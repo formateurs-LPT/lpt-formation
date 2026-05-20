@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { sbSelect, sbUpsert, sbUpdate, SESSION_CODE } from '@/lib/supabase'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import Image from 'next/image'
+import ParticipantModuleView from '@/components/ParticipantModuleView'
 
 const QUIZ10 = [
   { q: 'Quel trouble visuel fait que les verres progressifs sont utiles au quotidien ?', opts: ['La myopie', 'La presbytie', "L'astigmatisme", "L'hypermétropie"], correct: 1, kind: 'standard' },
@@ -340,6 +341,8 @@ export default function ParticipantView({ pName, onToast, onOnlineCount }) {
   const [curSlide, setCurSlide] = useState(1)
   const [ended, setEnded] = useState(false)
   const [trainerName, setTrainerName] = useState('kevin')
+  const [activeModule, setActiveModule] = useState(null)
+  const [modulePage, setModulePage] = useState(0)
 
   useEffect(() => {
     const poll = async () => {
@@ -348,6 +351,10 @@ export default function ParticipantView({ pName, onToast, onOnlineCount }) {
         if (sessions?.[0]) {
           const step = Number(sessions[0].current_step)
           const slideNum = Number(sessions[0].active_scenario)
+          const mod = sessions[0].active_module ?? null
+          const modPage = sessions[0].module_page ?? 0
+          setActiveModule(mod)
+          setModulePage(modPage)
           if (step === -1 && curStep > 0) { setEnded(true); return }
           if (step >= 0 && step !== curStep) setCurStep(step)
           if (step === 1 && slideNum && slideNum !== curSlide) setCurSlide(slideNum)
@@ -357,7 +364,7 @@ export default function ParticipantView({ pName, onToast, onOnlineCount }) {
       } catch {}
     }
     poll()
-    const interval = setInterval(poll, 3000)
+    const interval = setInterval(poll, 1500)
     return () => clearInterval(interval)
   }, [curStep, curSlide])
 
@@ -393,6 +400,9 @@ export default function ParticipantView({ pName, onToast, onOnlineCount }) {
       </div>
     </div>
   )
+
+  // Si un module est actif, on prend le dessus sur tout le reste
+  if (activeModule) return <ParticipantModuleView forcedModule={activeModule} forcedPage={modulePage} />
 
   return (
     <div id="pv">

@@ -215,8 +215,10 @@ function WaitingScreen() {
   )
 }
 
-export default function ParticipantModuleView() {
-  const { activeModule, modulePage } = useModuleSync(1200)
+export default function ParticipantModuleView({ forcedModule, forcedPage }) {
+  const sync = useModuleSync(forcedModule ? 99999 : 1200) // pas de polling si forcé depuis ParticipantView
+  const activeModule = forcedModule ?? sync.activeModule
+  const modulePage = forcedPage ?? sync.modulePage
 
   const page = activeModule === 'types-verres'
     ? (TYPES_VERRES_PAGES[modulePage] || TYPES_VERRES_PAGES[0])
