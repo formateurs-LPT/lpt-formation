@@ -39,6 +39,10 @@ export async function sbUpdate(table, data, filter) {
     headers: { ...sbHeaders, Prefer: 'return=minimal' },
     body: JSON.stringify(data)
   })
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}))
+    console.error('[sbUpdate] ERREUR', table, r.status, err, '| data:', data, '| filter:', filter)
+  }
   return r.ok
 }
 
