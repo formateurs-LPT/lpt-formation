@@ -159,22 +159,63 @@ function TVContentPage({ page, pageIndex, total }) {
 }
 
 // ── Waiting Screen ────────────────────────────────────────────────
+const APP_URL = 'https://lpt-formation.vercel.app'
+const QR_URL  = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(APP_URL)}`
+
 function WaitingScreen() {
   return (
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: 0,
     }}>
-      <Image src="/assets/logo-lpt.png" alt="LPT" width={220} height={84} style={{ objectFit: 'contain', marginBottom: 40 }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Image src="/assets/logo-lpt.png" alt="LPT" width={220} height={84}
+        style={{ objectFit: 'contain', marginBottom: 52 }} />
+
+      {/* QR + instructions */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 56,
+        background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 28, padding: '36px 48px',
+      }}>
+        {/* QR Code */}
         <div style={{
-          width: 10, height: 10, borderRadius: '50%', background: '#00abe9',
-          animation: 'waitingPulse 1.4s ease-in-out infinite',
-        }} />
-        <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.55)', fontWeight: 500, letterSpacing: 0.5 }}>
-          En attente du formateur…
-        </span>
+          background: '#0a2a5c', borderRadius: 18, padding: 12,
+          border: '2px solid rgba(0,171,233,0.35)',
+          boxShadow: '0 0 40px rgba(0,171,233,0.15)',
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={QR_URL} alt="QR Code" width={220} height={220}
+            style={{ display: 'block', borderRadius: 8 }} />
+        </div>
+
+        {/* Texte */}
+        <div>
+          <div style={{
+            fontSize: 11, fontWeight: 700, color: '#00abe9',
+            textTransform: 'uppercase', letterSpacing: 2, marginBottom: 14,
+          }}>Rejoindre la formation</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 12 }}>
+            Scannez ce QR code<br />avec votre téléphone
+          </div>
+          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', marginBottom: 28, lineHeight: 1.6 }}>
+            Connectez-vous avec votre prénom et<br />le code de session communiqué<br />par votre formateur.
+          </div>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.25)',
+            borderRadius: 20, padding: '8px 18px',
+          }}>
+            <div style={{
+              width: 8, height: 8, borderRadius: '50%', background: '#00abe9',
+              animation: 'waitingPulse 1.4s ease-in-out infinite',
+            }} />
+            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+              En attente du formateur…
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   )
