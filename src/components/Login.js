@@ -2,24 +2,12 @@
 import { useState } from 'react'
 import Image from 'next/image'
 
-export default function Login({ onTrainerLogin, onParticipantJoin, onTVMode }) {
+export default function Login({ onTrainerLogin, onParticipantJoin }) {
   const [showTrainerPanel, setShowTrainerPanel] = useState(false)
-  const [showTVPanel, setShowTVPanel] = useState(false)
   const [trainerId, setTrainerId] = useState('')
   const [trainerCode, setTrainerCode] = useState('')
   const [pname, setPname] = useState('')
   const [scode, setScode] = useState('')
-  const [tvCode, setTvCode] = useState('')
-  const [tvError, setTvError] = useState(false)
-
-  const handleTVConnect = () => {
-    if (tvCode.trim().toUpperCase() === 'LPT2026') {
-      onTVMode()
-    } else {
-      setTvError(true)
-      setTimeout(() => setTvError(false), 1800)
-    }
-  }
 
   const handleTrainerConnect = () => {
     onTrainerLogin(trainerId, trainerCode)
@@ -98,35 +86,6 @@ export default function Login({ onTrainerLogin, onParticipantJoin, onTVMode }) {
             <button className="gbtn" onClick={handleJoin}>Rejoindre →</button>
           </div>
           <p className="hint">Le code de session est communiqué par votre formateur</p>
-
-          <div className="sep"></div>
-
-          <div className="lcard-section-label">Diffusion</div>
-          {!showTVPanel ? (
-            <button className="rbtn" onClick={() => setShowTVPanel(true)} style={{ opacity: 0.75 }}>
-              <span style={{ fontSize: 22 }}>📺</span>
-              <div>Mode TV / Écran salle<span className="sub">Affichage synchronisé pour la télévision</span></div>
-            </button>
-          ) : (
-            <div className="trainer-login-panel">
-              <input
-                className="finput"
-                type="text"
-                placeholder="Code de session"
-                maxLength={8}
-                value={tvCode}
-                onChange={e => { setTvCode(e.target.value.toUpperCase()); setTvError(false) }}
-                onKeyDown={e => e.key === 'Enter' && handleTVConnect()}
-                style={{ borderColor: tvError ? '#ef4444' : undefined }}
-                autoComplete="off"
-              />
-              {tvError && <p style={{ color: '#ef4444', fontSize: 12, marginTop: -8, marginBottom: 8 }}>Code incorrect</p>}
-              <div className="trainer-actions">
-                <button className="lbtn-connect" onClick={handleTVConnect}>Activer le mode TV →</button>
-                <button className="lbtn-cancel" onClick={() => { setShowTVPanel(false); setTvCode('') }}>Annuler</button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -74,7 +74,7 @@ export default function Page() {
   if (view === 'landing') {
     return (
       <>
-        <Login onTrainerLogin={handleTrainerLogin} onParticipantJoin={handleParticipantJoin} onTVMode={() => setMode('tv')} />
+        <Login onTrainerLogin={handleTrainerLogin} onParticipantJoin={handleParticipantJoin} />
         <Toast message={message} />
       </>
     )
@@ -88,6 +88,7 @@ export default function Page() {
         onlineCount={onlineCount}
         sessionCode={SESSION_CODE}
         onLogout={handleLogout}
+        onTVMode={() => setMode('tv')}
       />
       {view === 'dashboard' && (
         <Dashboard
