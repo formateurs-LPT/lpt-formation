@@ -37,7 +37,7 @@ export default function Page() {
     setIsTrainer(true)
     try {
       await sbUpsert('sessions', { code: SESSION_CODE, current_step: -1, active_scenario: 0 }, 'code')
-      await sbUpdate('sessions', { current_step: -1 }, 'code=eq.' + SESSION_CODE)
+      await sbUpdate('sessions', { current_step: -1, active_module: null, module_page: 0 }, 'code=eq.' + SESSION_CODE)
     } catch (e) {
       console.warn('Supabase session init failed (non-blocking):', e)
     }
