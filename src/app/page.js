@@ -18,14 +18,13 @@ export default function Page() {
   const [pName, setPName] = useState('')
   const [isTrainer, setIsTrainer] = useState(false)
   const [onlineCount, setOnlineCount] = useState(0)
-  const [mode, setMode] = useState(null)
-  const { message, toast } = useToast()
-
-  useEffect(() => {
+  const [mode] = useState(() => {
+    if (typeof window === 'undefined') return null
     const params = new URLSearchParams(window.location.search)
     const m = params.get('mode')
-    if (m === 'tv' || m === 'participant') setMode(m)
-  }, [])
+    return (m === 'tv' || m === 'participant') ? m : null
+  })
+  const { message, toast } = useToast()
 
   const handleTrainerLogin = async (id, code) => {
     const idRaw = id.trim().toLowerCase()
