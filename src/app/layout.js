@@ -2,7 +2,7 @@ import './globals.css'
 
 export const metadata = {
   title: 'LPT Formation — Le Verre Progressif',
-  description: 'Lunettes Pour Tous — Formation'
+  description: 'Lunettes Pour Tous — Formation Verre Progressif'
 }
 
 export default function RootLayout({ children }) {
