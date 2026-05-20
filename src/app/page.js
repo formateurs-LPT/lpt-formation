@@ -25,8 +25,12 @@ export default function Page() {
     const name = normalized.charAt(0).toUpperCase() + normalized.slice(1)
     setPName(name)
     setIsTrainer(true)
-    await sbUpsert('sessions', { code: SESSION_CODE, current_step: -1, active_scenario: 0 }, 'code')
-    await sbUpdate('sessions', { current_step: -1 }, 'code=eq.' + SESSION_CODE)
+    try {
+      await sbUpsert('sessions', { code: SESSION_CODE, current_step: -1, active_scenario: 0 }, 'code')
+      await sbUpdate('sessions', { current_step: -1 }, 'code=eq.' + SESSION_CODE)
+    } catch (e) {
+      console.warn('Supabase session init failed (non-blocking):', e)
+    }
     setView('dashboard')
   }
 
@@ -35,7 +39,11 @@ export default function Page() {
     if (code.trim().toUpperCase() !== SESSION_CODE) { toast('Code de session incorrect'); return }
     setPName(name.trim())
     setIsTrainer(false)
-    await sbUpsert('participants', { session_code: SESSION_CODE, name: name.trim() }, 'session_code,name')
+    try {
+      await sbUpsert('participants', { session_code: SESSION_CODE, name: name.trim() }, 'session_code,name')
+    } catch (e) {
+      console.warn('Supabase participant upsert failed (non-blocking):', e)
+    }
     setView('participant')
   }
 
