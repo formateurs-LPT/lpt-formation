@@ -245,6 +245,21 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .detail-back{display:inline-flex;align-items:center;gap:6px;color:var(--lpt);font-size:14px;font-weight:500;cursor:pointer;margin-bottom:24px;background:none;border:none;font-family:'DM Sans',sans-serif;padding:0}
 .detail-back:hover{text-decoration:underline}
 
+/* ── ONBOARDING ── */
+.ob-group-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.ob-group-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:36px 24px;text-align:center;cursor:pointer;transition:all .2s}
+.ob-group-card:hover{border-color:var(--lpt);box-shadow:0 6px 20px rgba(0,171,233,.12);transform:translateY(-2px)}
+.ob-group-card-icon{font-size:36px;margin-bottom:12px}
+.ob-group-card-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px}
+.ob-group-card-sub{font-size:13px;color:var(--text-s);margin-bottom:12px}
+.ob-group-card-count{display:inline-block;background:var(--lpt-l);color:var(--lpt-dd);font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px}
+.ob-collab-list{display:flex;flex-direction:column;gap:10px;margin-bottom:8px}
+.ob-collab-row{background:#fff;border:1px solid var(--border);border-radius:var(--rs);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.ob-collab-name{font-size:15px;font-weight:600;color:var(--text)}
+.ob-collab-checks{display:flex;gap:20px}
+.ob-collab-check{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text-s);cursor:pointer;font-weight:500}
+.ob-collab-check input[type=checkbox]{accent-color:var(--lpt);width:16px;height:16px;cursor:pointer}
+
 /* ── RESPONSIVE ── */
 @media(max-width:640px){
   .tlayout{grid-template-columns:1fr}

@@ -5,6 +5,7 @@ import { sbSelect, SESSION_CODE } from '@/lib/supabase'
 import WeatherWidget from './WeatherWidget'
 import ProgressWidget from './ProgressWidget'
 import NotesWidget from './NotesWidget'
+import OnboardingView from './OnboardingView'
 import { TRAINER_AVATARS } from '@/lib/constants'
 
 const NEWS_ITEMS = [
@@ -59,7 +60,7 @@ function DashHeader({ pName }) {
 }
 
 export default function Dashboard({ pName, onLaunchSession, onToast, onOnlineCount }) {
-  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules
+  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding
   const [entreeCount, setEntreeCount] = useState(null)
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
@@ -85,6 +86,17 @@ export default function Dashboard({ pName, onLaunchSession, onToast, onOnlineCou
   }
 
   const obDay = typeof window !== 'undefined' ? (localStorage.getItem('ob_day') || '1') : '1'
+
+  if (activeView === 'onboarding') {
+    return (
+      <div id="dashboard">
+        <OnboardingView
+          onBack={() => setActiveView('home')}
+          onLaunchFormation={onLaunchSession}
+        />
+      </div>
+    )
+  }
 
   if (activeView === 'modules') {
     return (
@@ -131,7 +143,7 @@ export default function Dashboard({ pName, onLaunchSession, onToast, onOnlineCou
         <NewsTicker />
 
         {/* OB Banner */}
-        <div className="ob-banner" onClick={() => setActiveView('modules')}>
+        <div className="ob-banner" onClick={() => setActiveView('onboarding')}>
           <div className="ob-banner-icon">🚀</div>
           <div className="ob-banner-body">
             <div className="ob-banner-label">Formation · Suivi collaborateurs</div>
