@@ -142,7 +142,7 @@ function AvatarBubble({ script, trainerAvatar, pName }) {
 }
 
 // ── Page de contenu ───────────────────────────────────────────────
-function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -359,6 +359,7 @@ export default function ModuleTypesVerres({ pName, onBack }) {
         isLast={pageIndex === PAGES.length - 1}
         onPrev={() => setPageIndex(i => Math.max(0, i - 1))}
         onNext={() => pageIndex < PAGES.length - 1 ? setPageIndex(i => i + 1) : onBack()}
+        onBack={onBack}
       />
     </>
   )
