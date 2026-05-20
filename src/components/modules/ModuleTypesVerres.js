@@ -57,7 +57,7 @@ function VerreAnime({ color }) {
   return (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
       <div style={{
-        position: 'absolute', width: 360, height: 360, borderRadius: '50%',
+        position: 'absolute', width: 520, height: 520, borderRadius: '50%',
         background: `radial-gradient(circle, ${color}35 0%, transparent 70%)`,
         animation: 'haloPulse 3.5s ease-in-out infinite',
       }} />
@@ -65,9 +65,9 @@ function VerreAnime({ color }) {
         <Image
           src="/assets/verre-unifocal-2.png"
           alt="Verre optique"
-          width={400}
-          height={400}
-          style={{ objectFit: 'contain', filter: `drop-shadow(0 0 48px ${color}80) drop-shadow(0 20px 40px rgba(0,0,0,0.3))` }}
+          width={560}
+          height={560}
+          style={{ objectFit: 'contain', filter: `drop-shadow(0 0 64px ${color}90) drop-shadow(0 24px 48px rgba(0,0,0,0.35))` }}
           priority
         />
       </div>
@@ -75,8 +75,8 @@ function VerreAnime({ color }) {
   )
 }
 
-// ── Bulle avatar ──────────────────────────────────────────────────
-function AvatarBubble({ script, trainerAvatar }) {
+// ── Présentateur (avatar + bulle) ────────────────────────────────
+function AvatarBubble({ script, trainerAvatar, pName }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     setVisible(false)
@@ -84,35 +84,65 @@ function AvatarBubble({ script, trainerAvatar }) {
     return () => clearTimeout(t)
   }, [script])
 
+  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Formateur'
+
   return (
     <div style={{
-      position: 'fixed', bottom: 24, right: 24, zIndex: 50,
-      display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10,
-      opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)',
-      transition: 'all .4s ease', pointerEvents: 'none',
+      position: 'fixed', bottom: 0, right: 0, zIndex: 50,
+      display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
+      padding: '0 28px 28px 0',
+      opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)',
+      transition: 'all .5s ease', pointerEvents: 'none',
     }}>
+      {/* Bulle script */}
       <div style={{
-        background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(16px)',
-        borderRadius: '16px 16px 4px 16px', padding: '12px 16px',
-        maxWidth: 240, boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-        fontSize: 12, color: '#1a1a2e', lineHeight: 1.55, fontWeight: 500,
+        background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(20px)',
+        borderRadius: '18px 18px 4px 18px', padding: '14px 18px',
+        maxWidth: 280, boxShadow: '0 12px 48px rgba(0,0,0,0.25)',
+        fontSize: 13, color: '#0f172a', lineHeight: 1.6, fontWeight: 500,
+        marginBottom: 12,
       }}>
         {script}
       </div>
+
+      {/* Carte présentateur */}
       <div style={{
-        width: 52, height: 52, borderRadius: '50%',
-        border: '3px solid #00abe9', overflow: 'hidden',
-        boxShadow: '0 4px 20px rgba(0,171,233,0.5)',
-        animation: 'avatarPulse 2.5s ease-in-out infinite',
+        background: 'rgba(10,42,92,0.75)', backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(0,171,233,0.3)', borderRadius: 20,
+        padding: '12px 18px 12px 12px',
+        display: 'flex', alignItems: 'center', gap: 14,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
       }}>
-        <Image src={trainerAvatar} alt="Formateur" width={52} height={52} style={{ objectFit: 'cover' }} />
+        {/* Avatar — futur slot HeyGen */}
+        <div style={{
+          width: 80, height: 80, borderRadius: 16, overflow: 'hidden', flexShrink: 0,
+          border: '2.5px solid #00abe9',
+          boxShadow: '0 0 0 4px rgba(0,171,233,0.2)',
+          animation: 'avatarPulse 2.5s ease-in-out infinite',
+        }}>
+          <Image src={trainerAvatar} alt={cap(pName)} width={80} height={80} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+        </div>
+        {/* Nom + rôle */}
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{cap(pName)}</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Formateur · LPT</div>
+          {/* Badge LIVE futur */}
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6,
+            background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.3)',
+            borderRadius: 20, padding: '3px 10px',
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00abe9', animation: 'haloPulse 1.5s ease-in-out infinite' }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', letterSpacing: .5 }}>EN DIRECT</span>
+          </div>
+        </div>
       </div>
     </div>
   )
 }
 
 // ── Page de contenu ───────────────────────────────────────────────
-function ContentPage({ page, trainerAvatar, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -252,7 +282,7 @@ function ContentPage({ page, trainerAvatar, onPrev, onNext, isFirst, isLast, pag
         >{isLast ? '✓ Terminer le module' : 'Suivant →'}</button>
       </div>
 
-      <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} />
+      <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
     </div>
   )
 }
@@ -311,6 +341,7 @@ export default function ModuleTypesVerres({ pName, onBack }) {
       <ContentPage
         page={PAGES[pageIndex]}
         trainerAvatar={trainerAvatar}
+        pName={pName}
         pageIndex={pageIndex}
         total={PAGES.length}
         isFirst={pageIndex === 0}
