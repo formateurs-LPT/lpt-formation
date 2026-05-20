@@ -9,6 +9,7 @@ import ParticipantView from '@/components/ParticipantView'
 import { sbUpsert, sbUpdate, SESSION_CODE } from '@/lib/supabase'
 import { TRAINERS, TRAINER_CANONICAL } from '@/lib/constants'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
+import OnboardingView from '@/components/OnboardingView'
 
 export default function Page() {
   const [view, setView] = useState('landing') // landing | dashboard | trainer-session | participant | module-types-verres
