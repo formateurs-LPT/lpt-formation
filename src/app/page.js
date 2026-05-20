@@ -18,7 +18,7 @@ export default function Page() {
   const [pName, setPName] = useState('')
   const [isTrainer, setIsTrainer] = useState(false)
   const [onlineCount, setOnlineCount] = useState(0)
-  const [mode] = useState(() => {
+  const [mode, setMode] = useState(() => {
     if (typeof window === 'undefined') return null
     const params = new URLSearchParams(window.location.search)
     const m = params.get('mode')
@@ -74,7 +74,7 @@ export default function Page() {
   if (view === 'landing') {
     return (
       <>
-        <Login onTrainerLogin={handleTrainerLogin} onParticipantJoin={handleParticipantJoin} />
+        <Login onTrainerLogin={handleTrainerLogin} onParticipantJoin={handleParticipantJoin} onTVMode={() => setMode('tv')} />
         <Toast message={message} />
       </>
     )
