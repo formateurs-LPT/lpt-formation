@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbSelect, SESSION_CODE } from '@/lib/supabase'
 import WeatherWidget from './WeatherWidget'
-import ProgressWidget from './ProgressWidget'
+import ShortcutsWidget from './ShortcutsWidget'
 import NotesWidget from './NotesWidget'
 import OnboardingView from './OnboardingView'
 import EntreesView from './EntreesView'
@@ -195,7 +195,7 @@ export default function Dashboard({ pName, onLaunchSession, onToast, onOnlineCou
         {/* Weather + Progress */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
           <WeatherWidget pName={pName} onToast={onToast} />
-          <ProgressWidget />
+          <ShortcutsWidget />
         </div>
 
         {/* Notes board */}
