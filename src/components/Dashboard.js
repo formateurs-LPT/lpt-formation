@@ -60,7 +60,7 @@ function DashHeader({ pName }) {
   )
 }
 
-export default function Dashboard({ pName, onLaunchSession, onToast, onOnlineCount }) {
+export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onToast, onOnlineCount }) {
   const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding
   const [entreeCount, setEntreeCount] = useState(null)
   const [sessionCount, setSessionCount] = useState('—')
@@ -102,6 +102,7 @@ export default function Dashboard({ pName, onLaunchSession, onToast, onOnlineCou
         <OnboardingView
           onBack={() => setActiveView('home')}
           onLaunchFormation={onLaunchSession}
+          onLaunchModule={onLaunchModule}
         />
       </div>
     )

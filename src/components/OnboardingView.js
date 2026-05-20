@@ -13,10 +13,10 @@ function classifyMagasin(magasin) {
   return 'province'
 }
 
-const MODULES = [
+const getModules = (onLaunchModule) => [
   { icon: 'paul', label: "Présentation de l'entreprise", sub: 'Paul Morlet — Histoire, valeurs et missions de LPT', slot: 'Jour 1 · Matin' },
   { icon: '👁️', label: "Lecture d'ordonnance", sub: 'Par un opticien — Décoder et interpréter une prescription optique', slot: 'Jour 1 · Matin' },
-  { icon: 'kevin', label: 'Les types de verres', sub: 'Kevin — Unifocaux, progressifs, antireflets et traitements', slot: 'Jour 1 · Après-midi' },
+  { icon: 'kevin', label: 'Les types de verres', sub: 'Kevin — Unifocaux, progressifs, antireflets et traitements', slot: 'Jour 1 · Après-midi', onClick: () => onLaunchModule('types-verres') },
   { icon: '💬', label: 'Arguments & Offre commerciale', sub: 'Techniques de vente et découverte du catalogue LPT', slot: 'Jour 2 · Matin' },
 ]
 
@@ -140,7 +140,8 @@ function CollabList({ group, onNext, onBack }) {
 }
 
 // ── Step 3 : Modules de formation ────────────────────────────────
-function SessionModules({ onBack, onLaunchFormation }) {
+function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
+  const MODULES = getModules(onLaunchModule)
   const day = typeof window !== 'undefined' ? (localStorage.getItem('ob_day') || '1') : '1'
   const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
@@ -159,7 +160,7 @@ function SessionModules({ onBack, onLaunchFormation }) {
 
       <div className="dash-tiles" style={{ gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         {MODULES.map((mod, i) => (
-          <div key={i} className="dash-tile" onClick={() => {}}>
+          <div key={i} className="dash-tile" onClick={mod.onClick || (() => {})}>
             <div className="dash-tile-top">
               {TRAINER_AVATARS[mod.icon] ? (
                 <Image src={TRAINER_AVATARS[mod.icon]} alt={mod.icon} width={38} height={38} style={{ borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
@@ -170,6 +171,7 @@ function SessionModules({ onBack, onLaunchFormation }) {
             </div>
             <div className="dash-tile-label" style={{ marginTop: 12 }}>{mod.label}</div>
             <div className="dash-tile-sub">{mod.sub}</div>
+            {mod.onClick && <div style={{ fontSize: 11, color: '#00abe9', marginTop: 8, fontWeight: 600 }}>Lancer →</div>}
           </div>
         ))}
 
@@ -190,7 +192,7 @@ function SessionModules({ onBack, onLaunchFormation }) {
 }
 
 // ── Composant principal ───────────────────────────────────────────
-export default function OnboardingView({ onBack, onLaunchFormation }) {
+export default function OnboardingView({ onBack, onLaunchFormation, onLaunchModule }) {
   const [step, setStep] = useState('select') // select | list | modules
   const [group, setGroup] = useState(null)
 
@@ -201,6 +203,6 @@ export default function OnboardingView({ onBack, onLaunchFormation }) {
 
   if (step === 'select') return <GroupSelect onSelect={handleSelectGroup} onBack={onBack} />
   if (step === 'list') return <CollabList group={group} onNext={() => setStep('modules')} onBack={() => setStep('select')} />
-  if (step === 'modules') return <SessionModules onBack={() => setStep('list')} onLaunchFormation={onLaunchFormation} />
+  if (step === 'modules') return <SessionModules onBack={() => setStep('list')} onLaunchFormation={onLaunchFormation} onLaunchModule={onLaunchModule} />
   return null
 }

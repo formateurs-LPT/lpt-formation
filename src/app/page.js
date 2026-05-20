@@ -8,9 +8,10 @@ import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
 import { sbUpsert, sbUpdate, SESSION_CODE } from '@/lib/supabase'
 import { TRAINERS, TRAINER_CANONICAL } from '@/lib/constants'
+import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
 
 export default function Page() {
-  const [view, setView] = useState('landing') // landing | dashboard | trainer-session | participant
+  const [view, setView] = useState('landing') // landing | dashboard | trainer-session | participant | module-types-verres
   const [pName, setPName] = useState('')
   const [isTrainer, setIsTrainer] = useState(false)
   const [onlineCount, setOnlineCount] = useState(0)
@@ -54,6 +55,7 @@ export default function Page() {
   }
 
   const handleLaunchSession = () => setView('trainer-session')
+  const handleLaunchModule = (moduleId) => setView('module-' + moduleId)
   const handleBackToDashboard = () => setView('dashboard')
 
   if (view === 'landing') {
@@ -78,6 +80,7 @@ export default function Page() {
         <Dashboard
           pName={pName}
           onLaunchSession={handleLaunchSession}
+          onLaunchModule={handleLaunchModule}
           onToast={toast}
           onOnlineCount={setOnlineCount}
         />
@@ -95,6 +98,12 @@ export default function Page() {
           pName={pName}
           onToast={toast}
           onOnlineCount={setOnlineCount}
+        />
+      )}
+      {view === 'module-types-verres' && (
+        <ModuleTypesVerres
+          pName={pName}
+          onBack={handleBackToDashboard}
         />
       )}
       <Toast message={message} />
