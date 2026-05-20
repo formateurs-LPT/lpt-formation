@@ -131,7 +131,7 @@ export default function Dashboard({ pName, onLaunchSession, onToast, onOnlineCou
         <NewsTicker />
 
         {/* OB Banner */}
-        <div className="ob-banner" onClick={() => onToast('Module Onboarding bientôt disponible')}>
+        <div className="ob-banner" onClick={() => setActiveView('modules')}>
           <div className="ob-banner-icon">🚀</div>
           <div className="ob-banner-body">
             <div className="ob-banner-label">Formation · Suivi collaborateurs</div>
