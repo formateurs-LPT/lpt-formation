@@ -57,6 +57,7 @@ export default function Page() {
   const handleLaunchSession = () => setView('trainer-session')
   const handleLaunchModule = (moduleId) => setView('module-' + moduleId)
   const handleBackToDashboard = () => setView('dashboard')
+  const handleBackToModules = () => setView('onboarding-modules')
 
   if (view === 'landing') {
     return (
@@ -100,10 +101,20 @@ export default function Page() {
           onOnlineCount={setOnlineCount}
         />
       )}
+      {view === 'onboarding-modules' && (
+        <div id="dashboard">
+          <OnboardingView
+            onBack={handleBackToDashboard}
+            onLaunchFormation={handleLaunchSession}
+            onLaunchModule={handleLaunchModule}
+            initialStep="modules"
+          />
+        </div>
+      )}
       {view === 'module-types-verres' && (
         <ModuleTypesVerres
           pName={pName}
-          onBack={handleBackToDashboard}
+          onBack={handleBackToModules}
         />
       )}
       <Toast message={message} />

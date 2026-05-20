@@ -192,8 +192,8 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
 }
 
 // ── Composant principal ───────────────────────────────────────────
-export default function OnboardingView({ onBack, onLaunchFormation, onLaunchModule }) {
-  const [step, setStep] = useState('select') // select | list | modules
+export default function OnboardingView({ onBack, onLaunchFormation, onLaunchModule, initialStep = 'select' }) {
+  const [step, setStep] = useState(initialStep) // select | list | modules
   const [group, setGroup] = useState(null)
 
   const handleSelectGroup = (g) => {
