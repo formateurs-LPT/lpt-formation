@@ -6,6 +6,7 @@ import WeatherWidget from './WeatherWidget'
 import ProgressWidget from './ProgressWidget'
 import NotesWidget from './NotesWidget'
 import OnboardingView from './OnboardingView'
+import EntreesView from './EntreesView'
 import { TRAINER_AVATARS } from '@/lib/constants'
 
 const NEWS_ITEMS = [
@@ -86,6 +87,14 @@ export default function Dashboard({ pName, onLaunchSession, onToast, onOnlineCou
   }
 
   const obDay = typeof window !== 'undefined' ? (localStorage.getItem('ob_day') || '1') : '1'
+
+  if (activeView === 'entrees') {
+    return (
+      <div id="dashboard">
+        <EntreesView onBack={() => setActiveView('home')} onToast={onToast} />
+      </div>
+    )
+  }
 
   if (activeView === 'onboarding') {
     return (
