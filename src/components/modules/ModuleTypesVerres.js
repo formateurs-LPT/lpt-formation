@@ -179,7 +179,7 @@ function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, isFirst, isLa
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Types de verres</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
           <div style={{ display: 'flex', gap: 5 }}>
             {Array(total).fill(0).map((_, i) => (
@@ -190,6 +190,15 @@ function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, isFirst, isLa
               }} />
             ))}
           </div>
+          <button onClick={onBack} style={{
+            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+            color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10,
+            fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            transition: 'all .2s', letterSpacing: .3,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b'; e.currentTarget.style.borderColor = 'rgba(255,80,80,0.35)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)' }}
+          >✕ Quitter</button>
         </div>
       </div>
 
@@ -249,10 +258,10 @@ function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, isFirst, isLa
         </div>
       </div>
 
-      {/* Boutons navigation — zIndex élevé, isolation totale */}
+      {/* Boutons navigation — padding-right décalé pour ne pas chevaucher l'avatar */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '0 48px 28px', position: 'relative', zIndex: 20, flexShrink: 0,
+        padding: '0 340px 28px 48px', position: 'relative', zIndex: 20, flexShrink: 0,
       }}>
         <button
           onClick={onPrev}
@@ -303,7 +312,9 @@ function Lobby({ onStart, onBack }) {
       }}>← Retour</button>
 
       <div style={{ textAlign: 'center', maxWidth: 500, padding: '0 24px' }}>
-        <div style={{ fontSize: 60, marginBottom: 20 }}>👁️</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+          <Image src="/assets/logo-lpt.png" alt="Lunettes Pour Tous" width={180} height={68} style={{ objectFit: 'contain' }} />
+        </div>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
           Module de formation
         </div>
