@@ -383,22 +383,27 @@ export default function ParticipantView({ pName, onToast, onOnlineCount }) {
   }
 
   const WaitScreen = () => (
-    <div id="pwait">
-      <div style={{ minHeight: 'calc(100vh - 58px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center', background: '#111111' }}>
-        <div style={{ width: 90, height: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28 }}>
-          <Image src="/assets/avatar_kevin.png" alt="LPT" width={90} height={90} style={{ borderRadius: '50%', objectFit: 'cover' }} />
-        </div>
-        <div style={{ fontSize: 13, fontWeight: 500, color: '#00abe9', letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: 8 }}>
-          Bonjour {pName.split(' ')[0]} 👋
-        </div>
-        <h2 style={{ fontSize: 22, fontWeight: 600, color: '#ffffff', marginBottom: 6 }}>Verre Progressif</h2>
-        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginBottom: 40 }}>Formation complémentaire · Lunettes Pour Tous</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
-          <div className="odot"></div>
-          En attente du formateur...
+    <>
+      <style>{`@keyframes waitDotP { 0%,100%{opacity:.2} 50%{opacity:1} }`}</style>
+      <div style={{
+        minHeight: '100dvh',
+        background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', padding: '40px 24px',
+      }}>
+        <Image src="/assets/logo-lpt.png" alt="LPT" width={160} height={60}
+          style={{ objectFit: 'contain', marginBottom: 48 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 8, height: 8, borderRadius: '50%', background: '#00abe9',
+            animation: 'waitDotP 1.4s ease-in-out infinite',
+          }} />
+          <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
+            La formation va commencer…
+          </span>
         </div>
       </div>
-    </div>
+    </>
   )
 
   // Si un module est actif, on prend le dessus sur tout le reste
