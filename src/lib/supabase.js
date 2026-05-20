@@ -1,5 +1,5 @@
-const SB_URL = 'https://hkbcvtqkxtayrmysufhe.supabase.co'
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrYmN2dHFreHRheXJteXN1ZmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2MzI2MDIsImV4cCI6MjA2MjIwODYwMn0.t6GxBPYHl8F9QQkjXCFsQPFCkNcjNGFpWFQTTrpXRaQ'
+const SB_URL = 'https://dofyyckseiilxhlijacy.supabase.co'
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvZnl5Y2tzZWlpbHhobGlqYWN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNjU2MjcsImV4cCI6MjA5Mzc0MTYyN30.ENd0dOZvA0ZqQky2LN5M8pK0Amp2SPLuIEHCHWyuI4A'
 
 const sbHeaders = {
   apikey: SB_KEY,
