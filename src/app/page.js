@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Login from '@/components/Login'
 import Topbar from '@/components/Topbar'
 import Toast, { useToast } from '@/components/Toast'
@@ -10,13 +10,22 @@ import { sbUpsert, sbUpdate, SESSION_CODE } from '@/lib/supabase'
 import { TRAINERS, TRAINER_CANONICAL } from '@/lib/constants'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
 import OnboardingView from '@/components/OnboardingView'
+import TVView from '@/components/TVView'
+import ParticipantModuleView from '@/components/ParticipantModuleView'
 
 export default function Page() {
   const [view, setView] = useState('landing') // landing | dashboard | trainer-session | participant | module-types-verres
   const [pName, setPName] = useState('')
   const [isTrainer, setIsTrainer] = useState(false)
   const [onlineCount, setOnlineCount] = useState(0)
+  const [mode, setMode] = useState(null)
   const { message, toast } = useToast()
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const m = params.get('mode')
+    if (m === 'tv' || m === 'participant') setMode(m)
+  }, [])
 
   const handleTrainerLogin = async (id, code) => {
     const idRaw = id.trim().toLowerCase()
@@ -59,6 +68,9 @@ export default function Page() {
   const handleLaunchModule = (moduleId) => setView('module-' + moduleId)
   const handleBackToDashboard = () => setView('dashboard')
   const handleBackToModules = () => setView('onboarding-modules')
+
+  if (mode === 'tv') return <TVView />
+  if (mode === 'participant') return <ParticipantModuleView />
 
   if (view === 'landing') {
     return (
