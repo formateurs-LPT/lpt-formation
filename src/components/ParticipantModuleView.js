@@ -76,18 +76,7 @@ function QuizAnswerScreen({ pName, qIdx }) {
         answer_idx: optIdx,
         is_correct: isCorrect,
       })
-      if (qIdx === TYPES_VERRES_QUIZ.length - 1) {
-        await sbInsert('module_results', {
-          collaborateur: pName || 'Anonyme',
-          pin: generatePin(pName || ''),
-          week_date: new Date().toISOString().slice(0, 10),
-          module_id: 'types-verres',
-          score: isCorrect ? 1 : 0,
-          score_total: 1,
-          xp: isCorrect ? 100 : 0,
-          completed_at: new Date().toISOString(),
-        })
-      }
+      // module_results est sauvegardé dans PersonalResultsScreen avec le score total
     } catch (e) { console.error(e) }
     setSaving(false)
   }
@@ -165,8 +154,26 @@ function PersonalResultsScreen({ pName }) {
     const fetchAnswers = async () => {
       const name = pName || 'Anonyme'
       const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}&collaborateur=eq.${encodeURIComponent(name)}`)
-      setAnswers(rows || [])
+      const data = rows || []
+      setAnswers(data)
       setLoading(false)
+
+      // Sauvegarde module_results avec le score total réel
+      const totalCorrect = data.filter(r => r.is_correct).length
+      const totalQ = TYPES_VERRES_QUIZ.length
+      const earnedXP = totalCorrect * 50
+      try {
+        await sbInsert('module_results', {
+          collaborateur: name,
+          pin: generatePin(name),
+          week_date: new Date().toISOString().slice(0, 10),
+          module_id: 'types-verres',
+          score: totalCorrect,
+          score_total: totalQ,
+          xp: earnedXP,
+          completed_at: new Date().toISOString(),
+        })
+      } catch (e) { console.error(e) }
     }
     fetchAnswers()
   }, [pName])

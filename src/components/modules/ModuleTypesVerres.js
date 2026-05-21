@@ -584,7 +584,7 @@ export default function ModuleTypesVerres({ pName, onBack }) {
   }
 
   const handleEndQuiz = async () => {
-    await sbUpdate('sessions', { module_page: 200 }, 'code=eq.' + SESSION_CODE)
+    await sbUpdate('sessions', { active_module: 'types-verres', module_page: 200 }, 'code=eq.' + SESSION_CODE)
     setShowGroupResults(true)
   }
 
