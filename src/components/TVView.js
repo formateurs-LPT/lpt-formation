@@ -22,6 +22,10 @@ const STYLES = `
     0%, 100% { opacity: 0.3; }
     50% { opacity: 1; }
   }
+  @keyframes logoBreathe {
+    0%, 100% { opacity: 0.85; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.06); }
+  }
 `
 
 // ── Verre animé ───────────────────────────────────────────────────
@@ -178,8 +182,8 @@ function WaitingScreen() {
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       gap: 0,
     }}>
-      <Image src="/assets/logo-lpt.png" alt="LPT" width={220} height={84}
-        style={{ objectFit: 'contain', marginBottom: 52 }} />
+      <Image src="/assets/logo-lpt.png" alt="LPT" width={300} height={114}
+        style={{ objectFit: 'contain', marginBottom: 52, animation: 'logoBreathe 3.5s ease-in-out infinite' }} />
 
       {/* Audio ambiance */}
       <audio ref={audioRef} src="/audio/waiting.mp3" autoPlay loop muted={muted} style={{ display: 'none' }} />
