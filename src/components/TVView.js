@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { TYPES_VERRES_PAGES } from '@/lib/modulesData'
@@ -163,6 +163,14 @@ const APP_URL = 'https://lpt-formation.vercel.app'
 const QR_URL  = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(APP_URL)}`
 
 function WaitingScreen() {
+  const [muted, setMuted] = useState(false)
+  const audioRef = useRef(null)
+
+  const toggleMute = () => {
+    if (audioRef.current) audioRef.current.muted = !muted
+    setMuted(m => !m)
+  }
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -172,6 +180,20 @@ function WaitingScreen() {
     }}>
       <Image src="/assets/logo-lpt.png" alt="LPT" width={220} height={84}
         style={{ objectFit: 'contain', marginBottom: 52 }} />
+
+      {/* Audio ambiance */}
+      <audio ref={audioRef} src="/audio/waiting.mp3" autoPlay loop muted={muted} style={{ display: 'none' }} />
+
+      {/* Bouton mute discret en bas à droite */}
+      <button onClick={toggleMute} style={{
+        position: 'fixed', bottom: 24, right: 24,
+        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+        color: 'rgba(255,255,255,0.4)', borderRadius: 12,
+        padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+        transition: 'all .2s',
+      }}>
+        {muted ? '🔇 Son coupé' : '🔊 Son actif'}
+      </button>
 
       {/* QR + instructions */}
       <div style={{
