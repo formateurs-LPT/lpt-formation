@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbSelect, SESSION_CODE } from '@/lib/supabase'
+import { sbSelect, sbDelete, SESSION_CODE } from '@/lib/supabase'
 import WeatherWidget from './WeatherWidget'
 import ShortcutsWidget from './ShortcutsWidget'
 import NotesWidget from './NotesWidget'
@@ -60,6 +60,70 @@ function DashHeader({ pName }) {
   )
 }
 
+function SessionsHistoryView({ onBack, onToast }) {
+  const [sessions, setSessions] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const load = async () => {
+    setLoading(true)
+    const data = await sbSelect('session_history')
+    setSessions(data || [])
+    setLoading(false)
+  }
+
+  useEffect(() => { load() }, [])
+
+  const handleClear = async () => {
+    if (!confirm('Vider tout l\'historique des sessions ?')) return
+    await sbDelete('session_history', 'session_date=gte.2000-01-01')
+    setSessions([])
+    onToast('Historique vidé')
+  }
+
+  return (
+    <div className="dash-wrap">
+      <button className="detail-back" onClick={onBack}>← Retour</button>
+      <div className="dash-header">
+        <div>
+          <h2>Sessions réalisées</h2>
+          <p>{sessions.length} session{sessions.length !== 1 ? 's' : ''} enregistrée{sessions.length !== 1 ? 's' : ''}</p>
+        </div>
+        {sessions.length > 0 && (
+          <button className="btn2" onClick={handleClear} style={{ color: '#dc2626', borderColor: '#dc2626', fontSize: 13 }}>
+            🗑 Vider l'historique
+          </button>
+        )}
+      </div>
+
+      {loading ? (
+        <p style={{ color: 'var(--text-m)', fontSize: 14, textAlign: 'center', padding: '40px 20px' }}>Chargement…</p>
+      ) : sessions.length === 0 ? (
+        <p style={{ color: 'var(--text-m)', fontSize: 14, textAlign: 'center', padding: '40px 20px' }}>Aucune session enregistrée.</p>
+      ) : (
+        <div>
+          {[...sessions].reverse().map((s, i) => {
+            const date = new Date(s.session_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+            const cap = str => str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
+            return (
+              <div key={i} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--lpt-l)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🎓</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{cap(date)}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 2 }}>{s.notes || '—'}</div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--lpt)' }}>{s.participant_count}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-m)' }}>collaborateur{s.participant_count !== 1 ? 's' : ''}</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onToast, onOnlineCount }) {
   const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding
   const [entreeCount, setEntreeCount] = useState(null)
@@ -87,6 +151,14 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
   }
 
   const obDay = typeof window !== 'undefined' ? (localStorage.getItem('ob_day') || '1') : '1'
+
+  if (activeView === 'sessions') {
+    return (
+      <div id="dashboard">
+        <SessionsHistoryView onBack={() => { setActiveView('home'); loadTileStats() }} onToast={onToast} />
+      </div>
+    )
+  }
 
   if (activeView === 'entrees') {
     return (
