@@ -326,8 +326,14 @@ function TVGroupResults() {
   const [muted, setMuted] = useState(true)
 
   const toggleMute = () => {
-    if (audioRef.current) audioRef.current.muted = !muted
-    setMuted(m => !m)
+    const newMuted = !muted
+    if (audioRef.current) {
+      audioRef.current.muted = newMuted
+      if (!newMuted && audioRef.current.paused) {
+        audioRef.current.play().catch(() => {})
+      }
+    }
+    setMuted(newMuted)
   }
 
   useEffect(() => {
