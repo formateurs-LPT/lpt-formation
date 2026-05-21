@@ -8,6 +8,7 @@ import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
 import { sbUpsert, sbUpdate, SESSION_CODE } from '@/lib/supabase'
 import { TRAINERS, TRAINER_CANONICAL } from '@/lib/constants'
+import { generatePin } from '@/lib/pin'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
 import OnboardingView from '@/components/OnboardingView'
 import TVView from '@/components/TVView'
@@ -46,7 +47,11 @@ export default function Page() {
 
   const handleParticipantJoin = async (name, code) => {
     if (!name.trim()) { toast('Entrez votre prénom et nom'); return }
-    if (code.trim().toUpperCase() !== SESSION_CODE) { toast('Code de session incorrect'); return }
+    const codeClean = code.trim()
+    const pin = generatePin(name.trim())
+    if (codeClean.toUpperCase() !== SESSION_CODE && codeClean !== pin) {
+      toast('Code incorrect'); return
+    }
     setPName(name.trim())
     setIsTrainer(false)
     try {

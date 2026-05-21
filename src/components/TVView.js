@@ -163,7 +163,7 @@ function TVContentPage({ page, pageIndex, total }) {
 }
 
 // ── Waiting Screen ────────────────────────────────────────────────
-const APP_URL = 'https://lpt-formation.vercel.app'
+const APP_URL = 'https://lpt-formation.vercel.app?join=1'
 const QR_URL  = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(APP_URL)}`
 
 function WaitingScreen() {
