@@ -323,7 +323,7 @@ function TVGroupResults() {
   const [answers, setAnswers] = useState([])
   const [loading, setLoading] = useState(true)
   const audioRef = useRef(null)
-  const [muted, setMuted] = useState(false)
+  const [muted, setMuted] = useState(true)
 
   const toggleMute = () => {
     if (audioRef.current) audioRef.current.muted = !muted
@@ -366,7 +366,7 @@ function TVGroupResults() {
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
       display: 'flex', flexDirection: 'column', padding: '32px 64px 48px', position: 'relative',
     }}>
-      <audio ref={audioRef} src="/audio/prettyjohn1-no-copyright-music-498106.mp3" autoPlay loop style={{ display: 'none' }} />
+      <audio ref={audioRef} src="/audio/prettyjohn1-no-copyright-music-498106.mp3" autoPlay loop muted style={{ display: 'none' }} />
       <button onClick={toggleMute} style={{
         position: 'fixed', bottom: 24, right: 24,
         background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
