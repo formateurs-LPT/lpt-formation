@@ -62,63 +62,144 @@ function DashHeader({ pName }) {
 
 function SessionsHistoryView({ onBack, onToast }) {
   const [sessions, setSessions] = useState([])
+  const [quizResults, setQuizResults] = useState([])
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
     setLoading(true)
-    const data = await sbSelect('session_history')
-    setSessions(data || [])
+    const [history, answers] = await Promise.all([
+      sbSelect('session_history'),
+      sbSelect('quiz_answers'),
+    ])
+    setSessions(history || [])
+
+    // Grouper les réponses quiz par collaborateur
+    const byCollab = {}
+    for (const a of (answers || [])) {
+      if (!byCollab[a.collaborateur]) {
+        byCollab[a.collaborateur] = { collaborateur: a.collaborateur, correct: 0, total: 0, answeredAt: a.created_at }
+      }
+      byCollab[a.collaborateur].total++
+      if (a.is_correct) byCollab[a.collaborateur].correct++
+    }
+    setQuizResults(Object.values(byCollab))
     setLoading(false)
   }
 
   useEffect(() => { load() }, [])
 
-  const handleClear = async () => {
-    if (!confirm('Vider tout l\'historique des sessions ?')) return
+  const handleClearQuiz = async () => {
+    if (!confirm('Vider les résultats du quiz ?')) return
+    await sbDelete('quiz_answers', 'id=gte.0')
+    await sbDelete('module_results', 'id=gte.0')
+    setQuizResults([])
+    onToast('Résultats quiz vidés')
+  }
+
+  const handleClearHistory = async () => {
+    if (!confirm('Vider l\'historique des sessions ?')) return
     await sbDelete('session_history', 'session_date=gte.2000-01-01')
     setSessions([])
     onToast('Historique vidé')
   }
 
+  const xpFor = (correct, total) => total > 0 ? Math.round((correct / total) * 100) : 0
+  const MODULE_LABELS = { 'types-verres': 'Types de verres' }
+
   return (
     <div className="dash-wrap">
       <button className="detail-back" onClick={onBack}>← Retour</button>
-      <div className="dash-header">
-        <div>
-          <h2>Sessions réalisées</h2>
-          <p>{sessions.length} session{sessions.length !== 1 ? 's' : ''} enregistrée{sessions.length !== 1 ? 's' : ''}</p>
-        </div>
-        {sessions.length > 0 && (
-          <button className="btn2" onClick={handleClear} style={{ color: '#dc2626', borderColor: '#dc2626', fontSize: 13 }}>
-            🗑 Vider l'historique
-          </button>
-        )}
-      </div>
 
       {loading ? (
         <p style={{ color: 'var(--text-m)', fontSize: 14, textAlign: 'center', padding: '40px 20px' }}>Chargement…</p>
-      ) : sessions.length === 0 ? (
-        <p style={{ color: 'var(--text-m)', fontSize: 14, textAlign: 'center', padding: '40px 20px' }}>Aucune session enregistrée.</p>
       ) : (
-        <div>
-          {[...sessions].reverse().map((s, i) => {
-            const date = new Date(s.session_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-            const cap = str => str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
-            return (
-              <div key={i} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--lpt-l)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🎓</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{cap(date)}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 2 }}>{s.notes || '—'}</div>
-                </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--lpt)' }}>{s.participant_count}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-m)' }}>collaborateur{s.participant_count !== 1 ? 's' : ''}</div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <>
+          {/* ── Résultats quiz en direct ── */}
+          <div className="dash-header" style={{ marginTop: 8 }}>
+            <div>
+              <h2>Résultats quiz</h2>
+              <p>{quizResults.length} participant{quizResults.length !== 1 ? 's' : ''} — Types de verres</p>
+            </div>
+            {quizResults.length > 0 && (
+              <button className="btn2" onClick={handleClearQuiz} style={{ color: '#dc2626', borderColor: '#dc2626', fontSize: 13 }}>
+                🗑 Vider
+              </button>
+            )}
+          </div>
+
+          {quizResults.length === 0 ? (
+            <div style={{ background: '#f8fafc', border: '1px dashed var(--border)', borderRadius: 'var(--rs)', padding: '28px', textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>🧠</div>
+              <p style={{ color: 'var(--text-m)', fontSize: 14 }}>Aucun résultat quiz pour l'instant.<br />Lancez le quiz depuis le module Types de verres.</p>
+            </div>
+          ) : (
+            <div style={{ marginBottom: 32 }}>
+              {quizResults.map((r, i) => {
+                const xp = xpFor(r.correct, r.total)
+                const pct = r.total > 0 ? Math.round((r.correct / r.total) * 100) : 0
+                const color = pct === 100 ? '#16a34a' : pct >= 50 ? '#0089ba' : '#dc2626'
+                return (
+                  <div key={i} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 18px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: '50%', background: `${color}15`, border: `2px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0, fontWeight: 800, color }}>
+                      {r.collaborateur.charAt(0).toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{r.collaborateur}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 2 }}>Types de verres · {r.correct}/{r.total} bonne{r.correct > 1 ? 's' : ''} réponse{r.correct > 1 ? 's' : ''}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 20, fontWeight: 800, color }}>{r.correct}/{r.total}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-m)' }}>Score</div>
+                      </div>
+                      <div style={{ textAlign: 'center', background: 'var(--lpt-l)', borderRadius: 10, padding: '6px 12px' }}>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--lpt)' }}>+{xp}</div>
+                        <div style={{ fontSize: 10, color: 'var(--lpt-d)', fontWeight: 600 }}>XP</div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* ── Historique des semaines ── */}
+          <div className="dash-header">
+            <div>
+              <h2>Historique des semaines</h2>
+              <p>{sessions.length} clôture{sessions.length !== 1 ? 's' : ''} enregistrée{sessions.length !== 1 ? 's' : ''}</p>
+            </div>
+            {sessions.length > 0 && (
+              <button className="btn2" onClick={handleClearHistory} style={{ color: '#dc2626', borderColor: '#dc2626', fontSize: 13 }}>
+                🗑 Vider
+              </button>
+            )}
+          </div>
+
+          {sessions.length === 0 ? (
+            <p style={{ color: 'var(--text-m)', fontSize: 14, textAlign: 'center', padding: '20px' }}>Aucune clôture enregistrée.</p>
+          ) : (
+            <div>
+              {[...sessions].reverse().map((s, i) => {
+                const date = new Date(s.session_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                const cap = str => str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
+                return (
+                  <div key={i} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--lpt-l)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>📅</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{cap(date)}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 2 }}>{s.notes || '—'}</div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--lpt)' }}>{s.participant_count}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-m)' }}>collaborateur{s.participant_count !== 1 ? 's' : ''}</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
