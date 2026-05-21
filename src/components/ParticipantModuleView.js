@@ -3,8 +3,10 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { TYPES_VERRES_PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
-import { sbInsert } from '@/lib/supabase'
+import { sbInsert, SESSION_CODE } from '@/lib/supabase'
 import { generatePin } from '@/lib/pin'
+
+const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
 const STYLES = `
   @keyframes verreFloat {
@@ -52,47 +54,46 @@ function WaitingScreen() {
   )
 }
 
-function QuizScreen({ pName }) {
-  const [answers, setAnswers] = useState({})
-  const [submitted, setSubmitted] = useState(false)
-  const [score, setScore] = useState(0)
+// Écran réponse pour UNE question — s'affiche sur le téléphone
+// La question est sur la TV, le participant répond ici
+function QuizAnswerScreen({ pName, qIdx }) {
+  const q = TYPES_VERRES_QUIZ[qIdx]
+  const [answered, setAnswered] = useState(false)
+  const [chosenIdx, setChosenIdx] = useState(null)
   const [saving, setSaving] = useState(false)
-  const total = TYPES_VERRES_QUIZ.length
 
-  const handleAnswer = (qIdx, optIdx) => {
-    if (answers[qIdx] !== undefined || submitted) return
-    setAnswers(prev => ({ ...prev, [qIdx]: optIdx }))
-  }
-
-  const allAnswered = Object.keys(answers).length === total
-
-  const handleSubmit = async () => {
-    if (saving) return
+  const handleAnswer = async (optIdx) => {
+    if (answered || saving) return
     setSaving(true)
-    const s = TYPES_VERRES_QUIZ.reduce((acc, q, i) => acc + (answers[i] === q.correct ? 1 : 0), 0)
-    const xp = Math.round((s / total) * 100)
-    setScore(s)
+    setAnswered(true)
+    setChosenIdx(optIdx)
+    const isCorrect = optIdx === q.correct
     try {
-      await sbInsert('module_results', {
+      await sbInsert('quiz_answers', {
+        session_code: SESSION_CODE,
         collaborateur: pName || 'Anonyme',
-        pin: generatePin(pName || ''),
-        week_date: new Date().toISOString().slice(0, 10),
-        module_id: 'types-verres',
-        score: s,
-        score_total: total,
-        xp,
-        completed_at: new Date().toISOString(),
+        question_idx: qIdx,
+        answer_idx: optIdx,
+        is_correct: isCorrect,
       })
-    } catch (e) { console.error('Quiz save error:', e) }
-    setSubmitted(true)
+      // Sauvegarde aussi le score final si c'est la dernière question
+      if (qIdx === TYPES_VERRES_QUIZ.length - 1) {
+        await sbInsert('module_results', {
+          collaborateur: pName || 'Anonyme',
+          pin: generatePin(pName || ''),
+          week_date: new Date().toISOString().slice(0, 10),
+          module_id: 'types-verres',
+          score: isCorrect ? 1 : 0,
+          score_total: 1,
+          xp: isCorrect ? 100 : 0,
+          completed_at: new Date().toISOString(),
+        })
+      }
+    } catch (e) { console.error(e) }
     setSaving(false)
   }
 
-  const xp = Math.round((score / total) * 100)
-
-  if (submitted) {
-    const emoji = score === total ? '🎉' : score >= total / 2 ? '👍' : '📚'
-    const msg = score === total ? 'Score parfait !' : score >= total / 2 ? 'Bien joué !' : 'Continue comme ça !'
+  if (answered) {
     return (
       <div style={{
         minHeight: '100dvh',
@@ -101,18 +102,9 @@ function QuizScreen({ pName }) {
         alignItems: 'center', justifyContent: 'center',
         padding: '40px 24px', textAlign: 'center',
       }}>
-        <div style={{ fontSize: 64, marginBottom: 16 }}>{emoji}</div>
-        <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
-          {score}/{total} bonne{score > 1 ? 's' : ''} réponse{score > 1 ? 's' : ''}
-        </div>
-        <div style={{
-          background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
-          borderRadius: 20, padding: '12px 32px', marginBottom: 28,
-          fontSize: 28, fontWeight: 800, color: '#a78bfa',
-        }}>+{xp} XP</div>
-        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.7 }}>
-          {msg}<br />Résultats envoyés au formateur ✓
-        </div>
+        <div style={{ fontSize: 64, marginBottom: 20 }}>✅</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 12 }}>Réponse enregistrée !</div>
+        <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>En attente de la prochaine question…</div>
       </div>
     )
   }
@@ -121,84 +113,44 @@ function QuizScreen({ pName }) {
     <div style={{
       minHeight: '100dvh',
       background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      padding: '36px 20px 48px',
-      display: 'flex', flexDirection: 'column',
+      padding: '48px 20px 40px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
     }}>
-      <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        <div style={{
-          display: 'inline-block',
-          background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
-          borderRadius: 20, padding: '4px 18px',
-          fontSize: 11, fontWeight: 700, color: '#a78bfa',
-          textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12,
-        }}>Quiz · Types de verres</div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>
-          {Object.keys(answers).length}/{total} répondu{Object.keys(answers).length > 1 ? 's' : ''}
-        </div>
+      {/* Badge */}
+      <div style={{
+        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '6px 20px',
+        fontSize: 11, fontWeight: 700, color: '#a78bfa',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
+      }}>Question {qIdx + 1} / {TYPES_VERRES_QUIZ.length}</div>
+
+      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 40, textAlign: 'center' }}>
+        Regardez la question sur l'écran<br />et choisissez votre réponse
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 32, flex: 1 }}>
-        {TYPES_VERRES_QUIZ.map((q, qIdx) => {
-          const answered = answers[qIdx] !== undefined
-          const chosen = answers[qIdx]
-          return (
-            <div key={qIdx}>
-              <div style={{ fontSize: 17, fontWeight: 700, color: '#fff', marginBottom: 16, lineHeight: 1.4 }}>
-                {qIdx + 1}. {q.question}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {q.options.map((opt, optIdx) => {
-                  const isCorrect = optIdx === q.correct
-                  const isChosen = chosen === optIdx
-                  let bg = 'rgba(255,255,255,0.06)'
-                  let border = '1px solid rgba(255,255,255,0.12)'
-                  let color = '#fff'
-                  let circleColor = 'rgba(255,255,255,0.15)'
-                  if (answered) {
-                    if (isCorrect) { bg = 'rgba(34,197,94,0.15)'; border = '1px solid rgba(34,197,94,0.5)'; color = '#4ade80'; circleColor = 'rgba(34,197,94,0.3)' }
-                    else if (isChosen) { bg = 'rgba(239,68,68,0.15)'; border = '1px solid rgba(239,68,68,0.4)'; color = '#f87171'; circleColor = 'rgba(239,68,68,0.3)' }
-                    else { bg = 'rgba(255,255,255,0.02)'; border = '1px solid rgba(255,255,255,0.05)'; color = 'rgba(255,255,255,0.25)'; circleColor = 'rgba(255,255,255,0.05)' }
-                  }
-                  return (
-                    <button key={optIdx} onClick={() => handleAnswer(qIdx, optIdx)} disabled={answered} style={{
-                      background: bg, border, borderRadius: 14,
-                      padding: '16px 18px', textAlign: 'left',
-                      display: 'flex', alignItems: 'center', gap: 14,
-                      cursor: answered ? 'default' : 'pointer',
-                      transition: 'all .15s', fontFamily: 'inherit', width: '100%',
-                    }}>
-                      <div style={{
-                        width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-                        background: circleColor,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 13, fontWeight: 800, color,
-                      }}>{'ABCD'[optIdx]}</div>
-                      <span style={{ fontSize: 15, fontWeight: 600, color, flex: 1 }}>{opt}</span>
-                      {answered && isCorrect && <span style={{ fontSize: 20 }}>✓</span>}
-                      {answered && isChosen && !isCorrect && <span style={{ fontSize: 20 }}>✗</span>}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
+      {/* Boutons réponse — gros et tactiles */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 400 }}>
+        {q.options.map((opt, i) => (
+          <button key={i} onClick={() => handleAnswer(i)} style={{
+            background: OPTION_COLORS[i],
+            border: 'none', borderRadius: 18,
+            padding: '22px 24px',
+            display: 'flex', alignItems: 'center', gap: 16,
+            cursor: 'pointer', fontFamily: 'inherit', width: '100%',
+            boxShadow: `0 6px 24px ${OPTION_COLORS[i]}55`,
+            transition: 'transform .1s, opacity .1s',
+            active: { transform: 'scale(0.97)' },
+          }}>
+            <div style={{
+              width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+              background: 'rgba(0,0,0,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18, fontWeight: 800, color: '#fff',
+            }}>{'ABCD'[i]}</div>
+            <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', textAlign: 'left' }}>{opt}</span>
+          </button>
+        ))}
       </div>
-
-      {allAnswered && (
-        <button onClick={handleSubmit} disabled={saving} style={{
-          marginTop: 36,
-          background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
-          border: 'none', color: '#fff',
-          padding: '18px 32px', borderRadius: 16, fontSize: 17, fontWeight: 700,
-          cursor: 'pointer', width: '100%',
-          boxShadow: '0 8px 32px rgba(124,58,237,0.45)',
-          fontFamily: 'inherit',
-          animation: 'fadeSlideUp .4s ease forwards',
-        }}>
-          {saving ? 'Envoi en cours…' : 'Valider mes réponses →'}
-        </button>
-      )}
     </div>
   )
 }
@@ -318,7 +270,8 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
   // Récupère le nom depuis le prop ou le localStorage (connexion via QR)
   const pName = pNameProp || (typeof window !== 'undefined' ? localStorage.getItem('participant_name') || '' : '')
 
-  const isQuiz = activeModule === 'types-verres' && modulePage === 99
+  const isQuiz = activeModule === 'types-verres' && modulePage >= 100
+  const qIdx = modulePage - 100
   const page = (!isQuiz && activeModule === 'types-verres')
     ? (TYPES_VERRES_PAGES[modulePage] || TYPES_VERRES_PAGES[0])
     : null
@@ -327,7 +280,7 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
     <>
       <style>{STYLES}</style>
       {isQuiz
-        ? <QuizScreen pName={pName} />
+        ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} />
         : page
           ? <ModuleScreen page={page} pageIndex={modulePage} total={TYPES_VERRES_PAGES.length} />
           : <WaitingScreen />

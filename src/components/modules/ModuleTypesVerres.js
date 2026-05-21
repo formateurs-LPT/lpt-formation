@@ -1,8 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, SESSION_CODE } from '@/lib/supabase'
-import { TYPES_VERRES_PAGES as PAGES } from '@/lib/modulesData'
+import { sbUpdate, sbSelect, SESSION_CODE } from '@/lib/supabase'
+import { TYPES_VERRES_PAGES as PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
+
+const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
 // ── Keyframes injectés une seule fois ─────────────────────────────
 const STYLES = `
@@ -285,6 +287,127 @@ function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFir
   )
 }
 
+// ── Quiz Controller (vue formateur) ──────────────────────────────
+function QuizController({ quizQ, onNext, onEnd, onBack }) {
+  const [liveAnswers, setLiveAnswers] = useState([])
+  const q = TYPES_VERRES_QUIZ[quizQ]
+  const isLast = quizQ >= TYPES_VERRES_QUIZ.length - 1
+
+  useEffect(() => {
+    const poll = async () => {
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}&question_idx=eq.${quizQ}`)
+      setLiveAnswers(rows || [])
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [quizQ])
+
+  const total = liveAnswers.length
+  const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '24px 40px',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz · Types de verres — Vue formateur</span>
+        </div>
+        <button onClick={onBack} style={{
+          background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)',
+          color: '#ff6b6b', padding: '7px 16px', borderRadius: 10,
+          fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+        }}>✕ Terminer</button>
+      </div>
+
+      {/* Badge question */}
+      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <div style={{
+          display: 'inline-block',
+          background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+          borderRadius: 20, padding: '6px 24px',
+          fontSize: 12, fontWeight: 700, color: '#a78bfa', letterSpacing: 1.5, textTransform: 'uppercase',
+        }}>Question {quizQ + 1} / {TYPES_VERRES_QUIZ.length}</div>
+      </div>
+
+      {/* Question */}
+      <div style={{
+        fontSize: 24, fontWeight: 800, color: '#fff', textAlign: 'center',
+        marginBottom: 36, lineHeight: 1.3, maxWidth: 800, alignSelf: 'center',
+      }}>{q.question}</div>
+
+      {/* Barres réponses en direct */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, maxWidth: 720, alignSelf: 'center', width: '100%' }}>
+        {q.options.map((opt, i) => {
+          const count = counts[i]
+          const isCorrect = i === q.correct
+          const pct = total > 0 ? (count / total) * 100 : 0
+          return (
+            <div key={i} style={{
+              background: isCorrect ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${isCorrect ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.1)'}`,
+              borderRadius: 16, padding: '14px 18px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                    background: OPTION_COLORS[i],
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 14, fontWeight: 800, color: '#fff',
+                  }}>{'ABCD'[i]}</div>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{opt}</span>
+                  {isCorrect && <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, background: 'rgba(34,197,94,0.15)', padding: '2px 10px', borderRadius: 20 }}>✓ Bonne réponse</span>}
+                </div>
+                <span style={{ fontSize: 22, fontWeight: 800, color: isCorrect ? '#4ade80' : '#fff' }}>
+                  {count}<span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500, marginLeft: 4 }}>vote{count > 1 ? 's' : ''}</span>
+                </span>
+              </div>
+              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 4,
+                  width: `${pct}%`,
+                  background: isCorrect ? '#4ade80' : OPTION_COLORS[i],
+                  transition: 'width .5s ease',
+                }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28 }}>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
+          <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginRight: 6 }}>{total}</span>
+          participant{total !== 1 ? 's' : ''} {total !== 1 ? 'ont' : 'a'} répondu
+        </div>
+        {isLast ? (
+          <button onClick={onEnd} style={{
+            background: 'linear-gradient(135deg, #16a34a, #22c55e)',
+            border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
+            fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 6px 24px rgba(34,197,94,0.4)',
+          }}>✓ Terminer le quiz</button>
+        ) : (
+          <button onClick={onNext} style={{
+            background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
+            border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
+            fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 6px 24px rgba(124,58,237,0.45)',
+          }}>Question suivante →</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Lobby ─────────────────────────────────────────────────────────
 function Lobby({ onStart, onBack }) {
   return (
@@ -329,10 +452,23 @@ export default function ModuleTypesVerres({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
   const [quizLaunched, setQuizLaunched] = useState(false)
+  const [quizQ, setQuizQ] = useState(0)
 
   const handleLaunchQuiz = async () => {
-    await sbUpdate('sessions', { module_page: 99 }, 'code=eq.' + SESSION_CODE)
+    await sbUpdate('sessions', { module_page: 100 }, 'code=eq.' + SESSION_CODE)
+    setQuizQ(0)
     setQuizLaunched(true)
+  }
+
+  const handleNextQuestion = async () => {
+    const next = quizQ + 1
+    await sbUpdate('sessions', { module_page: 100 + next }, 'code=eq.' + SESSION_CODE)
+    setQuizQ(next)
+  }
+
+  const handleEndQuiz = async () => {
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + SESSION_CODE)
+    onBack()
   }
 
   const trainerAvatar = pName
@@ -359,6 +495,20 @@ export default function ModuleTypesVerres({ pName, onBack }) {
   }
 
   if (!started) return <Lobby onStart={() => setStarted(true)} onBack={handleBack} />
+
+  if (quizLaunched) {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <QuizController
+          quizQ={quizQ}
+          onNext={handleNextQuestion}
+          onEnd={handleEndQuiz}
+          onBack={handleEndQuiz}
+        />
+      </>
+    )
+  }
 
   return (
     <>
