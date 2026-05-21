@@ -56,31 +56,11 @@ function WaitingScreen() {
 
 // Écran réponse pour UNE question — s'affiche sur le téléphone
 // La question est sur la TV, le participant répond ici
-const SB_URL = 'https://dofyyckseiilxhlijacy.supabase.co'
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvZnl5Y2tzZWlpbHhobGlqYWN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNjU2MjcsImV4cCI6MjA5Mzc0MTYyN30.ENd0dOZvA0ZqQky2LN5M8pK0Amp2SPLuIEHCHWyuI4A'
-
-async function debugInsert(table, data) {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
-    method: 'POST',
-    headers: {
-      apikey: SB_KEY,
-      Authorization: 'Bearer ' + SB_KEY,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify(data),
-  })
-  let body = ''
-  try { body = await r.text() } catch (_) {}
-  return { ok: r.ok, status: r.status, body }
-}
-
 function QuizAnswerScreen({ pName, qIdx }) {
   const q = TYPES_VERRES_QUIZ[qIdx]
   const [answered, setAnswered] = useState(false)
   const [chosenIdx, setChosenIdx] = useState(null)
   const [saving, setSaving] = useState(false)
-  const [debugInfo, setDebugInfo] = useState(null)
 
   const handleAnswer = async (optIdx) => {
     if (answered || saving) return
@@ -88,30 +68,27 @@ function QuizAnswerScreen({ pName, qIdx }) {
     setAnswered(true)
     setChosenIdx(optIdx)
     const isCorrect = optIdx === q.correct
-
-    const payload = {
-      session_code: SESSION_CODE,
-      collaborateur: pName || 'Anonyme',
-      question_idx: qIdx,
-      answer_idx: optIdx,
-      is_correct: isCorrect,
-    }
-
-    const res = await debugInsert('quiz_answers', payload)
-    setDebugInfo({ ...res, payload: JSON.stringify(payload) })
-
-    if (res.ok && qIdx === TYPES_VERRES_QUIZ.length - 1) {
-      await debugInsert('module_results', {
+    try {
+      await sbInsert('quiz_answers', {
+        session_code: SESSION_CODE,
         collaborateur: pName || 'Anonyme',
-        pin: generatePin(pName || ''),
-        week_date: new Date().toISOString().slice(0, 10),
-        module_id: 'types-verres',
-        score: isCorrect ? 1 : 0,
-        score_total: 1,
-        xp: isCorrect ? 100 : 0,
-        completed_at: new Date().toISOString(),
+        question_idx: qIdx,
+        answer_idx: optIdx,
+        is_correct: isCorrect,
       })
-    }
+      if (qIdx === TYPES_VERRES_QUIZ.length - 1) {
+        await sbInsert('module_results', {
+          collaborateur: pName || 'Anonyme',
+          pin: generatePin(pName || ''),
+          week_date: new Date().toISOString().slice(0, 10),
+          module_id: 'types-verres',
+          score: isCorrect ? 1 : 0,
+          score_total: 1,
+          xp: isCorrect ? 100 : 0,
+          completed_at: new Date().toISOString(),
+        })
+      }
+    } catch (e) { console.error(e) }
     setSaving(false)
   }
 
@@ -124,29 +101,9 @@ function QuizAnswerScreen({ pName, qIdx }) {
         alignItems: 'center', justifyContent: 'center',
         padding: '40px 24px', textAlign: 'center',
       }}>
-        <div style={{ fontSize: 64, marginBottom: 20 }}>{debugInfo?.ok ? '✅' : '❌'}</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
-          {debugInfo?.ok ? 'Réponse enregistrée !' : 'Erreur sauvegarde'}
-        </div>
-        <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', marginBottom: 20 }}>
-          {debugInfo?.ok ? 'En attente de la prochaine question…' : 'Voir détail ci-dessous'}
-        </div>
-        {debugInfo && (
-          <div style={{
-            background: debugInfo.ok ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-            border: `1px solid ${debugInfo.ok ? '#22c55e' : '#ef4444'}`,
-            borderRadius: 12, padding: '14px 16px',
-            width: '100%', maxWidth: 400, textAlign: 'left',
-          }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: debugInfo.ok ? '#22c55e' : '#ef4444', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
-              Debug — HTTP {debugInfo.status}
-            </div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', wordBreak: 'break-all', fontFamily: 'monospace', lineHeight: 1.6 }}>
-              <div><b style={{color:'rgba(255,255,255,0.8)'}}>Payload:</b> {debugInfo.payload}</div>
-              {debugInfo.body && <div style={{marginTop:6}}><b style={{color:'rgba(255,255,255,0.8)'}}>Réponse:</b> {debugInfo.body}</div>}
-            </div>
-          </div>
-        )}
+        <div style={{ fontSize: 64, marginBottom: 20 }}>✅</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 12 }}>Réponse enregistrée !</div>
+        <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>En attente de la prochaine question…</div>
       </div>
     )
   }

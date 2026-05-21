@@ -219,12 +219,20 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
     try {
       const entrees = JSON.parse(localStorage.getItem('entrees_data') || '[]')
       setEntreeCount(entrees.length || '—')
-      const history = await sbSelect('session_history')
-      setSessionCount(history?.length || 0)
-      if (history?.length) {
+      const [history, answers] = await Promise.all([
+        sbSelect('session_history'),
+        sbSelect('quiz_answers'),
+      ])
+      const sessionLen = history?.length || 0
+      const quizParticipants = new Set((answers || []).map(a => a.collaborateur)).size
+      const total = sessionLen + quizParticipants
+      setSessionCount(total || 0)
+      if (sessionLen) {
         const last = history[history.length - 1]
         const d = new Date(last.session_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
         setSessionLast(`Dernière : ${d}`)
+      } else if (quizParticipants) {
+        setSessionLast(`${quizParticipants} participant${quizParticipants > 1 ? 's' : ''} au quiz`)
       } else {
         setSessionLast('Aucune session enregistrée')
       }
