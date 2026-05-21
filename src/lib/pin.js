@@ -1,9 +1,10 @@
 // Génère un PIN 4 chiffres déterministe basé sur le nom complet
-// Insensible à l'ordre (Auriane Faure = Faure Auriane = même PIN)
-// Même nom = même PIN toujours, pas besoin de le stocker
+// Insensible à l'ordre ET aux caractères spéciaux (tirets, deux-points, etc.)
+// "MAISONDIEU– LAFORGE: AURIANE" = "Auriane Maisondieu Laforge" = même PIN
 export function generatePin(fullName) {
   const str = (fullName || '')
     .toLowerCase()
+    .replace(/[^a-zàâäéèêëîïôùûüç\s]/gi, '') // supprime tirets, deux-points, etc.
     .split(/\s+/)
     .filter(Boolean)
     .sort()
