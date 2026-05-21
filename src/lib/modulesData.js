@@ -1,3 +1,16 @@
+export const TYPES_VERRES_QUIZ = [
+  {
+    question: 'Quel est le délai de fabrication du verre unifocal ?',
+    options: ['9 jours', '10 minutes'],
+    correct: 1,
+  },
+  {
+    question: 'Où est la vision de près sur le verre progressif ?',
+    options: ['En bas du verre', 'Au centre du verre', 'En haut du verre'],
+    correct: 0,
+  },
+]
+
 export const TYPES_VERRES_PAGES = [
   {
     id: 'unifocal',

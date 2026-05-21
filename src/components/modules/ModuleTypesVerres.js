@@ -114,7 +114,7 @@ function AvatarBubble({ script, trainerAvatar, pName }) {
 }
 
 // ── Page de contenu ───────────────────────────────────────────────
-function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total }) {
+function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -248,19 +248,36 @@ function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFir
           disabled={isFirst}
         >← Précédent</button>
 
-        <button
-          onClick={onNext}
-          style={{
-            background: isLast
-              ? 'linear-gradient(135deg, #16a34a, #22c55e)'
-              : `linear-gradient(135deg, #0089ba, #00abe9)`,
+        {isLast ? (
+          quizLaunched ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <span style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>✓ Quiz envoyé</span>
+              <button onClick={onBack} style={{
+                background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)',
+                color: '#ff6b6b', padding: '12px 24px', borderRadius: 12,
+                fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              }}>Terminer le module →</button>
+            </div>
+          ) : (
+            <button onClick={onLaunchQuiz} style={{
+              background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
+              border: 'none', color: '#fff',
+              padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
+              cursor: 'pointer', transition: 'all .2s',
+              boxShadow: '0 6px 24px rgba(124,58,237,0.5)',
+              fontFamily: 'inherit',
+            }}>🧠 Lancer le quiz →</button>
+          )
+        ) : (
+          <button onClick={onNext} style={{
+            background: 'linear-gradient(135deg, #0089ba, #00abe9)',
             border: 'none', color: '#fff',
             padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
             cursor: 'pointer', transition: 'all .2s',
-            boxShadow: isLast ? '0 6px 24px rgba(34,197,94,0.5)' : '0 6px 24px rgba(0,171,233,0.5)',
+            boxShadow: '0 6px 24px rgba(0,171,233,0.5)',
             fontFamily: 'inherit',
-          }}
-        >{isLast ? '✓ Terminer le module' : 'Suivant →'}</button>
+          }}>Suivant →</button>
+        )}
       </div>
 
       <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
@@ -311,6 +328,12 @@ function Lobby({ onStart, onBack }) {
 export default function ModuleTypesVerres({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
+  const [quizLaunched, setQuizLaunched] = useState(false)
+
+  const handleLaunchQuiz = async () => {
+    await sbUpdate('sessions', { module_page: 99 }, 'code=eq.' + SESSION_CODE)
+    setQuizLaunched(true)
+  }
 
   const trainerAvatar = pName
     ? `/assets/avatar_${pName.toLowerCase()}.png`
@@ -349,8 +372,10 @@ export default function ModuleTypesVerres({ pName, onBack }) {
         isFirst={pageIndex === 0}
         isLast={pageIndex === PAGES.length - 1}
         onPrev={() => setPageIndex(i => Math.max(0, i - 1))}
-        onNext={() => pageIndex < PAGES.length - 1 ? setPageIndex(i => i + 1) : handleBack()}
+        onNext={() => setPageIndex(i => i + 1)}
         onBack={handleBack}
+        quizLaunched={quizLaunched}
+        onLaunchQuiz={handleLaunchQuiz}
       />
     </>
   )

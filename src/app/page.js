@@ -54,6 +54,7 @@ export default function Page() {
     }
     setPName(name.trim())
     setIsTrainer(false)
+    localStorage.setItem('participant_name', name.trim())
     try {
       await sbUpsert('participants', { session_code: SESSION_CODE, name: name.trim() }, 'session_code,name')
     } catch (e) {

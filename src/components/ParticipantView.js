@@ -407,7 +407,7 @@ export default function ParticipantView({ pName, onToast, onOnlineCount }) {
   )
 
   // Si un module est actif, on prend le dessus sur tout le reste
-  if (activeModule) return <ParticipantModuleView forcedModule={activeModule} forcedPage={modulePage} />
+  if (activeModule) return <ParticipantModuleView forcedModule={activeModule} forcedPage={modulePage} pName={pName} />
 
   return (
     <div id="pv">
