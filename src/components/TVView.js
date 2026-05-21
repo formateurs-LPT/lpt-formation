@@ -322,6 +322,20 @@ function WaitingScreen() {
 function TVGroupResults() {
   const [answers, setAnswers] = useState([])
   const [loading, setLoading] = useState(true)
+  const audioRef = useRef(null)
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = 0.4
+      audioRef.current.play().catch(() => {})
+    }
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.currentTime = 0
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const fetchAnswers = async () => {
@@ -359,6 +373,8 @@ function TVGroupResults() {
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
       display: 'flex', flexDirection: 'column', padding: '32px 64px 48px', position: 'relative',
     }}>
+      <audio ref={audioRef} src="/audio/prettyjohn1-no-copyright-music-498106.mp3" loop style={{ display: 'none' }} />
+
       {/* Logo top-left */}
       <div style={{ position: 'absolute', top: 28, left: 40 }}>
         <Image src="/assets/logo-lpt.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
