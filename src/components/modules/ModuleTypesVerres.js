@@ -447,12 +447,129 @@ function Lobby({ onStart, onBack }) {
   )
 }
 
+// ── Group Results View (vue formateur après quiz) ─────────────────
+function GroupResultsView({ onTerminate }) {
+  const [answers, setAnswers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchAnswers = async () => {
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}`)
+      setAnswers(rows || [])
+      setLoading(false)
+    }
+    fetchAnswers()
+  }, [])
+
+  const participantNames = [...new Set((answers || []).map(r => r.collaborateur))]
+  const participantCount = participantNames.length
+
+  const questionStats = TYPES_VERRES_QUIZ.map((q, idx) => {
+    const qAnswers = answers.filter(r => r.question_idx === idx)
+    const wrongCount = qAnswers.filter(r => !r.is_correct).length
+    const total = qAnswers.length
+    const pctWrong = total > 0 ? Math.round((wrongCount / total) * 100) : 0
+    return { idx, question: q.question, pctWrong, total }
+  }).sort((a, b) => b.pctWrong - a.pctWrong)
+
+  const getPriority = (pct) => {
+    if (pct >= 50) return { icon: '🔴', label: 'À retravailler en priorité', color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)' }
+    if (pct >= 25) return { icon: '🟡', label: 'À consolider', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)' }
+    return { icon: '🟢', label: 'Bien maîtrisé', color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)' }
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '24px 40px',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Bilan du quiz · Types de verres</span>
+        </div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginRight: 6 }}>{participantCount}</span>
+          participant{participantCount !== 1 ? 's' : ''}
+        </div>
+      </div>
+
+      {/* Title */}
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{
+          display: 'inline-block',
+          background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.35)',
+          borderRadius: 20, padding: '6px 24px',
+          fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase',
+          marginBottom: 12,
+        }}>Résultats du groupe</div>
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Points à retravailler</h1>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>Trié par taux d'erreur décroissant</p>
+      </div>
+
+      {/* Question cards */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 760, alignSelf: 'center', width: '100%' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 15, padding: 40 }}>Chargement…</div>
+        ) : questionStats.map((stat) => {
+          const priority = getPriority(stat.pctWrong)
+          return (
+            <div key={stat.idx} style={{
+              background: priority.bg,
+              border: `1px solid ${priority.border}`,
+              borderRadius: 18, padding: '18px 22px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                <div style={{ flex: 1, marginRight: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 16 }}>{priority.icon}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: priority.color, textTransform: 'uppercase', letterSpacing: 1 }}>{priority.label}</span>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>
+                    Q{stat.idx + 1} — {stat.question}
+                  </div>
+                </div>
+                <div style={{ fontSize: 40, fontWeight: 800, color: priority.color, lineHeight: 1, flexShrink: 0 }}>
+                  {stat.pctWrong}%
+                  <div style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.4)', textAlign: 'right' }}>d'erreurs</div>
+                </div>
+              </div>
+              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 4,
+                  width: `${stat.pctWrong}%`,
+                  background: priority.color,
+                  transition: 'width .8s ease',
+                }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer — terminate button */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32 }}>
+        <button onClick={onTerminate} style={{
+          background: 'linear-gradient(135deg, #dc2626, #ef4444)',
+          border: 'none', color: '#fff', padding: '14px 42px', borderRadius: 14,
+          fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          boxShadow: '0 6px 24px rgba(220,38,38,0.4)',
+        }}>✓ Terminer le module</button>
+      </div>
+    </div>
+  )
+}
+
 // ── Export principal ───────────────────────────────────────────────
 export default function ModuleTypesVerres({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
   const [quizLaunched, setQuizLaunched] = useState(false)
   const [quizQ, setQuizQ] = useState(0)
+  const [showGroupResults, setShowGroupResults] = useState(false)
 
   const handleLaunchQuiz = async () => {
     await sbUpdate('sessions', { module_page: 100 }, 'code=eq.' + SESSION_CODE)
@@ -467,6 +584,11 @@ export default function ModuleTypesVerres({ pName, onBack }) {
   }
 
   const handleEndQuiz = async () => {
+    await sbUpdate('sessions', { module_page: 200 }, 'code=eq.' + SESSION_CODE)
+    setShowGroupResults(true)
+  }
+
+  const handleTerminateModule = async () => {
     await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + SESSION_CODE)
     onBack()
   }
@@ -495,6 +617,15 @@ export default function ModuleTypesVerres({ pName, onBack }) {
   }
 
   if (!started) return <Lobby onStart={() => setStarted(true)} onBack={handleBack} />
+
+  if (showGroupResults) {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <GroupResultsView onTerminate={handleTerminateModule} />
+      </>
+    )
+  }
 
   if (quizLaunched) {
     return (

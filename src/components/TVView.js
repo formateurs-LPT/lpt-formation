@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { TYPES_VERRES_PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
+import { sbSelect, SESSION_CODE } from '@/lib/supabase'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -317,17 +318,121 @@ function WaitingScreen() {
   )
 }
 
+// ── TV Group Results ──────────────────────────────────────────────
+function TVGroupResults() {
+  const [answers, setAnswers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchAnswers = async () => {
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}`)
+      setAnswers(rows || [])
+      setLoading(false)
+    }
+    fetchAnswers()
+    const interval = setInterval(async () => {
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}`)
+      setAnswers(rows || [])
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const participantCount = [...new Set((answers || []).map(r => r.collaborateur))].length
+
+  const questionStats = TYPES_VERRES_QUIZ.map((q, idx) => {
+    const qAnswers = answers.filter(r => r.question_idx === idx)
+    const wrongCount = qAnswers.filter(r => !r.is_correct).length
+    const totalAnswers = qAnswers.length
+    const pctWrong = totalAnswers > 0 ? Math.round((wrongCount / totalAnswers) * 100) : 0
+    return { idx, question: q.question, pctWrong, totalAnswers }
+  }).sort((a, b) => b.pctWrong - a.pctWrong)
+
+  const getPriority = (pct) => {
+    if (pct >= 50) return { icon: '🔴', label: 'À retravailler en priorité', color: '#ef4444', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.35)' }
+    if (pct >= 25) return { icon: '🟡', label: 'À consolider', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.35)' }
+    return { icon: '🟢', label: 'Bien maîtrisé', color: '#22c55e', bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.35)' }
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '32px 64px 48px', position: 'relative',
+    }}>
+      {/* Logo top-left */}
+      <div style={{ position: 'absolute', top: 28, left: 40 }}>
+        <Image src="/assets/logo-lpt.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
+      </div>
+
+      {/* Title */}
+      <div style={{ textAlign: 'center', marginBottom: 40, paddingTop: 16 }}>
+        <h1 style={{ fontSize: 56, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Bilan du quiz</h1>
+        <p style={{ fontSize: 22, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>Points à retravailler en priorité</p>
+      </div>
+
+      {/* Question cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1, maxWidth: 1100, alignSelf: 'center', width: '100%' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 20, padding: 60 }}>Chargement…</div>
+        ) : questionStats.map((stat) => {
+          const priority = getPriority(stat.pctWrong)
+          return (
+            <div key={stat.idx} style={{
+              background: priority.bg,
+              border: `1px solid ${priority.border}`,
+              borderRadius: 24, padding: '24px 36px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <div style={{ flex: 1, marginRight: 32 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <span style={{ fontSize: 24 }}>{priority.icon}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: priority.color, textTransform: 'uppercase', letterSpacing: 1.2 }}>{priority.label}</span>
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>
+                    Q{stat.idx + 1} — {stat.question}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontSize: 64, fontWeight: 900, color: priority.color, lineHeight: 1 }}>{stat.pctWrong}%</div>
+                  <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>d'erreurs</div>
+                </div>
+              </div>
+              <div style={{ height: 12, background: 'rgba(255,255,255,0.08)', borderRadius: 6, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 6,
+                  width: `${stat.pctWrong}%`,
+                  background: priority.color,
+                  transition: 'width 1s ease',
+                }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Participant count bottom */}
+      <div style={{ textAlign: 'center', marginTop: 32, fontSize: 18, color: 'rgba(255,255,255,0.4)' }}>
+        <span style={{ fontSize: 32, fontWeight: 800, color: '#fff', marginRight: 8 }}>{participantCount}</span>
+        participant{participantCount !== 1 ? 's' : ''} ont répondu
+      </div>
+    </div>
+  )
+}
+
 // ── TV View ───────────────────────────────────────────────────────
 export default function TVView() {
   const { activeModule, modulePage, loading } = useModuleSync(1500)
 
+  const isResults = activeModule === 'types-verres' && modulePage === 200
+  const isQuiz = activeModule === 'types-verres' && modulePage >= 100 && modulePage < 200
+
   let page = null
   let quizQuestion = null
   if (activeModule === 'types-verres') {
-    if (modulePage >= 100) {
+    if (isQuiz) {
       const qIdx = modulePage - 100
       quizQuestion = TYPES_VERRES_QUIZ[qIdx] || null
-    } else {
+    } else if (!isResults) {
       page = TYPES_VERRES_PAGES[modulePage] || TYPES_VERRES_PAGES[0]
     }
   }
@@ -337,7 +442,9 @@ export default function TVView() {
       <style>{STYLES}</style>
       {loading ? (
         <WaitingScreen />
-      ) : quizQuestion ? (
+      ) : isResults ? (
+        <TVGroupResults />
+      ) : isQuiz && quizQuestion ? (
         <TVQuizQuestion
           question={quizQuestion}
           qIdx={modulePage - 100}

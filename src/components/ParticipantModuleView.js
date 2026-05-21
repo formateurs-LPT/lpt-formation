@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { TYPES_VERRES_PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
-import { sbInsert, SESSION_CODE } from '@/lib/supabase'
+import { sbInsert, sbSelect, SESSION_CODE } from '@/lib/supabase'
 import { generatePin } from '@/lib/pin'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -154,6 +154,155 @@ function QuizAnswerScreen({ pName, qIdx }) {
   )
 }
 
+function PersonalResultsScreen({ pName }) {
+  const [answers, setAnswers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [displayedScore, setDisplayedScore] = useState(0)
+  const [displayedXP, setDisplayedXP] = useState(0)
+  const [cardsVisible, setCardsVisible] = useState(false)
+
+  useEffect(() => {
+    const fetchAnswers = async () => {
+      const name = pName || 'Anonyme'
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}&collaborateur=eq.${encodeURIComponent(name)}`)
+      setAnswers(rows || [])
+      setLoading(false)
+    }
+    fetchAnswers()
+  }, [pName])
+
+  const answerMap = {}
+  answers.forEach(row => { answerMap[row.question_idx] = row })
+  const total = TYPES_VERRES_QUIZ.length
+  const correct = answers.filter(r => r.is_correct).length
+  const xp = correct * 50
+
+  // Animate score
+  useEffect(() => {
+    if (loading) return
+    setDisplayedScore(0)
+    const delay = setTimeout(() => {
+      let current = 0
+      const timer = setInterval(() => {
+        current += 1
+        setDisplayedScore(current)
+        if (current >= correct) clearInterval(timer)
+      }, 300)
+      return () => clearInterval(timer)
+    }, 600)
+    return () => clearTimeout(delay)
+  }, [loading, correct])
+
+  // Animate XP
+  useEffect(() => {
+    if (loading) return
+    setDisplayedXP(0)
+    const delay = setTimeout(() => {
+      let current = 0
+      const timer = setInterval(() => {
+        current = Math.min(current + 5, xp)
+        setDisplayedXP(current)
+        if (current >= xp) clearInterval(timer)
+      }, 20)
+      return () => clearInterval(timer)
+    }, 800)
+    return () => clearTimeout(delay)
+  }, [loading, xp])
+
+  // Staggered cards reveal
+  useEffect(() => {
+    if (loading) return
+    const delay = setTimeout(() => setCardsVisible(true), 400)
+    return () => clearTimeout(delay)
+  }, [loading])
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      padding: '40px 20px 60px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+    }}>
+      {/* Header label */}
+      <div style={{
+        background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.35)',
+        borderRadius: 20, padding: '6px 20px',
+        fontSize: 11, fontWeight: 700, color: '#00abe9',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 28,
+      }}>Résultats du quiz</div>
+
+      {/* Big score */}
+      <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        <div style={{ fontSize: 72, fontWeight: 900, color: '#fff', lineHeight: 1 }}>
+          {displayedScore}<span style={{ fontSize: 32, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>/{total}</span>
+        </div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>bonne{correct !== 1 ? 's' : ''} réponse{correct !== 1 ? 's' : ''}</div>
+      </div>
+
+      {/* XP badge */}
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '8px 20px', marginBottom: 36,
+      }}>
+        <span style={{ fontSize: 20, fontWeight: 900, color: '#a78bfa' }}>+{displayedXP} XP</span>
+      </div>
+
+      {/* Question cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 420 }}>
+        {TYPES_VERRES_QUIZ.map((q, idx) => {
+          const row = answerMap[idx]
+          const isCorrect = row ? row.is_correct : null
+          const chosenIdx = row ? row.answer_idx : null
+          const chosenText = chosenIdx != null ? q.options[chosenIdx] : null
+          const correctText = q.options[q.correct]
+
+          return (
+            <div key={idx} style={{
+              background: isCorrect ? 'rgba(34,197,94,0.08)' : isCorrect === false ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${isCorrect ? 'rgba(34,197,94,0.3)' : isCorrect === false ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)'}`,
+              borderRadius: 18, padding: '16px 18px',
+              opacity: cardsVisible ? 1 : 0,
+              animation: cardsVisible ? `fadeSlideUp .4s ease ${idx * 0.1}s both` : 'none',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: isCorrect === false ? 10 : 0 }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                  background: isCorrect ? 'rgba(34,197,94,0.2)' : isCorrect === false ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 800, color: '#fff',
+                }}>Q{idx + 1}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', lineHeight: 1.4, marginBottom: 4 }}>
+                    {q.question}
+                  </div>
+                  {chosenText && (
+                    <div style={{ fontSize: 12, color: isCorrect ? '#4ade80' : '#f87171', fontWeight: 600 }}>
+                      {isCorrect ? '✅' : '❌'} {chosenText}
+                    </div>
+                  )}
+                  {!row && (
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>— Sans réponse</div>
+                  )}
+                </div>
+              </div>
+              {isCorrect === false && (
+                <div style={{
+                  background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)',
+                  borderRadius: 10, padding: '8px 12px',
+                  fontSize: 12, color: '#4ade80', fontWeight: 600,
+                }}>
+                  Bonne réponse : {correctText}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function ModuleScreen({ page, pageIndex, total }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
@@ -269,20 +418,23 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
   // Récupère le nom depuis le prop ou le localStorage (connexion via QR)
   const pName = pNameProp || (typeof window !== 'undefined' ? localStorage.getItem('participant_name') || '' : '')
 
-  const isQuiz = activeModule === 'types-verres' && modulePage >= 100
+  const isResults = activeModule === 'types-verres' && modulePage === 200
+  const isQuiz = activeModule === 'types-verres' && modulePage >= 100 && modulePage < 200
   const qIdx = modulePage - 100
-  const page = (!isQuiz && activeModule === 'types-verres')
+  const page = (!isQuiz && !isResults && activeModule === 'types-verres')
     ? (TYPES_VERRES_PAGES[modulePage] || TYPES_VERRES_PAGES[0])
     : null
 
   return (
     <>
       <style>{STYLES}</style>
-      {isQuiz
-        ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} />
-        : page
-          ? <ModuleScreen page={page} pageIndex={modulePage} total={TYPES_VERRES_PAGES.length} />
-          : <WaitingScreen />
+      {isResults
+        ? <PersonalResultsScreen key="results" pName={pName} />
+        : isQuiz
+          ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} />
+          : page
+            ? <ModuleScreen page={page} pageIndex={modulePage} total={TYPES_VERRES_PAGES.length} />
+            : <WaitingScreen />
       }
     </>
   )
