@@ -60,10 +60,43 @@ function DashHeader({ pName }) {
   )
 }
 
+function ConfirmModal({ title, message, confirmLabel, onConfirm, onCancel, danger }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 24,
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 20, padding: '32px 28px',
+        maxWidth: 420, width: '100%', textAlign: 'center',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.3)',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: '#111', marginBottom: 12 }}>{title}</div>
+        <div style={{ fontSize: 14, color: '#666', lineHeight: 1.6, marginBottom: 28 }}>{message}</div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button onClick={onCancel} style={{
+            flex: 1, padding: '12px 0', borderRadius: 12, border: '1.5px solid #e5e7eb',
+            background: '#f9fafb', color: '#374151', fontWeight: 600, fontSize: 14, cursor: 'pointer',
+          }}>Annuler</button>
+          <button onClick={onConfirm} style={{
+            flex: 1, padding: '12px 0', borderRadius: 12, border: 'none',
+            background: danger ? '#dc2626' : 'var(--lpt)', color: '#fff',
+            fontWeight: 700, fontSize: 14, cursor: 'pointer',
+          }}>{confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function SessionsHistoryView({ onBack, onToast }) {
   const [sessions, setSessions] = useState([])
   const [quizResults, setQuizResults] = useState([])
   const [loading, setLoading] = useState(true)
+  const [modal, setModal] = useState(null) // { type: 'quiz'|'history'|'close' }
 
   const load = async () => {
     setLoading(true)
@@ -89,22 +122,22 @@ function SessionsHistoryView({ onBack, onToast }) {
   useEffect(() => { load() }, [])
 
   const handleClearQuiz = async () => {
-    if (!confirm('Vider les résultats du quiz ?')) return
     await sbDelete('quiz_answers', 'id=gte.0')
     await sbDelete('module_results', 'id=gte.0')
     setQuizResults([])
+    setModal(null)
     onToast('Résultats quiz vidés')
   }
 
   const handleClearHistory = async () => {
-    if (!confirm('Vider l\'historique des sessions ?')) return
     await sbDelete('session_history', 'session_date=gte.2000-01-01')
     setSessions([])
+    setModal(null)
     onToast('Historique vidé')
   }
 
   const handleCloseSession = async () => {
-    if (!confirm('Clôturer la session et enregistrer les résultats ?')) return
+    setModal(null)
     const [participants, answers] = await Promise.all([
       sbSelect('participants', 'session_code=eq.' + SESSION_CODE),
       sbSelect('quiz_answers', 'session_code=eq.' + SESSION_CODE),
@@ -135,10 +168,41 @@ function SessionsHistoryView({ onBack, onToast }) {
     <div className="dash-wrap">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <button className="detail-back" onClick={onBack} style={{ margin: 0 }}>← Retour</button>
-        <button className="btn1" onClick={handleCloseSession} style={{ fontSize: 13, padding: '8px 16px' }}>
+        <button className="btn1" onClick={() => setModal('close')} style={{ fontSize: 13, padding: '8px 16px' }}>
           🔒 Clôturer la session
         </button>
       </div>
+
+      {modal === 'quiz' && (
+        <ConfirmModal
+          title="Vider les résultats quiz ?"
+          message="⚠️ ATTENTION — Tu es sur le point d'effacer définitivement tous les résultats du quiz de la semaine. Cette action est irréversible. Si tu veux garder une trace, clôture d'abord la session."
+          confirmLabel="Oui, vider"
+          onConfirm={handleClearQuiz}
+          onCancel={() => setModal(null)}
+          danger
+        />
+      )}
+      {modal === 'history' && (
+        <ConfirmModal
+          title="Vider l'historique ?"
+          message="⚠️ ATTENTION — Tu vas supprimer tout l'historique des sessions enregistrées. Cette action est irréversible et définitive."
+          confirmLabel="Oui, vider"
+          onConfirm={handleClearHistory}
+          onCancel={() => setModal(null)}
+          danger
+        />
+      )}
+      {modal === 'close' && (
+        <ConfirmModal
+          title="Clôturer la session ?"
+          message="Les résultats de la semaine vont être enregistrés dans l'historique, puis la session en cours sera réinitialisée. Bonne action pour fin de semaine ✅"
+          confirmLabel="Oui, clôturer"
+          onConfirm={handleCloseSession}
+          onCancel={() => setModal(null)}
+          danger={false}
+        />
+      )}
 
       {loading ? (
         <p style={{ color: 'var(--text-m)', fontSize: 14, textAlign: 'center', padding: '40px 20px' }}>Chargement…</p>
@@ -151,7 +215,7 @@ function SessionsHistoryView({ onBack, onToast }) {
               <p>{quizResults.length} participant{quizResults.length !== 1 ? 's' : ''} — Types de verres</p>
             </div>
             {quizResults.length > 0 && (
-              <button className="btn2" onClick={handleClearQuiz} style={{ color: '#dc2626', borderColor: '#dc2626', fontSize: 13 }}>
+              <button className="btn2" onClick={() => setModal('quiz')} style={{ color: '#dc2626', borderColor: '#dc2626', fontSize: 13 }}>
                 🗑 Vider
               </button>
             )}
@@ -200,7 +264,7 @@ function SessionsHistoryView({ onBack, onToast }) {
               <p>{sessions.length} clôture{sessions.length !== 1 ? 's' : ''} enregistrée{sessions.length !== 1 ? 's' : ''}</p>
             </div>
             {sessions.length > 0 && (
-              <button className="btn2" onClick={handleClearHistory} style={{ color: '#dc2626', borderColor: '#dc2626', fontSize: 13 }}>
+              <button className="btn2" onClick={() => setModal('history')} style={{ color: '#dc2626', borderColor: '#dc2626', fontSize: 13 }}>
                 🗑 Vider
               </button>
             )}
