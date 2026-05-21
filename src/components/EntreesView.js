@@ -1,5 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { generatePin } from '@/lib/pin'
+import { sbInsert, sbUpsert } from '@/lib/supabase'
 
 const PARIS_MAGASINS = ['chatelet','st lazare','saint lazare','montparnasse','italie','commerce','bastille','cergy','creteil','créteil','belle epine','belle épine','paris','st ouen','saint ouen','ouen','beauchamp','odysseum','supply']
 const BELGIQUE_MAGASINS = ['namur','liege','liège','fripier','ixelles','charleroi','bruxelles']
@@ -109,6 +111,8 @@ function CollabCard({ c }) {
   const cat = classifyMagasin(c.magasin)
   const colors = { paris: '#0089ba', province: '#7c3aed', belgique: '#db2777' }
   const color = colors[cat] || '#888'
+  const fullName = ((c.nom || '') + ' ' + (c.prenom || '')).trim()
+  const pin = generatePin(fullName)
   return (
     <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
       <div style={{ width: 36, height: 36, borderRadius: '50%', background: color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color, flexShrink: 0 }}>
@@ -118,9 +122,15 @@ function CollabCard({ c }) {
         <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{c.nom} {c.prenom}</div>
         <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 2 }}>{c.magasin} · {c.poste}</div>
       </div>
-      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+      <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+        {/* PIN */}
+        <div style={{
+          background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8,
+          padding: '3px 10px', fontSize: 13, fontWeight: 800,
+          color: '#0089ba', letterSpacing: 1,
+        }}>🔑 {pin}</div>
         {c.heures && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-s)' }}>{c.heures}h/sem</div>}
-        {c.telephone && <div style={{ fontSize: 11, color: 'var(--text-m)', marginTop: 2 }}>{c.telephone}</div>}
+        {c.telephone && <div style={{ fontSize: 11, color: 'var(--text-m)' }}>{c.telephone}</div>}
       </div>
     </div>
   )
@@ -184,6 +194,51 @@ export default function EntreesView({ onBack, onToast }) {
     onToast('Liste vidée')
   }
 
+  const handleCloture = async () => {
+    if (!confirm('Clôturer la semaine ? Les données seront archivées dans Supabase et la liste sera vidée.')) return
+    try {
+      const obData = JSON.parse(localStorage.getItem('ob_data') || '{}')
+      const weekDate = new Date().toISOString().slice(0, 10)
+
+      // Archiver chaque collaborateur
+      for (const c of entrees) {
+        const fullName = ((c.nom || '') + ' ' + (c.prenom || '')).trim()
+        const key = fullName.replace(/"/g, '')
+        const pin = generatePin(fullName)
+        const d = obData[key] || {}
+        await sbInsert('onboarding_sessions', {
+          week_date: weekDate,
+          collaborateur: fullName,
+          pin,
+          magasin: c.magasin || '',
+          poste: c.poste || '',
+          present: !!d.present,
+          contrat: !!d.contrat,
+        })
+      }
+
+      // Ajouter une ligne dans session_history
+      await sbInsert('session_history', {
+        session_date: new Date().toISOString(),
+        trainer_name: 'kevin',
+        participant_count: entrees.length,
+        notes: `Onboarding semaine du ${weekDate} — ${entrees.length} collaborateurs`,
+      })
+
+      // Vider le localStorage
+      localStorage.removeItem('entrees_data')
+      localStorage.removeItem('ob_data')
+      localStorage.removeItem('ob_date')
+      localStorage.removeItem('ob_day')
+      setEntrees([])
+      setShowResults(false)
+      onToast(`✓ Semaine clôturée — ${entrees.length} collaborateurs archivés`)
+    } catch (e) {
+      console.error(e)
+      onToast('Erreur lors de la clôture. Réessayez.')
+    }
+  }
+
   const paris = entrees.filter(c => classifyMagasin(c.magasin) === 'paris')
   const province = entrees.filter(c => classifyMagasin(c.magasin) === 'province')
   const belgique = entrees.filter(c => classifyMagasin(c.magasin) === 'belgique')
@@ -200,6 +255,11 @@ export default function EntreesView({ onBack, onToast }) {
           {showResults && (
             <button className="btn2" onClick={() => setShowResults(false)} style={{ fontSize: 13 }}>
               ✏️ Modifier
+            </button>
+          )}
+          {showResults && entrees.length > 0 && (
+            <button className="btn2" onClick={handleCloture} style={{ color: '#16a34a', borderColor: '#16a34a', fontSize: 13, fontWeight: 700 }}>
+              ✓ Clôturer la semaine
             </button>
           )}
           <button className="btn2" onClick={handleClear} style={{ color: '#dc2626', borderColor: '#dc2626', fontSize: 13 }}>

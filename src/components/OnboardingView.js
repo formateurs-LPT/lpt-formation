@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { TRAINER_AVATARS } from '@/lib/constants'
+import { generatePin } from '@/lib/pin'
 
 const PARIS_MAGASINS = ['chatelet','st lazare','saint lazare','montparnasse','italie','commerce','bastille','cergy','creteil','créteil','belle epine','belle épine','paris','st ouen','saint ouen','ouen','beauchamp','odysseum','supply']
 const BELGIQUE_MAGASINS = ['namur','liege','liège','fripier','ixelles','charleroi','bruxelles']
@@ -114,9 +115,17 @@ function CollabList({ group, onNext, onBack }) {
           const fullName = ((c.nom || '') + ' ' + (c.prenom || '')).trim() || 'Collaborateur ' + (i + 1)
           const key = fullName.replace(/"/g, '')
           const d = checks[key] || {}
+          const pin = generatePin(fullName)
           return (
             <div key={key} className="ob-collab-row">
-              <div className="ob-collab-name">{fullName}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                <div className="ob-collab-name">{fullName}</div>
+                <div style={{
+                  background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8,
+                  padding: '2px 9px', fontSize: 12, fontWeight: 800,
+                  color: '#0089ba', letterSpacing: 1, flexShrink: 0,
+                }}>🔑 {pin}</div>
+              </div>
               <div className="ob-collab-checks">
                 <label className="ob-collab-check">
                   <input type="checkbox" checked={!!d.present} onChange={() => toggle(key, 'present')} />
