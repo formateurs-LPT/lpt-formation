@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbSelect, sbDelete, SESSION_CODE } from '@/lib/supabase'
+import { sbSelect, sbInsert, sbDelete, SESSION_CODE } from '@/lib/supabase'
 import WeatherWidget from './WeatherWidget'
 import ShortcutsWidget from './ShortcutsWidget'
 import NotesWidget from './NotesWidget'
@@ -103,12 +103,42 @@ function SessionsHistoryView({ onBack, onToast }) {
     onToast('Historique vidé')
   }
 
+  const handleCloseSession = async () => {
+    if (!confirm('Clôturer la session et enregistrer les résultats ?')) return
+    const [participants, answers] = await Promise.all([
+      sbSelect('participants', 'session_code=eq.' + SESSION_CODE),
+      sbSelect('quiz_answers', 'session_code=eq.' + SESSION_CODE),
+    ])
+    if ((participants?.length || 0) + (answers?.length || 0) === 0) {
+      onToast('Aucune donnée à enregistrer'); return
+    }
+    await sbInsert('session_history', {
+      session_code: SESSION_CODE + '_' + Date.now(),
+      session_date: new Date().toISOString(),
+      participants: JSON.stringify(participants || []),
+      quiz_results: JSON.stringify(answers || []),
+      scenario_responses: '[]',
+    })
+    await Promise.all([
+      sbDelete('participants', 'session_code=eq.' + SESSION_CODE),
+      sbDelete('quiz_answers', 'session_code=eq.' + SESSION_CODE),
+      sbDelete('module_results', 'id=gte.0'),
+    ])
+    onToast('Session clôturée ✓')
+    load()
+  }
+
   const xpFor = (correct, total) => total > 0 ? Math.round((correct / total) * 100) : 0
   const MODULE_LABELS = { 'types-verres': 'Types de verres' }
 
   return (
     <div className="dash-wrap">
-      <button className="detail-back" onClick={onBack}>← Retour</button>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <button className="detail-back" onClick={onBack} style={{ margin: 0 }}>← Retour</button>
+        <button className="btn1" onClick={handleCloseSession} style={{ fontSize: 13, padding: '8px 16px' }}>
+          🔒 Clôturer la session
+        </button>
+      </div>
 
       {loading ? (
         <p style={{ color: 'var(--text-m)', fontSize: 14, textAlign: 'center', padding: '40px 20px' }}>Chargement…</p>
