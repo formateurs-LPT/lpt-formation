@@ -323,19 +323,12 @@ function TVGroupResults() {
   const [answers, setAnswers] = useState([])
   const [loading, setLoading] = useState(true)
   const audioRef = useRef(null)
+  const [muted, setMuted] = useState(false)
 
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = 0.4
-      audioRef.current.play().catch(() => {})
-    }
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause()
-        audioRef.current.currentTime = 0
-      }
-    }
-  }, [])
+  const toggleMute = () => {
+    if (audioRef.current) audioRef.current.muted = !muted
+    setMuted(m => !m)
+  }
 
   useEffect(() => {
     const fetchAnswers = async () => {
@@ -373,7 +366,15 @@ function TVGroupResults() {
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
       display: 'flex', flexDirection: 'column', padding: '32px 64px 48px', position: 'relative',
     }}>
-      <audio ref={audioRef} src="/audio/prettyjohn1-no-copyright-music-498106.mp3" loop style={{ display: 'none' }} />
+      <audio ref={audioRef} src="/audio/prettyjohn1-no-copyright-music-498106.mp3" autoPlay loop style={{ display: 'none' }} />
+      <button onClick={toggleMute} style={{
+        position: 'fixed', bottom: 24, right: 24,
+        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+        color: 'rgba(255,255,255,0.4)', borderRadius: 12,
+        padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+      }}>
+        {muted ? '🔇 Son coupé' : '🔊 Son actif'}
+      </button>
 
       {/* Logo top-left */}
       <div style={{ position: 'absolute', top: 28, left: 40 }}>
