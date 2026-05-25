@@ -122,6 +122,55 @@ function TVQuizQuestion({ question, qIdx, total, moduleLabel }) {
   )
 }
 
+// ── TV Image Visual (photo avec halo animé) ───────────────────────
+function TVImageVisual({ src, color }) {
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+      <div style={{
+        position: 'absolute', width: 560, height: 560, borderRadius: '50%',
+        background: `radial-gradient(circle, ${color}35 0%, transparent 70%)`,
+        animation: 'haloPulse 3.5s ease-in-out infinite',
+      }} />
+      <div style={{ animation: 'verreFloat 4s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
+        <Image
+          src={src}
+          alt="Module illustration"
+          width={480}
+          height={480}
+          style={{
+            objectFit: 'contain',
+            borderRadius: 24,
+            boxShadow: `0 0 64px ${color}60, 0 24px 48px rgba(0,0,0,0.4)`,
+          }}
+          priority
+        />
+      </div>
+    </div>
+  )
+}
+
+// ── TV Emoji Visual (grand emoji avec glow) ───────────────────────
+function TVEmojiVisual({ emoji, color }) {
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+      <div style={{
+        position: 'absolute', width: 460, height: 460, borderRadius: '50%',
+        background: `radial-gradient(circle, ${color}30 0%, transparent 65%)`,
+        animation: 'haloPulse 3.5s ease-in-out infinite',
+      }} />
+      <div style={{
+        width: 320, height: 320, borderRadius: '50%',
+        background: `${color}18`, border: `2px solid ${color}35`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        animation: 'verreFloat 4s ease-in-out infinite',
+        position: 'relative', zIndex: 1,
+      }}>
+        <span style={{ fontSize: 160, lineHeight: 1 }}>{emoji}</span>
+      </div>
+    </div>
+  )
+}
+
 // ── TV Content Page (no controls, no avatar) ──────────────────────
 function TVContentPage({ page, pageIndex, total, moduleLabel }) {
   const [entered, setEntered] = useState(false)
@@ -220,13 +269,19 @@ function TVContentPage({ page, pageIndex, total, moduleLabel }) {
           </div>
         </div>
 
-        {/* Verre droite */}
+        {/* Illustration droite */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           opacity: entered ? 1 : 0, transform: entered ? 'scale(1)' : 'scale(0.88)',
           transition: 'all .65s ease .1s',
         }}>
-          <VerreAnime color={page.color} />
+          {page.image ? (
+            <TVImageVisual src={page.image} color={page.color} />
+          ) : page.icon ? (
+            <TVEmojiVisual emoji={page.icon} color={page.color} />
+          ) : (
+            <VerreAnime color={page.color} />
+          )}
         </div>
       </div>
     </div>

@@ -311,7 +311,7 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
   )
 }
 
-function ModuleScreen({ page, pageIndex, total }) {
+function ModuleScreen({ page, pageIndex, total, moduleLabel }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
@@ -356,7 +356,7 @@ function ModuleScreen({ page, pageIndex, total }) {
           borderRadius: 20, padding: '3px 14px',
           fontSize: 10, fontWeight: 700, color: page.color,
           textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 10,
-        }}>Types de verres</div>
+        }}>{moduleLabel || 'Formation LPT'}</div>
         <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
           {page.titre}
         </div>
@@ -365,7 +365,7 @@ function ModuleScreen({ page, pageIndex, total }) {
         </div>
       </div>
 
-      {/* Verre qui respire — centré */}
+      {/* Illustration — centré */}
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {/* Halo */}
         <div style={{
@@ -374,20 +374,49 @@ function ModuleScreen({ page, pageIndex, total }) {
           background: `radial-gradient(circle, ${page.color}30 0%, transparent 70%)`,
           animation: 'haloBreath 3.5s ease-in-out infinite',
         }} />
-        {/* Image verre */}
-        <div style={{ animation: 'verreFloat 4s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
-          <Image
-            src="/assets/verre-unifocal-2.png"
-            alt="Verre"
-            width={260}
-            height={260}
-            style={{
-              objectFit: 'contain',
-              filter: `drop-shadow(0 0 40px ${page.color}80) drop-shadow(0 16px 32px rgba(0,0,0,0.4))`,
-            }}
-            priority
-          />
-        </div>
+        {page.image ? (
+          /* Photo module */
+          <div style={{ animation: 'verreFloat 4s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
+            <Image
+              src={page.image}
+              alt="Illustration"
+              width={260}
+              height={260}
+              style={{
+                objectFit: 'contain',
+                borderRadius: 20,
+                boxShadow: `0 0 40px ${page.color}60, 0 16px 32px rgba(0,0,0,0.4)`,
+              }}
+              priority
+            />
+          </div>
+        ) : page.icon ? (
+          /* Emoji module */
+          <div style={{
+            width: 220, height: 220, borderRadius: '50%',
+            background: `${page.color}18`, border: `2px solid ${page.color}35`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            animation: 'verreFloat 4s ease-in-out infinite',
+            position: 'relative', zIndex: 1,
+          }}>
+            <span style={{ fontSize: 100, lineHeight: 1 }}>{page.icon}</span>
+          </div>
+        ) : (
+          /* Verre par défaut */
+          <div style={{ animation: 'verreFloat 4s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
+            <Image
+              src="/assets/verre-unifocal-2.png"
+              alt="Verre"
+              width={260}
+              height={260}
+              style={{
+                objectFit: 'contain',
+                filter: `drop-shadow(0 0 40px ${page.color}80) drop-shadow(0 16px 32px rgba(0,0,0,0.4))`,
+              }}
+              priority
+            />
+          </div>
+        )}
       </div>
 
       {/* Avatar formateur — bas de l'écran */}
@@ -443,7 +472,7 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
         : isQuiz
           ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
           : page
-            ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} />
+            ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} />
             : <WaitingScreen />
       }
     </>

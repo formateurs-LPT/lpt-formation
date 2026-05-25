@@ -27,7 +27,7 @@ const STYLES = `
 `
 
 // ── Illustration slide 1 : photo LPTVISION ────────────────────────
-function PDMIntroImage({ color }) {
+function PDMIntroImage({ color, src }) {
   return (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
       <div style={{
@@ -37,7 +37,7 @@ function PDMIntroImage({ color }) {
       }} />
       <div style={{ animation: 'pdmFloat 4s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
         <Image
-          src="/assets/lptvision-tangentes.png"
+          src={src || '/assets/lptvision-tangentes.png'}
           alt="LPTVISION"
           width={480}
           height={480}
@@ -152,9 +152,8 @@ function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFir
   }, [page.id])
 
   // Determine right-side illustration
-  const isIntro = page.id === 'intro'
-  // Step emoji: first point emoji of non-intro slides
-  const stepEmoji = !isIntro && page.points[0]?.emoji
+  const hasImage = !!page.image
+  const hasIcon  = !!page.icon
 
   return (
     <div style={{
@@ -259,9 +258,9 @@ function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFir
           opacity: entered ? 1 : 0, transform: entered ? 'scale(1)' : 'scale(0.88)',
           transition: 'all .65s ease .1s',
         }}>
-          {isIntro
-            ? <PDMIntroImage color={page.color} />
-            : <PDMStepIcon emoji={stepEmoji} color={page.color} />
+          {hasImage
+            ? <PDMIntroImage color={page.color} src={page.image} />
+            : <PDMStepIcon emoji={page.icon || page.points[0]?.emoji} color={page.color} />
           }
         </div>
       </div>
