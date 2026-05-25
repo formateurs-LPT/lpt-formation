@@ -44,12 +44,12 @@ export const PDM_PAGES = [
   {
     id: 'pourquoi',
     titre: 'Pourquoi mesurer ?',
-    sousTitre: 'Avant de fabriquer les verres, il est essentiel de réaliser une prise de mesure afin de positionner précisément le centre optique du verre devant les yeux du client, pour garantir une vision confortable, nette et naturelle au quotidien.',
+    sousTitre: 'Positionner le centre optique du verre exactement devant les yeux du client.',
     icon: '👁️',
     points: [
-      { emoji: '🎯', titre: 'Centrage optique', texte: "Chaque client a des yeux positionnés différemment — la mesure permet d'aligner le centre du verre exactement devant la pupille." },
-      { emoji: '😌', titre: 'Confort visuel', texte: "Un verre mal centré provoque fatigue, maux de tête et flou — même avec une bonne correction optique." },
-      { emoji: '✅', titre: 'Satisfaction garantie', texte: "Une prise de mesure précise = un client satisfait dès le premier port de ses lunettes." },
+      { emoji: '🎯', titre: 'Centrage optique', texte: "Avant de fabriquer les verres, il faut mesurer précisément où se trouvent les yeux du client pour aligner le centre du verre devant sa pupille." },
+      { emoji: '😌', titre: 'Confort visuel', texte: "Un verre mal centré provoque fatigue, maux de tête et flou — même avec une correction parfaite." },
+      { emoji: '✅', titre: 'Satisfaction garantie', texte: "Une bonne mesure = un client satisfait dès le premier port de ses lunettes." },
     ],
     avatarScript: "Avant de fabriquer les verres, on doit mesurer précisément où se trouvent les yeux du client. Un verre mal centré, même avec la bonne correction, peut provoquer de la fatigue ou du flou. C'est le point de départ de chaque vente réussie.",
     color: '#f59e0b',
