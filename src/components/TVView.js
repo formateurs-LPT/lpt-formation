@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { TYPES_VERRES_PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
+import { MODULE_DATA } from '@/lib/modulesData'
 import { sbSelect, SESSION_CODE } from '@/lib/supabase'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -55,7 +55,7 @@ function VerreAnime({ color }) {
 }
 
 // ── TV Quiz Question ──────────────────────────────────────────────
-function TVQuizQuestion({ question, qIdx, total }) {
+function TVQuizQuestion({ question, qIdx, total, moduleLabel }) {
   return (
     <div style={{
       minHeight: '100vh',
@@ -68,7 +68,7 @@ function TVQuizQuestion({ question, qIdx, total }) {
       <div style={{ position: 'absolute', top: 24, left: 32, display: 'flex', alignItems: 'center', gap: 12 }}>
         <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
         <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Quiz · Types de verres</span>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Quiz · {moduleLabel}</span>
       </div>
 
       {/* Badge question */}
@@ -123,7 +123,7 @@ function TVQuizQuestion({ question, qIdx, total }) {
 }
 
 // ── TV Content Page (no controls, no avatar) ──────────────────────
-function TVContentPage({ page, pageIndex, total }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -158,7 +158,7 @@ function TVContentPage({ page, pageIndex, total }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Types de verres</span>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
@@ -319,7 +319,7 @@ function WaitingScreen() {
 }
 
 // ── TV Group Results ──────────────────────────────────────────────
-function TVGroupResults() {
+function TVGroupResults({ moduleId, moduleLabel, quiz }) {
   const [answers, setAnswers] = useState([])
   const [loading, setLoading] = useState(true)
   const audioRef = useRef(null)
@@ -352,7 +352,7 @@ function TVGroupResults() {
 
   const participantCount = [...new Set((answers || []).map(r => r.collaborateur))].length
 
-  const questionStats = TYPES_VERRES_QUIZ.map((q, idx) => {
+  const questionStats = (quiz || []).map((q, idx) => {
     const qAnswers = answers.filter(r => r.question_idx === idx)
     const wrongCount = qAnswers.filter(r => !r.is_correct).length
     const totalAnswers = qAnswers.length
@@ -446,17 +446,18 @@ function TVGroupResults() {
 export default function TVView() {
   const { activeModule, modulePage, loading } = useModuleSync(1500)
 
-  const isResults = activeModule === 'types-verres' && modulePage === 200
-  const isQuiz = activeModule === 'types-verres' && modulePage >= 100 && modulePage < 200
+  const moduleData = MODULE_DATA[activeModule] || null
+  const isResults = !!moduleData && modulePage === 200
+  const isQuiz = !!moduleData && modulePage >= 100 && modulePage < 200
 
   let page = null
   let quizQuestion = null
-  if (activeModule === 'types-verres') {
+  if (moduleData) {
     if (isQuiz) {
       const qIdx = modulePage - 100
-      quizQuestion = TYPES_VERRES_QUIZ[qIdx] || null
+      quizQuestion = moduleData.quiz[qIdx] || null
     } else if (!isResults) {
-      page = TYPES_VERRES_PAGES[modulePage] || TYPES_VERRES_PAGES[0]
+      page = moduleData.pages[modulePage] || moduleData.pages[0]
     }
   }
 
@@ -466,18 +467,20 @@ export default function TVView() {
       {loading ? (
         <WaitingScreen />
       ) : isResults ? (
-        <TVGroupResults />
+        <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
       ) : isQuiz && quizQuestion ? (
         <TVQuizQuestion
           question={quizQuestion}
           qIdx={modulePage - 100}
-          total={TYPES_VERRES_QUIZ.length}
+          total={moduleData.quiz.length}
+          moduleLabel={moduleData?.label || ''}
         />
       ) : page ? (
         <TVContentPage
           page={page}
           pageIndex={modulePage}
-          total={TYPES_VERRES_PAGES.length}
+          total={moduleData.pages.length}
+          moduleLabel={moduleData?.label || ''}
         />
       ) : (
         <WaitingScreen />

@@ -18,6 +18,7 @@ const getModules = (onLaunchModule) => [
   { icon: 'paul', label: "Présentation de l'entreprise", sub: 'Paul Morlet — Histoire, valeurs et missions de LPT', slot: 'Jour 1 · Matin' },
   { icon: '👁️', label: "Lecture d'ordonnance", sub: 'Par un opticien — Décoder et interpréter une prescription optique', slot: 'Jour 1 · Matin' },
   { icon: 'kevin', label: 'Les types de verres', sub: 'Kevin — Unifocaux, progressifs, antireflets et traitements', slot: 'Jour 1 · Après-midi', onClick: () => onLaunchModule('types-verres') },
+  { icon: '📐', label: 'Prises de mesures', sub: 'Kevin — Maîtriser LPTVISION pour chaque prise de mesure', slot: 'Jour 1 · Après-midi', onClick: () => onLaunchModule('pdm') },
   { icon: '💬', label: 'Arguments & Offre commerciale', sub: 'Techniques de vente et découverte du catalogue LPT', slot: 'Jour 2 · Matin' },
 ]
 

@@ -39,3 +39,78 @@ export const TYPES_VERRES_PAGES = [
     color: '#7c3aed',
   },
 ]
+
+export const PDM_PAGES = [
+  {
+    id: 'intro',
+    titre: 'LPTVISION',
+    sousTitre: "L'outil indispensable pour chaque prise de mesure",
+    points: [
+      { emoji: '📱', titre: 'App interne LPT', texte: "LPTVISION remplace la prise à la main — plus précise, plus rapide." },
+      { emoji: '🎯', titre: 'Chaque vente, sans exception', texte: "Aucune mesure à la main. L'app est l'unique référence." },
+      { emoji: '⚠️', titre: "Pourquoi c'est crucial", texte: "Une mauvaise mesure = un verre mal taillé = un client insatisfait." },
+    ],
+    avatarScript: "LPTVISION est notre outil de prise de mesure intégré. Il remplace totalement la prise à la main. C'est rapide, précis, et obligatoire sur chaque vente.",
+    color: '#f59e0b',
+    image: '/assets/lptvision-tangentes.png',
+  },
+  {
+    id: 'etape1-client',
+    titre: 'Étape 1 — Le client',
+    sousTitre: 'Une bonne position = une mesure juste',
+    points: [
+      { emoji: '🧍', titre: 'Position naturelle', texte: "Debout, bien droit." },
+      { emoji: '👁️', titre: 'Regard naturel', texte: "Fixe l'objectif de l'app, sans forcer ni tourner la tête." },
+      { emoji: '❌', titre: 'À éviter', texte: "Client penché, tête tournée ou regard dévié = mesure erronée." },
+    ],
+    avatarScript: "Le client doit être debout, bien droit, dans sa position naturelle. Son regard doit fixer l'objectif sans forcer. Un client qui se penche ou tourne la tête fausse immédiatement la mesure.",
+    color: '#f59e0b',
+  },
+  {
+    id: 'etape2-monture',
+    titre: 'Étape 2 — La monture',
+    sousTitre: 'Une monture mal placée = mesures faussées',
+    points: [
+      { emoji: '👓', titre: 'Bien droite sur le nez', texte: "Branches parallèles au sol, pas de torsion." },
+      { emoji: '🔧', titre: 'Ajustez si nécessaire', texte: "Vérifiez et ajustez la monture avant de lancer l'app." },
+      { emoji: '❌', titre: 'À éviter', texte: "Monture tordue, penchée ou mal placée sur le nez." },
+    ],
+    avatarScript: "Avant de mesurer, vérifiez toujours que la monture est bien droite. Branches parallèles, pas de torsion. Si elle est mal positionnée, ajustez-la. C'est une étape que beaucoup oublient.",
+    color: '#f59e0b',
+  },
+  {
+    id: 'etape3-position',
+    titre: 'Étape 3 — Votre position',
+    sousTitre: "Vous êtes l'objectif — soyez bien en face",
+    points: [
+      { emoji: '📏', titre: 'Environ 1 mètre', texte: "Ni trop loin, ni trop près — la distance idéale pour l'app." },
+      { emoji: '🎯', titre: 'Face aux yeux', texte: "L'objectif doit être à la même hauteur que les yeux du client." },
+      { emoji: '❌', titre: 'À éviter', texte: "Angle de côté, trop penché, ou distance incorrecte." },
+    ],
+    avatarScript: "Placez-vous à environ 1 mètre, face au client. L'objectif doit être à la hauteur de ses yeux, bien centré. Pas d'angle, pas de biais. Vous êtes la caméra — soyez stable et en face.",
+    color: '#f59e0b',
+  },
+]
+
+export const PDM_QUIZ = [
+  {
+    question: 'Quelle est la position idéale du client pour la PDM ?',
+    options: ['Assis, regard naturel', "Debout, bien droit, regard naturel vers l'objectif", 'Debout mais légèrement penché en avant'],
+    correct: 1,
+  },
+  {
+    question: 'Que faut-il vérifier sur la monture avant de lancer LPTVISION ?',
+    options: ["Qu'elle est de la bonne couleur", "Qu'elle est bien droite, branches parallèles", "Qu'elle est bien rangée dans l'étui"],
+    correct: 1,
+  },
+  {
+    question: 'À quelle distance doit-on se placer pour faire une PDM avec LPTVISION ?',
+    options: ['30 cm', 'Environ 1 mètre', '2 mètres ou plus'],
+    correct: 1,
+  },
+]
+
+export const MODULE_DATA = {
+  'types-verres': { pages: TYPES_VERRES_PAGES, quiz: TYPES_VERRES_QUIZ, label: 'Types de verres' },
+  'pdm': { pages: PDM_PAGES, quiz: PDM_QUIZ, label: 'Prises de mesures' },
+}

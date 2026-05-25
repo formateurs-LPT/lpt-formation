@@ -10,6 +10,7 @@ import { sbUpsert, sbUpdate, SESSION_CODE } from '@/lib/supabase'
 import { TRAINERS, TRAINER_CANONICAL } from '@/lib/constants'
 import { generatePin } from '@/lib/pin'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
+import ModulePDM from '@/components/modules/ModulePDM'
 import OnboardingView from '@/components/OnboardingView'
 import TVView from '@/components/TVView'
 import ParticipantModuleView from '@/components/ParticipantModuleView'
@@ -132,6 +133,12 @@ export default function Page() {
       )}
       {view === 'module-types-verres' && (
         <ModuleTypesVerres
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-pdm' && (
+        <ModulePDM
           pName={pName}
           onBack={handleBackToModules}
         />

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { TYPES_VERRES_PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
+import { MODULE_DATA } from '@/lib/modulesData'
 import { sbInsert, sbSelect, SESSION_CODE } from '@/lib/supabase'
 import { generatePin } from '@/lib/pin'
 
@@ -56,8 +56,8 @@ function WaitingScreen() {
 
 // Écran réponse pour UNE question — s'affiche sur le téléphone
 // La question est sur la TV, le participant répond ici
-function QuizAnswerScreen({ pName, qIdx }) {
-  const q = TYPES_VERRES_QUIZ[qIdx]
+function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
+  const q = quiz[qIdx]
   const [answered, setAnswered] = useState(false)
   const [chosenIdx, setChosenIdx] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -75,6 +75,7 @@ function QuizAnswerScreen({ pName, qIdx }) {
         question_idx: qIdx,
         answer_idx: optIdx,
         is_correct: isCorrect,
+        module_id: moduleId,
       })
       // module_results est sauvegardé dans PersonalResultsScreen avec le score total
     } catch (e) { console.error(e) }
@@ -110,7 +111,7 @@ function QuizAnswerScreen({ pName, qIdx }) {
         borderRadius: 20, padding: '6px 20px',
         fontSize: 11, fontWeight: 700, color: '#a78bfa',
         textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
-      }}>Question {qIdx + 1} / {TYPES_VERRES_QUIZ.length}</div>
+      }}>Question {qIdx + 1} / {quiz.length}</div>
 
       <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 40, textAlign: 'center' }}>
         Regardez la question sur l'écran<br />et choisissez votre réponse
@@ -143,7 +144,7 @@ function QuizAnswerScreen({ pName, qIdx }) {
   )
 }
 
-function PersonalResultsScreen({ pName }) {
+function PersonalResultsScreen({ pName, quiz, moduleId }) {
   const [answers, setAnswers] = useState([])
   const [loading, setLoading] = useState(true)
   const [displayedScore, setDisplayedScore] = useState(0)
@@ -160,14 +161,14 @@ function PersonalResultsScreen({ pName }) {
 
       // Sauvegarde module_results avec le score total réel
       const totalCorrect = data.filter(r => r.is_correct).length
-      const totalQ = TYPES_VERRES_QUIZ.length
+      const totalQ = quiz.length
       const earnedXP = totalCorrect * 50
       try {
         await sbInsert('module_results', {
           collaborateur: name,
           pin: generatePin(name),
           week_date: new Date().toISOString().slice(0, 10),
-          module_id: 'types-verres',
+          module_id: moduleId,
           score: totalCorrect,
           score_total: totalQ,
           xp: earnedXP,
@@ -180,7 +181,7 @@ function PersonalResultsScreen({ pName }) {
 
   const answerMap = {}
   answers.forEach(row => { answerMap[row.question_idx] = row })
-  const total = TYPES_VERRES_QUIZ.length
+  const total = quiz.length
   const correct = answers.filter(r => r.is_correct).length
   const xp = correct * 50
 
@@ -257,7 +258,7 @@ function PersonalResultsScreen({ pName }) {
 
       {/* Question cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 420 }}>
-        {TYPES_VERRES_QUIZ.map((q, idx) => {
+        {quiz.map((q, idx) => {
           const row = answerMap[idx]
           const isCorrect = row ? row.is_correct : null
           const chosenIdx = row ? row.answer_idx : null
@@ -425,22 +426,24 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
   // Récupère le nom depuis le prop ou le localStorage (connexion via QR)
   const pName = pNameProp || (typeof window !== 'undefined' ? localStorage.getItem('participant_name') || '' : '')
 
-  const isResults = activeModule === 'types-verres' && modulePage === 200
-  const isQuiz = activeModule === 'types-verres' && modulePage >= 100 && modulePage < 200
+  const moduleData = MODULE_DATA[activeModule] || null
+  const pages = moduleData?.pages || []
+  const quiz = moduleData?.quiz || []
+
+  const isResults = !!moduleData && modulePage === 200
+  const isQuiz = !!moduleData && modulePage >= 100 && modulePage < 200
   const qIdx = modulePage - 100
-  const page = (!isQuiz && !isResults && activeModule === 'types-verres')
-    ? (TYPES_VERRES_PAGES[modulePage] || TYPES_VERRES_PAGES[0])
-    : null
+  const page = (!isQuiz && !isResults && moduleData) ? (pages[modulePage] || pages[0]) : null
 
   return (
     <>
       <style>{STYLES}</style>
       {isResults
-        ? <PersonalResultsScreen key="results" pName={pName} />
+        ? <PersonalResultsScreen key="results" pName={pName} quiz={quiz} moduleId={activeModule} />
         : isQuiz
-          ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} />
+          ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
           : page
-            ? <ModuleScreen page={page} pageIndex={modulePage} total={TYPES_VERRES_PAGES.length} />
+            ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} />
             : <WaitingScreen />
       }
     </>
