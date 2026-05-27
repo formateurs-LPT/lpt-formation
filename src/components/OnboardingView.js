@@ -29,7 +29,7 @@ const JOURNEES = (onLaunchModule) => [
         visual: 'emoji', icon: '👁️',
         label: "Les bases de l'optique",
         sub: 'Lecture d\'ordonnance — Décoder une prescription optique',
-        soon: true,
+        onClick: () => onLaunchModule('optique'),
       },
       {
         visual: 'image', src: '/assets/verre-unifocal-2.png',

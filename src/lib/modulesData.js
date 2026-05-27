@@ -100,7 +100,28 @@ export const PDM_QUIZ = [
   },
 ]
 
+export const OPTIQUE_PAGES = [
+  {
+    id: 'troubles',
+    type: 'troubles-list',
+    titre: 'Pourquoi porte-t-on des lunettes ?',
+    sousTitre: 'Les 4 principaux troubles visuels',
+    icon: '👁️',
+    color: '#00abe9',
+    troubles: [
+      { num: '01', nom: 'Myope',        def: 'Voit bien de près, flou de loin.',                                     color: '#00abe9' },
+      { num: '02', nom: 'Hypermétrope', def: 'Flou à toutes distances, force constamment pour voir net.',             color: '#7c3aed' },
+      { num: '03', nom: 'Astigmate',    def: 'Vision déformée à toutes distances.',                                   color: '#f59e0b' },
+      { num: '04', nom: 'Presbyte',     def: 'Vision floue de près à partir de 40-45 ans.',                          color: '#22c55e' },
+    ],
+    avatarScript: "On porte des lunettes pour corriger un trouble visuel. Il en existe 4 principaux : myopie, hypermétropie, astigmatisme et presbytie. Chacun affecte la vision différemment — et chacun a sa correction adaptée.",
+  },
+]
+
+export const OPTIQUE_QUIZ = []
+
 export const MODULE_DATA = {
   'types-verres': { pages: TYPES_VERRES_PAGES, quiz: TYPES_VERRES_QUIZ, label: 'Types de verres' },
-  'pdm': { pages: PDM_PAGES, quiz: PDM_QUIZ, label: 'Prises de mesures' },
+  'pdm':          { pages: PDM_PAGES,          quiz: PDM_QUIZ,          label: 'Prises de mesures' },
+  'optique':      { pages: OPTIQUE_PAGES,      quiz: OPTIQUE_QUIZ,      label: "Les bases de l'optique" },
 }

@@ -11,6 +11,7 @@ import { TRAINERS, TRAINER_CANONICAL } from '@/lib/constants'
 import { generatePin } from '@/lib/pin'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
 import ModulePDM from '@/components/modules/ModulePDM'
+import ModuleOptique from '@/components/modules/ModuleOptique'
 import OnboardingView from '@/components/OnboardingView'
 import TVView from '@/components/TVView'
 import ParticipantModuleView from '@/components/ParticipantModuleView'
@@ -139,6 +140,12 @@ export default function Page() {
       )}
       {view === 'module-pdm' && (
         <ModulePDM
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-optique' && (
+        <ModuleOptique
           pName={pName}
           onBack={handleBackToModules}
         />

@@ -311,9 +311,91 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
   )
 }
 
+// ── Troubles list — vue téléphone ────────────────────────────────
+function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
+  const [visibleCount, setVisibleCount] = useState(0)
+
+  useEffect(() => {
+    setVisibleCount(0)
+    const timers = page.troubles.map((_, i) =>
+      setTimeout(() => setVisibleCount(c => Math.max(c, i + 1)), 250 + i * 220)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [page.id])
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: `linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, #0d3b7a 100%)`,
+      display: 'flex', flexDirection: 'column',
+      padding: '0 0 24px', overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Image src="/assets/logo-lpt.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{
+              height: 4, borderRadius: 2,
+              width: i === pageIndex ? 18 : 4,
+              background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)',
+              transition: 'all .4s ease',
+            }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Titre */}
+      <div style={{ padding: '20px 20px 0' }}>
+        <div style={{
+          display: 'inline-block',
+          background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)',
+          borderRadius: 20, padding: '3px 12px',
+          fontSize: 10, fontWeight: 700, color: '#00abe9',
+          textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10,
+        }}>{moduleLabel || 'Les bases de l\'optique'}</div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{page.titre}</div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{page.sousTitre}</div>
+      </div>
+
+      {/* Liste */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '20px 16px 0', flex: 1 }}>
+        {page.troubles.map((t, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+            background: i < visibleCount ? `${t.color}09` : 'transparent',
+            border: `1px solid ${i < visibleCount ? t.color + '28' : 'transparent'}`,
+            borderLeft: `4px solid ${i < visibleCount ? t.color : 'transparent'}`,
+            borderRadius: 14, padding: '16px 18px',
+            opacity: i < visibleCount ? 1 : 0,
+            transform: i < visibleCount ? 'translateX(0)' : 'translateX(-24px)',
+            transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+          }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: t.color, letterSpacing: 1, opacity: 0.7, paddingTop: 3, minWidth: 20 }}>
+              {t.num}
+            </span>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: -0.3, marginBottom: 4 }}>
+                {t.nom}
+              </div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5, fontWeight: 400 }}>
+                {t.def}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ModuleScreen({ page, pageIndex, total, moduleLabel }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
+
+  if (page.type === 'troubles-list') {
+    return <TroublesListMobile page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  }
 
   return (
     <div style={{

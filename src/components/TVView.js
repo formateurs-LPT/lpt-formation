@@ -171,6 +171,98 @@ function TVEmojiVisual({ emoji, color }) {
   )
 }
 
+// ── TV Troubles List (type = troubles-list) ───────────────────────
+function TVTroublesList({ page, pageIndex, total, moduleLabel }) {
+  const [visibleCount, setVisibleCount] = useState(0)
+
+  useEffect(() => {
+    setVisibleCount(0)
+    const timers = page.troubles.map((_, i) =>
+      setTimeout(() => setVisibleCount(c => Math.max(c, i + 1)), 300 + i * 280)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [page.id])
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', position: 'relative',
+    }}>
+      {/* Topbar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '18px 32px', position: 'relative', zIndex: 10, flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {Array(total).fill(0).map((_, i) => (
+              <div key={i} style={{
+                height: 5, borderRadius: 3, transition: 'all .3s',
+                width: i === pageIndex ? 22 : 5,
+                background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)',
+              }} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Zone principale */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px 64px 48px', gap: 32 }}>
+        {/* Titre */}
+        <div>
+          <div style={{
+            display: 'inline-block',
+            background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)',
+            borderRadius: 20, padding: '4px 16px',
+            fontSize: 12, fontWeight: 700, color: '#00abe9',
+            textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14,
+          }}>Formation LPT</div>
+          <h1 style={{ fontSize: 44, fontWeight: 800, color: '#fff', lineHeight: 1.1, marginBottom: 6 }}>
+            {page.titre}
+          </h1>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', fontWeight: 400 }}>
+            {page.sousTitre}
+          </p>
+        </div>
+
+        {/* Liste */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, justifyContent: 'center' }}>
+          {page.troubles.map((t, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: 32,
+              background: i < visibleCount ? `${t.color}09` : 'transparent',
+              border: `1px solid ${i < visibleCount ? t.color + '28' : 'transparent'}`,
+              borderLeft: `5px solid ${i < visibleCount ? t.color : 'transparent'}`,
+              borderRadius: 18, padding: '24px 36px',
+              opacity: i < visibleCount ? 1 : 0,
+              transform: i < visibleCount ? 'translateX(0)' : 'translateX(-40px)',
+              transition: 'all 0.55s cubic-bezier(0.22, 1, 0.36, 1)',
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: t.color, letterSpacing: 1, minWidth: 28, opacity: 0.7 }}>
+                {t.num}
+              </span>
+              <span style={{ fontSize: 36, fontWeight: 800, color: '#fff', minWidth: 300, letterSpacing: -0.5 }}>
+                {t.nom}
+              </span>
+              <div style={{ width: 1, height: 32, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+              <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.58)', lineHeight: 1.5, fontWeight: 400 }}>
+                {t.def}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── TV Content Page (no controls, no avatar) ──────────────────────
 function TVContentPage({ page, pageIndex, total, moduleLabel }) {
   const [entered, setEntered] = useState(false)
@@ -180,6 +272,10 @@ function TVContentPage({ page, pageIndex, total, moduleLabel }) {
     const t = setTimeout(() => setEntered(true), 60)
     return () => clearTimeout(t)
   }, [page.id])
+
+  if (page.type === 'troubles-list') {
+    return <TVTroublesList page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  }
 
   return (
     <div style={{
