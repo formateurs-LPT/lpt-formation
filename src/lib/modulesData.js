@@ -116,6 +116,15 @@ export const OPTIQUE_PAGES = [
     ],
     avatarScript: "On porte des lunettes pour corriger un trouble visuel. Il en existe 4 principaux : myopie, hypermétropie, astigmatisme et presbytie. Chacun affecte la vision différemment — et chacun a sa correction adaptée.",
   },
+  {
+    id: 'corrections',
+    type: 'correction-scale',
+    titre: 'Comment fonctionnent les corrections ?',
+    sousTitre: 'De 0,00 à ±6,00 — par pas de 0,25 dioptrie',
+    icon: '🔢',
+    color: '#00abe9',
+    avatarScript: "Les corrections sont mesurées en dioptries. On part de 0,00 — le plan, aucune correction nécessaire. Elles évoluent de 0,25 en 0,25 dans les deux sens : négatif pour la myopie, positif pour l'hypermétropie. Plus le chiffre est élevé, plus la correction est forte.",
+  },
 ]
 
 export const OPTIQUE_QUIZ = []

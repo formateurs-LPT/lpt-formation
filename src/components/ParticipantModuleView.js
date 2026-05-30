@@ -311,6 +311,94 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
   )
 }
 
+// ── Correction scale — vue téléphone ─────────────────────────────
+const MOB_NEG = Array.from({ length: 24 }, (_, i) => -((i + 1) * 0.25))
+const MOB_POS = Array.from({ length: 24 }, (_, i) => (i + 1) * 0.25)
+const mobColor = (v) => { const a = Math.abs(v); if (a <= 1) return '#22c55e'; if (a <= 3) return '#f59e0b'; return '#ef4444' }
+const mobFmt  = (v) => (v > 0 ? '+' : '') + Math.abs(v).toFixed(2).replace('.', ',')
+
+function CorrectionScaleMobile({ page, pageIndex, total, moduleLabel }) {
+  const [steps, setSteps] = useState(0)
+  useEffect(() => {
+    setSteps(0); let s = 0
+    const id = setInterval(() => { s++; setSteps(s); if (s >= 24) clearInterval(id) }, 110)
+    return () => clearInterval(id)
+  }, [page.id])
+
+  const ROW_H = 18
+
+  const Col = ({ values, side }) => (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 0.8, textAlign: 'center', marginBottom: 6 }}>
+        {side === 'neg' ? '← Négatif' : 'Positif →'}
+      </div>
+      {values.map((v, i) => {
+        const visible = steps > i
+        const color = mobColor(v)
+        const barPct = Math.abs(v) / 6 * 100
+        const showSep = Math.abs(v) === 1.25 || Math.abs(v) === 3.25
+        return (
+          <div key={i}>
+            {showSep && <div style={{ height: 1, background: `${color}30`, margin: '2px 0' }} />}
+            <div style={{ display: 'flex', alignItems: 'center', height: ROW_H, gap: 5, opacity: visible ? 1 : 0, transition: 'opacity 0.25s ease' }}>
+              {side === 'neg' ? (
+                <>
+                  <span style={{ width: 38, textAlign: 'right', fontSize: 10, color, fontWeight: 600 }}>{mobFmt(v)}</span>
+                  <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1, position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: visible ? `${barPct}%` : '0%', background: color, borderRadius: 1, transition: 'width 0.35s ease' }} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1, position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: visible ? `${barPct}%` : '0%', background: color, borderRadius: 1, transition: 'width 0.35s ease' }} />
+                  </div>
+                  <span style={{ width: 38, textAlign: 'left', fontSize: 10, color, fontWeight: 600 }}>{mobFmt(v)}</span>
+                </>
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+
+  return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '0 0 16px' }}>
+      <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Image src="/assets/logo-lpt.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIndex ? 18 : 4, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .4s' }} />
+          ))}
+        </div>
+      </div>
+      <div style={{ padding: '14px 16px 0' }}>
+        <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)', borderRadius: 20, padding: '2px 10px', fontSize: 9, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+          {moduleLabel}
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>{page.sousTitre}</div>
+      </div>
+      <div style={{ margin: '12px 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
+        <span style={{ fontSize: 18, fontWeight: 900, color: '#fff' }}>0,00</span>
+        <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.2)' }} />
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 1.2 }}>Plan</span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr', gap: '0 10px', flex: 1, padding: '0 12px' }}>
+        <Col values={MOB_NEG} side="neg" />
+        <div style={{ background: 'rgba(255,255,255,0.07)' }} />
+        <Col values={MOB_POS} side="pos" />
+      </div>
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', padding: '10px 12px 0', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 600 }}>● Légère</span>
+        <span style={{ fontSize: 10, color: '#f59e0b', fontWeight: 600 }}>● Modérée</span>
+        <span style={{ fontSize: 10, color: '#ef4444', fontWeight: 600 }}>● Forte</span>
+      </div>
+    </div>
+  )
+}
+
 // ── Troubles list — vue téléphone ────────────────────────────────
 function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
   const [visibleCount, setVisibleCount] = useState(0)
@@ -393,9 +481,8 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
-  if (page.type === 'troubles-list') {
-    return <TroublesListMobile page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  }
+  if (page.type === 'troubles-list')    return <TroublesListMobile    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'correction-scale') return <CorrectionScaleMobile page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
 
   return (
     <div style={{
