@@ -322,6 +322,24 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, to
             </div>
           </div>
         </div>
+
+        {/* Encart clé */}
+        <div style={{
+          marginTop: 40,
+          padding: '28px 40px',
+          borderRadius: 20,
+          background: 'rgba(0,171,233,0.07)',
+          border: '1px solid rgba(0,171,233,0.22)',
+          display: 'flex', alignItems: 'center', gap: 24,
+        }}>
+          <span style={{ fontSize: 36, lineHeight: 1, flexShrink: 0 }}>⚡</span>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>À retenir</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+              Fabrication en 10 minutes
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Navigation */}
