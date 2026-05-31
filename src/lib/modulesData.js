@@ -134,6 +134,14 @@ export const OPTIQUE_PAGES = [
     color: '#38bdf8',
     avatarScript: "Sur une ordonnance optique, vous trouverez toujours trois colonnes : la Sphère, la correction principale — négative pour les myopes, positive pour les hypermétropes. Le Cylindre, qui corrige l'astigmatisme. L'Axe, qui oriente ce cylindre. Et l'Addition, uniquement présente sur les progressifs.",
   },
+  {
+    id: 'atelier',
+    type: 'pause',
+    titre: 'Place à la pratique !',
+    sousTitre: 'Travaillons maintenant sur de vraies ordonnances',
+    icon: '🔬',
+    color: '#00abe9',
+  },
 ]
 
 export const OPTIQUE_QUIZ = []
