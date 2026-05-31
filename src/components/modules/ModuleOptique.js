@@ -18,6 +18,8 @@ const STYLES = `
     from { opacity: 0; transform: translateX(-6px); }
     to   { opacity: 1; transform: translateX(0); }
   }
+  .frise-chips { -ms-overflow-style: none; scrollbar-width: none; }
+  .frise-chips::-webkit-scrollbar { display: none; }
 `
 
 // ── Avatar formateur ──────────────────────────────────────────────
@@ -222,9 +224,11 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, pageIndex, total, on
 }
 
 // ── Frise des corrections ─────────────────────────────────────────
-const FRISE_STEPS = Array.from({ length: 32 }, (_, i) => (i + 1) * 0.25)
+const FRISE_NEG = Array.from({ length: 32 }, (_, i) => (i + 1) * 0.25) // −0,25 → −8,00
+const FRISE_POS = Array.from({ length: 29 }, (_, i) => (i + 1) * 0.25) // +0,25 → +7,25
 const fFmt = (v) => v.toFixed(2).replace('.', ',')
-const OPT_PLAN_W = 96 // largeur zone Plan à gauche
+const OPT_PLAN_W = 96  // largeur colonne Plan (fixe, ne scrolle pas)
+const OPT_ROW_H  = 46  // hauteur fixe des rangées de chips
 
 // ── Page 2 : Frise horizontale ±8,00 ─────────────────────────────
 function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, total, onNext, isLast }) {
@@ -243,7 +247,8 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, to
     return () => clearTimeout(tid)
   }, [page.id])
 
-  const visible = FRISE_STEPS.slice(0, step)
+  const negVisible = FRISE_NEG.slice(0, step)
+  const posVisible = FRISE_POS.slice(0, step)
   const optChip = {
     padding: '8px 13px', borderRadius: 8, flexShrink: 0,
     background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
@@ -290,28 +295,26 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, to
         </div>
 
         {/* Frise */}
-        <div style={{ overflow: 'hidden' }}>
-          {/* Négatifs — au-dessus de la ligne */}
-          <div style={{ display: 'flex', alignItems: 'center', paddingLeft: OPT_PLAN_W, gap: 5, flexWrap: 'nowrap', marginBottom: 12, minHeight: 46 }}>
-            {visible.map((v, i) => (
-              <div key={i} style={optChip}>−{fFmt(v)}</div>
-            ))}
+        <div style={{ display: 'flex', alignItems: 'stretch' }}>
+
+          {/* Colonne Plan — fixe, ne scrolle pas */}
+          <div style={{ width: OPT_PLAN_W, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingRight: 18 }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#00abe9', lineHeight: 1 }}>Plan</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>0,00</div>
           </div>
 
-          {/* Axe horizontal avec Plan à gauche */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ width: OPT_PLAN_W, flexShrink: 0, paddingRight: 18 }}>
-              <div style={{ fontSize: 17, fontWeight: 800, color: '#00abe9', lineHeight: 1 }}>Plan</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>0,00</div>
+          {/* Zone chips + axe */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {/* Négatifs — scrollable, au-dessus */}
+            <div className="frise-chips" style={{ height: OPT_ROW_H, display: 'flex', alignItems: 'center', gap: 5, overflowX: 'auto', flexWrap: 'nowrap' }}>
+              {negVisible.map((v, i) => <div key={i} style={optChip}>−{fFmt(v)}</div>)}
             </div>
-            <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1 }} />
-          </div>
-
-          {/* Positifs — en dessous de la ligne */}
-          <div style={{ display: 'flex', alignItems: 'center', paddingLeft: OPT_PLAN_W, gap: 5, flexWrap: 'nowrap', marginTop: 12, minHeight: 46 }}>
-            {visible.map((v, i) => (
-              <div key={i} style={optChip}>+{fFmt(v)}</div>
-            ))}
+            {/* Axe */}
+            <div style={{ height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1, flexShrink: 0 }} />
+            {/* Positifs — scrollable, en dessous */}
+            <div className="frise-chips" style={{ height: OPT_ROW_H, display: 'flex', alignItems: 'center', gap: 5, overflowX: 'auto', flexWrap: 'nowrap' }}>
+              {posVisible.map((v, i) => <div key={i} style={optChip}>+{fFmt(v)}</div>)}
+            </div>
           </div>
         </div>
       </div>

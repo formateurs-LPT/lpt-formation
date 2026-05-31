@@ -33,6 +33,8 @@ const STYLES = `
     from { opacity: 0; transform: translateX(-6px); }
     to   { opacity: 1; transform: translateX(0); }
   }
+  .frise-chips { -ms-overflow-style: none; scrollbar-width: none; }
+  .frise-chips::-webkit-scrollbar { display: none; }
 `
 
 // ── Verre animé ───────────────────────────────────────────────────
@@ -176,9 +178,11 @@ function TVEmojiVisual({ emoji, color }) {
 }
 
 // ── TV Correction Scale (type = correction-scale) — frise ──────────
-const TV_FRISE = Array.from({ length: 32 }, (_, i) => (i + 1) * 0.25)
-const tvFmt   = (v) => v.toFixed(2).replace('.', ',')
-const TV_PLAN_W = 110 // largeur de la zone "Plan" à gauche
+const TV_NEG    = Array.from({ length: 32 }, (_, i) => (i + 1) * 0.25) // −0,25 → −8,00
+const TV_POS    = Array.from({ length: 29 }, (_, i) => (i + 1) * 0.25) // +0,25 → +7,25
+const tvFmt     = (v) => v.toFixed(2).replace('.', ',')
+const TV_PLAN_W = 110 // colonne Plan fixe
+const TV_ROW_H  = 54  // hauteur rangée chips
 
 function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
   const [step, setStep] = useState(0)
@@ -196,7 +200,8 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
     return () => clearTimeout(tid)
   }, [page.id])
 
-  const visible = TV_FRISE.slice(0, step)
+  const negVisible = TV_NEG.slice(0, step)
+  const posVisible = TV_POS.slice(0, step)
   const tvChip = {
     padding: '10px 16px', borderRadius: 9, flexShrink: 0,
     background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
@@ -233,36 +238,26 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
         </div>
 
         {/* Frise */}
-        <div style={{ overflow: 'hidden' }}>
-          {/* Négatifs — au-dessus de la ligne */}
-          <div style={{
-            display: 'flex', alignItems: 'center',
-            paddingLeft: TV_PLAN_W, gap: 6, flexWrap: 'nowrap',
-            marginBottom: 14, minHeight: 52,
-          }}>
-            {visible.map((v, i) => (
-              <div key={i} style={tvChip}>−{tvFmt(v)}</div>
-            ))}
+        <div style={{ display: 'flex', alignItems: 'stretch' }}>
+
+          {/* Colonne Plan — fixe */}
+          <div style={{ width: TV_PLAN_W, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingRight: 20 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#00abe9', lineHeight: 1 }}>Plan</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>0,00</div>
           </div>
 
-          {/* Axe horizontal avec Plan à gauche */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ width: TV_PLAN_W, flexShrink: 0, paddingRight: 20 }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#00abe9', lineHeight: 1 }}>Plan</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>0,00</div>
+          {/* Zone chips + axe */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {/* Négatifs — scrollable */}
+            <div className="frise-chips" style={{ height: TV_ROW_H, display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', flexWrap: 'nowrap' }}>
+              {negVisible.map((v, i) => <div key={i} style={tvChip}>−{tvFmt(v)}</div>)}
             </div>
-            <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1 }} />
-          </div>
-
-          {/* Positifs — en dessous de la ligne */}
-          <div style={{
-            display: 'flex', alignItems: 'center',
-            paddingLeft: TV_PLAN_W, gap: 6, flexWrap: 'nowrap',
-            marginTop: 14, minHeight: 52,
-          }}>
-            {visible.map((v, i) => (
-              <div key={i} style={tvChip}>+{tvFmt(v)}</div>
-            ))}
+            {/* Axe */}
+            <div style={{ height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1, flexShrink: 0 }} />
+            {/* Positifs — scrollable */}
+            <div className="frise-chips" style={{ height: TV_ROW_H, display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', flexWrap: 'nowrap' }}>
+              {posVisible.map((v, i) => <div key={i} style={tvChip}>+{tvFmt(v)}</div>)}
+            </div>
           </div>
         </div>
       </div>

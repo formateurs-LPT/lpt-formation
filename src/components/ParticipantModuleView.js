@@ -13,6 +13,8 @@ const STYLES = `
     from { opacity: 0; transform: translateX(-4px); }
     to   { opacity: 1; transform: translateX(0); }
   }
+  .frise-chips { -ms-overflow-style: none; scrollbar-width: none; }
+  .frise-chips::-webkit-scrollbar { display: none; }
   @keyframes verreFloat {
     0%, 100% { transform: translateY(0px) scale(1); }
     50% { transform: translateY(-18px) scale(1.05); }
@@ -316,9 +318,11 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
 }
 
 // ── Correction scale — vue téléphone — frise ──────────────────────
-const MOB_FRISE = Array.from({ length: 32 }, (_, i) => (i + 1) * 0.25)
-const mobFmt   = (v) => v.toFixed(2).replace('.', ',')
-const MOB_PLAN_W = 72 // largeur zone Plan à gauche
+const MOB_NEG   = Array.from({ length: 32 }, (_, i) => (i + 1) * 0.25) // −0,25 → −8,00
+const MOB_POS   = Array.from({ length: 29 }, (_, i) => (i + 1) * 0.25) // +0,25 → +7,25
+const mobFmt    = (v) => v.toFixed(2).replace('.', ',')
+const MOB_PLAN_W = 68 // colonne Plan fixe
+const MOB_ROW_H  = 40 // hauteur rangée chips
 
 function CorrectionScaleMobile({ page, pageIndex, total }) {
   const [step, setStep] = useState(0)
@@ -336,7 +340,8 @@ function CorrectionScaleMobile({ page, pageIndex, total }) {
     return () => clearTimeout(tid)
   }, [page.id])
 
-  const visible = MOB_FRISE.slice(0, step)
+  const negVisible = MOB_NEG.slice(0, step)
+  const posVisible = MOB_POS.slice(0, step)
   const mobChip = {
     padding: '7px 11px', borderRadius: 8, flexShrink: 0,
     background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
@@ -365,28 +370,26 @@ function CorrectionScaleMobile({ page, pageIndex, total }) {
 
       {/* Frise */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 16px 32px' }}>
-        <div style={{ overflow: 'hidden' }}>
-          {/* Négatifs — au-dessus de la ligne */}
-          <div style={{ display: 'flex', alignItems: 'center', paddingLeft: MOB_PLAN_W, gap: 4, flexWrap: 'nowrap', marginBottom: 10, minHeight: 38 }}>
-            {visible.map((v, i) => (
-              <div key={i} style={mobChip}>−{mobFmt(v)}</div>
-            ))}
+        <div style={{ display: 'flex', alignItems: 'stretch' }}>
+
+          {/* Colonne Plan — fixe */}
+          <div style={{ width: MOB_PLAN_W, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingRight: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#00abe9', lineHeight: 1 }}>Plan</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>0,00</div>
           </div>
 
-          {/* Axe horizontal avec Plan à gauche */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ width: MOB_PLAN_W, flexShrink: 0, paddingRight: 14 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#00abe9', lineHeight: 1 }}>Plan</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>0,00</div>
+          {/* Zone chips + axe */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {/* Négatifs — scrollable */}
+            <div className="frise-chips" style={{ height: MOB_ROW_H, display: 'flex', alignItems: 'center', gap: 4, overflowX: 'auto', flexWrap: 'nowrap' }}>
+              {negVisible.map((v, i) => <div key={i} style={mobChip}>−{mobFmt(v)}</div>)}
             </div>
-            <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1 }} />
-          </div>
-
-          {/* Positifs — en dessous de la ligne */}
-          <div style={{ display: 'flex', alignItems: 'center', paddingLeft: MOB_PLAN_W, gap: 4, flexWrap: 'nowrap', marginTop: 10, minHeight: 38 }}>
-            {visible.map((v, i) => (
-              <div key={i} style={mobChip}>+{mobFmt(v)}</div>
-            ))}
+            {/* Axe */}
+            <div style={{ height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1, flexShrink: 0 }} />
+            {/* Positifs — scrollable */}
+            <div className="frise-chips" style={{ height: MOB_ROW_H, display: 'flex', alignItems: 'center', gap: 4, overflowX: 'auto', flexWrap: 'nowrap' }}>
+              {posVisible.map((v, i) => <div key={i} style={mobChip}>+{mobFmt(v)}</div>)}
+            </div>
           </div>
         </div>
       </div>
