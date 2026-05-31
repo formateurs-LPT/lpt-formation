@@ -239,7 +239,7 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, to
     let s = 0; let tid
     const next = () => {
       s++
-      if (s > FRISE_STEPS.length) return
+      if (s > FRISE_NEG.length) return
       setStep(s)
       tid = setTimeout(next, 90)
     }

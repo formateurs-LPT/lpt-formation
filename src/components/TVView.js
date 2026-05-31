@@ -192,7 +192,7 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
     let s = 0; let tid
     const next = () => {
       s++
-      if (s > TV_FRISE.length) return
+      if (s > TV_NEG.length) return
       setStep(s)
       tid = setTimeout(next, 90)
     }

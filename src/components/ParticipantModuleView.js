@@ -332,7 +332,7 @@ function CorrectionScaleMobile({ page, pageIndex, total }) {
     let s = 0; let tid
     const next = () => {
       s++
-      if (s > MOB_FRISE.length) return
+      if (s > MOB_NEG.length) return
       setStep(s)
       tid = setTimeout(next, 90)
     }
