@@ -311,25 +311,34 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
   )
 }
 
-// ── Correction scale — vue téléphone — liste animée ───────────────────
-const MOB_SCALE = Array.from({ length: 33 }, (_, i) => i * 0.25)
-const mobCFmt  = (v) => v.toFixed(2).replace('.', ',')
+// ── Correction scale — vue téléphone — frise ──────────────────────
+const MOB_FRISE     = Array.from({ length: 32 }, (_, i) => (i + 1) * 0.25)
+const MOB_FRISE_REV = [...MOB_FRISE].reverse()
+const mobFmt = (v) => v.toFixed(2).replace('.', ',')
 
 function CorrectionScaleMobile({ page, pageIndex, total, moduleLabel }) {
-  const [visible, setVisible] = useState(0)
+  const [step, setStep] = useState(0)
 
   useEffect(() => {
-    setVisible(0)
-    let count = 0; let tid
-    const step = () => {
-      count++
-      if (count > MOB_SCALE.length) return
-      setVisible(count)
-      tid = setTimeout(step, 90)
+    setStep(0)
+    let s = 0; let tid
+    const next = () => {
+      s++
+      if (s > MOB_FRISE.length) return
+      setStep(s)
+      tid = setTimeout(next, 90)
     }
-    tid = setTimeout(step, 400)
+    tid = setTimeout(next, 500)
     return () => clearTimeout(tid)
   }, [page.id])
+
+  const mobChip = (isVis) => ({
+    opacity: isVis ? 1 : 0.07,
+    transition: 'opacity 0.25s ease',
+    padding: '7px 11px', borderRadius: 8, flexShrink: 0,
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.1)',
+  })
 
   return (
     <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
@@ -344,36 +353,65 @@ function CorrectionScaleMobile({ page, pageIndex, total, moduleLabel }) {
       </div>
 
       {/* Titre */}
-      <div style={{ padding: '16px 20px 12px' }}>
-        <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{page.titre}</div>
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>{page.sousTitre}</div>
+      <div style={{ padding: '14px 20px 10px' }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 3 }}>{page.sousTitre}</div>
       </div>
 
-      {/* Grille 2 colonnes */}
-      <div style={{ flex: 1, padding: '0 16px 24px', overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px 12px' }}>
-          {MOB_SCALE.map((v, i) => {
-            const isWhole = Number.isInteger(v) && v > 0
-            return (
-              <div key={i} style={{
-                opacity: i < visible ? 1 : 0,
-                transform: i < visible ? 'translateY(0)' : 'translateY(6px)',
-                transition: 'all 0.2s ease',
-                padding: '10px 14px', borderRadius: 10,
-                background: isWhole ? 'rgba(0,171,233,0.07)' : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${isWhole ? 'rgba(0,171,233,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                display: 'flex', alignItems: 'center', gap: 8,
-              }}>
-                <span style={{
-                  fontSize: isWhole ? 18 : 15,
-                  fontWeight: isWhole ? 800 : 500,
-                  color: isWhole ? '#fff' : 'rgba(255,255,255,0.5)',
-                  fontVariantNumeric: 'tabular-nums',
-                }}>{mobCFmt(v)}</span>
-                {v === 0 && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontWeight: 600 }}>Plan</span>}
-              </div>
-            )
-          })}
+      {/* Frise */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 16px 24px', gap: 12 }}>
+
+        {/* Négatifs */}
+        <div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+            Correction négative ←
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {MOB_FRISE_REV.map((v, j) => {
+              const isVis = j >= MOB_FRISE.length - step
+              return (
+                <div key={j} style={mobChip(isVis)}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.82)', fontVariantNumeric: 'tabular-nums' }}>
+                    −{mobFmt(v)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Axe 0,00 Plan */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.14)' }} />
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '8px 18px', borderRadius: 16,
+            background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)',
+            flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 18, fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>0,00</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1 }}>Plan</span>
+          </div>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.14)' }} />
+        </div>
+
+        {/* Positifs */}
+        <div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {MOB_FRISE.map((v, i) => {
+              const isVis = i < step
+              return (
+                <div key={i} style={mobChip(isVis)}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.82)', fontVariantNumeric: 'tabular-nums' }}>
+                    +{mobFmt(v)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: 1, marginTop: 6 }}>
+            → Correction positive
+          </div>
         </div>
       </div>
     </div>

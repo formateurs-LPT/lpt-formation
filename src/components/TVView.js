@@ -171,25 +171,34 @@ function TVEmojiVisual({ emoji, color }) {
   )
 }
 
-// ── TV Correction Scale (type = correction-scale) — liste animée ──────
-const TV_SCALE = Array.from({ length: 33 }, (_, i) => i * 0.25)
-const tvCFmt  = (v) => v.toFixed(2).replace('.', ',')
+// ── TV Correction Scale (type = correction-scale) — frise ──────────
+const TV_FRISE  = Array.from({ length: 32 }, (_, i) => (i + 1) * 0.25) // 0.25 → 8.00
+const TV_FRISE_REV = [...TV_FRISE].reverse()                              // 8.00 → 0.25
+const tvFmt = (v) => v.toFixed(2).replace('.', ',')
 
 function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
-  const [visible, setVisible] = useState(0)
+  const [step, setStep] = useState(0)
 
   useEffect(() => {
-    setVisible(0)
-    let count = 0; let tid
-    const step = () => {
-      count++
-      if (count > TV_SCALE.length) return
-      setVisible(count)
-      tid = setTimeout(step, 90)
+    setStep(0)
+    let s = 0; let tid
+    const next = () => {
+      s++
+      if (s > TV_FRISE.length) return
+      setStep(s)
+      tid = setTimeout(next, 90)
     }
-    tid = setTimeout(step, 400)
+    tid = setTimeout(next, 500)
     return () => clearTimeout(tid)
   }, [page.id])
+
+  const tvChip = (isVis) => ({
+    opacity: isVis ? 1 : 0.07,
+    transition: 'opacity 0.25s ease',
+    padding: '11px 18px', borderRadius: 10, flexShrink: 0,
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.1)',
+  })
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
@@ -210,37 +219,65 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
         </div>
       </div>
 
-      {/* Titre */}
-      <div style={{ padding: '8px 48px 20px' }}>
-        <h2 style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</h2>
-        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>{page.sousTitre}</p>
-      </div>
+      {/* Main */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 56px 32px', gap: 18 }}>
+        {/* Titre */}
+        <div style={{ marginBottom: 4 }}>
+          <h2 style={{ fontSize: 32, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</h2>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)' }}>{page.sousTitre}</p>
+        </div>
 
-      {/* Grille 3 colonnes */}
-      <div style={{ flex: 1, padding: '0 48px 40px', overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px 24px' }}>
-          {TV_SCALE.map((v, i) => {
-            const isWhole = Number.isInteger(v) && v > 0
-            return (
-              <div key={i} style={{
-                opacity: i < visible ? 1 : 0,
-                transform: i < visible ? 'translateY(0)' : 'translateY(8px)',
-                transition: 'all 0.2s ease',
-                padding: '14px 20px', borderRadius: 12,
-                background: isWhole ? 'rgba(0,171,233,0.07)' : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${isWhole ? 'rgba(0,171,233,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                display: 'flex', alignItems: 'center', gap: 12,
-              }}>
-                <span style={{
-                  fontSize: isWhole ? 28 : 22,
-                  fontWeight: isWhole ? 800 : 500,
-                  color: isWhole ? '#fff' : 'rgba(255,255,255,0.5)',
-                  fontVariantNumeric: 'tabular-nums',
-                }}>{tvCFmt(v)}</span>
-                {v === 0 && <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', fontWeight: 600 }}>Plan</span>}
-              </div>
-            )
-          })}
+        {/* Négatifs */}
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 9 }}>
+            Correction négative ←
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {TV_FRISE_REV.map((v, j) => {
+              const isVis = j >= TV_FRISE.length - step
+              return (
+                <div key={j} style={tvChip(isVis)}>
+                  <span style={{ fontSize: 17, fontWeight: 500, color: 'rgba(255,255,255,0.82)', fontVariantNumeric: 'tabular-nums' }}>
+                    −{tvFmt(v)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Axe 0,00 Plan */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.14)' }} />
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '12px 28px', borderRadius: 24,
+            background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)',
+            flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 28, fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>0,00</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1.5 }}>Plan</span>
+          </div>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.14)' }} />
+        </div>
+
+        {/* Positifs */}
+        <div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {TV_FRISE.map((v, i) => {
+              const isVis = i < step
+              return (
+                <div key={i} style={tvChip(isVis)}>
+                  <span style={{ fontSize: 17, fontWeight: 500, color: 'rgba(255,255,255,0.82)', fontVariantNumeric: 'tabular-nums' }}>
+                    +{tvFmt(v)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: 1, marginTop: 9 }}>
+            → Correction positive
+          </div>
         </div>
       </div>
     </div>
