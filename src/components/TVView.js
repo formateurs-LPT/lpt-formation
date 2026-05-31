@@ -237,25 +237,30 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)' }}>{page.sousTitre}</p>
         </div>
 
-        {/* Frise */}
-        <div style={{ display: 'flex', alignItems: 'stretch' }}>
+        {/* Frise — négatifs */}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
+          <div style={{ width: TV_PLAN_W, flexShrink: 0 }} />
+          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
+            <div style={{ display: 'inline-flex', gap: 6, padding: '6px 0' }}>
+              {negVisible.map((v, i) => <div key={i} style={tvChip}>−{tvFmt(v)}</div>)}
+            </div>
+          </div>
+        </div>
 
-          {/* Colonne Plan — fixe */}
-          <div style={{ width: TV_PLAN_W, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingRight: 20 }}>
+        {/* Frise — axe Plan */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ width: TV_PLAN_W, flexShrink: 0, paddingRight: 20 }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: '#00abe9', lineHeight: 1 }}>Plan</div>
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>0,00</div>
           </div>
+          <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1 }} />
+        </div>
 
-          {/* Zone chips + axe */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            {/* Négatifs — scrollable */}
-            <div className="frise-chips" style={{ height: TV_ROW_H, display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', flexWrap: 'nowrap' }}>
-              {negVisible.map((v, i) => <div key={i} style={tvChip}>−{tvFmt(v)}</div>)}
-            </div>
-            {/* Axe */}
-            <div style={{ height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1, flexShrink: 0 }} />
-            {/* Positifs — scrollable */}
-            <div className="frise-chips" style={{ height: TV_ROW_H, display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', flexWrap: 'nowrap' }}>
+        {/* Frise — positifs */}
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: 14 }}>
+          <div style={{ width: TV_PLAN_W, flexShrink: 0 }} />
+          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
+            <div style={{ display: 'inline-flex', gap: 6, padding: '6px 0' }}>
               {posVisible.map((v, i) => <div key={i} style={tvChip}>+{tvFmt(v)}</div>)}
             </div>
           </div>

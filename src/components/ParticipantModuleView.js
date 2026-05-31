@@ -370,24 +370,31 @@ function CorrectionScaleMobile({ page, pageIndex, total }) {
 
       {/* Frise */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 16px 32px' }}>
-        <div style={{ display: 'flex', alignItems: 'stretch' }}>
 
-          {/* Colonne Plan — fixe */}
-          <div style={{ width: MOB_PLAN_W, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingRight: 14 }}>
+        {/* Négatifs */}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
+          <div style={{ width: MOB_PLAN_W, flexShrink: 0 }} />
+          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
+            <div style={{ display: 'inline-flex', gap: 4, padding: '3px 0' }}>
+              {negVisible.map((v, i) => <div key={i} style={mobChip}>−{mobFmt(v)}</div>)}
+            </div>
+          </div>
+        </div>
+
+        {/* Axe Plan */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ width: MOB_PLAN_W, flexShrink: 0, paddingRight: 14 }}>
             <div style={{ fontSize: 14, fontWeight: 800, color: '#00abe9', lineHeight: 1 }}>Plan</div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>0,00</div>
           </div>
+          <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1 }} />
+        </div>
 
-          {/* Zone chips + axe */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            {/* Négatifs — scrollable */}
-            <div className="frise-chips" style={{ height: MOB_ROW_H, display: 'flex', alignItems: 'center', gap: 4, overflowX: 'auto', flexWrap: 'nowrap' }}>
-              {negVisible.map((v, i) => <div key={i} style={mobChip}>−{mobFmt(v)}</div>)}
-            </div>
-            {/* Axe */}
-            <div style={{ height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1, flexShrink: 0 }} />
-            {/* Positifs — scrollable */}
-            <div className="frise-chips" style={{ height: MOB_ROW_H, display: 'flex', alignItems: 'center', gap: 4, overflowX: 'auto', flexWrap: 'nowrap' }}>
+        {/* Positifs */}
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: 10 }}>
+          <div style={{ width: MOB_PLAN_W, flexShrink: 0 }} />
+          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
+            <div style={{ display: 'inline-flex', gap: 4, padding: '3px 0' }}>
               {posVisible.map((v, i) => <div key={i} style={mobChip}>+{mobFmt(v)}</div>)}
             </div>
           </div>

@@ -294,25 +294,30 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, to
           <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{page.sousTitre}</p>
         </div>
 
-        {/* Frise */}
-        <div style={{ display: 'flex', alignItems: 'stretch' }}>
+        {/* Frise — négatifs */}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ width: OPT_PLAN_W, flexShrink: 0 }} />
+          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
+            <div style={{ display: 'inline-flex', gap: 5, padding: '4px 0' }}>
+              {negVisible.map((v, i) => <div key={i} style={optChip}>−{fFmt(v)}</div>)}
+            </div>
+          </div>
+        </div>
 
-          {/* Colonne Plan — fixe, ne scrolle pas */}
-          <div style={{ width: OPT_PLAN_W, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingRight: 18 }}>
+        {/* Frise — axe Plan */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ width: OPT_PLAN_W, flexShrink: 0, paddingRight: 18 }}>
             <div style={{ fontSize: 17, fontWeight: 800, color: '#00abe9', lineHeight: 1 }}>Plan</div>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>0,00</div>
           </div>
+          <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1 }} />
+        </div>
 
-          {/* Zone chips + axe */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            {/* Négatifs — scrollable, au-dessus */}
-            <div className="frise-chips" style={{ height: OPT_ROW_H, display: 'flex', alignItems: 'center', gap: 5, overflowX: 'auto', flexWrap: 'nowrap' }}>
-              {negVisible.map((v, i) => <div key={i} style={optChip}>−{fFmt(v)}</div>)}
-            </div>
-            {/* Axe */}
-            <div style={{ height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1, flexShrink: 0 }} />
-            {/* Positifs — scrollable, en dessous */}
-            <div className="frise-chips" style={{ height: OPT_ROW_H, display: 'flex', alignItems: 'center', gap: 5, overflowX: 'auto', flexWrap: 'nowrap' }}>
+        {/* Frise — positifs */}
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: 12 }}>
+          <div style={{ width: OPT_PLAN_W, flexShrink: 0 }} />
+          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
+            <div style={{ display: 'inline-flex', gap: 5, padding: '4px 0' }}>
               {posVisible.map((v, i) => <div key={i} style={optChip}>+{fFmt(v)}</div>)}
             </div>
           </div>
