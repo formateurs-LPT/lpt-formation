@@ -265,6 +265,24 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
             </div>
           </div>
         </div>
+
+        {/* Encart clé */}
+        <div style={{
+          marginTop: 48,
+          padding: '32px 48px',
+          borderRadius: 22,
+          background: 'rgba(0,171,233,0.07)',
+          border: '1px solid rgba(0,171,233,0.22)',
+          display: 'flex', alignItems: 'center', gap: 28,
+        }}>
+          <span style={{ fontSize: 44, lineHeight: 1, flexShrink: 0 }}>⚡</span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>À retenir</div>
+            <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+              Fabrication en 10 minutes
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
