@@ -761,7 +761,7 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
   const isResults = !!moduleData && modulePage === 200
   const isQuiz = !!moduleData && modulePage >= 100 && modulePage < 200
   const qIdx = modulePage - 100
-  const page = (!isQuiz && !isResults && moduleData) ? (pages[modulePage] || pages[0]) : null
+  const page = (!isQuiz && !isResults && moduleData) ? (pages[modulePage] ?? null) : null
 
   return (
     <>

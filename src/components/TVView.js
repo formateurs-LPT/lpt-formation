@@ -839,7 +839,7 @@ export default function TVView() {
       const qIdx = modulePage - 100
       quizQuestion = moduleData.quiz[qIdx] || null
     } else if (!isResults) {
-      page = moduleData.pages[modulePage] || moduleData.pages[0]
+      page = moduleData.pages[modulePage] ?? null
     }
   }
 
