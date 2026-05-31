@@ -240,8 +240,8 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
         {/* Frise — négatifs */}
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ width: TV_PLAN_W, flexShrink: 0 }} />
-          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
-            <div style={{ display: 'inline-flex', gap: 6, padding: '6px 0' }}>
+          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'scroll', touchAction: 'pan-x' }}>
+            <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 6, padding: '6px 0', width: 'max-content' }}>
               {negVisible.map((v, i) => <div key={i} style={tvChip}>−{tvFmt(v)}</div>)}
             </div>
           </div>
@@ -259,8 +259,8 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
         {/* Frise — positifs */}
         <div style={{ display: 'flex', alignItems: 'center', marginTop: 14 }}>
           <div style={{ width: TV_PLAN_W, flexShrink: 0 }} />
-          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
-            <div style={{ display: 'inline-flex', gap: 6, padding: '6px 0' }}>
+          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'scroll', touchAction: 'pan-x' }}>
+            <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 6, padding: '6px 0', width: 'max-content' }}>
               {posVisible.map((v, i) => <div key={i} style={tvChip}>+{tvFmt(v)}</div>)}
             </div>
           </div>

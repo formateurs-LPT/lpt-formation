@@ -297,8 +297,8 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, to
         {/* Frise — négatifs */}
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
           <div style={{ width: OPT_PLAN_W, flexShrink: 0 }} />
-          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
-            <div style={{ display: 'inline-flex', gap: 5, padding: '4px 0' }}>
+          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'scroll', touchAction: 'pan-x' }}>
+            <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 5, padding: '4px 0', width: 'max-content' }}>
               {negVisible.map((v, i) => <div key={i} style={optChip}>−{fFmt(v)}</div>)}
             </div>
           </div>
@@ -316,8 +316,8 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, to
         {/* Frise — positifs */}
         <div style={{ display: 'flex', alignItems: 'center', marginTop: 12 }}>
           <div style={{ width: OPT_PLAN_W, flexShrink: 0 }} />
-          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
-            <div style={{ display: 'inline-flex', gap: 5, padding: '4px 0' }}>
+          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'scroll', touchAction: 'pan-x' }}>
+            <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 5, padding: '4px 0', width: 'max-content' }}>
               {posVisible.map((v, i) => <div key={i} style={optChip}>+{fFmt(v)}</div>)}
             </div>
           </div>

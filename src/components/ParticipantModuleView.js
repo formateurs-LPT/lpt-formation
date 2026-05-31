@@ -374,8 +374,8 @@ function CorrectionScaleMobile({ page, pageIndex, total }) {
         {/* Négatifs */}
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
           <div style={{ width: MOB_PLAN_W, flexShrink: 0 }} />
-          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
-            <div style={{ display: 'inline-flex', gap: 4, padding: '3px 0' }}>
+          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'scroll', touchAction: 'pan-x' }}>
+            <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 4, padding: '3px 0', width: 'max-content' }}>
               {negVisible.map((v, i) => <div key={i} style={mobChip}>−{mobFmt(v)}</div>)}
             </div>
           </div>
@@ -393,8 +393,8 @@ function CorrectionScaleMobile({ page, pageIndex, total }) {
         {/* Positifs */}
         <div style={{ display: 'flex', alignItems: 'center', marginTop: 10 }}>
           <div style={{ width: MOB_PLAN_W, flexShrink: 0 }} />
-          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
-            <div style={{ display: 'inline-flex', gap: 4, padding: '3px 0' }}>
+          <div className="frise-chips" style={{ flex: 1, minWidth: 0, overflowX: 'scroll', touchAction: 'pan-x' }}>
+            <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 4, padding: '3px 0', width: 'max-content' }}>
               {posVisible.map((v, i) => <div key={i} style={mobChip}>+{mobFmt(v)}</div>)}
             </div>
           </div>
