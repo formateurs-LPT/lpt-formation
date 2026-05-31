@@ -217,33 +217,26 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, pageIndex, total, on
   )
 }
 
-// ── Helpers compteur ─────────────────────────────────────────────
+// ── Helpers liste ─────────────────────────────────────────────────
 const SCALE_VALUES = Array.from({ length: 33 }, (_, i) => i * 0.25) // 0.00 → 8.00
-const cFmt = (v) => v.toFixed(2).replace('.', ',')
+const sFmt = (v) => v.toFixed(2).replace('.', ',')
 
-// ── Page 2 : Compteur de corrections ─────────────────────────────
+// ── Page 2 : Liste animée de corrections ─────────────────────────
 function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, total, onNext, isLast }) {
-  const [idx, setIdx] = useState(0)
-  const [done, setDone] = useState(false)
+  const [visible, setVisible] = useState(0) // nb de valeurs affichées
 
   useEffect(() => {
-    setIdx(0)
-    setDone(false)
-    let current = 0
-    let tid
+    setVisible(0)
+    let count = 0; let tid
     const step = () => {
-      current++
-      if (current >= SCALE_VALUES.length) { setDone(true); return }
-      setIdx(current)
-      const isWhole = Number.isInteger(SCALE_VALUES[current]) && SCALE_VALUES[current] > 0
-      tid = setTimeout(step, isWhole ? 380 : 110)
+      count++
+      if (count > SCALE_VALUES.length) return
+      setVisible(count)
+      tid = setTimeout(step, 90)
     }
-    tid = setTimeout(step, 500)
+    tid = setTimeout(step, 400)
     return () => clearTimeout(tid)
   }, [page.id])
-
-  const current = SCALE_VALUES[idx]
-  const progress = idx / (SCALE_VALUES.length - 1)
 
   return (
     <div style={{
@@ -252,10 +245,7 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, to
       display: 'flex', flexDirection: 'column', position: 'relative',
     }}>
       {/* Topbar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '18px 32px', flexShrink: 0, position: 'relative', zIndex: 10,
-      }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
@@ -275,43 +265,41 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, to
         </div>
       </div>
 
-      {/* Zone principale — compteur centré */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 48px 80px', gap: 0 }}>
-
-        {/* Sous-titre */}
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', fontWeight: 500, marginBottom: 32, textAlign: 'center', letterSpacing: 0.5 }}>
-          {page.titre}
+      {/* Zone principale */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px 48px 100px' }}>
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)', borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Les bases de l&apos;optique</div>
+          <h1 style={{ fontSize: 30, fontWeight: 800, color: '#fff', lineHeight: 1.1, marginBottom: 4 }}>{page.titre}</h1>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>{page.sousTitre}</p>
         </div>
 
-        {/* Grand chiffre */}
-        <div style={{ fontSize: 148, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -6, fontVariantNumeric: 'tabular-nums', transition: 'opacity 0.08s ease' }}>
-          {cFmt(current)}
-        </div>
-        <div style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.3)', marginTop: 12, textTransform: 'uppercase', letterSpacing: 3 }}>
-          dioptrie{current !== 1 ? 's' : ''}
-        </div>
-
-        {/* Barre de progression */}
-        <div style={{ width: 480, marginTop: 52 }}>
-          <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${progress * 100}%`, background: '#00abe9', borderRadius: 2, transition: 'width 0.1s ease' }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>0,00</span>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>8,00</span>
-          </div>
-        </div>
-
-        {/* Message final après animation */}
-        <div style={{ marginTop: 40, textAlign: 'center', opacity: done ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
-          <div style={{ display: 'flex', gap: 20, justifyContent: 'center' }}>
-            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 20px' }}>
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>− Myopie · Astigmatisme</span>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 20px' }}>
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>+ Hypermétropie · Presbytie</span>
-            </div>
-          </div>
+        {/* Grille 3 colonnes */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px 16px' }}>
+          {SCALE_VALUES.map((v, i) => {
+            const isWhole = Number.isInteger(v) && v > 0
+            return (
+              <div key={i} style={{
+                opacity: i < visible ? 1 : 0,
+                transform: i < visible ? 'translateY(0)' : 'translateY(8px)',
+                transition: 'all 0.2s ease',
+                padding: '10px 16px',
+                borderRadius: 10,
+                background: isWhole ? 'rgba(0,171,233,0.07)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${isWhole ? 'rgba(0,171,233,0.2)' : 'rgba(255,255,255,0.06)'}`,
+              }}>
+                <span style={{
+                  fontSize: isWhole ? 22 : 18,
+                  fontWeight: isWhole ? 800 : 500,
+                  color: isWhole ? '#fff' : 'rgba(255,255,255,0.55)',
+                  fontVariantNumeric: 'tabular-nums',
+                  letterSpacing: -0.5,
+                }}>
+                  {sFmt(v)}
+                </span>
+                {v === 0 && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginLeft: 8, fontWeight: 600 }}>Plan</span>}
+              </div>
+            )
+          })}
         </div>
       </div>
 

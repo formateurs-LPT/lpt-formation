@@ -171,33 +171,29 @@ function TVEmojiVisual({ emoji, color }) {
   )
 }
 
-// ── TV Correction Scale (type = correction-scale) — compteur ──────
+// ── TV Correction Scale (type = correction-scale) — liste animée ──────
 const TV_SCALE = Array.from({ length: 33 }, (_, i) => i * 0.25)
 const tvCFmt  = (v) => v.toFixed(2).replace('.', ',')
 
 function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
-  const [idx, setIdx] = useState(0)
-  const [done, setDone] = useState(false)
+  const [visible, setVisible] = useState(0)
 
   useEffect(() => {
-    setIdx(0); setDone(false)
-    let current = 0; let tid
+    setVisible(0)
+    let count = 0; let tid
     const step = () => {
-      current++
-      if (current >= TV_SCALE.length) { setDone(true); return }
-      setIdx(current)
-      const isWhole = Number.isInteger(TV_SCALE[current]) && TV_SCALE[current] > 0
-      tid = setTimeout(step, isWhole ? 380 : 110)
+      count++
+      if (count > TV_SCALE.length) return
+      setVisible(count)
+      tid = setTimeout(step, 90)
     }
-    tid = setTimeout(step, 500)
+    tid = setTimeout(step, 400)
     return () => clearTimeout(tid)
   }, [page.id])
 
-  const current = TV_SCALE[idx]
-  const progress = idx / (TV_SCALE.length - 1)
-
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
+      {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
@@ -213,30 +209,38 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
           </div>
         </div>
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 64px 48px', gap: 0 }}>
-        <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.35)', fontWeight: 500, marginBottom: 36, letterSpacing: 0.5 }}>{page.titre}</div>
-        <div style={{ fontSize: 180, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -8, fontVariantNumeric: 'tabular-nums' }}>
-          {tvCFmt(current)}
-        </div>
-        <div style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.3)', marginTop: 14, textTransform: 'uppercase', letterSpacing: 4 }}>
-          dioptries
-        </div>
-        <div style={{ width: 560, marginTop: 56 }}>
-          <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${progress * 100}%`, background: '#00abe9', borderRadius: 3, transition: 'width 0.1s ease' }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.25)' }}>0,00</span>
-            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.25)' }}>8,00</span>
-          </div>
-        </div>
-        <div style={{ marginTop: 44, display: 'flex', gap: 24, opacity: done ? 1 : 0, transition: 'opacity 0.6s ease' }}>
-          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '12px 24px' }}>
-            <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)' }}>− Myopie · Astigmatisme</span>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '12px 24px' }}>
-            <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)' }}>+ Hypermétropie · Presbytie</span>
-          </div>
+
+      {/* Titre */}
+      <div style={{ padding: '8px 48px 20px' }}>
+        <h2 style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</h2>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>{page.sousTitre}</p>
+      </div>
+
+      {/* Grille 3 colonnes */}
+      <div style={{ flex: 1, padding: '0 48px 40px', overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px 24px' }}>
+          {TV_SCALE.map((v, i) => {
+            const isWhole = Number.isInteger(v) && v > 0
+            return (
+              <div key={i} style={{
+                opacity: i < visible ? 1 : 0,
+                transform: i < visible ? 'translateY(0)' : 'translateY(8px)',
+                transition: 'all 0.2s ease',
+                padding: '14px 20px', borderRadius: 12,
+                background: isWhole ? 'rgba(0,171,233,0.07)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${isWhole ? 'rgba(0,171,233,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                display: 'flex', alignItems: 'center', gap: 12,
+              }}>
+                <span style={{
+                  fontSize: isWhole ? 28 : 22,
+                  fontWeight: isWhole ? 800 : 500,
+                  color: isWhole ? '#fff' : 'rgba(255,255,255,0.5)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}>{tvCFmt(v)}</span>
+                {v === 0 && <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', fontWeight: 600 }}>Plan</span>}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>

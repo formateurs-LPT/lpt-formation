@@ -311,33 +311,29 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
   )
 }
 
-// ── Correction scale — vue téléphone — compteur ───────────────────
+// ── Correction scale — vue téléphone — liste animée ───────────────────
 const MOB_SCALE = Array.from({ length: 33 }, (_, i) => i * 0.25)
 const mobCFmt  = (v) => v.toFixed(2).replace('.', ',')
 
 function CorrectionScaleMobile({ page, pageIndex, total, moduleLabel }) {
-  const [idx, setIdx] = useState(0)
-  const [done, setDone] = useState(false)
+  const [visible, setVisible] = useState(0)
 
   useEffect(() => {
-    setIdx(0); setDone(false)
-    let current = 0; let tid
+    setVisible(0)
+    let count = 0; let tid
     const step = () => {
-      current++
-      if (current >= MOB_SCALE.length) { setDone(true); return }
-      setIdx(current)
-      const isWhole = Number.isInteger(MOB_SCALE[current]) && MOB_SCALE[current] > 0
-      tid = setTimeout(step, isWhole ? 380 : 110)
+      count++
+      if (count > MOB_SCALE.length) return
+      setVisible(count)
+      tid = setTimeout(step, 90)
     }
-    tid = setTimeout(step, 500)
+    tid = setTimeout(step, 400)
     return () => clearTimeout(tid)
   }, [page.id])
 
-  const current = MOB_SCALE[idx]
-  const progress = idx / (MOB_SCALE.length - 1)
-
   return (
     <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Image src="/assets/logo-lpt.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
         <div style={{ display: 'flex', gap: 5 }}>
@@ -347,30 +343,37 @@ function CorrectionScaleMobile({ page, pageIndex, total, moduleLabel }) {
         </div>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 24px 40px' }}>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 500, marginBottom: 24, textAlign: 'center' }}>{page.titre}</div>
-        <div style={{ fontSize: 88, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -3, fontVariantNumeric: 'tabular-nums' }}>
-          {mobCFmt(current)}
-        </div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.3)', marginTop: 8, textTransform: 'uppercase', letterSpacing: 2 }}>
-          dioptries
-        </div>
-        <div style={{ width: '100%', maxWidth: 280, marginTop: 36 }}>
-          <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${progress * 100}%`, background: '#00abe9', borderRadius: 2, transition: 'width 0.1s ease' }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>0,00</span>
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>8,00</span>
-          </div>
-        </div>
-        <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 280, opacity: done ? 1 : 0, transition: 'opacity 0.6s ease' }}>
-          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 14px', textAlign: 'center' }}>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>− Myopie · Astigmatisme</span>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 14px', textAlign: 'center' }}>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>+ Hypermétropie · Presbytie</span>
-          </div>
+      {/* Titre */}
+      <div style={{ padding: '16px 20px 12px' }}>
+        <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>{page.sousTitre}</div>
+      </div>
+
+      {/* Grille 2 colonnes */}
+      <div style={{ flex: 1, padding: '0 16px 24px', overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px 12px' }}>
+          {MOB_SCALE.map((v, i) => {
+            const isWhole = Number.isInteger(v) && v > 0
+            return (
+              <div key={i} style={{
+                opacity: i < visible ? 1 : 0,
+                transform: i < visible ? 'translateY(0)' : 'translateY(6px)',
+                transition: 'all 0.2s ease',
+                padding: '10px 14px', borderRadius: 10,
+                background: isWhole ? 'rgba(0,171,233,0.07)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${isWhole ? 'rgba(0,171,233,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+                <span style={{
+                  fontSize: isWhole ? 18 : 15,
+                  fontWeight: isWhole ? 800 : 500,
+                  color: isWhole ? '#fff' : 'rgba(255,255,255,0.5)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}>{mobCFmt(v)}</span>
+                {v === 0 && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontWeight: 600 }}>Plan</span>}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
