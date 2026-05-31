@@ -163,8 +163,8 @@ export const ORD_COLS = [
   },
 ]
 export const ORD_EXAMPLE = {
-  od: { sphere: '−0,75', cylindre: '−0,25', axe: '180°' },
-  og: { sphere: '−1,00', cylindre: '−0,50', axe: '70°'  },
+  od: { sphere: '−0,75', cylindre: '(−0,25)', axe: '180°' },
+  og: { sphere: '−1,00', cylindre: '(−0,50)', axe: '70°'  },
   add: '+2,00',
 }
 
