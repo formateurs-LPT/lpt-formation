@@ -9,6 +9,10 @@ import { generatePin } from '@/lib/pin'
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
 const STYLES = `
+  @keyframes chipIn {
+    from { opacity: 0; transform: translateX(-4px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
   @keyframes verreFloat {
     0%, 100% { transform: translateY(0px) scale(1); }
     50% { transform: translateY(-18px) scale(1.05); }
@@ -312,11 +316,11 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
 }
 
 // ── Correction scale — vue téléphone — frise ──────────────────────
-const MOB_FRISE     = Array.from({ length: 32 }, (_, i) => (i + 1) * 0.25)
-const MOB_FRISE_REV = [...MOB_FRISE].reverse()
-const mobFmt = (v) => v.toFixed(2).replace('.', ',')
+const MOB_FRISE = Array.from({ length: 32 }, (_, i) => (i + 1) * 0.25)
+const mobFmt   = (v) => v.toFixed(2).replace('.', ',')
+const MOB_PLAN_W = 72 // largeur zone Plan à gauche
 
-function CorrectionScaleMobile({ page, pageIndex, total, moduleLabel }) {
+function CorrectionScaleMobile({ page, pageIndex, total }) {
   const [step, setStep] = useState(0)
 
   useEffect(() => {
@@ -332,13 +336,14 @@ function CorrectionScaleMobile({ page, pageIndex, total, moduleLabel }) {
     return () => clearTimeout(tid)
   }, [page.id])
 
-  const mobChip = (isVis) => ({
-    opacity: isVis ? 1 : 0.07,
-    transition: 'opacity 0.25s ease',
+  const visible = MOB_FRISE.slice(0, step)
+  const mobChip = {
     padding: '7px 11px', borderRadius: 8, flexShrink: 0,
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.1)',
-  })
+    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+    animation: 'chipIn 0.2s ease',
+    fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.85)',
+    fontVariantNumeric: 'tabular-nums',
+  }
 
   return (
     <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
@@ -359,58 +364,29 @@ function CorrectionScaleMobile({ page, pageIndex, total, moduleLabel }) {
       </div>
 
       {/* Frise */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 16px 24px', gap: 12 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 16px 32px' }}>
+        <div style={{ overflow: 'hidden' }}>
+          {/* Négatifs — au-dessus de la ligne */}
+          <div style={{ display: 'flex', alignItems: 'center', paddingLeft: MOB_PLAN_W, gap: 4, flexWrap: 'nowrap', marginBottom: 10, minHeight: 38 }}>
+            {visible.map((v, i) => (
+              <div key={i} style={mobChip}>−{mobFmt(v)}</div>
+            ))}
+          </div>
 
-        {/* Négatifs */}
-        <div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
-            Correction négative ←
+          {/* Axe horizontal avec Plan à gauche */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ width: MOB_PLAN_W, flexShrink: 0, paddingRight: 14 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#00abe9', lineHeight: 1 }}>Plan</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>0,00</div>
+            </div>
+            <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1 }} />
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {MOB_FRISE_REV.map((v, j) => {
-              const isVis = j >= MOB_FRISE.length - step
-              return (
-                <div key={j} style={mobChip(isVis)}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.82)', fontVariantNumeric: 'tabular-nums' }}>
-                    −{mobFmt(v)}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
 
-        {/* Axe 0,00 Plan */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.14)' }} />
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '8px 18px', borderRadius: 16,
-            background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)',
-            flexShrink: 0,
-          }}>
-            <span style={{ fontSize: 18, fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>0,00</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1 }}>Plan</span>
-          </div>
-          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.14)' }} />
-        </div>
-
-        {/* Positifs */}
-        <div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {MOB_FRISE.map((v, i) => {
-              const isVis = i < step
-              return (
-                <div key={i} style={mobChip(isVis)}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.82)', fontVariantNumeric: 'tabular-nums' }}>
-                    +{mobFmt(v)}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: 1, marginTop: 6 }}>
-            → Correction positive
+          {/* Positifs — en dessous de la ligne */}
+          <div style={{ display: 'flex', alignItems: 'center', paddingLeft: MOB_PLAN_W, gap: 4, flexWrap: 'nowrap', marginTop: 10, minHeight: 38 }}>
+            {visible.map((v, i) => (
+              <div key={i} style={mobChip}>+{mobFmt(v)}</div>
+            ))}
           </div>
         </div>
       </div>

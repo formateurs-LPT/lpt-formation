@@ -14,6 +14,10 @@ const STYLES = `
     0%, 100% { box-shadow: 0 4px 20px rgba(0,171,233,0.35); }
     50%       { box-shadow: 0 4px 36px rgba(0,171,233,0.8); }
   }
+  @keyframes chipIn {
+    from { opacity: 0; transform: translateX(-6px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
 `
 
 // ── Avatar formateur ──────────────────────────────────────────────
@@ -218,9 +222,9 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, pageIndex, total, on
 }
 
 // ── Frise des corrections ─────────────────────────────────────────
-const FRISE_STEPS = Array.from({ length: 32 }, (_, i) => (i + 1) * 0.25) // 0.25 → 8.00
-const FRISE_REV   = [...FRISE_STEPS].reverse()                             // 8.00 → 0.25 (affichage négatifs)
+const FRISE_STEPS = Array.from({ length: 32 }, (_, i) => (i + 1) * 0.25)
 const fFmt = (v) => v.toFixed(2).replace('.', ',')
+const OPT_PLAN_W = 96 // largeur zone Plan à gauche
 
 // ── Page 2 : Frise horizontale ±8,00 ─────────────────────────────
 function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, total, onNext, isLast }) {
@@ -239,17 +243,14 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, to
     return () => clearTimeout(tid)
   }, [page.id])
 
-  // Chip uniforme
-  const chip = (label, isVis) => ({
-    opacity: isVis ? 1 : 0.07,
-    transition: 'opacity 0.25s ease',
-    padding: '9px 14px', borderRadius: 9, flexShrink: 0,
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.1)',
-    fontSize: 15, fontWeight: 500,
-    color: 'rgba(255,255,255,0.82)',
+  const visible = FRISE_STEPS.slice(0, step)
+  const optChip = {
+    padding: '8px 13px', borderRadius: 8, flexShrink: 0,
+    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+    animation: 'chipIn 0.2s ease',
+    fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.85)',
     fontVariantNumeric: 'tabular-nums',
-  })
+  }
 
   return (
     <div style={{
@@ -279,61 +280,38 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, to
       </div>
 
       {/* Zone principale */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '12px 48px 100px', gap: 14 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '12px 48px 100px' }}>
 
         {/* Titre */}
-        <div style={{ marginBottom: 8 }}>
+        <div style={{ marginBottom: 36 }}>
           <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)', borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Les bases de l&apos;optique</div>
           <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1.1, marginBottom: 4 }}>{page.titre}</h1>
           <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{page.sousTitre}</p>
         </div>
 
-        {/* Négatifs (en haut) */}
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7 }}>
-            Correction négative ←
+        {/* Frise */}
+        <div style={{ overflow: 'hidden' }}>
+          {/* Négatifs — au-dessus de la ligne */}
+          <div style={{ display: 'flex', alignItems: 'center', paddingLeft: OPT_PLAN_W, gap: 5, flexWrap: 'nowrap', marginBottom: 12, minHeight: 46 }}>
+            {visible.map((v, i) => (
+              <div key={i} style={optChip}>−{fFmt(v)}</div>
+            ))}
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-            {FRISE_REV.map((v, j) => {
-              const isVis = j >= FRISE_STEPS.length - step
-              return (
-                <div key={j} style={chip(`−${fFmt(v)}`, isVis)}>
-                  −{fFmt(v)}
-                </div>
-              )
-            })}
-          </div>
-        </div>
 
-        {/* Axe 0,00 Plan */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '4px 0' }}>
-          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.14)' }} />
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '9px 22px', borderRadius: 20,
-            background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)',
-            flexShrink: 0,
-          }}>
-            <span style={{ fontSize: 20, fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>0,00</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1 }}>Plan</span>
+          {/* Axe horizontal avec Plan à gauche */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ width: OPT_PLAN_W, flexShrink: 0, paddingRight: 18 }}>
+              <div style={{ fontSize: 17, fontWeight: 800, color: '#00abe9', lineHeight: 1 }}>Plan</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>0,00</div>
+            </div>
+            <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1 }} />
           </div>
-          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.14)' }} />
-        </div>
 
-        {/* Positifs (en bas) */}
-        <div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-            {FRISE_STEPS.map((v, i) => {
-              const isVis = i < step
-              return (
-                <div key={i} style={chip(`+${fFmt(v)}`, isVis)}>
-                  +{fFmt(v)}
-                </div>
-              )
-            })}
-          </div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: 1, marginTop: 7 }}>
-            → Correction positive
+          {/* Positifs — en dessous de la ligne */}
+          <div style={{ display: 'flex', alignItems: 'center', paddingLeft: OPT_PLAN_W, gap: 5, flexWrap: 'nowrap', marginTop: 12, minHeight: 46 }}>
+            {visible.map((v, i) => (
+              <div key={i} style={optChip}>+{fFmt(v)}</div>
+            ))}
           </div>
         </div>
       </div>
