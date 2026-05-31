@@ -217,99 +217,33 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, pageIndex, total, on
   )
 }
 
-// ── Helpers échelle ──────────────────────────────────────────────
-const NEG_VALUES = Array.from({ length: 24 }, (_, i) => -((i + 1) * 0.25))
-const POS_VALUES = Array.from({ length: 24 }, (_, i) => (i + 1) * 0.25)
-const scaleColor = (v) => {
-  const a = Math.abs(v)
-  if (a <= 1.00) return '#22c55e'
-  if (a <= 3.00) return '#f59e0b'
-  return '#ef4444'
-}
-const scaleFmt = (v) => {
-  const s = v > 0 ? '+' : ''
-  return s + Math.abs(v).toFixed(2).replace('.', ',')
-}
+// ── Helpers compteur ─────────────────────────────────────────────
+const SCALE_VALUES = Array.from({ length: 33 }, (_, i) => i * 0.25) // 0.00 → 8.00
+const cFmt = (v) => v.toFixed(2).replace('.', ',')
 
-// ── Page 2 : Échelle de corrections ──────────────────────────────
+// ── Page 2 : Compteur de corrections ─────────────────────────────
 function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, total, onNext, isLast }) {
-  const [steps, setSteps] = useState(0)
+  const [idx, setIdx] = useState(0)
+  const [done, setDone] = useState(false)
 
   useEffect(() => {
-    setSteps(0)
-    let s = 0
-    const id = setInterval(() => {
-      s++
-      setSteps(s)
-      if (s >= 24) clearInterval(id)
-    }, 110)
-    return () => clearInterval(id)
+    setIdx(0)
+    setDone(false)
+    let current = 0
+    let tid
+    const step = () => {
+      current++
+      if (current >= SCALE_VALUES.length) { setDone(true); return }
+      setIdx(current)
+      const isWhole = Number.isInteger(SCALE_VALUES[current]) && SCALE_VALUES[current] > 0
+      tid = setTimeout(step, isWhole ? 380 : 110)
+    }
+    tid = setTimeout(step, 500)
+    return () => clearTimeout(tid)
   }, [page.id])
 
-  const ROW_H = 22
-
-  const ScaleCol = ({ values, side }) => (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <div style={{
-        fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)',
-        textTransform: 'uppercase', letterSpacing: 1,
-        textAlign: 'center', marginBottom: 8,
-      }}>
-        {side === 'neg' ? '← Myopie · Astigmatisme' : 'Hypermétropie · Presbytie →'}
-      </div>
-      {values.map((v, i) => {
-        const visible = steps > i
-        const color = scaleColor(v)
-        const barPct = Math.abs(v) / 6 * 100
-        const showSep = Math.abs(v) === 1.25 || Math.abs(v) === 3.25
-        return (
-          <div key={i}>
-            {showSep && (
-              <div style={{ height: 1, background: `${color}35`, margin: '3px 0' }} />
-            )}
-            <div style={{
-              display: 'flex', alignItems: 'center', height: ROW_H, gap: 8,
-              opacity: visible ? 1 : 0,
-              transition: 'opacity 0.25s ease',
-              flexDirection: side === 'neg' ? 'row' : 'row',
-            }}>
-              {side === 'neg' ? (
-                <>
-                  <span style={{
-                    width: 52, textAlign: 'right', fontSize: 11, color,
-                    fontWeight: 600, letterSpacing: 0.3, fontVariantNumeric: 'tabular-nums',
-                  }}>{scaleFmt(v)}</span>
-                  <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
-                    <div style={{
-                      position: 'absolute', right: 0, top: 0, bottom: 0,
-                      width: visible ? `${barPct}%` : '0%',
-                      background: `linear-gradient(to left, ${color}, ${color}70)`,
-                      borderRadius: 2, transition: 'width 0.35s ease',
-                    }} />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
-                    <div style={{
-                      position: 'absolute', left: 0, top: 0, bottom: 0,
-                      width: visible ? `${barPct}%` : '0%',
-                      background: `linear-gradient(to right, ${color}70, ${color})`,
-                      borderRadius: 2, transition: 'width 0.35s ease',
-                    }} />
-                  </div>
-                  <span style={{
-                    width: 52, textAlign: 'left', fontSize: 11, color,
-                    fontWeight: 600, letterSpacing: 0.3, fontVariantNumeric: 'tabular-nums',
-                  }}>{scaleFmt(v)}</span>
-                </>
-              )}
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
+  const current = SCALE_VALUES[idx]
+  const progress = idx / (SCALE_VALUES.length - 1)
 
   return (
     <div style={{
@@ -325,108 +259,71 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, to
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
-            Module · Les bases de l&apos;optique
-          </span>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Les bases de l&apos;optique</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
           <div style={{ display: 'flex', gap: 5 }}>
             {Array(total).fill(0).map((_, i) => (
-              <div key={i} style={{
-                height: 5, borderRadius: 3, transition: 'all .3s',
-                width: i === pageIndex ? 22 : 5,
-                background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)',
-              }} />
+              <div key={i} style={{ height: 5, borderRadius: 3, transition: 'all .3s', width: i === pageIndex ? 22 : 5, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)' }} />
             ))}
           </div>
-          <button onClick={onBack} style={{
-            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-            color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10,
-            fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+          <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
           >✕ Quitter</button>
         </div>
       </div>
 
-      {/* Zone principale */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '12px 48px 100px', gap: 16 }}>
-        {/* Titre */}
-        <div>
-          <div style={{
-            display: 'inline-block',
-            background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)',
-            borderRadius: 20, padding: '4px 14px',
-            fontSize: 11, fontWeight: 700, color: '#00abe9',
-            textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10,
-          }}>Les bases de l&apos;optique</div>
-          <h1 style={{ fontSize: 30, fontWeight: 800, color: '#fff', lineHeight: 1.1, marginBottom: 4 }}>
-            {page.titre}
-          </h1>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 400 }}>
-            {page.sousTitre}
-          </p>
+      {/* Zone principale — compteur centré */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 48px 80px', gap: 0 }}>
+
+        {/* Sous-titre */}
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', fontWeight: 500, marginBottom: 32, textAlign: 'center', letterSpacing: 0.5 }}>
+          {page.titre}
         </div>
 
-        {/* Rangée 0,00 Plan */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20,
-          height: 48, borderRadius: 14,
-          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)',
-        }}>
-          <span style={{ fontSize: 22, fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>0,00</span>
-          <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.2)' }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 1.5 }}>Plan</span>
+        {/* Grand chiffre */}
+        <div style={{ fontSize: 148, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -6, fontVariantNumeric: 'tabular-nums', transition: 'opacity 0.08s ease' }}>
+          {cFmt(current)}
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.3)', marginTop: 12, textTransform: 'uppercase', letterSpacing: 3 }}>
+          dioptrie{current !== 1 ? 's' : ''}
         </div>
 
-        {/* Deux colonnes */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr', gap: '0 20px', flex: 1 }}>
-          <ScaleCol values={NEG_VALUES} side="neg" />
-          <div style={{ background: 'rgba(255,255,255,0.07)' }} />
-          <ScaleCol values={POS_VALUES} side="pos" />
+        {/* Barre de progression */}
+        <div style={{ width: 480, marginTop: 52 }}>
+          <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress * 100}%`, background: '#00abe9', borderRadius: 2, transition: 'width 0.1s ease' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>0,00</span>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>8,00</span>
+          </div>
         </div>
 
-        {/* Légende */}
-        <div style={{
-          display: 'flex', gap: 24, justifyContent: 'center',
-          padding: '10px 20px', background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10,
-        }}>
-          <span style={{ fontSize: 11, color: '#22c55e', fontWeight: 600 }}>● Légère (0,25 → 1,00)</span>
-          <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>● Modérée (1,25 → 3,00)</span>
-          <span style={{ fontSize: 11, color: '#ef4444', fontWeight: 600 }}>● Forte (3,25 et +)</span>
+        {/* Message final après animation */}
+        <div style={{ marginTop: 40, textAlign: 'center', opacity: done ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: 'none' }}>
+          <div style={{ display: 'flex', gap: 20, justifyContent: 'center' }}>
+            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 20px' }}>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>− Myopie · Astigmatisme</span>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 20px' }}>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>+ Hypermétropie · Presbytie</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
-        padding: '16px 360px 24px 48px',
-        background: 'linear-gradient(0deg, rgba(3,17,42,0.95) 0%, transparent 100%)',
-        zIndex: 20,
-      }}>
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '16px 360px 24px 48px', background: 'linear-gradient(0deg, rgba(3,17,42,0.95) 0%, transparent 100%)', zIndex: 20 }}>
         {isLast ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>
-              Suite du module en construction…
-            </span>
-            <button onClick={onBack} style={{
-              background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)',
-              color: '#ff6b6b', padding: '12px 24px', borderRadius: 12,
-              fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            }}>Terminer →</button>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>Suite du module en construction…</span>
+            <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)', color: '#ff6b6b', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Terminer →</button>
           </div>
         ) : (
-          <button onClick={onNext} style={{
-            background: 'linear-gradient(135deg, #0066a0, #00abe9)',
-            border: 'none', color: '#fff',
-            padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
-            cursor: 'pointer', boxShadow: '0 6px 24px rgba(0,171,233,0.45)',
-            fontFamily: 'inherit',
-          }}>Suivant →</button>
+          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #0066a0, #00abe9)', border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 24px rgba(0,171,233,0.45)', fontFamily: 'inherit' }}>Suivant →</button>
         )}
       </div>
 

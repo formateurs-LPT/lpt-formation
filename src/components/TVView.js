@@ -171,65 +171,30 @@ function TVEmojiVisual({ emoji, color }) {
   )
 }
 
-// ── Helpers échelle (TV) ──────────────────────────────────────────
-const TV_NEG = Array.from({ length: 24 }, (_, i) => -((i + 1) * 0.25))
-const TV_POS = Array.from({ length: 24 }, (_, i) => (i + 1) * 0.25)
-const tvScaleColor = (v) => {
-  const a = Math.abs(v)
-  if (a <= 1.00) return '#22c55e'
-  if (a <= 3.00) return '#f59e0b'
-  return '#ef4444'
-}
-const tvFmt = (v) => (v > 0 ? '+' : '') + Math.abs(v).toFixed(2).replace('.', ',')
+// ── TV Correction Scale (type = correction-scale) — compteur ──────
+const TV_SCALE = Array.from({ length: 33 }, (_, i) => i * 0.25)
+const tvCFmt  = (v) => v.toFixed(2).replace('.', ',')
 
-// ── TV Correction Scale (type = correction-scale) ─────────────────
 function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
-  const [steps, setSteps] = useState(0)
+  const [idx, setIdx] = useState(0)
+  const [done, setDone] = useState(false)
 
   useEffect(() => {
-    setSteps(0)
-    let s = 0
-    const id = setInterval(() => { s++; setSteps(s); if (s >= 24) clearInterval(id) }, 110)
-    return () => clearInterval(id)
+    setIdx(0); setDone(false)
+    let current = 0; let tid
+    const step = () => {
+      current++
+      if (current >= TV_SCALE.length) { setDone(true); return }
+      setIdx(current)
+      const isWhole = Number.isInteger(TV_SCALE[current]) && TV_SCALE[current] > 0
+      tid = setTimeout(step, isWhole ? 380 : 110)
+    }
+    tid = setTimeout(step, 500)
+    return () => clearTimeout(tid)
   }, [page.id])
 
-  const ROW_H = 28
-
-  const Col = ({ values, side }) => (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 1, textAlign: 'center', marginBottom: 10 }}>
-        {side === 'neg' ? '← Myopie · Astigmatisme' : 'Hypermétropie · Presbytie →'}
-      </div>
-      {values.map((v, i) => {
-        const visible = steps > i
-        const color = tvScaleColor(v)
-        const barPct = Math.abs(v) / 6 * 100
-        const showSep = Math.abs(v) === 1.25 || Math.abs(v) === 3.25
-        return (
-          <div key={i}>
-            {showSep && <div style={{ height: 1, background: `${color}35`, margin: '4px 0' }} />}
-            <div style={{ display: 'flex', alignItems: 'center', height: ROW_H, gap: 10, opacity: visible ? 1 : 0, transition: 'opacity 0.25s ease' }}>
-              {side === 'neg' ? (
-                <>
-                  <span style={{ width: 60, textAlign: 'right', fontSize: 13, color, fontWeight: 600, letterSpacing: 0.3 }}>{tvFmt(v)}</span>
-                  <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: visible ? `${barPct}%` : '0%', background: `linear-gradient(to left, ${color}, ${color}70)`, borderRadius: 2, transition: 'width 0.35s ease' }} />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: visible ? `${barPct}%` : '0%', background: `linear-gradient(to right, ${color}70, ${color})`, borderRadius: 2, transition: 'width 0.35s ease' }} />
-                  </div>
-                  <span style={{ width: 60, textAlign: 'left', fontSize: 13, color, fontWeight: 600, letterSpacing: 0.3 }}>{tvFmt(v)}</span>
-                </>
-              )}
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
+  const current = TV_SCALE[idx]
+  const progress = idx / (TV_SCALE.length - 1)
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
@@ -248,25 +213,30 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
           </div>
         </div>
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '8px 64px 32px', gap: 14 }}>
-        <div>
-          <h1 style={{ fontSize: 38, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</h1>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)' }}>{page.sousTitre}</p>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 64px 48px', gap: 0 }}>
+        <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.35)', fontWeight: 500, marginBottom: 36, letterSpacing: 0.5 }}>{page.titre}</div>
+        <div style={{ fontSize: 180, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -8, fontVariantNumeric: 'tabular-nums' }}>
+          {tvCFmt(current)}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, height: 52, borderRadius: 14, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)' }}>
-          <span style={{ fontSize: 26, fontWeight: 900, color: '#fff' }}>0,00</span>
-          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.2)' }} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 1.5 }}>Plan</span>
+        <div style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.3)', marginTop: 14, textTransform: 'uppercase', letterSpacing: 4 }}>
+          dioptries
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr', gap: '0 24px', flex: 1 }}>
-          <Col values={TV_NEG} side="neg" />
-          <div style={{ background: 'rgba(255,255,255,0.07)' }} />
-          <Col values={TV_POS} side="pos" />
+        <div style={{ width: 560, marginTop: 56 }}>
+          <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress * 100}%`, background: '#00abe9', borderRadius: 3, transition: 'width 0.1s ease' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
+            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.25)' }}>0,00</span>
+            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.25)' }}>8,00</span>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 28, justifyContent: 'center', padding: '10px 20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10 }}>
-          <span style={{ fontSize: 13, color: '#22c55e', fontWeight: 600 }}>● Légère (0,25 → 1,00)</span>
-          <span style={{ fontSize: 13, color: '#f59e0b', fontWeight: 600 }}>● Modérée (1,25 → 3,00)</span>
-          <span style={{ fontSize: 13, color: '#ef4444', fontWeight: 600 }}>● Forte (3,25 et +)</span>
+        <div style={{ marginTop: 44, display: 'flex', gap: 24, opacity: done ? 1 : 0, transition: 'opacity 0.6s ease' }}>
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '12px 24px' }}>
+            <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)' }}>− Myopie · Astigmatisme</span>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '12px 24px' }}>
+            <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)' }}>+ Hypermétropie · Presbytie</span>
+          </div>
         </div>
       </div>
     </div>
