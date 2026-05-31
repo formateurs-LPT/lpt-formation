@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { MODULE_DATA } from '@/lib/modulesData'
+import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE } from '@/lib/modulesData'
 import { sbInsert, sbSelect, SESSION_CODE } from '@/lib/supabase'
 import { generatePin } from '@/lib/pin'
 
@@ -404,6 +404,130 @@ function CorrectionScaleMobile({ page, pageIndex, total }) {
   )
 }
 
+// ── Ordonnance — vue téléphone ────────────────────────────────────
+function OrdonnanceMobile({ page, pageIndex, total }) {
+  const [step, setStep] = useState(0)
+
+  useEffect(() => {
+    setStep(0)
+    const T = [400, 1000, 1600, 2800, 3200, 3500, 3800, 4200, 4500, 4800, 5300]
+    const timers = T.map((t, i) => setTimeout(() => setStep(s => Math.max(s, i + 1)), t))
+    return () => timers.forEach(clearTimeout)
+  }, [page.id])
+
+  const show = (n) => step >= n
+  const cellVis = (row, col) => show(row === 0 ? 5 + col : 8 + col)
+
+  return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <Image src="/assets/logo-lpt.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIndex ? 18 : 4, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .4s' }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Titre */}
+      <div style={{ padding: '14px 20px 0' }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 3 }}>{page.sousTitre}</div>
+      </div>
+
+      {/* Contenu */}
+      <div style={{ flex: 1, padding: '16px 16px 32px', display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto' }}>
+
+        {/* Phase 1 — 3 cartes empilées */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {ORD_COLS.map((col, i) => (
+            <div key={col.key} style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              background: `${col.color}0d`, border: `1px solid ${col.color}25`,
+              borderLeft: `4px solid ${col.color}`, borderRadius: 14,
+              padding: '14px 16px',
+              opacity: show(i + 1) ? 1 : 0,
+              transform: show(i + 1) ? 'translateY(0)' : 'translateY(12px)',
+              transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+            }}>
+              <div style={{ minWidth: 64, flexShrink: 0, fontSize: 10, fontWeight: 800, color: col.color, textTransform: 'uppercase', letterSpacing: 1 }}>
+                {col.label}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{col.desc}</div>
+                {col.sub && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{col.sub}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Phase 2 — Table */}
+        <div style={{
+          opacity: show(4) ? 1 : 0,
+          transform: show(4) ? 'translateY(0)' : 'translateY(12px)',
+          transition: 'all 0.5s ease',
+          marginTop: 8,
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
+            Exemple d&apos;ordonnance
+          </div>
+
+          <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+            {/* En-têtes */}
+            <div style={{ display: 'grid', gridTemplateColumns: '44px repeat(3, 1fr)', background: 'rgba(255,255,255,0.04)' }}>
+              <div />
+              {ORD_COLS.map(col => (
+                <div key={col.key} style={{ padding: '8px 10px', fontSize: 10, fontWeight: 800, color: col.color, textTransform: 'uppercase', letterSpacing: 0.5, borderLeft: '1px solid rgba(255,255,255,0.07)' }}>
+                  {col.label}
+                </div>
+              ))}
+            </div>
+
+            {/* OD */}
+            <div style={{ display: 'grid', gridTemplateColumns: '44px repeat(3, 1fr)', borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+              <div style={{ padding: '12px 10px', fontSize: 12, fontWeight: 800, color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center' }}>OD</div>
+              {ORD_COLS.map((col, ci) => (
+                <div key={col.key} style={{
+                  padding: '12px 10px', borderLeft: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center',
+                  opacity: cellVis(0, ci) ? 1 : 0, transform: cellVis(0, ci) ? 'translateX(0)' : 'translateX(-8px)', transition: 'all 0.35s ease',
+                }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: col.color, fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.od[col.key]}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* OG */}
+            <div style={{ display: 'grid', gridTemplateColumns: '44px repeat(3, 1fr)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ padding: '12px 10px', fontSize: 12, fontWeight: 800, color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center' }}>OG</div>
+              {ORD_COLS.map((col, ci) => (
+                <div key={col.key} style={{
+                  padding: '12px 10px', borderLeft: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center',
+                  opacity: cellVis(1, ci) ? 1 : 0, transform: cellVis(1, ci) ? 'translateX(0)' : 'translateX(-8px)', transition: 'all 0.35s ease',
+                }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: col.color, fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.og[col.key]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Addition */}
+          <div style={{
+            marginTop: 10, display: 'flex', alignItems: 'center', gap: 12,
+            padding: '12px 16px',
+            background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 12,
+            opacity: show(11) ? 1 : 0, transform: show(11) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s ease',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 1.5 }}>Addition</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#4ade80', fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.add}</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginLeft: 4 }}>Presbytie · progressif</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Troubles list — vue téléphone ────────────────────────────────
 function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
   const [visibleCount, setVisibleCount] = useState(0)
@@ -487,7 +611,8 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel }) {
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
   if (page.type === 'troubles-list')    return <TroublesListMobile    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'correction-scale') return <CorrectionScaleMobile page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'correction-scale') return <CorrectionScaleMobile  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'ordonnance')        return <OrdonnanceMobile        page={page} pageIndex={pageIndex} total={total} />
 
   return (
     <div style={{

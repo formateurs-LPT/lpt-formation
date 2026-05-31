@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { MODULE_DATA } from '@/lib/modulesData'
+import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE } from '@/lib/modulesData'
 import { sbSelect, SESSION_CODE } from '@/lib/supabase'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -288,6 +288,142 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
   )
 }
 
+// ── TV Ordonnance (type = ordonnance) ────────────────────────────
+function TVOrdonnance({ page, pageIndex, total, moduleLabel }) {
+  const [step, setStep] = useState(0)
+
+  useEffect(() => {
+    setStep(0)
+    const T = [400, 1000, 1600, 2800, 3200, 3500, 3800, 4200, 4500, 4800, 5300]
+    const timers = T.map((t, i) => setTimeout(() => setStep(s => Math.max(s, i + 1)), t))
+    return () => timers.forEach(clearTimeout)
+  }, [page.id])
+
+  const show = (n) => step >= n
+  const cellVis = (row, col) => show(row === 0 ? 5 + col : 8 + col)
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
+      {/* Topbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {Array(total).fill(0).map((_, i) => (
+              <div key={i} style={{ height: 5, borderRadius: 3, transition: 'all .3s', width: i === pageIndex ? 22 : 5, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)' }} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Zone principale */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '12px 56px 48px', gap: 32 }}>
+
+        {/* Titre */}
+        <div>
+          <h2 style={{ fontSize: 36, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{page.titre}</h2>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.35)' }}>{page.sousTitre}</p>
+        </div>
+
+        {/* Phase 1 — 3 cartes */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+          {ORD_COLS.map((col, i) => (
+            <div key={col.key} style={{
+              background: `${col.color}0d`, border: `1px solid ${col.color}28`,
+              borderTop: `4px solid ${col.color}`, borderRadius: 18,
+              padding: '28px 28px 22px',
+              opacity: show(i + 1) ? 1 : 0,
+              transform: show(i + 1) ? 'translateY(0)' : 'translateY(20px)',
+              transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+            }}>
+              <div style={{
+                display: 'inline-block',
+                background: `${col.color}1a`, border: `1px solid ${col.color}40`,
+                borderRadius: 20, padding: '4px 14px',
+                fontSize: 12, fontWeight: 800, color: col.color,
+                textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12,
+              }}>{col.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#fff', lineHeight: 1.3, marginBottom: col.sub ? 10 : 0 }}>
+                {col.desc}
+              </div>
+              {col.sub && (
+                <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>{col.sub}</div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Phase 2 — Table ordonnance */}
+        <div style={{
+          opacity: show(4) ? 1 : 0,
+          transform: show(4) ? 'translateY(0)' : 'translateY(16px)',
+          transition: 'all 0.5s ease',
+          flex: 1,
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>
+            Exemple d&apos;ordonnance
+          </div>
+
+          <div style={{ borderRadius: 20, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+            {/* En-têtes */}
+            <div style={{ display: 'grid', gridTemplateColumns: '100px repeat(3, 1fr)', background: 'rgba(255,255,255,0.04)' }}>
+              <div />
+              {ORD_COLS.map(col => (
+                <div key={col.key} style={{ padding: '14px 28px', fontSize: 14, fontWeight: 800, color: col.color, textTransform: 'uppercase', letterSpacing: 1, borderLeft: '1px solid rgba(255,255,255,0.07)' }}>
+                  {col.label}
+                </div>
+              ))}
+            </div>
+
+            {/* Ligne OD */}
+            <div style={{ display: 'grid', gridTemplateColumns: '100px repeat(3, 1fr)', borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+              <div style={{ padding: '20px 28px', fontSize: 16, fontWeight: 800, color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center' }}>OD</div>
+              {ORD_COLS.map((col, ci) => (
+                <div key={col.key} style={{
+                  padding: '20px 28px', borderLeft: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center',
+                  opacity: cellVis(0, ci) ? 1 : 0, transform: cellVis(0, ci) ? 'translateX(0)' : 'translateX(-12px)', transition: 'all 0.35s ease',
+                }}>
+                  <span style={{ fontSize: 28, fontWeight: 700, color: col.color, fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.od[col.key]}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Ligne OG */}
+            <div style={{ display: 'grid', gridTemplateColumns: '100px repeat(3, 1fr)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ padding: '20px 28px', fontSize: 16, fontWeight: 800, color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center' }}>OG</div>
+              {ORD_COLS.map((col, ci) => (
+                <div key={col.key} style={{
+                  padding: '20px 28px', borderLeft: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center',
+                  opacity: cellVis(1, ci) ? 1 : 0, transform: cellVis(1, ci) ? 'translateX(0)' : 'translateX(-12px)', transition: 'all 0.35s ease',
+                }}>
+                  <span style={{ fontSize: 28, fontWeight: 700, color: col.color, fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.og[col.key]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Addition */}
+          <div style={{
+            marginTop: 18, display: 'flex', alignItems: 'center', gap: 24,
+            padding: '18px 28px',
+            background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 18,
+            opacity: show(11) ? 1 : 0, transform: show(11) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s ease',
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 1.5 }}>Addition</div>
+            <div style={{ fontSize: 32, fontWeight: 800, color: '#4ade80', fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.add}</div>
+            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.35)', marginLeft: 4 }}>Correction presbytie · verres progressifs uniquement</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── TV Troubles List (type = troubles-list) ───────────────────────
 function TVTroublesList({ page, pageIndex, total, moduleLabel }) {
   const [visibleCount, setVisibleCount] = useState(0)
@@ -390,8 +526,9 @@ function TVContentPage({ page, pageIndex, total, moduleLabel }) {
     return () => clearTimeout(t)
   }, [page.id])
 
-  if (page.type === 'troubles-list')   return <TVTroublesList    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'correction-scale') return <TVCorrectionScale page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'troubles-list')    return <TVTroublesList    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'correction-scale') return <TVCorrectionScale  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'ordonnance')        return <TVOrdonnance        page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
 
   return (
     <div style={{

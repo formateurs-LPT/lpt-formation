@@ -125,9 +125,48 @@ export const OPTIQUE_PAGES = [
     color: '#00abe9',
     avatarScript: "Les corrections sont mesurées en dioptries. On part de 0,00 — le plan, aucune correction nécessaire. Elles évoluent de 0,25 en 0,25 dans les deux sens : négatif pour la myopie, positif pour l'hypermétropie. Plus le chiffre est élevé, plus la correction est forte.",
   },
+  {
+    id: 'ordonnance',
+    type: 'ordonnance',
+    titre: 'Lire une ordonnance',
+    sousTitre: 'Sphère · Cylindre · Axe — décrypter la prescription',
+    icon: '📋',
+    color: '#38bdf8',
+    avatarScript: "Sur une ordonnance optique, vous trouverez toujours trois colonnes : la Sphère, la correction principale — négative pour les myopes, positive pour les hypermétropes. Le Cylindre, qui corrige l'astigmatisme. L'Axe, qui oriente ce cylindre. Et l'Addition, uniquement présente sur les progressifs.",
+  },
 ]
 
 export const OPTIQUE_QUIZ = []
+
+// ── Données partagées page 3 ──────────────────────────────────────
+export const ORD_COLS = [
+  {
+    key: 'sphere',
+    label: 'Sphère',
+    color: '#38bdf8',
+    desc: 'Correction de base',
+    sub: 'Négatif = myopie  ·  Positif = hypermétropie',
+  },
+  {
+    key: 'cylindre',
+    label: 'Cylindre',
+    color: '#fb923c',
+    desc: "Correction de l'astigmatisme",
+    sub: null,
+  },
+  {
+    key: 'axe',
+    label: 'Axe',
+    color: '#c084fc',
+    desc: "Orientation du cylindre",
+    sub: 'De 0° à 180°',
+  },
+]
+export const ORD_EXAMPLE = {
+  od: { sphere: '−0,75', cylindre: '−0,25', axe: '180°' },
+  og: { sphere: '−1,00', cylindre: '−0,50', axe: '70°'  },
+  add: '+2,00',
+}
 
 export const MODULE_DATA = {
   'types-verres': { pages: TYPES_VERRES_PAGES, quiz: TYPES_VERRES_QUIZ, label: 'Types de verres' },
