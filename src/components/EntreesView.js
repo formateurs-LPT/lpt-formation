@@ -174,7 +174,7 @@ export default function EntreesView({ onBack, onToast, pName }) {
     const text = pasteText.trim()
     if (!text) { onToast('Collez d\'abord le contenu du tableau'); return }
     setLoading(true)
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         const results = parseRHTable(text)
         if (results.length === 0) {
