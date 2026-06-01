@@ -149,7 +149,7 @@ function GroupSection({ title, collabs }) {
   )
 }
 
-export default function EntreesView({ onBack, onToast }) {
+export default function EntreesView({ onBack, onToast, pName }) {
   const [pasteText, setPasteText] = useState('')
   const [entrees, setEntrees] = useState([])
   const [loading, setLoading] = useState(false)
@@ -232,7 +232,7 @@ export default function EntreesView({ onBack, onToast }) {
       // Ajouter une ligne dans session_history
       await sbInsert('session_history', {
         session_date: new Date().toISOString(),
-        trainer_name: 'kevin',
+        trainer_name: pName || localStorage.getItem('trainer_name') || 'Formateur',
         participant_count: entrees.length,
         notes: `Onboarding semaine du ${weekDate} — ${entrees.length} collaborateurs`,
       })

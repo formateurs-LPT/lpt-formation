@@ -350,7 +350,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
   if (activeView === 'entrees') {
     return (
       <div id="dashboard">
-        <EntreesView onBack={() => { setActiveView('home'); loadTileStats() }} onToast={onToast} />
+        <EntreesView onBack={() => { setActiveView('home'); loadTileStats() }} onToast={onToast} pName={pName} />
       </div>
     )
   }
