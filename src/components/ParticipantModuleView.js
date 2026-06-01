@@ -1024,10 +1024,10 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
       </div>
 
       {/* ── Corps scrollable ── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 14px 0' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 0' }}>
 
         {/* Sélecteur de cas */}
-        <div style={{ marginBottom: 14 }}>
+        <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 8 }}>Quel cas traitez-vous ?</div>
           <div style={{ display: 'flex', gap: 8 }}>
             {SAISIE_EXERCISES.map((e, i) => (
@@ -1043,60 +1043,67 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
           </div>
         </div>
 
-        <div style={{ fontSize: 13, fontWeight: 800, color: APP_DARK, marginBottom: 10 }}>Corrections*</div>
+        {/* Label Corrections */}
+        <div style={{ fontSize: 13, fontWeight: 800, color: APP_DARK, marginBottom: 12 }}>Corrections*</div>
 
-        {/* Carte OD + OG côte à côte */}
-        <div style={{ background: '#fff', borderRadius: 14, padding: '14px 12px 10px', marginBottom: 12, border: '1px solid #ddd9ec' }}>
+        {/* Tableau OD / OG — même schéma que l'app LPT */}
+        <div>
 
           {/* En-têtes colonnes */}
-          <div style={{ display: 'grid', gridTemplateColumns: '38px 1fr 1fr', gap: 6, marginBottom: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8 }}>
             <div />
-            {['OD', 'OG'].map(eye => (
-              <div key={eye} style={{ textAlign: 'center', fontSize: 12, fontWeight: 800, color: APP_DARK, paddingBottom: 6, borderBottom: `2px solid ${APP_GOLD}` }}>
-                👁 {eye}
-              </div>
-            ))}
+            <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 600, color: '#666', fontStyle: 'italic' }}>Œil droit</div>
+            <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 600, color: '#666', fontStyle: 'italic' }}>Œil gauche</div>
           </div>
 
           {/* Sphère */}
-          <div style={{ display: 'grid', gridTemplateColumns: '38px 1fr 1fr', gap: 6, marginBottom: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>Sphère</div>
-            <WheelPicker values={SPH_VALS} selectedIdx={idx.od.sph} onChange={v => setEye('od', 'sph', v)} showResult={showResult} isCorrect={results?.od?.sph} correctLabel={corrLabel.od.sph} />
-            <WheelPicker values={SPH_VALS} selectedIdx={idx.og.sph} onChange={v => setEye('og', 'sph', v)} showResult={showResult} isCorrect={results?.og?.sph} correctLabel={corrLabel.og.sph} />
+          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>Sphère</div>
+            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
+              <WheelPicker values={SPH_VALS} selectedIdx={idx.od.sph} onChange={v => setEye('od', 'sph', v)} showResult={showResult} isCorrect={results?.od?.sph} correctLabel={corrLabel.od.sph} />
+            </div>
+            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
+              <WheelPicker values={SPH_VALS} selectedIdx={idx.og.sph} onChange={v => setEye('og', 'sph', v)} showResult={showResult} isCorrect={results?.og?.sph} correctLabel={corrLabel.og.sph} />
+            </div>
           </div>
 
           {/* Cylindre */}
-          <div style={{ display: 'grid', gridTemplateColumns: '38px 1fr 1fr', gap: 6, marginBottom: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>Cylindre</div>
-            <WheelPicker values={CYL_VALS} selectedIdx={idx.od.cyl} onChange={v => setEye('od', 'cyl', v)} showResult={showResult} isCorrect={results?.od?.cyl} correctLabel={corrLabel.od.cyl} />
-            <WheelPicker values={CYL_VALS} selectedIdx={idx.og.cyl} onChange={v => setEye('og', 'cyl', v)} showResult={showResult} isCorrect={results?.og?.cyl} correctLabel={corrLabel.og.cyl} />
+          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>Cylindre</div>
+            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
+              <WheelPicker values={CYL_VALS} selectedIdx={idx.od.cyl} onChange={v => setEye('od', 'cyl', v)} showResult={showResult} isCorrect={results?.od?.cyl} correctLabel={corrLabel.od.cyl} />
+            </div>
+            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
+              <WheelPicker values={CYL_VALS} selectedIdx={idx.og.cyl} onChange={v => setEye('og', 'cyl', v)} showResult={showResult} isCorrect={results?.og?.cyl} correctLabel={corrLabel.og.cyl} />
+            </div>
           </div>
 
           {/* Axe */}
-          <div style={{ display: 'grid', gridTemplateColumns: '38px 1fr 1fr', gap: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>Axe</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: '#555', paddingTop: 36 }}>Axe</div>
             <div>
-              <WheelPicker values={AXE_VALS} selectedIdx={idx.od.axe} onChange={v => setEye('od', 'axe', v)} showResult={showResult} isCorrect={results?.od?.axe} correctLabel={corrLabel.od.axe} />
-              <button onPointerDown={() => setNumpadEye('od')} style={{ width: '100%', marginTop: 3, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 10, color: '#bbb', fontFamily: 'inherit', padding: '2px 0', WebkitTapHighlightColor: 'transparent' }}>⌨️ taper</button>
+              <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
+                <WheelPicker values={AXE_VALS} selectedIdx={idx.od.axe} onChange={v => setEye('od', 'axe', v)} showResult={showResult} isCorrect={results?.od?.axe} correctLabel={corrLabel.od.axe} />
+              </div>
+              <button onPointerDown={() => setNumpadEye('od')} style={{ width: '100%', marginTop: 4, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 10, color: '#bbb', fontFamily: 'inherit', padding: '2px 0', WebkitTapHighlightColor: 'transparent' }}>⌨️ taper</button>
             </div>
             <div>
-              <WheelPicker values={AXE_VALS} selectedIdx={idx.og.axe} onChange={v => setEye('og', 'axe', v)} showResult={showResult} isCorrect={results?.og?.axe} correctLabel={corrLabel.og.axe} />
-              <button onPointerDown={() => setNumpadEye('og')} style={{ width: '100%', marginTop: 3, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 10, color: '#bbb', fontFamily: 'inherit', padding: '2px 0', WebkitTapHighlightColor: 'transparent' }}>⌨️ taper</button>
+              <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
+                <WheelPicker values={AXE_VALS} selectedIdx={idx.og.axe} onChange={v => setEye('og', 'axe', v)} showResult={showResult} isCorrect={results?.og?.axe} correctLabel={corrLabel.og.axe} />
+              </div>
+              <button onPointerDown={() => setNumpadEye('og')} style={{ width: '100%', marginTop: 4, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 10, color: '#bbb', fontFamily: 'inherit', padding: '2px 0', WebkitTapHighlightColor: 'transparent' }}>⌨️ taper</button>
             </div>
           </div>
-        </div>
 
-        {/* Addition */}
-        <div style={{ background: '#fff', borderRadius: 14, padding: '14px 12px 10px', marginBottom: 12, border: '1px solid #ddd9ec' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#555', marginBottom: 10 }}>
-            Add{!hasAdd && <span style={{ fontSize: 10, color: '#aaa', fontWeight: 400, marginLeft: 8 }}>— non applicable pour ce cas</span>}
-          </div>
-          <div style={{ maxWidth: 120, margin: '0 auto' }}>
-            <WheelPicker
-              values={ADD_VALS} selectedIdx={idx.add}
-              onChange={setAdd}
-              showResult={showResult && hasAdd} isCorrect={results?.add} correctLabel={corrLabel.add}
-            />
+          {/* Add */}
+          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 12, alignItems: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: hasAdd ? '#555' : '#aaa' }}>Add</div>
+            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${hasAdd ? APP_GOLD + '88' : '#ddd9ec'}`, overflow: 'hidden', opacity: hasAdd ? 1 : 0.4 }}>
+              <WheelPicker values={ADD_VALS} selectedIdx={idx.add} onChange={hasAdd ? setAdd : () => {}} showResult={showResult && hasAdd} isCorrect={results?.add} correctLabel={corrLabel.add} />
+            </div>
+            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${hasAdd ? APP_GOLD + '88' : '#ddd9ec'}`, overflow: 'hidden', opacity: hasAdd ? 1 : 0.4 }}>
+              <WheelPicker values={ADD_VALS} selectedIdx={idx.add} onChange={hasAdd ? setAdd : () => {}} showResult={showResult && hasAdd} isCorrect={results?.add} correctLabel={corrLabel.add} />
+            </div>
           </div>
         </div>
 
