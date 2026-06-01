@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { generatePin } from '@/lib/pin'
-import { sbInsert, sbUpsert } from '@/lib/supabase'
+import { sbInsert, sbUpsert, getSharedState, setSharedState } from '@/lib/supabase'
 
 const PARIS_MAGASINS = ['chatelet','st lazare','saint lazare','montparnasse','italie','commerce','bastille','cergy','creteil','créteil','belle epine','belle épine','paris','st ouen','saint ouen','ouen','beauchamp','odysseum','supply']
 const BELGIQUE_MAGASINS = ['namur','liege','liège','fripier','ixelles','charleroi','bruxelles']
@@ -156,8 +156,18 @@ export default function EntreesView({ onBack, onToast }) {
   const [showResults, setShowResults] = useState(false)
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('entrees_data') || '[]')
-    if (saved.length > 0) { setEntrees(saved); setShowResults(true) }
+    const load = async () => {
+      try {
+        const state = await getSharedState()
+        const saved = state.entrees_data || []
+        if (saved.length > 0) { setEntrees(saved); setShowResults(true) }
+      } catch {
+        // fallback localStorage
+        const saved = JSON.parse(localStorage.getItem('entrees_data') || '[]')
+        if (saved.length > 0) { setEntrees(saved); setShowResults(true) }
+      }
+    }
+    load()
   }, [])
 
   const handleParse = () => {
@@ -173,7 +183,8 @@ export default function EntreesView({ onBack, onToast }) {
           return
         }
         setEntrees(results)
-        localStorage.setItem('entrees_data', JSON.stringify(results))
+        localStorage.setItem('entrees_data', JSON.stringify(results)) // cache local
+        await setSharedState({ entrees_data: results })
         setShowResults(true)
         onToast(`${results.length} collaborateurs importés ✓`)
       } catch (e) {
@@ -185,12 +196,13 @@ export default function EntreesView({ onBack, onToast }) {
     }, 300)
   }
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (!confirm('Vider la liste des entrées ?')) return
     setEntrees([])
     setShowResults(false)
     setPasteText('')
     localStorage.removeItem('entrees_data')
+    await setSharedState({ entrees_data: [], ob_data: {}, ob_date: null, ob_day: '1' })
     onToast('Liste vidée')
   }
 
@@ -225,11 +237,12 @@ export default function EntreesView({ onBack, onToast }) {
         notes: `Onboarding semaine du ${weekDate} — ${entrees.length} collaborateurs`,
       })
 
-      // Vider le localStorage
+      // Vider localStorage + Supabase shared state
       localStorage.removeItem('entrees_data')
       localStorage.removeItem('ob_data')
       localStorage.removeItem('ob_date')
       localStorage.removeItem('ob_day')
+      await setSharedState({ entrees_data: [], ob_data: {}, ob_date: null, ob_day: '1' })
       setEntrees([])
       setShowResults(false)
       onToast(`✓ Semaine clôturée — ${entrees.length} collaborateurs archivés`)

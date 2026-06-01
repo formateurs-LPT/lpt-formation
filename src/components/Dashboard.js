@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbSelect, sbInsert, sbDelete, SESSION_CODE } from '@/lib/supabase'
+import { sbSelect, sbInsert, sbDelete, SESSION_CODE, getSharedState } from '@/lib/supabase'
 import WeatherWidget from './WeatherWidget'
 import ShortcutsWidget from './ShortcutsWidget'
 import NotesWidget from './NotesWidget'
@@ -305,18 +305,24 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
 
+  const [obDay, setObDay] = useState('1')
+
   useEffect(() => {
     loadTileStats()
+    const interval = setInterval(loadTileStats, 15000)
+    return () => clearInterval(interval)
   }, [])
 
   const loadTileStats = async () => {
     try {
-      const entrees = JSON.parse(localStorage.getItem('entrees_data') || '[]')
-      setEntreeCount(entrees.length || '—')
-      const [history, answers] = await Promise.all([
+      const [state, history, answers] = await Promise.all([
+        getSharedState(),
         sbSelect('session_history'),
         sbSelect('quiz_answers'),
       ])
+      const entrees = state.entrees_data || JSON.parse(localStorage.getItem('entrees_data') || '[]')
+      setEntreeCount(entrees.length || '—')
+      setObDay(state.ob_day || localStorage.getItem('ob_day') || '1')
       const sessionLen = history?.length || 0
       const quizParticipants = new Set((answers || []).map(a => a.collaborateur)).size
       const total = sessionLen + quizParticipants
@@ -332,8 +338,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
       }
     } catch {}
   }
-
-  const obDay = typeof window !== 'undefined' ? (localStorage.getItem('ob_day') || '1') : '1'
 
   if (activeView === 'sessions') {
     return (

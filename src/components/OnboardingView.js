@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { generatePin } from '@/lib/pin'
+import { getSharedState, setSharedState } from '@/lib/supabase'
 
 const PARIS_MAGASINS = ['chatelet','st lazare','saint lazare','montparnasse','italie','commerce','bastille','cergy','creteil','créteil','belle epine','belle épine','paris','st ouen','saint ouen','ouen','beauchamp','odysseum','supply']
 const BELGIQUE_MAGASINS = ['namur','liege','liège','fripier','ixelles','charleroi','bruxelles']
@@ -46,10 +47,21 @@ function GroupSelect({ onSelect, onBack }) {
   const [counts, setCounts] = useState({ paris: 0, visio: 0 })
 
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem('entrees_data') || '[]')
-    const paris = data.filter(e => classifyMagasin(e.magasin) === 'paris').length
-    const visio = data.filter(e => ['province', 'belgique'].includes(classifyMagasin(e.magasin))).length
-    setCounts({ paris, visio })
+    const load = async () => {
+      try {
+        const state = await getSharedState()
+        const data = state.entrees_data || JSON.parse(localStorage.getItem('entrees_data') || '[]')
+        const paris = data.filter(e => classifyMagasin(e.magasin) === 'paris').length
+        const visio = data.filter(e => ['province', 'belgique'].includes(classifyMagasin(e.magasin))).length
+        setCounts({ paris, visio })
+      } catch {
+        const data = JSON.parse(localStorage.getItem('entrees_data') || '[]')
+        const paris = data.filter(e => classifyMagasin(e.magasin) === 'paris').length
+        const visio = data.filter(e => ['province', 'belgique'].includes(classifyMagasin(e.magasin))).length
+        setCounts({ paris, visio })
+      }
+    }
+    load()
   }, [])
 
   return (
@@ -88,27 +100,46 @@ function CollabList({ group, onNext, onBack }) {
   const [checks, setChecks] = useState({})
 
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem('entrees_data') || '[]')
-    const filtered = group === 'presentiel'
-      ? data.filter(e => classifyMagasin(e.magasin) === 'paris')
-      : data.filter(e => ['province', 'belgique'].includes(classifyMagasin(e.magasin)))
-    setCollabs(filtered)
-    const saved = JSON.parse(localStorage.getItem('ob_data') || '{}')
-    setChecks(saved)
+    const load = async () => {
+      try {
+        const state = await getSharedState()
+        const data = state.entrees_data || JSON.parse(localStorage.getItem('entrees_data') || '[]')
+        const filtered = group === 'presentiel'
+          ? data.filter(e => classifyMagasin(e.magasin) === 'paris')
+          : data.filter(e => ['province', 'belgique'].includes(classifyMagasin(e.magasin)))
+        setCollabs(filtered)
+        const saved = state.ob_data || JSON.parse(localStorage.getItem('ob_data') || '{}')
+        setChecks(saved)
+      } catch {
+        const data = JSON.parse(localStorage.getItem('entrees_data') || '[]')
+        const filtered = group === 'presentiel'
+          ? data.filter(e => classifyMagasin(e.magasin) === 'paris')
+          : data.filter(e => ['province', 'belgique'].includes(classifyMagasin(e.magasin)))
+        setCollabs(filtered)
+        setChecks(JSON.parse(localStorage.getItem('ob_data') || '{}'))
+      }
+    }
+    load()
   }, [group])
 
-  const toggle = (key, field) => {
+  const toggle = async (key, field) => {
     const updated = {
       ...checks,
       [key]: { ...(checks[key] || {}), [field]: !(checks[key]?.[field]) }
     }
     setChecks(updated)
     localStorage.setItem('ob_data', JSON.stringify(updated))
+    const patch = { ob_data: updated }
     // marque la date du 1er onboarding
-    if (!localStorage.getItem('ob_date')) {
-      localStorage.setItem('ob_date', new Date().toDateString())
+    const state = await getSharedState().catch(() => ({}))
+    if (!state.ob_date) {
+      const today = new Date().toDateString()
+      localStorage.setItem('ob_date', today)
       localStorage.setItem('ob_day', '1')
+      patch.ob_date = today
+      patch.ob_day = '1'
     }
+    setSharedState(patch).catch(console.warn)
   }
 
   const title = group === 'presentiel' ? '🏢 Présentiel · Paris' : '💻 Visio · Province & Belgique'

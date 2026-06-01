@@ -29,6 +29,16 @@ export default function Page() {
   })
   const { message, toast } = useToast()
 
+  // Restaurer la session formateur au rechargement de page
+  useEffect(() => {
+    const savedName = localStorage.getItem('trainer_name')
+    if (savedName) {
+      setPName(savedName)
+      setIsTrainer(true)
+      setView('dashboard')
+    }
+  }, [])
+
   const handleTrainerLogin = async (id, code) => {
     const idRaw = id.trim().toLowerCase()
     const normalized = TRAINER_CANONICAL[idRaw] || idRaw
@@ -38,6 +48,7 @@ export default function Page() {
     const name = normalized.charAt(0).toUpperCase() + normalized.slice(1)
     setPName(name)
     setIsTrainer(true)
+    localStorage.setItem('trainer_name', name)
     try {
       await sbUpsert('sessions', { code: SESSION_CODE, current_step: -1, active_scenario: 0 }, 'code')
       await sbUpdate('sessions', { current_step: -1, active_module: null, module_page: 0 }, 'code=eq.' + SESSION_CODE)
@@ -68,6 +79,7 @@ export default function Page() {
   const handleLogout = () => {
     setIsTrainer(false)
     setPName('')
+    localStorage.removeItem('trainer_name')
     setView('landing')
   }
 

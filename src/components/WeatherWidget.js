@@ -9,13 +9,10 @@ export default function WeatherWidget({ pName, onToast }) {
   const myTrainer = (pName || '').toLowerCase().split(' ')[0]
 
   const fetchWeather = async () => {
-    const local = JSON.parse(localStorage.getItem('weather_local') || '{}')
-    let sbRows = []
-    try { sbRows = await sbSelect('trainer_weather') } catch (e) {}
-    const merged = {}
-    sbRows.forEach(r => { merged[r.trainer] = r })
-    Object.values(local).forEach(r => { if (!merged[r.trainer]) merged[r.trainer] = r })
-    setRows(Object.values(merged))
+    try {
+      const sbRows = await sbSelect('trainer_weather')
+      setRows(sbRows || [])
+    } catch (e) {}
   }
 
   useEffect(() => {
@@ -25,9 +22,6 @@ export default function WeatherWidget({ pName, onToast }) {
   }, [])
 
   const setWeather = async (emoji, label) => {
-    const local = JSON.parse(localStorage.getItem('weather_local') || '{}')
-    local[myTrainer] = { trainer: myTrainer, weather: emoji, label, updated_at: new Date().toISOString() }
-    localStorage.setItem('weather_local', JSON.stringify(local))
     const result = await sbUpsert('trainer_weather', { trainer: myTrainer, weather: emoji, label, updated_at: new Date().toISOString() }, 'trainer').catch(() => null)
     if (!result) onToast(`⚠️ Sync Supabase échouée (trainer: ${myTrainer})`)
     else onToast(`Météo enregistrée : ${emoji} ${label}`)

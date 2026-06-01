@@ -54,3 +54,20 @@ export async function sbDelete(table, filter) {
 }
 
 export const SESSION_CODE = 'LPT2026'
+
+// ── trainer_state : état partagé entre tous les formateurs ─────────
+// Clé = SESSION_CODE (partagé) ou nom formateur (personnel)
+export async function getSharedState() {
+  const rows = await sbSelect('trainer_state', `trainer=eq.${SESSION_CODE}`)
+  return rows?.[0]?.state || {}
+}
+
+export async function setSharedState(patch) {
+  const current = await getSharedState()
+  const merged = { ...current, ...patch }
+  return sbUpsert('trainer_state', {
+    trainer: SESSION_CODE,
+    state: merged,
+    updated_at: new Date().toISOString(),
+  }, 'trainer')
+}
