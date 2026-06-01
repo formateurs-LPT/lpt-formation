@@ -786,10 +786,19 @@ const findCylIdx = v => Math.max(0, Math.min(64, Math.round((8 - v) / 0.25)))
 const findAxeIdx = v => Math.max(0, Math.min(180, Math.round(v)))
 
 // ── WheelPicker (roulette tactile) ────────────────────────────────
-function WheelPicker({ values, selectedIdx, onChange, showResult, isCorrect, correctLabel }) {
+// circular=true : le tableau boucle sur lui-même (0° ↔ 180°)
+function WheelPicker({ values, selectedIdx, onChange, showResult, isCorrect, correctLabel, circular = false }) {
   const ITEM_H = 38
-  const H = ITEM_H * 3         // 3 items visibles = 114px
-  const CENTER = ITEM_H        // position Y de la rangée centrale
+  const H = ITEM_H * 3
+  const CENTER = ITEM_H
+
+  // Pour le mode circulaire, on préfixe/suffixe quelques items pour que
+  // le défilement au-delà des bords affiche les valeurs enroulées
+  const PAD = circular ? 3 : 0
+  const padded = circular
+    ? [...values.slice(-PAD), ...values, ...values.slice(0, PAD)]
+    : values
+  const paddedSelected = selectedIdx + PAD
 
   const [offset, setOffset] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
@@ -816,9 +825,8 @@ function WheelPicker({ values, selectedIdx, onChange, showResult, isCorrect, cor
       if (dt > 0) dragRef.current.vel = (y - dragRef.current.lastY) / dt
       dragRef.current.lastY = y
       dragRef.current.lastT = now
-      const newOff = y - dragRef.current.startY
-      offsetRef.current = newOff
-      setOffset(newOff)
+      offsetRef.current = y - dragRef.current.startY
+      setOffset(offsetRef.current)
     }
 
     const onEnd = () => {
@@ -829,40 +837,45 @@ function WheelPicker({ values, selectedIdx, onChange, showResult, isCorrect, cor
       const momentum = dragRef.current.vel * 90
       const total = offsetRef.current + momentum
       const delta = -Math.round(total / ITEM_H)
-      const newIdx = Math.max(0, Math.min(values.length - 1, selectedIdx + delta))
 
-      // Ajuster l'offset pour éviter le saut visuel lors du changement de selectedIdx
-      const adjusted = (selectedIdx - newIdx) * ITEM_H
-      offsetRef.current = adjusted
-      setOffset(adjusted)
+      let newIdx
+      if (circular) {
+        newIdx = ((selectedIdx + delta) % values.length + values.length) % values.length
+      } else {
+        newIdx = Math.max(0, Math.min(values.length - 1, selectedIdx + delta))
+      }
+
+      // Chemin le plus court pour l'animation (évite le saut visuel)
+      let diff = selectedIdx - newIdx
+      if (circular) {
+        if (diff >  values.length / 2) diff -= values.length
+        if (diff < -values.length / 2) diff += values.length
+      }
+      offsetRef.current = diff * ITEM_H
+      setOffset(diff * ITEM_H)
 
       onChange(newIdx)
-
-      // Animer vers la position finale (offset=0) après le rendu
-      requestAnimationFrame(() => {
-        offsetRef.current = 0
-        setOffset(0)
-      })
+      requestAnimationFrame(() => { offsetRef.current = 0; setOffset(0) })
     }
 
     el.addEventListener('touchstart', onStart, { passive: true })
-    el.addEventListener('touchmove', onMove, { passive: false })
-    el.addEventListener('touchend', onEnd)
-    el.addEventListener('mousedown', onStart)
+    el.addEventListener('touchmove',  onMove,  { passive: false })
+    el.addEventListener('touchend',   onEnd)
+    el.addEventListener('mousedown',  onStart)
     window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onEnd)
+    window.addEventListener('mouseup',   onEnd)
 
     return () => {
       el.removeEventListener('touchstart', onStart)
-      el.removeEventListener('touchmove', onMove)
-      el.removeEventListener('touchend', onEnd)
-      el.removeEventListener('mousedown', onStart)
+      el.removeEventListener('touchmove',  onMove)
+      el.removeEventListener('touchend',   onEnd)
+      el.removeEventListener('mousedown',  onStart)
       window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onEnd)
+      window.removeEventListener('mouseup',   onEnd)
     }
-  }, [selectedIdx, onChange, values.length])
+  }, [selectedIdx, onChange, values.length, circular])
 
-  const translateY = CENTER - selectedIdx * ITEM_H + offset
+  const translateY = CENTER - paddedSelected * ITEM_H + offset
   const bandBg     = showResult ? (isCorrect ? 'rgba(34,197,94,0.18)' : 'rgba(239,68,68,0.15)') : 'rgba(200,165,42,0.13)'
   const bandBorder = showResult ? (isCorrect ? '#22c55e' : '#ef4444') : 'rgba(200,165,42,0.45)'
 
@@ -876,14 +889,14 @@ function WheelPicker({ values, selectedIdx, onChange, showResult, isCorrect, cor
           zIndex: 1, pointerEvents: 'none',
         }} />
 
-        {/* Items */}
+        {/* Items (padded pour le circulaire) */}
         <div style={{
           transform: `translateY(${translateY}px)`,
           transition: isDragging ? 'none' : 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
           willChange: 'transform',
         }}>
-          {values.map((item, i) => {
-            const dist = Math.abs(i - selectedIdx)
+          {padded.map((item, i) => {
+            const dist = Math.abs(i - paddedSelected)
             return (
               <div key={i} style={{
                 height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1104,10 +1117,10 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
           <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
             <div style={{ fontSize: 13, fontWeight: 500, color: '#555', paddingTop: 36 }}>Axe</div>
             <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
-              <WheelPicker values={AXE_VALS} selectedIdx={idx.od.axe} onChange={v => setEye('od', 'axe', v)} showResult={showResult} isCorrect={results?.od?.axe} correctLabel={corrLabel.od.axe} />
+              <WheelPicker values={AXE_VALS} selectedIdx={idx.od.axe} onChange={v => setEye('od', 'axe', v)} showResult={showResult} isCorrect={results?.od?.axe} correctLabel={corrLabel.od.axe} circular />
             </div>
             <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
-              <WheelPicker values={AXE_VALS} selectedIdx={idx.og.axe} onChange={v => setEye('og', 'axe', v)} showResult={showResult} isCorrect={results?.og?.axe} correctLabel={corrLabel.og.axe} />
+              <WheelPicker values={AXE_VALS} selectedIdx={idx.og.axe} onChange={v => setEye('og', 'axe', v)} showResult={showResult} isCorrect={results?.og?.axe} correctLabel={corrLabel.og.axe} circular />
             </div>
           </div>
 
