@@ -754,139 +754,268 @@ function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
 }
 
 // ── Saisie interactive — vue téléphone (style app LPT) ────────────
-const APP_GOLD   = '#c8a52a'
-const APP_BG     = '#eae7f0'
-const APP_DARK   = '#2a2840'
+const APP_GOLD = '#c8a52a'
+const APP_BG   = '#eae7f0'
+const APP_DARK = '#2a2840'
 
-function SpinnerField({ value, onChange, min, max, step = 0.25, isAxe = false, isCorrect, correctVal, showResult }) {
-  const fmt = (v) => {
-    if (isAxe) return `${v}°`
-    const abs = Math.abs(v).toFixed(2).replace('.', ',')
-    if (v > 0.001) return `+${abs}`
-    if (v < -0.001) return `−${abs}`
-    return '0,00'
-  }
-  const decr = () => onChange(parseFloat(Math.max(min, value - step).toFixed(3)))
-  const incr = () => onChange(parseFloat(Math.min(max, value + step).toFixed(3)))
+// ── Tableaux de valeurs (ordonnés : drag-up = négatif/moins, drag-down = positif/plus) ──
+const SPH_VALS = Array.from({ length: 65 }, (_, i) => {
+  const v = parseFloat((8 - i * 0.25).toFixed(3))
+  const a = Math.abs(v).toFixed(2).replace('.', ',')
+  return { val: v, label: v > 0.001 ? `+${a}` : v < -0.001 ? `−${a}` : '0,00' }
+})
+const CYL_VALS = Array.from({ length: 33 }, (_, i) => {
+  const v = parseFloat((i * -0.25).toFixed(3))
+  const a = Math.abs(v).toFixed(2).replace('.', ',')
+  return { val: v, label: v < -0.001 ? `−${a}` : '0,00' }
+})
+const AXE_VALS = Array.from({ length: 181 }, (_, i) => ({ val: i, label: `${i}°` }))
+const ADD_VALS = Array.from({ length: 17 }, (_, i) => {
+  const v = parseFloat((i * 0.25).toFixed(3))
+  return { val: v, label: v > 0.001 ? `+${v.toFixed(2).replace('.', ',')}` : '0,00' }
+})
 
-  const borderColor = showResult ? (isCorrect ? '#22c55e' : '#ef4444') : '#d8d4e8'
-  const bgColor     = showResult ? (isCorrect ? '#f0fdf4' : '#fff0f0') : '#fff'
+// Index "zéro" dans chaque tableau
+const SPH_ZERO = 32   // 8 - 32*0.25 = 0.00
+const CYL_ZERO = 0    // 0.00
+const AXE_ZERO = 0    // 0°
+const ADD_ZERO = 0    // 0.00
+
+const findSphIdx = v => Math.max(0, Math.min(64, Math.round((8 - v) / 0.25)))
+const findAxeIdx = v => Math.max(0, Math.min(180, Math.round(v)))
+
+// ── WheelPicker (roulette tactile) ────────────────────────────────
+function WheelPicker({ values, selectedIdx, onChange, showResult, isCorrect, correctLabel }) {
+  const ITEM_H = 38
+  const H = ITEM_H * 3         // 3 items visibles = 114px
+  const CENTER = ITEM_H        // position Y de la rangée centrale
+
+  const [offset, setOffset] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const containerRef = useRef(null)
+  const offsetRef = useRef(0)
+  const dragRef = useRef({ active: false, startY: 0, lastY: 0, lastT: 0, vel: 0 })
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    const onStart = (e) => {
+      const y = e.touches ? e.touches[0].clientY : e.clientY
+      dragRef.current = { active: true, startY: y, lastY: y, lastT: Date.now(), vel: 0 }
+      setIsDragging(true)
+    }
+
+    const onMove = (e) => {
+      if (!dragRef.current.active) return
+      if (e.cancelable) e.preventDefault()
+      const y = e.touches ? e.touches[0].clientY : e.clientY
+      const now = Date.now()
+      const dt = now - dragRef.current.lastT
+      if (dt > 0) dragRef.current.vel = (y - dragRef.current.lastY) / dt
+      dragRef.current.lastY = y
+      dragRef.current.lastT = now
+      const newOff = y - dragRef.current.startY
+      offsetRef.current = newOff
+      setOffset(newOff)
+    }
+
+    const onEnd = () => {
+      if (!dragRef.current.active) return
+      dragRef.current.active = false
+      setIsDragging(false)
+
+      const momentum = dragRef.current.vel * 90
+      const total = offsetRef.current + momentum
+      const delta = -Math.round(total / ITEM_H)
+      const newIdx = Math.max(0, Math.min(values.length - 1, selectedIdx + delta))
+
+      // Ajuster l'offset pour éviter le saut visuel lors du changement de selectedIdx
+      const adjusted = (selectedIdx - newIdx) * ITEM_H
+      offsetRef.current = adjusted
+      setOffset(adjusted)
+
+      onChange(newIdx)
+
+      // Animer vers la position finale (offset=0) après le rendu
+      requestAnimationFrame(() => {
+        offsetRef.current = 0
+        setOffset(0)
+      })
+    }
+
+    el.addEventListener('touchstart', onStart, { passive: true })
+    el.addEventListener('touchmove', onMove, { passive: false })
+    el.addEventListener('touchend', onEnd)
+    el.addEventListener('mousedown', onStart)
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onEnd)
+
+    return () => {
+      el.removeEventListener('touchstart', onStart)
+      el.removeEventListener('touchmove', onMove)
+      el.removeEventListener('touchend', onEnd)
+      el.removeEventListener('mousedown', onStart)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onEnd)
+    }
+  }, [selectedIdx, onChange, values.length])
+
+  const translateY = CENTER - selectedIdx * ITEM_H + offset
+  const bandBg     = showResult ? (isCorrect ? 'rgba(34,197,94,0.18)' : 'rgba(239,68,68,0.15)') : 'rgba(200,165,42,0.13)'
+  const bandBorder = showResult ? (isCorrect ? '#22c55e' : '#ef4444') : 'rgba(200,165,42,0.45)'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        background: bgColor, border: `2px solid ${borderColor}`,
-        borderRadius: 10, overflow: 'hidden',
-      }}>
-        <button onPointerDown={decr} style={{
-          width: 36, height: 44, background: 'transparent', border: 'none',
-          cursor: 'pointer', fontSize: 22, color: '#444', fontWeight: 700,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          WebkitTapHighlightColor: 'transparent',
-        }}>−</button>
-        <span style={{
-          flex: 1, textAlign: 'center', fontSize: 15, fontWeight: 700,
-          color: APP_DARK, fontVariantNumeric: 'tabular-nums', userSelect: 'none',
-        }}>{fmt(value)}</span>
-        <button onPointerDown={incr} style={{
-          width: 36, height: 44, background: 'transparent', border: 'none',
-          cursor: 'pointer', fontSize: 22, color: '#444', fontWeight: 700,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          WebkitTapHighlightColor: 'transparent',
-        }}>+</button>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+      <div ref={containerRef} style={{ width: '100%', height: H, overflow: 'hidden', position: 'relative', cursor: 'grab', userSelect: 'none', touchAction: 'none' }}>
+        {/* Bande centrale */}
+        <div style={{
+          position: 'absolute', top: CENTER, left: 0, right: 0, height: ITEM_H,
+          background: bandBg, borderTop: `1.5px solid ${bandBorder}`, borderBottom: `1.5px solid ${bandBorder}`,
+          zIndex: 1, pointerEvents: 'none',
+        }} />
+
+        {/* Items */}
+        <div style={{
+          transform: `translateY(${translateY}px)`,
+          transition: isDragging ? 'none' : 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
+          willChange: 'transform',
+        }}>
+          {values.map((item, i) => {
+            const dist = Math.abs(i - selectedIdx)
+            return (
+              <div key={i} style={{
+                height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: dist === 0 ? 15 : 11,
+                fontWeight: dist === 0 ? 700 : 400,
+                color: dist === 0 ? APP_DARK : '#bbb',
+                fontVariantNumeric: 'tabular-nums',
+                pointerEvents: 'none',
+                transition: 'font-size 0.15s, color 0.15s',
+              }}>
+                {item.label}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Fondu haut */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: CENTER, background: 'linear-gradient(to bottom, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.2) 100%)', pointerEvents: 'none', zIndex: 2 }} />
+        {/* Fondu bas */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: CENTER, background: 'linear-gradient(to top, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.2) 100%)', pointerEvents: 'none', zIndex: 2 }} />
       </div>
+
+      {/* Bonne réponse si incorrect */}
       {showResult && !isCorrect && (
-        <div style={{ fontSize: 10, color: '#ef4444', textAlign: 'center', fontWeight: 600 }}>
-          ✓ {isAxe ? `${correctVal}°` : (() => { const abs = Math.abs(correctVal).toFixed(2).replace('.', ','); return correctVal > 0.001 ? `+${abs}` : correctVal < -0.001 ? `−${abs}` : '0,00' })()}
+        <div style={{ fontSize: 10, color: '#ef4444', fontWeight: 700, textAlign: 'center' }}>
+          ✓ {correctLabel}
         </div>
       )}
     </div>
   )
 }
 
+// ── Pavé numérique axe ────────────────────────────────────────────
+function AxeNumpad({ currentValue, onConfirm, onClose }) {
+  const [digits, setDigits] = useState(String(currentValue))
+  const add = d => { const s = digits === '0' ? d : digits + d; if (parseInt(s) <= 180) setDigits(s) }
+  const del = () => setDigits(p => p.length <= 1 ? '0' : p.slice(0, -1))
+  const ok  = () => onConfirm(Math.max(0, Math.min(180, parseInt(digits) || 0)))
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 99 }} />
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: APP_BG, borderRadius: '20px 20px 0 0', padding: '18px 18px 40px', boxShadow: '0 -8px 40px rgba(0,0,0,0.25)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#555' }}>Axe (0° – 180°)</span>
+          <button onPointerDown={onClose} style={{ background: 'transparent', border: 'none', fontSize: 22, cursor: 'pointer', color: '#888', padding: '2px 8px' }}>✕</button>
+        </div>
+        <div style={{ background: '#fff', borderRadius: 12, padding: '12px 20px', fontSize: 34, fontWeight: 800, color: APP_DARK, textAlign: 'center', marginBottom: 14, border: `2px solid ${APP_GOLD}`, fontVariantNumeric: 'tabular-nums' }}>
+          {digits}°
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          {['1','2','3','4','5','6','7','8','9','⌫','0','✓'].map(k => (
+            <button key={k} onPointerDown={() => { if (k==='⌫') del(); else if (k==='✓') ok(); else add(k) }}
+              style={{ padding: '15px 8px', borderRadius: 12, background: k==='✓' ? APP_GOLD : k==='⌫' ? '#e0dcf0' : '#fff', border: '1px solid #ddd9ec', color: k==='✓' ? '#fff' : APP_DARK, fontSize: k==='✓'||k==='⌫' ? 20 : 22, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent' }}
+            >{k}</button>
+          ))}
+        </div>
+      </div>
+    </>
+  )
+}
+
+
 function SaisieInteractiveMobile({ page, pageIndex, total }) {
+  const initIdx = () => ({
+    od: { sph: SPH_ZERO, cyl: CYL_ZERO, axe: AXE_ZERO },
+    og: { sph: SPH_ZERO, cyl: CYL_ZERO, axe: AXE_ZERO },
+    add: ADD_ZERO,
+  })
+
   const [caseIdx, setCaseIdx] = useState(0)
-  const initVals = () => ({ od: { sphere: 0, cylindre: 0, axe: 0 }, og: { sphere: 0, cylindre: 0, axe: 0 }, add: 0 })
-  const [vals, setVals] = useState(initVals)
+  const [idx, setIdx] = useState(initIdx)
   const [showResult, setShowResult] = useState(false)
   const [results, setResults] = useState(null)
+  const [numpadEye, setNumpadEye] = useState(null) // null | 'od' | 'og'
 
   const ex = SAISIE_EXERCISES[caseIdx]
 
-  const handleCaseChange = (idx) => {
-    setCaseIdx(idx)
-    setVals(initVals())
-    setShowResult(false)
-    setResults(null)
-  }
+  const resetAll = () => { setIdx(initIdx()); setShowResult(false); setResults(null) }
+  const handleCaseChange = i => { setCaseIdx(i); resetAll() }
 
-  const setEyeField = (eye, field, v) => {
-    setVals(prev => ({ ...prev, [eye]: { ...prev[eye], [field]: v } }))
+  const setEye = (eye, field, val) => {
+    setIdx(prev => ({ ...prev, [eye]: { ...prev[eye], [field]: val } }))
     if (showResult) { setShowResult(false); setResults(null) }
   }
-  const setAdd = (v) => {
-    setVals(prev => ({ ...prev, add: v }))
+  const setAdd = val => {
+    setIdx(prev => ({ ...prev, add: val }))
     if (showResult) { setShowResult(false); setResults(null) }
   }
 
   const near = (a, b) => Math.abs(a - b) < 0.001
+
   const verify = () => {
     const r = {
       od: {
-        sphere:   near(vals.od.sphere,   ex.od.sphere),
-        cylindre: near(vals.od.cylindre, ex.od.cylindre),
-        axe:      vals.od.axe === ex.od.axe,
+        sph: near(SPH_VALS[idx.od.sph].val, ex.od.sphere),
+        cyl: near(CYL_VALS[idx.od.cyl].val, ex.od.cylindre),
+        axe: AXE_VALS[idx.od.axe].val === ex.od.axe,
       },
       og: {
-        sphere:   near(vals.og.sphere,   ex.og.sphere),
-        cylindre: near(vals.og.cylindre, ex.og.cylindre),
-        axe:      vals.og.axe === ex.og.axe,
+        sph: near(SPH_VALS[idx.og.sph].val, ex.og.sphere),
+        cyl: near(CYL_VALS[idx.og.cyl].val, ex.og.cylindre),
+        axe: AXE_VALS[idx.og.axe].val === ex.og.axe,
       },
-      add: near(vals.add, ex.add ?? 0),
+      add: near(ADD_VALS[idx.add].val, ex.add ?? 0),
     }
     setResults(r)
     setShowResult(true)
   }
 
-  const reset = () => {
-    setVals(initVals())
-    setShowResult(false)
-    setResults(null)
-  }
-
-  const totalFields = ex.add != null ? 7 : 6
-  const correctCount = results ? (
-    [results.od.sphere, results.od.cylindre, results.od.axe,
-     results.og.sphere, results.og.cylindre, results.og.axe,
-     ...(ex.add != null ? [results.add] : [])].filter(Boolean).length
-  ) : 0
+  const hasAdd = ex.add != null
+  const totalFields = hasAdd ? 7 : 6
+  const correctCount = results
+    ? [results.od.sph, results.od.cyl, results.od.axe,
+       results.og.sph, results.og.cyl, results.og.axe,
+       ...(hasAdd ? [results.add] : [])].filter(Boolean).length
+    : 0
   const perfect = showResult && correctCount === totalFields
 
-  const ROW_STYLE = {
-    display: 'grid', gridTemplateColumns: '72px 1fr 1fr',
-    borderTop: '1px solid #ddd9ec', alignItems: 'center',
+  // Labels de la bonne réponse (pour feedback)
+  const corrLabel = {
+    od: { sph: SPH_VALS[findSphIdx(ex.od.sphere)]?.label || '', cyl: CYL_VALS[Math.round(-ex.od.cylindre / 0.25)]?.label || '', axe: `${ex.od.axe}°` },
+    og: { sph: SPH_VALS[findSphIdx(ex.og.sphere)]?.label || '', cyl: CYL_VALS[Math.round(-ex.og.cylindre / 0.25)]?.label || '', axe: `${ex.og.axe}°` },
+    add: ADD_VALS[Math.round((ex.add ?? 0) / 0.25)]?.label || '',
   }
-  const LABEL_STYLE = { padding: '10px 10px', fontSize: 13, fontWeight: 700, color: '#444', lineHeight: 1.2 }
-  const CELL_STYLE  = { padding: '8px 8px' }
 
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: APP_BG,
-      display: 'flex', flexDirection: 'column',
-      fontFamily: 'inherit',
-    }}>
-      {/* Header doré */}
-      <div style={{
-        background: APP_GOLD, padding: '14px 20px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexShrink: 0,
-      }}>
-        <Image src="/assets/logo-lpt.png" alt="LPT" width={60} height={22} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
-        <span style={{ fontSize: 16, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' }}>
-          Ajouter l&apos;ordonnance
-        </span>
+    <div style={{ minHeight: '100dvh', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
+
+      {/* ── Header doré ── */}
+      <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <Image src="/assets/logo-lpt.png" alt="LPT" width={56} height={20} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+        <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' }}>Ajouter l&apos;ordonnance</span>
         <div style={{ display: 'flex', gap: 4 }}>
           {Array(total).fill(0).map((_, i) => (
             <div key={i} style={{ height: 3, borderRadius: 2, width: i === pageIndex ? 14 : 3, background: i === pageIndex ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'all .4s' }} />
@@ -894,19 +1023,19 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
         </div>
       </div>
 
-      {/* Corps scrollable */}
+      {/* ── Corps scrollable ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 14px 0' }}>
 
         {/* Sélecteur de cas */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#555', marginBottom: 8 }}>Quel cas traitez-vous ?</div>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 8 }}>Quel cas traitez-vous ?</div>
           <div style={{ display: 'flex', gap: 8 }}>
             {SAISIE_EXERCISES.map((e, i) => (
               <button key={e.id} onPointerDown={() => handleCaseChange(i)} style={{
                 flex: 1, padding: '10px 6px', borderRadius: 10,
                 border: `2px solid ${i === caseIdx ? APP_GOLD : '#ccc9de'}`,
                 background: i === caseIdx ? APP_GOLD : '#fff',
-                color: i === caseIdx ? '#fff' : '#555',
+                color: i === caseIdx ? '#fff' : '#666',
                 fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
                 WebkitTapHighlightColor: 'transparent',
               }}>{e.label}</button>
@@ -914,121 +1043,108 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
           </div>
         </div>
 
-        {/* Section corrections */}
-        <div style={{ fontSize: 14, fontWeight: 800, color: APP_DARK, marginBottom: 10 }}>Corrections*</div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: APP_DARK, marginBottom: 10 }}>Corrections*</div>
 
-        {/* Tableau */}
-        <div style={{
-          background: '#fff', borderRadius: 14, overflow: 'hidden',
-          border: '1px solid #ddd9ec', marginBottom: 12,
-        }}>
-          {/* En-têtes colonnes */}
-          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', background: '#f4f1fb' }}>
-            <div />
-            {['Œil droit', 'Œil gauche'].map(h => (
-              <div key={h} style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700, color: '#666', textAlign: 'center', borderLeft: '1px solid #ddd9ec' }}>{h}</div>
-            ))}
-          </div>
+        {/* Carte OD + OG */}
+        {[['od', 'OD — Œil droit'], ['og', 'OG — Œil gauche']].map(([eye, label]) => (
+          <div key={eye} style={{ background: '#fff', borderRadius: 14, padding: '14px 12px 10px', marginBottom: 12, border: '1px solid #ddd9ec' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#555', marginBottom: 10 }}>👁 {label}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
 
-          {/* Sphère */}
-          <div style={ROW_STYLE}>
-            <div style={LABEL_STYLE}>Sphère</div>
-            {['od', 'og'].map(eye => (
-              <div key={eye} style={{ ...CELL_STYLE, borderLeft: '1px solid #ddd9ec' }}>
-                <SpinnerField
-                  value={vals[eye].sphere} onChange={v => setEyeField(eye, 'sphere', v)}
-                  min={-8} max={8} step={0.25}
-                  showResult={showResult} isCorrect={results?.[eye]?.sphere} correctVal={ex[eye].sphere}
+              {/* Sphère */}
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: '#999', textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Sphère</div>
+                <WheelPicker
+                  values={SPH_VALS} selectedIdx={idx[eye].sph}
+                  onChange={v => setEye(eye, 'sph', v)}
+                  showResult={showResult} isCorrect={results?.[eye]?.sph} correctLabel={corrLabel[eye].sph}
                 />
               </div>
-            ))}
-          </div>
 
-          {/* Cylindre */}
-          <div style={ROW_STYLE}>
-            <div style={LABEL_STYLE}>Cylindre</div>
-            {['od', 'og'].map(eye => (
-              <div key={eye} style={{ ...CELL_STYLE, borderLeft: '1px solid #ddd9ec' }}>
-                <SpinnerField
-                  value={vals[eye].cylindre} onChange={v => setEyeField(eye, 'cylindre', v)}
-                  min={-8} max={0} step={0.25}
-                  showResult={showResult} isCorrect={results?.[eye]?.cylindre} correctVal={ex[eye].cylindre}
+              {/* Cylindre */}
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: '#999', textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Cylindre</div>
+                <WheelPicker
+                  values={CYL_VALS} selectedIdx={idx[eye].cyl}
+                  onChange={v => setEye(eye, 'cyl', v)}
+                  showResult={showResult} isCorrect={results?.[eye]?.cyl} correctLabel={corrLabel[eye].cyl}
                 />
               </div>
-            ))}
-          </div>
 
-          {/* Axe */}
-          <div style={ROW_STYLE}>
-            <div style={LABEL_STYLE}>Axe</div>
-            {['od', 'og'].map(eye => (
-              <div key={eye} style={{ ...CELL_STYLE, borderLeft: '1px solid #ddd9ec' }}>
-                <SpinnerField
-                  value={vals[eye].axe} onChange={v => setEyeField(eye, 'axe', v)}
-                  min={0} max={180} step={1} isAxe
-                  showResult={showResult} isCorrect={results?.[eye]?.axe} correctVal={ex[eye].axe}
+              {/* Axe */}
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: '#999', textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Axe</div>
+                <WheelPicker
+                  values={AXE_VALS} selectedIdx={idx[eye].axe}
+                  onChange={v => setEye(eye, 'axe', v)}
+                  showResult={showResult} isCorrect={results?.[eye]?.axe} correctLabel={corrLabel[eye].axe}
                 />
+                <button onPointerDown={() => setNumpadEye(eye)} style={{
+                  width: '100%', marginTop: 3, background: 'transparent', border: 'none',
+                  cursor: 'pointer', fontSize: 10, color: '#bbb', fontFamily: 'inherit',
+                  padding: '2px 0', WebkitTapHighlightColor: 'transparent',
+                }}>⌨️ taper</button>
               </div>
-            ))}
-          </div>
-
-          {/* Add */}
-          <div style={ROW_STYLE}>
-            <div style={LABEL_STYLE}>Add</div>
-            <div style={{ ...CELL_STYLE, borderLeft: '1px solid #ddd9ec', gridColumn: 'span 2' }}>
-              <SpinnerField
-                value={vals.add} onChange={setAdd}
-                min={0} max={4} step={0.25}
-                showResult={showResult && ex.add != null}
-                isCorrect={results?.add}
-                correctVal={ex.add ?? 0}
-              />
             </div>
+          </div>
+        ))}
+
+        {/* Addition */}
+        <div style={{ background: '#fff', borderRadius: 14, padding: '14px 12px 10px', marginBottom: 12, border: '1px solid #ddd9ec' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#555', marginBottom: 10 }}>
+            Add{!hasAdd && <span style={{ fontSize: 10, color: '#aaa', fontWeight: 400, marginLeft: 8 }}>— non applicable pour ce cas</span>}
+          </div>
+          <div style={{ maxWidth: 120, margin: '0 auto' }}>
+            <WheelPicker
+              values={ADD_VALS} selectedIdx={idx.add}
+              onChange={setAdd}
+              showResult={showResult && hasAdd} isCorrect={results?.add} correctLabel={corrLabel.add}
+            />
           </div>
         </div>
 
-        {/* Banner résultat */}
+        {/* Bannière résultat */}
         {showResult && (
           <div style={{
-            borderRadius: 14, padding: '14px 18px',
-            background: perfect ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.08)',
+            borderRadius: 14, padding: '14px 18px', marginBottom: 12,
+            background: perfect ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.07)',
             border: `1px solid ${perfect ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.3)'}`,
-            display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12,
+            display: 'flex', alignItems: 'center', gap: 14,
           }}>
             <span style={{ fontSize: 28 }}>{perfect ? '🎉' : '💡'}</span>
             <div>
               <div style={{ fontSize: 15, fontWeight: 800, color: perfect ? '#16a34a' : '#dc2626' }}>
-                {perfect ? 'Parfait !' : `${correctCount} / ${totalFields} correct`}
+                {perfect ? 'Parfait !' : `${correctCount} / ${totalFields}`}
               </div>
               <div style={{ fontSize: 12, color: '#555' }}>
-                {perfect ? 'Toutes les corrections sont bonnes !' : 'Les champs en rouge indiquent la bonne réponse.'}
+                {perfect ? 'Toutes les corrections sont correctes !' : 'Cases en rouge → bonne valeur affichée.'}
               </div>
             </div>
           </div>
         )}
-
-        {/* Espace bas */}
         <div style={{ height: 12 }} />
       </div>
 
-      {/* Bouton bas fixe */}
-      <div style={{ padding: '12px 14px 32px', background: APP_BG, flexShrink: 0 }}>
-        {showResult ? (
-          <button onPointerDown={reset} style={{
-            width: '100%', padding: '16px', borderRadius: 12,
-            background: APP_DARK, border: 'none', color: '#fff',
-            fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
-            letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent',
-          }}>RÉINITIALISER</button>
-        ) : (
-          <button onPointerDown={verify} style={{
-            width: '100%', padding: '16px', borderRadius: 12,
-            background: APP_DARK, border: 'none', color: '#fff',
-            fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
-            letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent',
-          }}>VÉRIFIER</button>
-        )}
+      {/* ── Bouton bas ── */}
+      <div style={{ padding: '12px 14px 36px', background: APP_BG, flexShrink: 0 }}>
+        <button onPointerDown={showResult ? resetAll : verify} style={{
+          width: '100%', padding: '16px', borderRadius: 12,
+          background: APP_DARK, border: 'none', color: '#fff',
+          fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+          letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent',
+        }}>
+          {showResult ? 'RÉINITIALISER' : 'VÉRIFIER'}
+        </button>
       </div>
+
+      {/* Pavé numérique axe */}
+      {numpadEye && (
+        <AxeNumpad
+          currentValue={AXE_VALS[idx[numpadEye].axe].val}
+          onConfirm={v => { setEye(numpadEye, 'axe', findAxeIdx(v)); setNumpadEye(null) }}
+          onClose={() => setNumpadEye(null)}
+        />
+      )}
     </div>
   )
 }
