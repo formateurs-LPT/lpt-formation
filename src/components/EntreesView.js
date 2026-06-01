@@ -209,7 +209,8 @@ export default function EntreesView({ onBack, onToast, pName }) {
   const handleCloture = async () => {
     if (!confirm('Clôturer la semaine ? Les données seront archivées dans Supabase et la liste sera vidée.')) return
     try {
-      const obData = JSON.parse(localStorage.getItem('ob_data') || '{}')
+      const sharedState = await getSharedState()
+      const obData = sharedState.ob_data || JSON.parse(localStorage.getItem('ob_data') || '{}')
       const weekDate = new Date().toISOString().slice(0, 10)
 
       // Archiver chaque collaborateur
