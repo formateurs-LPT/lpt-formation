@@ -718,10 +718,9 @@ export default function ModuleOptique({ pName, onBack }) {
 
   const trainerAvatar = TRAINER_AVATARS[(pName || '').toLowerCase()] || TRAINER_AVATARS.kevin
 
-  // Dès que le Lobby s'affiche → on remet Supabase à vide
-  // pour que TV et participants restent sur WaitingScreen
+  // Dès que le Lobby s'affiche → on signale le module en attente de lancement
   useEffect(() => {
-    sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${SESSION_CODE}`)
+    sbUpdate('sessions', { active_module: 'optique', module_page: -1 }, `code=eq.${SESSION_CODE}`)
   }, [])
 
   // Sync Supabase seulement quand le module est lancé

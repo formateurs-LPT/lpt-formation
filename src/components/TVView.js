@@ -765,6 +765,42 @@ function TVContentPage({ page, pageIndex, total, moduleLabel }) {
   )
 }
 
+// ── TV Module Lobby ───────────────────────────────────────────────
+function TVModuleLobby({ moduleLabel }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{ textAlign: 'center', maxWidth: 700, padding: '0 32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 40 }}>
+          <Image src="/assets/logo-lpt.png" alt="LPT" width={220} height={84}
+            style={{ objectFit: 'contain', animation: 'logoBreathe 3.5s ease-in-out infinite' }} />
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>
+          Module de formation
+        </div>
+        <h1 style={{ fontSize: 56, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 18 }}>
+          {moduleLabel}
+        </h1>
+        <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.45)', marginBottom: 52, lineHeight: 1.6 }}>
+          Troubles visuels · Corrections · Ordonnances<br />
+          Comprendre et expliquer la prescription à vos clients
+        </p>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 12,
+          background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.25)',
+          borderRadius: 40, padding: '16px 32px',
+        }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#00abe9', animation: 'waitingPulse 1.4s ease-in-out infinite' }} />
+          <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>Le formateur va lancer le module…</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Waiting Screen ────────────────────────────────────────────────
 const APP_URL = 'https://lpt-formation.vercel.app?join=1'
 const QR_URL  = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(APP_URL)}`
@@ -957,8 +993,9 @@ export default function TVView() {
   const { activeModule, modulePage, loading } = useModuleSync(1500)
 
   const moduleData = MODULE_DATA[activeModule] || null
+  const isLobby   = !!moduleData && modulePage === -1
   const isResults = !!moduleData && modulePage === 200
-  const isQuiz = !!moduleData && modulePage >= 100 && modulePage < 200
+  const isQuiz    = !!moduleData && modulePage >= 100 && modulePage < 200
 
   let page = null
   let quizQuestion = null
@@ -966,7 +1003,7 @@ export default function TVView() {
     if (isQuiz) {
       const qIdx = modulePage - 100
       quizQuestion = moduleData.quiz[qIdx] || null
-    } else if (!isResults) {
+    } else if (!isResults && !isLobby) {
       page = moduleData.pages[modulePage] ?? null
     }
   }
@@ -976,6 +1013,8 @@ export default function TVView() {
       <style>{STYLES}</style>
       {loading ? (
         <WaitingScreen />
+      ) : isLobby ? (
+        <TVModuleLobby moduleLabel={moduleData?.label || ''} />
       ) : isResults ? (
         <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
       ) : isQuiz && quizQuestion ? (

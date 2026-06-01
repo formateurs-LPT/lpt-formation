@@ -60,6 +60,39 @@ function WaitingScreen() {
   )
 }
 
+function ParticipantModuleLobby({ moduleLabel }) {
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px', textAlign: 'center',
+    }}>
+      <Image src="/assets/logo-lpt.png" alt="LPT" width={140} height={52}
+        style={{ objectFit: 'contain', marginBottom: 40 }} />
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+        Module de formation
+      </div>
+      <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', lineHeight: 1.2, marginBottom: 12 }}>
+        {moduleLabel}
+      </div>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 40, lineHeight: 1.6 }}>
+        Troubles visuels · Corrections · Ordonnances
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{
+          width: 8, height: 8, borderRadius: '50%', background: '#00abe9',
+          animation: 'waitDot 1.4s ease-in-out infinite',
+        }} />
+        <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
+          Démarrage imminent…
+        </span>
+      </div>
+    </div>
+  )
+}
+
 // Écran réponse pour UNE question — s'affiche sur le téléphone
 // La question est sur la TV, le participant répond ici
 function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
@@ -874,21 +907,24 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
   const pages = moduleData?.pages || []
   const quiz = moduleData?.quiz || []
 
+  const isLobby   = !!moduleData && modulePage === -1
   const isResults = !!moduleData && modulePage === 200
-  const isQuiz = !!moduleData && modulePage >= 100 && modulePage < 200
+  const isQuiz    = !!moduleData && modulePage >= 100 && modulePage < 200
   const qIdx = modulePage - 100
-  const page = (!isQuiz && !isResults && moduleData) ? (pages[modulePage] ?? null) : null
+  const page = (!isQuiz && !isResults && !isLobby && moduleData) ? (pages[modulePage] ?? null) : null
 
   return (
     <>
       <style>{STYLES}</style>
-      {isResults
-        ? <PersonalResultsScreen key="results" pName={pName} quiz={quiz} moduleId={activeModule} />
-        : isQuiz
-          ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
-          : page
-            ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} />
-            : <WaitingScreen />
+      {isLobby
+        ? <ParticipantModuleLobby moduleLabel={moduleData?.label || ''} />
+        : isResults
+          ? <PersonalResultsScreen key="results" pName={pName} quiz={quiz} moduleId={activeModule} />
+          : isQuiz
+            ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
+            : page
+              ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} />
+              : <WaitingScreen />
       }
     </>
   )
