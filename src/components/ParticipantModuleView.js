@@ -1045,49 +1045,46 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
 
         <div style={{ fontSize: 13, fontWeight: 800, color: APP_DARK, marginBottom: 10 }}>Corrections*</div>
 
-        {/* Carte OD + OG */}
-        {[['od', 'OD — Œil droit'], ['og', 'OG — Œil gauche']].map(([eye, label]) => (
-          <div key={eye} style={{ background: '#fff', borderRadius: 14, padding: '14px 12px 10px', marginBottom: 12, border: '1px solid #ddd9ec' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#555', marginBottom: 10 }}>👁 {label}</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        {/* Carte OD + OG côte à côte */}
+        <div style={{ background: '#fff', borderRadius: 14, padding: '14px 12px 10px', marginBottom: 12, border: '1px solid #ddd9ec' }}>
 
-              {/* Sphère */}
-              <div>
-                <div style={{ fontSize: 9, fontWeight: 700, color: '#999', textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Sphère</div>
-                <WheelPicker
-                  values={SPH_VALS} selectedIdx={idx[eye].sph}
-                  onChange={v => setEye(eye, 'sph', v)}
-                  showResult={showResult} isCorrect={results?.[eye]?.sph} correctLabel={corrLabel[eye].sph}
-                />
+          {/* En-têtes colonnes */}
+          <div style={{ display: 'grid', gridTemplateColumns: '38px 1fr 1fr', gap: 6, marginBottom: 8 }}>
+            <div />
+            {['OD', 'OG'].map(eye => (
+              <div key={eye} style={{ textAlign: 'center', fontSize: 12, fontWeight: 800, color: APP_DARK, paddingBottom: 6, borderBottom: `2px solid ${APP_GOLD}` }}>
+                👁 {eye}
               </div>
+            ))}
+          </div>
 
-              {/* Cylindre */}
-              <div>
-                <div style={{ fontSize: 9, fontWeight: 700, color: '#999', textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Cylindre</div>
-                <WheelPicker
-                  values={CYL_VALS} selectedIdx={idx[eye].cyl}
-                  onChange={v => setEye(eye, 'cyl', v)}
-                  showResult={showResult} isCorrect={results?.[eye]?.cyl} correctLabel={corrLabel[eye].cyl}
-                />
-              </div>
+          {/* Sphère */}
+          <div style={{ display: 'grid', gridTemplateColumns: '38px 1fr 1fr', gap: 6, marginBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>Sphère</div>
+            <WheelPicker values={SPH_VALS} selectedIdx={idx.od.sph} onChange={v => setEye('od', 'sph', v)} showResult={showResult} isCorrect={results?.od?.sph} correctLabel={corrLabel.od.sph} />
+            <WheelPicker values={SPH_VALS} selectedIdx={idx.og.sph} onChange={v => setEye('og', 'sph', v)} showResult={showResult} isCorrect={results?.og?.sph} correctLabel={corrLabel.og.sph} />
+          </div>
 
-              {/* Axe */}
-              <div>
-                <div style={{ fontSize: 9, fontWeight: 700, color: '#999', textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Axe</div>
-                <WheelPicker
-                  values={AXE_VALS} selectedIdx={idx[eye].axe}
-                  onChange={v => setEye(eye, 'axe', v)}
-                  showResult={showResult} isCorrect={results?.[eye]?.axe} correctLabel={corrLabel[eye].axe}
-                />
-                <button onPointerDown={() => setNumpadEye(eye)} style={{
-                  width: '100%', marginTop: 3, background: 'transparent', border: 'none',
-                  cursor: 'pointer', fontSize: 10, color: '#bbb', fontFamily: 'inherit',
-                  padding: '2px 0', WebkitTapHighlightColor: 'transparent',
-                }}>⌨️ taper</button>
-              </div>
+          {/* Cylindre */}
+          <div style={{ display: 'grid', gridTemplateColumns: '38px 1fr 1fr', gap: 6, marginBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>Cylindre</div>
+            <WheelPicker values={CYL_VALS} selectedIdx={idx.od.cyl} onChange={v => setEye('od', 'cyl', v)} showResult={showResult} isCorrect={results?.od?.cyl} correctLabel={corrLabel.od.cyl} />
+            <WheelPicker values={CYL_VALS} selectedIdx={idx.og.cyl} onChange={v => setEye('og', 'cyl', v)} showResult={showResult} isCorrect={results?.og?.cyl} correctLabel={corrLabel.og.cyl} />
+          </div>
+
+          {/* Axe */}
+          <div style={{ display: 'grid', gridTemplateColumns: '38px 1fr 1fr', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>Axe</div>
+            <div>
+              <WheelPicker values={AXE_VALS} selectedIdx={idx.od.axe} onChange={v => setEye('od', 'axe', v)} showResult={showResult} isCorrect={results?.od?.axe} correctLabel={corrLabel.od.axe} />
+              <button onPointerDown={() => setNumpadEye('od')} style={{ width: '100%', marginTop: 3, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 10, color: '#bbb', fontFamily: 'inherit', padding: '2px 0', WebkitTapHighlightColor: 'transparent' }}>⌨️ taper</button>
+            </div>
+            <div>
+              <WheelPicker values={AXE_VALS} selectedIdx={idx.og.axe} onChange={v => setEye('og', 'axe', v)} showResult={showResult} isCorrect={results?.og?.axe} correctLabel={corrLabel.og.axe} />
+              <button onPointerDown={() => setNumpadEye('og')} style={{ width: '100%', marginTop: 3, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 10, color: '#bbb', fontFamily: 'inherit', padding: '2px 0', WebkitTapHighlightColor: 'transparent' }}>⌨️ taper</button>
             </div>
           </div>
-        ))}
+        </div>
 
         {/* Addition */}
         <div style={{ background: '#fff', borderRadius: 14, padding: '14px 12px 10px', marginBottom: 12, border: '1px solid #ddd9ec' }}>
