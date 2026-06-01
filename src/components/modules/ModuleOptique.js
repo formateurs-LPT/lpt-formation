@@ -496,7 +496,7 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, pageIndex, total, 
           }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 1.5 }}>Addition</div>
             <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80', fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.add}</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginLeft: 4 }}>Correction presbytie · verres progressifs uniquement</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginLeft: 4 }}>Correction presbytie</div>
           </div>
         </div>
       </div>
@@ -609,21 +609,72 @@ function PausePage({ page, trainerAvatar, pName, onBack, pageIndex, total, onNex
   )
 }
 
+// ── Lobby ─────────────────────────────────────────────────────────
+function Lobby({ onStart, onBack }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
+    }}>
+      <button onClick={onBack} style={{
+        position: 'absolute', top: 24, left: 24,
+        background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+        color: 'rgba(255,255,255,0.6)', padding: '8px 16px', borderRadius: 10,
+        fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+      }}>← Retour</button>
+
+      <div style={{ textAlign: 'center', maxWidth: 520, padding: '0 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+          <Image src="/assets/logo-lpt.png" alt="LPT" width={180} height={68} style={{ objectFit: 'contain' }} />
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+          Module de formation
+        </div>
+        <h1 style={{ fontSize: 34, fontWeight: 800, color: '#fff', marginBottom: 10 }}>
+          Les bases de l&apos;optique
+        </h1>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 36, lineHeight: 1.6 }}>
+          Troubles visuels · Corrections · Ordonnances<br />
+          Comprendre et expliquer la prescription à vos clients
+        </p>
+        <button onClick={onStart} style={{
+          background: 'linear-gradient(135deg, #0089ba, #00abe9)',
+          border: 'none', color: '#fff', padding: '16px 48px',
+          borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer',
+          boxShadow: '0 8px 32px rgba(0,171,233,0.45)', fontFamily: 'inherit',
+        }}>▶ Lancer le module</button>
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>4 pages · ~15 minutes</p>
+      </div>
+    </div>
+  )
+}
+
 // ── Composant principal ───────────────────────────────────────────
 export default function ModuleOptique({ pName, onBack }) {
+  const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
 
   const trainerAvatar = TRAINER_AVATARS[(pName || '').toLowerCase()] || TRAINER_AVATARS.kevin
 
-  // Sync Supabase à chaque changement de page
+  // Sync Supabase seulement quand le module est lancé
   useEffect(() => {
-    sbUpdate('sessions', { active_module: 'optique', module_page: pageIndex }, `code=eq.${SESSION_CODE}`)
-  }, [pageIndex])
+    if (started) {
+      sbUpdate('sessions', { active_module: 'optique', module_page: pageIndex }, `code=eq.${SESSION_CODE}`)
+    }
+  }, [pageIndex, started])
 
   const handleBack = async () => {
     await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${SESSION_CODE}`)
     onBack()
   }
+
+  if (!started) return (
+    <>
+      <style>{STYLES}</style>
+      <Lobby onStart={() => setStarted(true)} onBack={handleBack} />
+    </>
+  )
 
   const page = PAGES[pageIndex]
   const navProps = {
