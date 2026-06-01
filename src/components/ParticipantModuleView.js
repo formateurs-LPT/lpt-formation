@@ -764,10 +764,10 @@ const SPH_VALS = Array.from({ length: 65 }, (_, i) => {
   const a = Math.abs(v).toFixed(2).replace('.', ',')
   return { val: v, label: v > 0.001 ? `+${a}` : v < -0.001 ? `−${a}` : '0,00' }
 })
-const CYL_VALS = Array.from({ length: 33 }, (_, i) => {
-  const v = parseFloat((i * -0.25).toFixed(3))
+const CYL_VALS = Array.from({ length: 65 }, (_, i) => {
+  const v = parseFloat((8 - i * 0.25).toFixed(3))
   const a = Math.abs(v).toFixed(2).replace('.', ',')
-  return { val: v, label: v < -0.001 ? `−${a}` : '0,00' }
+  return { val: v, label: v > 0.001 ? `+${a}` : v < -0.001 ? `−${a}` : '0,00' }
 })
 const AXE_VALS = Array.from({ length: 181 }, (_, i) => ({ val: i, label: `${i}°` }))
 const ADD_VALS = Array.from({ length: 17 }, (_, i) => {
@@ -777,11 +777,12 @@ const ADD_VALS = Array.from({ length: 17 }, (_, i) => {
 
 // Index "zéro" dans chaque tableau
 const SPH_ZERO = 32   // 8 - 32*0.25 = 0.00
-const CYL_ZERO = 0    // 0.00
+const CYL_ZERO = 32   // 8 - 32*0.25 = 0.00
 const AXE_ZERO = 0    // 0°
 const ADD_ZERO = 0    // 0.00
 
 const findSphIdx = v => Math.max(0, Math.min(64, Math.round((8 - v) / 0.25)))
+const findCylIdx = v => Math.max(0, Math.min(64, Math.round((8 - v) / 0.25)))
 const findAxeIdx = v => Math.max(0, Math.min(180, Math.round(v)))
 
 // ── WheelPicker (roulette tactile) ────────────────────────────────
@@ -958,11 +959,20 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
   const [showResult, setShowResult] = useState(false)
   const [results, setResults] = useState(null)
   const [numpadEye, setNumpadEye] = useState(null) // null | 'od' | 'og'
+  const [completed, setCompleted] = useState([false, false, false])
 
   const ex = SAISIE_EXERCISES[caseIdx]
 
   const resetAll = () => { setIdx(initIdx()); setShowResult(false); setResults(null) }
-  const handleCaseChange = i => { setCaseIdx(i); resetAll() }
+  const handleCaseChange = i => {
+    const isUnlocked = i === 0 || completed[i - 1]
+    if (!isUnlocked) return
+    setCaseIdx(i); resetAll()
+  }
+  const goToNextCase = () => {
+    const next = caseIdx + 1
+    if (next < SAISIE_EXERCISES.length) { setCaseIdx(next); resetAll() }
+  }
 
   const setEye = (eye, field, val) => {
     setIdx(prev => ({ ...prev, [eye]: { ...prev[eye], [field]: val } }))
@@ -991,6 +1001,10 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
     }
     setResults(r)
     setShowResult(true)
+    const fields = [r.od.sph, r.od.cyl, r.od.axe, r.og.sph, r.og.cyl, r.og.axe, ...(ex.add != null ? [r.add] : [])]
+    if (fields.every(Boolean)) {
+      setCompleted(prev => prev.map((c, i) => i === caseIdx ? true : c))
+    }
   }
 
   const hasAdd = ex.add != null
@@ -1004,8 +1018,8 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
 
   // Labels de la bonne réponse (pour feedback)
   const corrLabel = {
-    od: { sph: SPH_VALS[findSphIdx(ex.od.sphere)]?.label || '', cyl: CYL_VALS[Math.round(-ex.od.cylindre / 0.25)]?.label || '', axe: `${ex.od.axe}°` },
-    og: { sph: SPH_VALS[findSphIdx(ex.og.sphere)]?.label || '', cyl: CYL_VALS[Math.round(-ex.og.cylindre / 0.25)]?.label || '', axe: `${ex.og.axe}°` },
+    od: { sph: SPH_VALS[findSphIdx(ex.od.sphere)]?.label || '', cyl: CYL_VALS[findCylIdx(ex.od.cylindre)]?.label || '', axe: `${ex.od.axe}°` },
+    og: { sph: SPH_VALS[findSphIdx(ex.og.sphere)]?.label || '', cyl: CYL_VALS[findCylIdx(ex.og.cylindre)]?.label || '', axe: `${ex.og.axe}°` },
     add: ADD_VALS[Math.round((ex.add ?? 0) / 0.25)]?.label || '',
   }
 
@@ -1030,16 +1044,24 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 8 }}>Quel cas traitez-vous ?</div>
           <div style={{ display: 'flex', gap: 8 }}>
-            {SAISIE_EXERCISES.map((e, i) => (
-              <button key={e.id} onPointerDown={() => handleCaseChange(i)} style={{
-                flex: 1, padding: '10px 6px', borderRadius: 10,
-                border: `2px solid ${i === caseIdx ? APP_GOLD : '#ccc9de'}`,
-                background: i === caseIdx ? APP_GOLD : '#fff',
-                color: i === caseIdx ? '#fff' : '#666',
-                fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                WebkitTapHighlightColor: 'transparent',
-              }}>{e.label}</button>
-            ))}
+            {SAISIE_EXERCISES.map((e, i) => {
+              const isUnlocked = i === 0 || completed[i - 1]
+              const isDone     = completed[i]
+              const isActive   = i === caseIdx
+              return (
+                <button key={e.id} onPointerDown={() => handleCaseChange(i)} style={{
+                  flex: 1, padding: '10px 4px', borderRadius: 10,
+                  border: `2px solid ${isActive ? APP_GOLD : isDone ? '#22c55e' : isUnlocked ? '#ccc9de' : '#e5e2ef'}`,
+                  background: isActive ? APP_GOLD : isDone ? '#f0fdf4' : '#fff',
+                  color: isActive ? '#fff' : isDone ? '#16a34a' : isUnlocked ? '#555' : '#ccc',
+                  fontSize: 12, fontWeight: 700, cursor: isUnlocked ? 'pointer' : 'default',
+                  fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                }}>
+                  {isDone && !isActive ? '✓ ' : ''}{e.label}{!isUnlocked ? ' 🔒' : ''}
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -1131,14 +1153,37 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
 
       {/* ── Bouton bas ── */}
       <div style={{ padding: '12px 14px 36px', background: APP_BG, flexShrink: 0 }}>
-        <button onPointerDown={showResult ? resetAll : verify} style={{
-          width: '100%', padding: '16px', borderRadius: 12,
-          background: APP_DARK, border: 'none', color: '#fff',
-          fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
-          letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent',
-        }}>
-          {showResult ? 'RÉINITIALISER' : 'VÉRIFIER'}
-        </button>
+        {!showResult && (
+          <button onPointerDown={verify} style={{
+            width: '100%', padding: '16px', borderRadius: 12,
+            background: APP_DARK, border: 'none', color: '#fff',
+            fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+            letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent',
+          }}>VÉRIFIER</button>
+        )}
+        {showResult && !perfect && (
+          <button onPointerDown={resetAll} style={{
+            width: '100%', padding: '16px', borderRadius: 12,
+            background: '#6b5fa6', border: 'none', color: '#fff',
+            fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+            letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent',
+          }}>↩ RÉESSAYER</button>
+        )}
+        {showResult && perfect && caseIdx < SAISIE_EXERCISES.length - 1 && (
+          <button onPointerDown={goToNextCase} style={{
+            width: '100%', padding: '16px', borderRadius: 12,
+            background: APP_GOLD, border: 'none', color: '#fff',
+            fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+            letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent',
+          }}>CAS {caseIdx + 2} →</button>
+        )}
+        {showResult && perfect && caseIdx === SAISIE_EXERCISES.length - 1 && (
+          <div style={{
+            width: '100%', padding: '16px', borderRadius: 12, boxSizing: 'border-box',
+            background: 'linear-gradient(135deg, #16a34a, #22c55e)', textAlign: 'center',
+            fontSize: 14, fontWeight: 800, color: '#fff', letterSpacing: 0.5,
+          }}>🎉 EXERCICE TERMINÉ !</div>
+        )}
       </div>
 
       {/* Pavé numérique axe */}
