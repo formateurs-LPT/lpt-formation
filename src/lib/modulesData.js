@@ -160,7 +160,58 @@ export const OPTIQUE_PAGES = [
   },
 ]
 
-export const OPTIQUE_QUIZ = []
+export const OPTIQUE_QUIZ = [
+  {
+    question: 'Un client voit bien de près mais flou de loin. Quel est son trouble ?',
+    options: ['Hypermétropie', 'Presbytie', 'Myopie'],
+    correct: 2,
+  },
+  {
+    question: 'Comment reconnaît-on une hypermétropie sur une ordonnance ?',
+    options: ['La sphère est négative', 'La sphère est positive', 'Il y a toujours une addition'],
+    correct: 1,
+  },
+  {
+    question: "Quelle est la particularité de la vision de l'astigmate ?",
+    options: ['Flou uniquement de loin', 'Flou uniquement de près', 'Vision déformée à toutes les distances'],
+    correct: 2,
+  },
+  {
+    question: 'À partir de quel âge apparaît généralement la presbytie ?',
+    options: ['30-35 ans', '40-45 ans', '55-60 ans'],
+    correct: 1,
+  },
+  {
+    question: 'De combien évolue une correction entre chaque cran en optique ?',
+    options: ['0,50 dioptrie', '0,25 dioptrie', '1,00 dioptrie'],
+    correct: 1,
+  },
+  {
+    question: 'Sur une ordonnance, une sphère négative (ex : −2,00) indique…',
+    options: ['Une myopie', 'Une hypermétropie', 'Un astigmatisme'],
+    correct: 0,
+  },
+  {
+    question: 'À quoi correspond la colonne "Cylindre" sur une ordonnance ?',
+    options: ['La correction de la presbytie', 'La correction de base de la vision', "La correction de l'astigmatisme"],
+    correct: 2,
+  },
+  {
+    question: "Dans quelle plage se situe la valeur de l'Axe sur une ordonnance ?",
+    options: ['De 0° à 90°', 'De 0° à 180°', 'De 0° à 360°'],
+    correct: 1,
+  },
+  {
+    question: 'La colonne "Addition" sur une ordonnance concerne…',
+    options: ['Tous les clients avec cylindre', 'Uniquement les presbytes', 'Les myopes forts uniquement'],
+    correct: 1,
+  },
+  {
+    question: 'OD : Sph −3,00 / Cyl −1,00 / Axe 20° — Quels sont les troubles visuels de cette correction ?',
+    options: ['Myopie uniquement', 'Myopie + Astigmatisme', 'Hypermétropie + Astigmatisme'],
+    correct: 1,
+  },
+]
 
 // ── Exercices saisie ordonnance ───────────────────────────────────
 // Valeurs en nombres (float). axe en entier.
