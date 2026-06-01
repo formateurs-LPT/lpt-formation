@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE } from '@/lib/modulesData'
+import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { sbInsert, sbSelect, SESSION_CODE } from '@/lib/supabase'
 import { generatePin } from '@/lib/pin'
 
@@ -753,15 +753,296 @@ function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
   )
 }
 
+// ── Saisie interactive — vue téléphone (style app LPT) ────────────
+const APP_GOLD   = '#c8a52a'
+const APP_BG     = '#eae7f0'
+const APP_DARK   = '#2a2840'
+
+function SpinnerField({ value, onChange, min, max, step = 0.25, isAxe = false, isCorrect, correctVal, showResult }) {
+  const fmt = (v) => {
+    if (isAxe) return `${v}°`
+    const abs = Math.abs(v).toFixed(2).replace('.', ',')
+    if (v > 0.001) return `+${abs}`
+    if (v < -0.001) return `−${abs}`
+    return '0,00'
+  }
+  const decr = () => onChange(parseFloat(Math.max(min, value - step).toFixed(3)))
+  const incr = () => onChange(parseFloat(Math.min(max, value + step).toFixed(3)))
+
+  const borderColor = showResult ? (isCorrect ? '#22c55e' : '#ef4444') : '#d8d4e8'
+  const bgColor     = showResult ? (isCorrect ? '#f0fdf4' : '#fff0f0') : '#fff'
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        background: bgColor, border: `2px solid ${borderColor}`,
+        borderRadius: 10, overflow: 'hidden',
+      }}>
+        <button onPointerDown={decr} style={{
+          width: 36, height: 44, background: 'transparent', border: 'none',
+          cursor: 'pointer', fontSize: 22, color: '#444', fontWeight: 700,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          WebkitTapHighlightColor: 'transparent',
+        }}>−</button>
+        <span style={{
+          flex: 1, textAlign: 'center', fontSize: 15, fontWeight: 700,
+          color: APP_DARK, fontVariantNumeric: 'tabular-nums', userSelect: 'none',
+        }}>{fmt(value)}</span>
+        <button onPointerDown={incr} style={{
+          width: 36, height: 44, background: 'transparent', border: 'none',
+          cursor: 'pointer', fontSize: 22, color: '#444', fontWeight: 700,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          WebkitTapHighlightColor: 'transparent',
+        }}>+</button>
+      </div>
+      {showResult && !isCorrect && (
+        <div style={{ fontSize: 10, color: '#ef4444', textAlign: 'center', fontWeight: 600 }}>
+          ✓ {isAxe ? `${correctVal}°` : (() => { const abs = Math.abs(correctVal).toFixed(2).replace('.', ','); return correctVal > 0.001 ? `+${abs}` : correctVal < -0.001 ? `−${abs}` : '0,00' })()}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SaisieInteractiveMobile({ page, pageIndex, total }) {
+  const [caseIdx, setCaseIdx] = useState(0)
+  const initVals = () => ({ od: { sphere: 0, cylindre: 0, axe: 0 }, og: { sphere: 0, cylindre: 0, axe: 0 }, add: 0 })
+  const [vals, setVals] = useState(initVals)
+  const [showResult, setShowResult] = useState(false)
+  const [results, setResults] = useState(null)
+
+  const ex = SAISIE_EXERCISES[caseIdx]
+
+  const handleCaseChange = (idx) => {
+    setCaseIdx(idx)
+    setVals(initVals())
+    setShowResult(false)
+    setResults(null)
+  }
+
+  const setEyeField = (eye, field, v) => {
+    setVals(prev => ({ ...prev, [eye]: { ...prev[eye], [field]: v } }))
+    if (showResult) { setShowResult(false); setResults(null) }
+  }
+  const setAdd = (v) => {
+    setVals(prev => ({ ...prev, add: v }))
+    if (showResult) { setShowResult(false); setResults(null) }
+  }
+
+  const near = (a, b) => Math.abs(a - b) < 0.001
+  const verify = () => {
+    const r = {
+      od: {
+        sphere:   near(vals.od.sphere,   ex.od.sphere),
+        cylindre: near(vals.od.cylindre, ex.od.cylindre),
+        axe:      vals.od.axe === ex.od.axe,
+      },
+      og: {
+        sphere:   near(vals.og.sphere,   ex.og.sphere),
+        cylindre: near(vals.og.cylindre, ex.og.cylindre),
+        axe:      vals.og.axe === ex.og.axe,
+      },
+      add: near(vals.add, ex.add ?? 0),
+    }
+    setResults(r)
+    setShowResult(true)
+  }
+
+  const reset = () => {
+    setVals(initVals())
+    setShowResult(false)
+    setResults(null)
+  }
+
+  const totalFields = ex.add != null ? 7 : 6
+  const correctCount = results ? (
+    [results.od.sphere, results.od.cylindre, results.od.axe,
+     results.og.sphere, results.og.cylindre, results.og.axe,
+     ...(ex.add != null ? [results.add] : [])].filter(Boolean).length
+  ) : 0
+  const perfect = showResult && correctCount === totalFields
+
+  const ROW_STYLE = {
+    display: 'grid', gridTemplateColumns: '72px 1fr 1fr',
+    borderTop: '1px solid #ddd9ec', alignItems: 'center',
+  }
+  const LABEL_STYLE = { padding: '10px 10px', fontSize: 13, fontWeight: 700, color: '#444', lineHeight: 1.2 }
+  const CELL_STYLE  = { padding: '8px 8px' }
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: APP_BG,
+      display: 'flex', flexDirection: 'column',
+      fontFamily: 'inherit',
+    }}>
+      {/* Header doré */}
+      <div style={{
+        background: APP_GOLD, padding: '14px 20px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexShrink: 0,
+      }}>
+        <Image src="/assets/logo-lpt.png" alt="LPT" width={60} height={22} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+        <span style={{ fontSize: 16, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' }}>
+          Ajouter l&apos;ordonnance
+        </span>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{ height: 3, borderRadius: 2, width: i === pageIndex ? 14 : 3, background: i === pageIndex ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'all .4s' }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Corps scrollable */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 14px 0' }}>
+
+        {/* Sélecteur de cas */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#555', marginBottom: 8 }}>Quel cas traitez-vous ?</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {SAISIE_EXERCISES.map((e, i) => (
+              <button key={e.id} onPointerDown={() => handleCaseChange(i)} style={{
+                flex: 1, padding: '10px 6px', borderRadius: 10,
+                border: `2px solid ${i === caseIdx ? APP_GOLD : '#ccc9de'}`,
+                background: i === caseIdx ? APP_GOLD : '#fff',
+                color: i === caseIdx ? '#fff' : '#555',
+                fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                WebkitTapHighlightColor: 'transparent',
+              }}>{e.label}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Section corrections */}
+        <div style={{ fontSize: 14, fontWeight: 800, color: APP_DARK, marginBottom: 10 }}>Corrections*</div>
+
+        {/* Tableau */}
+        <div style={{
+          background: '#fff', borderRadius: 14, overflow: 'hidden',
+          border: '1px solid #ddd9ec', marginBottom: 12,
+        }}>
+          {/* En-têtes colonnes */}
+          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', background: '#f4f1fb' }}>
+            <div />
+            {['Œil droit', 'Œil gauche'].map(h => (
+              <div key={h} style={{ padding: '8px 10px', fontSize: 11, fontWeight: 700, color: '#666', textAlign: 'center', borderLeft: '1px solid #ddd9ec' }}>{h}</div>
+            ))}
+          </div>
+
+          {/* Sphère */}
+          <div style={ROW_STYLE}>
+            <div style={LABEL_STYLE}>Sphère</div>
+            {['od', 'og'].map(eye => (
+              <div key={eye} style={{ ...CELL_STYLE, borderLeft: '1px solid #ddd9ec' }}>
+                <SpinnerField
+                  value={vals[eye].sphere} onChange={v => setEyeField(eye, 'sphere', v)}
+                  min={-8} max={8} step={0.25}
+                  showResult={showResult} isCorrect={results?.[eye]?.sphere} correctVal={ex[eye].sphere}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Cylindre */}
+          <div style={ROW_STYLE}>
+            <div style={LABEL_STYLE}>Cylindre</div>
+            {['od', 'og'].map(eye => (
+              <div key={eye} style={{ ...CELL_STYLE, borderLeft: '1px solid #ddd9ec' }}>
+                <SpinnerField
+                  value={vals[eye].cylindre} onChange={v => setEyeField(eye, 'cylindre', v)}
+                  min={-8} max={0} step={0.25}
+                  showResult={showResult} isCorrect={results?.[eye]?.cylindre} correctVal={ex[eye].cylindre}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Axe */}
+          <div style={ROW_STYLE}>
+            <div style={LABEL_STYLE}>Axe</div>
+            {['od', 'og'].map(eye => (
+              <div key={eye} style={{ ...CELL_STYLE, borderLeft: '1px solid #ddd9ec' }}>
+                <SpinnerField
+                  value={vals[eye].axe} onChange={v => setEyeField(eye, 'axe', v)}
+                  min={0} max={180} step={1} isAxe
+                  showResult={showResult} isCorrect={results?.[eye]?.axe} correctVal={ex[eye].axe}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Add */}
+          <div style={ROW_STYLE}>
+            <div style={LABEL_STYLE}>Add</div>
+            <div style={{ ...CELL_STYLE, borderLeft: '1px solid #ddd9ec', gridColumn: 'span 2' }}>
+              <SpinnerField
+                value={vals.add} onChange={setAdd}
+                min={0} max={4} step={0.25}
+                showResult={showResult && ex.add != null}
+                isCorrect={results?.add}
+                correctVal={ex.add ?? 0}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Banner résultat */}
+        {showResult && (
+          <div style={{
+            borderRadius: 14, padding: '14px 18px',
+            background: perfect ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.08)',
+            border: `1px solid ${perfect ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.3)'}`,
+            display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12,
+          }}>
+            <span style={{ fontSize: 28 }}>{perfect ? '🎉' : '💡'}</span>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: perfect ? '#16a34a' : '#dc2626' }}>
+                {perfect ? 'Parfait !' : `${correctCount} / ${totalFields} correct`}
+              </div>
+              <div style={{ fontSize: 12, color: '#555' }}>
+                {perfect ? 'Toutes les corrections sont bonnes !' : 'Les champs en rouge indiquent la bonne réponse.'}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Espace bas */}
+        <div style={{ height: 12 }} />
+      </div>
+
+      {/* Bouton bas fixe */}
+      <div style={{ padding: '12px 14px 32px', background: APP_BG, flexShrink: 0 }}>
+        {showResult ? (
+          <button onPointerDown={reset} style={{
+            width: '100%', padding: '16px', borderRadius: 12,
+            background: APP_DARK, border: 'none', color: '#fff',
+            fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+            letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent',
+          }}>RÉINITIALISER</button>
+        ) : (
+          <button onPointerDown={verify} style={{
+            width: '100%', padding: '16px', borderRadius: 12,
+            background: APP_DARK, border: 'none', color: '#fff',
+            fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+            letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent',
+          }}>VÉRIFIER</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function ModuleScreen({ page, pageIndex, total, moduleLabel }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
-  if (page.type === 'troubles-intro')   return <TroublesIntroMobile   page={page} pageIndex={pageIndex} total={total} />
-  if (page.type === 'troubles-list')    return <TroublesListMobile    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'correction-scale') return <CorrectionScaleMobile  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'ordonnance')        return <OrdonnanceMobile        page={page} pageIndex={pageIndex} total={total} />
-  if (page.type === 'pause')             return <PauseMobile             page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'troubles-intro')    return <TroublesIntroMobile      page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'troubles-list')    return <TroublesListMobile       page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'correction-scale') return <CorrectionScaleMobile    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'ordonnance')        return <OrdonnanceMobile         page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'pause')             return <PauseMobile              page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'saisie-interactive') return <SaisieInteractiveMobile page={page} pageIndex={pageIndex} total={total} />
 
   return (
     <div style={{

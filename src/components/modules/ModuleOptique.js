@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, SESSION_CODE } from '@/lib/supabase'
-import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE } from '@/lib/modulesData'
+import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
 
 const STYLES = `
@@ -670,6 +670,144 @@ function PausePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst
   )
 }
 
+// ── Helpers saisie ────────────────────────────────────────────────
+const fmtSph = (v) => {
+  if (Math.abs(v) < 0.001) return '0,00'
+  const abs = Math.abs(v).toFixed(2).replace('.', ',')
+  return v > 0 ? `+${abs}` : `−${abs}`
+}
+const fmtCyl = (v) => {
+  if (Math.abs(v) < 0.001) return null
+  const abs = Math.abs(v).toFixed(2).replace('.', ',')
+  return `(−${abs})`
+}
+const fmtAdd = (v) => v != null ? `Add +${v.toFixed(2).replace('.', ',')}` : null
+
+function PrescLine({ eye }) {
+  const parts = [fmtSph(eye.sphere)]
+  const cyl = fmtCyl(eye.cylindre)
+  if (cyl) { parts.push(cyl); parts.push(`${eye.axe}°`) }
+  return <span>{parts.join(' ')}</span>
+}
+
+// ── Page 5 : Saisie interactive (vue formateur) ───────────────────
+function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    setVisible(false)
+    const t = setTimeout(() => setVisible(true), 100)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', position: 'relative',
+    }}>
+      {/* Topbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0, zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Les bases de l&apos;optique</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {Array(total).fill(0).map((_, i) => (
+              <div key={i} style={{ height: 5, borderRadius: 3, transition: 'all .3s', width: i === pageIndex ? 22 : 5, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)' }} />
+            ))}
+          </div>
+          <button onClick={onBack}
+            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+          >✕ Quitter</button>
+        </div>
+      </div>
+
+      {/* Corps */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column', padding: '16px 48px 100px', gap: 24,
+        opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(20px)',
+        transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}>
+        {/* Titre */}
+        <div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)', borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+            <span style={{ fontSize: 15 }}>⌨️</span> Exercice pratique
+          </div>
+          <h1 style={{ fontSize: 30, fontWeight: 800, color: '#fff', lineHeight: 1.1, margin: 0 }}>{page.titre}</h1>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 6 }}>
+            Les participants saisissent les corrections sur leur téléphone — annoncez le cas à traiter.
+          </p>
+        </div>
+
+        {/* 3 cas exercice */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          {SAISIE_EXERCISES.map((ex, i) => (
+            <div key={ex.id} style={{
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 20, padding: '24px 24px 20px', display: 'flex', flexDirection: 'column', gap: 16,
+            }}>
+              {/* Badge cas */}
+              <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.35)', borderRadius: 16, padding: '4px 14px', fontSize: 12, fontWeight: 800, color: '#00abe9' }}>
+                {ex.label}
+              </div>
+
+              {/* Valeurs */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[['OD', ex.od], ['OG', ex.og]].map(([label, eye]) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.4)', minWidth: 24 }}>{label}</span>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
+                      <PrescLine eye={eye} />
+                    </span>
+                  </div>
+                ))}
+                {ex.add != null && (
+                  <div style={{ marginTop: 4, fontSize: 14, fontWeight: 600, color: '#4ade80' }}>
+                    {fmtAdd(ex.add)}
+                  </div>
+                )}
+              </div>
+
+              {/* Grille recap */}
+              <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: 'rgba(255,255,255,0.04)' }}>
+                  {['Sphère', 'Cylindre', 'Axe'].map(h => (
+                    <div key={h} style={{ padding: '6px 10px', fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 0.8, borderRight: '1px solid rgba(255,255,255,0.06)' }}>{h}</div>
+                  ))}
+                </div>
+                {[['OD', ex.od], ['OG', ex.og]].map(([label, eye]) => (
+                  <div key={label} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    {[fmtSph(eye.sphere), Math.abs(eye.cylindre) < 0.001 ? '—' : fmtCyl(eye.cylindre), eye.axe === 0 && Math.abs(eye.cylindre) < 0.001 ? '—' : `${eye.axe}°`].map((v, ci) => (
+                      <div key={ci} style={{ padding: '8px 10px', fontSize: 13, fontWeight: 700, color: '#fff', borderRight: '1px solid rgba(255,255,255,0.06)', fontVariantNumeric: 'tabular-nums' }}>{v}</div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Instruction */}
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 10, alignSelf: 'flex-start',
+          background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)',
+          borderRadius: 30, padding: '12px 24px',
+        }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'optiqueHalo 1.5s ease-in-out infinite' }} />
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>Les participants saisissent en ce moment sur leur téléphone</span>
+        </div>
+      </div>
+
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
+    </div>
+  )
+}
+
 // ── Lobby ─────────────────────────────────────────────────────────
 function Lobby({ onStart, onBack }) {
   return (
@@ -705,7 +843,7 @@ function Lobby({ onStart, onBack }) {
           borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer',
           boxShadow: '0 8px 32px rgba(0,171,233,0.45)', fontFamily: 'inherit',
         }}>▶ Lancer le module</button>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>5 pages · ~15 minutes</p>
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>6 pages · ~20 minutes</p>
       </div>
     </div>
   )
@@ -758,11 +896,12 @@ export default function ModuleOptique({ pName, onBack }) {
   return (
     <>
       <style>{STYLES}</style>
-      {page.type === 'troubles-intro'   && <TroublesIntroPage   page={page} {...navProps} />}
-      {page.type === 'troubles-list'    && <TroublesPage        page={page} {...navProps} />}
-      {page.type === 'correction-scale' && <CorrectionScalePage  page={page} {...navProps} />}
-      {page.type === 'ordonnance'        && <OrdonnancePage        page={page} {...navProps} />}
-      {page.type === 'pause'             && <PausePage             page={page} {...navProps} />}
+      {page.type === 'troubles-intro'    && <TroublesIntroPage      page={page} {...navProps} />}
+      {page.type === 'troubles-list'    && <TroublesPage           page={page} {...navProps} />}
+      {page.type === 'correction-scale' && <CorrectionScalePage    page={page} {...navProps} />}
+      {page.type === 'ordonnance'        && <OrdonnancePage         page={page} {...navProps} />}
+      {page.type === 'pause'             && <PausePage              page={page} {...navProps} />}
+      {page.type === 'saisie-interactive' && <SaisieInteractivePage page={page} {...navProps} />}
     </>
   )
 }

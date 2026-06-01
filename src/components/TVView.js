@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE } from '@/lib/modulesData'
+import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { sbSelect, SESSION_CODE } from '@/lib/supabase'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -642,6 +642,130 @@ function TVTroublesList({ page, pageIndex, total, moduleLabel }) {
   )
 }
 
+// ── Helpers saisie TV ─────────────────────────────────────────────
+const tvFmtSph = (v) => {
+  if (Math.abs(v) < 0.001) return '0,00'
+  const abs = Math.abs(v).toFixed(2).replace('.', ',')
+  return v > 0 ? `+${abs}` : `−${abs}`
+}
+const tvFmtCyl = (v) => {
+  if (Math.abs(v) < 0.001) return null
+  const abs = Math.abs(v).toFixed(2).replace('.', ',')
+  return `(−${abs})`
+}
+
+function TVPrescLine({ eye }) {
+  const parts = [tvFmtSph(eye.sphere)]
+  const cyl = tvFmtCyl(eye.cylindre)
+  if (cyl) { parts.push(cyl); parts.push(`${eye.axe}°`) }
+  return <span>{parts.join(' ')}</span>
+}
+
+// ── TV Saisie Interactive (type = saisie-interactive) ─────────────
+function TVSaisieInteractive({ page, pageIndex, total, moduleLabel }) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    setVisible(false)
+    const t = setTimeout(() => setVisible(true), 100)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
+      {/* Topbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {Array(total).fill(0).map((_, i) => (
+              <div key={i} style={{ height: 5, borderRadius: 3, transition: 'all .3s', width: i === pageIndex ? 22 : 5, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)' }} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Corps */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column', padding: '12px 56px 40px', gap: 28,
+        opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(20px)',
+        transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}>
+        {/* Badge */}
+        <div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)', borderRadius: 20, padding: '5px 18px', fontSize: 13, fontWeight: 700, color: '#00abe9' }}>
+            ⌨️&nbsp; Exercice pratique
+          </div>
+          <h2 style={{ fontSize: 36, fontWeight: 800, color: '#fff', marginTop: 10, marginBottom: 4 }}>{page.titre}</h2>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.35)' }}>Saisissez ces corrections depuis votre téléphone</p>
+        </div>
+
+        {/* 3 cas côte à côte */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, flex: 1 }}>
+          {SAISIE_EXERCISES.map((ex, i) => (
+            <div key={ex.id} style={{
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+              borderTop: '4px solid #00abe9', borderRadius: 20, padding: '28px 28px 24px',
+              display: 'flex', flexDirection: 'column', gap: 20,
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2 }}>{ex.label}</div>
+
+              {/* Lignes OD / OG */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {[['OD', ex.od], ['OG', ex.og]].map(([label, eye]) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: 'rgba(255,255,255,0.4)', minWidth: 28 }}>{label}</span>
+                    <span style={{ fontSize: 26, fontWeight: 700, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
+                      <TVPrescLine eye={eye} />
+                    </span>
+                  </div>
+                ))}
+                {ex.add != null && (
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#4ade80', marginTop: 4 }}>
+                    Add +{ex.add.toFixed(2).replace('.', ',')}
+                  </div>
+                )}
+              </div>
+
+              {/* Grille détail */}
+              <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr 1fr', background: 'rgba(255,255,255,0.04)' }}>
+                  <div />
+                  {['Sphère', 'Cyl.', 'Axe'].map(h => (
+                    <div key={h} style={{ padding: '8px 12px', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 0.8, borderLeft: '1px solid rgba(255,255,255,0.06)' }}>{h}</div>
+                  ))}
+                </div>
+                {[['OD', ex.od], ['OG', ex.og]].map(([label, eye]) => (
+                  <div key={label} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 1fr 1fr', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ padding: '10px 12px', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center' }}>{label}</div>
+                    <div style={{ padding: '10px 12px', fontSize: 16, fontWeight: 700, color: '#38bdf8', borderLeft: '1px solid rgba(255,255,255,0.06)', fontVariantNumeric: 'tabular-nums' }}>{tvFmtSph(eye.sphere)}</div>
+                    <div style={{ padding: '10px 12px', fontSize: 16, fontWeight: 700, color: '#fb923c', borderLeft: '1px solid rgba(255,255,255,0.06)', fontVariantNumeric: 'tabular-nums' }}>{Math.abs(eye.cylindre) < 0.001 ? '—' : tvFmtCyl(eye.cylindre)}</div>
+                    <div style={{ padding: '10px 12px', fontSize: 16, fontWeight: 700, color: '#c084fc', borderLeft: '1px solid rgba(255,255,255,0.06)', fontVariantNumeric: 'tabular-nums' }}>{eye.axe === 0 && Math.abs(eye.cylindre) < 0.001 ? '—' : `${eye.axe}°`}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Pill bas */}
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 12, alignSelf: 'center',
+          background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)',
+          borderRadius: 40, padding: '14px 32px',
+        }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#00abe9', animation: 'waitingPulse 1.5s ease-in-out infinite' }} />
+          <span style={{ fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>📱 Saisissez les corrections sur votre téléphone</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── TV Content Page (no controls, no avatar) ──────────────────────
 function TVContentPage({ page, pageIndex, total, moduleLabel }) {
   const [entered, setEntered] = useState(false)
@@ -652,11 +776,12 @@ function TVContentPage({ page, pageIndex, total, moduleLabel }) {
     return () => clearTimeout(t)
   }, [page.id])
 
-  if (page.type === 'troubles-intro')   return <TVTroublesIntro   page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'troubles-list')    return <TVTroublesList    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'correction-scale') return <TVCorrectionScale  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'ordonnance')        return <TVOrdonnance        page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'pause')             return <TVPause             page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'troubles-list')    return <TVTroublesList       page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
 
   return (
     <div style={{

@@ -150,9 +150,40 @@ export const OPTIQUE_PAGES = [
     icon: '🔬',
     color: '#00abe9',
   },
+  {
+    id: 'saisie-ordo',
+    type: 'saisie-interactive',
+    titre: 'À vous de jouer !',
+    sousTitre: 'Saisissez les corrections dans l\'app',
+    icon: '⌨️',
+    color: '#00abe9',
+  },
 ]
 
 export const OPTIQUE_QUIZ = []
+
+// ── Exercices saisie ordonnance ───────────────────────────────────
+// Valeurs en nombres (float). axe en entier.
+export const SAISIE_EXERCISES = [
+  {
+    id: 'ex1', label: 'Cas 1',
+    od: { sphere:  1.50, cylindre: -0.50, axe: 180 },
+    og: { sphere:  1.00, cylindre: -0.25, axe:  30 },
+    add: null,
+  },
+  {
+    id: 'ex2', label: 'Cas 2',
+    od: { sphere: -3.00, cylindre: -1.00, axe:  20 },
+    og: { sphere: -3.25, cylindre: -1.00, axe: 100 },
+    add: null,
+  },
+  {
+    id: 'ex3', label: 'Cas 3',
+    od: { sphere:  1.25, cylindre:  0.00, axe:   0 },
+    og: { sphere:  1.50, cylindre: -0.25, axe: 150 },
+    add: 1.50,
+  },
+]
 
 // ── Données partagées page 3 ──────────────────────────────────────
 export const ORD_COLS = [
