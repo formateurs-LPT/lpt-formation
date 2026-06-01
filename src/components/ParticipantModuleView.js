@@ -1103,17 +1103,11 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
           {/* Axe */}
           <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
             <div style={{ fontSize: 13, fontWeight: 500, color: '#555', paddingTop: 36 }}>Axe</div>
-            <div>
-              <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
-                <WheelPicker values={AXE_VALS} selectedIdx={idx.od.axe} onChange={v => setEye('od', 'axe', v)} showResult={showResult} isCorrect={results?.od?.axe} correctLabel={corrLabel.od.axe} />
-              </div>
-              <button onPointerDown={() => setNumpadEye('od')} style={{ width: '100%', marginTop: 4, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 10, color: '#bbb', fontFamily: 'inherit', padding: '2px 0', WebkitTapHighlightColor: 'transparent' }}>⌨️ taper</button>
+            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
+              <WheelPicker values={AXE_VALS} selectedIdx={idx.od.axe} onChange={v => setEye('od', 'axe', v)} showResult={showResult} isCorrect={results?.od?.axe} correctLabel={corrLabel.od.axe} />
             </div>
-            <div>
-              <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
-                <WheelPicker values={AXE_VALS} selectedIdx={idx.og.axe} onChange={v => setEye('og', 'axe', v)} showResult={showResult} isCorrect={results?.og?.axe} correctLabel={corrLabel.og.axe} />
-              </div>
-              <button onPointerDown={() => setNumpadEye('og')} style={{ width: '100%', marginTop: 4, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 10, color: '#bbb', fontFamily: 'inherit', padding: '2px 0', WebkitTapHighlightColor: 'transparent' }}>⌨️ taper</button>
+            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
+              <WheelPicker values={AXE_VALS} selectedIdx={idx.og.axe} onChange={v => setEye('og', 'axe', v)} showResult={showResult} isCorrect={results?.og?.axe} correctLabel={corrLabel.og.axe} />
             </div>
           </div>
 
