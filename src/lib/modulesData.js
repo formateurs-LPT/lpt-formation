@@ -102,6 +102,14 @@ export const PDM_QUIZ = [
 
 export const OPTIQUE_PAGES = [
   {
+    id: 'troubles-intro',
+    type: 'troubles-intro',
+    titre: 'Pourquoi porte-t-on des lunettes ?',
+    sousTitre: 'Réfléchissez-y…',
+    icon: '👁️',
+    color: '#00abe9',
+  },
+  {
     id: 'troubles',
     type: 'troubles-list',
     titre: 'Pourquoi porte-t-on des lunettes ?',

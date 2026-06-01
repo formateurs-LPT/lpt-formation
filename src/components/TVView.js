@@ -494,6 +494,62 @@ function TVPause({ page, pageIndex, total, moduleLabel }) {
   )
 }
 
+// ── TV Troubles Intro (type = troubles-intro) ─────────────────────
+function TVTroublesIntro({ page, pageIndex, total, moduleLabel }) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    setVisible(false)
+    const t = setTimeout(() => setVisible(true), 100)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {Array(total).fill(0).map((_, i) => (
+              <div key={i} style={{ height: 5, borderRadius: 3, transition: 'all .3s', width: i === pageIndex ? 22 : 5, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)' }} />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 36,
+        opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)',
+        transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}>
+        <div style={{
+          width: 160, height: 160, borderRadius: '50%',
+          background: 'rgba(0,171,233,0.1)', border: '2px solid rgba(0,171,233,0.2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 0 80px rgba(0,171,233,0.15)',
+        }}>
+          <span style={{ fontSize: 80, lineHeight: 1 }}>{page.icon}</span>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)', borderRadius: 20, padding: '5px 18px', fontSize: 12, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 22 }}>
+            Les bases de l&apos;optique
+          </div>
+          <h1 style={{ fontSize: 64, fontWeight: 900, color: '#fff', lineHeight: 1.15, maxWidth: 800 }}>
+            {page.titre}
+          </h1>
+          <p style={{ fontSize: 22, color: 'rgba(255,255,255,0.4)', marginTop: 18, fontStyle: 'italic' }}>
+            {page.sousTitre}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── TV Troubles List (type = troubles-list) ───────────────────────
 function TVTroublesList({ page, pageIndex, total, moduleLabel }) {
   const [visibleCount, setVisibleCount] = useState(0)
@@ -596,6 +652,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel }) {
     return () => clearTimeout(t)
   }, [page.id])
 
+  if (page.type === 'troubles-intro')   return <TVTroublesIntro   page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')    return <TVTroublesList    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'correction-scale') return <TVCorrectionScale  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance        page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />

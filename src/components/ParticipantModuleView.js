@@ -592,6 +592,56 @@ function PauseMobile({ page, pageIndex, total }) {
   )
 }
 
+// ── Troubles intro — vue téléphone ───────────────────────────────
+function TroublesIntroMobile({ page, pageIndex, total }) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    setVisible(false)
+    const t = setTimeout(() => setVisible(true), 100)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <Image src="/assets/logo-lpt.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIndex ? 18 : 4, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .4s' }} />
+          ))}
+        </div>
+      </div>
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: 24, padding: '40px 24px',
+        opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)',
+        transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}>
+        <div style={{
+          width: 88, height: 88, borderRadius: '50%',
+          background: 'rgba(0,171,233,0.1)', border: '2px solid rgba(0,171,233,0.2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 0 40px rgba(0,171,233,0.15)',
+        }}>
+          <span style={{ fontSize: 42, lineHeight: 1 }}>{page.icon}</span>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>
+            Les bases de l&apos;optique
+          </div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>
+            {page.titre}
+          </div>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', marginTop: 12, fontStyle: 'italic' }}>
+            {page.sousTitre}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Troubles list — vue téléphone ────────────────────────────────
 function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
   const [visibleCount, setVisibleCount] = useState(0)
@@ -674,6 +724,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
+  if (page.type === 'troubles-intro')   return <TroublesIntroMobile   page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'troubles-list')    return <TroublesListMobile    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'correction-scale') return <CorrectionScaleMobile  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <OrdonnanceMobile        page={page} pageIndex={pageIndex} total={total} />

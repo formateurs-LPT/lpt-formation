@@ -82,8 +82,125 @@ function AvatarBubble({ script, trainerAvatar, pName }) {
   )
 }
 
+// ── NavBar partagée (formateur) ───────────────────────────────────
+function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+  return (
+    <div style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0,
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      padding: '16px 360px 24px 48px',
+      background: 'linear-gradient(0deg, rgba(3,17,42,0.95) 0%, transparent 100%)',
+      zIndex: 20,
+    }}>
+      {/* Précédent */}
+      {!isFirst ? (
+        <button onClick={onPrev} style={{
+          background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+          color: 'rgba(255,255,255,0.6)', padding: '12px 28px', borderRadius: 12,
+          fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          transition: 'all .2s',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.13)'; e.currentTarget.style.color = '#fff' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
+        >← Précédent</button>
+      ) : <div />}
+
+      {/* Suivant / Terminer */}
+      {isLast ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>Suite du module en construction…</span>
+          <button onClick={onBack} style={{
+            background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)',
+            color: '#ff6b6b', padding: '12px 24px', borderRadius: 12,
+            fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          }}>Terminer →</button>
+        </div>
+      ) : (
+        <button onClick={onNext} style={{
+          background: 'linear-gradient(135deg, #0066a0, #00abe9)',
+          border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12,
+          fontSize: 15, fontWeight: 700, cursor: 'pointer',
+          boxShadow: '0 6px 24px rgba(0,171,233,0.45)', fontFamily: 'inherit',
+        }}>Suivant →</button>
+      )}
+    </div>
+  )
+}
+
+// ── Page 0 : Titre seul — question orale ─────────────────────────
+function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    setVisible(false)
+    const t = setTimeout(() => setVisible(true), 100)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', position: 'relative',
+    }}>
+      {/* Topbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0, zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Les bases de l&apos;optique</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {Array(total).fill(0).map((_, i) => (
+              <div key={i} style={{ height: 5, borderRadius: 3, transition: 'all .3s', width: i === pageIndex ? 22 : 5, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)' }} />
+            ))}
+          </div>
+          <button onClick={onBack}
+            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+          >✕ Quitter</button>
+        </div>
+      </div>
+
+      {/* Centre */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: 32, padding: '40px 48px 120px',
+        opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(20px)',
+        transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}>
+        <div style={{
+          width: 110, height: 110, borderRadius: '50%',
+          background: 'rgba(0,171,233,0.1)', border: '2px solid rgba(0,171,233,0.2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 0 60px rgba(0,171,233,0.15)',
+        }}>
+          <span style={{ fontSize: 52, lineHeight: 1 }}>{page.icon}</span>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)', borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 18 }}>
+            Les bases de l&apos;optique
+          </div>
+          <h1 style={{ fontSize: 44, fontWeight: 900, color: '#fff', lineHeight: 1.15, maxWidth: 600 }}>
+            {page.titre}
+          </h1>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', marginTop: 16, fontStyle: 'italic' }}>
+            {page.sousTitre}
+          </p>
+        </div>
+      </div>
+
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
+      <AvatarBubble script="Commencez par poser cette question à vos collaborateurs avant de dévoiler les réponses." trainerAvatar={trainerAvatar} pName={pName} />
+    </div>
+  )
+}
+
 // ── Page troubles visuels ─────────────────────────────────────────
-function TroublesPage({ page, trainerAvatar, pName, onBack, pageIndex, total, onNext, isLast }) {
+function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
   const [visibleCount, setVisibleCount] = useState(0)
 
   useEffect(() => {
@@ -188,36 +305,7 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, pageIndex, total, on
         </div>
       </div>
 
-      {/* Boutons navigation */}
-      <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
-        padding: '16px 360px 24px 48px',
-        background: 'linear-gradient(0deg, rgba(3,17,42,0.95) 0%, transparent 100%)',
-        zIndex: 20,
-      }}>
-        {isLast ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>
-              Suite du module en construction…
-            </span>
-            <button onClick={onBack} style={{
-              background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)',
-              color: '#ff6b6b', padding: '12px 24px', borderRadius: 12,
-              fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            }}>Terminer →</button>
-          </div>
-        ) : (
-          <button onClick={onNext} style={{
-            background: 'linear-gradient(135deg, #0066a0, #00abe9)',
-            border: 'none', color: '#fff',
-            padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
-            cursor: 'pointer', boxShadow: '0 6px 24px rgba(0,171,233,0.45)',
-            fontFamily: 'inherit',
-          }}>Suivant →</button>
-        )}
-      </div>
-
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
       <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
     </div>
   )
@@ -231,7 +319,7 @@ const OPT_PLAN_W = 96  // largeur colonne Plan (fixe, ne scrolle pas)
 const OPT_ROW_H  = 46  // hauteur fixe des rangées de chips
 
 // ── Page 2 : Frise horizontale ±8,00 ─────────────────────────────
-function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, total, onNext, isLast }) {
+function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
   const [step, setStep] = useState(0)
 
   useEffect(() => {
@@ -343,16 +431,7 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, to
       </div>
 
       {/* Navigation */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '16px 360px 24px 48px', background: 'linear-gradient(0deg, rgba(3,17,42,0.95) 0%, transparent 100%)', zIndex: 20 }}>
-        {isLast ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>Suite du module en construction…</span>
-            <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)', color: '#ff6b6b', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Terminer →</button>
-          </div>
-        ) : (
-          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #0066a0, #00abe9)', border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 24px rgba(0,171,233,0.45)', fontFamily: 'inherit' }}>Suivant →</button>
-        )}
-      </div>
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
 
       <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
     </div>
@@ -360,7 +439,7 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, pageIndex, to
 }
 
 // ── Page 3 : Lire une ordonnance ─────────────────────────────────
-function OrdonnancePage({ page, trainerAvatar, pName, onBack, pageIndex, total, onNext, isLast }) {
+function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
   const [step, setStep] = useState(0)
 
   useEffect(() => {
@@ -502,16 +581,7 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, pageIndex, total, 
       </div>
 
       {/* Navigation */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '16px 360px 24px 48px', background: 'linear-gradient(0deg, rgba(3,17,42,0.95) 0%, transparent 100%)', zIndex: 20 }}>
-        {isLast ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>Suite du module en construction…</span>
-            <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)', color: '#ff6b6b', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Terminer →</button>
-          </div>
-        ) : (
-          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #0066a0, #00abe9)', border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 24px rgba(0,171,233,0.45)', fontFamily: 'inherit' }}>Suivant →</button>
-        )}
-      </div>
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
 
       <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
     </div>
@@ -519,7 +589,7 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, pageIndex, total, 
 }
 
 // ── Page 4 : Pause atelier pratique ──────────────────────────────
-function PausePage({ page, trainerAvatar, pName, onBack, pageIndex, total, onNext, isLast }) {
+function PausePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     setVisible(false)
@@ -595,16 +665,7 @@ function PausePage({ page, trainerAvatar, pName, onBack, pageIndex, total, onNex
       </div>
 
       {/* Navigation */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '16px 360px 24px 48px', background: 'linear-gradient(0deg, rgba(3,17,42,0.95) 0%, transparent 100%)', zIndex: 20 }}>
-        {isLast ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>Suite du module en construction…</span>
-            <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)', color: '#ff6b6b', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Terminer →</button>
-          </div>
-        ) : (
-          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #0066a0, #00abe9)', border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 24px rgba(0,171,233,0.45)', fontFamily: 'inherit' }}>Suivant →</button>
-        )}
-      </div>
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
     </div>
   )
 }
@@ -644,7 +705,7 @@ function Lobby({ onStart, onBack }) {
           borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer',
           boxShadow: '0 8px 32px rgba(0,171,233,0.45)', fontFamily: 'inherit',
         }}>▶ Lancer le module</button>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>4 pages · ~15 minutes</p>
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>5 pages · ~15 minutes</p>
       </div>
     </div>
   )
@@ -683,13 +744,16 @@ export default function ModuleOptique({ pName, onBack }) {
     onBack: handleBack,
     pageIndex,
     total: PAGES.length,
+    onPrev: () => setPageIndex(i => Math.max(i - 1, 0)),
     onNext: () => setPageIndex(i => Math.min(i + 1, PAGES.length - 1)),
+    isFirst: pageIndex === 0,
     isLast: pageIndex === PAGES.length - 1,
   }
 
   return (
     <>
       <style>{STYLES}</style>
+      {page.type === 'troubles-intro'   && <TroublesIntroPage   page={page} {...navProps} />}
       {page.type === 'troubles-list'    && <TroublesPage        page={page} {...navProps} />}
       {page.type === 'correction-scale' && <CorrectionScalePage  page={page} {...navProps} />}
       {page.type === 'ordonnance'        && <OrdonnancePage        page={page} {...navProps} />}
