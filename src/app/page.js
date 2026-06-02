@@ -8,7 +8,6 @@ import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
 import { sbUpsert, sbUpdate, SESSION_CODE } from '@/lib/supabase'
 import { TRAINERS, TRAINER_CANONICAL } from '@/lib/constants'
-import { generatePin } from '@/lib/pin'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
 import ModulePDM from '@/components/modules/ModulePDM'
 import ModuleOptique from '@/components/modules/ModuleOptique'
@@ -58,13 +57,8 @@ export default function Page() {
     setView('dashboard')
   }
 
-  const handleParticipantJoin = async (name, code) => {
+  const handleParticipantJoin = async (name) => {
     if (!name.trim()) { toast('Entrez votre prénom et nom'); return }
-    const codeClean = code.trim()
-    const pin = generatePin(name.trim())
-    if (codeClean.toUpperCase() !== SESSION_CODE && codeClean !== pin) {
-      toast('Code incorrect'); return
-    }
     setPName(name.trim())
     setIsTrainer(false)
     localStorage.setItem('participant_name', name.trim())

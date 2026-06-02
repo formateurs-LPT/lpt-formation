@@ -76,21 +76,10 @@ export default function Login({ onTrainerLogin, onParticipantJoin }) {
             placeholder="Votre prénom et nom"
             value={pname}
             onChange={e => setPname(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleJoin()}
           />
-          <div className="join-row">
-            <input
-              className="finput code-input"
-              type="text"
-              placeholder={isJoinMode ? 'Votre PIN' : 'CODE'}
-              maxLength={8}
-              value={scode}
-              onChange={e => setScode(isJoinMode ? e.target.value.replace(/\D/g, '') : e.target.value.toUpperCase())}
-              onKeyDown={e => e.key === 'Enter' && handleJoin()}
-              inputMode={isJoinMode ? 'numeric' : 'text'}
-            />
-            <button className="gbtn" onClick={handleJoin}>Rejoindre →</button>
-          </div>
-          <p className="hint">{isJoinMode ? 'Votre code PIN personnel (communiqué par le formateur)' : 'Le code de session est communiqué par votre formateur'}</p>
+          <button className="gbtn" style={{ width: '100%', marginTop: 4 }} onClick={handleJoin}>Rejoindre →</button>
+          <p className="hint">Entrez votre prénom et nom pour rejoindre la session</p>
         </div>
       </div>
     </div>
