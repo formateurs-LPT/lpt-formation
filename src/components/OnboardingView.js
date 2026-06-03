@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { generatePin } from '@/lib/pin'
-import { getSharedState, setSharedState } from '@/lib/supabase'
+import { getSharedState, setSharedState, sbUpsert } from '@/lib/supabase'
 
 const PARIS_MAGASINS = ['chatelet','st lazare','saint lazare','montparnasse','italie','commerce','bastille','cergy','creteil','créteil','belle epine','belle épine','paris','st ouen','saint ouen','ouen','beauchamp','odysseum','supply']
 const BELGIQUE_MAGASINS = ['namur','liege','liège','fripier','ixelles','charleroi','bruxelles']
@@ -122,7 +122,16 @@ function CollabList({ group, onNext, onBack }) {
     load()
   }, [group])
 
-  const toggle = async (key, field) => {
+  // Calcule le lundi de la semaine courante (clé week_date)
+  const getWeekDate = () => {
+    const d = new Date()
+    const day = d.getDay()
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+    d.setDate(diff)
+    return d.toISOString().slice(0, 10)
+  }
+
+  const toggle = async (key, field, collab) => {
     const updated = {
       ...checks,
       [key]: { ...(checks[key] || {}), [field]: !(checks[key]?.[field]) }
@@ -140,6 +149,18 @@ function CollabList({ group, onNext, onBack }) {
       patch.ob_day = '1'
     }
     setSharedState(patch).catch(console.warn)
+
+    // Écriture dans la table onboarding_sessions
+    const d = updated[key] || {}
+    sbUpsert('onboarding_sessions', {
+      week_date: getWeekDate(),
+      collaborateur: key,
+      pin: generatePin(key),
+      magasin: collab?.magasin || '',
+      poste: collab?.poste || '',
+      present: !!d.present,
+      contrat: !!d.contrat,
+    }, 'collaborateur,week_date').catch(console.warn)
   }
 
   const title = group === 'presentiel' ? '🏢 Présentiel · Paris' : '💻 Visio · Province & Belgique'
@@ -179,11 +200,11 @@ function CollabList({ group, onNext, onBack }) {
               </div>
               <div className="ob-collab-checks">
                 <label className="ob-collab-check">
-                  <input type="checkbox" checked={!!d.present} onChange={() => toggle(key, 'present')} />
+                  <input type="checkbox" checked={!!d.present} onChange={() => toggle(key, 'present', c)} />
                   Présent
                 </label>
                 <label className="ob-collab-check">
-                  <input type="checkbox" checked={!!d.contrat} onChange={() => toggle(key, 'contrat')} />
+                  <input type="checkbox" checked={!!d.contrat} onChange={() => toggle(key, 'contrat', c)} />
                   Contrat signé
                 </label>
               </div>

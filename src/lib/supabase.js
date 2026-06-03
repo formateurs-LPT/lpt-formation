@@ -73,6 +73,14 @@ export async function sbDelete(table, filter) {
   })
 }
 
+// ── Trainer auth depuis la table Supabase ─────────────────────────
+export async function getTrainerFromDB(login) {
+  try {
+    const rows = await sbSelect('trainers', `login=eq.${encodeURIComponent(login)}&active=eq.true`)
+    return rows?.[0] || null
+  } catch { return null }
+}
+
 export async function getSharedState() {
   const code = SESSION_CODE || getSessionCode()
   const rows = await sbSelect('trainer_state', `trainer=eq.${code}`)

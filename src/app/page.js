@@ -6,7 +6,7 @@ import Toast, { useToast } from '@/components/Toast'
 import Dashboard from '@/components/Dashboard'
 import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
-import { sbUpsert, sbUpdate, SESSION_CODE } from '@/lib/supabase'
+import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB } from '@/lib/supabase'
 import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
@@ -40,13 +40,23 @@ export default function Page() {
   }, [])
 
   const handleTrainerLogin = async (id, code) => {
-    const trainers = getTrainerCredentials()
     const idRaw = id.trim().toLowerCase()
     const normalized = TRAINER_CANONICAL[idRaw] || idRaw
     if (!normalized) { toast('Entrez votre identifiant'); return }
-    if (!trainers[normalized]) { toast('Identifiant inconnu'); return }
-    if (trainers[normalized] !== code.trim()) { toast('Code incorrect'); return }
-    const name = normalized.charAt(0).toUpperCase() + normalized.slice(1)
+
+    // 1. Essai via table Supabase `trainers`
+    let name = null
+    const dbTrainer = await getTrainerFromDB(normalized)
+    if (dbTrainer) {
+      if (dbTrainer.pin_hash !== code.trim()) { toast('Code incorrect'); return }
+      name = dbTrainer.display_name || (normalized.charAt(0).toUpperCase() + normalized.slice(1))
+    } else {
+      // 2. Fallback env vars
+      const trainers = getTrainerCredentials()
+      if (!trainers[normalized]) { toast('Identifiant inconnu'); return }
+      if (trainers[normalized] !== code.trim()) { toast('Code incorrect'); return }
+      name = normalized.charAt(0).toUpperCase() + normalized.slice(1)
+    }
     setPName(name)
     setIsTrainer(true)
     localStorage.setItem('trainer_name', name)
@@ -65,7 +75,11 @@ export default function Page() {
     setIsTrainer(false)
     localStorage.setItem('participant_name', name.trim())
     try {
-      await sbUpsert('participants', { session_code: SESSION_CODE, name: name.trim() }, 'session_code,name')
+      await sbUpsert('participants', {
+        session_code: SESSION_CODE,
+        name: name.trim(),
+        joined_at: new Date().toISOString(),
+      }, 'session_code,name')
     } catch (e) {
       console.warn('Supabase participant upsert failed (non-blocking):', e)
     }
