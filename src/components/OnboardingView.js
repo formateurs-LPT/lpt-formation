@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { generatePin } from '@/lib/pin'
-import { getSharedState, setSharedState, sbUpsert } from '@/lib/supabase'
+import { getSharedState, setSharedState, sbUpsert, sbSelect, SESSION_CODE } from '@/lib/supabase'
 
 const PARIS_MAGASINS = ['chatelet','st lazare','saint lazare','montparnasse','italie','commerce','bastille','cergy','creteil','créteil','belle epine','belle épine','paris','st ouen','saint ouen','ouen','beauchamp','odysseum','supply']
 const BELGIQUE_MAGASINS = ['namur','liege','liège','fripier','ixelles','charleroi','bruxelles']
@@ -101,23 +101,38 @@ function CollabList({ group, onNext, onBack }) {
 
   useEffect(() => {
     const load = async () => {
+      let data = []
+      let obData = {}
       try {
         const state = await getSharedState()
-        const data = state.entrees_data || JSON.parse(localStorage.getItem('entrees_data') || '[]')
-        const filtered = group === 'presentiel'
-          ? data.filter(e => classifyMagasin(e.magasin) === 'paris')
-          : data.filter(e => ['province', 'belgique'].includes(classifyMagasin(e.magasin)))
-        setCollabs(filtered)
-        const saved = state.ob_data || JSON.parse(localStorage.getItem('ob_data') || '{}')
-        setChecks(saved)
+        data = state.entrees_data || JSON.parse(localStorage.getItem('entrees_data') || '[]')
+        obData = state.ob_data || JSON.parse(localStorage.getItem('ob_data') || '{}')
       } catch {
-        const data = JSON.parse(localStorage.getItem('entrees_data') || '[]')
-        const filtered = group === 'presentiel'
-          ? data.filter(e => classifyMagasin(e.magasin) === 'paris')
-          : data.filter(e => ['province', 'belgique'].includes(classifyMagasin(e.magasin)))
-        setCollabs(filtered)
-        setChecks(JSON.parse(localStorage.getItem('ob_data') || '{}'))
+        data = JSON.parse(localStorage.getItem('entrees_data') || '[]')
+        obData = JSON.parse(localStorage.getItem('ob_data') || '{}')
       }
+
+      // Fallback : charger depuis participants Supabase si entrees_data vide
+      if (data.length === 0) {
+        try {
+          const rows = await sbSelect('participants', `session_code=eq.${SESSION_CODE}&order=joined_at.asc`)
+          if (rows && rows.length > 0) {
+            data = rows.map(r => {
+              const parts = (r.name || '').trim().split(/\s+/)
+              return { nom: parts.slice(1).join(' ') || '', prenom: parts[0] || '', magasin: '', heures: '', poste: '', telephone: '' }
+            })
+          }
+        } catch (e) { console.warn('participants fallback échoué', e) }
+      }
+
+      // Participants sans magasin → apparaissent dans les deux groupes
+      const filtered = data.filter(e => {
+        if (!e.magasin) return true
+        const cat = classifyMagasin(e.magasin)
+        return group === 'presentiel' ? cat === 'paris' : ['province', 'belgique'].includes(cat)
+      })
+      setCollabs(filtered)
+      setChecks(obData)
     }
     load()
   }, [group])

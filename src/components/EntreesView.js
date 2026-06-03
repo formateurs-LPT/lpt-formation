@@ -184,6 +184,8 @@ export default function EntreesView({ onBack, onToast, pName }) {
           })
           setEntrees(converted)
           setShowResults(true)
+          // Sauvegarder dans trainer_state pour que OnboardingView puisse les lire
+          setSharedState({ entrees_data: converted }).catch(console.warn)
         }
       } catch (e) {
         console.warn('Chargement participants échoué', e)
