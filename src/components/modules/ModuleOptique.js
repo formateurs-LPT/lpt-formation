@@ -827,7 +827,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
 
   useEffect(() => {
     const poll = async () => {
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}&question_idx=eq.${quizQ}`)
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}&module_id=eq.optique&question_idx=eq.${quizQ}`)
       setLiveAnswers(rows || [])
     }
     poll()
@@ -947,7 +947,7 @@ function GroupResultsView({ onTerminate }) {
 
   useEffect(() => {
     const fetchAnswers = async () => {
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}`)
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}&module_id=eq.optique`)
       setAnswers(rows || [])
       setLoading(false)
     }

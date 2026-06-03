@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
-import { sbInsert, sbSelect, SESSION_CODE } from '@/lib/supabase'
+import { sbInsert, sbUpsert, sbSelect, SESSION_CODE } from '@/lib/supabase'
 import { generatePin } from '@/lib/pin'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -193,17 +193,17 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
   useEffect(() => {
     const fetchAnswers = async () => {
       const name = pName || 'Anonyme'
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}&collaborateur=eq.${encodeURIComponent(name)}`)
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}&module_id=eq.${moduleId}&collaborateur=eq.${encodeURIComponent(name)}`)
       const data = rows || []
       setAnswers(data)
       setLoading(false)
 
-      // Sauvegarde module_results avec le score total réel
+      // Sauvegarde module_results avec le score total réel (upsert pour éviter les doublons)
       const totalCorrect = data.filter(r => r.is_correct).length
       const totalQ = quiz.length
       const earnedXP = totalCorrect * 50
       try {
-        await sbInsert('module_results', {
+        await sbUpsert('module_results', {
           collaborateur: name,
           pin: generatePin(name),
           week_date: new Date().toISOString().slice(0, 10),
@@ -212,7 +212,7 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
           score_total: totalQ,
           xp: earnedXP,
           completed_at: new Date().toISOString(),
-        })
+        }, 'collaborateur,module_id,week_date')
       } catch (e) { console.error(e) }
     }
     fetchAnswers()
