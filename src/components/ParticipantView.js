@@ -391,7 +391,7 @@ export default function ParticipantView({ pName, onToast, onOnlineCount }) {
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', padding: '40px 24px',
       }}>
-        <Image src="/assets/logo-lpt.png" alt="LPT" width={160} height={60}
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={160} height={60}
           style={{ objectFit: 'contain', marginBottom: 48 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
