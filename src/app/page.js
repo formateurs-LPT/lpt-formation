@@ -7,7 +7,8 @@ import Dashboard from '@/components/Dashboard'
 import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
 import { sbUpsert, sbUpdate, SESSION_CODE } from '@/lib/supabase'
-import { TRAINERS, TRAINER_CANONICAL } from '@/lib/constants'
+import { TRAINER_CANONICAL } from '@/lib/constants'
+import { getTrainerCredentials } from '@/lib/env'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
 import ModulePDM from '@/components/modules/ModulePDM'
 import ModuleOptique from '@/components/modules/ModuleOptique'
@@ -39,11 +40,12 @@ export default function Page() {
   }, [])
 
   const handleTrainerLogin = async (id, code) => {
+    const trainers = getTrainerCredentials()
     const idRaw = id.trim().toLowerCase()
     const normalized = TRAINER_CANONICAL[idRaw] || idRaw
     if (!normalized) { toast('Entrez votre identifiant'); return }
-    if (!TRAINERS[normalized]) { toast('Identifiant inconnu'); return }
-    if (TRAINERS[normalized] !== code.trim()) { toast('Code incorrect'); return }
+    if (!trainers[normalized]) { toast('Identifiant inconnu'); return }
+    if (trainers[normalized] !== code.trim()) { toast('Code incorrect'); return }
     const name = normalized.charAt(0).toUpperCase() + normalized.slice(1)
     setPName(name)
     setIsTrainer(true)

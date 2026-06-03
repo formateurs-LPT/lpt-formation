@@ -1,10 +1,3 @@
-export const TRAINERS = {
-  'kevin': '3442',
-  'quentin': '3930',
-  'nadege': '8281',
-  'nadège': '8281'
-}
-
 export const TRAINER_CANONICAL = { 'nadège': 'nadege' }
 
 export const TRAINER_AVATARS = {
