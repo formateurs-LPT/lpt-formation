@@ -156,7 +156,7 @@ function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext,
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Les bases de l&apos;optique</span>
         </div>
@@ -234,7 +234,7 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
         padding: '18px 32px', position: 'relative', zIndex: 10, flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
             Module · Les bases de l&apos;optique
@@ -365,7 +365,7 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNex
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Les bases de l&apos;optique</span>
         </div>
@@ -472,7 +472,7 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Les bases de l&apos;optique</span>
         </div>
@@ -617,7 +617,7 @@ function PausePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Les bases de l&apos;optique</span>
         </div>
@@ -719,7 +719,7 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Les bases de l&apos;optique</span>
         </div>
@@ -847,7 +847,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz · Les bases de l&apos;optique — Vue formateur</span>
         </div>
@@ -980,7 +980,7 @@ function GroupResultsView({ onTerminate }) {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Bilan du quiz · Les bases de l&apos;optique</span>
         </div>
@@ -1073,7 +1073,7 @@ function Lobby({ onStart, onBack }) {
 
       <div style={{ textAlign: 'center', maxWidth: 520, padding: '0 24px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={180} height={68} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={180} height={68} style={{ objectFit: 'contain' }} />
         </div>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
           Module de formation

@@ -45,7 +45,7 @@ function WaitingScreen() {
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', padding: '40px 24px',
     }}>
-      <Image src="/assets/logo-lpt.png" alt="LPT" width={160} height={60}
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={160} height={60}
         style={{ objectFit: 'contain', marginBottom: 48 }} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
@@ -69,7 +69,7 @@ function ParticipantModuleLobby({ moduleLabel }) {
       alignItems: 'center', justifyContent: 'center',
       padding: '40px 24px', textAlign: 'center',
     }}>
-      <Image src="/assets/logo-lpt.png" alt="LPT" width={140} height={52}
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={140} height={52}
         style={{ objectFit: 'contain', marginBottom: 40 }} />
       <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
         Module de formation
@@ -387,7 +387,7 @@ function CorrectionScaleMobile({ page, pageIndex, total }) {
     <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Image src="/assets/logo-lpt.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
         <div style={{ display: 'flex', gap: 5 }}>
           {Array(total).fill(0).map((_, i) => (
             <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIndex ? 18 : 4, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .4s' }} />
@@ -455,7 +455,7 @@ function OrdonnanceMobile({ page, pageIndex, total }) {
     <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <Image src="/assets/logo-lpt.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
         <div style={{ display: 'flex', gap: 5 }}>
           {Array(total).fill(0).map((_, i) => (
             <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIndex ? 18 : 4, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .4s' }} />
@@ -578,7 +578,7 @@ function PauseMobile({ page, pageIndex, total }) {
     }}>
       {/* Header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <Image src="/assets/logo-lpt.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
         <div style={{ display: 'flex', gap: 5 }}>
           {Array(total).fill(0).map((_, i) => (
             <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIndex ? 18 : 4, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .4s' }} />
@@ -637,7 +637,7 @@ function TroublesIntroMobile({ page, pageIndex, total }) {
   return (
     <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <Image src="/assets/logo-lpt.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
         <div style={{ display: 'flex', gap: 5 }}>
           {Array(total).fill(0).map((_, i) => (
             <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIndex ? 18 : 4, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .4s' }} />
@@ -696,7 +696,7 @@ function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
     }}>
       {/* Header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Image src="/assets/logo-lpt.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
         <div style={{ display: 'flex', gap: 5 }}>
           {Array(total).fill(0).map((_, i) => (
             <div key={i} style={{
@@ -1041,7 +1041,7 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
 
       {/* ── Header doré ── */}
       <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <Image src="/assets/logo-lpt.png" alt="LPT" width={56} height={20} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={56} height={20} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
         <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' }}>Ajouter l&apos;ordonnance</span>
         <div style={{ display: 'flex', gap: 4 }}>
           {Array(total).fill(0).map((_, i) => (
@@ -1232,7 +1232,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel }) {
         padding: '20px 24px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Image src="/assets/logo-lpt.png" alt="LPT" width={72} height={28}
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28}
           style={{ objectFit: 'contain', opacity: 0.7 }} />
         <div style={{ display: 'flex', gap: 6 }}>
           {Array(total).fill(0).map((_, i) => (

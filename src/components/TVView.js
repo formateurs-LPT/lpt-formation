@@ -72,7 +72,7 @@ function TVQuizQuestion({ question, qIdx, total, moduleLabel }) {
     }}>
       {/* Header */}
       <div style={{ position: 'absolute', top: 24, left: 32, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
         <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
         <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Quiz · {moduleLabel}</span>
       </div>
@@ -215,7 +215,7 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
         </div>
@@ -307,7 +307,7 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel }) {
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
         </div>
@@ -442,7 +442,7 @@ function TVPause({ page, pageIndex, total, moduleLabel }) {
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
         </div>
@@ -507,7 +507,7 @@ function TVTroublesIntro({ page, pageIndex, total, moduleLabel }) {
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
         </div>
@@ -574,7 +574,7 @@ function TVTroublesList({ page, pageIndex, total, moduleLabel }) {
         padding: '18px 32px', position: 'relative', zIndex: 10, flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
         </div>
@@ -675,7 +675,7 @@ function TVSaisieInteractive({ page, pageIndex, total, moduleLabel }) {
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
         </div>
@@ -807,7 +807,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel }) {
         padding: '18px 32px', position: 'relative', zIndex: 10, flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
         </div>
@@ -900,7 +900,7 @@ function TVModuleLobby({ moduleLabel }) {
     }}>
       <div style={{ textAlign: 'center', maxWidth: 700, padding: '0 32px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 40 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={220} height={84}
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={220} height={84}
             style={{ objectFit: 'contain', animation: 'logoBreathe 3.5s ease-in-out infinite' }} />
         </div>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>
@@ -938,7 +938,7 @@ function WaitingScreen() {
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       gap: 0,
     }}>
-      <Image src="/assets/logo-lpt.png" alt="LPT" width={300} height={114}
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={300} height={114}
         style={{ objectFit: 'contain', marginBottom: 52, animation: 'logoBreathe 3.5s ease-in-out infinite' }} />
 
       {/* QR + instructions */}
@@ -1055,7 +1055,7 @@ function TVGroupResults({ moduleId, moduleLabel, quiz }) {
 
       {/* Logo top-left */}
       <div style={{ position: 'absolute', top: 28, left: 40 }}>
-        <Image src="/assets/logo-lpt.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
       </div>
 
       {/* Title */}
