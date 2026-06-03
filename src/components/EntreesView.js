@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { generatePin } from '@/lib/pin'
-import { sbInsert, sbUpsert, getSharedState, setSharedState } from '@/lib/supabase'
+import { sbInsert, sbUpsert, sbSelect, getSharedState, setSharedState, SESSION_CODE } from '@/lib/supabase'
 
 const PARIS_MAGASINS = ['chatelet','st lazare','saint lazare','montparnasse','italie','commerce','bastille','cergy','creteil','créteil','belle epine','belle épine','paris','st ouen','saint ouen','ouen','beauchamp','odysseum','supply']
 const BELGIQUE_MAGASINS = ['namur','liege','liège','fripier','ixelles','charleroi','bruxelles']
@@ -157,14 +157,36 @@ export default function EntreesView({ onBack, onToast, pName }) {
 
   useEffect(() => {
     const load = async () => {
+      // 1. Essai depuis trainer_state (import RH)
+      let saved = []
       try {
         const state = await getSharedState()
-        const saved = state.entrees_data || []
-        if (saved.length > 0) { setEntrees(saved); setShowResults(true) }
+        saved = state.entrees_data || []
       } catch {
-        // fallback localStorage
-        const saved = JSON.parse(localStorage.getItem('entrees_data') || '[]')
-        if (saved.length > 0) { setEntrees(saved); setShowResults(true) }
+        saved = JSON.parse(localStorage.getItem('entrees_data') || '[]')
+      }
+
+      if (saved.length > 0) {
+        setEntrees(saved)
+        setShowResults(true)
+        return
+      }
+
+      // 2. Fallback : charger depuis la table participants Supabase
+      try {
+        const rows = await sbSelect('participants', `session_code=eq.${SESSION_CODE}&order=joined_at.asc`)
+        if (rows && rows.length > 0) {
+          const converted = rows.map(r => {
+            const parts = (r.name || '').trim().split(/\s+/)
+            const prenom = parts[0] || ''
+            const nom = parts.slice(1).join(' ') || ''
+            return { nom, prenom, magasin: '', heures: '', poste: '', telephone: '' }
+          })
+          setEntrees(converted)
+          setShowResults(true)
+        }
+      } catch (e) {
+        console.warn('Chargement participants échoué', e)
       }
     }
     load()
