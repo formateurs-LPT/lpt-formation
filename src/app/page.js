@@ -13,6 +13,7 @@ import { getTrainerCredentials } from '@/lib/env'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
 import ModulePDM from '@/components/modules/ModulePDM'
 import ModuleOptique from '@/components/modules/ModuleOptique'
+import ModuleOffres from '@/components/modules/ModuleOffres'
 import OnboardingView from '@/components/OnboardingView'
 import TVView from '@/components/TVView'
 import ParticipantModuleView from '@/components/ParticipantModuleView'
@@ -184,6 +185,12 @@ export default function Page() {
       )}
       {view === 'module-optique' && (
         <ModuleOptique
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-offres' && (
+        <ModuleOffres
           pName={pName}
           onBack={handleBackToModules}
         />

@@ -180,7 +180,7 @@ function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFir
         padding: '18px 32px', position: 'relative', zIndex: 10, flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Prises de mesures</span>
         </div>
@@ -351,7 +351,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz · Prises de mesures — Vue formateur</span>
         </div>
@@ -461,7 +461,7 @@ function Lobby({ onStart, onBack }) {
 
       <div style={{ textAlign: 'center', maxWidth: 500, padding: '0 24px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
-          <Image src="/assets/logo-lpt.png" alt="Lunettes Pour Tous" width={180} height={68} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="Lunettes Pour Tous" width={180} height={68} style={{ objectFit: 'contain' }} />
         </div>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
           Module de formation
@@ -524,7 +524,7 @@ function GroupResultsView({ onTerminate }) {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Bilan du quiz · Prises de mesures</span>
         </div>
