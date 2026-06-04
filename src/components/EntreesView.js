@@ -214,9 +214,13 @@ export default function EntreesView({ onBack, onToast, pName }) {
         }
         setEntrees(results)
         localStorage.setItem('entrees_data', JSON.stringify(results)) // cache local
-        await setSharedState({ entrees_data: results })
+        const synced = await setSharedState({ entrees_data: results })
         setShowResults(true)
-        onToast(`${results.length} collaborateurs importés ✓`)
+        if (synced) {
+          onToast(`${results.length} collaborateurs importés ✓ (liste enregistrée en BDD)`)
+        } else {
+          onToast(`${results.length} collaborateurs importés localement — sync Supabase échouée (table trainer_state)`)
+        }
       } catch (e) {
         console.error(e)
         onToast('Erreur de lecture. Réessayez.')

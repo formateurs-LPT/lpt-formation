@@ -144,10 +144,13 @@ export async function getSharedState() {
 
 export async function setSharedState(patch) {
   const code = getRuntimeSessionCode()
-  if (!code) return null
+  if (!code) {
+    console.error('[setSharedState] NEXT_PUBLIC_SESSION_CODE manquant — rien enregistré en BDD')
+    return null
+  }
   const current = await getSharedState()
   const merged = { ...current, ...patch }
-  return sbUpsert(
+  const result = await sbUpsert(
     'trainer_state',
     {
       trainer: code,
@@ -156,4 +159,8 @@ export async function setSharedState(patch) {
     },
     'trainer'
   )
+  if (!result) {
+    console.error('[setSharedState] échec upsert trainer_state, clé trainer=', code)
+  }
+  return result
 }
