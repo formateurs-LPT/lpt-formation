@@ -3,8 +3,10 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
-import { sbInsert, sbUpsert, sbSelect, SESSION_CODE } from '@/lib/supabase'
+import { sbUpsert, sbSelect, SESSION_CODE, ensureSession } from '@/lib/supabase'
+import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
+import { resolveParticipantName } from '@/lib/participantNames'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -100,24 +102,37 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
   const [answered, setAnswered] = useState(false)
   const [chosenIdx, setChosenIdx] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(false)
 
   const handleAnswer = async (optIdx) => {
     if (answered || saving) return
+    if (!pName?.trim()) {
+      setSaveError(true)
+      return
+    }
     setSaving(true)
-    setAnswered(true)
-    setChosenIdx(optIdx)
+    setSaveError(false)
     const isCorrect = optIdx === q.correct
     try {
-      await sbInsert('quiz_answers', {
-        session_code: SESSION_CODE,
-        collaborateur: pName || 'Anonyme',
-        question_idx: qIdx,
-        answer_idx: optIdx,
-        is_correct: isCorrect,
-        module_id: moduleId,
+      const saved = await saveModuleQuizAnswer({
+        sessionCode: SESSION_CODE,
+        moduleId,
+        questionIdx: qIdx,
+        collaborateur: pName.trim(),
+        answerIdx: optIdx,
+        isCorrect,
       })
-      // module_results est sauvegardé dans PersonalResultsScreen avec le score total
-    } catch (e) { console.error(e) }
+      if (!saved) {
+        setSaveError(true)
+        setSaving(false)
+        return
+      }
+      setAnswered(true)
+      setChosenIdx(optIdx)
+    } catch (e) {
+      console.error(e)
+      setSaveError(true)
+    }
     setSaving(false)
   }
 
@@ -155,6 +170,16 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
       <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 40, textAlign: 'center' }}>
         Regardez la question sur l'écran<br />et choisissez votre réponse
       </div>
+
+      {saveError && (
+        <div style={{
+          background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
+          borderRadius: 12, padding: '12px 16px', marginBottom: 20, maxWidth: 400,
+          fontSize: 14, color: '#fca5a5', textAlign: 'center',
+        }}>
+          Enregistrement impossible. Rechargez la page ou prévenez le formateur.
+        </div>
+      )}
 
       {/* Boutons réponse — gros et tactiles */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 400 }}>
@@ -1348,13 +1373,84 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel }) {
   )
 }
 
-export default function ParticipantModuleView({ forcedModule, forcedPage, pName: pNameProp }) {
+function RhAccessDenied({ message }) {
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px', textAlign: 'center',
+    }}>
+      <Image src="/assets/logo-lpt.png" alt="LPT" width={160} height={60} style={{ objectFit: 'contain', marginBottom: 32 }} />
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 12 }}>Accès refusé</h2>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', maxWidth: 360, lineHeight: 1.6 }}>{message}</p>
+      <a href="/" style={{
+        marginTop: 28, background: '#00abe9', color: '#fff', padding: '12px 24px',
+        borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: 'none',
+      }}>Retour à l&apos;accueil</a>
+    </div>
+  )
+}
+
+function RhParticipantGate({ pNameInput, children }) {
+  const [status, setStatus] = useState('loading')
+  const [canonicalName, setCanonicalName] = useState('')
+  const [denyMessage, setDenyMessage] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const raw = (pNameInput || '').trim()
+      if (!raw) {
+        if (!cancelled) {
+          setDenyMessage('Connectez-vous depuis la page d\'accueil avec votre prénom et nom (liste RH).')
+          setStatus('denied')
+        }
+        return
+      }
+      const resolved = await resolveParticipantName(raw)
+      if (!resolved.ok) {
+        if (!cancelled) {
+          setDenyMessage(
+            resolved.reason === 'no_list'
+              ? 'Liste RH indisponible. Le formateur doit importer « Entrées de la semaine ».'
+              : 'Nom non reconnu. Reprenez le prénom et le nom comme sur la liste RH.'
+          )
+          setStatus('denied')
+        }
+        return
+      }
+      const canonical = resolved.canonicalName
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('participant_name', canonical)
+      }
+      try {
+        await ensureSession()
+        await sbUpsert('participants', {
+          session_code: SESSION_CODE,
+          name: canonical,
+          joined_at: new Date().toISOString(),
+        }, 'session_code,name')
+      } catch (e) {
+        console.warn('participant upsert (module QR)', e)
+      }
+      if (!cancelled) {
+        setCanonicalName(canonical)
+        setStatus('ok')
+      }
+    })()
+    return () => { cancelled = true }
+  }, [pNameInput])
+
+  if (status === 'loading') return <WaitingScreen />
+  if (status === 'denied') return <RhAccessDenied message={denyMessage} />
+  return children(canonicalName)
+}
+
+function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
   const sync = useModuleSync(forcedModule != null ? 99999 : 1200)
   const activeModule = forcedModule ?? sync.activeModule
   const modulePage   = forcedPage  ?? sync.modulePage
-
-  // Récupère le nom depuis le prop ou le localStorage (connexion via QR)
-  const pName = pNameProp || (typeof window !== 'undefined' ? localStorage.getItem('participant_name') || '' : '')
 
   const moduleData = MODULE_DATA[activeModule] || null
   const pages = moduleData?.pages || []
@@ -1380,5 +1476,20 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
               : <WaitingScreen />
       }
     </>
+  )
+}
+
+export default function ParticipantModuleView({ forcedModule, forcedPage, pName: pNameProp }) {
+  const pNameRaw = pNameProp || (typeof window !== 'undefined' ? localStorage.getItem('participant_name') || '' : '')
+  return (
+    <RhParticipantGate pNameInput={pNameRaw}>
+      {canonicalName => (
+        <ParticipantModuleContent
+          forcedModule={forcedModule}
+          forcedPage={forcedPage}
+          pName={canonicalName}
+        />
+      )}
+    </RhParticipantGate>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { sbSelect, sbInsert, SESSION_CODE } from '@/lib/supabase'
+import { sbSelect, sbInsert, getRuntimeSessionCode, isSupabaseTableAvailable } from '@/lib/supabase'
 import TrainerAvatar from './TrainerAvatar'
 
 function formatTimeAgo(date) {
@@ -16,25 +16,39 @@ export default function NotesWidget({ pName }) {
   const [notes, setNotes] = useState([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [tableOk, setTableOk] = useState(null)
   const textareaRef = useRef(null)
 
   const fetchNotes = async () => {
-    const data = await sbSelect('trainer_notes', 'session_code=eq.' + SESSION_CODE + '&order=created_at.asc')
+    const code = getRuntimeSessionCode()
+    if (!code) return
+    const data = await sbSelect(
+      'trainer_notes',
+      'session_code=eq.' + encodeURIComponent(code) + '&order=created_at.asc'
+    )
     if (data) setNotes(data)
   }
 
   useEffect(() => {
-    fetchNotes()
-    const interval = setInterval(fetchNotes, 5000)
-    return () => clearInterval(interval)
+    let interval
+    ;(async () => {
+      const ok = await isSupabaseTableAvailable('trainer_notes')
+      setTableOk(ok)
+      if (!ok) return
+      fetchNotes()
+      interval = setInterval(fetchNotes, 5000)
+    })()
+    return () => { if (interval) clearInterval(interval) }
   }, [])
 
   const addNote = async () => {
     const text = input.trim()
-    if (!text || sending) return
+    if (!text || sending || tableOk === false) return
+    const code = getRuntimeSessionCode()
+    if (!code) return
     setSending(true)
     await sbInsert('trainer_notes', {
-      session_code: SESSION_CODE,
+      session_code: code,
       author: pName || 'Formateur',
       content: text,
       created_at: new Date().toISOString()
@@ -62,7 +76,11 @@ export default function NotesWidget({ pName }) {
         </span>
       </div>
       <div id="notes-list">
-        {notes.length === 0 ? (
+        {tableOk === false ? (
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,.35)', padding: '6px 0', lineHeight: 1.5 }}>
+            Notes désactivées (table trainer_notes absente en BDD).
+          </p>
+        ) : notes.length === 0 ? (
           <p style={{ fontSize: 12, color: 'rgba(255,255,255,.3)', padding: '6px 0' }}>Aucune note pour l'instant…</p>
         ) : notes.map((note, i) => (
           <div key={note.id || i} className="note-card">
@@ -77,7 +95,7 @@ export default function NotesWidget({ pName }) {
           </div>
         ))}
       </div>
-      <div className="note-form">
+      <div className="note-form" style={{ opacity: tableOk === false ? 0.4 : 1, pointerEvents: tableOk === false ? 'none' : 'auto' }}>
         <textarea
           ref={textareaRef}
           className="note-textarea"

@@ -6,7 +6,8 @@ import Toast, { useToast } from '@/components/Toast'
 import Dashboard from '@/components/Dashboard'
 import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
-import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB } from '@/lib/supabase'
+import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB, ensureSession } from '@/lib/supabase'
+import { resolveParticipantName } from '@/lib/participantNames'
 import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
@@ -44,19 +45,20 @@ export default function Page() {
     const normalized = TRAINER_CANONICAL[idRaw] || idRaw
     if (!normalized) { toast('Entrez votre identifiant'); return }
 
-    // 1. Essai via table Supabase `trainers`
-    let name = null
-    const dbTrainer = await getTrainerFromDB(normalized)
-    if (dbTrainer) {
-      if (dbTrainer.pin_hash !== code.trim()) { toast('Code incorrect'); return }
-      name = dbTrainer.display_name || (normalized.charAt(0).toUpperCase() + normalized.slice(1))
-    } else {
-      // 2. Fallback env vars
-      const trainers = getTrainerCredentials()
-      if (!trainers[normalized]) { toast('Identifiant inconnu'); return }
-      if (trainers[normalized] !== code.trim()) { toast('Code incorrect'); return }
-      name = normalized.charAt(0).toUpperCase() + normalized.slice(1)
+    const pin = code.trim()
+    // Vérification du PIN via .env (comme avant) — pin_hash en BDD est bcrypt, non vérifiable côté navigateur
+    let trainers = {}
+    try {
+      trainers = getTrainerCredentials()
+    } catch {
+      toast('Configuration formateur manquante (.env)'); return
     }
+    if (!trainers[normalized]) { toast('Identifiant inconnu'); return }
+    if (trainers[normalized] !== pin) { toast('Code incorrect'); return }
+
+    const dbTrainer = await getTrainerFromDB(normalized)
+    const name = dbTrainer?.display_name
+      || normalized.charAt(0).toUpperCase() + normalized.slice(1)
     setPName(name)
     setIsTrainer(true)
     localStorage.setItem('trainer_name', name)
@@ -70,14 +72,28 @@ export default function Page() {
   }
 
   const handleParticipantJoin = async (name) => {
-    if (!name.trim()) { toast('Entrez votre prénom et nom'); return }
-    setPName(name.trim())
+    const raw = name.trim()
+    if (!raw) { toast('Entrez votre prénom et nom'); return }
+
+    const resolved = await resolveParticipantName(raw)
+    if (!resolved.ok) {
+      if (resolved.reason === 'no_list') {
+        toast('Liste RH indisponible. Le formateur doit importer « Entrées de la semaine » (ou attendre qu\'un collègue se soit déjà connecté).')
+      } else {
+        toast('Nom non reconnu. Reprenez le prénom et le nom comme sur la liste RH (accents et ordre libres).')
+      }
+      return
+    }
+
+    const canonical = resolved.canonicalName
+    setPName(canonical)
     setIsTrainer(false)
-    localStorage.setItem('participant_name', name.trim())
+    localStorage.setItem('participant_name', canonical)
     try {
+      await ensureSession()
       await sbUpsert('participants', {
         session_code: SESSION_CODE,
-        name: name.trim(),
+        name: canonical,
         joined_at: new Date().toISOString(),
       }, 'session_code,name')
     } catch (e) {

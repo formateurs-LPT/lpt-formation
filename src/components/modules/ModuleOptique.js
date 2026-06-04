@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, sbSelect, SESSION_CODE } from '@/lib/supabase'
+import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, OPTIQUE_QUIZ } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
 
@@ -827,7 +828,9 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
 
   useEffect(() => {
     const poll = async () => {
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}&module_id=eq.optique&question_idx=eq.${quizQ}`)
+      const rows = await fetchTrainerQuizAnswers(
+        `session_code=eq.${SESSION_CODE}&module_id=eq.optique&question_idx=eq.${quizQ}`
+      )
       setLiveAnswers(rows || [])
     }
     poll()
@@ -947,7 +950,9 @@ function GroupResultsView({ onTerminate }) {
 
   useEffect(() => {
     const fetchAnswers = async () => {
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}&module_id=eq.optique`)
+      const rows = await fetchTrainerQuizAnswers(
+        `session_code=eq.${SESSION_CODE}&module_id=eq.optique`
+      )
       setAnswers(rows || [])
       setLoading(false)
     }

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, sbSelect, SESSION_CODE } from '@/lib/supabase'
+import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { TYPES_VERRES_PAGES as PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -295,7 +296,9 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
 
   useEffect(() => {
     const poll = async () => {
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}&module_id=eq.types-verres&question_idx=eq.${quizQ}`)
+      const rows = await fetchTrainerQuizAnswers(
+        `session_code=eq.${SESSION_CODE}&module_id=eq.types-verres&question_idx=eq.${quizQ}`
+      )
       setLiveAnswers(rows || [])
     }
     poll()
@@ -454,7 +457,9 @@ function GroupResultsView({ onTerminate }) {
 
   useEffect(() => {
     const fetchAnswers = async () => {
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}&module_id=eq.types-verres`)
+      const rows = await fetchTrainerQuizAnswers(
+        `session_code=eq.${SESSION_CODE}&module_id=eq.types-verres`
+      )
       setAnswers(rows || [])
       setLoading(false)
     }
