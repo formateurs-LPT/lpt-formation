@@ -41,10 +41,24 @@ export async function sbSelect(table, filter = null) {
   const r = await fetch(url, { headers: sbHeaders() })
   if (!r.ok) {
     const err = await r.json().catch(() => ({}))
+    const msg = String(err?.message || err?.hint || '')
+    const missingTable = r.status === 404 && /could not find the table/i.test(msg)
+    if (missingTable) {
+      console.warn('[sbSelect] table absente:', table)
+      return []
+    }
     console.error('[sbSelect]', table, r.status, err?.message || err?.code || err)
     return []
   }
   return await r.json()
+}
+
+/** false si la table n'existe pas (404 schema cache) */
+export async function isSupabaseTableAvailable(table) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?select=*&limit=0`, { headers: sbHeaders() })
+  if (r.ok) return true
+  const err = await r.json().catch(() => ({}))
+  return !(r.status === 404 && /could not find the table/i.test(String(err?.message || '')))
 }
 
 export async function sbUpsert(table, data, onConflict) {
