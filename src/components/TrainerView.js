@@ -4,7 +4,7 @@ import { sbSelect, sbUpdate, sbUpsert, sbInsert, sbDelete, SESSION_CODE } from '
 import {
   filterParticipantsInRh,
   loadEntreesList,
-  isInConnectedRhList,
+  shouldShowAnswerForTrainer,
 } from '@/lib/participantNames'
 
 const STEP_NAMES = ['Quiz initial', 'Les bases', 'Arguments & Offre', 'Ordonnances', 'Quiz final']
@@ -60,7 +60,7 @@ function ResponseFeed({ sessionCode, scenarioIdx, label }) {
         loadEntreesList(),
       ])
       const rows = data || []
-      setItems(rows.filter(r => isInConnectedRhList(r.participant_name, participants, entrees)))
+      setItems(rows.filter(r => shouldShowAnswerForTrainer(r.participant_name, participants, entrees)))
     }
     load()
     const interval = setInterval(load, 3000)
@@ -96,7 +96,7 @@ function QuizResults({ sessionCode }) {
         loadEntreesList(),
       ])
       const rows = data || []
-      setResults(rows.filter(r => isInConnectedRhList(r.participant_name, participants, entrees)))
+      setResults(rows.filter(r => shouldShowAnswerForTrainer(r.participant_name, participants, entrees)))
     }
     load()
     const interval = setInterval(load, 3000)

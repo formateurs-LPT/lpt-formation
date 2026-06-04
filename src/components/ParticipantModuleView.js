@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
-import { sbInsert, sbUpsert, sbSelect, SESSION_CODE } from '@/lib/supabase'
+import { sbUpsert, sbSelect, SESSION_CODE, ensureSession } from '@/lib/supabase'
+import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName } from '@/lib/participantNames'
 
@@ -101,24 +102,37 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
   const [answered, setAnswered] = useState(false)
   const [chosenIdx, setChosenIdx] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(false)
 
   const handleAnswer = async (optIdx) => {
     if (answered || saving) return
+    if (!pName?.trim()) {
+      setSaveError(true)
+      return
+    }
     setSaving(true)
-    setAnswered(true)
-    setChosenIdx(optIdx)
+    setSaveError(false)
     const isCorrect = optIdx === q.correct
     try {
-      await sbInsert('quiz_answers', {
-        session_code: SESSION_CODE,
-        collaborateur: pName || 'Anonyme',
-        question_idx: qIdx,
-        answer_idx: optIdx,
-        is_correct: isCorrect,
-        module_id: moduleId,
+      const saved = await saveModuleQuizAnswer({
+        sessionCode: SESSION_CODE,
+        moduleId,
+        questionIdx: qIdx,
+        collaborateur: pName.trim(),
+        answerIdx: optIdx,
+        isCorrect,
       })
-      // module_results est sauvegardé dans PersonalResultsScreen avec le score total
-    } catch (e) { console.error(e) }
+      if (!saved) {
+        setSaveError(true)
+        setSaving(false)
+        return
+      }
+      setAnswered(true)
+      setChosenIdx(optIdx)
+    } catch (e) {
+      console.error(e)
+      setSaveError(true)
+    }
     setSaving(false)
   }
 
@@ -156,6 +170,16 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
       <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 40, textAlign: 'center' }}>
         Regardez la question sur l'écran<br />et choisissez votre réponse
       </div>
+
+      {saveError && (
+        <div style={{
+          background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
+          borderRadius: 12, padding: '12px 16px', marginBottom: 20, maxWidth: 400,
+          fontSize: 14, color: '#fca5a5', textAlign: 'center',
+        }}>
+          Enregistrement impossible. Rechargez la page ou prévenez le formateur.
+        </div>
+      )}
 
       {/* Boutons réponse — gros et tactiles */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 400 }}>
@@ -1401,6 +1425,7 @@ function RhParticipantGate({ pNameInput, children }) {
         localStorage.setItem('participant_name', canonical)
       }
       try {
+        await ensureSession()
         await sbUpsert('participants', {
           session_code: SESSION_CODE,
           name: canonical,

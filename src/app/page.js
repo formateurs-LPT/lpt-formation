@@ -6,7 +6,7 @@ import Toast, { useToast } from '@/components/Toast'
 import Dashboard from '@/components/Dashboard'
 import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
-import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB } from '@/lib/supabase'
+import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB, ensureSession } from '@/lib/supabase'
 import { resolveParticipantName } from '@/lib/participantNames'
 import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
@@ -89,6 +89,7 @@ export default function Page() {
     setIsTrainer(false)
     localStorage.setItem('participant_name', canonical)
     try {
+      await ensureSession()
       await sbUpsert('participants', {
         session_code: SESSION_CODE,
         name: canonical,

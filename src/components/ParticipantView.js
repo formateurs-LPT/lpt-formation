@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { sbSelect, sbUpsert, sbUpdate, SESSION_CODE } from '@/lib/supabase'
+import { sbSelect, sbUpsert, sbUpdate, SESSION_CODE, ensureSession } from '@/lib/supabase'
+import { saveScenarioResponse } from '@/lib/formationSave'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import Image from 'next/image'
 import ParticipantModuleView from '@/components/ParticipantModuleView'
@@ -106,15 +107,17 @@ function QuizView({ pName, mode, sessionCode }) {
     setAnswers(newAnswers)
     setScore(newScore)
 
-    await sbUpsert('scenario_responses', {
-      session_code: sessionCode,
-      scenario_idx: 20 + qIdx,
-      participant_name: pName,
-      response: QUIZ10[qIdx].opts[optIdx]
-    }, 'session_code,scenario_idx,participant_name')
+    const saved = await saveScenarioResponse({
+      sessionCode,
+      scenarioIdx: 20 + qIdx,
+      participantName: pName,
+      response: QUIZ10[qIdx].opts[optIdx],
+    })
+    if (!saved) console.error('[QuizView] échec enregistrement Q', qIdx + 1)
 
     if (Object.keys(newAnswers).length === QUIZ10.length && !done) {
       setDone(true)
+      await ensureSession()
       if (!isFinal) {
         await sbUpsert('quiz_results', {
           session_code: sessionCode,
@@ -280,13 +283,14 @@ function P3Ordonnances({ pName, sessionCode }) {
   const submitOrdo = async (n) => {
     const text = texts[n].trim()
     if (!text) return
-    await sbUpsert('scenario_responses', {
-      session_code: sessionCode,
-      scenario_idx: n - 1,
-      participant_name: pName,
-      response: text
-    }, 'session_code,scenario_idx,participant_name')
-    setSent(s => ({ ...s, [n]: true }))
+    const saved = await saveScenarioResponse({
+      sessionCode,
+      scenarioIdx: n - 1,
+      participantName: pName,
+      response: text,
+    })
+    if (saved) setSent(s => ({ ...s, [n]: true }))
+    else console.error('[Ordonnances] échec enregistrement scénario', n)
   }
 
   return (

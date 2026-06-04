@@ -1,4 +1,4 @@
-import { getSharedState, sbSelect, SESSION_CODE } from './supabase'
+import { getSharedState, sbSelect, getRuntimeSessionCode } from './supabase'
 
 /** Nom affiché / stocké : fullName si présent, sinon « NOM Prénom » (import RH) */
 export function entreeDisplayName(c) {
@@ -77,7 +77,7 @@ export async function loadEntreesList() {
     try {
       const rows = await sbSelect(
         'participants',
-        `session_code=eq.${SESSION_CODE}&order=joined_at.asc`
+        `session_code=eq.${getRuntimeSessionCode()}&order=joined_at.asc`
       )
       entrees = buildEntreesFromParticipants(rows)
     } catch {
@@ -107,7 +107,7 @@ export async function resolveParticipantName(rawInput) {
   try {
     const rows = await sbSelect(
       'participants',
-      `session_code=eq.${SESSION_CODE}&order=joined_at.asc`
+      `session_code=eq.${getRuntimeSessionCode()}&order=joined_at.asc`
     )
     const fromParticipants = buildEntreesFromParticipants(rows)
     match = findRhMatch(raw, fromParticipants)
@@ -135,13 +135,32 @@ export function connectedRhNameKeys(participants, entrees) {
   )
 }
 
+/** Lobby / compteur : RH + ligne participants */
 export function isInConnectedRhList(name, participants, entrees) {
   return connectedRhNameKeys(participants, entrees).has(normalizeNameKey(name))
 }
 
+/** Affichage formateur des réponses : liste RH OU déjà dans participants (pas les deux obligatoires) */
+export function shouldShowAnswerForTrainer(collaborateur, participants, entrees) {
+  const key = normalizeNameKey(collaborateur)
+  if (!key || key === normalizeNameKey('Anonyme')) return false
+
+  if (entrees?.length) {
+    const rhKeys = new Set(
+      entrees.map(c => normalizeNameKey(entreeDisplayName(c))).filter(Boolean)
+    )
+    if (rhKeys.has(key)) return true
+  }
+
+  const partKeys = new Set(
+    (participants || []).map(p => normalizeNameKey(p.name)).filter(Boolean)
+  )
+  return partKeys.has(key)
+}
+
 export async function loadRhGuardContext() {
   const [participants, entrees] = await Promise.all([
-    sbSelect('participants', 'session_code=eq.' + SESSION_CODE),
+    sbSelect('participants', 'session_code=eq.' + getRuntimeSessionCode()),
     loadEntreesList(),
   ])
   return { participants: participants || [], entrees }
@@ -149,7 +168,7 @@ export async function loadRhGuardContext() {
 
 export function filterAnswersForTrainer(answers, participants, entrees) {
   return (answers || []).filter(a =>
-    isInConnectedRhList(a.collaborateur, participants, entrees)
+    shouldShowAnswerForTrainer(a.collaborateur, participants, entrees)
   )
 }
 
