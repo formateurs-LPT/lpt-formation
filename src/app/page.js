@@ -7,7 +7,7 @@ import Dashboard from '@/components/Dashboard'
 import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
 import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB } from '@/lib/supabase'
-import { findRhMatch, loadEntreesList } from '@/lib/participantNames'
+import { resolveParticipantName } from '@/lib/participantNames'
 import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
@@ -74,19 +74,17 @@ export default function Page() {
     const raw = name.trim()
     if (!raw) { toast('Entrez votre prénom et nom'); return }
 
-    const entrees = await loadEntreesList()
-    if (!entrees.length) {
-      toast('Liste des participants indisponible. Le formateur doit d\'abord importer les entrées de la semaine.')
+    const resolved = await resolveParticipantName(raw)
+    if (!resolved.ok) {
+      if (resolved.reason === 'no_list') {
+        toast('Liste RH indisponible. Le formateur doit importer « Entrées de la semaine » (ou attendre qu\'un collègue se soit déjà connecté).')
+      } else {
+        toast('Nom non reconnu. Reprenez le prénom et le nom comme sur la liste RH (accents et ordre libres).')
+      }
       return
     }
 
-    const match = findRhMatch(raw, entrees)
-    if (!match) {
-      toast('Nom non reconnu. Utilisez le même prénom et nom que sur la liste RH.')
-      return
-    }
-
-    const canonical = match.canonicalName
+    const canonical = resolved.canonicalName
     setPName(canonical)
     setIsTrainer(false)
     localStorage.setItem('participant_name', canonical)

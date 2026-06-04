@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { generatePin } from '@/lib/pin'
+import { buildEntreesFromParticipants } from '@/lib/participantNames'
 import { sbInsert, sbUpsert, sbSelect, getSharedState, setSharedState, SESSION_CODE } from '@/lib/supabase'
 
 const PARIS_MAGASINS = ['chatelet','st lazare','saint lazare','montparnasse','italie','commerce','bastille','cergy','creteil','créteil','belle epine','belle épine','paris','st ouen','saint ouen','ouen','beauchamp','odysseum','supply']
@@ -100,7 +101,17 @@ function parseRHTable(rawText) {
     if (!prenom && words.length > 1) { prenom = words[words.length - 1]; nom = words.slice(0, -1).join(' ') }
 
     if (nom && nom !== 'NOM' && nom.length > 1 && !/^\d/.test(nom)) {
-      results.push({ nom: nom.trim(), prenom: prenom.trim(), magasin: magasin || '', heures, poste, telephone })
+      const nomT = nom.trim()
+      const prenomT = prenom.trim()
+      results.push({
+        nom: nomT,
+        prenom: prenomT,
+        fullName: `${nomT} ${prenomT}`.trim(),
+        magasin: magasin || '',
+        heures,
+        poste,
+        telephone,
+      })
     }
   })
 
@@ -176,12 +187,7 @@ export default function EntreesView({ onBack, onToast, pName }) {
       try {
         const rows = await sbSelect('participants', `session_code=eq.${SESSION_CODE}&order=joined_at.asc`)
         if (rows && rows.length > 0) {
-          const converted = rows.map(r => {
-            const parts = (r.name || '').trim().split(/\s+/)
-            const prenom = parts[0] || ''
-            const nom = parts.slice(1).join(' ') || ''
-            return { nom, prenom, magasin: '', heures: '', poste: '', telephone: '' }
-          })
+          const converted = buildEntreesFromParticipants(rows)
           setEntrees(converted)
           setShowResults(true)
           // Sauvegarder dans trainer_state pour que OnboardingView puisse les lire

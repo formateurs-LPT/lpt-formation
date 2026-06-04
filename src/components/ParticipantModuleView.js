@@ -5,7 +5,7 @@ import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { sbInsert, sbUpsert, sbSelect, SESSION_CODE } from '@/lib/supabase'
 import { generatePin } from '@/lib/pin'
-import { findRhMatch, loadEntreesList } from '@/lib/participantNames'
+import { resolveParticipantName } from '@/lib/participantNames'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -1384,23 +1384,19 @@ function RhParticipantGate({ pNameInput, children }) {
         }
         return
       }
-      const entrees = await loadEntreesList()
-      if (!entrees.length) {
+      const resolved = await resolveParticipantName(raw)
+      if (!resolved.ok) {
         if (!cancelled) {
-          setDenyMessage('Liste RH indisponible. Le formateur doit importer les entrées de la semaine.')
+          setDenyMessage(
+            resolved.reason === 'no_list'
+              ? 'Liste RH indisponible. Le formateur doit importer « Entrées de la semaine ».'
+              : 'Nom non reconnu. Reprenez le prénom et le nom comme sur la liste RH.'
+          )
           setStatus('denied')
         }
         return
       }
-      const match = findRhMatch(raw, entrees)
-      if (!match) {
-        if (!cancelled) {
-          setDenyMessage('Nom non reconnu. Utilisez le même prénom et nom que sur la liste RH.')
-          setStatus('denied')
-        }
-        return
-      }
-      const canonical = match.canonicalName
+      const canonical = resolved.canonicalName
       if (typeof window !== 'undefined') {
         localStorage.setItem('participant_name', canonical)
       }
