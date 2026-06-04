@@ -18,7 +18,9 @@ function classifyMagasin(magasin) {
 const JOURNEES = (onLaunchModule) => [
   {
     id: 'journee1',
+    numero: 1,
     titre: 'Journée 1',
+    sub: 'Les fondamentaux de l\'optique',
     modules: [
       {
         visual: 'avatar', src: '/assets/avatar_paul.png',
@@ -37,6 +39,20 @@ const JOURNEES = (onLaunchModule) => [
         label: 'Les types de verres',
         sub: 'Unifocaux, progressifs, antireflets et traitements',
         onClick: () => onLaunchModule('types-verres'),
+      },
+    ],
+  },
+  {
+    id: 'journee2',
+    numero: 2,
+    titre: 'Journée 2',
+    sub: 'Les offres et la vente',
+    modules: [
+      {
+        visual: 'emoji', icon: '🏷️',
+        label: 'Les offres',
+        sub: 'Découverte des offres LPT et argumentation commerciale',
+        onClick: () => onLaunchModule('offres'),
       },
     ],
   },
@@ -323,13 +339,13 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
                 background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.25)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 18, fontWeight: 800, color: '#00abe9',
-              }}>1</div>
+              }}>{j.numero}</div>
               <span style={{ fontSize: 11, color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>
-                {j.modules.length} modules
+                {j.modules.length} module{j.modules.length > 1 ? 's' : ''}
               </span>
             </div>
             <div className="dash-tile-label" style={{ marginTop: 12 }}>{j.titre}</div>
-            <div className="dash-tile-sub">Les fondamentaux de l'optique</div>
+            <div className="dash-tile-sub">{j.sub}</div>
             <div style={{ fontSize: 11, color: '#00abe9', marginTop: 8, fontWeight: 600 }}>Voir les modules →</div>
           </div>
         ))}
