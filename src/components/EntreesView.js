@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { generatePin } from '@/lib/pin'
-import { buildEntreesFromParticipants } from '@/lib/participantNames'
+import { buildEntreesFromParticipants, entreeDisplayName } from '@/lib/participantNames'
 import { sbInsert, sbUpsert, sbSelect, getSharedState, setSharedState, SESSION_CODE } from '@/lib/supabase'
 
 const PARIS_MAGASINS = ['chatelet','st lazare','saint lazare','montparnasse','italie','commerce','bastille','cergy','creteil','créteil','belle epine','belle épine','paris','st ouen','saint ouen','ouen','beauchamp','odysseum','supply']
@@ -118,56 +118,21 @@ function parseRHTable(rawText) {
   return results
 }
 
-function CollabCard({ c, onEdit }) {
-  const [editing, setEditing] = useState(false)
-  const [nom, setNom] = useState(c.nom || '')
-  const [prenom, setPrenom] = useState(c.prenom || '')
-
+function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving }) {
   const cat = classifyMagasin(c.magasin)
   const colors = { paris: '#0089ba', province: '#7c3aed', belgique: '#db2777' }
   const color = colors[cat] || '#888'
-  const fullName = ((c.nom || '') + ' ' + (c.prenom || '')).trim()
+  const fullName = entreeDisplayName(c)
   const pin = generatePin(fullName)
+  const [nom, setNom] = useState(c.nom || '')
+  const [prenom, setPrenom] = useState(c.prenom || '')
 
-  const handleSave = () => {
-    if (nom.trim()) {
-      onEdit(c, nom.trim(), prenom.trim())
-      setEditing(false)
+  useEffect(() => {
+    if (editing) {
+      setNom(c.nom || '')
+      setPrenom(c.prenom || '')
     }
-  }
-
-  if (editing) {
-    return (
-      <div style={{ background: '#fff', border: '2px solid #0089ba', borderRadius: 'var(--rs)', padding: '12px 14px', marginBottom: 8 }}>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-          <input
-            value={nom}
-            onChange={e => setNom(e.target.value)}
-            placeholder="NOM"
-            autoFocus
-            style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', fontFamily: 'inherit' }}
-          />
-          <input
-            value={prenom}
-            onChange={e => setPrenom(e.target.value)}
-            placeholder="Prénom"
-            onKeyDown={e => e.key === 'Enter' && handleSave()}
-            style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 13, fontFamily: 'inherit' }}
-          />
-        </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button onClick={() => { setNom(c.nom || ''); setPrenom(c.prenom || ''); setEditing(false) }}
-            style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #d1d5db', background: '#f9fafb', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
-            Annuler
-          </button>
-          <button onClick={handleSave}
-            style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: '#0089ba', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-            ✓ Enregistrer
-          </button>
-        </div>
-      </div>
-    )
-  }
+  }, [editing, c.nom, c.prenom])
 
   return (
     <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
@@ -175,36 +140,86 @@ function CollabCard({ c, onEdit }) {
         {(c.nom || '?')[0]}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{c.nom} {c.prenom}</div>
-        <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 2 }}>{c.magasin} · {c.poste}</div>
+        {editing ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <input
+              className="finput"
+              style={{ flex: '1 1 120px', fontSize: 13, padding: '8px 10px' }}
+              placeholder="Nom"
+              value={nom}
+              onChange={e => setNom(e.target.value)}
+            />
+            <input
+              className="finput"
+              style={{ flex: '1 1 120px', fontSize: 13, padding: '8px 10px' }}
+              placeholder="Prénom"
+              value={prenom}
+              onChange={e => setPrenom(e.target.value)}
+            />
+            <button type="button" className="btn1" style={{ fontSize: 12, padding: '6px 12px' }} disabled={saving} onClick={() => onSave(nom, prenom)}>
+              {saving ? '…' : 'OK'}
+            </button>
+            <button type="button" className="btn2" style={{ fontSize: 12, padding: '6px 10px' }} disabled={saving} onClick={onCancelEdit}>
+              Annuler
+            </button>
+          </div>
+        ) : (
+          <>
+            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{c.nom} {c.prenom}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 2 }}>{c.magasin} · {c.poste}</div>
+          </>
+        )}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-          <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: '3px 10px', fontSize: 13, fontWeight: 800, color: '#0089ba', letterSpacing: 1 }}>🔑 {pin}</div>
-          {c.heures && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-s)' }}>{c.heures}h/sem</div>}
-          {c.telephone && <div style={{ fontSize: 11, color: 'var(--text-m)' }}>{c.telephone}</div>}
-        </div>
-        <button onClick={() => setEditing(true)} style={{
-          background: 'none', border: '1px solid #e5e7eb', borderRadius: 8,
-          width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', fontSize: 13, color: '#6b7280', flexShrink: 0,
-        }}>✏️</button>
+      <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+        {/* PIN */}
+        <div style={{
+          background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8,
+          padding: '3px 10px', fontSize: 13, fontWeight: 800,
+          color: '#0089ba', letterSpacing: 1,
+        }}>🔑 {pin}</div>
+        {c.heures && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-s)' }}>{c.heures}h/sem</div>}
+        {c.telephone && <div style={{ fontSize: 11, color: 'var(--text-m)' }}>{c.telephone}</div>}
       </div>
+      {!editing && (
+        <button
+          type="button"
+          className="btn2"
+          style={{ fontSize: 11, padding: '4px 10px', flexShrink: 0 }}
+          onClick={onStartEdit}
+          title="Modifier le nom"
+        >
+          ✏️
+        </button>
+      )}
     </div>
   )
 }
 
-function GroupSection({ title, collabs, onEdit }) {
-  if (!collabs.length) return null
+function GroupSection({ title, items, editingIndex, savingIndex, onStartEdit, onCancelEdit, onSave }) {
+  if (!items.length) return null
   return (
     <div style={{ marginBottom: 24 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 12, borderBottom: '2px solid #111' }}>
         <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h3>
-        <span style={{ fontSize: 13, color: 'var(--text-m)' }}>{collabs.length} collaborateur{collabs.length > 1 ? 's' : ''}</span>
+        <span style={{ fontSize: 13, color: 'var(--text-m)' }}>{items.length} collaborateur{items.length > 1 ? 's' : ''}</span>
       </div>
-      {collabs.map((c, i) => <CollabCard key={i} c={c} onEdit={onEdit} />)}
+      {items.map(({ c, index }) => (
+        <CollabCard
+          key={index}
+          c={c}
+          editing={editingIndex === index}
+          saving={savingIndex === index}
+          onStartEdit={() => onStartEdit(index)}
+          onCancelEdit={onCancelEdit}
+          onSave={(nom, prenom) => onSave(index, nom, prenom)}
+        />
+      ))}
     </div>
   )
+}
+
+function obKeyFromName(name) {
+  return (name || '').replace(/"/g, '')
 }
 
 export default function EntreesView({ onBack, onToast, pName }) {
@@ -212,6 +227,58 @@ export default function EntreesView({ onBack, onToast, pName }) {
   const [entrees, setEntrees] = useState([])
   const [loading, setLoading] = useState(false)
   const [showResults, setShowResults] = useState(false)
+  const [editingIndex, setEditingIndex] = useState(null)
+  const [savingIndex, setSavingIndex] = useState(null)
+
+  const persistEntreesList = async (list, obDataPatch = null) => {
+    localStorage.setItem('entrees_data', JSON.stringify(list))
+    const patch = { entrees_data: list }
+    if (obDataPatch) patch.ob_data = obDataPatch
+    return setSharedState(patch)
+  }
+
+  const handleSaveCollab = async (index, nom, prenom) => {
+    const nomT = (nom || '').trim()
+    const prenomT = (prenom || '').trim()
+    if (!nomT && !prenomT) {
+      onToast('Nom ou prénom requis')
+      return
+    }
+    setSavingIndex(index)
+    const old = entrees[index]
+    const oldKey = obKeyFromName(entreeDisplayName(old))
+    const fullName = `${nomT} ${prenomT}`.trim()
+    const newKey = obKeyFromName(fullName)
+
+    const next = [...entrees]
+    next[index] = {
+      ...old,
+      nom: nomT,
+      prenom: prenomT,
+      fullName,
+    }
+    setEntrees(next)
+
+    let obPatch = null
+    try {
+      const state = await getSharedState()
+      const obData = { ...(state.ob_data || JSON.parse(localStorage.getItem('ob_data') || '{}')) }
+      if (oldKey !== newKey && obData[oldKey]) {
+        obData[newKey] = obData[oldKey]
+        delete obData[oldKey]
+        localStorage.setItem('ob_data', JSON.stringify(obData))
+        obPatch = obData
+      }
+    } catch {
+      /* ignore */
+    }
+
+    const synced = await persistEntreesList(next, obPatch)
+    setSavingIndex(null)
+    setEditingIndex(null)
+    if (synced) onToast('Nom mis à jour (liste RH synchronisée)')
+    else onToast('Nom mis à jour localement — sync Supabase échouée')
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -261,7 +328,7 @@ export default function EntreesView({ onBack, onToast, pName }) {
         }
         setEntrees(results)
         localStorage.setItem('entrees_data', JSON.stringify(results)) // cache local
-        const synced = await setSharedState({ entrees_data: results })
+        const synced = await persistEntreesList(results)
         setShowResults(true)
         if (synced) {
           onToast(`${results.length} collaborateurs importés ✓ (liste enregistrée en BDD)`)
@@ -334,18 +401,18 @@ export default function EntreesView({ onBack, onToast, pName }) {
     }
   }
 
-  const handleEditCollab = async (original, newNom, newPrenom) => {
-    const updated = entrees.map(e =>
-      e === original ? { ...e, nom: newNom, prenom: newPrenom } : e
-    )
-    setEntrees(updated)
-    localStorage.setItem('entrees_data', JSON.stringify(updated))
-    setSharedState({ entrees_data: updated }).catch(console.warn)
+  const withIndex = (pred) =>
+    entrees.map((c, index) => ({ c, index })).filter(({ c }) => pred(c))
+  const paris = withIndex(c => classifyMagasin(c.magasin) === 'paris')
+  const province = withIndex(c => classifyMagasin(c.magasin) === 'province')
+  const belgique = withIndex(c => classifyMagasin(c.magasin) === 'belgique')
+  const groupProps = {
+    editingIndex,
+    savingIndex,
+    onStartEdit: setEditingIndex,
+    onCancelEdit: () => setEditingIndex(null),
+    onSave: handleSaveCollab,
   }
-
-  const paris = entrees.filter(c => classifyMagasin(c.magasin) === 'paris')
-  const province = entrees.filter(c => classifyMagasin(c.magasin) === 'province')
-  const belgique = entrees.filter(c => classifyMagasin(c.magasin) === 'belgique')
 
   return (
     <div className="dash-wrap">
@@ -416,9 +483,9 @@ export default function EntreesView({ onBack, onToast, pName }) {
             ))}
           </div>
 
-          <GroupSection title="Présentiel Paris" collabs={paris} onEdit={handleEditCollab} />
-          <GroupSection title="Visio Province" collabs={province} onEdit={handleEditCollab} />
-          <GroupSection title="Visio Belgique" collabs={belgique} onEdit={handleEditCollab} />
+          <GroupSection title="Présentiel Paris" items={paris} {...groupProps} />
+          <GroupSection title="Visio Province" items={province} {...groupProps} />
+          <GroupSection title="Visio Belgique" items={belgique} {...groupProps} />
         </>
       )}
     </div>
