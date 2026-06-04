@@ -1,4 +1,13 @@
-import { getSharedState, sbSelect, getRuntimeSessionCode } from './supabase'
+import {
+  getSharedState,
+  sbSelect,
+  sbDelete,
+  sbUpdate,
+  sbUpsert,
+  pgEq,
+  getRuntimeSessionCode,
+  ensureSession,
+} from './supabase'
 
 /** Nom affiché / stocké : fullName si présent, sinon « NOM Prénom » (import RH) */
 export function entreeDisplayName(c) {
@@ -57,18 +66,25 @@ export function buildEntreesFromParticipants(rows) {
     .filter(Boolean)
 }
 
+export function normalizeEntreeEntry(c) {
+  const nom = (c?.nom || '').trim()
+  const prenom = (c?.prenom || '').trim()
+  const fullName = (c?.fullName || '').trim() || `${nom} ${prenom}`.trim()
+  if (!fullName) return c
+  return { ...c, nom, prenom, fullName }
+}
+
+export function normalizeEntreeList(list) {
+  return (list || []).map(normalizeEntreeEntry).filter(c => entreeDisplayName(c))
+}
+
+/** Liste RH pour l’écran Entrées (BDD + cache local + repli participants) */
 export async function loadEntreesList() {
-  let entrees = []
-  try {
-    const state = await getSharedState()
-    if (state.entrees_data?.length) entrees = state.entrees_data
-  } catch {
-    /* ignore */
-  }
+  let entrees = await loadEntreesFromTrainerState()
   if (!entrees.length && typeof window !== 'undefined') {
     try {
       const local = JSON.parse(localStorage.getItem('entrees_data') || '[]')
-      if (local.length) entrees = local
+      if (local.length) entrees = normalizeEntreeList(local)
     } catch {
       /* ignore */
     }
@@ -77,7 +93,7 @@ export async function loadEntreesList() {
     try {
       const rows = await sbSelect(
         'participants',
-        `session_code=eq.${getRuntimeSessionCode()}&order=joined_at.asc`
+        `session_code=eq.${encodeURIComponent(getRuntimeSessionCode())}&order=joined_at.asc`
       )
       entrees = buildEntreesFromParticipants(rows)
     } catch {
@@ -87,6 +103,61 @@ export async function loadEntreesList() {
   return entrees
 }
 
+/** Liste RH pour la connexion : priorité Supabase (évite un cache local obsolète) */
+export async function loadEntreesFromTrainerState() {
+  try {
+    const state = await getSharedState()
+    if (state.entrees_data?.length) return normalizeEntreeList(state.entrees_data)
+  } catch {
+    /* ignore */
+  }
+  return []
+}
+
+/** Après renommage RH : aligner participants + réponses déjà enregistrées */
+export async function renameParticipantIdentity(oldCanonical, newCanonical) {
+  const code = getRuntimeSessionCode()
+  const oldName = (oldCanonical || '').trim()
+  const newName = (newCanonical || '').trim()
+  if (!code || !oldName || !newName) return false
+  if (normalizeNameKey(oldName) === normalizeNameKey(newName)) return true
+  if (!(await ensureSession())) return false
+
+  await sbDelete(
+    'participants',
+    `session_code=eq.${encodeURIComponent(code)}&${pgEq('name', oldName)}`
+  )
+  await sbUpsert(
+    'participants',
+    {
+      session_code: code,
+      name: newName,
+      joined_at: new Date().toISOString(),
+    },
+    'session_code,name'
+  )
+
+  const sessionFilter = `session_code=eq.${encodeURIComponent(code)}`
+  await sbUpdate(
+    'scenario_responses',
+    { participant_name: newName },
+    `${sessionFilter}&${pgEq('participant_name', oldName)}`
+  )
+  await sbUpdate(
+    'quiz_results',
+    { participant_name: newName },
+    `${sessionFilter}&${pgEq('participant_name', oldName)}`
+  )
+  await sbUpdate(
+    'quiz_answers',
+    { collaborateur: newName },
+    `${sessionFilter}&${pgEq('collaborateur', oldName)}`
+  )
+  await sbUpdate('module_results', { collaborateur: newName }, pgEq('collaborateur', oldName))
+
+  return true
+}
+
 /**
  * Résout un nom saisi : liste RH (trainer_state) puis secours table participants.
  */
@@ -94,7 +165,15 @@ export async function resolveParticipantName(rawInput) {
   const raw = (rawInput || '').trim()
   if (!raw) return { ok: false, reason: 'empty' }
 
-  const entrees = await loadEntreesList()
+  let entrees = await loadEntreesFromTrainerState()
+  if (!entrees.length && typeof window !== 'undefined') {
+    try {
+      const local = JSON.parse(localStorage.getItem('entrees_data') || '[]')
+      if (local.length) entrees = normalizeEntreeList(local)
+    } catch {
+      /* ignore */
+    }
+  }
   if (!entrees.length) {
     return { ok: false, reason: 'no_list' }
   }
