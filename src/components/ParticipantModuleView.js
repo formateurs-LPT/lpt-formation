@@ -5,6 +5,7 @@ import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { sbInsert, sbUpsert, sbSelect, SESSION_CODE } from '@/lib/supabase'
 import { generatePin } from '@/lib/pin'
+import { findRhMatch, loadEntreesList } from '@/lib/participantNames'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -1348,13 +1349,87 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel }) {
   )
 }
 
-export default function ParticipantModuleView({ forcedModule, forcedPage, pName: pNameProp }) {
+function RhAccessDenied({ message }) {
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px', textAlign: 'center',
+    }}>
+      <Image src="/assets/logo-lpt.png" alt="LPT" width={160} height={60} style={{ objectFit: 'contain', marginBottom: 32 }} />
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 12 }}>Accès refusé</h2>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', maxWidth: 360, lineHeight: 1.6 }}>{message}</p>
+      <a href="/" style={{
+        marginTop: 28, background: '#00abe9', color: '#fff', padding: '12px 24px',
+        borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: 'none',
+      }}>Retour à l&apos;accueil</a>
+    </div>
+  )
+}
+
+function RhParticipantGate({ pNameInput, children }) {
+  const [status, setStatus] = useState('loading')
+  const [canonicalName, setCanonicalName] = useState('')
+  const [denyMessage, setDenyMessage] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const raw = (pNameInput || '').trim()
+      if (!raw) {
+        if (!cancelled) {
+          setDenyMessage('Connectez-vous depuis la page d\'accueil avec votre prénom et nom (liste RH).')
+          setStatus('denied')
+        }
+        return
+      }
+      const entrees = await loadEntreesList()
+      if (!entrees.length) {
+        if (!cancelled) {
+          setDenyMessage('Liste RH indisponible. Le formateur doit importer les entrées de la semaine.')
+          setStatus('denied')
+        }
+        return
+      }
+      const match = findRhMatch(raw, entrees)
+      if (!match) {
+        if (!cancelled) {
+          setDenyMessage('Nom non reconnu. Utilisez le même prénom et nom que sur la liste RH.')
+          setStatus('denied')
+        }
+        return
+      }
+      const canonical = match.canonicalName
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('participant_name', canonical)
+      }
+      try {
+        await sbUpsert('participants', {
+          session_code: SESSION_CODE,
+          name: canonical,
+          joined_at: new Date().toISOString(),
+        }, 'session_code,name')
+      } catch (e) {
+        console.warn('participant upsert (module QR)', e)
+      }
+      if (!cancelled) {
+        setCanonicalName(canonical)
+        setStatus('ok')
+      }
+    })()
+    return () => { cancelled = true }
+  }, [pNameInput])
+
+  if (status === 'loading') return <WaitingScreen />
+  if (status === 'denied') return <RhAccessDenied message={denyMessage} />
+  return children(canonicalName)
+}
+
+function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
   const sync = useModuleSync(forcedModule != null ? 99999 : 1200)
   const activeModule = forcedModule ?? sync.activeModule
   const modulePage   = forcedPage  ?? sync.modulePage
-
-  // Récupère le nom depuis le prop ou le localStorage (connexion via QR)
-  const pName = pNameProp || (typeof window !== 'undefined' ? localStorage.getItem('participant_name') || '' : '')
 
   const moduleData = MODULE_DATA[activeModule] || null
   const pages = moduleData?.pages || []
@@ -1380,5 +1455,20 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
               : <WaitingScreen />
       }
     </>
+  )
+}
+
+export default function ParticipantModuleView({ forcedModule, forcedPage, pName: pNameProp }) {
+  const pNameRaw = pNameProp || (typeof window !== 'undefined' ? localStorage.getItem('participant_name') || '' : '')
+  return (
+    <RhParticipantGate pNameInput={pNameRaw}>
+      {canonicalName => (
+        <ParticipantModuleContent
+          forcedModule={forcedModule}
+          forcedPage={forcedPage}
+          pName={canonicalName}
+        />
+      )}
+    </RhParticipantGate>
   )
 }

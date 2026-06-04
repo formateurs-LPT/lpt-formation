@@ -73,13 +73,13 @@ export default function Login({ onTrainerLogin, onParticipantJoin }) {
           <input
             className="finput"
             type="text"
-            placeholder="Votre prénom et nom"
+            placeholder="Prénom et nom (comme sur la liste RH)"
             value={pname}
             onChange={e => setPname(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleJoin()}
           />
           <button className="gbtn" style={{ width: '100%', marginTop: 4 }} onClick={handleJoin}>Rejoindre →</button>
-          <p className="hint">Entrez votre prénom et nom pour rejoindre la session</p>
+          <p className="hint">Prénom et nom exactement comme sur la liste RH (Entrées de la semaine)</p>
         </div>
       </div>
     </div>

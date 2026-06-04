@@ -7,6 +7,7 @@ import Dashboard from '@/components/Dashboard'
 import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
 import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB } from '@/lib/supabase'
+import { findRhMatch, loadEntreesList } from '@/lib/participantNames'
 import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
@@ -70,14 +71,29 @@ export default function Page() {
   }
 
   const handleParticipantJoin = async (name) => {
-    if (!name.trim()) { toast('Entrez votre prénom et nom'); return }
-    setPName(name.trim())
+    const raw = name.trim()
+    if (!raw) { toast('Entrez votre prénom et nom'); return }
+
+    const entrees = await loadEntreesList()
+    if (!entrees.length) {
+      toast('Liste des participants indisponible. Le formateur doit d\'abord importer les entrées de la semaine.')
+      return
+    }
+
+    const match = findRhMatch(raw, entrees)
+    if (!match) {
+      toast('Nom non reconnu. Utilisez le même prénom et nom que sur la liste RH.')
+      return
+    }
+
+    const canonical = match.canonicalName
+    setPName(canonical)
     setIsTrainer(false)
-    localStorage.setItem('participant_name', name.trim())
+    localStorage.setItem('participant_name', canonical)
     try {
       await sbUpsert('participants', {
         session_code: SESSION_CODE,
-        name: name.trim(),
+        name: canonical,
         joined_at: new Date().toISOString(),
       }, 'session_code,name')
     } catch (e) {

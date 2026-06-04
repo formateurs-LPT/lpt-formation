@@ -1,6 +1,11 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { sbSelect, sbUpdate, sbUpsert, sbInsert, sbDelete, SESSION_CODE } from '@/lib/supabase'
+import {
+  filterParticipantsInRh,
+  loadEntreesList,
+  isInConnectedRhList,
+} from '@/lib/participantNames'
 
 const STEP_NAMES = ['Quiz initial', 'Les bases', 'Arguments & Offre', 'Ordonnances', 'Quiz final']
 const SLIDE_NOTES = [
@@ -16,8 +21,11 @@ function ParticipantList({ sessionCode }) {
   const [participants, setParticipants] = useState([])
   useEffect(() => {
     const load = async () => {
-      const data = await sbSelect('participants', 'session_code=eq.' + sessionCode)
-      setParticipants(data || [])
+      const [data, entrees] = await Promise.all([
+        sbSelect('participants', 'session_code=eq.' + sessionCode),
+        loadEntreesList(),
+      ])
+      setParticipants(filterParticipantsInRh(data || [], entrees))
     }
     load()
     const interval = setInterval(load, 3000)
@@ -46,8 +54,13 @@ function ResponseFeed({ sessionCode, scenarioIdx, label }) {
   const [items, setItems] = useState([])
   useEffect(() => {
     const load = async () => {
-      const data = await sbSelect('scenario_responses', `session_code=eq.${sessionCode}&scenario_idx=eq.${scenarioIdx}`)
-      setItems(data || [])
+      const [data, participants, entrees] = await Promise.all([
+        sbSelect('scenario_responses', `session_code=eq.${sessionCode}&scenario_idx=eq.${scenarioIdx}`),
+        sbSelect('participants', 'session_code=eq.' + sessionCode),
+        loadEntreesList(),
+      ])
+      const rows = data || []
+      setItems(rows.filter(r => isInConnectedRhList(r.participant_name, participants, entrees)))
     }
     load()
     const interval = setInterval(load, 3000)
@@ -77,8 +90,13 @@ function QuizResults({ sessionCode }) {
   const [results, setResults] = useState([])
   useEffect(() => {
     const load = async () => {
-      const data = await sbSelect('quiz_results', 'session_code=eq.' + sessionCode)
-      setResults(data || [])
+      const [data, participants, entrees] = await Promise.all([
+        sbSelect('quiz_results', 'session_code=eq.' + sessionCode),
+        sbSelect('participants', 'session_code=eq.' + sessionCode),
+        loadEntreesList(),
+      ])
+      const rows = data || []
+      setResults(rows.filter(r => isInConnectedRhList(r.participant_name, participants, entrees)))
     }
     load()
     const interval = setInterval(load, 3000)
@@ -139,8 +157,11 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      const data = await sbSelect('participants', 'session_code=eq.' + SESSION_CODE)
-      const count = data?.length || 0
+      const [data, entrees] = await Promise.all([
+        sbSelect('participants', 'session_code=eq.' + SESSION_CODE),
+        loadEntreesList(),
+      ])
+      const count = filterParticipantsInRh(data || [], entrees).length
       setParticipantCount(count)
       onOnlineCount(count)
     }, 3000)

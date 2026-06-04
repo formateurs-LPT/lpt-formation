@@ -49,7 +49,10 @@ export async function sbInsert(table, data) {
     headers: { ...sbHeaders(), Prefer: 'return=minimal' },
     body: JSON.stringify(data),
   })
-  if (!r.ok) console.error('sbInsert error', table, r.status)
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}))
+    console.error('sbInsert error', table, r.status, err?.message || err?.hint || err)
+  }
   return r.ok
 }
 
