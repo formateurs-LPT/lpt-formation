@@ -26,12 +26,28 @@ export function normalizeNameKey(name) {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\u00a0/g, ' ')
     .replace(/[''`\-–—]/g, ' ')
     .replace(/[^a-z\s]/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
     .split(/\s+/)
     .filter(Boolean)
     .sort()
     .join(' ')
+}
+
+/** Toutes les clés possibles pour une fiche RH (ordre nom/prénom, fullName, etc.) */
+export function matchKeysForEntry(c) {
+  const keys = new Set()
+  const nom = (c?.nom || '').trim()
+  const prenom = (c?.prenom || '').trim()
+  const full = entreeDisplayName(c)
+  for (const label of [full, `${nom} ${prenom}`, `${prenom} ${nom}`, nom, prenom]) {
+    const k = normalizeNameKey(label)
+    if (k) keys.add(k)
+  }
+  return keys
 }
 
 export function findRhMatch(inputName, entrees) {
@@ -40,7 +56,7 @@ export function findRhMatch(inputName, entrees) {
   for (const c of entrees) {
     const canonical = entreeDisplayName(c)
     if (!canonical) continue
-    if (normalizeNameKey(canonical) === key) {
+    if (matchKeysForEntry(c).has(key)) {
       return { canonicalName: canonical, entry: c }
     }
   }
@@ -103,15 +119,32 @@ export async function loadEntreesList() {
   return entrees
 }
 
-/** Liste RH pour la connexion : priorité Supabase (évite un cache local obsolète) */
+/** Liste RH depuis Supabase uniquement (pas de localStorage) */
 export async function loadEntreesFromTrainerState() {
+  const code = getRuntimeSessionCode()
+  if (!code) return []
+
   try {
-    const state = await getSharedState()
-    if (state.entrees_data?.length) return normalizeEntreeList(state.entrees_data)
-  } catch {
-    /* ignore */
+    const rows = await sbSelect('trainer_state', `trainer=eq.${encodeURIComponent(code)}`)
+    if (!rows?.length) return []
+
+    let state = rows[0].state
+    if (typeof state === 'string') {
+      try {
+        state = JSON.parse(state)
+      } catch {
+        return []
+      }
+    }
+    if (!state || typeof state !== 'object') return []
+    const raw = state.entrees_data
+    if (!Array.isArray(raw) || !raw.length) return []
+
+    return normalizeEntreeList(raw)
+  } catch (e) {
+    console.error('[loadEntreesFromTrainerState]', e)
+    return []
   }
-  return []
 }
 
 /** Après renommage RH : aligner participants + réponses déjà enregistrées */
@@ -162,20 +195,30 @@ export async function renameParticipantIdentity(oldCanonical, newCanonical) {
  * Résout un nom saisi : liste RH (trainer_state) puis secours table participants.
  */
 export async function resolveParticipantName(rawInput) {
-  const raw = (rawInput || '').trim()
+  const raw = (rawInput || '').trim().replace(/\s+/g, ' ')
   if (!raw) return { ok: false, reason: 'empty' }
 
+  const sessionCode = getRuntimeSessionCode()
+  if (!sessionCode) {
+    return { ok: false, reason: 'no_session_code' }
+  }
+
   let entrees = await loadEntreesFromTrainerState()
-  if (!entrees.length && typeof window !== 'undefined') {
+
+  if (!entrees.length) {
     try {
-      const local = JSON.parse(localStorage.getItem('entrees_data') || '[]')
-      if (local.length) entrees = normalizeEntreeList(local)
+      const rows = await sbSelect(
+        'participants',
+        `session_code=eq.${encodeURIComponent(sessionCode)}&order=joined_at.asc`
+      )
+      entrees = buildEntreesFromParticipants(rows)
     } catch {
       /* ignore */
     }
   }
+
   if (!entrees.length) {
-    return { ok: false, reason: 'no_list' }
+    return { ok: false, reason: 'no_list', sessionCode }
   }
 
   let match = findRhMatch(raw, entrees)
@@ -183,21 +226,13 @@ export async function resolveParticipantName(rawInput) {
     return { ok: true, canonicalName: match.canonicalName }
   }
 
-  try {
-    const rows = await sbSelect(
-      'participants',
-      `session_code=eq.${getRuntimeSessionCode()}&order=joined_at.asc`
-    )
-    const fromParticipants = buildEntreesFromParticipants(rows)
-    match = findRhMatch(raw, fromParticipants)
-    if (match) {
-      return { ok: true, canonicalName: match.canonicalName }
-    }
-  } catch {
-    /* ignore */
-  }
+  console.warn(
+    '[resolveParticipantName] pas de match',
+    { saisi: raw, cle: normalizeNameKey(raw), sessionCode, nb: entrees.length,
+      exemples: entrees.slice(0, 5).map(entreeDisplayName) }
+  )
 
-  return { ok: false, reason: 'no_match' }
+  return { ok: false, reason: 'no_match', sessionCode }
 }
 
 export function filterParticipantsInRh(participants, entrees) {
