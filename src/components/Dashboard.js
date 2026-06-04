@@ -248,8 +248,8 @@ function SessionsHistoryView({ onBack, onToast }) {
                         <div style={{ fontSize: 10, color: 'var(--text-m)' }}>Score</div>
                       </div>
                       <div style={{ textAlign: 'center', background: 'var(--lpt-l)', borderRadius: 10, padding: '6px 12px' }}>
-                        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--lpt)' }}>+{xp}</div>
-                        <div style={{ fontSize: 10, color: 'var(--lpt-d)', fontWeight: 600 }}>XP</div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--lpt)' }}>{xp}%</div>
+                        <div style={{ fontSize: 10, color: 'var(--lpt-d)', fontWeight: 600 }}>Réussite</div>
                       </div>
                     </div>
                   </div>
