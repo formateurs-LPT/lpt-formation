@@ -118,12 +118,57 @@ function parseRHTable(rawText) {
   return results
 }
 
-function CollabCard({ c }) {
+function CollabCard({ c, onEdit }) {
+  const [editing, setEditing] = useState(false)
+  const [nom, setNom] = useState(c.nom || '')
+  const [prenom, setPrenom] = useState(c.prenom || '')
+
   const cat = classifyMagasin(c.magasin)
   const colors = { paris: '#0089ba', province: '#7c3aed', belgique: '#db2777' }
   const color = colors[cat] || '#888'
   const fullName = ((c.nom || '') + ' ' + (c.prenom || '')).trim()
   const pin = generatePin(fullName)
+
+  const handleSave = () => {
+    if (nom.trim()) {
+      onEdit(c, nom.trim(), prenom.trim())
+      setEditing(false)
+    }
+  }
+
+  if (editing) {
+    return (
+      <div style={{ background: '#fff', border: '2px solid #0089ba', borderRadius: 'var(--rs)', padding: '12px 14px', marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <input
+            value={nom}
+            onChange={e => setNom(e.target.value)}
+            placeholder="NOM"
+            autoFocus
+            style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', fontFamily: 'inherit' }}
+          />
+          <input
+            value={prenom}
+            onChange={e => setPrenom(e.target.value)}
+            placeholder="Prénom"
+            onKeyDown={e => e.key === 'Enter' && handleSave()}
+            style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 13, fontFamily: 'inherit' }}
+          />
+        </div>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button onClick={() => { setNom(c.nom || ''); setPrenom(c.prenom || ''); setEditing(false) }}
+            style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #d1d5db', background: '#f9fafb', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+            Annuler
+          </button>
+          <button onClick={handleSave}
+            style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: '#0089ba', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            ✓ Enregistrer
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
       <div style={{ width: 36, height: 36, borderRadius: '50%', background: color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color, flexShrink: 0 }}>
@@ -133,21 +178,23 @@ function CollabCard({ c }) {
         <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{c.nom} {c.prenom}</div>
         <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 2 }}>{c.magasin} · {c.poste}</div>
       </div>
-      <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-        {/* PIN */}
-        <div style={{
-          background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8,
-          padding: '3px 10px', fontSize: 13, fontWeight: 800,
-          color: '#0089ba', letterSpacing: 1,
-        }}>🔑 {pin}</div>
-        {c.heures && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-s)' }}>{c.heures}h/sem</div>}
-        {c.telephone && <div style={{ fontSize: 11, color: 'var(--text-m)' }}>{c.telephone}</div>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: '3px 10px', fontSize: 13, fontWeight: 800, color: '#0089ba', letterSpacing: 1 }}>🔑 {pin}</div>
+          {c.heures && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-s)' }}>{c.heures}h/sem</div>}
+          {c.telephone && <div style={{ fontSize: 11, color: 'var(--text-m)' }}>{c.telephone}</div>}
+        </div>
+        <button onClick={() => setEditing(true)} style={{
+          background: 'none', border: '1px solid #e5e7eb', borderRadius: 8,
+          width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', fontSize: 13, color: '#6b7280', flexShrink: 0,
+        }}>✏️</button>
       </div>
     </div>
   )
 }
 
-function GroupSection({ title, collabs }) {
+function GroupSection({ title, collabs, onEdit }) {
   if (!collabs.length) return null
   return (
     <div style={{ marginBottom: 24 }}>
@@ -155,7 +202,7 @@ function GroupSection({ title, collabs }) {
         <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h3>
         <span style={{ fontSize: 13, color: 'var(--text-m)' }}>{collabs.length} collaborateur{collabs.length > 1 ? 's' : ''}</span>
       </div>
-      {collabs.map((c, i) => <CollabCard key={i} c={c} />)}
+      {collabs.map((c, i) => <CollabCard key={i} c={c} onEdit={onEdit} />)}
     </div>
   )
 }
@@ -287,6 +334,15 @@ export default function EntreesView({ onBack, onToast, pName }) {
     }
   }
 
+  const handleEditCollab = async (original, newNom, newPrenom) => {
+    const updated = entrees.map(e =>
+      e === original ? { ...e, nom: newNom, prenom: newPrenom } : e
+    )
+    setEntrees(updated)
+    localStorage.setItem('entrees_data', JSON.stringify(updated))
+    setSharedState({ entrees_data: updated }).catch(console.warn)
+  }
+
   const paris = entrees.filter(c => classifyMagasin(c.magasin) === 'paris')
   const province = entrees.filter(c => classifyMagasin(c.magasin) === 'province')
   const belgique = entrees.filter(c => classifyMagasin(c.magasin) === 'belgique')
@@ -360,9 +416,9 @@ export default function EntreesView({ onBack, onToast, pName }) {
             ))}
           </div>
 
-          <GroupSection title="Présentiel Paris" collabs={paris} />
-          <GroupSection title="Visio Province" collabs={province} />
-          <GroupSection title="Visio Belgique" collabs={belgique} />
+          <GroupSection title="Présentiel Paris" collabs={paris} onEdit={handleEditCollab} />
+          <GroupSection title="Visio Province" collabs={province} onEdit={handleEditCollab} />
+          <GroupSection title="Visio Belgique" collabs={belgique} onEdit={handleEditCollab} />
         </>
       )}
     </div>
