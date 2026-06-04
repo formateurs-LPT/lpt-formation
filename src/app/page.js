@@ -6,7 +6,7 @@ import Toast, { useToast } from '@/components/Toast'
 import Dashboard from '@/components/Dashboard'
 import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
-import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB, ensureSession } from '@/lib/supabase'
+import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB, ensureSession, getRuntimeSessionCode } from '@/lib/supabase'
 import { resolveParticipantName } from '@/lib/participantNames'
 import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
@@ -78,22 +78,25 @@ export default function Page() {
 
     const resolved = await resolveParticipantName(raw)
     if (!resolved.ok) {
-      if (resolved.reason === 'no_list') {
-        toast('Liste RH indisponible. Le formateur doit importer « Entrées de la semaine » (ou attendre qu\'un collègue se soit déjà connecté).')
+      if (resolved.reason === 'no_session_code') {
+        toast('Application mal configurée (code session manquant). Contactez le formateur.')
+      } else if (resolved.reason === 'no_list') {
+        toast('Liste RH indisponible. Le formateur doit importer « Entrées de la semaine ».')
       } else {
-        toast('Nom non reconnu. Utilisez exactement le libellé « Connexion : … » affiché sur Entrées de la semaine.')
+        toast('Nom non reconnu. Copiez-collez exactement la ligne bleue « Connexion : … » sur Entrées de la semaine.')
       }
       return
     }
 
     const canonical = resolved.canonicalName
+    const sessionCode = getRuntimeSessionCode() || SESSION_CODE
     setPName(canonical)
     setIsTrainer(false)
     localStorage.setItem('participant_name', canonical)
     try {
       await ensureSession()
       await sbUpsert('participants', {
-        session_code: SESSION_CODE,
+        session_code: sessionCode,
         name: canonical,
         joined_at: new Date().toISOString(),
       }, 'session_code,name')

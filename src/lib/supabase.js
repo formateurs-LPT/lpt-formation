@@ -9,7 +9,7 @@ export const SESSION_CODE = process.env.NEXT_PUBLIC_SESSION_CODE ?? ''
 /** Filtre PostgREST pour valeurs avec espaces / accents */
 export function pgEq(column, value) {
   const v = String(value ?? '').replace(/"/g, '""')
-  return `${column}=eq."${encodeURIComponent(v)}"`
+  return `${column}=eq."${v}"`
 }
 
 /** Code session (build Vercel : NEXT_PUBLIC_SESSION_CODE obligatoire) */
@@ -141,11 +141,30 @@ export async function getTrainerFromDB(login) {
   } catch { return null }
 }
 
+function parseTrainerStateRow(row) {
+  let state = row?.state ?? {}
+  if (typeof state === 'string') {
+    try {
+      state = JSON.parse(state)
+    } catch {
+      state = {}
+    }
+  }
+  return state && typeof state === 'object' ? state : {}
+}
+
 export async function getSharedState() {
   const code = getRuntimeSessionCode()
-  if (!code) return {}
+  if (!code) {
+    console.error('[getSharedState] NEXT_PUBLIC_SESSION_CODE manquant')
+    return {}
+  }
   const rows = await sbSelect('trainer_state', `trainer=eq.${encodeURIComponent(code)}`)
-  return rows?.[0]?.state || {}
+  if (!rows?.length) {
+    console.warn('[getSharedState] aucune ligne pour trainer=', code)
+    return {}
+  }
+  return parseTrainerStateRow(rows[0])
 }
 
 export async function setSharedState(patch) {
