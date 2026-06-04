@@ -7,7 +7,7 @@ import ShortcutsWidget from './ShortcutsWidget'
 import NotesWidget from './NotesWidget'
 import OnboardingView from './OnboardingView'
 import EntreesView from './EntreesView'
-import { TRAINER_AVATARS } from '@/lib/constants'
+import { TRAINER_AVATARS, TRAINER_CANONICAL } from '@/lib/constants'
 
 const NEWS_ITEMS = [
   '📚 Formation Verre Progressif — Module complet',
@@ -37,8 +37,9 @@ function NewsTicker() {
 }
 
 function DashHeader({ pName }) {
-  const key = (pName || '').toLowerCase()
-  const avatarSrc = TRAINER_AVATARS[key] || '/assets/avatar_kevin.png'
+  const rawKey = (pName || '').toLowerCase().split(' ')[0]
+  const key = TRAINER_CANONICAL[rawKey] || rawKey
+  const avatarSrc = TRAINER_AVATARS[key] || TRAINER_AVATARS.kevin
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
 

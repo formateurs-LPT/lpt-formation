@@ -1,12 +1,13 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { sbSelect, sbUpsert } from '@/lib/supabase'
-import { WEATHER_PHRASES, WEATHER_PHRASES_DEFAULT } from '@/lib/constants'
+import { WEATHER_PHRASES, WEATHER_PHRASES_DEFAULT, TRAINER_CANONICAL } from '@/lib/constants'
 import TrainerAvatar from './TrainerAvatar'
 
 export default function WeatherWidget({ pName, onToast }) {
   const [rows, setRows] = useState([])
-  const myTrainer = (pName || '').toLowerCase().split(' ')[0]
+  const rawTrainer = (pName || '').toLowerCase().split(' ')[0]
+  const myTrainer = TRAINER_CANONICAL[rawTrainer] || rawTrainer
 
   const fetchWeather = async () => {
     try {
@@ -36,7 +37,7 @@ export default function WeatherWidget({ pName, onToast }) {
   const trainerRows = trainers.map(t => rows.find(r => r.trainer === t)).filter(Boolean)
 
   return (
-    <div className="dash-tile" style={{ cursor: 'default' }}>
+    <div className="dash-tile" style={{ cursor: 'default', overflow: 'visible' }}>
       <div className="dash-tile-top">
         <div className="dash-tile-icon">🌤️</div>
         <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,.4)', letterSpacing: '.4px' }}>Météo de la promo</span>
@@ -48,7 +49,7 @@ export default function WeatherWidget({ pName, onToast }) {
           </button>
         ))}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 200, overflowY: 'auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 180, overflowY: 'auto', overflowX: 'hidden' }}>
         {trainerRows.length === 0 ? (
           <p style={{ fontSize: 12, color: 'rgba(255,255,255,.25)', textAlign: 'center', padding: '8px 0' }}>Cliquez sur une météo pour démarrer ☝️</p>
         ) : trainerRows.map(row => {
