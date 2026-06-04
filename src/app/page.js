@@ -45,19 +45,20 @@ export default function Page() {
     const normalized = TRAINER_CANONICAL[idRaw] || idRaw
     if (!normalized) { toast('Entrez votre identifiant'); return }
 
-    // 1. Essai via table Supabase `trainers`
-    let name = null
-    const dbTrainer = await getTrainerFromDB(normalized)
-    if (dbTrainer) {
-      if (dbTrainer.pin_hash !== code.trim()) { toast('Code incorrect'); return }
-      name = dbTrainer.display_name || (normalized.charAt(0).toUpperCase() + normalized.slice(1))
-    } else {
-      // 2. Fallback env vars
-      const trainers = getTrainerCredentials()
-      if (!trainers[normalized]) { toast('Identifiant inconnu'); return }
-      if (trainers[normalized] !== code.trim()) { toast('Code incorrect'); return }
-      name = normalized.charAt(0).toUpperCase() + normalized.slice(1)
+    const pin = code.trim()
+    // Vérification du PIN via .env (comme avant) — pin_hash en BDD est bcrypt, non vérifiable côté navigateur
+    let trainers = {}
+    try {
+      trainers = getTrainerCredentials()
+    } catch {
+      toast('Configuration formateur manquante (.env)'); return
     }
+    if (!trainers[normalized]) { toast('Identifiant inconnu'); return }
+    if (trainers[normalized] !== pin) { toast('Code incorrect'); return }
+
+    const dbTrainer = await getTrainerFromDB(normalized)
+    const name = dbTrainer?.display_name
+      || normalized.charAt(0).toUpperCase() + normalized.slice(1)
     setPName(name)
     setIsTrainer(true)
     localStorage.setItem('trainer_name', name)
