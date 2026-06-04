@@ -81,7 +81,7 @@ export default function Page() {
       if (resolved.reason === 'no_list') {
         toast('Liste RH indisponible. Le formateur doit importer « Entrées de la semaine » (ou attendre qu\'un collègue se soit déjà connecté).')
       } else {
-        toast('Nom non reconnu. Reprenez le prénom et le nom comme sur la liste RH (accents et ordre libres).')
+        toast('Nom non reconnu. Utilisez exactement le libellé « Connexion : … » affiché sur Entrées de la semaine.')
       }
       return
     }

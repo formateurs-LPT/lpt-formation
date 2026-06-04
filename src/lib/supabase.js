@@ -6,6 +6,12 @@ const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 
 export const SESSION_CODE = process.env.NEXT_PUBLIC_SESSION_CODE ?? ''
 
+/** Filtre PostgREST pour valeurs avec espaces / accents */
+export function pgEq(column, value) {
+  const v = String(value ?? '').replace(/"/g, '""')
+  return `${column}=eq."${encodeURIComponent(v)}"`
+}
+
 /** Code session (build Vercel : NEXT_PUBLIC_SESSION_CODE obligatoire) */
 export function getRuntimeSessionCode() {
   const raw = process.env.NEXT_PUBLIC_SESSION_CODE ?? ''

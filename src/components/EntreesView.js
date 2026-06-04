@@ -1,7 +1,12 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { generatePin } from '@/lib/pin'
-import { buildEntreesFromParticipants, entreeDisplayName } from '@/lib/participantNames'
+import {
+  buildEntreesFromParticipants,
+  entreeDisplayName,
+  renameParticipantIdentity,
+  normalizeEntreeList,
+} from '@/lib/participantNames'
 import { sbInsert, sbUpsert, sbSelect, getSharedState, setSharedState, SESSION_CODE } from '@/lib/supabase'
 
 const PARIS_MAGASINS = ['chatelet','st lazare','saint lazare','montparnasse','italie','commerce','bastille','cergy','creteil','créteil','belle epine','belle épine','paris','st ouen','saint ouen','ouen','beauchamp','odysseum','supply']
@@ -167,6 +172,9 @@ function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving }) {
           <>
             <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{c.nom} {c.prenom}</div>
             <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 2 }}>{c.magasin} · {c.poste}</div>
+            <div style={{ fontSize: 11, color: '#0089ba', marginTop: 6, fontWeight: 600 }}>
+              Connexion : {fullName}
+            </div>
           </>
         )}
       </div>
@@ -246,7 +254,8 @@ export default function EntreesView({ onBack, onToast, pName }) {
     }
     setSavingIndex(index)
     const old = entrees[index]
-    const oldKey = obKeyFromName(entreeDisplayName(old))
+    const oldCanonical = entreeDisplayName(old)
+    const oldKey = obKeyFromName(oldCanonical)
     const fullName = `${nomT} ${prenomT}`.trim()
     const newKey = obKeyFromName(fullName)
 
@@ -274,10 +283,20 @@ export default function EntreesView({ onBack, onToast, pName }) {
     }
 
     const synced = await persistEntreesList(next, obPatch)
+    if (synced && oldCanonical !== fullName) {
+      await renameParticipantIdentity(oldCanonical, fullName)
+    }
     setSavingIndex(null)
     setEditingIndex(null)
-    if (synced) onToast('Nom mis à jour (liste RH synchronisée)')
-    else onToast('Nom mis à jour localement — sync Supabase échouée')
+    if (synced) {
+      onToast(
+        oldCanonical !== fullName
+          ? `Nom mis à jour. Connexion : « ${fullName} »`
+          : 'Nom mis à jour (liste RH synchronisée)'
+      )
+    } else {
+      onToast('Nom mis à jour localement — sync Supabase échouée')
+    }
   }
 
   useEffect(() => {
@@ -292,7 +311,7 @@ export default function EntreesView({ onBack, onToast, pName }) {
       }
 
       if (saved.length > 0) {
-        setEntrees(saved)
+        setEntrees(normalizeEntreeList(saved))
         setShowResults(true)
         return
       }
