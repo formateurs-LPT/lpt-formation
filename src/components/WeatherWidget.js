@@ -48,7 +48,7 @@ export default function WeatherWidget({ pName, onToast }) {
           </button>
         ))}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 200, overflowY: 'auto' }}>
         {trainerRows.length === 0 ? (
           <p style={{ fontSize: 12, color: 'rgba(255,255,255,.25)', textAlign: 'center', padding: '8px 0' }}>Cliquez sur une météo pour démarrer ☝️</p>
         ) : trainerRows.map(row => {
