@@ -266,8 +266,37 @@ export const ORD_EXAMPLE = {
   add: '+2,00',
 }
 
+export const OFFRES_QUIZ = [
+  {
+    question: 'Quel parcours propose un reste à charge de 0€ ET des verres Origine France Garantie ?',
+    options: ['Parcours 1=1', 'Parcours Suprême', 'Pack Plan à 95€'],
+    correct: 1,
+  },
+  {
+    question: 'Dans le parcours 1=1 sans remboursement, combien coûtent 2 paires de progressifs ?',
+    options: ['~157€', '~260€', '~350€'],
+    correct: 1,
+  },
+  {
+    question: 'Quel parcours est destiné à un client sans ordonnance qui veut 2 paires sans correction ?',
+    options: ['Parcours Classique', 'Parcours 1=1', 'Pack Plan à 95€'],
+    correct: 2,
+  },
+  {
+    question: 'Dans le parcours Classique, quel est l\'avantage sur la 2e paire ?',
+    options: ['Elle est offerte', 'Elle est à -50%', 'Elle est à -20%'],
+    correct: 2,
+  },
+  {
+    question: 'Quelle formule GlassProtect couvre la casse ET la rayure de l\'équipement complet pendant 1 an ?',
+    options: ['Basic', 'Silver', 'Gold'],
+    correct: 2,
+  },
+]
+
 export const MODULE_DATA = {
   'types-verres': { pages: TYPES_VERRES_PAGES, quiz: TYPES_VERRES_QUIZ, label: 'Types de verres' },
   'pdm':          { pages: PDM_PAGES,          quiz: PDM_QUIZ,          label: 'Prises de mesures' },
   'optique':      { pages: OPTIQUE_PAGES,      quiz: OPTIQUE_QUIZ,      label: "Les bases de l'optique" },
+  'offres':       { pages: [],                 quiz: OFFRES_QUIZ,       label: 'Les offres' },
 }
