@@ -294,14 +294,6 @@ export const OFFRES_QUIZ = [
   },
 ]
 
-export const MODULE_DATA = {
-  'types-verres': { pages: TYPES_VERRES_PAGES, quiz: TYPES_VERRES_QUIZ, label: 'Types de verres' },
-  'pdm':          { pages: PDM_PAGES,          quiz: PDM_QUIZ,          label: 'Prises de mesures' },
-  'optique':      { pages: OPTIQUE_PAGES,      quiz: OPTIQUE_QUIZ,      label: "Les bases de l'optique" },
-  'offres':       { pages: [],                 quiz: OFFRES_QUIZ,       label: 'Les offres' },
-  'entreprise':   { pages: ENTREPRISE_PAGES,   quiz: ENTREPRISE_QUIZ,   label: "Présentation de l'entreprise" },
-}
-
 export const ENTREPRISE_QUIZ = [
   {
     question: "En quelle année a ouvert le 1er magasin Lunettes Pour Tous ?",
@@ -504,3 +496,11 @@ export const ENTREPRISE_PAGES = [
     avatarScript: "Je peux conduire ce soir. Je peux travailler demain. Je peux lire à nouveau. Ce sont les mots de vos futurs clients. Chaque jour, vous allez transformer des vies. Tu ne rejoins pas seulement une entreprise. Tu participes à rendre la vue accessible à tous. Bienvenue dans la famille LPT.",
   },
 ]
+
+export const MODULE_DATA = {
+  'types-verres': { pages: TYPES_VERRES_PAGES, quiz: TYPES_VERRES_QUIZ, label: 'Types de verres' },
+  'pdm':          { pages: PDM_PAGES,          quiz: PDM_QUIZ,          label: 'Prises de mesures' },
+  'optique':      { pages: OPTIQUE_PAGES,      quiz: OPTIQUE_QUIZ,      label: "Les bases de l'optique" },
+  'offres':       { pages: [],                 quiz: OFFRES_QUIZ,       label: 'Les offres' },
+  'entreprise':   { pages: ENTREPRISE_PAGES,   quiz: ENTREPRISE_QUIZ,   label: "Présentation de l'entreprise" },
+}
