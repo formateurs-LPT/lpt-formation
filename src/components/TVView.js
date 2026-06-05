@@ -792,6 +792,44 @@ function TVEntrepriseShell({ page, pageIndex, total, children }) {
   )
 }
 
+function TVEntreprisePoints({ page, pageIndex, total }) {
+  const accent = page.color || '#00abe9'
+  const emoji = page.type === 'impact' ? '👁️' : page.type === 'probleme' ? '🔍' : '⚙️'
+  return (
+    <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }}>
+        {/* Gauche — titre + points */}
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Journée 1 · Présentation</div>
+          <h1 style={{ fontSize: 36, fontWeight: 800, color: '#fff', marginBottom: 8, lineHeight: 1.2 }}>{page.titre}</h1>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 28 }}>{page.sousTitre}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {(page.points || []).map((pt, i) => (
+              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: `${accent}18`, border: `1px solid ${accent}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17 }}>{pt.emoji}</div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{pt.titre}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{pt.texte}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Droite — grand emoji décoratif */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{
+            width: 220, height: 220, borderRadius: '50%',
+            background: `${accent}15`, border: `2px solid ${accent}30`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 100,
+            boxShadow: `0 0 80px ${accent}25`,
+          }}>{emoji}</div>
+        </div>
+      </div>
+    </TVEntrepriseShell>
+  )
+}
+
 function TVEntrepriseTimeline({ page, pageIndex, total }) {
   return (
     <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
@@ -971,7 +1009,10 @@ function TVContentPage({ page, pageIndex, total, moduleLabel }) {
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
 
-  // Entreprise module types
+  // Entreprise module types — tous dispatchés pour éviter le VerreAnime
+  if (page.type === 'impact')     return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'probleme')   return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'machines')   return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'timeline')   return <TVEntrepriseTimeline  page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'piliers')    return <TVEntreprisePiliers   page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'steps')      return <TVEntrepriseSteps     page={page} pageIndex={pageIndex} total={total} />
