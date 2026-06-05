@@ -60,7 +60,7 @@ Fondée en 2014 par Paul Morlet et Xavier Niel, LPT naît du constat que des cen
 | 2015–2021 | Déploiement national (Lyon, Bordeaux, Marseille, Lille, Toulouse…) |
 | 2022 | Ouverture en Belgique (Bruxelles, Liège) |
 | 2023–2024 | Atelier fabrication Paris · Certification Origine France Garantie |
-| 2025 | 32 magasins · 27 France · 5 Belgique · +800 collaborateurs |
+| 2025 | 32 magasins · 27 France · 5 Belgique · +1000 collaborateurs |
 
 ### Trame d'accueil client — à maîtriser absolument
 1. Bonjour et bienvenue chez Lunettes Pour Tous
