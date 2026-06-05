@@ -22,6 +22,7 @@ import ParticipantModuleView from '@/components/ParticipantModuleView'
 export default function Page() {
   const [view, setView] = useState('landing') // landing | dashboard | trainer-session | participant | module-types-verres
   const [pName, setPName] = useState('')
+  const [pPrenom, setPPrenom] = useState('')
   const [isTrainer, setIsTrainer] = useState(false)
   const [onlineCount, setOnlineCount] = useState(0)
   const [mode, setMode] = useState(() => {
@@ -90,10 +91,13 @@ export default function Page() {
     }
 
     const canonical = resolved.canonicalName
+    const prenom = resolved.prenom || raw.split(' ')[0] || ''
     const sessionCode = getRuntimeSessionCode() || SESSION_CODE
     setPName(canonical)
+    setPPrenom(prenom)
     setIsTrainer(false)
     localStorage.setItem('participant_name', canonical)
+    localStorage.setItem('participant_prenom', prenom)
     try {
       await ensureSession()
       await sbUpsert('participants', {
@@ -161,6 +165,7 @@ export default function Page() {
       {view === 'participant' && (
         <ParticipantView
           pName={pName}
+          pPrenom={pPrenom || localStorage.getItem('participant_prenom') || ''}
           onToast={toast}
           onOnlineCount={setOnlineCount}
         />
