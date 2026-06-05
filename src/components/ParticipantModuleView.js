@@ -1230,6 +1230,224 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
   )
 }
 
+function EntreprisePageMobile({ page, pageIndex, total }) {
+  const [entered, setEntered] = useState(false)
+  useEffect(() => { setEntered(false); const t = setTimeout(() => setEntered(true), 80); return () => clearTimeout(t) }, [page.id])
+  const accent = page.color || '#00abe9'
+
+  const Header = () => (
+    <div style={{ padding: '16px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={56} height={22} style={{ objectFit: 'contain', opacity: 0.7 }} />
+      <div style={{ display: 'flex', gap: 5 }}>
+        {Array(total).fill(0).map((_, i) => (
+          <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIndex ? 16 : 4, background: i === pageIndex ? accent : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />
+        ))}
+      </div>
+    </div>
+  )
+
+  const base = {
+    minHeight: '100dvh',
+    background: `linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, ${accent}15 100%)`,
+    display: 'flex', flexDirection: 'column',
+    opacity: entered ? 1 : 0, transition: 'opacity .4s ease',
+  }
+
+  // Timeline
+  if (page.type === 'timeline') return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 32px', flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
+        <div style={{ position: 'relative', paddingLeft: 20 }}>
+          <div style={{ position: 'absolute', left: 7, top: 0, bottom: 0, width: 2, background: 'rgba(0,171,233,0.3)' }} />
+          {page.timeline.map((item, i) => (
+            <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 18, position: 'relative' }}>
+              <div style={{ width: 14, height: 14, borderRadius: '50%', background: i === page.timeline.length - 1 ? '#00abe9' : 'rgba(0,171,233,0.4)', border: '2px solid #00abe9', flexShrink: 0, marginTop: 3 }} />
+              <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', marginBottom: 2 }}>{item.year}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{item.label}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{item.detail}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // Piliers (3 cards)
+  if (page.type === 'piliers') return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 32px', flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {page.points.map((p, i) => (
+            <div key={i} style={{ background: `${accent}12`, border: `1px solid ${accent}35`, borderRadius: 16, padding: '20px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+              <span style={{ fontSize: 32 }}>{p.emoji}</span>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{p.titre}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{p.texte}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // Steps
+  if (page.type === 'steps') return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 32px', flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {page.steps.map((s, i) => (
+            <div key={i} style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{s.num}</div>
+              <span style={{ fontSize: 18 }}>{s.emoji}</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{s.titre}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{s.texte}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // Cases (❌/✅)
+  if (page.type === 'cases') return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 32px', flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {page.cases.map((c, i) => (
+            <div key={i} style={{ background: 'rgba(219,39,119,0.06)', border: '1px solid rgba(219,39,119,0.2)', borderRadius: 16, padding: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: 24 }}>{c.emoji}</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>{c.prenom}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{c.age} · {c.contexte}</div>
+                </div>
+              </div>
+              <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '8px 12px', marginBottom: 8, fontSize: 12, color: '#f87171' }}>❌ {c.sans}</div>
+              <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#4ade80' }}>✅ {c.avec}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // Visages
+  if (page.type === 'visages') return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 32px', flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {page.profils.map((p, i) => (
+            <div key={i} style={{ background: 'rgba(8,145,178,0.07)', border: '1px solid rgba(8,145,178,0.2)', borderRadius: 12, padding: '14px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(8,145,178,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{p.emoji}</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{p.metier}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>{p.message}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // Croissance
+  if (page.type === 'croissance') return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 32px', flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+          {page.stats.map((s, i) => (
+            <div key={i} style={{ background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.25)', borderRadius: 14, padding: '16px 12px', textAlign: 'center' }}>
+              <div style={{ fontSize: 28, fontWeight: 900, color: '#4ade80', lineHeight: 1, marginBottom: 4 }}>{s.value}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {page.points.map((p, i) => (
+            <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'center' }}>
+              <span style={{ fontSize: 18 }}>{p.emoji}</span>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>{p.titre}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{p.texte}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // Mission
+  if (page.type === 'mission') return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 32px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+          {page.temoignages.map((t, i) => (
+            <div key={i} style={{ background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.25)', borderRadius: 14, padding: '16px' }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', fontStyle: 'italic', marginBottom: 4 }}>{t.quote}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{t.context}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)', borderRadius: 12, padding: '14px 16px', fontSize: 13, fontWeight: 700, color: '#00abe9', textAlign: 'center' }}>
+          Tu participes à rendre la vue accessible à tous. 👁️
+        </div>
+      </div>
+    </div>
+  )
+
+  // Fallback pour impact, probleme, machines (generic points works great)
+  return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 12px' }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 3 }}>{page.sousTitre}</div>
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, padding: '8px 20px 32px' }}>
+        {(page.points || []).map((p, i) => (
+          <div key={i} style={{ background: `${accent}10`, border: `1px solid ${accent}25`, borderRadius: 14, padding: '16px', display: 'flex', alignItems: 'flex-start', gap: 12,
+            opacity: entered ? 1 : 0, transform: entered ? 'translateY(0)' : 'translateY(12px)',
+            transition: `all .4s ease ${i * 0.08}s`,
+          }}>
+            <span style={{ fontSize: 26, flexShrink: 0 }}>{p.emoji}</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{p.titre}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{p.texte}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ModuleScreen({ page, pageIndex, total, moduleLabel }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
@@ -1240,6 +1458,10 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel }) {
   if (page.type === 'ordonnance')        return <OrdonnanceMobile         page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'pause')             return <PauseMobile              page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'saisie-interactive') return <SaisieInteractiveMobile page={page} pageIndex={pageIndex} total={total} />
+
+  // Entreprise module types
+  if (['impact','probleme','timeline','piliers','steps','machines','cases','visages','croissance','mission'].includes(page.type))
+    return <EntreprisePageMobile page={page} pageIndex={pageIndex} total={total} />
 
   return (
     <div style={{

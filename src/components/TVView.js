@@ -766,6 +766,194 @@ function TVSaisieInteractive({ page, pageIndex, total, moduleLabel }) {
   )
 }
 
+// ── TV Entreprise helpers ─────────────────────────────────────────
+function TVEntrepriseShell({ page, pageIndex, total, children }) {
+  const [entered, setEntered] = useState(false)
+  useEffect(() => { setEntered(false); const t = setTimeout(() => setEntered(true), 60); return () => clearTimeout(t) }, [page.id])
+  const accent = page.color || '#00abe9'
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 40px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Présentation de l&apos;entreprise</span>
+        </div>
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{ height: 5, borderRadius: 3, width: i === pageIndex ? 22 : 5, background: i === pageIndex ? accent : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />
+          ))}
+        </div>
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '0 48px 32px', opacity: entered ? 1 : 0, transform: entered ? 'translateY(0)' : 'translateY(20px)', transition: 'all .5s ease' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function TVEntrepriseTimeline({ page, pageIndex, total }) {
+  return (
+    <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Journée 1 · Présentation</div>
+        <h1 style={{ fontSize: 36, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{page.titre}</h1>
+        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>{page.sousTitre}</p>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, justifyContent: 'center' }}>
+        {page.timeline.map((item, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <div style={{ width: 100, flexShrink: 0, textAlign: 'right', fontSize: 13, fontWeight: 800, color: '#00abe9' }}>{item.year}</div>
+            <div style={{ width: 14, height: 14, borderRadius: '50%', background: i === page.timeline.length - 1 ? '#00abe9' : 'rgba(0,171,233,0.4)', border: '2px solid #00abe9', flexShrink: 0 }} />
+            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 20px', flex: 1 }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginRight: 12 }}>{item.label}</span>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>{item.detail}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </TVEntrepriseShell>
+  )
+}
+
+function TVEntreprisePiliers({ page, pageIndex, total }) {
+  const accent = page.color || '#16a34a'
+  return (
+    <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <h1 style={{ fontSize: 36, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{page.titre}</h1>
+        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>{page.sousTitre}</p>
+      </div>
+      <div style={{ display: 'flex', gap: 24, flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        {page.points.map((p, i) => (
+          <div key={i} style={{ flex: 1, background: `${accent}12`, border: `1px solid ${accent}35`, borderRadius: 24, padding: '36px 24px', textAlign: 'center' }}>
+            <div style={{ fontSize: 52, marginBottom: 16 }}>{p.emoji}</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 12 }}>{p.titre}</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>{p.texte}</div>
+          </div>
+        ))}
+      </div>
+    </TVEntrepriseShell>
+  )
+}
+
+function TVEntrepriseSteps({ page, pageIndex, total }) {
+  return (
+    <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 34, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{page.titre}</h1>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>{page.sousTitre}</p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, flex: 1 }}>
+        {page.steps.map((s, i) => (
+          <div key={i} style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 18, padding: '22px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{s.num}</div>
+              <span style={{ fontSize: 20 }}>{s.emoji}</span>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{s.titre}</div>
+            </div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{s.texte}</div>
+          </div>
+        ))}
+      </div>
+    </TVEntrepriseShell>
+  )
+}
+
+function TVEntrepriseCases({ page, pageIndex, total }) {
+  return (
+    <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
+      <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <h1 style={{ fontSize: 34, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{page.titre}</h1>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>{page.sousTitre}</p>
+      </div>
+      <div style={{ display: 'flex', gap: 20, flex: 1, alignItems: 'center' }}>
+        {page.cases.map((c, i) => (
+          <div key={i} style={{ flex: 1, background: 'rgba(219,39,119,0.06)', border: '1px solid rgba(219,39,119,0.2)', borderRadius: 20, padding: '24px 20px' }}>
+            <div style={{ fontSize: 36, marginBottom: 10 }}>{c.emoji}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 3 }}>{c.prenom}</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 16 }}>{c.age} · {c.contexte}</div>
+            <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 10, fontSize: 13, color: '#f87171', lineHeight: 1.4 }}>❌ {c.sans}</div>
+            <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#4ade80', lineHeight: 1.4 }}>✅ {c.avec}</div>
+          </div>
+        ))}
+      </div>
+    </TVEntrepriseShell>
+  )
+}
+
+function TVEntrepriseVisages({ page, pageIndex, total }) {
+  return (
+    <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 34, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{page.titre}</h1>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>{page.sousTitre}</p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1 }}>
+        {page.profils.map((p, i) => (
+          <div key={i} style={{ background: 'rgba(8,145,178,0.07)', border: '1px solid rgba(8,145,178,0.2)', borderRadius: 18, padding: '22px 24px', display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(8,145,178,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>{p.emoji}</div>
+            <div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: '#fff', marginBottom: 6 }}>{p.metier}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.55 }}>{p.message}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </TVEntrepriseShell>
+  )
+}
+
+function TVEntrepriseCroissance({ page, pageIndex, total }) {
+  return (
+    <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
+      <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <h1 style={{ fontSize: 34, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{page.titre}</h1>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>{page.sousTitre}</p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 24 }}>
+        {page.stats.map((s, i) => (
+          <div key={i} style={{ background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.25)', borderRadius: 18, padding: '24px 12px', textAlign: 'center' }}>
+            <div style={{ fontSize: 38, fontWeight: 900, color: '#4ade80', lineHeight: 1, marginBottom: 8 }}>{s.value}</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontWeight: 600 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 16 }}>
+        {page.points.map((p, i) => (
+          <div key={i} style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 22 }}>{p.emoji}</span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{p.titre}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{p.texte}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </TVEntrepriseShell>
+  )
+}
+
+function TVEntrepriseMission({ page, pageIndex, total }) {
+  return (
+    <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
+      <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: 860, margin: '0 auto', width: '100%' }}>
+        <h1 style={{ fontSize: 38, fontWeight: 900, color: '#fff', marginBottom: 8 }}>{page.titre}</h1>
+        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', marginBottom: 40 }}>{page.sousTitre}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 36 }}>
+          {page.temoignages.map((t, i) => (
+            <div key={i} style={{ background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.25)', borderRadius: 16, padding: '20px 28px', textAlign: 'left' }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', fontStyle: 'italic', marginBottom: 6 }}>{t.quote}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{t.context}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#00abe9', fontStyle: 'italic' }}>Tu participes à rendre la vue accessible à tous.</div>
+      </div>
+    </TVEntrepriseShell>
+  )
+}
+
 // ── TV Content Page (no controls, no avatar) ──────────────────────
 function TVContentPage({ page, pageIndex, total, moduleLabel }) {
   const [entered, setEntered] = useState(false)
@@ -782,6 +970,15 @@ function TVContentPage({ page, pageIndex, total, moduleLabel }) {
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+
+  // Entreprise module types
+  if (page.type === 'timeline')   return <TVEntrepriseTimeline  page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'piliers')    return <TVEntreprisePiliers   page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'steps')      return <TVEntrepriseSteps     page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'cases')      return <TVEntrepriseCases     page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'visages')    return <TVEntrepriseVisages   page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'croissance') return <TVEntrepriseCroissance page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'mission')    return <TVEntrepriseMission   page={page} pageIndex={pageIndex} total={total} />
 
   return (
     <div style={{
