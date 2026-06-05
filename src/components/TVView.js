@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
-import { sbSelect, SESSION_CODE } from '@/lib/supabase'
+import { sbSelect, SESSION_CODE, getSharedState } from '@/lib/supabase'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -1166,6 +1166,36 @@ function TVModuleLobby({ moduleLabel }) {
 
 // ── Waiting Screen ────────────────────────────────────────────────
 const APP_URL = 'https://lpt-formation.vercel.app?join=1'
+// ── Écran de bienvenue (avant le QR) ──────────────────────────────
+function WelcomeScreen() {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+    }}>
+      <Image
+        src="/assets/logo-lpt-blanc.png"
+        alt="Lunettes Pour Tous"
+        width={360}
+        height={136}
+        style={{ objectFit: 'contain', animation: 'logoBreathe 3.5s ease-in-out infinite', marginBottom: 52 }}
+      />
+      <div style={{
+        fontSize: 28,
+        fontWeight: 300,
+        color: 'rgba(255,255,255,0.55)',
+        letterSpacing: 4,
+        textTransform: 'uppercase',
+        textAlign: 'center',
+      }}>
+        Bienvenue chez Lunettes Pour Tous
+      </div>
+    </div>
+  )
+}
+
 const QR_URL  = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(APP_URL)}`
 
 function WaitingScreen() {
@@ -1354,6 +1384,19 @@ function TVGroupResults({ moduleId, moduleLabel, quiz }) {
 // ── TV View ───────────────────────────────────────────────────────
 export default function TVView() {
   const { activeModule, modulePage, loading } = useModuleSync(1500)
+  const [tvScreen, setTvScreen] = useState(null) // null = welcome, 'qr' = QR code
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const state = await getSharedState()
+        setTvScreen(state?.tv_screen || null)
+      } catch { /* ignore */ }
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [])
 
   const moduleData = MODULE_DATA[activeModule] || null
   const isLobby   = !!moduleData && modulePage === -1
@@ -1371,11 +1414,21 @@ export default function TVView() {
     }
   }
 
+  // Pas de module actif → écran selon tv_screen
+  if (!loading && !activeModule && !isLobby) {
+    return (
+      <>
+        <style>{STYLES}</style>
+        {tvScreen === 'qr' ? <WaitingScreen /> : <WelcomeScreen />}
+      </>
+    )
+  }
+
   return (
     <>
       <style>{STYLES}</style>
       {loading ? (
-        <WaitingScreen />
+        <WelcomeScreen />
       ) : isLobby ? (
         <TVModuleLobby moduleLabel={moduleData?.label || ''} />
       ) : isResults ? (
@@ -1395,7 +1448,7 @@ export default function TVView() {
           moduleLabel={moduleData?.label || ''}
         />
       ) : (
-        <WaitingScreen />
+        <WelcomeScreen />
       )}
     </>
   )

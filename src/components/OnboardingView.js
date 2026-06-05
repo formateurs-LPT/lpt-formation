@@ -332,7 +332,7 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
 
       <div className="dash-tiles" style={{ gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         {journees.map((j) => (
-          <div key={j.id} className="dash-tile" onClick={() => setSelectedJournee(j.id)} style={{ cursor: 'pointer' }}>
+          <div key={j.id} className="dash-tile" onClick={() => { setSelectedJournee(j.id); setSharedState({ tv_screen: 'qr' }).catch(console.warn) }} style={{ cursor: 'pointer' }}>
             <div className="dash-tile-top">
               <div style={{
                 width: 38, height: 38, borderRadius: 10, flexShrink: 0,
