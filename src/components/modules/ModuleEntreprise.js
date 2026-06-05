@@ -1,0 +1,732 @@
+'use client'
+import { useState, useEffect } from 'react'
+import Image from 'next/image'
+import { sbUpdate, SESSION_CODE } from '@/lib/supabase'
+import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { ENTREPRISE_PAGES as PAGES, ENTREPRISE_QUIZ } from '@/lib/modulesData'
+
+const PAUL_AVATAR = '/assets/avatar_paul.png'
+const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
+
+// ── Avatar Paul ───────────────────────────────────────────────────
+function PaulBubble({ script }) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    setVisible(false)
+    const t = setTimeout(() => setVisible(true), 600)
+    return () => clearTimeout(t)
+  }, [script])
+
+  if (!script) return null
+  return (
+    <div style={{
+      position: 'fixed', bottom: 0, right: 0, zIndex: 50,
+      display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
+      padding: '0 28px 28px 0',
+      opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)',
+      transition: 'all .5s ease', pointerEvents: 'none',
+    }}>
+      <div style={{
+        background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(20px)',
+        borderRadius: '18px 18px 4px 18px', padding: '14px 18px',
+        maxWidth: 280, boxShadow: '0 12px 48px rgba(0,0,0,0.25)',
+        marginBottom: 12,
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#0a2a5c', marginBottom: 6 }}>Paul Morlet · Fondateur LPT</div>
+        <p style={{ fontSize: 13, color: '#1a1a2e', lineHeight: 1.55, margin: 0 }}>{script}</p>
+      </div>
+      <div style={{
+        width: 64, height: 64, borderRadius: '50%', overflow: 'hidden',
+        border: '3px solid rgba(0,171,233,0.6)',
+        boxShadow: '0 4px 20px rgba(0,171,233,0.4)',
+      }}>
+        <Image src={PAUL_AVATAR} alt="Paul Morlet" width={64} height={64} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+      </div>
+    </div>
+  )
+}
+
+// ── Nav formateur ─────────────────────────────────────────────────
+function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast, quizLaunched, onLaunchQuiz }) {
+  return (
+    <div style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
+      background: 'rgba(3,17,42,0.92)', backdropFilter: 'blur(16px)',
+      borderTop: '1px solid rgba(255,255,255,0.08)',
+      padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    }}>
+      <button onClick={onBack} style={{
+        background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+        color: 'rgba(255,255,255,0.6)', padding: '9px 18px', borderRadius: 10,
+        fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+      }}>← Retour</button>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{
+              width: i === pageIndex ? 20 : 6, height: 6, borderRadius: 3,
+              background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)',
+              transition: 'all .3s',
+            }} />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10 }}>
+        {isLast && !quizLaunched && (
+          <button onClick={onLaunchQuiz} style={{
+            background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
+            border: 'none', color: '#fff', padding: '9px 20px', borderRadius: 10,
+            fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 4px 16px rgba(124,58,237,0.4)',
+          }}>🧠 Lancer le quiz</button>
+        )}
+        <button onClick={onPrev} disabled={isFirst} style={{
+          background: isFirst ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+          border: '1px solid rgba(255,255,255,0.12)', color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff',
+          padding: '9px 18px', borderRadius: 10, fontSize: 13, cursor: isFirst ? 'default' : 'pointer', fontFamily: 'inherit',
+        }}>←</button>
+        <button onClick={onNext} disabled={isLast} style={{
+          background: isLast ? 'rgba(255,255,255,0.03)' : 'linear-gradient(135deg,#0089ba,#00abe9)',
+          border: 'none', color: isLast ? 'rgba(255,255,255,0.2)' : '#fff',
+          padding: '9px 22px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+          cursor: isLast ? 'default' : 'pointer', fontFamily: 'inherit',
+        }}>→</button>
+      </div>
+    </div>
+  )
+}
+
+// ── Rendu de page ─────────────────────────────────────────────────
+function EntreprisePage({ page, navProps }) {
+  const accent = page.color || '#00abe9'
+
+  const PageHeader = () => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+        <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Présentation de l&apos;entreprise</span>
+      </div>
+      {page.videoPlaceholder && (
+        <div style={{
+          background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)',
+          borderRadius: 20, padding: '5px 14px',
+          fontSize: 11, fontWeight: 700, color: '#fbbf24', letterSpacing: 0.5,
+        }}>🎬 {page.videoPlaceholder}</div>
+      )}
+    </div>
+  )
+
+  const PageTitle = () => (
+    <div style={{ marginBottom: 36 }}>
+      <div style={{
+        display: 'inline-block',
+        background: `rgba(${accent === '#ef4444' ? '239,68,68' : accent === '#16a34a' ? '22,163,74' : accent === '#7c3aed' ? '124,58,237' : accent === '#f59e0b' ? '245,158,11' : accent === '#db2777' ? '219,39,119' : '0,171,233'},.15)`,
+        border: `1px solid ${accent}50`,
+        borderRadius: 20, padding: '5px 20px',
+        fontSize: 11, fontWeight: 700, color: accent, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 14,
+      }}>Journée 1 · Présentation</div>
+      <h1 style={{ fontSize: 32, fontWeight: 800, color: '#fff', marginBottom: 8, lineHeight: 1.2 }}>{page.titre}</h1>
+      <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{page.sousTitre}</p>
+    </div>
+  )
+
+  // ── IMPACT ─────────────────────────────────────────────────────
+  if (page.type === 'impact') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px' }}>
+        <PageHeader />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+          <div style={{ textAlign: 'center', maxWidth: 760 }}>
+            <div style={{ fontSize: 56, marginBottom: 24 }}>👁️</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Bienvenue</div>
+            <h1 style={{ fontSize: 42, fontWeight: 900, color: '#fff', lineHeight: 1.2, marginBottom: 16 }}>{page.titre}</h1>
+            <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.55)', fontStyle: 'italic', marginBottom: 48, lineHeight: 1.5 }}>"{page.sousTitre}"</p>
+            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {page.points.map((p, i) => (
+                <div key={i} style={{
+                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 16, padding: '18px 24px', textAlign: 'center', minWidth: 160,
+                }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>{p.emoji}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{p.titre}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>{p.texte}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <PaulBubble script={page.avatarScript} />
+        <TrainerNav {...navProps} />
+      </div>
+    )
+  }
+
+  // ── PROBLÈME ────────────────────────────────────────────────────
+  if (page.type === 'probleme') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a0505 55%, #2d0808 100%)', padding: '24px 48px 100px' }}>
+        <PageHeader />
+        <PageTitle />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900, margin: '0 auto' }}>
+          {page.points.map((p, i) => (
+            <div key={i} style={{
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+              borderRadius: 18, padding: '24px',
+            }}>
+              <div style={{ fontSize: 32, marginBottom: 12 }}>{p.emoji}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 8 }}>{p.titre}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>{p.texte}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 40 }}>
+          <div style={{
+            display: 'inline-block', background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.35)',
+            borderRadius: 20, padding: '10px 28px', fontSize: 15, fontWeight: 700, color: '#00abe9', fontStyle: 'italic',
+          }}>Et si on pouvait faire autrement ?</div>
+        </div>
+        <PaulBubble script={page.avatarScript} />
+        <TrainerNav {...navProps} />
+      </div>
+    )
+  }
+
+  // ── TIMELINE ────────────────────────────────────────────────────
+  if (page.type === 'timeline') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px' }}>
+        <PageHeader />
+        <PageTitle />
+        <div style={{ maxWidth: 800, margin: '0 auto', position: 'relative' }}>
+          <div style={{ position: 'absolute', left: 20, top: 0, bottom: 0, width: 2, background: 'rgba(0,171,233,0.3)', borderRadius: 1 }} />
+          {page.timeline.map((item, i) => (
+            <div key={i} style={{ display: 'flex', gap: 28, marginBottom: 28, position: 'relative' }}>
+              <div style={{
+                width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+                background: i === page.timeline.length - 1 ? '#00abe9' : 'rgba(0,171,233,0.15)',
+                border: `2px solid ${i === page.timeline.length - 1 ? '#00abe9' : 'rgba(0,171,233,0.4)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: 1,
+              }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: i === page.timeline.length - 1 ? '#fff' : '#00abe9' }} />
+              </div>
+              <div style={{
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 14, padding: '16px 20px', flex: 1,
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1, marginBottom: 4 }}>{item.year}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{item.label}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{item.detail}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <PaulBubble script={page.avatarScript} />
+        <TrainerNav {...navProps} />
+      </div>
+    )
+  }
+
+  // ── PILIERS ─────────────────────────────────────────────────────
+  if (page.type === 'piliers') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #021a0c 55%, #042a14 100%)', padding: '24px 48px 100px' }}>
+        <PageHeader />
+        <PageTitle />
+        <div style={{ display: 'flex', gap: 20, maxWidth: 960, margin: '0 auto' }}>
+          {page.points.map((p, i) => (
+            <div key={i} style={{
+              flex: 1, background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.25)',
+              borderRadius: 20, padding: '32px 24px', textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>{p.emoji}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 12 }}>{p.titre}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>{p.texte}</div>
+            </div>
+          ))}
+        </div>
+        <PaulBubble script={page.avatarScript} />
+        <TrainerNav {...navProps} />
+      </div>
+    )
+  }
+
+  // ── ÉTAPES FABRICATION ──────────────────────────────────────────
+  if (page.type === 'steps') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a0f02 55%, #2a1a04 100%)', padding: '24px 48px 100px' }}>
+        <PageHeader />
+        <PageTitle />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, maxWidth: 960, margin: '0 auto' }}>
+          {page.steps.map((s, i) => (
+            <div key={i} style={{
+              background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)',
+              borderRadius: 16, padding: '20px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: '50%', background: '#f59e0b',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 14, fontWeight: 800, color: '#fff', flexShrink: 0,
+                }}>{s.num}</div>
+                <span style={{ fontSize: 20 }}>{s.emoji}</span>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{s.titre}</div>
+              </div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{s.texte}</div>
+            </div>
+          ))}
+        </div>
+        <PaulBubble script={page.avatarScript} />
+        <TrainerNav {...navProps} />
+      </div>
+    )
+  }
+
+  // ── MACHINES ────────────────────────────────────────────────────
+  if (page.type === 'machines') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0d0520 55%, #150a2e 100%)', padding: '24px 48px 100px' }}>
+        <PageHeader />
+        <PageTitle />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 800, margin: '0 auto' }}>
+          {page.points.map((p, i) => (
+            <div key={i} style={{
+              background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.25)',
+              borderRadius: 18, padding: '24px 28px', display: 'flex', alignItems: 'flex-start', gap: 20,
+            }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 16, background: 'rgba(124,58,237,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0,
+              }}>{p.emoji}</div>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: '#fff', marginBottom: 6 }}>{p.titre}</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>{p.texte}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <PaulBubble script={page.avatarScript} />
+        <TrainerNav {...navProps} />
+      </div>
+    )
+  }
+
+  // ── CAS CLIENTS ─────────────────────────────────────────────────
+  if (page.type === 'cases') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a0510 55%, #2d0820 100%)', padding: '24px 48px 100px' }}>
+        <PageHeader />
+        <PageTitle />
+        <div style={{ display: 'flex', gap: 18, maxWidth: 1000, margin: '0 auto' }}>
+          {page.cases.map((c, i) => (
+            <div key={i} style={{
+              flex: 1, background: 'rgba(219,39,119,0.06)', border: '1px solid rgba(219,39,119,0.2)',
+              borderRadius: 20, padding: '28px 22px',
+            }}>
+              <div style={{ fontSize: 36, marginBottom: 12 }}>{c.emoji}</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{c.prenom}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 14 }}>{c.age} · {c.contexte}</div>
+              <div style={{
+                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
+                borderRadius: 10, padding: '10px 14px', marginBottom: 10,
+                fontSize: 12, color: '#f87171', lineHeight: 1.5,
+              }}>❌ Sans LPT : {c.sans}</div>
+              <div style={{
+                background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)',
+                borderRadius: 10, padding: '10px 14px',
+                fontSize: 12, color: '#4ade80', lineHeight: 1.5,
+              }}>✅ Avec LPT : {c.avec}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 32 }}>
+          <div style={{ fontSize: 16, fontStyle: 'italic', color: 'rgba(255,255,255,0.5)' }}>
+            "Tu ne vends pas seulement des lunettes. Tu aides les gens à retrouver leur autonomie."
+          </div>
+        </div>
+        <PaulBubble script={page.avatarScript} />
+        <TrainerNav {...navProps} />
+      </div>
+    )
+  }
+
+  // ── VISAGES LPT ─────────────────────────────────────────────────
+  if (page.type === 'visages') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #031a20 55%, #052a30 100%)', padding: '24px 48px 100px' }}>
+        <PageHeader />
+        <PageTitle />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 880, margin: '0 auto' }}>
+          {page.profils.map((p, i) => (
+            <div key={i} style={{
+              background: 'rgba(8,145,178,0.07)', border: '1px solid rgba(8,145,178,0.2)',
+              borderRadius: 18, padding: '22px 24px', display: 'flex', alignItems: 'flex-start', gap: 16,
+            }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: 14, background: 'rgba(8,145,178,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0,
+              }}>{p.emoji}</div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 6 }}>{p.metier}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.55 }}>{p.message}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 32 }}>
+          <div style={{
+            display: 'inline-block', background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)',
+            borderRadius: 20, padding: '10px 28px', fontSize: 15, fontWeight: 700, color: '#00abe9', fontStyle: 'italic',
+          }}>
+            "Peu importe d'où tu viens. Ce qui compte, c'est ce que tu vas construire ici."
+          </div>
+        </div>
+        <PaulBubble script={page.avatarScript} />
+        <TrainerNav {...navProps} />
+      </div>
+    )
+  }
+
+  // ── CROISSANCE ──────────────────────────────────────────────────
+  if (page.type === 'croissance') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #021a0c 55%, #042a14 100%)', padding: '24px 48px 100px' }}>
+        <PageHeader />
+        <PageTitle />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, maxWidth: 900, margin: '0 auto 40px' }}>
+          {page.stats.map((s, i) => (
+            <div key={i} style={{
+              background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.25)',
+              borderRadius: 18, padding: '28px 16px', textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 36, fontWeight: 900, color: '#4ade80', lineHeight: 1, marginBottom: 8 }}>{s.value}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 600 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 700, margin: '0 auto' }}>
+          {page.points.map((p, i) => (
+            <div key={i} style={{
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14,
+            }}>
+              <span style={{ fontSize: 22 }}>{p.emoji}</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{p.titre}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{p.texte}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <PaulBubble script={page.avatarScript} />
+        <TrainerNav {...navProps} />
+      </div>
+    )
+  }
+
+  // ── MISSION FINALE ──────────────────────────────────────────────
+  if (page.type === 'mission') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px' }}>
+        <PageHeader />
+        <div style={{ textAlign: 'center', maxWidth: 800, margin: '40px auto' }}>
+          <h1 style={{ fontSize: 38, fontWeight: 900, color: '#fff', marginBottom: 12 }}>{page.titre}</h1>
+          <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.45)', marginBottom: 48 }}>{page.sousTitre}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 48 }}>
+            {page.temoignages.map((t, i) => (
+              <div key={i} style={{
+                background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.25)',
+                borderRadius: 18, padding: '22px 28px',
+              }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', fontStyle: 'italic', marginBottom: 8 }}>{t.quote}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{t.context}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{
+            display: 'inline-block', background: 'linear-gradient(135deg, rgba(0,137,186,0.3), rgba(0,171,233,0.15))',
+            border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '14px 32px',
+            fontSize: 16, fontWeight: 800, color: '#00abe9',
+          }}>
+            Tu participes à rendre la vue accessible à tous.
+          </div>
+        </div>
+        <PaulBubble script={page.avatarScript} />
+        <TrainerNav {...navProps} />
+      </div>
+    )
+  }
+
+  // ── FALLBACK ────────────────────────────────────────────────────
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px' }}>
+      <PageHeader />
+      <PageTitle />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 760, margin: '0 auto' }}>
+        {(page.points || []).map((p, i) => (
+          <div key={i} style={{
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 16, padding: '20px 24px', display: 'flex', alignItems: 'flex-start', gap: 16,
+          }}>
+            <span style={{ fontSize: 28, flexShrink: 0 }}>{p.emoji}</span>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 6 }}>{p.titre}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>{p.texte}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <PaulBubble script={page.avatarScript} />
+      <TrainerNav {...navProps} />
+    </div>
+  )
+}
+
+// ── Quiz Controller ───────────────────────────────────────────────
+function QuizController({ quizQ, onNext, onEnd, onBack }) {
+  const [liveAnswers, setLiveAnswers] = useState([])
+  const q = ENTREPRISE_QUIZ[quizQ]
+  const isLast = quizQ >= ENTREPRISE_QUIZ.length - 1
+
+  useEffect(() => {
+    const poll = async () => {
+      const rows = await fetchTrainerQuizAnswers(
+        `session_code=eq.${SESSION_CODE}&module_id=eq.entreprise&question_idx=eq.${quizQ}`
+      )
+      setLiveAnswers(rows || [])
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [quizQ])
+
+  const total = liveAnswers.length
+  const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz · Présentation entreprise — Vue formateur</span>
+        </div>
+        <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Terminer</button>
+      </div>
+      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'inline-block', background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)', borderRadius: 20, padding: '6px 24px', fontSize: 12, fontWeight: 700, color: '#a78bfa', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+          Question {quizQ + 1} / {ENTREPRISE_QUIZ.length}
+        </div>
+      </div>
+      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', textAlign: 'center', marginBottom: 36, lineHeight: 1.3, maxWidth: 800, alignSelf: 'center' }}>{q.question}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, maxWidth: 720, alignSelf: 'center', width: '100%' }}>
+        {q.options.map((opt, i) => {
+          const count = counts[i]
+          const isCorrect = i === q.correct
+          const pct = total > 0 ? (count / total) * 100 : 0
+          return (
+            <div key={i} style={{ background: isCorrect ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)', border: `1px solid ${isCorrect ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 16, padding: '14px 18px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: OPTION_COLORS[i], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff' }}>{'ABC'[i]}</div>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{opt}</span>
+                  {isCorrect && <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, background: 'rgba(34,197,94,0.15)', padding: '2px 10px', borderRadius: 20 }}>✓ Bonne réponse</span>}
+                </div>
+                <span style={{ fontSize: 22, fontWeight: 800, color: isCorrect ? '#4ade80' : '#fff' }}>
+                  {count}<span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500, marginLeft: 4 }}>vote{count > 1 ? 's' : ''}</span>
+                </span>
+              </div>
+              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{ height: '100%', borderRadius: 4, width: `${pct}%`, background: isCorrect ? '#4ade80' : OPTION_COLORS[i], transition: 'width .5s ease' }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28 }}>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
+          <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginRight: 6 }}>{total}</span>
+          participant{total !== 1 ? 's' : ''} {total !== 1 ? 'ont' : 'a'} répondu
+        </div>
+        {isLast ? (
+          <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Terminer le quiz</button>
+        ) : (
+          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #7c3aed, #9f67fa)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(124,58,237,0.45)' }}>Question suivante →</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Group Results ─────────────────────────────────────────────────
+function GroupResultsView({ onTerminate }) {
+  const [answers, setAnswers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetch = async () => {
+      const rows = await fetchTrainerQuizAnswers(`session_code=eq.${SESSION_CODE}&module_id=eq.entreprise`)
+      setAnswers(rows || [])
+      setLoading(false)
+    }
+    fetch()
+  }, [])
+
+  const participantCount = [...new Set(answers.map(r => r.collaborateur))].length
+
+  const questionStats = ENTREPRISE_QUIZ.map((q, idx) => {
+    const qAnswers = answers.filter(r => r.question_idx === idx)
+    const wrongCount = qAnswers.filter(r => !r.is_correct).length
+    const total = qAnswers.length
+    const pctWrong = total > 0 ? Math.round((wrongCount / total) * 100) : 0
+    return { idx, question: q.question, pctWrong, total }
+  }).sort((a, b) => b.pctWrong - a.pctWrong)
+
+  const getPriority = (pct) => {
+    if (pct >= 50) return { icon: '🔴', label: 'À retravailler en priorité', color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)' }
+    if (pct >= 25) return { icon: '🟡', label: 'À consolider', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)' }
+    return { icon: '🟢', label: 'Bien maîtrisé', color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)' }
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Bilan · Présentation de l&apos;entreprise</span>
+        </div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginRight: 6 }}>{participantCount}</span>
+          participant{participantCount !== 1 ? 's' : ''}
+        </div>
+      </div>
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.35)', borderRadius: 20, padding: '6px 24px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 12 }}>Résultats du groupe</div>
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Points à retravailler</h1>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>Trié par taux d&apos;erreur décroissant</p>
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 760, alignSelf: 'center', width: '100%', overflowY: 'auto' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 15, padding: 40 }}>Chargement…</div>
+        ) : questionStats.map((stat) => {
+          const priority = getPriority(stat.pctWrong)
+          return (
+            <div key={stat.idx} style={{ background: priority.bg, border: `1px solid ${priority.border}`, borderRadius: 18, padding: '18px 22px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                <div style={{ flex: 1, marginRight: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 16 }}>{priority.icon}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: priority.color, textTransform: 'uppercase', letterSpacing: 1 }}>{priority.label}</span>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>Q{stat.idx + 1} — {stat.question}</div>
+                </div>
+                <div style={{ fontSize: 40, fontWeight: 800, color: priority.color, lineHeight: 1, flexShrink: 0 }}>
+                  {stat.pctWrong}%
+                  <div style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.4)', textAlign: 'right' }}>d&apos;erreurs</div>
+                </div>
+              </div>
+              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{ height: '100%', borderRadius: 4, width: `${stat.pctWrong}%`, background: priority.color, transition: 'width .8s ease' }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32 }}>
+        <button onClick={onTerminate} style={{ background: 'linear-gradient(135deg, #dc2626, #ef4444)', border: 'none', color: '#fff', padding: '14px 42px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(220,38,38,0.4)' }}>✓ Terminer le module</button>
+      </div>
+    </div>
+  )
+}
+
+// ── Lobby ─────────────────────────────────────────────────────────
+function Lobby({ onStart, onBack }) {
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+      <button onClick={onBack} style={{ position: 'absolute', top: 24, left: 24, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.6)', padding: '8px 16px', borderRadius: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>← Retour</button>
+      <div style={{ textAlign: 'center', maxWidth: 540, padding: '0 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={180} height={68} style={{ objectFit: 'contain' }} />
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Module de formation · Journée 1</div>
+        <h1 style={{ fontSize: 34, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Présentation de l&apos;entreprise</h1>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 36, lineHeight: 1.6 }}>
+          Mission · Histoire · Culture LPT<br />
+          Comprendre pourquoi LPT existe et ce que vous y construisez
+        </p>
+        <button onClick={onStart} style={{ background: 'linear-gradient(135deg, #0089ba, #00abe9)', border: 'none', color: '#fff', padding: '16px 48px', borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 32px rgba(0,171,233,0.45)', fontFamily: 'inherit' }}>▶ Lancer le module</button>
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>{PAGES.length} slides · ~25 minutes</p>
+      </div>
+    </div>
+  )
+}
+
+// ── Composant principal ───────────────────────────────────────────
+export default function ModuleEntreprise({ pName, onBack }) {
+  const [started, setStarted] = useState(false)
+  const [pageIndex, setPageIndex] = useState(0)
+  const [quizLaunched, setQuizLaunched] = useState(false)
+  const [quizQ, setQuizQ] = useState(0)
+  const [showGroupResults, setShowGroupResults] = useState(false)
+
+  useEffect(() => {
+    sbUpdate('sessions', { active_module: 'entreprise', module_page: -1 }, `code=eq.${SESSION_CODE}`)
+  }, [])
+
+  useEffect(() => {
+    if (started) {
+      sbUpdate('sessions', { active_module: 'entreprise', module_page: pageIndex }, `code=eq.${SESSION_CODE}`)
+    }
+  }, [pageIndex, started])
+
+  const handleBack = async () => {
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${SESSION_CODE}`)
+    onBack()
+  }
+
+  const handleLaunchQuiz = async () => {
+    await sbUpdate('sessions', { active_module: 'entreprise', module_page: 100 }, `code=eq.${SESSION_CODE}`)
+    setQuizQ(0)
+    setQuizLaunched(true)
+  }
+
+  const handleNextQuestion = async () => {
+    const next = quizQ + 1
+    await sbUpdate('sessions', { active_module: 'entreprise', module_page: 100 + next }, `code=eq.${SESSION_CODE}`)
+    setQuizQ(next)
+  }
+
+  const handleEndQuiz = async () => {
+    await sbUpdate('sessions', { active_module: 'entreprise', module_page: 200 }, `code=eq.${SESSION_CODE}`)
+    setShowGroupResults(true)
+  }
+
+  const handleTerminateModule = async () => {
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${SESSION_CODE}`)
+    onBack()
+  }
+
+  if (!started) return <Lobby onStart={() => setStarted(true)} onBack={handleBack} />
+  if (showGroupResults) return <GroupResultsView onTerminate={handleTerminateModule} />
+  if (quizLaunched) return <QuizController quizQ={quizQ} onNext={handleNextQuestion} onEnd={handleEndQuiz} onBack={handleEndQuiz} />
+
+  const page = PAGES[pageIndex]
+  const navProps = {
+    onBack: handleBack,
+    pageIndex,
+    total: PAGES.length,
+    onPrev: () => setPageIndex(i => Math.max(i - 1, 0)),
+    onNext: () => setPageIndex(i => Math.min(i + 1, PAGES.length - 1)),
+    isFirst: pageIndex === 0,
+    isLast: pageIndex === PAGES.length - 1,
+    quizLaunched,
+    onLaunchQuiz: handleLaunchQuiz,
+  }
+
+  return <EntreprisePage page={page} navProps={navProps} />
+}

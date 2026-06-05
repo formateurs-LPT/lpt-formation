@@ -26,7 +26,7 @@ const JOURNEES = (onLaunchModule) => [
         visual: 'avatar', src: '/assets/avatar_paul.png',
         label: "Présentation de l'entreprise",
         sub: 'Paul Morlet — Histoire, valeurs et missions de LPT',
-        soon: true,
+        onClick: () => onLaunchModule('entreprise'),
       },
       {
         visual: 'emoji', icon: '👁️',
