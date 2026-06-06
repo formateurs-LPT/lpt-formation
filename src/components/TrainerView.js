@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { sbSelect, sbUpdate, sbUpsert, sbInsert, sbDelete, SESSION_CODE } from '@/lib/supabase'
+import { sbSelect, sbUpdate, sbUpsert, sbDelete, SESSION_CODE, insertSessionHistory } from '@/lib/supabase'
 import {
   filterParticipantsInRh,
   loadEntreesList,
@@ -205,12 +205,13 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
     const quizResults = await sbSelect('quiz_results', 'session_code=eq.' + SESSION_CODE)
     const responses = await sbSelect('scenario_responses', 'session_code=eq.' + SESSION_CODE)
     if (participants?.length || quizResults?.length) {
-      await sbInsert('session_history', {
-        session_code: SESSION_CODE + '_' + Date.now(),
-        session_date: new Date().toISOString(),
-        participants: JSON.stringify(participants || []),
-        quiz_results: JSON.stringify(quizResults || []),
-        scenario_responses: JSON.stringify(responses || [])
+      await insertSessionHistory({
+        sessionCode: SESSION_CODE + '_' + Date.now(),
+        sessionDate: new Date().toISOString(),
+        trainerName: localStorage.getItem('trainer_name') || 'Formateur',
+        participants: participants || [],
+        quizResults: quizResults || [],
+        scenarioResponses: responses || [],
       })
     }
     await sbDelete('participants', 'session_code=eq.' + SESSION_CODE)

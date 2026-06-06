@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbSelect, sbInsert, sbDelete, SESSION_CODE, getSharedState } from '@/lib/supabase'
+import { sbSelect, sbDelete, SESSION_CODE, getSharedState, insertSessionHistory, parseSessionHistorySummary } from '@/lib/supabase'
 import WeatherWidget from './WeatherWidget'
 import ShortcutsWidget from './ShortcutsWidget'
 import NotesWidget from './NotesWidget'
@@ -146,12 +146,13 @@ function SessionsHistoryView({ onBack, onToast }) {
     if ((participants?.length || 0) + (answers?.length || 0) === 0) {
       onToast('Aucune donnée à enregistrer'); return
     }
-    await sbInsert('session_history', {
-      session_code: SESSION_CODE + '_' + Date.now(),
-      session_date: new Date().toISOString(),
-      participants: JSON.stringify(participants || []),
-      quiz_results: JSON.stringify(answers || []),
-      scenario_responses: '[]',
+    await insertSessionHistory({
+      sessionCode: SESSION_CODE + '_' + Date.now(),
+      sessionDate: new Date().toISOString(),
+      trainerName: localStorage.getItem('trainer_name') || 'Formateur',
+      participants: participants || [],
+      quizResults: answers || [],
+      scenarioResponses: [],
     })
     await Promise.all([
       sbDelete('participants', 'session_code=eq.' + SESSION_CODE),
@@ -278,16 +279,17 @@ function SessionsHistoryView({ onBack, onToast }) {
               {[...sessions].reverse().map((s, i) => {
                 const date = new Date(s.session_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
                 const cap = str => str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
+                const { notes, count } = parseSessionHistorySummary(s)
                 return (
                   <div key={i} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 14 }}>
                     <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--lpt-l)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>📅</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{cap(date)}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 2 }}>{s.notes || '—'}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 2 }}>{notes}</div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--lpt)' }}>{s.participant_count}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-m)' }}>collaborateur{s.participant_count !== 1 ? 's' : ''}</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--lpt)' }}>{count}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-m)' }}>collaborateur{count !== 1 ? 's' : ''}</div>
                     </div>
                   </div>
                 )

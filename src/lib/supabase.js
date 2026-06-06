@@ -98,6 +98,58 @@ export async function sbInsert(table, data) {
   return r.ok
 }
 
+function parseJsonField(value, fallback) {
+  if (value == null) return fallback
+  if (typeof value === 'object') return value
+  try {
+    return JSON.parse(value)
+  } catch {
+    return fallback
+  }
+}
+
+/** Schéma prod session_history : session_code, session_date, trainer_name, participants/quiz_results/scenario_responses (jsonb) */
+export async function insertSessionHistory({
+  sessionCode,
+  sessionDate,
+  trainerName,
+  participants = [],
+  quizResults = [],
+  scenarioResponses = [],
+}) {
+  const row = {
+    session_code: sessionCode,
+    session_date: String(sessionDate || '').slice(0, 10),
+    participants,
+    quiz_results: quizResults,
+    scenario_responses: scenarioResponses,
+  }
+  if (trainerName) row.trainer_name = trainerName
+  return sbInsert('session_history', row)
+}
+
+export function parseSessionHistorySummary(row) {
+  const quizResults = parseJsonField(row?.quiz_results, [])
+  if (quizResults?.type === 'onboarding_week') {
+    return {
+      notes: quizResults.notes || '—',
+      count: quizResults.participant_count ?? 0,
+    }
+  }
+
+  const participants = parseJsonField(row?.participants, [])
+  const count = Array.isArray(participants) ? participants.length : 0
+  const trainer = row?.trainer_name?.trim()
+  return {
+    notes: trainer
+      ? `Session — ${trainer}${count ? ` · ${count} participant${count > 1 ? 's' : ''}` : ''}`
+      : count
+        ? `Session — ${count} participant${count > 1 ? 's' : ''}`
+        : '—',
+    count,
+  }
+}
+
 /** Garantit une ligne sessions (FK participants / quiz_answers) */
 export async function ensureSession() {
   const code = getRuntimeSessionCode()

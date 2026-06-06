@@ -7,7 +7,7 @@ import {
   renameParticipantIdentity,
   normalizeEntreeList,
 } from '@/lib/participantNames'
-import { sbInsert, sbUpsert, sbSelect, getSharedState, setSharedState, SESSION_CODE } from '@/lib/supabase'
+import { sbInsert, sbUpsert, sbSelect, getSharedState, setSharedState, SESSION_CODE, insertSessionHistory } from '@/lib/supabase'
 
 const PARIS_MAGASINS = ['chatelet','st lazare','saint lazare','montparnasse','italie','commerce','bastille','cergy','creteil','créteil','belle epine','belle épine','paris','st ouen','saint ouen','ouen','beauchamp','odysseum','supply']
 const BELGIQUE_MAGASINS = ['namur','liege','liège','fripier','ixelles','charleroi','bruxelles']
@@ -170,7 +170,9 @@ function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving }) {
           </div>
         ) : (
           <>
-            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{c.nom} {c.prenom}</div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>
+              {(c.nom || c.prenom) ? `${c.nom} ${c.prenom}`.trim() : fullName}
+            </div>
             <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 2 }}>{c.magasin} · {c.poste}</div>
             <div style={{ fontSize: 11, color: '#0089ba', marginTop: 6, fontWeight: 600 }}>
               Connexion : {fullName}
@@ -301,29 +303,39 @@ export default function EntreesView({ onBack, onToast, pName }) {
 
   useEffect(() => {
     const load = async () => {
-      // 1. Essai depuis trainer_state (import RH)
+      // 1. Liste RH dans trainer_state (source de vérité)
       let saved = []
+      let rhListDefined = false
       try {
         const state = await getSharedState()
-        saved = state.entrees_data || []
+        if (Array.isArray(state.entrees_data)) {
+          rhListDefined = true
+          saved = state.entrees_data
+        }
       } catch {
-        saved = JSON.parse(localStorage.getItem('entrees_data') || '[]')
+        const local = JSON.parse(localStorage.getItem('entrees_data') || '[]')
+        if (local.length > 0) {
+          rhListDefined = true
+          saved = local
+        }
       }
 
-      if (saved.length > 0) {
-        setEntrees(normalizeEntreeList(saved))
-        setShowResults(true)
+      // Tableau vide en BDD = liste volontairement vidée → ne pas recharger depuis participants
+      if (rhListDefined) {
+        if (saved.length > 0) {
+          setEntrees(normalizeEntreeList(saved))
+          setShowResults(true)
+        }
         return
       }
 
-      // 2. Fallback : charger depuis la table participants Supabase
+      // 2. Fallback uniquement si import RH jamais fait (pas de clé entrees_data)
       try {
         const rows = await sbSelect('participants', `session_code=eq.${SESSION_CODE}&order=joined_at.asc`)
         if (rows && rows.length > 0) {
           const converted = buildEntreesFromParticipants(rows)
           setEntrees(converted)
           setShowResults(true)
-          // Sauvegarder dans trainer_state pour que OnboardingView puisse les lire
           setSharedState({ entrees_data: converted }).catch(console.warn)
         }
       } catch (e) {
@@ -369,8 +381,8 @@ export default function EntreesView({ onBack, onToast, pName }) {
     setShowResults(false)
     setPasteText('')
     localStorage.removeItem('entrees_data')
-    await setSharedState({ entrees_data: [], ob_data: {}, ob_date: null, ob_day: '1' })
-    onToast('Liste vidée')
+    const synced = await setSharedState({ entrees_data: [], ob_data: {}, ob_date: null, ob_day: '1' })
+    onToast(synced ? 'Liste vidée' : 'Liste vidée localement — sync Supabase échouée (rechargez après correction)')
   }
 
   const handleCloture = async () => {
@@ -398,11 +410,19 @@ export default function EntreesView({ onBack, onToast, pName }) {
       }
 
       // Ajouter une ligne dans session_history
-      await sbInsert('session_history', {
-        session_date: new Date().toISOString(),
-        trainer_name: pName || localStorage.getItem('trainer_name') || 'Formateur',
-        participant_count: entrees.length,
-        notes: `Onboarding semaine du ${weekDate} — ${entrees.length} collaborateurs`,
+      await insertSessionHistory({
+        sessionCode: SESSION_CODE,
+        sessionDate: weekDate,
+        trainerName: pName || localStorage.getItem('trainer_name') || 'Formateur',
+        participants: [],
+        quizResults: {
+          type: 'onboarding_week',
+          week_date: weekDate,
+          trainer_name: pName || localStorage.getItem('trainer_name') || 'Formateur',
+          participant_count: entrees.length,
+          notes: `Onboarding semaine du ${weekDate} — ${entrees.length} collaborateurs`,
+        },
+        scenarioResponses: [],
       })
 
       // Vider localStorage + Supabase shared state
