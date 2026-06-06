@@ -109,13 +109,13 @@ create table if not exists public.module_results (
 );
 
 create table if not exists public.session_history (
-  id bigserial primary key,
+  id uuid primary key default gen_random_uuid(),
   session_code text not null,
-  session_date date,
+  session_date timestamp without time zone,
   trainer_name text,
-  participant_count int default 0,
-  payload jsonb,
-  created_at timestamptz default now()
+  participants jsonb,
+  quiz_results jsonb,
+  scenario_responses jsonb
 );
 
 create table if not exists public.trainer_notes (
