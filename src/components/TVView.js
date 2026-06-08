@@ -1513,6 +1513,21 @@ export default function TVView() {
   const [troublesPhase, setTroublesPhase] = useState(1)
   const [opticienPlaying, setOpticienPlaying] = useState(false)
   const [audioUnlocked, setAudioUnlocked] = useState(false)
+  const audioPrimerRef = useRef(null)
+
+  // Quand l'audio est débloqué, jouer/pauser la vidéo pour que le
+  // navigateur autorise toutes les lectures audio suivantes sur cette page
+  const handleAudioUnlock = () => {
+    setAudioUnlocked(true)
+    if (audioPrimerRef.current) {
+      audioPrimerRef.current.play()
+        .then(() => {
+          audioPrimerRef.current.pause()
+          audioPrimerRef.current.currentTime = 0
+        })
+        .catch(() => {})
+    }
+  }
   useEffect(() => {
     const poll = async () => {
       try {
@@ -1548,7 +1563,10 @@ export default function TVView() {
     return (
       <>
         <style>{STYLES}</style>
-        {tvScreen === 'qr' ? <WaitingScreen /> : <WelcomeScreen onAudioUnlock={() => setAudioUnlocked(true)} audioUnlocked={audioUnlocked} />}
+        {/* Vidéo cachée pour débloquer l'audio navigateur au clic */}
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+        <video ref={audioPrimerRef} src="/assets/avatar_opticien_troubles.mp4" style={{ display: 'none' }} preload="auto" />
+        {tvScreen === 'qr' ? <WaitingScreen /> : <WelcomeScreen onAudioUnlock={handleAudioUnlock} audioUnlocked={audioUnlocked} />}
       </>
     )
   }
