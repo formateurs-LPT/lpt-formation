@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
-import { sbUpsert, sbSelect, SESSION_CODE, ensureSession, getSharedState } from '@/lib/supabase'
+import { sbUpsert, sbSelect, SESSION_CODE, ensureSession, getSharedState, setSharedState } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName } from '@/lib/participantNames'
@@ -1479,7 +1479,100 @@ function EntreprisePageMobile({ page, pageIndex, total }) {
   )
 }
 
-function ModuleScreen({ page, pageIndex, total, moduleLabel }) {
+// ── Freins à l'achat — saisie libre participant ───────────────────
+function FreinsInputMobile({ page, pName }) {
+  const [text, setText]               = useState('')
+  const [submitted, setSubmitted]     = useState(false)
+  const [submittedText, setSubmittedText] = useState('')
+  const [sending, setSending]         = useState(false)
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return
+    setSending(true)
+    try {
+      const x = Math.floor(Math.random() * 58) + 8   // 8 → 66 %
+      const y = Math.floor(Math.random() * 38) + 32  // 32 → 70 %
+      const state = await getSharedState()
+      const current = state?.freins_responses || {}
+      await setSharedState({ freins_responses: { ...current, [pName]: { text: text.trim(), x, y } } })
+      setSubmittedText(text.trim())
+      setSubmitted(true)
+    } catch { /* ignore */ }
+    setSending(false)
+  }
+
+  const handleModify = () => {
+    setText(submittedText)
+    setSubmitted(false)
+  }
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '52px 24px 40px',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38}
+        style={{ objectFit: 'contain', marginBottom: 36 }} />
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+        Question ouverte
+      </div>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.45, marginBottom: 32 }}>
+        {page.titre}
+      </h2>
+
+      {submitted ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{
+            background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)',
+            borderRadius: 16, padding: '16px 20px',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#4ade80', marginBottom: 8 }}>✓ Réponse envoyée</div>
+            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{submittedText}</div>
+          </div>
+          <button onClick={handleModify} style={{
+            background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.3)',
+            color: '#00abe9', borderRadius: 14, padding: '14px',
+            fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}>✏️ Modifier ma réponse</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Tapez votre réponse ici…"
+            rows={5}
+            style={{
+              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 16, padding: '16px', color: '#fff', fontSize: 16,
+              fontFamily: 'inherit', resize: 'none', outline: 'none', lineHeight: 1.5,
+              WebkitAppearance: 'none',
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!text.trim() || sending}
+            style={{
+              background: text.trim() ? '#00abe9' : 'rgba(255,255,255,0.1)',
+              border: 'none', borderRadius: 14, padding: '16px',
+              fontSize: 16, fontWeight: 700, color: '#fff',
+              cursor: text.trim() ? 'pointer' : 'default',
+              fontFamily: 'inherit', transition: 'background .2s',
+              opacity: sending ? 0.7 : 1,
+            }}
+          >
+            {sending ? 'Envoi en cours…' : 'Envoyer ma réponse →'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ModuleScreen({ page, pageIndex, total, moduleLabel, pName }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
@@ -1489,6 +1582,9 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel }) {
   if (page.type === 'ordonnance')        return <OrdonnanceMobile         page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'pause')             return <PauseMobile              page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'saisie-interactive') return <SaisieInteractiveMobile page={page} pageIndex={pageIndex} total={total} />
+
+  // Freins à l'achat — saisie libre
+  if (page.type === 'freins') return <FreinsInputMobile page={page} pName={pName || 'Anonyme'} />
 
   // Entreprise module types
   if (['impact','probleme','timeline','piliers','steps','machines','cases','visages','croissance','mission'].includes(page.type))
@@ -1725,7 +1821,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
           : isQuiz
             ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
             : page
-              ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} />
+              ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} />
               : <WaitingScreen />
       }
     </>

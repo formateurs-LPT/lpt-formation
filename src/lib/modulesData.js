@@ -296,7 +296,14 @@ export const OFFRES_QUIZ = [
 
 export const ENTREPRISE_QUIZ = []
 
-export const ENTREPRISE_PAGES = []
+export const ENTREPRISE_PAGES = [
+  {
+    id: 'freins',
+    type: 'freins',
+    titre: "Quels sont pour vous, les freins à l'achat d'une paire de lunettes ?",
+    color: '#00abe9',
+  },
+]
 
 export const MODULE_DATA = {
   'types-verres': { pages: TYPES_VERRES_PAGES, quiz: TYPES_VERRES_QUIZ, label: 'Types de verres' },
