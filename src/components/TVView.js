@@ -1497,7 +1497,7 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
           <video
             ref={videoRef}
             src="/assets/avatar_opticien_troubles.mp4"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'multiply' }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             playsInline
             preload="auto"
           />
