@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
-import { sbSelect, SESSION_CODE, getSharedState } from '@/lib/supabase'
+import { sbSelect, SESSION_CODE, getSharedState, setSharedState } from '@/lib/supabase'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -1562,6 +1562,15 @@ export default function TVView() {
   const [opticienPlaying, setOpticienPlaying] = useState(false)
   const [ordoPlaying, setOrdoPlaying]         = useState(false)
   const [audioUnlocked, setAudioUnlocked]     = useState(false)
+
+  // À l'ouverture de la TV : remet tv_screen à null pour toujours afficher la bienvenue
+  useEffect(() => {
+    getSharedState().then(state => {
+      if (state?.tv_screen) {
+        setSharedState({ tv_screen: null }).catch(() => {})
+      }
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     const poll = async () => {
