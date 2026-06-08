@@ -1203,23 +1203,58 @@ function WelcomeScreen() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 60%, #0d3b7a 100%)',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
+      position: 'relative', overflow: 'hidden',
     }}>
+      {/* Halo décoratif derrière le logo */}
+      <div style={{
+        position: 'absolute',
+        width: 520, height: 520, borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(0,171,233,0.12) 0%, transparent 70%)',
+        animation: 'haloPulse 4s ease-in-out infinite',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Logo */}
       <Image
         src="/assets/logo-lpt-blanc.png"
         alt="Lunettes Pour Tous"
-        width={360}
-        height={136}
-        style={{ objectFit: 'contain', animation: 'logoBreathe 3.5s ease-in-out infinite', marginBottom: 52 }}
+        width={400}
+        height={152}
+        style={{
+          objectFit: 'contain',
+          animation: 'logoBreathe 3.5s ease-in-out infinite',
+          position: 'relative', zIndex: 1,
+        }}
+        priority
       />
+
+      {/* Séparateur */}
       <div style={{
-        fontSize: 28, fontWeight: 300,
-        color: 'rgba(255,255,255,0.55)',
-        letterSpacing: 4, textTransform: 'uppercase', textAlign: 'center',
+        width: 48, height: 2,
+        background: 'linear-gradient(90deg, transparent, rgba(0,171,233,0.6), transparent)',
+        margin: '40px 0 36px',
+        borderRadius: 2,
+      }} />
+
+      {/* Texte */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+        position: 'relative', zIndex: 1,
       }}>
-        Bienvenue chez Lunettes Pour Tous
+        <div style={{
+          fontSize: 15, fontWeight: 500,
+          color: 'rgba(255,255,255,0.35)',
+          letterSpacing: 6, textTransform: 'uppercase',
+        }}>Bienvenue chez</div>
+        <div style={{
+          fontSize: 38, fontWeight: 800,
+          color: '#ffffff',
+          letterSpacing: 1, textAlign: 'center',
+          lineHeight: 1.1,
+        }}>Lunettes Pour Tous</div>
       </div>
     </div>
   )
