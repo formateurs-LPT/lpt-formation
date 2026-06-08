@@ -306,9 +306,9 @@ export const ENTREPRISE_PAGES = [
 ]
 
 export const MODULE_DATA = {
-  'types-verres': { pages: TYPES_VERRES_PAGES, quiz: TYPES_VERRES_QUIZ, label: 'Types de verres' },
-  'pdm':          { pages: PDM_PAGES,          quiz: PDM_QUIZ,          label: 'Prises de mesures' },
-  'optique':      { pages: OPTIQUE_PAGES,      quiz: OPTIQUE_QUIZ,      label: "Les bases de l'optique" },
-  'offres':       { pages: [],                 quiz: OFFRES_QUIZ,       label: 'Les offres' },
-  'entreprise':   { pages: ENTREPRISE_PAGES,   quiz: ENTREPRISE_QUIZ,   label: "Présentation de l'entreprise" },
+  'types-verres': { pages: TYPES_VERRES_PAGES, quiz: TYPES_VERRES_QUIZ, label: 'Types de verres',               sub: 'Unifocaux · Progressifs · Spéciaux' },
+  'pdm':          { pages: PDM_PAGES,          quiz: PDM_QUIZ,          label: 'Prises de mesures',             sub: 'Écart pupillaire · Hauteur · LPTVISION' },
+  'optique':      { pages: OPTIQUE_PAGES,      quiz: OPTIQUE_QUIZ,      label: "Les bases de l'optique",        sub: 'Troubles visuels · Corrections · Ordonnances' },
+  'offres':       { pages: [],                 quiz: OFFRES_QUIZ,       label: 'Les offres',                    sub: '100% Santé · Offres LPT · Mutuelles' },
+  'entreprise':   { pages: ENTREPRISE_PAGES,   quiz: ENTREPRISE_QUIZ,   label: "Présentation de l'entreprise", sub: 'Mission · Histoire · Culture LPT' },
 }

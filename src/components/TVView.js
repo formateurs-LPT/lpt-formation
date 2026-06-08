@@ -1234,7 +1234,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
 }
 
 // ── TV Module Lobby ───────────────────────────────────────────────
-function TVModuleLobby({ moduleLabel }) {
+function TVModuleLobby({ moduleLabel, moduleSub }) {
   return (
     <div style={{
       minHeight: '100vh',
@@ -1253,8 +1253,7 @@ function TVModuleLobby({ moduleLabel }) {
           {moduleLabel}
         </h1>
         <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.45)', marginBottom: 52, lineHeight: 1.6 }}>
-          Troubles visuels · Corrections · Ordonnances<br />
-          Comprendre et expliquer la prescription à vos clients
+          {moduleSub}
         </p>
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 12,
@@ -1715,7 +1714,7 @@ export default function TVView() {
       {loading ? (
         <WelcomeScreen />
       ) : isLobby ? (
-        <TVModuleLobby moduleLabel={moduleData?.label || ''} />
+        <TVModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
       ) : isResults ? (
         <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
       ) : isQuiz && quizQuestion ? (

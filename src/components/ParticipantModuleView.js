@@ -62,7 +62,7 @@ function WaitingScreen() {
   )
 }
 
-function ParticipantModuleLobby({ moduleLabel }) {
+function ParticipantModuleLobby({ moduleLabel, moduleSub }) {
   return (
     <div style={{
       minHeight: '100dvh',
@@ -80,7 +80,7 @@ function ParticipantModuleLobby({ moduleLabel }) {
         {moduleLabel}
       </div>
       <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 40, lineHeight: 1.6 }}>
-        Troubles visuels · Corrections · Ordonnances
+        {moduleSub}
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
@@ -1815,7 +1815,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
     <>
       <style>{STYLES}</style>
       {isLobby
-        ? <ParticipantModuleLobby moduleLabel={moduleData?.label || ''} />
+        ? <ParticipantModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
         : isResults
           ? <PersonalResultsScreen key="results" pName={pName} quiz={quiz} moduleId={activeModule} />
           : isQuiz
