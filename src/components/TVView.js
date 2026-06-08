@@ -992,58 +992,6 @@ function TVEntrepriseMission({ page, pageIndex, total }) {
   )
 }
 
-// ── TV Opticien Intro ─────────────────────────────────────────────
-function TVOpticienIntro({ opticienIntroPlaying }) {
-  const videoRef = useRef(null)
-
-  useEffect(() => {
-    if (!videoRef.current) return
-    if (opticienIntroPlaying) {
-      videoRef.current.play().catch(() => {})
-    } else {
-      videoRef.current.pause()
-    }
-  }, [opticienIntroPlaying])
-
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      gap: 40,
-    }}>
-      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={120} height={46} style={{ objectFit: 'contain', opacity: 0.7 }} />
-
-      {/* Cercle vidéo grand centré */}
-      <div style={{
-        width: 420, height: 420, borderRadius: '50%', overflow: 'hidden',
-        border: `5px solid ${opticienIntroPlaying ? 'rgba(34,197,94,0.6)' : 'rgba(0,171,233,0.4)'}`,
-        boxShadow: `0 0 0 12px ${opticienIntroPlaying ? 'rgba(34,197,94,0.08)' : 'rgba(0,171,233,0.08)'}, 0 24px 80px rgba(0,0,0,0.5)`,
-        background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 60%, #0d3b7a 100%)',
-        transition: 'border-color .4s, box-shadow .4s',
-      }}>
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <video
-          ref={videoRef}
-          src="/assets/Pr%C3%A9sentation_Opto_.mp4"
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          playsInline
-          preload="auto"
-        />
-      </div>
-
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>
-          Les bases de l&apos;optique
-        </div>
-        <div style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>
-          Présentation de l&apos;opticien
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── TV Content Page (no controls, no avatar) ──────────────────────
 function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying }) {
   const [entered, setEntered] = useState(false)
@@ -1565,8 +1513,6 @@ export default function TVView() {
   const [tvScreen, setTvScreen] = useState(null)
   const [troublesPhase, setTroublesPhase] = useState(1)
   const [opticienPlaying, setOpticienPlaying] = useState(false)
-  const [opticienIntroPlaying, setOpticienIntroPlaying] = useState(false)
-
   useEffect(() => {
     const poll = async () => {
       try {
@@ -1574,7 +1520,6 @@ export default function TVView() {
         setTvScreen(state?.tv_screen || null)
         setTroublesPhase(state?.troubles_phase || 1)
         setOpticienPlaying(!!state?.opticien_playing)
-        setOpticienIntroPlaying(!!state?.opticien_intro_playing)
       } catch { /* ignore */ }
     }
     poll()
@@ -1624,8 +1569,6 @@ export default function TVView() {
           total={moduleData.quiz.length}
           moduleLabel={moduleData?.label || ''}
         />
-      ) : page?.type === 'opticien-intro' ? (
-        <TVOpticienIntro opticienIntroPlaying={opticienIntroPlaying} />
       ) : page ? (
         <TVContentPage
           page={page}
