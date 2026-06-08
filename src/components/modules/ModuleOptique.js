@@ -141,28 +141,29 @@ function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total,
 
 // ── Page intro opticien ───────────────────────────────────────────
 function OpticienIntroPage({ onBack, onNext, onPrev, isFirst, isLast, pageIndex, total }) {
-  const videoRef = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [ended, setEnded] = useState(false)
 
+  // Reset au montage + arrêt de la vidéo TV au démontage
   useEffect(() => {
     setPlaying(false)
     setEnded(false)
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0
+    setSharedState({ opticien_intro_playing: false }).catch(() => {})
+    return () => {
+      setSharedState({ opticien_intro_playing: false }).catch(() => {})
     }
   }, [])
 
   const togglePlay = () => {
-    if (!videoRef.current) return
-    if (videoRef.current.paused) {
-      videoRef.current.play().catch(() => {})
-      setPlaying(true)
-      setEnded(false)
-    } else {
-      videoRef.current.pause()
-      setPlaying(false)
-    }
+    const next = !playing
+    setPlaying(next)
+    if (next) setEnded(false)
+    setSharedState({ opticien_intro_playing: next }).catch(() => {})
+  }
+
+  const handleNext = () => {
+    setSharedState({ opticien_intro_playing: false }).catch(() => {})
+    onNext()
   }
 
   return (
@@ -202,85 +203,73 @@ function OpticienIntroPage({ onBack, onNext, onPrev, isFirst, isLast, pageIndex,
         </div>
       </div>
 
-      {/* Zone principale — 2 colonnes */}
-      <div style={{
-        flex: 1, display: 'flex', alignItems: 'center',
-        padding: '0 64px 100px', gap: 80,
-      }}>
-        {/* Gauche — texte */}
-        <div style={{ flex: 1 }}>
+      {/* Zone principale — texte centré, sobre */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 80px 100px' }}>
+        <div style={{ maxWidth: 600 }}>
           <div style={{
             display: 'inline-block',
             background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)',
             borderRadius: 20, padding: '5px 16px',
             fontSize: 11, fontWeight: 700, color: '#00abe9',
-            textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20,
+            textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
           }}>Les bases de l&apos;optique</div>
 
-          <h1 style={{ fontSize: 42, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 16 }}>
+          <h1 style={{ fontSize: 46, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 20 }}>
             Présentation<br />de l&apos;opticien
           </h1>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, maxWidth: 400 }}>
-            Notre opticien vous guide à travers les fondamentaux :
-            troubles visuels, lecture d&apos;ordonnance et types de verres.
+          <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7 }}>
+            Notre opticien présente le module sur le diffuseur.<br />
+            Lancez la vidéo depuis le bouton ci-dessous.
           </p>
         </div>
+      </div>
 
-        {/* Droite — bulle avatar grosse */}
-        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-          {/* Cercle vidéo grand */}
+      {/* Petite carte opticien — même style que la bulle formateur */}
+      <div style={{ position: 'fixed', bottom: 0, right: 0, zIndex: 50, padding: '0 28px 28px 0' }}>
+        <div style={{
+          background: 'rgba(10,42,92,0.85)', backdropFilter: 'blur(20px)',
+          border: `1px solid ${playing ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
+          borderRadius: 20, padding: '12px 18px 12px 12px',
+          display: 'flex', alignItems: 'center', gap: 14,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)', transition: 'border-color .3s',
+        }}>
           <div style={{
-            width: 280, height: 280, borderRadius: '50%', overflow: 'hidden',
-            border: `4px solid ${playing ? 'rgba(34,197,94,0.7)' : 'rgba(0,171,233,0.5)'}`,
-            boxShadow: `0 0 0 8px ${playing ? 'rgba(34,197,94,0.1)' : 'rgba(0,171,233,0.1)'}, 0 16px 64px rgba(0,0,0,0.4)`,
+            width: 80, height: 80, borderRadius: 16, overflow: 'hidden', flexShrink: 0,
+            border: `2.5px solid ${playing ? '#4ade80' : '#00abe9'}`,
+            boxShadow: `0 0 0 4px ${playing ? 'rgba(34,197,94,0.2)' : 'rgba(0,171,233,0.2)'}`,
             background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 60%, #0d3b7a 100%)',
-            position: 'relative', transition: 'border-color .3s, box-shadow .3s',
+            transition: 'border-color .3s',
           }}>
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video
-              ref={videoRef}
               src="/assets/Pr%C3%A9sentation_Opto_.mp4"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              playsInline
-              preload="auto"
-              onEnded={() => { setPlaying(false); setEnded(true) }}
+              style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+              playsInline muted preload="metadata"
             />
           </div>
-
-          {/* Carte info + bouton play */}
-          <div style={{
-            background: 'rgba(10,42,92,0.85)', backdropFilter: 'blur(20px)',
-            border: `1px solid ${playing ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
-            borderRadius: 20, padding: '12px 20px',
-            display: 'flex', alignItems: 'center', gap: 14,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-            transition: 'border-color .3s',
-          }}>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Opticien</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>Avatar · LPT</div>
-            </div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Opticien</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Avatar · LPT</div>
             <button onClick={togglePlay} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 7,
+              display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8,
               background: playing ? 'rgba(34,197,94,0.2)' : ended ? 'rgba(245,158,11,0.2)' : 'rgba(0,171,233,0.15)',
               border: `1px solid ${playing ? 'rgba(34,197,94,0.4)' : ended ? 'rgba(245,158,11,0.4)' : 'rgba(0,171,233,0.35)'}`,
-              borderRadius: 20, padding: '6px 16px',
+              borderRadius: 20, padding: '5px 14px',
               color: playing ? '#4ade80' : ended ? '#fbbf24' : '#00abe9',
-              fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              transition: 'all .2s',
+              fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .2s',
             }}>
               <div style={{
                 width: 7, height: 7, borderRadius: '50%',
                 background: playing ? '#4ade80' : ended ? '#fbbf24' : '#00abe9',
                 animation: playing ? 'optiqueHalo 1.5s ease-in-out infinite' : 'none',
               }} />
-              {playing ? '⏸ Pause' : ended ? '↺ Rejouer' : '▶ Lancer'}
+              {playing ? '⏸ Pause' : ended ? '↺ Rejouer sur TV' : '▶ Diffuser sur TV'}
             </button>
           </div>
         </div>
       </div>
 
-      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={handleNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
     </div>
   )
 }
