@@ -8,6 +8,8 @@ import NotesWidget from './NotesWidget'
 import OnboardingView from './OnboardingView'
 import EntreesView from './EntreesView'
 import { TRAINER_AVATARS, TRAINER_CANONICAL } from '@/lib/constants'
+import { PLANNING_JOURS } from '@/lib/planningData'
+import { setSharedState } from '@/lib/supabase'
 
 const NEWS_ITEMS = [
   '📚 Formation Verre Progressif — Module complet',
@@ -303,7 +305,7 @@ function SessionsHistoryView({ onBack, onToast }) {
 }
 
 export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onToast, onOnlineCount }) {
-  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding
+  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | planning
   const [entreeCount, setEntreeCount] = useState(null)
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
@@ -370,6 +372,80 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
     )
   }
 
+  if (activeView === 'planning') {
+    return (
+      <div id="dashboard">
+        <div className="dash-wrap">
+          <button className="detail-back" onClick={() => setActiveView('home')}>← Retour au tableau de bord</button>
+          <div className="dash-header" style={{ marginBottom: 28 }}>
+            <div>
+              <h2 style={{ marginBottom: 4 }}>Planning formation</h2>
+              <p style={{ color: 'var(--text-s)', fontSize: 14 }}>Cliquez sur un jour pour l&apos;afficher sur le diffuseur et les téléphones</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+            {PLANNING_JOURS.map(jour => (
+              <div
+                key={jour.id}
+                onClick={async () => {
+                  await setSharedState({ tv_screen: 'planning', planning_day: jour.id })
+                }}
+                style={{
+                  background: '#fff', border: '1px solid var(--border)',
+                  borderTop: `4px solid ${jour.color}`,
+                  borderRadius: 'var(--r)', padding: '24px 28px',
+                  cursor: 'pointer', transition: 'all .2s',
+                }}
+                onMouseOver={e => { e.currentTarget.style.boxShadow = `0 6px 24px ${jour.color}22`; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
+              >
+                {/* En-tête jour */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{jour.jour}</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)' }}>{jour.label}</div>
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-s)', background: 'var(--bg)', borderRadius: 20, padding: '4px 12px', border: '1px solid var(--border)' }}>
+                    Diffuser →
+                  </div>
+                </div>
+
+                {/* Blocs programme */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {jour.blocs.map((bloc, i) => (
+                    <div key={i} style={{ borderLeft: `3px solid ${jour.color}55`, paddingLeft: 14 }}>
+                      {bloc.horaire && (
+                        <div style={{ fontSize: 11, fontWeight: 700, color: jour.color, marginBottom: 2, letterSpacing: 0.5 }}>{bloc.horaire}</div>
+                      )}
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{bloc.titre}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {bloc.items.map((item, j) => (
+                          <div key={j} style={{ fontSize: 12, color: 'var(--text-s)', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                            <span style={{ color: jour.color, flexShrink: 0, marginTop: 1 }}>–</span>
+                            {item}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 16, background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 13, color: 'var(--text-s)' }}>Arrêter la diffusion du planning</span>
+            <button
+              onClick={async () => { await setSharedState({ tv_screen: null, planning_day: null }) }}
+              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626', borderRadius: 10, padding: '7px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            >Arrêter</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (activeView === 'modules') {
     return (
       <div id="dashboard">
@@ -424,6 +500,34 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
             <div className="ob-day-badge">Jour {obDay}</div>
           </div>
           <div className="ob-banner-arrow">→</div>
+        </div>
+
+        {/* Planning banner */}
+        <div
+          onClick={() => setActiveView('planning')}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: '#fff', border: '1px solid var(--border)',
+            borderLeft: '4px solid #00abe9',
+            borderRadius: 'var(--r)', padding: '18px 24px',
+            cursor: 'pointer', marginBottom: 16, transition: 'all .2s',
+          }}
+          onMouseOver={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,171,233,.1)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+          onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,171,233,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00abe9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>4 jours · Onboarding intensif</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Planning formation</div>
+              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 1 }}>Diffusez le programme du jour sur les écrans</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#00abe9' }}>Voir →</div>
         </div>
 
         {/* Main tiles */}

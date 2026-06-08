@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
+import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE, getSharedState, setSharedState } from '@/lib/supabase'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -1515,6 +1516,79 @@ function TVModuleLobby({ moduleLabel, moduleSub }) {
 // ── Waiting Screen ────────────────────────────────────────────────
 const APP_URL = 'https://lpt-formation.vercel.app?join=1'
 // ── Écran de bienvenue (avant le QR) ──────────────────────────────
+function TVPlanningScreen({ planningDay }) {
+  const jour = PLANNING_JOURS.find(j => j.id === planningDay)
+  const [visible, setVisible] = useState(0)
+
+  useEffect(() => {
+    setVisible(0)
+    if (!jour) return
+    const timers = jour.blocs.map((_, i) =>
+      setTimeout(() => setVisible(v => Math.max(v, i + 1)), 400 + i * 500)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [planningDay])
+
+  if (!jour) return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={120} height={46} style={{ objectFit: 'contain', marginBottom: 24 }} />
+        <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.4)' }}>Sélectionnez un jour depuis le tableau de bord</div>
+      </div>
+    </div>
+  )
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '36px 60px 48px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1 }}>Planning Onboarding</span>
+        </div>
+        <div style={{ background: `${jour.color}20`, border: `1px solid ${jour.color}50`, borderRadius: 20, padding: '6px 20px', fontSize: 12, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1 }}>
+          {jour.jour}
+        </div>
+      </div>
+
+      {/* Titre */}
+      <div style={{ marginBottom: 40 }}>
+        <div style={{ fontSize: 46, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 6 }}>{jour.label}</div>
+        <div style={{ width: 60, height: 4, borderRadius: 2, background: jour.color }} />
+      </div>
+
+      {/* Blocs */}
+      <div style={{ display: 'flex', gap: 24, flex: 1, alignItems: 'flex-start' }}>
+        {jour.blocs.map((bloc, i) => (
+          <div key={i} style={{
+            flex: 1,
+            background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.08)`,
+            borderTop: `3px solid ${jour.color}`,
+            borderRadius: 16, padding: '28px 28px',
+            opacity: i < visible ? 1 : 0,
+            transform: i < visible ? 'translateY(0)' : 'translateY(16px)',
+            transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+          }}>
+            {bloc.horaire && (
+              <div style={{ fontSize: 12, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{bloc.horaire}</div>
+            )}
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 16, lineHeight: 1.2 }}>{bloc.titre}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {bloc.items.map((item, j) => (
+                <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: jour.color, flexShrink: 0, marginTop: 7 }} />
+                  <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5, fontWeight: 400 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function WelcomeScreen() {
   return (
     <div style={{
@@ -1881,6 +1955,7 @@ export default function TVView() {
   const [freinsResponses, setFreinsResponses]       = useState({})
   const [prixResponses, setPrixResponses]           = useState({})
   const [ventesResponses, setVentesResponses]       = useState({})
+  const [planningDay, setPlanningDay]               = useState(null)
 
   // À l'ouverture de la TV : remet tv_screen à null pour toujours afficher la bienvenue
   useEffect(() => {
@@ -1902,6 +1977,7 @@ export default function TVView() {
         setFreinsResponses(state?.freins_responses || {})
         setPrixResponses(state?.prix_responses || {})
         setVentesResponses(state?.ventes_responses || {})
+        setPlanningDay(state?.planning_day || null)
       } catch { /* ignore */ }
     }
     poll()
@@ -1930,7 +2006,7 @@ export default function TVView() {
     return (
       <>
         <style>{STYLES}</style>
-        {tvScreen === 'qr' ? <WaitingScreen /> : <WelcomeScreen />}
+        {tvScreen === 'planning' ? <TVPlanningScreen planningDay={planningDay} /> : tvScreen === 'qr' ? <WaitingScreen /> : <WelcomeScreen />}
       </>
     )
   }

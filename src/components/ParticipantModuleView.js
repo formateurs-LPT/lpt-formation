@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
+import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbUpsert, sbSelect, SESSION_CODE, ensureSession, getSharedState, setSharedState } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
@@ -2074,10 +2075,63 @@ function RhParticipantGate({ pNameInput, children }) {
   return children(canonicalName)
 }
 
+function ParticipantPlanningScreen({ planningDay }) {
+  const jour = PLANNING_JOURS.find(j => j.id === planningDay)
+  if (!jour) return <WaitingScreen />
+
+  return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', display: 'flex', flexDirection: 'column', padding: '32px 20px 40px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ background: `${jour.color}20`, border: `1px solid ${jour.color}50`, borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1 }}>{jour.jour}</div>
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', marginBottom: 6 }}>{jour.label}</div>
+        <div style={{ width: 40, height: 3, borderRadius: 2, background: jour.color }} />
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1 }}>
+        {jour.blocs.map((bloc, i) => (
+          <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderTop: `2px solid ${jour.color}`, borderRadius: 14, padding: '16px 18px' }}>
+            {bloc.horaire && (
+              <div style={{ fontSize: 10, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{bloc.horaire}</div>
+            )}
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 10 }}>{bloc.titre}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {bloc.items.map((item, j) => (
+                <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: jour.color, flexShrink: 0, marginTop: 6 }} />
+                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
   const sync = useModuleSync(forcedModule != null ? 99999 : 1200)
   const activeModule = forcedModule ?? sync.activeModule
   const modulePage   = forcedPage  ?? sync.modulePage
+  const [planningDay, setPlanningDay] = useState(null)
+  const [tvScreen, setTvScreen]       = useState(null)
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const state = await getSharedState()
+        setTvScreen(state?.tv_screen || null)
+        setPlanningDay(state?.planning_day || null)
+      } catch { /* ignore */ }
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [])
 
   const moduleData = MODULE_DATA[activeModule] || null
   const pages = moduleData?.pages || []
@@ -2100,7 +2154,9 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
             ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
             : page
               ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} />
-              : <WaitingScreen />
+              : tvScreen === 'planning' && planningDay
+                ? <ParticipantPlanningScreen planningDay={planningDay} />
+                : <WaitingScreen />
       }
     </>
   )
