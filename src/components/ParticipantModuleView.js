@@ -1490,8 +1490,8 @@ function FreinsInputMobile({ page, pName }) {
     if (!text.trim() || sending) return
     setSending(true)
     try {
-      const x = Math.floor(Math.random() * 58) + 8   // 8 → 66 %
-      const y = Math.floor(Math.random() * 38) + 32  // 32 → 70 %
+      const x = Math.floor(Math.random() * 65) + 3   // 3 → 68 % (largeur écran)
+      const y = Math.floor(Math.random() * 38) + 42  // 42 → 80 % (sous la question)
       const state = await getSharedState()
       const current = state?.freins_responses || {}
       await setSharedState({ freins_responses: { ...current, [pName]: { text: text.trim(), x, y } } })
