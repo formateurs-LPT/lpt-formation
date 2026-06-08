@@ -303,6 +303,12 @@ export const ENTREPRISE_PAGES = [
     titre: "Quels sont pour vous, les freins à l'achat d'une paire de lunettes ?",
     color: '#00abe9',
   },
+  {
+    id: 'prix',
+    type: 'prix',
+    titre: "Combien coûte une paire de lunettes en moyenne ?",
+    color: '#f59e0b',
+  },
 ]
 
 export const MODULE_DATA = {
