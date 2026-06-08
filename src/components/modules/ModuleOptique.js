@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { sbUpdate, sbSelect, SESSION_CODE } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
@@ -86,7 +86,7 @@ function AvatarBubble({ script, trainerAvatar, pName }) {
 }
 
 // ── NavBar partagée (formateur) ───────────────────────────────────
-function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz }) {
+function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextLabel }) {
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
@@ -133,7 +133,7 @@ function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total,
           border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12,
           fontSize: 15, fontWeight: 700, cursor: 'pointer',
           boxShadow: '0 6px 24px rgba(0,171,233,0.45)', fontFamily: 'inherit',
-        }}>Suivant →</button>
+        }}>{nextLabel || 'Suivant →'}</button>
       )}
     </div>
   )
@@ -214,14 +214,57 @@ function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext,
 // ── Page troubles visuels ─────────────────────────────────────────
 function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
   const [visibleCount, setVisibleCount] = useState(0)
+  const [phase, setPhase] = useState(1)          // 1 = noms seulement · 2 = définitions révélées
+  const [defVisibleCount, setDefVisibleCount] = useState(0)
+  const [playing, setPlaying] = useState(false)
+  const videoRef = useRef(null)
 
+  // Reset à chaque changement de page
   useEffect(() => {
     setVisibleCount(0)
+    setPhase(1)
+    setDefVisibleCount(0)
+    setPlaying(false)
+    if (videoRef.current) {
+      videoRef.current.pause()
+      videoRef.current.currentTime = 0
+    }
     const timers = page.troubles.map((_, i) =>
       setTimeout(() => setVisibleCount(c => Math.max(c, i + 1)), 250 + i * 220)
     )
     return () => timers.forEach(clearTimeout)
   }, [page.id])
+
+  // Phase 2 : lancer la vidéo + révéler les définitions en stagger
+  useEffect(() => {
+    if (phase !== 2) return
+    setDefVisibleCount(0)
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0
+      videoRef.current.play().catch(() => {})
+      setPlaying(true)
+    }
+    const timers = page.troubles.map((_, i) =>
+      setTimeout(() => setDefVisibleCount(c => Math.max(c, i + 1)), 500 + i * 900)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [phase])
+
+  const handleNext = () => {
+    if (phase === 1) setPhase(2)   // 1er clic → révèle les defs, ne navigue pas
+    else onNext()                   // 2e clic → navigation réelle
+  }
+
+  const togglePlay = () => {
+    if (!videoRef.current) return
+    if (videoRef.current.paused) {
+      videoRef.current.play().catch(() => {})
+      setPlaying(true)
+    } else {
+      videoRef.current.pause()
+      setPlaying(false)
+    }
+  }
 
   return (
     <div style={{
@@ -242,6 +285,16 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {/* Badge phase */}
+          <div style={{
+            background: phase === 2 ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)',
+            border: `1px solid ${phase === 2 ? 'rgba(34,197,94,0.35)' : 'rgba(245,158,11,0.35)'}`,
+            borderRadius: 20, padding: '4px 12px',
+            fontSize: 11, fontWeight: 700,
+            color: phase === 2 ? '#4ade80' : '#fbbf24',
+          }}>
+            {phase === 1 ? 'Noms révélés · En attente' : 'Définitions en cours'}
+          </div>
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
           <div style={{ display: 'flex', gap: 5 }}>
             {Array(total).fill(0).map((_, i) => (
@@ -298,18 +351,21 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
               transform: i < visibleCount ? 'translateX(0)' : 'translateX(-28px)',
               transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
             }}>
-              {/* Numéro */}
               <span style={{ fontSize: 12, fontWeight: 800, color: t.color, letterSpacing: 1, minWidth: 26, opacity: 0.75 }}>
                 {t.num}
               </span>
-              {/* Nom */}
               <span style={{ fontSize: 26, fontWeight: 800, color: '#fff', minWidth: 220, letterSpacing: -0.3 }}>
                 {t.nom}
               </span>
-              {/* Séparateur */}
               <div style={{ width: 1, height: 26, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
-              {/* Définition */}
-              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.58)', lineHeight: 1.5, fontWeight: 400 }}>
+              {/* Définition — cachée en phase 1, révélée progressivement en phase 2 */}
+              <span style={{
+                fontSize: 15, color: 'rgba(255,255,255,0.58)', lineHeight: 1.5, fontWeight: 400,
+                opacity: phase === 2 && i < defVisibleCount ? 1 : 0,
+                transform: phase === 2 && i < defVisibleCount ? 'translateY(0)' : 'translateY(6px)',
+                transition: 'opacity 0.6s ease, transform 0.6s ease',
+                minHeight: 22, // préserve l'espace même quand invisible
+              }}>
                 {t.def}
               </span>
             </div>
@@ -317,8 +373,58 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
         </div>
       </div>
 
-      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
-      <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
+      {/* Bouton Suivant personnalisé selon la phase */}
+      <TrainerNav
+        onBack={onBack} onPrev={onPrev} onNext={handleNext}
+        isFirst={isFirst} isLast={isLast}
+        pageIndex={pageIndex} total={total}
+        nextLabel={phase === 1 ? 'Révéler les définitions →' : 'Suivant →'}
+      />
+
+      {/* Bulle vidéo avatar opticien */}
+      <div style={{
+        position: 'fixed', bottom: 28, right: 28, zIndex: 50,
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10,
+      }}>
+        <div style={{
+          width: 148, height: 148, borderRadius: '50%', overflow: 'hidden',
+          border: '3px solid rgba(0,171,233,0.6)',
+          boxShadow: '0 8px 32px rgba(0,171,233,0.35)',
+          position: 'relative', background: '#0a2a5c',
+        }}>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            ref={videoRef}
+            src="/assets/avatar_opticien_troubles.mp4"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            playsInline
+            onEnded={() => setPlaying(false)}
+          />
+          {/* Bouton play/pause */}
+          <button
+            onClick={togglePlay}
+            style={{
+              position: 'absolute', bottom: 6, right: 6,
+              width: 32, height: 32, borderRadius: '50%',
+              background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+              border: '1px solid rgba(255,255,255,0.25)',
+              color: '#fff', fontSize: 12, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: 'inherit',
+            }}
+          >
+            {playing ? '⏸' : '▶'}
+          </button>
+        </div>
+        <div style={{
+          background: 'rgba(3,17,42,0.85)', backdropFilter: 'blur(12px)',
+          borderRadius: 10, padding: '5px 12px',
+          fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.6)',
+          border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center',
+        }}>
+          Opticien · LPT
+        </div>
+      </div>
     </div>
   )
 }
