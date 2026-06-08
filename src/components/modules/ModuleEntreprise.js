@@ -301,6 +301,56 @@ function EntreprisePage({ page, navProps }) {
     </div>
   )
 
+  // ── NAISSANCE ──────────────────────────────────────────────────
+  if (page.type === 'naissance') return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+        <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Présentation de l&apos;entreprise</span>
+      </div>
+
+      {/* Titre */}
+      <div style={{ textAlign: 'center', marginBottom: 48 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+          Les origines
+        </div>
+        <h1 style={{ fontSize: 34, fontWeight: 900, color: '#fff', lineHeight: 1.2, marginBottom: 12 }}>
+          {page.titre}
+        </h1>
+        <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>
+          &ldquo;{page.sousTitre}&rdquo;
+        </p>
+      </div>
+
+      {/* Deux fondateurs côte à côte */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: 60, flex: 1 }}>
+        {[
+          { src: '/assets/photo-Paul.jpg', name: 'Paul Morlet', role: 'Fondateur & CEO' },
+          { src: '/assets/Photo-Xavier.png', name: 'Xavier Niel', role: 'Co-fondateur & Investisseur' },
+        ].map((person, i) => (
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <div style={{
+              width: 180, height: 180, borderRadius: '50%', overflow: 'hidden',
+              border: '3px solid rgba(0,171,233,0.6)',
+              boxShadow: '0 0 0 6px rgba(0,171,233,0.1), 0 12px 40px rgba(0,171,233,0.3)',
+            }}>
+              <Image src={person.src} alt={person.name} width={180} height={180}
+                style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{person.name}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>{person.role}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <TrainerNav {...navProps} />
+    </div>
+  )
+
   // ── FREINS ─────────────────────────────────────────────────────
   if (page.type === 'freins') return <FreinsPage page={page} navProps={navProps} />
 

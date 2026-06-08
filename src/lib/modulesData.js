@@ -309,6 +309,13 @@ export const ENTREPRISE_PAGES = [
     titre: "Combien coûte une paire de lunettes en moyenne ?",
     color: '#f59e0b',
   },
+  {
+    id: 'naissance',
+    type: 'naissance',
+    titre: '2014, naissance de Lunettes pour Tous',
+    sousTitre: 'Mission claire, rendre la vue accessible à tous',
+    color: '#00abe9',
+  },
 ]
 
 export const MODULE_DATA = {

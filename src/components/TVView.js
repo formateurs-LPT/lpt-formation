@@ -958,6 +958,70 @@ function TVEntrepriseShell({ page, pageIndex, total, children }) {
   )
 }
 
+function TVEntrepriseNaissance({ page, pageIndex, total }) {
+  return (
+    <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
+      {/* Titre */}
+      <div style={{ textAlign: 'center', marginBottom: 48, paddingTop: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 14 }}>
+          Présentation de l&apos;entreprise
+        </div>
+        <h1 style={{ fontSize: 42, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 14 }}>
+          {page.titre}
+        </h1>
+        <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>
+          &ldquo;{page.sousTitre}&rdquo;
+        </p>
+      </div>
+
+      {/* Deux fondateurs côte à côte */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: 80 }}>
+        {/* Paul Morlet */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+          <div style={{
+            width: 220, height: 220, borderRadius: '50%', overflow: 'hidden',
+            border: '4px solid rgba(0,171,233,0.6)',
+            boxShadow: '0 0 0 8px rgba(0,171,233,0.12), 0 16px 48px rgba(0,171,233,0.35)',
+          }}>
+            <Image src="/assets/photo-Paul.jpg" alt="Paul Morlet" width={220} height={220}
+              style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 4 }}>Paul Morlet</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Fondateur &amp; CEO</div>
+          </div>
+        </div>
+
+        {/* Séparateur & */}
+        <div style={{ display: 'flex', alignItems: 'center', paddingTop: 88 }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, color: 'rgba(255,255,255,0.3)',
+          }}>&amp;</div>
+        </div>
+
+        {/* Xavier Niel */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+          <div style={{
+            width: 220, height: 220, borderRadius: '50%', overflow: 'hidden',
+            border: '4px solid rgba(0,171,233,0.6)',
+            boxShadow: '0 0 0 8px rgba(0,171,233,0.12), 0 16px 48px rgba(0,171,233,0.35)',
+          }}>
+            <Image src="/assets/Photo-Xavier.png" alt="Xavier Niel" width={220} height={220}
+              style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 4 }}>Xavier Niel</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Co-fondateur &amp; Investisseur</div>
+          </div>
+        </div>
+      </div>
+    </TVEntrepriseShell>
+  )
+}
+
 function TVEntreprisePoints({ page, pageIndex, total }) {
   const accent = page.color || '#00abe9'
   const emoji = page.type === 'impact' ? '👁️' : page.type === 'probleme' ? '🔍' : '⚙️'
@@ -1178,6 +1242,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   // Entreprise module types — tous dispatchés pour éviter le VerreAnime
   if (page.type === 'freins')     return <TVEntrepriseFreins   page={page} pageIndex={pageIndex} total={total} freinsResponses={freinsResponses} />
   if (page.type === 'prix')       return <TVEntreprisePrix     page={page} pageIndex={pageIndex} total={total} prixResponses={prixResponses} />
+  if (page.type === 'naissance')  return <TVEntrepriseNaissance page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'impact')     return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'probleme')   return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'machines')   return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
