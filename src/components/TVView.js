@@ -993,7 +993,7 @@ function TVEntrepriseMission({ page, pageIndex, total }) {
 }
 
 // ── TV Content Page (no controls, no avatar) ──────────────────────
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -1003,7 +1003,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase }) {
   }, [page.id])
 
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesPhase={troublesPhase} />
+  if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesPhase={troublesPhase} opticienPlaying={opticienPlaying} audioUnlocked={audioUnlocked} />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
@@ -1378,10 +1378,11 @@ function TVGroupResults({ moduleId, moduleLabel, quiz }) {
   )
 }
 
-// ── TV Troubles List (sans avatar) ───────────────────────────────
-function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhase }) {
-  const [entered, setEntered] = useState(false)
+// ── TV Troubles List avec avatar opticien ────────────────────────
+function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked }) {
+  const [entered, setEntered]   = useState(false)
   const [defVisible, setDefVisible] = useState(0)
+  const videoRef = useRef(null)
 
   useEffect(() => {
     setEntered(false)
@@ -1397,6 +1398,17 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
     )
     return () => timers.forEach(clearTimeout)
   }, [troublesPhase])
+
+  // Contrôle play/pause — attend que l'audio soit débloqué (clic overlay)
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    if (opticienPlaying && audioUnlocked) {
+      v.play().catch(() => {})
+    } else if (!opticienPlaying) {
+      v.pause()
+    }
+  }, [opticienPlaying, audioUnlocked])
 
   return (
     <div style={{
@@ -1452,8 +1464,25 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
         </div>
       </div>
 
-
-
+      {/* Cercle avatar opticien */}
+      <div style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 10 }}>
+        <div style={{
+          width: 200, height: 200, borderRadius: '50%', overflow: 'hidden',
+          border: `4px solid ${opticienPlaying ? 'rgba(34,197,94,0.7)' : 'rgba(0,171,233,0.5)'}`,
+          boxShadow: `0 8px 48px ${opticienPlaying ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
+          background: '#03112a',
+          transition: 'border-color .3s, box-shadow .3s',
+        }}>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            ref={videoRef}
+            src="/assets/avatar_opticien_troubles.mp4"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            playsInline
+            preload="auto"
+          />
+        </div>
+      </div>
     </div>
   )
 }
@@ -1461,14 +1490,18 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
 // ── TV View ───────────────────────────────────────────────────────
 export default function TVView() {
   const { activeModule, modulePage, loading } = useModuleSync(1500)
-  const [tvScreen, setTvScreen]           = useState(null)
-  const [troublesPhase, setTroublesPhase] = useState(1)
+  const [tvScreen, setTvScreen]               = useState(null)
+  const [troublesPhase, setTroublesPhase]     = useState(1)
+  const [opticienPlaying, setOpticienPlaying] = useState(false)
+  const [audioUnlocked, setAudioUnlocked]     = useState(false)
+
   useEffect(() => {
     const poll = async () => {
       try {
         const state = await getSharedState()
         setTvScreen(state?.tv_screen || null)
         setTroublesPhase(state?.troubles_phase || 1)
+        setOpticienPlaying(!!state?.opticien_playing)
       } catch { /* ignore */ }
     }
     poll()
@@ -1505,6 +1538,27 @@ export default function TVView() {
   return (
     <>
       <style>{STYLES}</style>
+
+      {/* Bouton d'activation du son — à cliquer une fois au démarrage de la TV */}
+      {!audioUnlocked && (
+        <div
+          onClick={() => setAudioUnlocked(true)}
+          style={{
+            position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 999, cursor: 'pointer',
+            background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: 24, padding: '10px 22px',
+            display: 'flex', alignItems: 'center', gap: 8,
+            color: '#fff', fontSize: 14, fontWeight: 600,
+            backdropFilter: 'blur(8px)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          }}
+        >
+          <span>🔊</span>
+          <span>Activer le son</span>
+        </div>
+      )}
+
       {loading ? (
         <WelcomeScreen />
       ) : isLobby ? (
@@ -1525,6 +1579,8 @@ export default function TVView() {
           total={moduleData.pages.length}
           moduleLabel={moduleData?.label || ''}
           troublesPhase={troublesPhase}
+          opticienPlaying={opticienPlaying}
+          audioUnlocked={audioUnlocked}
         />
       ) : (
         <WelcomeScreen />

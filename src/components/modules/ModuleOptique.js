@@ -213,32 +213,51 @@ function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext,
 
 // ── Page troubles visuels ─────────────────────────────────────────
 function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
-  const [visibleCount, setVisibleCount] = useState(0)
-  const [phase, setPhase] = useState(1)
+  const [visibleCount, setVisibleCount]   = useState(0)
+  const [phase, setPhase]                 = useState(1)
   const [defVisibleCount, setDefVisibleCount] = useState(0)
+  const [playing, setPlaying]             = useState(false)
+  const videoPreviewRef                   = useRef(null)
 
   // Reset local + Supabase à chaque changement de page
   useEffect(() => {
     setVisibleCount(0)
     setPhase(1)
     setDefVisibleCount(0)
-    setSharedState({ troubles_phase: 1 }).catch(() => {})
+    setPlaying(false)
+    setSharedState({ troubles_phase: 1, opticien_playing: false }).catch(() => {})
     const timers = page.troubles.map((_, i) =>
       setTimeout(() => setVisibleCount(c => Math.max(c, i + 1)), 250 + i * 220)
     )
     return () => timers.forEach(clearTimeout)
   }, [page.id])
 
-  // Phase 2 : révèle les définitions sur TV + formateur
+  // Phase 2 : révèle les définitions + lance l'avatar opticien
   useEffect(() => {
     if (phase !== 2) return
     setDefVisibleCount(0)
-    setSharedState({ troubles_phase: 2 }).catch(() => {})
+    setPlaying(true)
+    setSharedState({ troubles_phase: 2, opticien_playing: true }).catch(() => {})
     const timers = page.troubles.map((_, i) =>
       setTimeout(() => setDefVisibleCount(c => Math.max(c, i + 1)), 500 + i * 900)
     )
     return () => timers.forEach(clearTimeout)
   }, [phase])
+
+  // Synchronise la prévisualisation locale (muet — pour le formateur)
+  useEffect(() => {
+    const v = videoPreviewRef.current
+    if (!v) return
+    v.muted = true
+    if (playing) v.play().catch(() => {})
+    else v.pause()
+  }, [playing])
+
+  const togglePlay = () => {
+    const next = !playing
+    setPlaying(next)
+    setSharedState({ opticien_playing: next }).catch(() => {})
+  }
 
   const handleNext = () => {
     if (phase === 1) setPhase(2)
@@ -351,6 +370,61 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
           ))}
         </div>
       </div>
+
+      {/* Bulle avatar opticien (apparaît en phase 2) */}
+      {phase === 2 && (
+        <div style={{
+          position: 'fixed', bottom: 80, right: 28, zIndex: 50,
+          display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10,
+        }}>
+          {/* Carte */}
+          <div style={{
+            background: 'rgba(10,42,92,0.85)', backdropFilter: 'blur(20px)',
+            border: `1px solid ${playing ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
+            borderRadius: 20, padding: '12px 14px',
+            display: 'flex', alignItems: 'center', gap: 14,
+            boxShadow: `0 8px 32px ${playing ? 'rgba(34,197,94,0.3)' : 'rgba(0,0,0,0.4)'}`,
+            transition: 'border-color .3s, box-shadow .3s',
+          }}>
+            {/* Miniature vidéo (muet) */}
+            <div style={{
+              width: 72, height: 72, borderRadius: 14, overflow: 'hidden', flexShrink: 0,
+              border: `2px solid ${playing ? 'rgba(34,197,94,0.6)' : 'rgba(0,171,233,0.4)'}`,
+              position: 'relative',
+            }}>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video
+                ref={videoPreviewRef}
+                src="/assets/avatar_opticien_troubles.mp4"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                playsInline
+                preload="auto"
+                muted
+              />
+            </div>
+            {/* Infos + bouton */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Opticien</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Avatar · Explication</div>
+              <button
+                onClick={togglePlay}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  background: playing ? 'rgba(34,197,94,0.2)' : 'rgba(0,171,233,0.2)',
+                  border: `1px solid ${playing ? 'rgba(34,197,94,0.5)' : 'rgba(0,171,233,0.5)'}`,
+                  borderRadius: 20, padding: '5px 12px',
+                  fontSize: 12, fontWeight: 700,
+                  color: playing ? '#4ade80' : '#00abe9',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  transition: 'all .2s',
+                }}
+              >
+                {playing ? '⏸ Pause' : '▶ Lecture'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bouton Suivant personnalisé selon la phase */}
       <TrainerNav
