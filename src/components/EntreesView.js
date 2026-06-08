@@ -40,7 +40,8 @@ function parseRHTable(rawText) {
     'Conseiller Vente Optique','Monteur Optique SAV','Opticien Lunetier',
     'Store Manager','Assistant RH','Employé Logistique Polyvalent'
   ]
-  const DATE_RE = /\d{2}\/\d{2}\/\d{4}/
+  // Tableau RH : dates en 09/06/26 ou 09/06/2026
+  const DATE_RE = /\d{2}\/\d{2}\/\d{2,4}/
 
   let text = rawText
     .replace(/Contrat\s*/gi, ' ')
