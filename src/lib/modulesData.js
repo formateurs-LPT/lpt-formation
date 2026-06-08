@@ -102,6 +102,16 @@ export const PDM_QUIZ = [
 
 export const OPTIQUE_PAGES = [
   {
+    id: 'opticien-intro',
+    type: 'opticien-intro',
+    titre: "Présentation de l'opticien",
+    sousTitre: "Notre opticien vous présente le programme du module",
+    color: '#00abe9',
+    points: [
+      { emoji: '👁️', titre: "Les bases de l'optique", texte: "Notre opticien vous guide à travers les troubles visuels, la lecture d'ordonnance et les types de verres." },
+    ],
+  },
+  {
     id: 'troubles-intro',
     type: 'troubles-intro',
     titre: 'Pourquoi porte-t-on des lunettes ?',

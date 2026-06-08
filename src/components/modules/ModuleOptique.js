@@ -139,6 +139,152 @@ function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total,
   )
 }
 
+// ── Page intro opticien ───────────────────────────────────────────
+function OpticienIntroPage({ onBack, onNext, onPrev, isFirst, isLast, pageIndex, total }) {
+  const videoRef = useRef(null)
+  const [playing, setPlaying] = useState(false)
+  const [ended, setEnded] = useState(false)
+
+  useEffect(() => {
+    setPlaying(false)
+    setEnded(false)
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0
+    }
+  }, [])
+
+  const togglePlay = () => {
+    if (!videoRef.current) return
+    if (videoRef.current.paused) {
+      videoRef.current.play().catch(() => {})
+      setPlaying(true)
+      setEnded(false)
+    } else {
+      videoRef.current.pause()
+      setPlaying(false)
+    }
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', position: 'relative',
+    }}>
+      {/* Topbar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '18px 32px', flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Module · Les bases de l&apos;optique</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {Array(total).fill(0).map((_, i) => (
+              <div key={i} style={{
+                height: 5, borderRadius: 3, width: i === pageIndex ? 22 : 5,
+                background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .3s',
+              }} />
+            ))}
+          </div>
+          <button onClick={onBack} style={{
+            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+            color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10,
+            fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+          >✕ Quitter</button>
+        </div>
+      </div>
+
+      {/* Zone principale — 2 colonnes */}
+      <div style={{
+        flex: 1, display: 'flex', alignItems: 'center',
+        padding: '0 64px 100px', gap: 80,
+      }}>
+        {/* Gauche — texte */}
+        <div style={{ flex: 1 }}>
+          <div style={{
+            display: 'inline-block',
+            background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)',
+            borderRadius: 20, padding: '5px 16px',
+            fontSize: 11, fontWeight: 700, color: '#00abe9',
+            textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20,
+          }}>Les bases de l&apos;optique</div>
+
+          <h1 style={{ fontSize: 42, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 16 }}>
+            Présentation<br />de l&apos;opticien
+          </h1>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, maxWidth: 400 }}>
+            Notre opticien vous guide à travers les fondamentaux :
+            troubles visuels, lecture d&apos;ordonnance et types de verres.
+          </p>
+        </div>
+
+        {/* Droite — bulle avatar grosse */}
+        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+          {/* Cercle vidéo grand */}
+          <div style={{
+            width: 280, height: 280, borderRadius: '50%', overflow: 'hidden',
+            border: `4px solid ${playing ? 'rgba(34,197,94,0.7)' : 'rgba(0,171,233,0.5)'}`,
+            boxShadow: `0 0 0 8px ${playing ? 'rgba(34,197,94,0.1)' : 'rgba(0,171,233,0.1)'}, 0 16px 64px rgba(0,0,0,0.4)`,
+            background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 60%, #0d3b7a 100%)',
+            position: 'relative', transition: 'border-color .3s, box-shadow .3s',
+          }}>
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              ref={videoRef}
+              src="/assets/Pr%C3%A9sentation_Opto_.mp4"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              playsInline
+              preload="auto"
+              onEnded={() => { setPlaying(false); setEnded(true) }}
+            />
+          </div>
+
+          {/* Carte info + bouton play */}
+          <div style={{
+            background: 'rgba(10,42,92,0.85)', backdropFilter: 'blur(20px)',
+            border: `1px solid ${playing ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
+            borderRadius: 20, padding: '12px 20px',
+            display: 'flex', alignItems: 'center', gap: 14,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+            transition: 'border-color .3s',
+          }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Opticien</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>Avatar · LPT</div>
+            </div>
+            <button onClick={togglePlay} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7,
+              background: playing ? 'rgba(34,197,94,0.2)' : ended ? 'rgba(245,158,11,0.2)' : 'rgba(0,171,233,0.15)',
+              border: `1px solid ${playing ? 'rgba(34,197,94,0.4)' : ended ? 'rgba(245,158,11,0.4)' : 'rgba(0,171,233,0.35)'}`,
+              borderRadius: 20, padding: '6px 16px',
+              color: playing ? '#4ade80' : ended ? '#fbbf24' : '#00abe9',
+              fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              transition: 'all .2s',
+            }}>
+              <div style={{
+                width: 7, height: 7, borderRadius: '50%',
+                background: playing ? '#4ade80' : ended ? '#fbbf24' : '#00abe9',
+                animation: playing ? 'optiqueHalo 1.5s ease-in-out infinite' : 'none',
+              }} />
+              {playing ? '⏸ Pause' : ended ? '↺ Rejouer' : '▶ Lancer'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
+    </div>
+  )
+}
+
 // ── Page 0 : Titre seul — question orale ─────────────────────────
 function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
   const [visible, setVisible] = useState(false)
@@ -1305,6 +1451,7 @@ export default function ModuleOptique({ pName, onBack }) {
   return (
     <>
       <style>{STYLES}</style>
+      {page.type === 'opticien-intro'    && <OpticienIntroPage               {...navProps} />}
       {page.type === 'troubles-intro'    && <TroublesIntroPage      page={page} {...navProps} />}
       {page.type === 'troubles-list'    && <TroublesPage           page={page} {...navProps} />}
       {page.type === 'correction-scale' && <CorrectionScalePage    page={page} {...navProps} />}
