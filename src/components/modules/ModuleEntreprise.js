@@ -328,7 +328,7 @@ function EntreprisePage({ page, navProps }) {
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: 60, flex: 1 }}>
         {[
           { src: '/assets/photo-Paul.jpg', name: 'Paul Morlet', role: 'Fondateur & CEO', pos: 'center center' },
-          { src: '/assets/Photo-Xavier.png', name: 'Xavier Niel', role: 'Co-fondateur & Investisseur', pos: 'right center' },
+          { src: '/assets/Photo-Xavier.png', name: 'Xavier Niel', role: 'Co-fondateur & Investisseur', pos: '60% top' },
         ].map((person, i) => (
           <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
             <div style={{

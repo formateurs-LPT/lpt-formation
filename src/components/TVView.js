@@ -1010,7 +1010,7 @@ function TVEntrepriseNaissance({ page, pageIndex, total }) {
             boxShadow: '0 0 0 8px rgba(0,171,233,0.12), 0 16px 48px rgba(0,171,233,0.35)',
           }}>
             <Image src="/assets/Photo-Xavier.png" alt="Xavier Niel" width={220} height={220}
-              style={{ objectFit: 'cover', objectPosition: 'right center', width: '100%', height: '100%' }} />
+              style={{ objectFit: 'cover', objectPosition: '60% top', width: '100%', height: '100%' }} />
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 4 }}>Xavier Niel</div>
