@@ -1490,7 +1490,8 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
           width: 200, height: 200, borderRadius: '50%', overflow: 'hidden',
           border: `4px solid ${opticienPlaying ? 'rgba(34,197,94,0.7)' : 'rgba(0,171,233,0.5)'}`,
           boxShadow: `0 8px 48px ${opticienPlaying ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
-          background: '#0a2a5c', transition: 'border-color .3s, box-shadow .3s',
+          background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 60%, #0d3b7a 100%)',
+          transition: 'border-color .3s, box-shadow .3s',
         }}>
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <video
