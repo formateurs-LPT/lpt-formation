@@ -371,53 +371,57 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
         nextLabel={phase === 1 ? 'Révéler les définitions →' : 'Suivant →'}
       />
 
-      {/* Bulle opticien — photo statique + contrôle remote TV */}
+      {/* Bulle opticien — même style que AvatarBubble formateur */}
       <div style={{
-        position: 'fixed', bottom: 28, right: 28, zIndex: 50,
-        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8,
+        position: 'fixed', bottom: 0, right: 0, zIndex: 50,
+        padding: '0 28px 28px 0',
       }}>
         <div style={{
-          width: 148, height: 148, borderRadius: '50%', overflow: 'hidden',
-          border: `3px solid ${playing ? 'rgba(34,197,94,0.7)' : 'rgba(0,171,233,0.6)'}`,
-          boxShadow: `0 8px 32px ${playing ? 'rgba(34,197,94,0.3)' : 'rgba(0,171,233,0.35)'}`,
-          position: 'relative', background: '#0a2a5c',
-          transition: 'border-color .3s, box-shadow .3s',
+          background: 'rgba(10,42,92,0.85)', backdropFilter: 'blur(20px)',
+          border: `1px solid ${playing ? 'rgba(34,197,94,0.5)' : 'rgba(0,171,233,0.3)'}`,
+          borderRadius: 20, padding: '12px 18px 12px 12px',
+          display: 'flex', alignItems: 'center', gap: 14,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          transition: 'border-color .3s',
         }}>
-          {/* Photo statique = premier frame de la vidéo */}
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-          <video
-            src="/assets/avatar_opticien_troubles.mp4"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            playsInline
-            muted
-            preload="metadata"
-          />
-          {/* Bouton play/pause → contrôle la TV via Supabase */}
-          <button
-            onClick={togglePlay}
-            style={{
-              position: 'absolute', bottom: 6, right: 6,
-              width: 34, height: 34, borderRadius: '50%',
-              background: playing ? 'rgba(34,197,94,0.85)' : 'rgba(0,0,0,0.65)',
-              backdropFilter: 'blur(4px)',
-              border: '1px solid rgba(255,255,255,0.25)',
-              color: '#fff', fontSize: 13, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: 'inherit', transition: 'background .2s',
-            }}
-          >
-            {playing ? '⏸' : '▶'}
-          </button>
-        </div>
-        <div style={{
-          background: 'rgba(3,17,42,0.85)', backdropFilter: 'blur(12px)',
-          borderRadius: 10, padding: '5px 14px',
-          fontSize: 11, fontWeight: 600,
-          color: playing ? '#4ade80' : 'rgba(255,255,255,0.6)',
-          border: `1px solid ${playing ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.1)'}`,
-          textAlign: 'center', transition: 'all .3s',
-        }}>
-          {playing ? '▶ Diffusion en cours' : 'Opticien · LPT'}
+          {/* Vidéo en photo statique (premier frame) */}
+          <div style={{
+            width: 80, height: 80, borderRadius: 16, overflow: 'hidden', flexShrink: 0,
+            border: `2.5px solid ${playing ? '#4ade80' : '#00abe9'}`,
+            boxShadow: `0 0 0 4px ${playing ? 'rgba(34,197,94,0.2)' : 'rgba(0,171,233,0.2)'}`,
+            transition: 'border-color .3s, box-shadow .3s',
+          }}>
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              src="/assets/avatar_opticien_troubles.mp4"
+              style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+              playsInline muted preload="metadata"
+            />
+          </div>
+          {/* Infos + bouton play/pause accessible */}
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Opticien</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Avatar · LPT</div>
+            <button
+              onClick={togglePlay}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8,
+                background: playing ? 'rgba(34,197,94,0.2)' : 'rgba(0,171,233,0.15)',
+                border: `1px solid ${playing ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.35)'}`,
+                borderRadius: 20, padding: '5px 14px',
+                color: playing ? '#4ade80' : '#00abe9',
+                fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                fontFamily: 'inherit', transition: 'all .2s',
+              }}
+            >
+              <div style={{
+                width: 7, height: 7, borderRadius: '50%',
+                background: playing ? '#4ade80' : '#00abe9',
+                animation: playing ? 'optiqueHalo 1.5s ease-in-out infinite' : 'none',
+              }} />
+              {playing ? '⏸ En pause sur TV' : '▶ Diffuser sur TV'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
