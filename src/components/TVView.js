@@ -289,8 +289,9 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
 }
 
 // ── TV Ordonnance (type = ordonnance) ────────────────────────────
-function TVOrdonnance({ page, pageIndex, total, moduleLabel }) {
+function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioUnlocked }) {
   const [step, setStep] = useState(0)
+  const videoRef = useRef(null)
 
   useEffect(() => {
     setStep(0)
@@ -299,11 +300,22 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel }) {
     return () => timers.forEach(clearTimeout)
   }, [page.id])
 
+  // Contrôle play/pause — attend que l'audio soit débloqué
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    if (ordoPlaying && audioUnlocked) {
+      v.play().catch(() => {})
+    } else if (!ordoPlaying) {
+      v.pause()
+    }
+  }, [ordoPlaying, audioUnlocked])
+
   const show = (n) => step >= n
   const cellVis = (row, col) => show(row === 0 ? 5 + col : 8 + col)
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -417,6 +429,26 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel }) {
             <div style={{ fontSize: 12, fontWeight: 800, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 1.5 }}>Addition</div>
             <div style={{ fontSize: 32, fontWeight: 800, color: '#4ade80', fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.add}</div>
             <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.35)', marginLeft: 4 }}>Correction presbytie</div>
+          </div>
+
+          {/* Cercle avatar opticien ordonnance */}
+          <div style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 10 }}>
+            <div style={{
+              width: 200, height: 200, borderRadius: '50%', overflow: 'hidden',
+              border: `4px solid ${ordoPlaying ? 'rgba(34,197,94,0.7)' : 'rgba(0,171,233,0.5)'}`,
+              boxShadow: `0 8px 48px ${ordoPlaying ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
+              background: '#03112a',
+              transition: 'border-color .3s, box-shadow .3s',
+            }}>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video
+                ref={videoRef}
+                src="/assets/LectureOrdoAudioOK.mp4"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                playsInline
+                preload="auto"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -993,7 +1025,7 @@ function TVEntrepriseMission({ page, pageIndex, total }) {
 }
 
 // ── TV Content Page (no controls, no avatar) ──────────────────────
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -1005,7 +1037,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesPhase={troublesPhase} opticienPlaying={opticienPlaying} audioUnlocked={audioUnlocked} />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} audioUnlocked={audioUnlocked} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
 
@@ -1493,6 +1525,7 @@ export default function TVView() {
   const [tvScreen, setTvScreen]               = useState(null)
   const [troublesPhase, setTroublesPhase]     = useState(1)
   const [opticienPlaying, setOpticienPlaying] = useState(false)
+  const [ordoPlaying, setOrdoPlaying]         = useState(false)
   const [audioUnlocked, setAudioUnlocked]     = useState(false)
 
   useEffect(() => {
@@ -1502,6 +1535,7 @@ export default function TVView() {
         setTvScreen(state?.tv_screen || null)
         setTroublesPhase(state?.troubles_phase || 1)
         setOpticienPlaying(!!state?.opticien_playing)
+        setOrdoPlaying(!!state?.ordo_playing)
       } catch { /* ignore */ }
     }
     poll()
@@ -1580,6 +1614,7 @@ export default function TVView() {
           moduleLabel={moduleData?.label || ''}
           troublesPhase={troublesPhase}
           opticienPlaying={opticienPlaying}
+          ordoPlaying={ordoPlaying}
           audioUnlocked={audioUnlocked}
         />
       ) : (

@@ -566,14 +566,37 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNex
 
 // ── Page 3 : Lire une ordonnance ─────────────────────────────────
 function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
-  const [step, setStep] = useState(0)
+  const [step, setStep]     = useState(0)
+  const [playing, setPlaying] = useState(false)
+  const videoPreviewRef     = useRef(null)
 
+  // Lance l'avatar automatiquement à l'arrivée sur la page, coupe au départ
   useEffect(() => {
     setStep(0)
+    setPlaying(true)
+    setSharedState({ ordo_playing: true }).catch(() => {})
     const T = [400, 1000, 1600, 2800, 3200, 3500, 3800, 4200, 4500, 4800, 5300]
     const timers = T.map((t, i) => setTimeout(() => setStep(s => Math.max(s, i + 1)), t))
-    return () => timers.forEach(clearTimeout)
+    return () => {
+      timers.forEach(clearTimeout)
+      setSharedState({ ordo_playing: false }).catch(() => {})
+    }
   }, [page.id])
+
+  // Prévisualisation locale muette
+  useEffect(() => {
+    const v = videoPreviewRef.current
+    if (!v) return
+    v.muted = true
+    if (playing) v.play().catch(() => {})
+    else v.pause()
+  }, [playing])
+
+  const togglePlay = () => {
+    const next = !playing
+    setPlaying(next)
+    setSharedState({ ordo_playing: next }).catch(() => {})
+  }
 
   const show = (n) => step >= n
   const cellVis = (row, col) => show(row === 0 ? 5 + col : 8 + col)
@@ -710,6 +733,57 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
       <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
 
       <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
+
+      {/* Bulle avatar opticien ordonnance */}
+      <div style={{
+        position: 'fixed', bottom: 80, right: 28, zIndex: 50,
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10,
+      }}>
+        <div style={{
+          background: 'rgba(10,42,92,0.85)', backdropFilter: 'blur(20px)',
+          border: `1px solid ${playing ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
+          borderRadius: 20, padding: '12px 14px',
+          display: 'flex', alignItems: 'center', gap: 14,
+          boxShadow: `0 8px 32px ${playing ? 'rgba(34,197,94,0.3)' : 'rgba(0,0,0,0.4)'}`,
+          transition: 'border-color .3s, box-shadow .3s',
+        }}>
+          {/* Miniature vidéo (muet) */}
+          <div style={{
+            width: 72, height: 72, borderRadius: 14, overflow: 'hidden', flexShrink: 0,
+            border: `2px solid ${playing ? 'rgba(34,197,94,0.6)' : 'rgba(0,171,233,0.4)'}`,
+          }}>
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              ref={videoPreviewRef}
+              src="/assets/LectureOrdoAudioOK.mp4"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              playsInline
+              preload="auto"
+              muted
+            />
+          </div>
+          {/* Infos + bouton */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Opticien</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Lecture ordonnance</div>
+            <button
+              onClick={togglePlay}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: playing ? 'rgba(34,197,94,0.2)' : 'rgba(0,171,233,0.2)',
+                border: `1px solid ${playing ? 'rgba(34,197,94,0.5)' : 'rgba(0,171,233,0.5)'}`,
+                borderRadius: 20, padding: '5px 12px',
+                fontSize: 12, fontWeight: 700,
+                color: playing ? '#4ade80' : '#00abe9',
+                cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'all .2s',
+              }}
+            >
+              {playing ? '⏸ Pause' : '▶ Lecture'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
