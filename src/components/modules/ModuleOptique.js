@@ -389,6 +389,7 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
             width: 80, height: 80, borderRadius: 16, overflow: 'hidden', flexShrink: 0,
             border: `2.5px solid ${playing ? '#4ade80' : '#00abe9'}`,
             boxShadow: `0 0 0 4px ${playing ? 'rgba(34,197,94,0.2)' : 'rgba(0,171,233,0.2)'}`,
+            background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 60%, #0d3b7a 100%)',
             transition: 'border-color .3s, box-shadow .3s',
           }}>
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
