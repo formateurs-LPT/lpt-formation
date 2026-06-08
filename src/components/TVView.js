@@ -958,6 +958,29 @@ function TVEntrepriseShell({ page, pageIndex, total, children }) {
   )
 }
 
+function TVVideoLPT({ audioUnlocked }) {
+  const videoRef = useRef(null)
+
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    v.muted = !audioUnlocked
+    v.play().catch(() => {})
+    return () => { v.pause() }
+  }, [audioUnlocked])
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <video
+        ref={videoRef}
+        src="/assets/Pr%C3%A9sentation%20LPT.mp4"
+        playsInline
+        style={{ width: '100%', height: '100vh', objectFit: 'contain' }}
+      />
+    </div>
+  )
+}
+
 function TVEntrepriseNaissance({ page, pageIndex, total }) {
   return (
     <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
@@ -1242,6 +1265,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   // Entreprise module types — tous dispatchés pour éviter le VerreAnime
   if (page.type === 'freins')     return <TVEntrepriseFreins   page={page} pageIndex={pageIndex} total={total} freinsResponses={freinsResponses} />
   if (page.type === 'prix')       return <TVEntreprisePrix     page={page} pageIndex={pageIndex} total={total} prixResponses={prixResponses} />
+  if (page.type === 'video-lpt')  return <TVVideoLPT audioUnlocked={audioUnlocked} />
   if (page.type === 'naissance')  return <TVEntrepriseNaissance page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'impact')     return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'probleme')   return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />

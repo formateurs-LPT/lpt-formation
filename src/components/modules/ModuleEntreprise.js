@@ -301,6 +301,29 @@ function EntreprisePage({ page, navProps }) {
     </div>
   )
 
+  // ── VIDÉO LPT ──────────────────────────────────────────────────
+  if (page.type === 'video-lpt') return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '24px 48px 100px', position: 'relative',
+    }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{
+          width: 80, height: 80, borderRadius: '50%',
+          background: 'rgba(0,171,233,0.12)', border: '2px solid rgba(0,171,233,0.25)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 36, margin: '0 auto 24px',
+          boxShadow: '0 0 32px rgba(0,171,233,0.2)',
+        }}>🎬</div>
+        <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 12 }}>Vidéo en cours</div>
+        <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)' }}>Regardez l&apos;écran de diffusion</div>
+      </div>
+      <TrainerNav {...navProps} />
+    </div>
+  )
+
   // ── NAISSANCE ──────────────────────────────────────────────────
   if (page.type === 'naissance') return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px', display: 'flex', flexDirection: 'column' }}>

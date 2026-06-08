@@ -1694,6 +1694,41 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName }) {
   // Prix moyen — saisie numérique
   if (page.type === 'prix') return <PrixInputMobile page={page} pName={pName || 'Anonyme'} />
 
+  // Vidéo LPT — écran passif
+  if (page.type === 'video-lpt') return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px', textAlign: 'center',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={110} height={42}
+        style={{ objectFit: 'contain', marginBottom: 44 }} />
+      <div style={{
+        width: 72, height: 72, borderRadius: '50%',
+        background: 'rgba(0,171,233,0.12)', border: '2px solid rgba(0,171,233,0.25)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 34, marginBottom: 24,
+        boxShadow: '0 0 32px rgba(0,171,233,0.15)',
+      }}>🎬</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.3, marginBottom: 10 }}>
+        Vidéo en cours
+      </div>
+      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 280, marginBottom: 36 }}>
+        Regardez l&apos;écran de diffusion
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{
+            width: 7, height: 7, borderRadius: '50%', background: '#00abe9',
+            animation: `waitDot 1.4s ease-in-out ${i * 0.25}s infinite`,
+          }} />
+        ))}
+      </div>
+    </div>
+  )
+
   // Naissance LPT — écran passif
   if (page.type === 'naissance') return (
     <div style={{
