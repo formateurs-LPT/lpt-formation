@@ -993,7 +993,7 @@ function TVEntrepriseMission({ page, pageIndex, total }) {
 }
 
 // ── TV Content Page (no controls, no avatar) ──────────────────────
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -1003,7 +1003,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   }, [page.id])
 
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesPhase={troublesPhase} opticienPlaying={opticienPlaying} />
+  if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesPhase={troublesPhase} opticienPlaying={opticienPlaying} audioUnlocked={audioUnlocked} />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
@@ -1167,7 +1167,7 @@ function TVModuleLobby({ moduleLabel }) {
 // ── Waiting Screen ────────────────────────────────────────────────
 const APP_URL = 'https://lpt-formation.vercel.app?join=1'
 // ── Écran de bienvenue (avant le QR) ──────────────────────────────
-function WelcomeScreen() {
+function WelcomeScreen({ onAudioUnlock, audioUnlocked }) {
   return (
     <div style={{
       minHeight: '100vh',
@@ -1183,15 +1183,32 @@ function WelcomeScreen() {
         style={{ objectFit: 'contain', animation: 'logoBreathe 3.5s ease-in-out infinite', marginBottom: 52 }}
       />
       <div style={{
-        fontSize: 28,
-        fontWeight: 300,
+        fontSize: 28, fontWeight: 300,
         color: 'rgba(255,255,255,0.55)',
-        letterSpacing: 4,
-        textTransform: 'uppercase',
-        textAlign: 'center',
+        letterSpacing: 4, textTransform: 'uppercase', textAlign: 'center',
+        marginBottom: 48,
       }}>
         Bienvenue chez Lunettes Pour Tous
       </div>
+      {!audioUnlocked && (
+        <button
+          onClick={onAudioUnlock}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.4)',
+            borderRadius: 20, padding: '10px 24px',
+            fontSize: 14, fontWeight: 600, color: '#00abe9',
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          🔊 Activer le son
+        </button>
+      )}
+      {audioUnlocked && (
+        <div style={{ fontSize: 13, color: 'rgba(34,197,94,0.7)', fontWeight: 600 }}>
+          ✓ Son activé
+        </div>
+      )}
     </div>
   )
 }
@@ -1382,9 +1399,8 @@ function TVGroupResults({ moduleId, moduleLabel, quiz }) {
 }
 
 // ── TV Troubles List avec vidéo opticien ─────────────────────────
-function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying }) {
+function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked }) {
   const [entered, setEntered] = useState(false)
-  const [audioUnlocked, setAudioUnlocked] = useState(false)
   const [defVisible, setDefVisible] = useState(0)
   const videoRef = useRef(null)
 
@@ -1419,23 +1435,6 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
       display: 'flex', flexDirection: 'column', position: 'relative',
     }}>
-      {/* Overlay audio — doit être cliqué une fois pour débloquer le son */}
-      {!audioUnlocked && (
-        <div
-          onClick={() => setAudioUnlocked(true)}
-          style={{
-            position: 'absolute', inset: 0, zIndex: 100,
-            background: 'rgba(3,17,42,0.75)', backdropFilter: 'blur(4px)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer',
-          }}
-        >
-          <div style={{ fontSize: 42, marginBottom: 16 }}>🔊</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 8 }}>Cliquez pour activer le son</div>
-          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>Requis par le navigateur pour lire la vidéo avec audio</div>
-        </div>
-      )}
-
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -1513,6 +1512,7 @@ export default function TVView() {
   const [tvScreen, setTvScreen] = useState(null)
   const [troublesPhase, setTroublesPhase] = useState(1)
   const [opticienPlaying, setOpticienPlaying] = useState(false)
+  const [audioUnlocked, setAudioUnlocked] = useState(false)
   useEffect(() => {
     const poll = async () => {
       try {
@@ -1548,7 +1548,7 @@ export default function TVView() {
     return (
       <>
         <style>{STYLES}</style>
-        {tvScreen === 'qr' ? <WaitingScreen /> : <WelcomeScreen />}
+        {tvScreen === 'qr' ? <WaitingScreen /> : <WelcomeScreen onAudioUnlock={() => setAudioUnlocked(true)} audioUnlocked={audioUnlocked} />}
       </>
     )
   }
@@ -1577,6 +1577,7 @@ export default function TVView() {
           moduleLabel={moduleData?.label || ''}
           troublesPhase={troublesPhase}
           opticienPlaying={opticienPlaying}
+          audioUnlocked={audioUnlocked}
         />
       ) : (
         <WelcomeScreen />
