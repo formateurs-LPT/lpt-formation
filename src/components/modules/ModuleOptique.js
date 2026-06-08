@@ -214,30 +214,26 @@ function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext,
 // ── Page troubles visuels ─────────────────────────────────────────
 function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
   const [visibleCount, setVisibleCount] = useState(0)
-  const [phase, setPhase] = useState(1)       // 1 = noms · 2 = définitions
+  const [phase, setPhase] = useState(1)
   const [defVisibleCount, setDefVisibleCount] = useState(0)
-  const [playing, setPlaying] = useState(false)
 
   // Reset local + Supabase à chaque changement de page
   useEffect(() => {
     setVisibleCount(0)
     setPhase(1)
     setDefVisibleCount(0)
-    setPlaying(false)
-    setSharedState({ troubles_phase: 1, opticien_playing: false }).catch(() => {})
+    setSharedState({ troubles_phase: 1 }).catch(() => {})
     const timers = page.troubles.map((_, i) =>
       setTimeout(() => setVisibleCount(c => Math.max(c, i + 1)), 250 + i * 220)
     )
     return () => timers.forEach(clearTimeout)
   }, [page.id])
 
-  // Phase 2 : écrire dans Supabase → TV joue la vidéo + révèle les defs
+  // Phase 2 : révèle les définitions sur TV + formateur
   useEffect(() => {
     if (phase !== 2) return
     setDefVisibleCount(0)
-    // Écrire dans Supabase pour que la TV démarre la vidéo
-    setSharedState({ troubles_phase: 2, opticien_playing: true }).catch(() => {})
-    setPlaying(true)
+    setSharedState({ troubles_phase: 2 }).catch(() => {})
     const timers = page.troubles.map((_, i) =>
       setTimeout(() => setDefVisibleCount(c => Math.max(c, i + 1)), 500 + i * 900)
     )
@@ -247,13 +243,6 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
   const handleNext = () => {
     if (phase === 1) setPhase(2)
     else onNext()
-  }
-
-  // Play/pause remote — contrôle la TV via Supabase
-  const togglePlay = () => {
-    const newPlaying = !playing
-    setPlaying(newPlaying)
-    setSharedState({ opticien_playing: newPlaying }).catch(() => {})
   }
 
   return (
@@ -370,61 +359,6 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
         pageIndex={pageIndex} total={total}
         nextLabel={phase === 1 ? 'Révéler les définitions →' : 'Suivant →'}
       />
-
-      {/* Bulle opticien — même style que AvatarBubble formateur */}
-      <div style={{
-        position: 'fixed', bottom: 0, right: 0, zIndex: 50,
-        padding: '0 28px 28px 0',
-      }}>
-        <div style={{
-          background: 'rgba(10,42,92,0.85)', backdropFilter: 'blur(20px)',
-          border: `1px solid ${playing ? 'rgba(34,197,94,0.5)' : 'rgba(0,171,233,0.3)'}`,
-          borderRadius: 20, padding: '12px 18px 12px 12px',
-          display: 'flex', alignItems: 'center', gap: 14,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-          transition: 'border-color .3s',
-        }}>
-          {/* Vidéo en photo statique (premier frame) */}
-          <div style={{
-            width: 80, height: 80, borderRadius: 16, overflow: 'hidden', flexShrink: 0,
-            border: `2.5px solid ${playing ? '#4ade80' : '#00abe9'}`,
-            boxShadow: `0 0 0 4px ${playing ? 'rgba(34,197,94,0.2)' : 'rgba(0,171,233,0.2)'}`,
-            background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 60%, #0d3b7a 100%)',
-            transition: 'border-color .3s, box-shadow .3s',
-          }}>
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-            <video
-              src="/assets/avatar_opticien_troubles.mp4"
-              style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-              playsInline muted preload="metadata"
-            />
-          </div>
-          {/* Infos + bouton play/pause accessible */}
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Opticien</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Avatar · LPT</div>
-            <button
-              onClick={togglePlay}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8,
-                background: playing ? 'rgba(34,197,94,0.2)' : 'rgba(0,171,233,0.15)',
-                border: `1px solid ${playing ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.35)'}`,
-                borderRadius: 20, padding: '5px 14px',
-                color: playing ? '#4ade80' : '#00abe9',
-                fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                fontFamily: 'inherit', transition: 'all .2s',
-              }}
-            >
-              <div style={{
-                width: 7, height: 7, borderRadius: '50%',
-                background: playing ? '#4ade80' : '#00abe9',
-                animation: playing ? 'optiqueHalo 1.5s ease-in-out infinite' : 'none',
-              }} />
-              {playing ? '⏸ En pause sur TV' : '▶ Diffuser sur TV'}
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
