@@ -430,26 +430,26 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
             <div style={{ fontSize: 32, fontWeight: 800, color: '#4ade80', fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.add}</div>
             <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.35)', marginLeft: 4 }}>Correction presbytie</div>
           </div>
+        </div>
+      </div>
 
-          {/* Cercle avatar opticien ordonnance */}
-          <div style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 10 }}>
-            <div style={{
-              width: 200, height: 200, borderRadius: '50%', overflow: 'hidden',
-              border: `4px solid ${ordoPlaying ? 'rgba(34,197,94,0.7)' : 'rgba(0,171,233,0.5)'}`,
-              boxShadow: `0 8px 48px ${ordoPlaying ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
-              background: '#03112a',
-              transition: 'border-color .3s, box-shadow .3s',
-            }}>
-              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-              <video
-                ref={videoRef}
-                src="/assets/LectureOrdoAudioOK.mp4"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                playsInline
-                preload="auto"
-              />
-            </div>
-          </div>
+      {/* Cercle avatar opticien — en dehors de toute div à opacité variable */}
+      <div style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 10 }}>
+        <div style={{
+          width: 200, height: 200, borderRadius: '50%', overflow: 'hidden',
+          border: `4px solid ${ordoPlaying ? 'rgba(34,197,94,0.7)' : 'rgba(0,171,233,0.5)'}`,
+          boxShadow: `0 8px 48px ${ordoPlaying ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
+          background: '#03112a',
+          transition: 'border-color .3s, box-shadow .3s',
+        }}>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            ref={videoRef}
+            src="/assets/LectureOrdoAudioOK.mp4"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            playsInline
+            preload="auto"
+          />
         </div>
       </div>
     </div>

@@ -732,8 +732,6 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
       {/* Navigation */}
       <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
 
-      <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
-
       {/* Bulle avatar opticien ordonnance */}
       <div style={{
         position: 'fixed', bottom: 80, right: 28, zIndex: 50,
