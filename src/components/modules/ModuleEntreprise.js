@@ -315,13 +315,12 @@ function EntreprisePage({ page, navProps }) {
         {page.stats.map((stat, i) => (
           <div key={i} style={{
             display: 'flex', alignItems: 'center', gap: 20,
-            background: `${stat.color}0d`, border: `1px solid ${stat.color}30`,
+            background: 'rgba(255,255,255,0.03)', border: `1px solid rgba(255,255,255,0.08)`,
             borderLeft: `4px solid ${stat.color}`,
             borderRadius: 16, padding: '18px 24px',
           }}>
-            <span style={{ fontSize: 28, flexShrink: 0 }}>{stat.emoji}</span>
-            <div style={{ fontSize: 26, fontWeight: 900, color: stat.color, minWidth: 120 }}>{stat.value}</div>
-            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>{stat.label}</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', minWidth: 130 }}>{stat.value}</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>{stat.label}</div>
           </div>
         ))}
       </div>

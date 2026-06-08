@@ -322,11 +322,11 @@ export const ENTREPRISE_PAGES = [
     titre: "Lunettes pour Tous aujourd'hui",
     color: '#00abe9',
     stats: [
-      { value: '32',          label: 'magasins en France',              color: '#00abe9', emoji: '🏪' },
-      { value: '🇫🇷 🇧🇪',      label: 'France & Belgique',              color: '#4ade80', emoji: '📍' },
-      { value: '+1 000',      label: 'collaborateurs',                   color: '#f59e0b', emoji: '👥' },
-      { value: 'Des milliers', label: 'de clients équipés chaque jour',  color: '#a78bfa', emoji: '👁️' },
-      { value: '10 min',      label: 'la promesse LPT',                  color: '#f472b6', emoji: '⚡' },
+      { value: '32',           label: 'magasins en France',             color: '#00abe9' },
+      { value: 'France & Belgique', label: 'présence géographique',     color: '#4ade80' },
+      { value: '+1 000',       label: 'collaborateurs',                  color: '#f59e0b' },
+      { value: 'Des milliers', label: 'de clients équipés chaque jour', color: '#a78bfa' },
+      { value: '10 minutes',   label: 'la promesse LPT',                color: '#f472b6' },
     ],
   },
 ]

@@ -1716,13 +1716,12 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName }) {
         {page.stats.map((stat, i) => (
           <div key={i} style={{
             display: 'flex', alignItems: 'center', gap: 14,
-            background: `${stat.color}0d`, border: `1px solid ${stat.color}30`,
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
             borderLeft: `4px solid ${stat.color}`,
             borderRadius: 14, padding: '14px 16px',
           }}>
-            <span style={{ fontSize: 22, flexShrink: 0 }}>{stat.emoji}</span>
-            <div style={{ fontSize: 20, fontWeight: 900, color: stat.color, minWidth: 90 }}>{stat.value}</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 500, lineHeight: 1.4 }}>{stat.label}</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', minWidth: 90 }}>{stat.value}</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontWeight: 500, lineHeight: 1.4 }}>{stat.label}</div>
           </div>
         ))}
       </div>

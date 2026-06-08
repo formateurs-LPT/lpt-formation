@@ -1006,20 +1006,18 @@ function TVEntrepriseChiffres({ page, pageIndex, total }) {
         {page.stats.map((stat, i) => (
           <div key={i} style={{
             width: 'calc(33% - 14px)', minWidth: 200, maxWidth: 280,
-            background: `${stat.color}12`,
-            border: `2px solid ${stat.color}40`,
-            borderRadius: 20, padding: '28px 24px',
+            background: 'rgba(255,255,255,0.04)',
+            border: `2px solid ${stat.color}55`,
+            borderRadius: 20, padding: '32px 28px',
             textAlign: 'center',
             opacity: i < visible ? 1 : 0,
             transform: i < visible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
             transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
-            boxShadow: i < visible ? `0 8px 32px ${stat.color}20` : 'none',
           }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>{stat.emoji}</div>
-            <div style={{ fontSize: 30, fontWeight: 900, color: stat.color, lineHeight: 1.1, marginBottom: 8 }}>
+            <div style={{ fontSize: 34, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 10 }}>
               {stat.value}
             </div>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', fontWeight: 500, lineHeight: 1.4 }}>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', fontWeight: 500, lineHeight: 1.4 }}>
               {stat.label}
             </div>
           </div>
