@@ -316,12 +316,6 @@ export const ENTREPRISE_PAGES = [
     sousTitre: 'Mission claire, rendre la vue accessible à tous',
     color: '#00abe9',
   },
-  {
-    id: 'video-lpt',
-    type: 'video-lpt',
-    titre: 'Présentation Lunettes pour Tous',
-    color: '#00abe9',
-  },
 ]
 
 export const MODULE_DATA = {
