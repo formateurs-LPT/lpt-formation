@@ -1694,6 +1694,41 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName }) {
   // Prix moyen — saisie numérique
   if (page.type === 'prix') return <PrixInputMobile page={page} pName={pName || 'Anonyme'} />
 
+  // Chiffres clés LPT
+  if (page.type === 'chiffres') return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '32px 20px 40px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIndex ? 16 : 4, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />
+          ))}
+        </div>
+      </div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Chiffres clés</div>
+      <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 24, lineHeight: 1.3 }}>{page.titre}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {page.stats.map((stat, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 14,
+            background: `${stat.color}0d`, border: `1px solid ${stat.color}30`,
+            borderLeft: `4px solid ${stat.color}`,
+            borderRadius: 14, padding: '14px 16px',
+          }}>
+            <span style={{ fontSize: 22, flexShrink: 0 }}>{stat.emoji}</span>
+            <div style={{ fontSize: 20, fontWeight: 900, color: stat.color, minWidth: 90 }}>{stat.value}</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 500, lineHeight: 1.4 }}>{stat.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
   // Vidéo LPT — écran passif
   if (page.type === 'video-lpt') return (
     <div style={{

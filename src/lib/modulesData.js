@@ -316,6 +316,19 @@ export const ENTREPRISE_PAGES = [
     sousTitre: 'Mission claire, rendre la vue accessible à tous',
     color: '#00abe9',
   },
+  {
+    id: 'chiffres',
+    type: 'chiffres',
+    titre: "Lunettes pour Tous aujourd'hui",
+    color: '#00abe9',
+    stats: [
+      { value: '32',          label: 'magasins en France',              color: '#00abe9', emoji: '🏪' },
+      { value: '🇫🇷 🇧🇪',      label: 'France & Belgique',              color: '#4ade80', emoji: '📍' },
+      { value: '+1 000',      label: 'collaborateurs',                   color: '#f59e0b', emoji: '👥' },
+      { value: 'Des milliers', label: 'de clients équipés chaque jour',  color: '#a78bfa', emoji: '👁️' },
+      { value: '10 min',      label: 'la promesse LPT',                  color: '#f472b6', emoji: '⚡' },
+    ],
+  },
 ]
 
 export const MODULE_DATA = {

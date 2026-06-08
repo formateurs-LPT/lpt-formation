@@ -981,6 +981,54 @@ function TVVideoLPT({ audioUnlocked }) {
   )
 }
 
+function TVEntrepriseChiffres({ page, pageIndex, total }) {
+  const [visible, setVisible] = useState(0)
+  useEffect(() => {
+    setVisible(0)
+    const timers = page.stats.map((_, i) =>
+      setTimeout(() => setVisible(v => Math.max(v, i + 1)), 600 + i * 700)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [page.id])
+
+  return (
+    <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
+      {/* Titre */}
+      <div style={{ textAlign: 'center', marginBottom: 40 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+          Chiffres clés
+        </div>
+        <h1 style={{ fontSize: 38, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>{page.titre}</h1>
+      </div>
+
+      {/* Grille de tuiles */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, justifyContent: 'center', flex: 1, alignContent: 'center' }}>
+        {page.stats.map((stat, i) => (
+          <div key={i} style={{
+            width: 'calc(33% - 14px)', minWidth: 200, maxWidth: 280,
+            background: `${stat.color}12`,
+            border: `2px solid ${stat.color}40`,
+            borderRadius: 20, padding: '28px 24px',
+            textAlign: 'center',
+            opacity: i < visible ? 1 : 0,
+            transform: i < visible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
+            transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+            boxShadow: i < visible ? `0 8px 32px ${stat.color}20` : 'none',
+          }}>
+            <div style={{ fontSize: 32, marginBottom: 10 }}>{stat.emoji}</div>
+            <div style={{ fontSize: 30, fontWeight: 900, color: stat.color, lineHeight: 1.1, marginBottom: 8 }}>
+              {stat.value}
+            </div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', fontWeight: 500, lineHeight: 1.4 }}>
+              {stat.label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </TVEntrepriseShell>
+  )
+}
+
 function TVEntrepriseNaissance({ page, pageIndex, total }) {
   return (
     <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
@@ -1266,6 +1314,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'freins')     return <TVEntrepriseFreins   page={page} pageIndex={pageIndex} total={total} freinsResponses={freinsResponses} />
   if (page.type === 'prix')       return <TVEntreprisePrix     page={page} pageIndex={pageIndex} total={total} prixResponses={prixResponses} />
   if (page.type === 'video-lpt')  return <TVVideoLPT audioUnlocked={audioUnlocked} />
+  if (page.type === 'chiffres')   return <TVEntrepriseChiffres  page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'naissance')  return <TVEntrepriseNaissance page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'impact')     return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'probleme')   return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
