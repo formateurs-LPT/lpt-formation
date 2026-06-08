@@ -47,7 +47,7 @@ function PaulBubble({ script }) {
 }
 
 // ── Nav formateur ─────────────────────────────────────────────────
-function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast, quizLaunched, onLaunchQuiz }) {
+function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast }) {
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
@@ -75,14 +75,6 @@ function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast,
       </div>
 
       <div style={{ display: 'flex', gap: 10 }}>
-        {isLast && !quizLaunched && (
-          <button onClick={onLaunchQuiz} style={{
-            background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
-            border: 'none', color: '#fff', padding: '9px 20px', borderRadius: 10,
-            fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            boxShadow: '0 4px 16px rgba(124,58,237,0.4)',
-          }}>🧠 Lancer le quiz</button>
-        )}
         <button onClick={onPrev} disabled={isFirst} style={{
           background: isFirst ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
           border: '1px solid rgba(255,255,255,0.12)', color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff',
@@ -189,6 +181,91 @@ function FreinsPage({ page, navProps }) {
   )
 }
 
+// ── Page interactive : prix moyen ─────────────────────────────────
+function PrixPage({ page, navProps }) {
+  const [responses, setResponses] = useState({})
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const state = await getSharedState()
+        setResponses(state?.prix_responses || {})
+      } catch { /* ignore */ }
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [])
+
+  const entries = Object.entries(responses)
+
+  const clearAll = () => {
+    setSharedState({ prix_responses: {} }).catch(() => {})
+    setResponses({})
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      padding: '24px 48px 100px', position: 'relative',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Présentation de l&apos;entreprise · Question ouverte</span>
+        </div>
+        <button onClick={clearAll} style={{
+          background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+          color: '#f87171', borderRadius: 20, padding: '6px 16px',
+          fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .2s',
+        }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.22)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.12)'}
+        >🗑 Effacer les réponses</button>
+      </div>
+
+      {/* Question */}
+      <div style={{ marginBottom: 36 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+          Question ouverte · En direct
+        </div>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1.35, maxWidth: 720 }}>{page.titre}</h1>
+      </div>
+
+      {/* Réponses */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '48vh', overflowY: 'auto', paddingRight: 4 }}>
+        {entries.length === 0 ? (
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, fontStyle: 'italic', padding: '12px 0' }}>
+            En attente des réponses des participants…
+          </div>
+        ) : entries.map(([pName, resp], i) => (
+          <div key={pName} style={{
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            borderLeft: `3px solid ${BUBBLE_COLORS[i % BUBBLE_COLORS.length]}`,
+            borderRadius: 12, padding: '12px 18px',
+            display: 'flex', alignItems: 'center', gap: 14,
+            animation: 'chipIn 0.35s ease both',
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 700, minWidth: 80, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length] }}>{pName}</span>
+            <span style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{resp.text}</span>
+          </div>
+        ))}
+      </div>
+
+      {entries.length > 0 && (
+        <div style={{ marginTop: 16, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
+          {entries.length} réponse{entries.length > 1 ? 's' : ''} reçue{entries.length > 1 ? 's' : ''}
+        </div>
+      )}
+
+      <TrainerNav {...navProps} />
+    </div>
+  )
+}
+
 // ── Rendu de page ─────────────────────────────────────────────────
 function EntreprisePage({ page, navProps }) {
   const accent = page.color || '#00abe9'
@@ -226,6 +303,9 @@ function EntreprisePage({ page, navProps }) {
 
   // ── FREINS ─────────────────────────────────────────────────────
   if (page.type === 'freins') return <FreinsPage page={page} navProps={navProps} />
+
+  // ── PRIX ────────────────────────────────────────────────────────
+  if (page.type === 'prix') return <PrixPage page={page} navProps={navProps} />
 
   // ── IMPACT ─────────────────────────────────────────────────────
   if (page.type === 'impact') {
@@ -763,9 +843,6 @@ function Lobby({ onStart, onBack }) {
 export default function ModuleEntreprise({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
-  const [quizLaunched, setQuizLaunched] = useState(false)
-  const [quizQ, setQuizQ] = useState(0)
-  const [showGroupResults, setShowGroupResults] = useState(false)
 
   useEffect(() => {
     sbUpdate('sessions', { active_module: 'entreprise', module_page: -1 }, `code=eq.${SESSION_CODE}`)
@@ -782,31 +859,12 @@ export default function ModuleEntreprise({ pName, onBack }) {
     onBack()
   }
 
-  const handleLaunchQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'entreprise', module_page: 100 }, `code=eq.${SESSION_CODE}`)
-    setQuizQ(0)
-    setQuizLaunched(true)
-  }
-
-  const handleNextQuestion = async () => {
-    const next = quizQ + 1
-    await sbUpdate('sessions', { active_module: 'entreprise', module_page: 100 + next }, `code=eq.${SESSION_CODE}`)
-    setQuizQ(next)
-  }
-
-  const handleEndQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'entreprise', module_page: 200 }, `code=eq.${SESSION_CODE}`)
-    setShowGroupResults(true)
-  }
-
   const handleTerminateModule = async () => {
     await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${SESSION_CODE}`)
     onBack()
   }
 
   if (!started) return <Lobby onStart={() => setStarted(true)} onBack={handleBack} />
-  if (showGroupResults) return <GroupResultsView onTerminate={handleTerminateModule} />
-  if (quizLaunched) return <QuizController quizQ={quizQ} onNext={handleNextQuestion} onEnd={handleEndQuiz} onBack={handleEndQuiz} />
 
   const page = PAGES[pageIndex]
   const navProps = {
@@ -817,8 +875,6 @@ export default function ModuleEntreprise({ pName, onBack }) {
     onNext: () => setPageIndex(i => Math.min(i + 1, PAGES.length - 1)),
     isFirst: pageIndex === 0,
     isLast: pageIndex === PAGES.length - 1,
-    quizLaunched,
-    onLaunchQuiz: handleLaunchQuiz,
   }
 
   return <EntreprisePage page={page} navProps={navProps} />
