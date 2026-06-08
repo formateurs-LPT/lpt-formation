@@ -395,7 +395,7 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
               <video
                 ref={videoPreviewRef}
-                src="/assets/avatar_opticien_troubles.mp4"
+                src="/assets/Problèmes_de_vue_Audio_OK.mp4"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 playsInline
                 preload="auto"
