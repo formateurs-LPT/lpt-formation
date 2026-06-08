@@ -1241,19 +1241,19 @@ function WelcomeScreen() {
 
       {/* Texte */}
       <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
         position: 'relative', zIndex: 1,
       }}>
         <div style={{
-          fontSize: 15, fontWeight: 500,
-          color: 'rgba(255,255,255,0.35)',
-          letterSpacing: 6, textTransform: 'uppercase',
+          fontSize: 22, fontWeight: 500,
+          color: 'rgba(255,255,255,0.45)',
+          letterSpacing: 8, textTransform: 'uppercase',
         }}>Bienvenue chez</div>
         <div style={{
-          fontSize: 38, fontWeight: 800,
+          fontSize: 72, fontWeight: 800,
           color: '#ffffff',
-          letterSpacing: 1, textAlign: 'center',
-          lineHeight: 1.1,
+          letterSpacing: 2, textAlign: 'center',
+          lineHeight: 1.05,
         }}>Lunettes Pour Tous</div>
       </div>
     </div>
