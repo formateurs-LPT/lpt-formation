@@ -932,6 +932,50 @@ function TVEntreprisePrix({ page, pageIndex, total, prixResponses }) {
   )
 }
 
+function TVEntrepriseVentesOpticien({ page, pageIndex, total, ventesResponses }) {
+  const entries = Object.entries(ventesResponses || {})
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Présentation de l&apos;entreprise</span>
+        </div>
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{ height: 5, borderRadius: 3, width: i === pageIndex ? 22 : 5, background: i === pageIndex ? '#a78bfa' : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />
+          ))}
+        </div>
+      </div>
+      <div style={{ textAlign: 'center', padding: '28px 160px 0', position: 'relative', zIndex: 2 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 18 }}>
+          Question ouverte
+        </div>
+        <h1 style={{ fontSize: 44, fontWeight: 800, color: '#fff', lineHeight: 1.25 }}>{page.titre}</h1>
+        {entries.length === 0 && (
+          <div style={{ marginTop: 28, fontSize: 16, color: 'rgba(255,255,255,0.28)', fontStyle: 'italic' }}>
+            En attente des réponses…
+          </div>
+        )}
+      </div>
+      {entries.map(([pName, resp], i) => (
+        <div key={pName} style={{
+          position: 'absolute', left: `${resp.x}%`, top: `${resp.y}%`,
+          background: 'rgba(5,20,55,0.88)', border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
+          borderRadius: 22, padding: '14px 24px', backdropFilter: 'blur(16px)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          animation: 'bubbleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+          zIndex: 5, display: 'flex', alignItems: 'baseline', gap: 4,
+        }}>
+          <span style={{ fontSize: 32, fontWeight: 900, color: '#fff' }}>{resp.text}</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: '#a78bfa' }}>paires</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── TV Entreprise helpers ─────────────────────────────────────────
 function TVEntrepriseShell({ page, pageIndex, total, children }) {
   const [entered, setEntered] = useState(false)
@@ -1292,7 +1336,7 @@ function TVEntrepriseMission({ page, pageIndex, total }) {
 }
 
 // ── TV Content Page (no controls, no avatar) ──────────────────────
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -1312,6 +1356,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'freins')     return <TVEntrepriseFreins   page={page} pageIndex={pageIndex} total={total} freinsResponses={freinsResponses} />
   if (page.type === 'prix')       return <TVEntreprisePrix     page={page} pageIndex={pageIndex} total={total} prixResponses={prixResponses} />
   if (page.type === 'video-lpt')  return <TVVideoLPT audioUnlocked={audioUnlocked} />
+  if (page.type === 'ventes-opticien') return <TVEntrepriseVentesOpticien page={page} pageIndex={pageIndex} total={total} ventesResponses={ventesResponses} />
   if (page.type === 'chiffres')   return <TVEntrepriseChiffres  page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'naissance')  return <TVEntrepriseNaissance page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'impact')     return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
@@ -1833,8 +1878,9 @@ export default function TVView() {
   const [opticienPlaying, setOpticienPlaying] = useState(false)
   const [ordoPlaying, setOrdoPlaying]         = useState(false)
   const [audioUnlocked, setAudioUnlocked]     = useState(false)
-  const [freinsResponses, setFreinsResponses] = useState({})
-  const [prixResponses, setPrixResponses]     = useState({})
+  const [freinsResponses, setFreinsResponses]       = useState({})
+  const [prixResponses, setPrixResponses]           = useState({})
+  const [ventesResponses, setVentesResponses]       = useState({})
 
   // À l'ouverture de la TV : remet tv_screen à null pour toujours afficher la bienvenue
   useEffect(() => {
@@ -1855,6 +1901,7 @@ export default function TVView() {
         setOrdoPlaying(!!state?.ordo_playing)
         setFreinsResponses(state?.freins_responses || {})
         setPrixResponses(state?.prix_responses || {})
+        setVentesResponses(state?.ventes_responses || {})
       } catch { /* ignore */ }
     }
     poll()
@@ -1937,6 +1984,7 @@ export default function TVView() {
           audioUnlocked={audioUnlocked}
           freinsResponses={freinsResponses}
           prixResponses={prixResponses}
+          ventesResponses={ventesResponses}
         />
       ) : (
         <WelcomeScreen />

@@ -266,6 +266,62 @@ function PrixPage({ page, navProps }) {
   )
 }
 
+// ── Page interactive : ventes opticien ───────────────────────────
+function VentesOpticienPage({ page, navProps }) {
+  const [responses, setResponses] = useState({})
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const state = await getSharedState()
+        setResponses(state?.ventes_responses || {})
+      } catch { /* ignore */ }
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [])
+
+  const entries = Object.entries(responses)
+  const clearAll = () => {
+    setSharedState({ ventes_responses: {} }).catch(() => {})
+    setResponses({})
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px', position: 'relative' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Présentation de l&apos;entreprise · Question ouverte</span>
+        </div>
+        <button onClick={clearAll} style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: 20, padding: '6px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.22)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.12)'}
+        >🗑 Effacer les réponses</button>
+      </div>
+      <div style={{ marginBottom: 36 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Question ouverte · En direct</div>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1.35, maxWidth: 720 }}>{page.titre}</h1>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '48vh', overflowY: 'auto' }}>
+        {entries.length === 0 ? (
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, fontStyle: 'italic', padding: '12px 0' }}>En attente des réponses des participants…</div>
+        ) : entries.map(([pName, resp], i) => (
+          <div key={pName} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderLeft: `3px solid ${BUBBLE_COLORS[i % BUBBLE_COLORS.length]}`, borderRadius: 12, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 14, animation: 'chipIn 0.35s ease both' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, minWidth: 80, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length] }}>{pName}</span>
+            <span style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{resp.text}</span>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>paires / jour</span>
+          </div>
+        ))}
+      </div>
+      {entries.length > 0 && <div style={{ marginTop: 16, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{entries.length} réponse{entries.length > 1 ? 's' : ''} reçue{entries.length > 1 ? 's' : ''}</div>}
+      <TrainerNav {...navProps} />
+    </div>
+  )
+}
+
 // ── Rendu de page ─────────────────────────────────────────────────
 function EntreprisePage({ page, navProps }) {
   const accent = page.color || '#00abe9'
@@ -300,6 +356,9 @@ function EntreprisePage({ page, navProps }) {
       <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{page.sousTitre}</p>
     </div>
   )
+
+  // ── VENTES OPTICIEN ────────────────────────────────────────────
+  if (page.type === 'ventes-opticien') return <VentesOpticienPage page={page} navProps={navProps} />
 
   // ── CHIFFRES CLÉS ──────────────────────────────────────────────
   if (page.type === 'chiffres') return (

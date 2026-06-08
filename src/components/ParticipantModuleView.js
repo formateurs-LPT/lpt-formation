@@ -1572,6 +1572,67 @@ function FreinsInputMobile({ page, pName }) {
   )
 }
 
+// ── Ventes opticien — saisie numérique participant ────────────────
+function VentesOpticienMobile({ page, pName }) {
+  const [value, setValue]              = useState('')
+  const [submitted, setSubmitted]      = useState(false)
+  const [submittedValue, setSubmittedValue] = useState('')
+  const [sending, setSending]          = useState(false)
+
+  const handleSend = async () => {
+    if (!value.trim() || sending) return
+    setSending(true)
+    try {
+      const x = Math.floor(Math.random() * 65) + 3
+      const y = Math.floor(Math.random() * 38) + 42
+      const state = await getSharedState()
+      const current = state?.ventes_responses || {}
+      await setSharedState({ ventes_responses: { ...current, [pName]: { text: value.trim(), x, y } } })
+      setSubmittedValue(value.trim())
+      setSubmitted(true)
+    } catch { /* ignore */ }
+    setSending(false)
+  }
+
+  const handleModify = () => { setValue(submittedValue); setSubmitted(false) }
+
+  return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', display: 'flex', flexDirection: 'column', padding: '52px 24px 40px' }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain', marginBottom: 36 }} />
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>Question ouverte</div>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.45, marginBottom: 32 }}>{page.titre}</h2>
+
+      {submitted ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 16, padding: '16px 20px' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#4ade80', marginBottom: 8 }}>✓ Réponse envoyée</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#fff' }}>
+              {submittedValue} <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>paires / jour</span>
+            </div>
+          </div>
+          <button onClick={handleModify} style={{ background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', color: '#a78bfa', borderRadius: 14, padding: '14px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✏️ Modifier ma réponse</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 16, padding: '0 20px', overflow: 'hidden' }}>
+            <input
+              type="number" inputMode="numeric" pattern="[0-9]*"
+              value={value}
+              onChange={e => setValue(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="0"
+              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 36, fontWeight: 900, padding: '20px 0', fontFamily: 'inherit', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+            />
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.4)', paddingLeft: 8, whiteSpace: 'nowrap' }}>paires / jour</span>
+          </div>
+          <button onClick={handleSend} disabled={!value.trim() || sending} style={{ background: value.trim() ? '#a78bfa' : 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 14, padding: '16px', fontSize: 16, fontWeight: 700, color: '#fff', cursor: value.trim() ? 'pointer' : 'default', fontFamily: 'inherit', transition: 'background .2s', opacity: sending ? 0.7 : 1 }}>
+            {sending ? 'Envoi en cours…' : 'Envoyer ma réponse →'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Prix moyen — saisie numérique participant ─────────────────────
 function PrixInputMobile({ page, pName }) {
   const [value, setValue]              = useState('')
@@ -1693,6 +1754,11 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName }) {
 
   // Prix moyen — saisie numérique
   if (page.type === 'prix') return <PrixInputMobile page={page} pName={pName || 'Anonyme'} />
+
+  // Ventes opticien — saisie numérique
+  if (page.type === 'ventes-opticien') {
+    return <VentesOpticienMobile page={page} pName={pName || 'Anonyme'} />
+  }
 
   // Chiffres clés LPT
   if (page.type === 'chiffres') return (
