@@ -327,8 +327,8 @@ function EntreprisePage({ page, navProps }) {
       {/* Deux fondateurs côte à côte */}
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: 60, flex: 1 }}>
         {[
-          { src: '/assets/photo-Paul.jpg', name: 'Paul Morlet', role: 'Fondateur & CEO' },
-          { src: '/assets/Photo-Xavier.png', name: 'Xavier Niel', role: 'Co-fondateur & Investisseur' },
+          { src: '/assets/photo-Paul.jpg', name: 'Paul Morlet', role: 'Fondateur & CEO', pos: 'center center' },
+          { src: '/assets/Photo-Xavier.png', name: 'Xavier Niel', role: 'Co-fondateur & Investisseur', pos: 'right center' },
         ].map((person, i) => (
           <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
             <div style={{
@@ -337,7 +337,7 @@ function EntreprisePage({ page, navProps }) {
               boxShadow: '0 0 0 6px rgba(0,171,233,0.1), 0 12px 40px rgba(0,171,233,0.3)',
             }}>
               <Image src={person.src} alt={person.name} width={180} height={180}
-                style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                style={{ objectFit: 'cover', objectPosition: person.pos || 'center center', width: '100%', height: '100%' }} />
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{person.name}</div>
