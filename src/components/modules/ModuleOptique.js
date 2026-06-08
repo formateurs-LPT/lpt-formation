@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbSelect, SESSION_CODE } from '@/lib/supabase'
+import { sbUpdate, sbSelect, SESSION_CODE, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, OPTIQUE_QUIZ } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
@@ -214,36 +214,30 @@ function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext,
 // ── Page troubles visuels ─────────────────────────────────────────
 function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
   const [visibleCount, setVisibleCount] = useState(0)
-  const [phase, setPhase] = useState(1)          // 1 = noms seulement · 2 = définitions révélées
+  const [phase, setPhase] = useState(1)       // 1 = noms · 2 = définitions
   const [defVisibleCount, setDefVisibleCount] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const videoRef = useRef(null)
 
-  // Reset à chaque changement de page
+  // Reset local + Supabase à chaque changement de page
   useEffect(() => {
     setVisibleCount(0)
     setPhase(1)
     setDefVisibleCount(0)
     setPlaying(false)
-    if (videoRef.current) {
-      videoRef.current.pause()
-      videoRef.current.currentTime = 0
-    }
+    setSharedState({ troubles_phase: 1, opticien_playing: false }).catch(() => {})
     const timers = page.troubles.map((_, i) =>
       setTimeout(() => setVisibleCount(c => Math.max(c, i + 1)), 250 + i * 220)
     )
     return () => timers.forEach(clearTimeout)
   }, [page.id])
 
-  // Phase 2 : lancer la vidéo + révéler les définitions en stagger
+  // Phase 2 : écrire dans Supabase → TV joue la vidéo + révèle les defs
   useEffect(() => {
     if (phase !== 2) return
     setDefVisibleCount(0)
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0
-      videoRef.current.play().catch(() => {})
-      setPlaying(true)
-    }
+    // Écrire dans Supabase pour que la TV démarre la vidéo
+    setSharedState({ troubles_phase: 2, opticien_playing: true }).catch(() => {})
+    setPlaying(true)
     const timers = page.troubles.map((_, i) =>
       setTimeout(() => setDefVisibleCount(c => Math.max(c, i + 1)), 500 + i * 900)
     )
@@ -251,19 +245,15 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
   }, [phase])
 
   const handleNext = () => {
-    if (phase === 1) setPhase(2)   // 1er clic → révèle les defs, ne navigue pas
-    else onNext()                   // 2e clic → navigation réelle
+    if (phase === 1) setPhase(2)
+    else onNext()
   }
 
+  // Play/pause remote — contrôle la TV via Supabase
   const togglePlay = () => {
-    if (!videoRef.current) return
-    if (videoRef.current.paused) {
-      videoRef.current.play().catch(() => {})
-      setPlaying(true)
-    } else {
-      videoRef.current.pause()
-      setPlaying(false)
-    }
+    const newPlaying = !playing
+    setPlaying(newPlaying)
+    setSharedState({ opticien_playing: newPlaying }).catch(() => {})
   }
 
   return (
@@ -381,36 +371,39 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
         nextLabel={phase === 1 ? 'Révéler les définitions →' : 'Suivant →'}
       />
 
-      {/* Bulle vidéo avatar opticien */}
+      {/* Bulle opticien — photo statique + contrôle remote TV */}
       <div style={{
         position: 'fixed', bottom: 28, right: 28, zIndex: 50,
-        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10,
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8,
       }}>
         <div style={{
           width: 148, height: 148, borderRadius: '50%', overflow: 'hidden',
-          border: '3px solid rgba(0,171,233,0.6)',
-          boxShadow: '0 8px 32px rgba(0,171,233,0.35)',
+          border: `3px solid ${playing ? 'rgba(34,197,94,0.7)' : 'rgba(0,171,233,0.6)'}`,
+          boxShadow: `0 8px 32px ${playing ? 'rgba(34,197,94,0.3)' : 'rgba(0,171,233,0.35)'}`,
           position: 'relative', background: '#0a2a5c',
+          transition: 'border-color .3s, box-shadow .3s',
         }}>
+          {/* Photo statique = premier frame de la vidéo */}
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <video
-            ref={videoRef}
             src="/assets/avatar_opticien_troubles.mp4"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             playsInline
-            onEnded={() => setPlaying(false)}
+            muted
+            preload="metadata"
           />
-          {/* Bouton play/pause */}
+          {/* Bouton play/pause → contrôle la TV via Supabase */}
           <button
             onClick={togglePlay}
             style={{
               position: 'absolute', bottom: 6, right: 6,
-              width: 32, height: 32, borderRadius: '50%',
-              background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+              width: 34, height: 34, borderRadius: '50%',
+              background: playing ? 'rgba(34,197,94,0.85)' : 'rgba(0,0,0,0.65)',
+              backdropFilter: 'blur(4px)',
               border: '1px solid rgba(255,255,255,0.25)',
-              color: '#fff', fontSize: 12, cursor: 'pointer',
+              color: '#fff', fontSize: 13, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: 'inherit',
+              fontFamily: 'inherit', transition: 'background .2s',
             }}
           >
             {playing ? '⏸' : '▶'}
@@ -418,11 +411,13 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
         </div>
         <div style={{
           background: 'rgba(3,17,42,0.85)', backdropFilter: 'blur(12px)',
-          borderRadius: 10, padding: '5px 12px',
-          fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.6)',
-          border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center',
+          borderRadius: 10, padding: '5px 14px',
+          fontSize: 11, fontWeight: 600,
+          color: playing ? '#4ade80' : 'rgba(255,255,255,0.6)',
+          border: `1px solid ${playing ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.1)'}`,
+          textAlign: 'center', transition: 'all .3s',
         }}>
-          Opticien · LPT
+          {playing ? '▶ Diffusion en cours' : 'Opticien · LPT'}
         </div>
       </div>
     </div>

@@ -993,7 +993,7 @@ function TVEntrepriseMission({ page, pageIndex, total }) {
 }
 
 // ── TV Content Page (no controls, no avatar) ──────────────────────
-function TVContentPage({ page, pageIndex, total, moduleLabel }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -1003,7 +1003,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel }) {
   }, [page.id])
 
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'troubles-list')    return <TVTroublesList       page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesPhase={troublesPhase} opticienPlaying={opticienPlaying} />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
@@ -1381,20 +1381,149 @@ function TVGroupResults({ moduleId, moduleLabel, quiz }) {
   )
 }
 
+// ── TV Troubles List avec vidéo opticien ─────────────────────────
+function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying }) {
+  const [entered, setEntered] = useState(false)
+  const [audioUnlocked, setAudioUnlocked] = useState(false)
+  const [defVisible, setDefVisible] = useState(0)
+  const videoRef = useRef(null)
+
+  useEffect(() => {
+    setEntered(false)
+    const t = setTimeout(() => setEntered(true), 60)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  // Stagger des définitions quand phase 2
+  useEffect(() => {
+    if (troublesPhase !== 2) { setDefVisible(0); return }
+    const timers = page.troubles.map((_, i) =>
+      setTimeout(() => setDefVisible(c => Math.max(c, i + 1)), 500 + i * 900)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [troublesPhase])
+
+  // Contrôle play/pause de la vidéo
+  useEffect(() => {
+    if (!videoRef.current || !audioUnlocked) return
+    if (opticienPlaying) {
+      videoRef.current.play().catch(() => {})
+    } else {
+      videoRef.current.pause()
+    }
+  }, [opticienPlaying, audioUnlocked])
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', position: 'relative',
+    }}>
+      {/* Overlay audio — doit être cliqué une fois pour débloquer le son */}
+      {!audioUnlocked && (
+        <div
+          onClick={() => setAudioUnlocked(true)}
+          style={{
+            position: 'absolute', inset: 0, zIndex: 100,
+            background: 'rgba(3,17,42,0.75)', backdropFilter: 'blur(4px)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          <div style={{ fontSize: 42, marginBottom: 16 }}>🔊</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 8 }}>Cliquez pour activer le son</div>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>Requis par le navigateur pour lire la vidéo avec audio</div>
+        </div>
+      )}
+
+      {/* Topbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Module · {moduleLabel}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{ height: 5, borderRadius: 3, width: i === pageIndex ? 22 : 5, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Zone principale */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column', padding: '12px 48px 32px', gap: 20,
+        opacity: entered ? 1 : 0, transform: entered ? 'translateY(0)' : 'translateY(16px)', transition: 'all .5s ease',
+      }}>
+        <div>
+          <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)', borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Les bases de l&apos;optique</div>
+          <h1 style={{ fontSize: 36, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{page.titre}</h1>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>{page.sousTitre}</p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+          {page.troubles.map((t, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: 24,
+              background: `${t.color}09`, border: `1px solid ${t.color}28`,
+              borderLeft: `4px solid ${t.color}`,
+              borderRadius: 16, padding: '18px 28px',
+            }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: t.color, letterSpacing: 1, minWidth: 26, opacity: 0.75 }}>{t.num}</span>
+              <span style={{ fontSize: 28, fontWeight: 800, color: '#fff', minWidth: 240, letterSpacing: -0.3 }}>{t.nom}</span>
+              <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+              <span style={{
+                fontSize: 16, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5,
+                opacity: troublesPhase === 2 && i < defVisible ? 1 : 0,
+                transform: troublesPhase === 2 && i < defVisible ? 'translateY(0)' : 'translateY(6px)',
+                transition: 'opacity 0.7s ease, transform 0.7s ease',
+                minHeight: 24,
+              }}>{t.def}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Vidéo opticien en bas à droite */}
+      <div style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 10 }}>
+        <div style={{
+          width: 200, height: 200, borderRadius: '50%', overflow: 'hidden',
+          border: `4px solid ${opticienPlaying ? 'rgba(34,197,94,0.7)' : 'rgba(0,171,233,0.5)'}`,
+          boxShadow: `0 8px 48px ${opticienPlaying ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
+          background: '#0a2a5c', transition: 'border-color .3s, box-shadow .3s',
+        }}>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            ref={videoRef}
+            src="/assets/avatar_opticien_troubles.mp4"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            playsInline
+            preload="auto"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── TV View ───────────────────────────────────────────────────────
 export default function TVView() {
   const { activeModule, modulePage, loading } = useModuleSync(1500)
-  const [tvScreen, setTvScreen] = useState(null) // null = welcome, 'qr' = QR code
+  const [tvScreen, setTvScreen] = useState(null)
+  const [troublesPhase, setTroublesPhase] = useState(1)
+  const [opticienPlaying, setOpticienPlaying] = useState(false)
 
   useEffect(() => {
     const poll = async () => {
       try {
         const state = await getSharedState()
         setTvScreen(state?.tv_screen || null)
+        setTroublesPhase(state?.troubles_phase || 1)
+        setOpticienPlaying(!!state?.opticien_playing)
       } catch { /* ignore */ }
     }
     poll()
-    const t = setInterval(poll, 2000)
+    const t = setInterval(poll, 1500)
     return () => clearInterval(t)
   }, [])
 
@@ -1446,6 +1575,8 @@ export default function TVView() {
           pageIndex={modulePage}
           total={moduleData.pages.length}
           moduleLabel={moduleData?.label || ''}
+          troublesPhase={troublesPhase}
+          opticienPlaying={opticienPlaying}
         />
       ) : (
         <WelcomeScreen />

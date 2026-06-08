@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
-import { sbUpsert, sbSelect, SESSION_CODE, ensureSession } from '@/lib/supabase'
+import { sbUpsert, sbSelect, SESSION_CODE, ensureSession, getSharedState } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName } from '@/lib/participantNames'
@@ -703,7 +703,10 @@ function TroublesIntroMobile({ page, pageIndex, total }) {
 // ── Troubles list — vue téléphone ────────────────────────────────
 function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
   const [visibleCount, setVisibleCount] = useState(0)
+  const [troublesPhase, setTroublesPhase] = useState(1)
+  const [defVisible, setDefVisible] = useState(0)
 
+  // Anime les lignes à l'arrivée
   useEffect(() => {
     setVisibleCount(0)
     const timers = page.troubles.map((_, i) =>
@@ -711,6 +714,28 @@ function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
     )
     return () => timers.forEach(clearTimeout)
   }, [page.id])
+
+  // Poll troubles_phase depuis trainer_state
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const state = await getSharedState()
+        setTroublesPhase(state?.troubles_phase || 1)
+      } catch { /* ignore */ }
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [])
+
+  // Stagger des définitions quand phase 2
+  useEffect(() => {
+    if (troublesPhase !== 2) { setDefVisible(0); return }
+    const timers = page.troubles.map((_, i) =>
+      setTimeout(() => setDefVisible(c => Math.max(c, i + 1)), 500 + i * 900)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [troublesPhase])
 
   return (
     <div style={{
@@ -767,7 +792,13 @@ function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
               <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: -0.3, marginBottom: 4 }}>
                 {t.nom}
               </div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5, fontWeight: 400 }}>
+              <div style={{
+                fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5, fontWeight: 400,
+                opacity: troublesPhase === 2 && i < defVisible ? 1 : 0,
+                transform: troublesPhase === 2 && i < defVisible ? 'translateY(0)' : 'translateY(4px)',
+                transition: 'opacity 0.6s ease, transform 0.6s ease',
+                minHeight: 18,
+              }}>
                 {t.def}
               </div>
             </div>
