@@ -806,139 +806,16 @@ function TVSaisieInteractive({ page, pageIndex, total, moduleLabel }) {
 // ── TV Entreprise : freins à l'achat ─────────────────────────────
 const TV_BUBBLE_COLORS = ['rgba(0,171,233,0.9)','rgba(74,222,128,0.9)','rgba(245,158,11,0.9)','rgba(167,139,250,0.9)','rgba(244,114,182,0.9)','rgba(52,211,153,0.9)']
 
-function TVEntrepriseFreins({ page, pageIndex, total, freinsResponses }) {
-  const entries = Object.entries(freinsResponses || {})
-
+// ── Composant partagé : layout TV pour questions libres ───────────
+function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting }) {
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100vh', overflow: 'hidden',
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-      position: 'relative', overflow: 'hidden',
+      display: 'flex', flexDirection: 'column',
     }}>
       {/* Topbar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
-          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Présentation de l&apos;entreprise</span>
-        </div>
-        <div style={{ display: 'flex', gap: 5 }}>
-          {Array(total).fill(0).map((_, i) => (
-            <div key={i} style={{ height: 5, borderRadius: 3, width: i === pageIndex ? 22 : 5, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />
-          ))}
-        </div>
-      </div>
-
-      {/* Question */}
-      <div style={{ textAlign: 'center', padding: '28px 160px 0', position: 'relative', zIndex: 2 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 18 }}>
-          Question ouverte
-        </div>
-        <h1 style={{ fontSize: 44, fontWeight: 800, color: '#fff', lineHeight: 1.25 }}>
-          {page.titre}
-        </h1>
-        {entries.length === 0 && (
-          <div style={{ marginTop: 28, fontSize: 16, color: 'rgba(255,255,255,0.28)', fontStyle: 'italic' }}>
-            En attente des réponses…
-          </div>
-        )}
-      </div>
-
-      {/* Bulles anonymes flottantes */}
-      {entries.map(([pName, resp], i) => (
-        <div key={pName} style={{
-          position: 'absolute',
-          left: `${resp.x}%`,
-          top: `${resp.y}%`,
-          maxWidth: 300,
-          background: 'rgba(5,20,55,0.88)',
-          border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
-          borderRadius: 22,
-          padding: '14px 22px',
-          fontSize: 17,
-          fontWeight: 600,
-          color: '#fff',
-          lineHeight: 1.45,
-          backdropFilter: 'blur(16px)',
-          boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}30`,
-          animation: 'bubbleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
-          zIndex: 5,
-        }}>
-          {resp.text}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ── TV Entreprise : prix moyen ────────────────────────────────────
-function TVEntreprisePrix({ page, pageIndex, total, prixResponses }) {
-  const entries = Object.entries(prixResponses || {})
-
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-      position: 'relative', overflow: 'hidden',
-    }}>
-      {/* Topbar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
-          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Présentation de l&apos;entreprise</span>
-        </div>
-        <div style={{ display: 'flex', gap: 5 }}>
-          {Array(total).fill(0).map((_, i) => (
-            <div key={i} style={{ height: 5, borderRadius: 3, width: i === pageIndex ? 22 : 5, background: i === pageIndex ? '#f59e0b' : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />
-          ))}
-        </div>
-      </div>
-
-      {/* Question */}
-      <div style={{ textAlign: 'center', padding: '28px 160px 0', position: 'relative', zIndex: 2 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 18 }}>
-          Question ouverte
-        </div>
-        <h1 style={{ fontSize: 44, fontWeight: 800, color: '#fff', lineHeight: 1.25 }}>
-          {page.titre}
-        </h1>
-        {entries.length === 0 && (
-          <div style={{ marginTop: 28, fontSize: 16, color: 'rgba(255,255,255,0.28)', fontStyle: 'italic' }}>
-            En attente des réponses…
-          </div>
-        )}
-      </div>
-
-      {/* Bulles anonymes */}
-      {entries.map(([pName, resp], i) => (
-        <div key={pName} style={{
-          position: 'absolute',
-          left: `${resp.x}%`,
-          top: `${resp.y}%`,
-          background: 'rgba(5,20,55,0.88)',
-          border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
-          borderRadius: 22,
-          padding: '14px 24px',
-          backdropFilter: 'blur(16px)',
-          boxShadow: `0 8px 32px rgba(0,0,0,0.5)`,
-          animation: 'bubbleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
-          zIndex: 5,
-          display: 'flex', alignItems: 'baseline', gap: 4,
-        }}>
-          <span style={{ fontSize: 32, fontWeight: 900, color: '#fff' }}>{resp.text}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function TVEntreprisePromesse({ page, pageIndex, total, promesseResponses }) {
-  const entries = Object.entries(promesseResponses || {})
-  const accent = '#34d399'
-  return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
@@ -950,74 +827,129 @@ function TVEntreprisePromesse({ page, pageIndex, total, promesseResponses }) {
           ))}
         </div>
       </div>
-      <div style={{ textAlign: 'center', padding: '28px 160px 0', position: 'relative', zIndex: 2 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 18 }}>
+
+      {/* Question */}
+      <div style={{ textAlign: 'center', padding: '10px 120px 0', flexShrink: 0 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
           Question ouverte
         </div>
-        <h1 style={{ fontSize: 44, fontWeight: 800, color: '#fff', lineHeight: 1.25 }}>{page.titre}</h1>
-        {entries.length === 0 && (
-          <div style={{ marginTop: 28, fontSize: 16, color: 'rgba(255,255,255,0.28)', fontStyle: 'italic' }}>
+        <h1 style={{ fontSize: 38, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+          {page.titre}
+        </h1>
+      </div>
+
+      {/* Zone bulles */}
+      <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 14, justifyContent: 'center', alignContent: 'center', padding: '20px 48px 24px', overflow: 'hidden' }}>
+        {waiting ? (
+          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.28)', fontStyle: 'italic' }}>
             En attente des réponses…
           </div>
-        )}
+        ) : children}
       </div>
+    </div>
+  )
+}
+
+function TVEntrepriseFreins({ page, pageIndex, total, freinsResponses }) {
+  const entries = Object.entries(freinsResponses || {})
+  const accent = '#00abe9'
+
+  return (
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={entries.length === 0}>
       {entries.map(([pName, resp], i) => (
         <div key={pName} style={{
-          position: 'absolute', left: `${resp.x}%`, top: `${resp.y}%`,
-          background: 'rgba(5,20,55,0.88)', border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
-          borderRadius: 22, padding: '12px 22px', backdropFilter: 'blur(16px)',
+          background: 'rgba(5,20,55,0.88)',
+          border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
+          borderRadius: 22,
+          padding: '14px 22px',
+          maxWidth: 300,
+          fontSize: 17, fontWeight: 600, color: '#fff', lineHeight: 1.45,
+          backdropFilter: 'blur(16px)',
+          boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}30`,
+          animation: 'bubbleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+          animationDelay: `${i * 0.06}s`,
+          transform: `rotate(${[-2, 0, 1.5, -1, 2, -1.5][i % 6]}deg)`,
+        }}>
+          {resp.text}
+        </div>
+      ))}
+    </TVBubbleScreen>
+  )
+}
+
+// ── TV Entreprise : prix moyen ────────────────────────────────────
+function TVEntreprisePrix({ page, pageIndex, total, prixResponses }) {
+  const entries = Object.entries(prixResponses || {})
+  const accent = '#f59e0b'
+
+  return (
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={entries.length === 0}>
+      {entries.map(([pName, resp], i) => (
+        <div key={pName} style={{
+          background: 'rgba(5,20,55,0.88)',
+          border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
+          borderRadius: 22,
+          padding: '16px 28px',
+          backdropFilter: 'blur(16px)',
+          boxShadow: `0 8px 32px rgba(0,0,0,0.5)`,
+          animation: 'bubbleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+          animationDelay: `${i * 0.06}s`,
+          transform: `rotate(${[-2, 0, 1.5, -1, 2, -1.5][i % 6]}deg)`,
+          display: 'flex', alignItems: 'baseline', gap: 6,
+        }}>
+          <span style={{ fontSize: 36, fontWeight: 900, color: '#fff' }}>{resp.text}</span>
+          <span style={{ fontSize: 20, fontWeight: 700, color: accent }}>€</span>
+        </div>
+      ))}
+    </TVBubbleScreen>
+  )
+}
+
+function TVEntreprisePromesse({ page, pageIndex, total, promesseResponses }) {
+  const entries = Object.entries(promesseResponses || {})
+  const accent = '#34d399'
+
+  return (
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={entries.length === 0}>
+      {entries.map(([pName, resp], i) => (
+        <div key={pName} style={{
+          background: 'rgba(5,20,55,0.88)',
+          border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
+          borderRadius: 22, padding: '14px 22px', maxWidth: 300,
+          backdropFilter: 'blur(16px)',
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
           animation: 'bubbleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
-          zIndex: 5, maxWidth: 320,
+          animationDelay: `${i * 0.06}s`,
+          transform: `rotate(${[-2, 0, 1.5, -1, 2, -1.5][i % 6]}deg)`,
         }}>
           <span style={{ fontSize: 16, fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>{resp.text}</span>
         </div>
       ))}
-    </div>
+    </TVBubbleScreen>
   )
 }
 
 function TVEntrepriseVentesOpticien({ page, pageIndex, total, ventesResponses }) {
   const entries = Object.entries(ventesResponses || {})
+  const accent = '#a78bfa'
+
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
-          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Présentation de l&apos;entreprise</span>
-        </div>
-        <div style={{ display: 'flex', gap: 5 }}>
-          {Array(total).fill(0).map((_, i) => (
-            <div key={i} style={{ height: 5, borderRadius: 3, width: i === pageIndex ? 22 : 5, background: i === pageIndex ? '#a78bfa' : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />
-          ))}
-        </div>
-      </div>
-      <div style={{ textAlign: 'center', padding: '28px 160px 0', position: 'relative', zIndex: 2 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 18 }}>
-          Question ouverte
-        </div>
-        <h1 style={{ fontSize: 44, fontWeight: 800, color: '#fff', lineHeight: 1.25 }}>{page.titre}</h1>
-        {entries.length === 0 && (
-          <div style={{ marginTop: 28, fontSize: 16, color: 'rgba(255,255,255,0.28)', fontStyle: 'italic' }}>
-            En attente des réponses…
-          </div>
-        )}
-      </div>
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={entries.length === 0}>
       {entries.map(([pName, resp], i) => (
         <div key={pName} style={{
-          position: 'absolute', left: `${resp.x}%`, top: `${resp.y}%`,
           background: 'rgba(5,20,55,0.88)', border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
-          borderRadius: 22, padding: '14px 24px', backdropFilter: 'blur(16px)',
+          borderRadius: 22, padding: '16px 28px', backdropFilter: 'blur(16px)',
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
           animation: 'bubbleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
-          zIndex: 5, display: 'flex', alignItems: 'baseline', gap: 4,
+          animationDelay: `${i * 0.06}s`,
+          transform: `rotate(${[-2, 0, 1.5, -1, 2, -1.5][i % 6]}deg)`,
+          display: 'flex', alignItems: 'baseline', gap: 6,
         }}>
-          <span style={{ fontSize: 32, fontWeight: 900, color: '#fff' }}>{resp.text}</span>
-          <span style={{ fontSize: 18, fontWeight: 700, color: '#a78bfa' }}>paires</span>
+          <span style={{ fontSize: 36, fontWeight: 900, color: '#fff' }}>{resp.text}</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: accent }}>paires</span>
         </div>
       ))}
-    </div>
+    </TVBubbleScreen>
   )
 }
 
