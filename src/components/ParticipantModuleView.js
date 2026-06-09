@@ -1634,6 +1634,100 @@ function VentesOpticienMobile({ page, pName }) {
   )
 }
 
+// ── Promesse — saisie libre participant ───────────────────────────
+function PromesseInputMobile({ page, pName }) {
+  const [text, setText]               = useState('')
+  const [submitted, setSubmitted]     = useState(false)
+  const [submittedText, setSubmittedText] = useState('')
+  const [sending, setSending]         = useState(false)
+  const accent = '#34d399'
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return
+    setSending(true)
+    try {
+      const x = Math.floor(Math.random() * 65) + 3
+      const y = Math.floor(Math.random() * 38) + 42
+      const state = await getSharedState()
+      const current = state?.promesse_responses || {}
+      await setSharedState({ promesse_responses: { ...current, [pName]: { text: text.trim(), x, y } } })
+      setSubmittedText(text.trim())
+      setSubmitted(true)
+    } catch { /* ignore */ }
+    setSending(false)
+  }
+
+  const handleModify = () => {
+    setText(submittedText)
+    setSubmitted(false)
+  }
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '52px 24px 40px',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38}
+        style={{ objectFit: 'contain', marginBottom: 36 }} />
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+        Question ouverte
+      </div>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.45, marginBottom: 32 }}>
+        {page.titre}
+      </h2>
+
+      {submitted ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{
+            background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)',
+            borderRadius: 16, padding: '16px 20px',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: accent, marginBottom: 8 }}>✓ Réponse envoyée</div>
+            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{submittedText}</div>
+          </div>
+          <button onClick={handleModify} style={{
+            background: 'rgba(52,211,153,0.1)', border: `1px solid rgba(52,211,153,0.3)`,
+            color: accent, borderRadius: 14, padding: '14px',
+            fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}>✏️ Modifier ma réponse</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Tapez votre réponse ici…"
+            rows={5}
+            style={{
+              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 16, padding: '16px', color: '#fff', fontSize: 16,
+              fontFamily: 'inherit', resize: 'none', outline: 'none', lineHeight: 1.5,
+              WebkitAppearance: 'none',
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!text.trim() || sending}
+            style={{
+              background: text.trim() ? accent : 'rgba(255,255,255,0.1)',
+              border: 'none', borderRadius: 14, padding: '16px',
+              fontSize: 16, fontWeight: 700, color: '#fff',
+              cursor: text.trim() ? 'pointer' : 'default',
+              fontFamily: 'inherit', transition: 'background .2s',
+              opacity: sending ? 0.7 : 1,
+            }}
+          >
+            {sending ? 'Envoi en cours…' : 'Envoyer ma réponse →'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Prix moyen — saisie numérique participant ─────────────────────
 function PrixInputMobile({ page, pName }) {
   const [value, setValue]              = useState('')
@@ -1760,6 +1854,9 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName }) {
   if (page.type === 'ventes-opticien') {
     return <VentesOpticienMobile page={page} pName={pName || 'Anonyme'} />
   }
+
+  // Promesse — saisie libre
+  if (page.type === 'promesse') return <PromesseInputMobile page={page} pName={pName || 'Anonyme'} />
 
   // Chiffres clés LPT
   if (page.type === 'chiffres') return (
