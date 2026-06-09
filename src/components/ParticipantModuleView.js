@@ -1833,6 +1833,53 @@ function PrixInputMobile({ page, pName }) {
   )
 }
 
+function ForceLPTMobile({ page, pageIndex, total }) {
+  const [visible, setVisible] = useState(0)
+  useEffect(() => {
+    setVisible(0)
+    const timers = page.items.map((_, i) =>
+      setTimeout(() => setVisible(v => Math.max(v, i + 1)), 400 + i * 500)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [page.id])
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '32px 20px 40px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIndex ? 16 : 4, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />
+          ))}
+        </div>
+      </div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Notre modèle</div>
+      <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 24, lineHeight: 1.3 }}>{page.titre}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {page.items.map((item, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 14,
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+            borderLeft: `4px solid ${item.color}`,
+            borderRadius: 14, padding: '14px 16px',
+            opacity: i < visible ? 1 : 0,
+            transform: i < visible ? 'translateX(0)' : 'translateX(-16px)',
+            transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+          }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color, flexShrink: 0, boxShadow: `0 0 6px ${item.color}` }} />
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>{item.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ModuleScreen({ page, pageIndex, total, moduleLabel, pName }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
@@ -1857,6 +1904,9 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName }) {
 
   // Promesse — saisie libre
   if (page.type === 'promesse') return <PromesseInputMobile page={page} pName={pName || 'Anonyme'} />
+
+  // Force LPT — liste progressive
+  if (page.type === 'force-lpt') return <ForceLPTMobile page={page} pageIndex={pageIndex} total={total} />
 
   // Chiffres clés LPT
   if (page.type === 'chiffres') return (

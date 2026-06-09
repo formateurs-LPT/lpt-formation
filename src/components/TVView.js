@@ -1116,6 +1116,52 @@ function TVEntrepriseChiffres({ page, pageIndex, total }) {
   )
 }
 
+function TVEntrepriseForceLPT({ page, pageIndex, total }) {
+  const [visible, setVisible] = useState(0)
+  useEffect(() => {
+    setVisible(0)
+    const timers = page.items.map((_, i) =>
+      setTimeout(() => setVisible(v => Math.max(v, i + 1)), 600 + i * 700)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [page.id])
+
+  return (
+    <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
+      <div style={{ textAlign: 'center', marginBottom: 40 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+          Les clés de notre modèle
+        </div>
+        <h1 style={{ fontSize: 38, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>{page.titre}</h1>
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, justifyContent: 'center', flex: 1, alignContent: 'center' }}>
+        {page.items.map((item, i) => (
+          <div key={i} style={{
+            width: 'calc(33% - 14px)', minWidth: 220, maxWidth: 300,
+            background: 'rgba(255,255,255,0.04)',
+            border: `2px solid ${item.color}55`,
+            borderRadius: 20, padding: '32px 28px',
+            textAlign: 'center',
+            opacity: i < visible ? 1 : 0,
+            transform: i < visible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
+            transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+          }}>
+            <div style={{
+              width: 10, height: 10, borderRadius: '50%',
+              background: item.color, margin: '0 auto 16px', flexShrink: 0,
+              boxShadow: `0 0 12px ${item.color}`,
+            }} />
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>
+              {item.label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </TVEntrepriseShell>
+  )
+}
+
 function TVEntrepriseNaissance({ page, pageIndex, total }) {
   return (
     <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
@@ -1404,6 +1450,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'ventes-opticien') return <TVEntrepriseVentesOpticien page={page} pageIndex={pageIndex} total={total} ventesResponses={ventesResponses} />
   if (page.type === 'promesse')        return <TVEntreprisePromesse       page={page} pageIndex={pageIndex} total={total} promesseResponses={promesseResponses} />
   if (page.type === 'chiffres')   return <TVEntrepriseChiffres  page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'force-lpt') return <TVEntrepriseForceLPT  page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'naissance')  return <TVEntrepriseNaissance page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'impact')     return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'probleme')   return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />

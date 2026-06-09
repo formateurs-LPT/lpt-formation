@@ -419,6 +419,33 @@ function EntreprisePage({ page, navProps }) {
   // ── PROMESSE ───────────────────────────────────────────────────
   if (page.type === 'promesse') return <PromessePage page={page} navProps={navProps} />
 
+  // ── FORCE LPT ──────────────────────────────────────────────────
+  if (page.type === 'force-lpt') return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+        <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Présentation de l&apos;entreprise · Notre modèle</span>
+      </div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Les clés de notre modèle</div>
+      <h1 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 32 }}>{page.titre}</h1>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 700 }}>
+        {page.items.map((item, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 20,
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+            borderLeft: `4px solid ${item.color}`,
+            borderRadius: 16, padding: '18px 24px',
+          }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color, flexShrink: 0, boxShadow: `0 0 8px ${item.color}` }} />
+            <div style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>{item.label}</div>
+          </div>
+        ))}
+      </div>
+      <TrainerNav {...navProps} />
+    </div>
+  )
+
   // ── CHIFFRES CLÉS ──────────────────────────────────────────────
   if (page.type === 'chiffres') return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px' }}>

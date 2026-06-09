@@ -341,6 +341,19 @@ export const ENTREPRISE_PAGES = [
     titre: 'Comment nous tenons notre promesse ?',
     color: '#34d399',
   },
+  {
+    id: 'force-lpt',
+    type: 'force-lpt',
+    titre: 'Ce qui fait la force de Lunettes Pour Tous',
+    color: '#00abe9',
+    items: [
+      { label: 'Des stocks de verres et montures dans chacun de nos magasins', color: '#00abe9' },
+      { label: 'Des machines à la pointe de la technologie', color: '#4ade80' },
+      { label: 'Volume de ventes conséquent', color: '#f59e0b' },
+      { label: 'Notre propre marque', color: '#a78bfa' },
+      { label: '0 intermédiaire', color: '#f472b6' },
+    ],
+  },
 ]
 
 export const MODULE_DATA = {
