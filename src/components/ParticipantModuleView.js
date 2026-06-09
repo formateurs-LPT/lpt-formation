@@ -2293,16 +2293,17 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
   return (
     <>
       <style>{STYLES}</style>
-      {isLobby
-        ? <ParticipantModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
-        : isResults
-          ? <PersonalResultsScreen key="results" pName={pName} quiz={quiz} moduleId={activeModule} />
-          : isQuiz
-            ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
-            : page
-              ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} />
-              : tvScreen === 'planning' && planningDay
-                ? <ParticipantPlanningScreen planningDay={planningDay} />
+      {/* Planning prioritaire : écrase tout si le formateur diffuse le planning */}
+      {tvScreen === 'planning' && planningDay
+        ? <ParticipantPlanningScreen planningDay={planningDay} />
+        : isLobby
+          ? <ParticipantModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
+          : isResults
+            ? <PersonalResultsScreen key="results" pName={pName} quiz={quiz} moduleId={activeModule} />
+            : isQuiz
+              ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
+              : page
+                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} />
                 : <WaitingScreen />
       }
     </>

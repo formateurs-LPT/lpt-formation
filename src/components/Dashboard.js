@@ -388,31 +388,23 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
             {PLANNING_JOURS.map(jour => (
               <div
                 key={jour.id}
-                onClick={async () => {
-                  await setSharedState({ tv_screen: 'planning', planning_day: jour.id })
-                }}
                 style={{
                   background: '#fff', border: '1px solid var(--border)',
                   borderTop: `4px solid ${jour.color}`,
                   borderRadius: 'var(--r)', padding: '24px 28px',
-                  cursor: 'pointer', transition: 'all .2s',
+                  transition: 'all .2s',
                 }}
-                onMouseOver={e => { e.currentTarget.style.boxShadow = `0 6px 24px ${jour.color}22`; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
               >
                 {/* En-tête jour */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                   <div>
                     <div style={{ fontSize: 11, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{jour.jour}</div>
                     <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)' }}>{jour.label}</div>
                   </div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-s)', background: 'var(--bg)', borderRadius: 20, padding: '4px 12px', border: '1px solid var(--border)' }}>
-                    Diffuser →
-                  </div>
                 </div>
 
                 {/* Blocs programme */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
                   {jour.blocs.map((bloc, i) => (
                     <div key={i} style={{ borderLeft: `3px solid ${jour.color}55`, paddingLeft: 14 }}>
                       {bloc.horaire && (
@@ -430,6 +422,24 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
                     </div>
                   ))}
                 </div>
+
+                {/* Bouton Diffuser */}
+                <button
+                  onClick={async () => { await setSharedState({ tv_screen: 'planning', planning_day: jour.id }) }}
+                  style={{
+                    width: '100%', padding: '12px 0',
+                    background: jour.color, border: 'none',
+                    borderRadius: 10, cursor: 'pointer',
+                    fontSize: 14, fontWeight: 700, color: '#fff',
+                    fontFamily: 'inherit', letterSpacing: 0.3,
+                    boxShadow: `0 4px 14px ${jour.color}44`,
+                    transition: 'opacity .15s',
+                  }}
+                  onMouseOver={e => e.currentTarget.style.opacity = '0.85'}
+                  onMouseOut={e => e.currentTarget.style.opacity = '1'}
+                >
+                  Diffuser sur TV &amp; téléphones
+                </button>
               </div>
             ))}
           </div>
