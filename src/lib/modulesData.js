@@ -335,6 +335,12 @@ export const ENTREPRISE_PAGES = [
     titre: 'À votre avis, un opticien traditionnel vend combien de paires par jour ?',
     color: '#a78bfa',
   },
+  {
+    id: 'promesse',
+    type: 'promesse',
+    titre: 'Comment nous tenons notre promesse ?',
+    color: '#34d399',
+  },
 ]
 
 export const MODULE_DATA = {
