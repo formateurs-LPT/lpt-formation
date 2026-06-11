@@ -806,6 +806,14 @@ function TVSaisieInteractive({ page, pageIndex, total, moduleLabel }) {
 // ── TV Entreprise : freins à l'achat ─────────────────────────────
 const TV_BUBBLE_COLORS = ['rgba(0,171,233,0.9)','rgba(74,222,128,0.9)','rgba(245,158,11,0.9)','rgba(167,139,250,0.9)','rgba(244,114,182,0.9)','rgba(52,211,153,0.9)']
 
+// ── Décalages "bazard" déterministes (12 positions, cycle) ────────
+// marginTop : décale chaque bulle vers le bas différemment → lignes brisées
+// rotation  : angle naturel, jamais parallèle
+// borderRadius : formes légèrement différentes
+const B_MT = [0, 18, 6, 28, 12, 22, 4, 32, 10, 24, 2, 16]     // marginTop px
+const B_ROT = [-5, 3, -2, 6, -4, 1, -7, 4, -1, 5, -3, 7]       // rotation deg
+const B_RAD = [20, 26, 18, 28, 22, 16, 24, 20, 26, 18, 22, 16]  // borderRadius px
+
 // ── Composant partagé : layout TV pour questions libres ───────────
 function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting }) {
   return (
@@ -838,10 +846,17 @@ function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting }) {
         </h1>
       </div>
 
-      {/* Zone bulles */}
-      <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 14, justifyContent: 'center', alignContent: 'center', padding: '20px 48px 24px', overflow: 'hidden' }}>
+      {/* Zone bulles — alignItems flex-start permet les décalages marginTop */}
+      <div style={{
+        flex: 1,
+        display: 'flex', flexWrap: 'wrap',
+        columnGap: 16, rowGap: 40,
+        justifyContent: 'center', alignItems: 'flex-start', alignContent: 'flex-start',
+        padding: '28px 60px 16px',
+        overflow: 'hidden',
+      }}>
         {waiting ? (
-          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.28)', fontStyle: 'italic' }}>
+          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.28)', fontStyle: 'italic', marginTop: 40 }}>
             En attente des réponses…
           </div>
         ) : children}
@@ -860,15 +875,16 @@ function TVEntrepriseFreins({ page, pageIndex, total, freinsResponses }) {
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)',
           border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
-          borderRadius: 22,
+          borderRadius: B_RAD[i % 12],
           padding: '14px 22px',
           maxWidth: 300,
           fontSize: 17, fontWeight: 600, color: '#fff', lineHeight: 1.45,
           backdropFilter: 'blur(16px)',
           boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}30`,
           animation: 'bubbleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
-          animationDelay: `${i * 0.06}s`,
-          transform: `rotate(${[-2, 0, 1.5, -1, 2, -1.5][i % 6]}deg)`,
+          animationDelay: `${i * 0.07}s`,
+          marginTop: B_MT[i % 12],
+          transform: `rotate(${B_ROT[i % 12]}deg)`,
         }}>
           {resp.text}
         </div>
@@ -888,13 +904,14 @@ function TVEntreprisePrix({ page, pageIndex, total, prixResponses }) {
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)',
           border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
-          borderRadius: 22,
+          borderRadius: B_RAD[i % 12],
           padding: '16px 28px',
           backdropFilter: 'blur(16px)',
           boxShadow: `0 8px 32px rgba(0,0,0,0.5)`,
           animation: 'bubbleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
-          animationDelay: `${i * 0.06}s`,
-          transform: `rotate(${[-2, 0, 1.5, -1, 2, -1.5][i % 6]}deg)`,
+          animationDelay: `${i * 0.07}s`,
+          marginTop: B_MT[i % 12],
+          transform: `rotate(${B_ROT[i % 12]}deg)`,
           display: 'flex', alignItems: 'baseline', gap: 6,
         }}>
           <span style={{ fontSize: 36, fontWeight: 900, color: '#fff' }}>{resp.text}</span>
@@ -915,12 +932,13 @@ function TVEntreprisePromesse({ page, pageIndex, total, promesseResponses }) {
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)',
           border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
-          borderRadius: 22, padding: '14px 22px', maxWidth: 300,
+          borderRadius: B_RAD[i % 12], padding: '14px 22px', maxWidth: 300,
           backdropFilter: 'blur(16px)',
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
           animation: 'bubbleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
-          animationDelay: `${i * 0.06}s`,
-          transform: `rotate(${[-2, 0, 1.5, -1, 2, -1.5][i % 6]}deg)`,
+          animationDelay: `${i * 0.07}s`,
+          marginTop: B_MT[i % 12],
+          transform: `rotate(${B_ROT[i % 12]}deg)`,
         }}>
           <span style={{ fontSize: 16, fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>{resp.text}</span>
         </div>
@@ -938,11 +956,12 @@ function TVEntrepriseVentesOpticien({ page, pageIndex, total, ventesResponses })
       {entries.map(([pName, resp], i) => (
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)', border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
-          borderRadius: 22, padding: '16px 28px', backdropFilter: 'blur(16px)',
+          borderRadius: B_RAD[i % 12], padding: '16px 28px', backdropFilter: 'blur(16px)',
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
           animation: 'bubbleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
-          animationDelay: `${i * 0.06}s`,
-          transform: `rotate(${[-2, 0, 1.5, -1, 2, -1.5][i % 6]}deg)`,
+          animationDelay: `${i * 0.07}s`,
+          marginTop: B_MT[i % 12],
+          transform: `rotate(${B_ROT[i % 12]}deg)`,
           display: 'flex', alignItems: 'baseline', gap: 6,
         }}>
           <span style={{ fontSize: 36, fontWeight: 900, color: '#fff' }}>{resp.text}</span>
