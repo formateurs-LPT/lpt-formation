@@ -433,10 +433,10 @@ function Lobby({ onStart, onBack }) {
         <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
           Module de formation
         </div>
-        <h1 style={{ fontSize: 34, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Types de verres</h1>
+        <h1 style={{ fontSize: 34, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Le Verre Unifocal</h1>
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 36, lineHeight: 1.6 }}>
-          Unifocal · Progressif<br />
-          Présentez chaque verre avec ses arguments de vente
+          La correction simple, efficace, accessible<br />
+          Arguments de vente &amp; positionnement dans l&apos;offre LPT
         </p>
         <button onClick={onStart} style={{
           background: 'linear-gradient(135deg, #0089ba, #00abe9)',
@@ -444,7 +444,7 @@ function Lobby({ onStart, onBack }) {
           borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer',
           boxShadow: '0 8px 32px rgba(0,171,233,0.45)', fontFamily: 'inherit',
         }}>▶ Lancer le module</button>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>2 pages · ~8 minutes</p>
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>1 page · ~4 minutes</p>
       </div>
     </div>
   )

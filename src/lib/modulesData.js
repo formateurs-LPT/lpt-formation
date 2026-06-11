@@ -4,11 +4,6 @@ export const TYPES_VERRES_QUIZ = [
     options: ['9 jours', '10 minutes'],
     correct: 1,
   },
-  {
-    question: 'Où est la vision de près sur le verre progressif ?',
-    options: ['En bas du verre', 'Au centre du verre', 'En haut du verre'],
-    correct: 0,
-  },
 ]
 
 export const TYPES_VERRES_PAGES = [
@@ -24,19 +19,6 @@ export const TYPES_VERRES_PAGES = [
     ],
     avatarScript: "Le verre unifocal corrige un seul défaut visuel. Toute la surface est homogène : pas de zone de flou, une vision nette partout. C'est le verre le plus courant, idéal pour une première paire.",
     color: '#00abe9',
-  },
-  {
-    id: 'progressif',
-    titre: 'Le Verre Progressif',
-    sousTitre: 'Trois zones, une liberté totale',
-    points: [
-      { emoji: '🔭', titre: 'Vision de loin', texte: 'Zone supérieure — conduite, cinéma, paysages. Nette à plus de 150 cm.' },
-      { emoji: '💻', titre: 'Vision intermédiaire', texte: 'Zone centrale — écran, comptoir, rayon. De 40 cm à 150 cm.' },
-      { emoji: '📖', titre: 'Vision de près', texte: 'Zone inférieure — lecture, smartphone, écriture. Moins de 40 cm.' },
-      { emoji: '🏆', titre: 'Argument différenciant', texte: 'Extra-large 180° avec aberrations réduites. Garantie adaptation 100 jours.' },
-    ],
-    avatarScript: "Le progressif, c'est notre produit phare. Trois zones en un seul verre : loin, intermédiaire, près. Pas besoin de changer de lunettes. La garantie 100 jours enlève toute objection client.",
-    color: '#7c3aed',
   },
 ]
 
@@ -357,7 +339,7 @@ export const ENTREPRISE_PAGES = [
 ]
 
 export const MODULE_DATA = {
-  'types-verres': { pages: TYPES_VERRES_PAGES, quiz: TYPES_VERRES_QUIZ, label: 'Types de verres',               sub: 'Unifocaux · Progressifs · Spéciaux' },
+  'types-verres': { pages: TYPES_VERRES_PAGES, quiz: TYPES_VERRES_QUIZ, label: 'Types de verres',               sub: 'Le verre unifocal' },
   'pdm':          { pages: PDM_PAGES,          quiz: PDM_QUIZ,          label: 'Prises de mesures',             sub: 'Écart pupillaire · Hauteur · LPTVISION' },
   'optique':      { pages: OPTIQUE_PAGES,      quiz: OPTIQUE_QUIZ,      label: "Les bases de l'optique",        sub: 'Troubles visuels · Corrections · Ordonnances' },
   'offres':       { pages: [],                 quiz: OFFRES_QUIZ,       label: 'Les offres',                    sub: '100% Santé · Offres LPT · Mutuelles' },
