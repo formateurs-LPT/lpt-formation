@@ -1602,31 +1602,63 @@ function TVPlanningScreen({ planningDay }) {
       </div>
 
       {/* Blocs */}
-      <div style={{ display: 'flex', gap: 24, flex: 1, alignItems: 'flex-start' }}>
-        {jour.blocs.map((bloc, i) => (
-          <div key={i} style={{
-            flex: 1,
-            background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.08)`,
-            borderTop: `3px solid ${jour.color}`,
-            borderRadius: 16, padding: '28px 28px',
-            opacity: i < visible ? 1 : 0,
-            transform: i < visible ? 'translateY(0)' : 'translateY(16px)',
-            transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
-          }}>
-            {bloc.horaire && (
-              <div style={{ fontSize: 12, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{bloc.horaire}</div>
-            )}
-            <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 16, lineHeight: 1.2 }}>{bloc.titre}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {bloc.items.map((item, j) => (
-                <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: jour.color, flexShrink: 0, marginTop: 7 }} />
-                  <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5, fontWeight: 400 }}>{item}</span>
-                </div>
-              ))}
+      <div style={{ display: 'flex', gap: 20, flex: 1, alignItems: 'stretch' }}>
+        {jour.blocs.map((bloc, i) => {
+          const isPause = bloc.titre === 'Pause déjeuner'
+
+          if (isPause) return (
+            <div key={i} style={{
+              flex: '0 0 88px',
+              background: 'rgba(245,158,11,0.07)',
+              border: '1px solid rgba(245,158,11,0.25)',
+              borderTop: '3px solid #f59e0b',
+              borderRadius: 16,
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: 10,
+              opacity: i < visible ? 1 : 0,
+              transform: i < visible ? 'translateY(0)' : 'translateY(16px)',
+              transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+            }}>
+              <div style={{ width: 28, height: 2, borderRadius: 1, background: 'rgba(245,158,11,0.4)' }} />
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1, textAlign: 'center', lineHeight: 1.4 }}>
+                Pause<br />déjeuner
+              </div>
+              {bloc.horaire && <div style={{ fontSize: 11, color: 'rgba(245,158,11,0.55)', textAlign: 'center' }}>{bloc.horaire}</div>}
+              <div style={{ width: 28, height: 2, borderRadius: 1, background: 'rgba(245,158,11,0.4)' }} />
             </div>
-          </div>
-        ))}
+          )
+
+          return (
+            <div key={i} style={{
+              flex: 1,
+              background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.08)`,
+              borderTop: `3px solid ${jour.color}`,
+              borderRadius: 16, padding: '22px 20px',
+              opacity: i < visible ? 1 : 0,
+              transform: i < visible ? 'translateY(0)' : 'translateY(16px)',
+              transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+            }}>
+              {bloc.horaire && (
+                <div style={{ fontSize: 11, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{bloc.horaire}</div>
+              )}
+              <div style={{ fontSize: 19, fontWeight: 800, color: '#fff', marginBottom: 14, lineHeight: 1.2 }}>{bloc.titre}</div>
+              {bloc.items.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {bloc.items.map((item, j) => (
+                    <div key={j} style={{
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderLeft: `3px solid ${jour.color}60`,
+                      borderRadius: 10, padding: '9px 14px',
+                      fontSize: 14, color: 'rgba(255,255,255,0.8)',
+                      fontWeight: 500, lineHeight: 1.4,
+                    }}>{item}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

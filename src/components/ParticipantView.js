@@ -456,21 +456,39 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
           <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', marginBottom: 6 }}>{jour.label}</div>
           <div style={{ width: 40, height: 3, borderRadius: 2, background: jour.color }} />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1 }}>
-          {jour.blocs.map((bloc, i) => (
-            <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderTop: `2px solid ${jour.color}`, borderRadius: 14, padding: '16px 18px' }}>
-              {bloc.horaire && <div style={{ fontSize: 10, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{bloc.horaire}</div>}
-              <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 10 }}>{bloc.titre}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {bloc.items.map((item, j) => (
-                  <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: jour.color, flexShrink: 0, marginTop: 6 }} />
-                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>{item}</span>
-                  </div>
-                ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+          {jour.blocs.map((bloc, i) => {
+            const isPause = bloc.titre === 'Pause déjeuner'
+            if (isPause) return (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0' }}>
+                <div style={{ flex: 1, height: 1, background: 'rgba(245,158,11,0.3)' }} />
+                <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 20, padding: '5px 16px', fontSize: 11, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1, whiteSpace: 'nowrap' }}>
+                  {bloc.horaire && <span style={{ opacity: 0.7, marginRight: 8 }}>{bloc.horaire}</span>}Pause déjeuner
+                </div>
+                <div style={{ flex: 1, height: 1, background: 'rgba(245,158,11,0.3)' }} />
               </div>
-            </div>
-          ))}
+            )
+            return (
+              <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderTop: `2px solid ${jour.color}`, borderRadius: 14, padding: '16px 16px' }}>
+                {bloc.horaire && <div style={{ fontSize: 10, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{bloc.horaire}</div>}
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: bloc.items.length > 0 ? 10 : 0 }}>{bloc.titre}</div>
+                {bloc.items.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {bloc.items.map((item, j) => (
+                      <div key={j} style={{
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.09)',
+                        borderLeft: `2px solid ${jour.color}60`,
+                        borderRadius: 8, padding: '7px 12px',
+                        fontSize: 12, color: 'rgba(255,255,255,0.75)',
+                        fontWeight: 500, lineHeight: 1.4,
+                      }}>{item}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
     )

@@ -404,23 +404,36 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
                 </div>
 
                 {/* Blocs programme */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-                  {jour.blocs.map((bloc, i) => (
-                    <div key={i} style={{ borderLeft: `3px solid ${jour.color}55`, paddingLeft: 14 }}>
-                      {bloc.horaire && (
-                        <div style={{ fontSize: 11, fontWeight: 700, color: jour.color, marginBottom: 2, letterSpacing: 0.5 }}>{bloc.horaire}</div>
-                      )}
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{bloc.titre}</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {bloc.items.map((item, j) => (
-                          <div key={j} style={{ fontSize: 12, color: 'var(--text-s)', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                            <span style={{ color: jour.color, flexShrink: 0, marginTop: 1 }}>–</span>
-                            {item}
-                          </div>
-                        ))}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+                  {jour.blocs.map((bloc, i) => {
+                    const isPause = bloc.titre === 'Pause déjeuner'
+                    if (isPause) return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
+                        <div style={{ flex: 1, height: 1, background: `${jour.color}40` }} />
+                        <div style={{ background: `${jour.color}12`, border: `1px solid ${jour.color}35`, borderRadius: 20, padding: '3px 12px', fontSize: 10, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 0.8, whiteSpace: 'nowrap' }}>
+                          {bloc.horaire && <span style={{ opacity: 0.7, marginRight: 6 }}>{bloc.horaire}</span>}Pause déjeuner
+                        </div>
+                        <div style={{ flex: 1, height: 1, background: `${jour.color}40` }} />
                       </div>
-                    </div>
-                  ))}
+                    )
+                    return (
+                      <div key={i} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderLeft: `3px solid ${jour.color}`, borderRadius: 8, padding: '10px 14px' }}>
+                        {bloc.horaire && (
+                          <div style={{ fontSize: 10, fontWeight: 700, color: jour.color, marginBottom: 2, letterSpacing: 0.5 }}>{bloc.horaire}</div>
+                        )}
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: bloc.items.length > 0 ? 6 : 0 }}>{bloc.titre}</div>
+                        {bloc.items.length > 0 && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            {bloc.items.map((item, j) => (
+                              <div key={j} style={{ fontSize: 11, color: 'var(--text-s)', background: '#fff', border: '1px solid var(--border)', borderRadius: 5, padding: '3px 8px' }}>
+                                {item}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
 
                 {/* Bouton Diffuser */}
