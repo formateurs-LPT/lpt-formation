@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { sbUpdate, SESSION_CODE, getSharedState, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { PROGRESSIF_PAGES, PROGRESSIF_QUIZ } from '@/lib/modulesData'
+import VerreProgressifSVG from './VerreProgressifSVG'
 
 const ACCENT = '#7c3aed'
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -36,54 +37,9 @@ const STYLES = `
   }
 `
 
-// ── Verre Progressif schéma (CSS) ─────────────────────────────────
+// VerreProgressifSchema = alias vers le SVG partagé
 function VerreProgressifSchema({ highlight, small }) {
-  const w = small ? 140 : 220
-  const h = small ? 190 : 300
-  const zones = [
-    { key: 'haut',    label: 'LOIN',           color: '#7c3aed', top: '0%',   height: '40%', left: '8%',  right: '8%' },
-    { key: 'milieu',  label: 'INTERMÉDIAIRE',  color: '#4ade80', top: '40%',  height: '22%', left: '20%', right: '20%' },
-    { key: 'bas',     label: 'PRÈS',           color: '#f59e0b', top: '62%',  height: '38%', left: '14%', right: '14%' },
-  ]
-  return (
-    <div style={{
-      position: 'relative', width: w, height: h, flexShrink: 0,
-      borderRadius: '45% 45% 42% 42% / 25% 25% 22% 22%',
-      border: `2px solid rgba(124,58,237,0.4)`,
-      overflow: 'hidden', background: 'rgba(10,18,40,0.7)',
-      animation: !small ? 'progFloat 4.5s ease-in-out infinite' : 'none',
-    }}>
-      {/* Zones */}
-      {zones.map(z => (
-        <div key={z.key} style={{
-          position: 'absolute', top: z.top, height: z.height,
-          left: z.left, right: z.right,
-          background: highlight === z.key ? `${z.color}55` : `${z.color}14`,
-          border: highlight === z.key ? `1px solid ${z.color}90` : '1px solid transparent',
-          borderRadius: 6,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transition: 'all 0.4s ease',
-          animation: highlight === z.key ? 'zoneGlow 1.5s ease-in-out infinite' : 'none',
-        }}>
-          <span style={{
-            fontSize: small ? 8 : 11,
-            fontWeight: 800, color: highlight === z.key ? '#fff' : z.color,
-            textTransform: 'uppercase', letterSpacing: 0.8, textAlign: 'center', lineHeight: 1.2,
-          }}>{z.label}</span>
-        </div>
-      ))}
-      {/* Aberrations latérales */}
-      <div style={{ position: 'absolute', top: '28%', bottom: '22%', left: 0, width: '10%', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.2)', writingMode: 'vertical-lr', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Flou</span>
-      </div>
-      <div style={{ position: 'absolute', top: '28%', bottom: '22%', right: 0, width: '10%', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.2)', writingMode: 'vertical-lr', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Flou</span>
-      </div>
-      {/* Séparateurs de zones */}
-      <div style={{ position: 'absolute', top: '40%', left: '8%', right: '8%', height: 1, background: 'rgba(255,255,255,0.08)' }} />
-      <div style={{ position: 'absolute', top: '62%', left: '8%', right: '8%', height: 1, background: 'rgba(255,255,255,0.08)' }} />
-    </div>
-  )
+  return <VerreProgressifSVG highlight={highlight} width={small ? 150 : 220} height={small ? 190 : 280} id={small ? 'vps-s' : 'vps-m'} />
 }
 
 // ── Avatar bulle ────────────────────────────────────────────────
@@ -183,8 +139,10 @@ function CoursPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: entered ? 1 : 0, transform: entered ? 'scale(1)' : 'scale(0.88)', transition: 'all .65s ease .1s' }}>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ position: 'absolute', width: 440, height: 440, borderRadius: '50%', background: `radial-gradient(circle, ${ACCENT}30 0%, transparent 70%)`, animation: 'progHalo 3.5s ease-in-out infinite' }} />
-            <VerreProgressifSchema />
+            <div style={{ position: 'absolute', width: 440, height: 440, borderRadius: '50%', background: `radial-gradient(circle, ${ACCENT}28 0%, transparent 70%)`, animation: 'progHalo 3.5s ease-in-out infinite' }} />
+            <div style={{ animation: 'progFloat 4.5s ease-in-out infinite', filter: 'drop-shadow(0 0 28px rgba(124,58,237,0.45))' }}>
+              <VerreProgressifSchema />
+            </div>
           </div>
         </div>
       </div>
@@ -260,7 +218,9 @@ function ZoneInteractifPage({ page, trainerAvatar, pName, onPrev, onNext, onBack
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 24 }}>{page.sousTitre}</p>
 
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
-            <VerreProgressifSchema highlight={zoneHighlight} />
+            <div style={{ filter: 'drop-shadow(0 0 20px rgba(124,58,237,0.4))' }}>
+              <VerreProgressifSchema highlight={zoneHighlight} />
+            </div>
           </div>
 
           {/* Boutons lancer questions */}

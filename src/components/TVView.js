@@ -5,6 +5,7 @@ import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE, getSharedState, setSharedState } from '@/lib/supabase'
+import VerreProgressifSVG from '@/components/modules/VerreProgressifSVG'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -1377,30 +1378,9 @@ function TVEntrepriseMission({ page, pageIndex, total }) {
   )
 }
 
-// ── TV Progressif : schéma verre ────────────────────────────────
+// ── TV Progressif : schéma verre (SVG partagé) ───────────────────
 function TVVerreProgressifSchema({ highlight }) {
-  const zones = [
-    { key: 'haut',   label: 'LOIN',          color: '#7c3aed', top: '0%',   height: '40%', left: '8%',  right: '8%' },
-    { key: 'milieu', label: 'INTERMÉD.', color: '#4ade80', top: '40%',  height: '22%', left: '20%', right: '20%' },
-    { key: 'bas',    label: 'PRÈS',          color: '#f59e0b', top: '62%',  height: '38%', left: '14%', right: '14%' },
-  ]
-  return (
-    <div style={{ position: 'relative', width: 260, height: 360, borderRadius: '45% 45% 42% 42% / 25% 25% 22% 22%', border: '2px solid rgba(124,58,237,0.4)', overflow: 'hidden', background: 'rgba(10,18,40,0.7)', flexShrink: 0 }}>
-      {zones.map(z => (
-        <div key={z.key} style={{ position: 'absolute', top: z.top, height: z.height, left: z.left, right: z.right, background: highlight === z.key ? `${z.color}55` : `${z.color}14`, border: highlight === z.key ? `1px solid ${z.color}90` : '1px solid transparent', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.4s ease' }}>
-          <span style={{ fontSize: 13, fontWeight: 800, color: highlight === z.key ? '#fff' : z.color, textTransform: 'uppercase', letterSpacing: 1, textAlign: 'center', lineHeight: 1.2 }}>{z.label}</span>
-        </div>
-      ))}
-      <div style={{ position: 'absolute', top: '28%', bottom: '22%', left: 0, width: '10%', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', writingMode: 'vertical-lr', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>FLOU</span>
-      </div>
-      <div style={{ position: 'absolute', top: '28%', bottom: '22%', right: 0, width: '10%', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', writingMode: 'vertical-lr', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>FLOU</span>
-      </div>
-      <div style={{ position: 'absolute', top: '40%', left: '8%', right: '8%', height: 1, background: 'rgba(255,255,255,0.1)' }} />
-      <div style={{ position: 'absolute', top: '62%', left: '8%', right: '8%', height: 1, background: 'rgba(255,255,255,0.1)' }} />
-    </div>
-  )
+  return <VerreProgressifSVG highlight={highlight} width={280} height={355} id="vps-tv" />
 }
 
 const OPT_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
