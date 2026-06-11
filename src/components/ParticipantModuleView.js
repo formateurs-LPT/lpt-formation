@@ -8,6 +8,7 @@ import { sbUpsert, sbSelect, SESSION_CODE, ensureSession, getSharedState, setSha
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName } from '@/lib/participantNames'
+import VerreProgressifSVG from '@/components/modules/VerreProgressifSVG'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -1880,6 +1881,142 @@ function ForceLPTMobile({ page, pageIndex, total }) {
   )
 }
 
+// ── Progressif : Page cours avec verre 3D ────────────────────────
+function ProgressifCoursMobile({ page, pageIndex, total }) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    setVisible(false)
+    const t = setTimeout(() => setVisible(true), 80)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  const accent = '#7c3aed'
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0d1d3a 50%, #100820 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '0 0 32px',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '18px 20px 0',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexShrink: 0,
+      }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={64} height={24}
+          style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{
+              height: 4, borderRadius: 2,
+              width: i === pageIndex ? 18 : 4,
+              background: i === pageIndex ? accent : 'rgba(255,255,255,0.2)',
+              transition: 'all .4s',
+            }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Badge module */}
+      <div style={{ padding: '14px 20px 0' }}>
+        <div style={{
+          display: 'inline-block',
+          background: `${accent}20`, border: `1px solid ${accent}45`,
+          borderRadius: 20, padding: '3px 14px',
+          fontSize: 10, fontWeight: 700, color: '#a78bfa',
+          textTransform: 'uppercase', letterSpacing: 1.5,
+        }}>Le Verre Progressif</div>
+      </div>
+
+      {/* Titre */}
+      <div style={{
+        padding: '10px 20px 0',
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(10px)',
+        transition: 'all 0.5s ease',
+      }}>
+        <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>
+          {page.titre}
+        </div>
+        {page.sousTitre && (
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 4, lineHeight: 1.5 }}>
+            {page.sousTitre}
+          </div>
+        )}
+      </div>
+
+      {/* Verre 3D */}
+      <div style={{
+        flex: '0 0 auto',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '18px 0 12px',
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(16px)',
+        transition: 'all 0.7s cubic-bezier(0.22,1,0.36,1)',
+      }}>
+        <div style={{ animation: 'verreFloat 5s ease-in-out infinite', position: 'relative' }}>
+          {/* Halo violet */}
+          <div style={{
+            position: 'absolute', inset: -24, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%)',
+            animation: 'haloBreath 3.5s ease-in-out infinite',
+          }} />
+          <VerreProgressifSVG
+            id={`mob-cours-${pageIndex}`}
+            width={188}
+            height={244}
+            highlight={null}
+          />
+        </div>
+      </div>
+
+      {/* Points du cours */}
+      {page.points && page.points.length > 0 && (
+        <div style={{
+          padding: '0 16px',
+          display: 'flex', flexDirection: 'column', gap: 9,
+          opacity: visible ? 1 : 0,
+          transition: 'opacity 0.6s ease 0.3s',
+        }}>
+          {page.points.map((pt, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 12,
+              background: 'rgba(124,58,237,0.07)',
+              border: '1px solid rgba(124,58,237,0.20)',
+              borderLeft: '3px solid rgba(124,58,237,0.60)',
+              borderRadius: 12, padding: '12px 14px',
+            }}>
+              <div style={{
+                width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                background: 'rgba(124,58,237,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, color: '#a78bfa', fontWeight: 800,
+              }}>{i + 1}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', fontWeight: 500, lineHeight: 1.55, paddingTop: 2 }}>
+                {pt}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Bas de page — écoute formateur */}
+      <div style={{
+        marginTop: 'auto', paddingTop: 20, padding: '20px 20px 0',
+        display: 'flex', alignItems: 'center', gap: 8,
+        opacity: visible ? 0.7 : 0, transition: 'opacity 0.8s ease 0.5s',
+      }}>
+        <div style={{ width: 7, height: 7, borderRadius: '50%', background: accent, animation: 'waitDot 1.5s ease-in-out infinite' }} />
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
+          Écoutez le formateur et regardez l&apos;écran de diffusion
+        </span>
+      </div>
+    </div>
+  )
+}
+
 // ── Progressif : Zone interactif participant ──────────────────────
 function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
   const [selected, setSelected] = useState(null)
@@ -1909,10 +2046,27 @@ function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
   const bg = 'linear-gradient(160deg, #03112a 0%, #12013a 100%)'
 
   if (!q) return (
-    <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
-      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain', marginBottom: 32 }} />
-      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>En attente de la question du formateur…</div>
-      <div style={{ width: 40, height: 2, background: 'rgba(124,58,237,0.3)', borderRadius: 1, marginTop: 16 }} />
+    <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', gap: 0 }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain', marginBottom: 28 }} />
+      <div style={{ position: 'relative', marginBottom: 20 }}>
+        <div style={{
+          position: 'absolute', inset: -20, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(124,58,237,0.22) 0%, transparent 70%)',
+          animation: 'haloBreath 3.5s ease-in-out infinite',
+        }} />
+        <VerreProgressifSVG id="zone-wait" width={140} height={180} highlight={null} />
+      </div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>
+        Zones du verre progressif
+      </div>
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', textAlign: 'center', maxWidth: 240 }}>
+        En attente de la question du formateur…
+      </div>
+      <div style={{ display: 'flex', gap: 5, marginTop: 16 }}>
+        {[0,1,2].map(i => (
+          <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: '#7c3aed', animation: `waitDot 1.4s ease-in-out ${i * 0.2}s infinite` }} />
+        ))}
+      </div>
     </div>
   )
 
@@ -2092,6 +2246,9 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
   if (page.type === 'force-lpt') return <ForceLPTMobile page={page} pageIndex={pageIndex} total={total} />
 
   // Progressif module types
+  const isProgressif = moduleLabel?.includes('Progressif')
+  if (page.type === 'cours' && isProgressif)
+    return <ProgressifCoursMobile page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'zone-interactif') return <ZoneInteractifMobile page={page} pName={pName || 'Anonyme'} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} />
   if (page.type === 'prog-retour')     return <RetourTerrainMobile  page={page} pName={pName || 'Anonyme'} />
   if (page.type === 'prog-objections') return <JeuObjectionsMobile  page={page} pName={pName || 'Anonyme'} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} />
