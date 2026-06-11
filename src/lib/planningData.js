@@ -6,21 +6,26 @@ export const PLANNING_JOURS = [
     color: '#00abe9',
     blocs: [
       {
-        horaire: '10h – 11h',
-        titre: 'Culture LPT',
+        horaire: '10h – 13h',
+        titre: 'Présentation Lunettes Pour Tous',
         items: [
-          'Avatar Paul — Histoire & vision',
+          'Histoire & vision',
           "L'accessibilité des lunettes",
           'Visite magasin & produits',
         ],
       },
       {
-        horaire: '',
-        titre: "Bases de l'optique",
+        horaire: '13h – 14h',
+        titre: 'Pause déjeuner',
+        items: [],
+      },
+      {
+        horaire: '14h – 18h',
+        titre: "Les bases de l'optique",
         items: [
-          'Avatar Opticien — Défauts visuels',
-          "Fondamentaux de l'optique",
-          'Quiz interactifs',
+          'Pourquoi porte-on des lunettes',
+          'Les troubles visuels',
+          "Lecture d'une ordonnance",
         ],
       },
     ],
@@ -32,23 +37,37 @@ export const PLANNING_JOURS = [
     color: '#4ade80',
     blocs: [
       {
-        horaire: '09h00',
+        horaire: '10h – 11h',
         titre: 'Réveil des acquis',
-        items: ['Quiz sur les notions J-1'],
+        items: [],
       },
       {
-        horaire: '10h – 11h',
-        titre: 'Parcours commercial',
+        horaire: '11h – 13h',
+        titre: "Trame d'accueil",
         items: [
-          "Trame d'accueil",
-          'Concept LPT',
-          'Offres : Suptime, 1+1, Classique, Pack 360',
+          'Présentation du concept aux clients',
         ],
       },
       {
-        horaire: '',
-        titre: 'Immersion terrain',
-        items: ['Observation en magasin', 'Mise en pratique'],
+        horaire: '13h – 14h',
+        titre: 'Pause déjeuner',
+        items: [],
+      },
+      {
+        horaire: '14h – 16h',
+        titre: 'Les offres',
+        items: [
+          'Parcours classique',
+          'Parcours 1+1',
+        ],
+      },
+      {
+        horaire: '16h – 18h',
+        titre: 'Immersion en magasin',
+        items: [
+          'Découverte de la vente, SAV et Montage',
+          'Accompagnement avec un binôme',
+        ],
       },
     ],
   },
@@ -59,21 +78,33 @@ export const PLANNING_JOURS = [
     color: '#f59e0b',
     blocs: [
       {
-        horaire: '09h30 – 12h',
-        titre: 'Acquis & Tiers payant',
+        horaire: '10h – 11h',
+        titre: 'Réveil des acquis + retour terrain',
         items: [
-          'Quiz de validation',
-          "Maîtrise trame d'accueil",
-          'Mutuelles & parcours client',
+          "Révision trame d'accueil",
         ],
       },
       {
-        horaire: '14h – 16h',
-        titre: 'Ventes & Mesures',
+        horaire: '11h – 13h',
+        titre: 'Les offres',
         items: [
-          'App de vente',
+          'Parcours Suprême',
+          'Tiers payant',
+        ],
+      },
+      {
+        horaire: '13h – 14h',
+        titre: 'Pause déjeuner',
+        items: [],
+      },
+      {
+        horaire: '14h – 15h',
+        titre: 'Simulation sur téléphone de vente',
+        items: [
+          'Découverte du téléphone',
+          'Prises de mesures',
           'Parcours client complet',
-          'Centrage optique & mesures',
+          'Backend',
         ],
       },
     ],
@@ -85,17 +116,24 @@ export const PLANNING_JOURS = [
     color: '#f472b6',
     blocs: [
       {
-        horaire: 'Matin',
-        titre: 'SAV & Cas pratiques',
-        items: ['Gestion des SAV', 'Cas pratiques'],
+        horaire: '10h – 13h',
+        titre: 'Montage / SAV',
+        items: [
+          'Gestion SAV',
+          'Cas pratiques',
+        ],
       },
       {
-        horaire: 'Après-midi',
-        titre: 'Montage & Clôture',
+        horaire: '13h – 14h',
+        titre: 'Pause déjeuner',
+        items: [],
+      },
+      {
+        horaire: '14h – 18h',
+        titre: 'Laboratoire',
         items: [
-          'Atelier montage',
-          'Parcours fabrication',
-          "Clôture de l'Onboarding",
+          'Découverte des machines',
+          'Mise en pratique montage',
         ],
       },
     ],
