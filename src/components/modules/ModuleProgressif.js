@@ -4,8 +4,6 @@ import Image from 'next/image'
 import { sbUpdate, SESSION_CODE, getSharedState, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { PROGRESSIF_PAGES, PROGRESSIF_QUIZ } from '@/lib/modulesData'
-import VerreProgressifSVG from './VerreProgressifSVG'
-
 const ACCENT = '#7c3aed'
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -37,9 +35,50 @@ const STYLES = `
   }
 `
 
-// VerreProgressifSchema = alias vers le SVG partagé
+// ── Schéma verre progressif — image PNG avec zones overlay ───────
+const PROG_ZONES = [
+  { key: 'haut',   label: 'LOIN',      color: '#a78bfa', top: '20%' },
+  { key: 'milieu', label: 'INTERMÉD.', color: '#4ade80', top: '52%' },
+  { key: 'bas',    label: 'PRÈS',      color: '#fbbf24', top: '80%' },
+]
+
 function VerreProgressifSchema({ highlight, small }) {
-  return <VerreProgressifSVG highlight={highlight} width={small ? 150 : 220} height={small ? 190 : 280} id={small ? 'vps-s' : 'vps-m'} />
+  const w = small ? 150 : 220
+  const h = small ? 194 : 284
+  return (
+    <div style={{ position: 'relative', display: 'inline-block', flexShrink: 0 }}>
+      <Image
+        src="/assets/verre-prog.png"
+        alt="Verre progressif"
+        width={w}
+        height={h}
+        style={{ objectFit: 'contain', display: 'block' }}
+        priority
+      />
+      {/* Badges de zone latéraux */}
+      {PROG_ZONES.map(z => (
+        <div key={z.key} style={{
+          position: 'absolute',
+          right: small ? -52 : -68,
+          top: z.top,
+          transform: 'translateY(-50%)',
+          display: 'flex', alignItems: 'center', gap: 5,
+          opacity: highlight === null || highlight === undefined ? 0.35 : highlight === z.key ? 1 : 0.12,
+          transition: 'opacity 0.4s ease',
+          pointerEvents: 'none',
+        }}>
+          <div style={{ width: small ? 14 : 20, height: 1, background: z.color, opacity: 0.8 }} />
+          <div style={{
+            background: highlight === z.key ? `${z.color}22` : 'transparent',
+            border: `1px solid ${z.color}${highlight === z.key ? '75' : '38'}`,
+            borderRadius: 8, padding: small ? '2px 6px' : '2px 8px',
+            fontSize: small ? 8 : 9, fontWeight: 800, color: z.color,
+            letterSpacing: 0.8, whiteSpace: 'nowrap',
+          }}>{z.label}</div>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 // ── Avatar bulle ────────────────────────────────────────────────

@@ -5,7 +5,6 @@ import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE, getSharedState, setSharedState } from '@/lib/supabase'
-import VerreProgressifSVG from '@/components/modules/VerreProgressifSVG'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -1378,9 +1377,62 @@ function TVEntrepriseMission({ page, pageIndex, total }) {
   )
 }
 
-// ── TV Progressif : schéma verre (SVG partagé) ───────────────────
+// ── TV Progressif : schéma verre PNG avec zones overlay ──────────
+const TV_PROG_ZONES = [
+  { key: 'haut',   label: 'LOIN',      color: '#a78bfa', top: '19%' },
+  { key: 'milieu', label: 'INTERMÉD.', color: '#4ade80', top: '52%' },
+  { key: 'bas',    label: 'PRÈS',      color: '#fbbf24', top: '80%' },
+]
+
 function TVVerreProgressifSchema({ highlight }) {
-  return <VerreProgressifSVG highlight={highlight} width={280} height={355} id="vps-tv" />
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      {/* Halo respirant derrière l'image */}
+      <div style={{
+        position: 'absolute', inset: -32, borderRadius: '50%', zIndex: 0,
+        background: 'radial-gradient(circle, rgba(124,58,237,0.28) 0%, transparent 68%)',
+        animation: 'haloPulse 3.8s ease-in-out infinite',
+      }} />
+      {/* Image principale avec float */}
+      <div style={{ animation: 'verreFloat 4.5s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
+        <Image
+          src="/assets/verre-prog.png"
+          alt="Verre progressif"
+          width={290}
+          height={374}
+          style={{
+            objectFit: 'contain',
+            display: 'block',
+            filter: 'drop-shadow(0 0 36px rgba(124,58,237,0.65)) drop-shadow(0 20px 48px rgba(0,0,0,0.55))',
+          }}
+          priority
+        />
+      </div>
+      {/* Badges zones */}
+      {TV_PROG_ZONES.map(z => (
+        <div key={z.key} style={{
+          position: 'absolute', zIndex: 2,
+          right: -92,
+          top: z.top,
+          transform: 'translateY(-50%)',
+          display: 'flex', alignItems: 'center', gap: 6,
+          opacity: highlight === null || highlight === undefined ? 0.38 : highlight === z.key ? 1 : 0.14,
+          transition: 'opacity 0.45s ease',
+          pointerEvents: 'none',
+        }}>
+          <div style={{ width: 24, height: 1, background: z.color, opacity: 0.85 }} />
+          <div style={{
+            background: highlight === z.key ? `${z.color}22` : 'transparent',
+            border: `1px solid ${z.color}${highlight === z.key ? '80' : '38'}`,
+            borderRadius: 10, padding: '3px 10px',
+            fontSize: 11, fontWeight: 800, color: z.color, letterSpacing: 1,
+            whiteSpace: 'nowrap',
+            boxShadow: highlight === z.key ? `0 0 12px ${z.color}45` : 'none',
+          }}>{z.label}</div>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 const OPT_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
