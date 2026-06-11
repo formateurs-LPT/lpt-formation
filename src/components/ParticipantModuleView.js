@@ -2624,9 +2624,10 @@ function ParticipantPlanningScreen({ planningDay }) {
 }
 
 function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
-  const sync = useModuleSync(forcedModule != null ? 99999 : 1200)
-  const activeModule = forcedModule ?? sync.activeModule
-  const modulePage   = forcedPage  ?? sync.modulePage
+  const sync = useModuleSync({ disabled: forcedModule != null })
+  const activeModule  = forcedModule ?? sync.activeModule
+  const modulePage    = forcedPage   ?? sync.modulePage
+  const sharedState   = sync.sharedState
   const [planningDay, setPlanningDay]         = useState(null)
   const [tvScreen, setTvScreen]               = useState(null)
   const [progZoneQ, setProgZoneQ]             = useState(null)
@@ -2634,22 +2635,16 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
   const [progObjectionIdx, setProgObjectionIdx]   = useState(null)
   const [progObjectionResponses, setProgObjectionResponses] = useState({})
 
+  // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
-    const poll = async () => {
-      try {
-        const state = await getSharedState()
-        setTvScreen(state?.tv_screen || null)
-        setPlanningDay(state?.planning_day || null)
-        setProgZoneQ(state?.prog_zone_q ?? null)
-        setProgZoneResponses(state?.prog_zone_responses || {})
-        setProgObjectionIdx(state?.prog_objection_idx ?? null)
-        setProgObjectionResponses(state?.prog_objection_responses || {})
-      } catch { /* ignore */ }
-    }
-    poll()
-    const t = setInterval(poll, 2000)
-    return () => clearInterval(t)
-  }, [])
+    if (!sharedState) return
+    setTvScreen(sharedState.tv_screen || null)
+    setPlanningDay(sharedState.planning_day || null)
+    setProgZoneQ(sharedState.prog_zone_q ?? null)
+    setProgZoneResponses(sharedState.prog_zone_responses || {})
+    setProgObjectionIdx(sharedState.prog_objection_idx ?? null)
+    setProgObjectionResponses(sharedState.prog_objection_responses || {})
+  }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
   const pages = moduleData?.pages || []

@@ -2240,7 +2240,7 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
 
 // ── TV View ───────────────────────────────────────────────────────
 export default function TVView() {
-  const { activeModule, modulePage, loading } = useModuleSync(1500)
+  const { activeModule, modulePage, sharedState, loading } = useModuleSync()
   const [tvScreen, setTvScreen]               = useState(null)
   const [troublesPhase, setTroublesPhase]     = useState(1)
   const [opticienPlaying, setOpticienPlaying] = useState(false)
@@ -2269,33 +2269,26 @@ export default function TVView() {
     }).catch(() => {})
   }, [])
 
+  // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
-    const poll = async () => {
-      try {
-        const state = await getSharedState()
-        setTvScreen(state?.tv_screen || null)
-        setTroublesPhase(state?.troubles_phase || 1)
-        setOpticienPlaying(!!state?.opticien_playing)
-        setOrdoPlaying(!!state?.ordo_playing)
-        setFreinsResponses(state?.freins_responses || {})
-        setPrixResponses(state?.prix_responses || {})
-        setVentesResponses(state?.ventes_responses || {})
-        setPromesseResponses(state?.promesse_responses || {})
-        setPlanningDay(state?.planning_day || null)
-        // Progressif
-        setProgZoneQ(state?.prog_zone_q ?? null)
-        setProgZoneResponses(state?.prog_zone_responses || {})
-        setProgZoneShowCorrect(!!state?.prog_zone_show_correct)
-        setProgRetourResponses(state?.prog_retour_responses || {})
-        setProgObjectionIdx(state?.prog_objection_idx ?? null)
-        setProgObjectionResponses(state?.prog_objection_responses || {})
-        setProgBestAnswer(state?.prog_best_answer || null)
-      } catch { /* ignore */ }
-    }
-    poll()
-    const t = setInterval(poll, 1500)
-    return () => clearInterval(t)
-  }, [])
+    if (!sharedState) return
+    setTvScreen(sharedState.tv_screen || null)
+    setTroublesPhase(sharedState.troubles_phase || 1)
+    setOpticienPlaying(!!sharedState.opticien_playing)
+    setOrdoPlaying(!!sharedState.ordo_playing)
+    setFreinsResponses(sharedState.freins_responses || {})
+    setPrixResponses(sharedState.prix_responses || {})
+    setVentesResponses(sharedState.ventes_responses || {})
+    setPromesseResponses(sharedState.promesse_responses || {})
+    setPlanningDay(sharedState.planning_day || null)
+    setProgZoneQ(sharedState.prog_zone_q ?? null)
+    setProgZoneResponses(sharedState.prog_zone_responses || {})
+    setProgZoneShowCorrect(!!sharedState.prog_zone_show_correct)
+    setProgRetourResponses(sharedState.prog_retour_responses || {})
+    setProgObjectionIdx(sharedState.prog_objection_idx ?? null)
+    setProgObjectionResponses(sharedState.prog_objection_responses || {})
+    setProgBestAnswer(sharedState.prog_best_answer || null)
+  }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
   const isLobby   = !!moduleData && modulePage === -1
