@@ -1395,17 +1395,16 @@ function TVVerreProgressifSchema({ highlight }) {
       }} />
       {/* Image principale avec float */}
       <div style={{ animation: 'verreFloat 4.5s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src="/assets/verre-prog.png"
           alt="Verre progressif"
-          width={290}
-          height={374}
           style={{
-            objectFit: 'contain',
+            width: 300,
+            height: 'auto',
             display: 'block',
             filter: 'drop-shadow(0 0 36px rgba(124,58,237,0.65)) drop-shadow(0 20px 48px rgba(0,0,0,0.55))',
           }}
-          priority
         />
       </div>
       {/* Badges zones */}

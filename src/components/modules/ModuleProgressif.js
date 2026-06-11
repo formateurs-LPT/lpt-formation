@@ -44,16 +44,13 @@ const PROG_ZONES = [
 
 function VerreProgressifSchema({ highlight, small }) {
   const w = small ? 150 : 220
-  const h = small ? 194 : 284
   return (
     <div style={{ position: 'relative', display: 'inline-block', flexShrink: 0 }}>
-      <Image
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src="/assets/verre-prog.png"
         alt="Verre progressif"
-        width={w}
-        height={h}
-        style={{ objectFit: 'contain', display: 'block' }}
-        priority
+        style={{ width: w, height: 'auto', display: 'block' }}
       />
       {/* Badges de zone latéraux */}
       {PROG_ZONES.map(z => (

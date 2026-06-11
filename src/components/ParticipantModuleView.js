@@ -8,7 +8,6 @@ import { sbUpsert, sbSelect, SESSION_CODE, ensureSession, getSharedState, setSha
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName } from '@/lib/participantNames'
-import VerreProgressifSVG from '@/components/modules/VerreProgressifSVG'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -1963,11 +1962,11 @@ function ProgressifCoursMobile({ page, pageIndex, total }) {
             background: 'radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%)',
             animation: 'haloBreath 3.5s ease-in-out infinite',
           }} />
-          <VerreProgressifSVG
-            id={`mob-cours-${pageIndex}`}
-            width={188}
-            height={244}
-            highlight={null}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/verre-prog.png"
+            alt="Verre progressif"
+            style={{ width: 188, height: 'auto', display: 'block' }}
           />
         </div>
       </div>
@@ -2054,7 +2053,8 @@ function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
           background: 'radial-gradient(circle, rgba(124,58,237,0.22) 0%, transparent 70%)',
           animation: 'haloBreath 3.5s ease-in-out infinite',
         }} />
-        <VerreProgressifSVG id="zone-wait" width={140} height={180} highlight={null} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/verre-prog.png" alt="Verre progressif" style={{ width: 140, height: 'auto', display: 'block', position: 'relative', zIndex: 1 }} />
       </div>
       <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>
         Zones du verre progressif
