@@ -11,6 +11,7 @@ import { resolveParticipantName } from '@/lib/participantNames'
 import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
+import ModuleProgressif from '@/components/modules/ModuleProgressif'
 import ModulePDM from '@/components/modules/ModulePDM'
 import ModuleOptique from '@/components/modules/ModuleOptique'
 import ModuleOffres from '@/components/modules/ModuleOffres'
@@ -208,6 +209,12 @@ export default function Page() {
         <ModuleEntreprise
           pName={pName}
           onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-verre-progressif' && (
+        <ModuleProgressif
+          pName={pName}
+          onBack={handleBackToDashboard}
         />
       )}
       <Toast message={message} />

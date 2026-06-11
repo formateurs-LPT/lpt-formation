@@ -1377,8 +1377,191 @@ function TVEntrepriseMission({ page, pageIndex, total }) {
   )
 }
 
+// ── TV Progressif : schéma verre ────────────────────────────────
+function TVVerreProgressifSchema({ highlight }) {
+  const zones = [
+    { key: 'haut',   label: 'LOIN',          color: '#7c3aed', top: '0%',   height: '40%', left: '8%',  right: '8%' },
+    { key: 'milieu', label: 'INTERMÉD.', color: '#4ade80', top: '40%',  height: '22%', left: '20%', right: '20%' },
+    { key: 'bas',    label: 'PRÈS',          color: '#f59e0b', top: '62%',  height: '38%', left: '14%', right: '14%' },
+  ]
+  return (
+    <div style={{ position: 'relative', width: 260, height: 360, borderRadius: '45% 45% 42% 42% / 25% 25% 22% 22%', border: '2px solid rgba(124,58,237,0.4)', overflow: 'hidden', background: 'rgba(10,18,40,0.7)', flexShrink: 0 }}>
+      {zones.map(z => (
+        <div key={z.key} style={{ position: 'absolute', top: z.top, height: z.height, left: z.left, right: z.right, background: highlight === z.key ? `${z.color}55` : `${z.color}14`, border: highlight === z.key ? `1px solid ${z.color}90` : '1px solid transparent', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.4s ease' }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: highlight === z.key ? '#fff' : z.color, textTransform: 'uppercase', letterSpacing: 1, textAlign: 'center', lineHeight: 1.2 }}>{z.label}</span>
+        </div>
+      ))}
+      <div style={{ position: 'absolute', top: '28%', bottom: '22%', left: 0, width: '10%', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', writingMode: 'vertical-lr', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>FLOU</span>
+      </div>
+      <div style={{ position: 'absolute', top: '28%', bottom: '22%', right: 0, width: '10%', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.2)', writingMode: 'vertical-lr', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>FLOU</span>
+      </div>
+      <div style={{ position: 'absolute', top: '40%', left: '8%', right: '8%', height: 1, background: 'rgba(255,255,255,0.1)' }} />
+      <div style={{ position: 'absolute', top: '62%', left: '8%', right: '8%', height: 1, background: 'rgba(255,255,255,0.1)' }} />
+    </div>
+  )
+}
+
+const OPT_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
+
+// ── TV Progressif : zone interactif ──────────────────────────────
+function TVProgressifZoneInteractif({ page, pageIndex, total, progZoneQ, progZoneResponses, progZoneShowCorrect }) {
+  const q = progZoneQ !== null && progZoneQ !== undefined ? page.zoneQuestions[progZoneQ] : null
+  const entries = Object.entries(progZoneResponses || {})
+  const totalR = entries.length
+  const counts = q ? q.options.map((_, i) => entries.filter(([, v]) => v === i).length) : []
+  const highlight = progZoneQ === 0 ? 'haut' : progZoneQ === 1 ? 'bas' : null
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #12013a 55%, #0d0a3a 100%)', display: 'flex', flexDirection: 'column', padding: '32px 56px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Le Verre Progressif · Exercice interactif</span>
+        </div>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+      </div>
+
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 56, alignItems: 'center' }}>
+        {/* Schéma verre */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+          <TVVerreProgressifSchema highlight={highlight} />
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>Schéma · verre progressif</div>
+        </div>
+
+        {/* Question + résultats */}
+        <div>
+          {q ? (
+            <>
+              <div style={{ display: 'inline-block', background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)', borderRadius: 20, padding: '5px 18px', fontSize: 13, fontWeight: 700, color: '#a78bfa', marginBottom: 20, textTransform: 'uppercase', letterSpacing: 1 }}>
+                Question {(progZoneQ || 0) + 1} / {page.zoneQuestions.length}
+              </div>
+              <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', marginBottom: 36, lineHeight: 1.2 }}>{q.question}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {q.options.map((opt, i) => {
+                  const cnt = counts[i]
+                  const pct = totalR > 0 ? (cnt / totalR) * 100 : 0
+                  const isCorrect = i === q.correct
+                  return (
+                    <div key={i} style={{ background: progZoneShowCorrect && isCorrect ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.05)', border: `1px solid ${progZoneShowCorrect && isCorrect ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 16, padding: '16px 20px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                          <div style={{ width: 40, height: 40, borderRadius: '50%', background: OPT_COLORS[i], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{'ABC'[i]}</div>
+                          <span style={{ fontSize: 18, fontWeight: 600, color: '#fff' }}>{opt}</span>
+                          {progZoneShowCorrect && isCorrect && <span style={{ fontSize: 12, color: '#4ade80', fontWeight: 700, background: 'rgba(34,197,94,0.15)', padding: '3px 12px', borderRadius: 20 }}>✓ Correct</span>}
+                        </div>
+                        <span style={{ fontSize: 28, fontWeight: 800, color: progZoneShowCorrect && isCorrect ? '#4ade80' : '#fff' }}>{cnt}</span>
+                      </div>
+                      <div style={{ height: 10, background: 'rgba(255,255,255,0.08)', borderRadius: 5, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', borderRadius: 5, width: `${pct}%`, background: progZoneShowCorrect && isCorrect ? '#4ade80' : OPT_COLORS[i], transition: 'width .5s ease' }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <div style={{ marginTop: 20, fontSize: 18, color: 'rgba(255,255,255,0.4)' }}>
+                <span style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginRight: 8 }}>{totalR}</span>
+                réponse{totalR !== 1 ? 's' : ''}
+              </div>
+            </>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.4 }}>
+              <div style={{ textAlign: 'center', fontSize: 20, color: 'rgba(255,255,255,0.5)' }}>Le formateur va lancer une question…</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── TV Progressif : retour terrain (bulles) ───────────────────────
+function TVProgressifRetourTerrain({ page, pageIndex, total, progRetourResponses }) {
+  const entries = Object.entries(progRetourResponses || {})
+  return (
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent="#7c3aed"
+      waiting={entries.length === 0}
+      moduleLabel="Le Verre Progressif"
+    >
+      {entries.map(([name, resp], idx) => (
+        <div key={name} style={{
+          background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.3)',
+          borderRadius: 20, padding: '14px 18px', maxWidth: 280,
+          marginTop: B_MT[idx % B_MT.length], transform: `rotate(${B_ROT[idx % B_ROT.length]}deg)`,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>{name}</div>
+          <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.5, fontWeight: 500 }}>{resp.text || resp}</div>
+        </div>
+      ))}
+    </TVBubbleScreen>
+  )
+}
+
+// ── TV Progressif : jeu d'objections ────────────────────────────
+function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, progObjectionResponses, progBestAnswer }) {
+  const objection = progObjectionIdx !== null && progObjectionIdx !== undefined ? page.objections[progObjectionIdx] : null
+  const entries = Object.entries(progObjectionResponses || {})
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #12013a 55%, #0d0a3a 100%)', display: 'flex', flexDirection: 'column', padding: '32px 56px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Le Verre Progressif · Jeu d'objections</span>
+        </div>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+      </div>
+
+      {objection ? (
+        <>
+          {/* Objection */}
+          <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 20, padding: '24px 32px', marginBottom: 32, maxWidth: 900, alignSelf: 'center', width: '100%', textAlign: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Le client dit :</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1.3, fontStyle: 'italic' }}>"{objection}"</div>
+          </div>
+
+          {/* Réponses */}
+          {entries.length === 0 ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.4 }}>
+              <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>En attente des réponses sur les téléphones…</div>
+            </div>
+          ) : (
+            <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start', padding: '8px 0', columnGap: 20, rowGap: 44 }}>
+              {entries.map(([name, resp], idx) => (
+                <div key={name} style={{
+                  background: progBestAnswer === name ? 'rgba(34,197,94,0.15)' : 'rgba(124,58,237,0.12)',
+                  border: `1px solid ${progBestAnswer === name ? 'rgba(34,197,94,0.5)' : 'rgba(124,58,237,0.3)'}`,
+                  borderRadius: 20, padding: '14px 18px', maxWidth: 300,
+                  marginTop: B_MT[idx % B_MT.length], transform: `rotate(${B_ROT[idx % B_ROT.length]}deg)`,
+                  transition: 'all 0.4s ease',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: progBestAnswer === name ? '#4ade80' : '#a78bfa', textTransform: 'uppercase', letterSpacing: 0.5 }}>{name}</span>
+                    {progBestAnswer === name && <span style={{ fontSize: 10, color: '#4ade80', fontWeight: 700 }}>⭐</span>}
+                  </div>
+                  <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.5, fontWeight: 500 }}>{resp.text || resp}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.4 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.5)' }}>Le formateur va choisir une objection…</div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── TV Content Page (no controls, no avatar) ──────────────────────
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -1413,6 +1596,11 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'visages')    return <TVEntrepriseVisages   page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'croissance') return <TVEntrepriseCroissance page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'mission')    return <TVEntrepriseMission   page={page} pageIndex={pageIndex} total={total} />
+
+  // Progressif module types
+  if (page.type === 'zone-interactif') return <TVProgressifZoneInteractif page={page} pageIndex={pageIndex} total={total} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progZoneShowCorrect={progZoneShowCorrect} />
+  if (page.type === 'prog-retour')     return <TVProgressifRetourTerrain  page={page} pageIndex={pageIndex} total={total} progRetourResponses={progRetourResponses} />
+  if (page.type === 'prog-objections') return <TVProgressifJeuObjections  page={page} pageIndex={pageIndex} total={total} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} progBestAnswer={progBestAnswer} />
 
   return (
     <div style={{
@@ -2027,11 +2215,19 @@ export default function TVView() {
   const [opticienPlaying, setOpticienPlaying] = useState(false)
   const [ordoPlaying, setOrdoPlaying]         = useState(false)
   const [audioUnlocked, setAudioUnlocked]     = useState(false)
-  const [freinsResponses, setFreinsResponses]       = useState({})
-  const [prixResponses, setPrixResponses]           = useState({})
-  const [ventesResponses, setVentesResponses]       = useState({})
-  const [promesseResponses, setPromesseResponses]   = useState({})
-  const [planningDay, setPlanningDay]               = useState(null)
+  const [freinsResponses, setFreinsResponses]           = useState({})
+  const [prixResponses, setPrixResponses]               = useState({})
+  const [ventesResponses, setVentesResponses]           = useState({})
+  const [promesseResponses, setPromesseResponses]       = useState({})
+  const [planningDay, setPlanningDay]                   = useState(null)
+  // Progressif interactive state
+  const [progZoneQ, setProgZoneQ]                       = useState(null)
+  const [progZoneResponses, setProgZoneResponses]       = useState({})
+  const [progZoneShowCorrect, setProgZoneShowCorrect]   = useState(false)
+  const [progRetourResponses, setProgRetourResponses]   = useState({})
+  const [progObjectionIdx, setProgObjectionIdx]         = useState(null)
+  const [progObjectionResponses, setProgObjectionResponses] = useState({})
+  const [progBestAnswer, setProgBestAnswer]             = useState(null)
 
   // À l'ouverture de la TV : remet tv_screen à null pour toujours afficher la bienvenue
   useEffect(() => {
@@ -2055,6 +2251,14 @@ export default function TVView() {
         setVentesResponses(state?.ventes_responses || {})
         setPromesseResponses(state?.promesse_responses || {})
         setPlanningDay(state?.planning_day || null)
+        // Progressif
+        setProgZoneQ(state?.prog_zone_q ?? null)
+        setProgZoneResponses(state?.prog_zone_responses || {})
+        setProgZoneShowCorrect(!!state?.prog_zone_show_correct)
+        setProgRetourResponses(state?.prog_retour_responses || {})
+        setProgObjectionIdx(state?.prog_objection_idx ?? null)
+        setProgObjectionResponses(state?.prog_objection_responses || {})
+        setProgBestAnswer(state?.prog_best_answer || null)
       } catch { /* ignore */ }
     }
     poll()
@@ -2139,6 +2343,13 @@ export default function TVView() {
           prixResponses={prixResponses}
           ventesResponses={ventesResponses}
           promesseResponses={promesseResponses}
+          progZoneQ={progZoneQ}
+          progZoneResponses={progZoneResponses}
+          progZoneShowCorrect={progZoneShowCorrect}
+          progRetourResponses={progRetourResponses}
+          progObjectionIdx={progObjectionIdx}
+          progObjectionResponses={progObjectionResponses}
+          progBestAnswer={progBestAnswer}
         />
       ) : (
         <WelcomeScreen />

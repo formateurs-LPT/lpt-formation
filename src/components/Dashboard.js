@@ -478,23 +478,23 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
             <div><h2>Démarrer une session</h2><p>Choisissez le module de formation à lancer</p></div>
           </div>
           <div
-            onClick={onLaunchSession}
+            onClick={() => onLaunchModule('verre-progressif')}
             style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '28px 30px', cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 24, marginBottom: 12 }}
-            onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--lpt)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,171,233,.12)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseOver={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(124,58,237,.12)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
             onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
           >
-            <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg,#0089ba,#00abe9)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, flexShrink: 0 }}>🎓</div>
+            <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg,#7c3aed,#9f67fa)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, flexShrink: 0 }}>🔬</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--lpt)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Module disponible</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Formation — Le Verre Progressif</div>
-              <div style={{ fontSize: 13, color: 'var(--text-s)', marginBottom: 12 }}>Module complet de formation à la vente et à la compréhension du verre progressif.</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Module J+14 · Formation retour terrain</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Le Verre Progressif</div>
+              <div style={{ fontSize: 13, color: 'var(--text-s)', marginBottom: 12 }}>Module interactif complet : anatomie, zones, presbytie, arguments LPT, jeu d'objections et quiz final 8 questions.</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {['① Quiz initial', '② Les bases', '③ Arguments & Offre', '④ Ordonnances', '⑤ Quiz final'].map(t => (
-                  <span key={t} style={{ padding: '3px 10px', background: 'var(--lpt-l)', color: 'var(--lpt-dd)', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>{t}</span>
+                {['① Anatomie', '② Zones quiz', '③ Presbytie', '④ Retour terrain', '⑤ Arguments', '⑥ Objections', '⑦ Quiz 8Q'].map(t => (
+                  <span key={t} style={{ padding: '3px 10px', background: 'rgba(124,58,237,0.08)', color: '#7c3aed', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>{t}</span>
                 ))}
               </div>
             </div>
-            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--lpt)', fontSize: 14, fontWeight: 600 }}>
+            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, color: '#7c3aed', fontSize: 14, fontWeight: 600 }}>
               Lancer <span style={{ fontSize: 20 }}>→</span>
             </div>
           </div>

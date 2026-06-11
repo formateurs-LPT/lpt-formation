@@ -1880,7 +1880,190 @@ function ForceLPTMobile({ page, pageIndex, total }) {
   )
 }
 
-function ModuleScreen({ page, pageIndex, total, moduleLabel, pName }) {
+// ── Progressif : Zone interactif participant ──────────────────────
+function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
+  const [selected, setSelected] = useState(null)
+  const [sent, setSent] = useState(false)
+
+  useEffect(() => { setSelected(null); setSent(false) }, [progZoneQ])
+
+  useEffect(() => {
+    if (progZoneQ !== null && progZoneQ !== undefined && progZoneResponses?.[pName] !== undefined) {
+      setSelected(progZoneResponses[pName])
+      setSent(true)
+    }
+  }, [progZoneResponses, pName, progZoneQ])
+
+  const q = progZoneQ !== null && progZoneQ !== undefined ? page.zoneQuestions?.[progZoneQ] : null
+  const COLORS = ['#ef4444', '#3b82f6', '#f59e0b']
+
+  const handleSelect = async (idx) => {
+    if (sent) return
+    setSelected(idx)
+    setSent(true)
+    const state = await getSharedState()
+    const current = state?.prog_zone_responses || {}
+    await setSharedState({ prog_zone_responses: { ...current, [pName]: idx } })
+  }
+
+  const bg = 'linear-gradient(160deg, #03112a 0%, #12013a 100%)'
+
+  if (!q) return (
+    <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain', marginBottom: 32 }} />
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>En attente de la question du formateur…</div>
+      <div style={{ width: 40, height: 2, background: 'rgba(124,58,237,0.3)', borderRadius: 1, marginTop: 16 }} />
+    </div>
+  )
+
+  return (
+    <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', padding: '52px 24px 40px' }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain', marginBottom: 28 }} />
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Question {(progZoneQ || 0) + 1} / {page.zoneQuestions?.length}</div>
+      <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff', lineHeight: 1.4, marginBottom: 28 }}>{q.question}</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {q.options.map((opt, i) => (
+          <button key={i} onClick={() => handleSelect(i)} disabled={sent} style={{
+            background: sent ? (selected === i ? 'rgba(124,58,237,0.25)' : 'rgba(255,255,255,0.04)') : 'rgba(255,255,255,0.07)',
+            border: `2px solid ${sent && selected === i ? '#7c3aed' : 'rgba(255,255,255,0.12)'}`,
+            borderRadius: 14, padding: '16px 20px',
+            display: 'flex', alignItems: 'center', gap: 14, cursor: sent ? 'default' : 'pointer', fontFamily: 'inherit',
+          }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', background: COLORS[i], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{'ABC'[i]}</div>
+            <span style={{ fontSize: 15, fontWeight: 600, color: sent && selected === i ? '#a78bfa' : '#fff' }}>{opt}</span>
+            {sent && selected === i && <span style={{ marginLeft: 'auto', fontSize: 18 }}>✓</span>}
+          </button>
+        ))}
+      </div>
+      {sent && <div style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Réponse envoyée — en attente du formateur</div>}
+    </div>
+  )
+}
+
+// ── Progressif : Retour terrain participant ───────────────────────
+function RetourTerrainMobile({ page, pName }) {
+  const [text, setText] = useState('')
+  const [sent, setSent] = useState(false)
+  const [sentText, setSentText] = useState('')
+  const [sending, setSending] = useState(false)
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return
+    setSending(true)
+    try {
+      const state = await getSharedState()
+      const current = state?.prog_retour_responses || {}
+      await setSharedState({ prog_retour_responses: { ...current, [pName]: { text: text.trim() } } })
+      setSentText(text.trim())
+      setSent(true)
+    } catch { /* ignore */ }
+    setSending(false)
+  }
+
+  const bg = 'linear-gradient(160deg, #03112a 0%, #12013a 100%)'
+  return (
+    <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', padding: '52px 24px 40px' }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain', marginBottom: 28 }} />
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Retour du terrain · J+14</div>
+      <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff', lineHeight: 1.4, marginBottom: 8 }}>{page.question}</h2>
+      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 24 }}>Partagez une expérience réelle de vos 2 semaines en magasin</p>
+
+      {sent ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.35)', borderRadius: 16, padding: '16px 20px' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', marginBottom: 6, textTransform: 'uppercase' }}>Votre réponse</div>
+            <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.6 }}>{sentText}</div>
+          </div>
+          <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Réponse partagée avec le groupe</div>
+          <button onClick={() => setSent(false)} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '12px', borderRadius: 12, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Modifier</button>
+        </div>
+      ) : (
+        <>
+          <textarea value={text} onChange={e => setText(e.target.value)} placeholder={page.placeholder || "Décrivez votre expérience…"}
+            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 14, padding: '16px', fontSize: 15, color: '#fff', lineHeight: 1.6, resize: 'none', height: 160, fontFamily: 'inherit', marginBottom: 16, outline: 'none' }} />
+          <button onClick={handleSend} disabled={!text.trim() || sending}
+            style={{ background: text.trim() ? 'linear-gradient(135deg, #7c3aed, #9f67fa)' : 'rgba(255,255,255,0.06)', border: 'none', color: text.trim() ? '#fff' : 'rgba(255,255,255,0.3)', padding: '16px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+            {sending ? 'Envoi…' : 'Partager avec le groupe →'}
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Progressif : Jeu d'objections participant ─────────────────────
+function JeuObjectionsMobile({ page, pName, progObjectionIdx, progObjectionResponses }) {
+  const [text, setText] = useState('')
+  const [sent, setSent] = useState(false)
+  const [sentText, setSentText] = useState('')
+  const [sending, setSending] = useState(false)
+
+  useEffect(() => { setText(''); setSent(false); setSentText('') }, [progObjectionIdx])
+
+  useEffect(() => {
+    if (progObjectionIdx !== null && progObjectionIdx !== undefined && progObjectionResponses?.[pName]) {
+      const r = progObjectionResponses[pName]
+      setSentText(r.text || r)
+      setSent(true)
+    }
+  }, [progObjectionResponses, pName, progObjectionIdx])
+
+  const objection = progObjectionIdx !== null && progObjectionIdx !== undefined ? page.objections?.[progObjectionIdx] : null
+  const bg = 'linear-gradient(160deg, #03112a 0%, #12013a 100%)'
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return
+    setSending(true)
+    try {
+      const state = await getSharedState()
+      const current = state?.prog_objection_responses || {}
+      await setSharedState({ prog_objection_responses: { ...current, [pName]: { text: text.trim() } } })
+      setSentText(text.trim())
+      setSent(true)
+    } catch { /* ignore */ }
+    setSending(false)
+  }
+
+  if (!objection) return (
+    <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain', marginBottom: 32 }} />
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>Le formateur va choisir une objection…</div>
+    </div>
+  )
+
+  return (
+    <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', padding: '52px 24px 40px' }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain', marginBottom: 28 }} />
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Le client dit :</div>
+      <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 16, padding: '16px 20px', marginBottom: 24 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', lineHeight: 1.4, fontStyle: 'italic' }}>"{objection}"</div>
+      </div>
+      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 16 }}>Quelle est votre meilleure réponse à cette objection ?</p>
+
+      {sent ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.35)', borderRadius: 16, padding: '16px 20px' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', marginBottom: 6, textTransform: 'uppercase' }}>Votre réponse</div>
+            <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.6 }}>{sentText}</div>
+          </div>
+          <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>En attente du formateur</div>
+          <button onClick={() => setSent(false)} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '12px', borderRadius: 12, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Modifier</button>
+        </div>
+      ) : (
+        <>
+          <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Tapez votre meilleure réponse…"
+            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 14, padding: '16px', fontSize: 15, color: '#fff', lineHeight: 1.6, resize: 'none', height: 140, fontFamily: 'inherit', marginBottom: 16, outline: 'none' }} />
+          <button onClick={handleSend} disabled={!text.trim() || sending}
+            style={{ background: text.trim() ? 'linear-gradient(135deg, #7c3aed, #9f67fa)' : 'rgba(255,255,255,0.06)', border: 'none', color: text.trim() ? '#fff' : 'rgba(255,255,255,0.3)', padding: '16px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+            {sending ? 'Envoi…' : 'Envoyer ma réponse →'}
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
+function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
@@ -1907,6 +2090,11 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName }) {
 
   // Force LPT — liste progressive
   if (page.type === 'force-lpt') return <ForceLPTMobile page={page} pageIndex={pageIndex} total={total} />
+
+  // Progressif module types
+  if (page.type === 'zone-interactif') return <ZoneInteractifMobile page={page} pName={pName || 'Anonyme'} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} />
+  if (page.type === 'prog-retour')     return <RetourTerrainMobile  page={page} pName={pName || 'Anonyme'} />
+  if (page.type === 'prog-objections') return <JeuObjectionsMobile  page={page} pName={pName || 'Anonyme'} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} />
 
   // Chiffres clés LPT
   if (page.type === 'chiffres') return (
@@ -2282,8 +2470,12 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
   const sync = useModuleSync(forcedModule != null ? 99999 : 1200)
   const activeModule = forcedModule ?? sync.activeModule
   const modulePage   = forcedPage  ?? sync.modulePage
-  const [planningDay, setPlanningDay] = useState(null)
-  const [tvScreen, setTvScreen]       = useState(null)
+  const [planningDay, setPlanningDay]         = useState(null)
+  const [tvScreen, setTvScreen]               = useState(null)
+  const [progZoneQ, setProgZoneQ]             = useState(null)
+  const [progZoneResponses, setProgZoneResponses] = useState({})
+  const [progObjectionIdx, setProgObjectionIdx]   = useState(null)
+  const [progObjectionResponses, setProgObjectionResponses] = useState({})
 
   useEffect(() => {
     const poll = async () => {
@@ -2291,6 +2483,10 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
         const state = await getSharedState()
         setTvScreen(state?.tv_screen || null)
         setPlanningDay(state?.planning_day || null)
+        setProgZoneQ(state?.prog_zone_q ?? null)
+        setProgZoneResponses(state?.prog_zone_responses || {})
+        setProgObjectionIdx(state?.prog_objection_idx ?? null)
+        setProgObjectionResponses(state?.prog_objection_responses || {})
       } catch { /* ignore */ }
     }
     poll()
@@ -2321,7 +2517,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
             : isQuiz
               ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
               : page
-                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} />
+                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} />
                 : <WaitingScreen />
       }
     </>
