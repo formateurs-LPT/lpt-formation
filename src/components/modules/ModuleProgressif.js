@@ -203,13 +203,6 @@ function ZoneInteractifPage({ page, trainerAvatar, pName, onPrev, onNext, onBack
   const [responses, setResponses] = useState({})
   const [showCorrect, setShowCorrect] = useState(false)
 
-  // Reset de la DB au montage : vide toute valeur stale d'une session précédente
-  // (sinon la TV affiche une question sans que le formateur l'ait lancée)
-  useEffect(() => {
-    setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_zone_show_correct: false })
-      .catch(() => {})
-  }, [])
-
   // Sync activeQ to trainer_state
   const launchQuestion = async (idx) => {
     setActiveQ(idx)
@@ -777,9 +770,15 @@ export default function ModuleProgressif({ pName, onBack }) {
   const isFirst = pageIndex === 0
   const isLast = pageIndex === PROGRESSIF_PAGES.length - 1
 
-  // Vide les réponses textuelles quand le formateur quitte une page interactive
-  // → réduit l'egress Supabase (les réponses pèsent ~4 Ko quand tous ont répondu)
+  // Nettoyage DB avant navigation
   const handleNext = async () => {
+    const nextPage = PROGRESSIF_PAGES[pageIndex + 1]
+
+    // Reset zone-interactif AVANT d'y entrer (évite race condition avec launchQuestion)
+    if (nextPage?.type === 'zone-interactif') {
+      await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_zone_show_correct: false })
+    }
+    // Vide les réponses textuelles en quittant les pages interactives (réduit l'egress)
     if (page.type === 'prog-retour') {
       await setSharedState({ prog_retour_responses: {} })
     } else if (page.type === 'prog-objections') {
