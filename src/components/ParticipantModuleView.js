@@ -1988,13 +1988,20 @@ function ProgressifCoursMobile({ page, pageIndex, total }) {
               borderRadius: 12, padding: '12px 14px',
             }}>
               <div style={{
-                width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
                 background: 'rgba(124,58,237,0.25)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 12, color: '#a78bfa', fontWeight: 800,
-              }}>{i + 1}</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', fontWeight: 500, lineHeight: 1.55, paddingTop: 2 }}>
-                {pt}
+                fontSize: 14,
+              }}>{typeof pt === 'object' ? pt.emoji : i + 1}</div>
+              <div style={{ paddingTop: 2 }}>
+                {typeof pt === 'object' ? (
+                  <>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{pt.titre}</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{pt.texte}</div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', fontWeight: 500, lineHeight: 1.55 }}>{pt}</div>
+                )}
               </div>
             </div>
           ))}

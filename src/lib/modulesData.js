@@ -344,6 +344,7 @@ export const PROGRESSIF_PAGES = [
     type: 'cours',
     titre: 'Anatomie du verre progressif',
     sousTitre: 'Trois zones actives · Aberrations latérales',
+    image: '/assets/verre-prog.png',
     points: [
       { emoji: '🔭', titre: 'Zone supérieure — Vision de loin', texte: 'Conduite, cinéma, paysages. Vision nette au-delà de 3 mètres. Zone la plus large du verre.' },
       { emoji: '🖥️', titre: 'Zone centrale — Vision intermédiaire', texte: 'Écran, comptoir, bras tendu. De 40 cm à 3 m. Zone de transition fluide entre loin et près.' },
@@ -370,6 +371,7 @@ export const PROGRESSIF_PAGES = [
     type: 'cours',
     titre: 'Identifier un client presbyte',
     sousTitre: "Les signaux à reconnaître — avant même d'ouvrir l'ordonnance",
+    image: '/assets/verre-prog.png',
     points: [
       { emoji: '📅', titre: 'Âge — premier indicateur', texte: "La presbytie apparaît généralement entre 40 et 45 ans. Dès cette tranche d'âge, pensez progressif." },
       { emoji: '👀', titre: 'Comportement révélateur', texte: "Éloigne les documents pour lire, retire ses lunettes pour voir de près, plisse les yeux, demande plus de lumière." },
@@ -393,6 +395,7 @@ export const PROGRESSIF_PAGES = [
     type: 'cours',
     titre: 'Vendre le progressif LPT',
     sousTitre: 'Nos arguments · Notre différence · Gestion des objections',
+    image: '/assets/verre-prog.png',
     points: [
       { emoji: '🏆', titre: 'Extra-large 180° — notre force', texte: 'Nos progressifs ont des zones de confort plus larges que la moyenne du marché. Adaptation plus facile, moins de flou latéral.' },
       { emoji: '🔒', titre: 'Garantie 100 jours', texte: "L'argument ultime. \"Si vous ne vous adaptez pas en 100 jours, on change.\" Zéro risque pour le client." },
