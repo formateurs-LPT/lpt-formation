@@ -2665,7 +2665,7 @@ function ParticipantPlanningScreen({ planningDay }) {
 }
 
 function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
-  const sync = useModuleSync({ disabled: forcedModule != null })
+  const sync = useModuleSync()
   const activeModule  = forcedModule ?? sync.activeModule
   const modulePage    = forcedPage   ?? sync.modulePage
   const sharedState   = sync.sharedState
