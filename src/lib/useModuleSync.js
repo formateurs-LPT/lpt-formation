@@ -53,6 +53,7 @@ export function useModuleSync({ disabled = false } = {}) {
         if (newSnap !== snapshotRef.current) {
           snapshotRef.current = newSnap
           stableRef.current = 0
+          console.log('[useModuleSync] 🔄 changement détecté — module=', activeModule, 'page=', modulePage, 'prog_zone_q=', shared?.prog_zone_q)
           setState({ activeModule, modulePage, sharedState: shared, loading: false })
         } else {
           stableRef.current += 1

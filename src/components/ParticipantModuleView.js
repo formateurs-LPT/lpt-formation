@@ -2048,7 +2048,10 @@ function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
   const [selected, setSelected] = useState(null)
   const [sent, setSent] = useState(false)
 
-  useEffect(() => { setSelected(null); setSent(false) }, [progZoneQ])
+  useEffect(() => {
+    console.log('[ZoneInteractifMobile] 🎯 progZoneQ=', progZoneQ, '— pName=', pName)
+    setSelected(null); setSent(false)
+  }, [progZoneQ])
 
   useEffect(() => {
     if (progZoneQ !== null && progZoneQ !== undefined && progZoneResponses?.[pName] !== undefined) {
@@ -2678,7 +2681,8 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
-    if (!sharedState) return
+    if (!sharedState) { console.log('[ParticipantContent] sharedState null — polling pas encore actif'); return }
+    console.log('[ParticipantContent] 📥 sharedState reçu — prog_zone_q=', sharedState.prog_zone_q, 'module=', activeModule)
     setTvScreen(sharedState.tv_screen || null)
     setPlanningDay(sharedState.planning_day || null)
     setProgZoneQ(sharedState.prog_zone_q ?? null)
