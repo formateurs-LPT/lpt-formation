@@ -203,6 +203,13 @@ function ZoneInteractifPage({ page, trainerAvatar, pName, onPrev, onNext, onBack
   const [responses, setResponses] = useState({})
   const [showCorrect, setShowCorrect] = useState(false)
 
+  // Reset de la DB au montage : vide toute valeur stale d'une session précédente
+  // (sinon la TV affiche une question sans que le formateur l'ait lancée)
+  useEffect(() => {
+    setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_zone_show_correct: false })
+      .catch(() => {})
+  }, [])
+
   // Sync activeQ to trainer_state
   const launchQuestion = async (idx) => {
     setActiveQ(idx)

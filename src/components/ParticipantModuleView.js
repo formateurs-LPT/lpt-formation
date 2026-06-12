@@ -2024,6 +2024,25 @@ function ProgressifCoursMobile({ page, pageIndex, total }) {
   )
 }
 
+// ── Progressif : verre animé réutilisable (défini hors composant) ──
+function ZoneVerreMobile({ size = 190 }) {
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{
+        position: 'absolute', inset: -18, borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 70%)',
+        animation: 'haloBreath 3.5s ease-in-out infinite',
+      }} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/assets/verre-prog.png" alt="Verre progressif" style={{
+        width: size, height: 'auto', display: 'block', position: 'relative', zIndex: 1,
+        animation: 'verreFloat 5s ease-in-out infinite',
+        filter: 'drop-shadow(0 0 24px rgba(124,58,237,0.5)) drop-shadow(0 8px 16px rgba(0,0,0,0.4))',
+      }} />
+    </div>
+  )
+}
+
 // ── Progressif : Zone interactif participant ──────────────────────
 function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
   const [selected, setSelected] = useState(null)
@@ -2052,27 +2071,10 @@ function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
 
   const bg = 'linear-gradient(160deg, #03112a 0%, #12013a 100%)'
 
-  // Verre centré (taille différente selon état)
-  const VerreMobile = ({ size = 190 }) => (
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{
-        position: 'absolute', inset: -18, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 70%)',
-        animation: 'haloBreath 3.5s ease-in-out infinite',
-      }} />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/assets/verre-prog.png" alt="Verre progressif" style={{
-        width: size, height: 'auto', display: 'block', position: 'relative', zIndex: 1,
-        animation: 'verreFloat 5s ease-in-out infinite',
-        filter: 'drop-shadow(0 0 24px rgba(124,58,237,0.5)) drop-shadow(0 8px 16px rgba(0,0,0,0.4))',
-      }} />
-    </div>
-  )
-
   if (!q) return (
     <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', gap: 0 }}>
       <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain', marginBottom: 32, opacity: 0.7 }} />
-      <div style={{ marginBottom: 28 }}><VerreMobile size={210} /></div>
+      <div style={{ marginBottom: 28 }}><ZoneVerreMobile size={210} /></div>
       <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>
         Identifie les zones
       </div>
@@ -2099,7 +2101,7 @@ function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
 
       {/* Verre */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
-        <VerreMobile size={160} />
+        <ZoneVerreMobile size={160} />
       </div>
 
       {/* Question */}
