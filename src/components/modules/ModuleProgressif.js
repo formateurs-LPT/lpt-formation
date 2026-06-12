@@ -769,11 +769,23 @@ export default function ModuleProgressif({ pName, onBack }) {
   const page = PROGRESSIF_PAGES[pageIndex]
   const isFirst = pageIndex === 0
   const isLast = pageIndex === PROGRESSIF_PAGES.length - 1
+
+  // Vide les réponses textuelles quand le formateur quitte une page interactive
+  // → réduit l'egress Supabase (les réponses pèsent ~4 Ko quand tous ont répondu)
+  const handleNext = async () => {
+    if (page.type === 'prog-retour') {
+      await setSharedState({ prog_retour_responses: {} })
+    } else if (page.type === 'prog-objections') {
+      await setSharedState({ prog_objection_responses: {}, prog_best_answer: null, prog_objection_idx: null })
+    }
+    setPageIndex(i => i + 1)
+  }
+
   const navProps = {
     page, trainerAvatar, pName, isFirst, isLast,
     pageIndex, total: PROGRESSIF_PAGES.length,
     onPrev: () => setPageIndex(i => Math.max(0, i - 1)),
-    onNext: () => setPageIndex(i => i + 1),
+    onNext: handleNext,
     onBack: handleBack,
     quizLaunched,
     onLaunchQuiz: handleLaunchQuiz,
