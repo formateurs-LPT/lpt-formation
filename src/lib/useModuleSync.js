@@ -59,13 +59,16 @@ export function useModuleSync({ disabled = false } = {}) {
         }
 
         // ── Calcul du prochain intervalle ─────────────────────────
+        // Quand un module est actif on reste toujours à BASE_MS :
+        // les exercices interactifs (zones, objections) ont besoin
+        // d'une réactivité max pour que les questions arrivent vite
+        // sur les téléphones. La lenteur SLOW_MS ne s'applique que
+        // si aucun module n'est en cours.
         let next
         if (!activeModule) {
-          next = IDLE_MS                            // rien d'actif → lent
-        } else if (stableRef.current >= SLOW_AFTER) {
-          next = SLOW_MS                            // stable depuis N polls → moyen
+          next = IDLE_MS   // rien d'actif → 5 s
         } else {
-          next = BASE_MS                            // changements récents → rapide
+          next = BASE_MS   // module actif → toujours 1.2 s
         }
 
         if (!cancelled) {

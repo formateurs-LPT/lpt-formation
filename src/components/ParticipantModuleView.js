@@ -2052,20 +2052,29 @@ function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
 
   const bg = 'linear-gradient(160deg, #03112a 0%, #12013a 100%)'
 
+  // Verre centré (taille différente selon état)
+  const VerreMobile = ({ size = 190 }) => (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{
+        position: 'absolute', inset: -18, borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 70%)',
+        animation: 'haloBreath 3.5s ease-in-out infinite',
+      }} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/assets/verre-prog.png" alt="Verre progressif" style={{
+        width: size, height: 'auto', display: 'block', position: 'relative', zIndex: 1,
+        animation: 'verreFloat 5s ease-in-out infinite',
+        filter: 'drop-shadow(0 0 24px rgba(124,58,237,0.5)) drop-shadow(0 8px 16px rgba(0,0,0,0.4))',
+      }} />
+    </div>
+  )
+
   if (!q) return (
     <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', gap: 0 }}>
-      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain', marginBottom: 28 }} />
-      <div style={{ position: 'relative', marginBottom: 20 }}>
-        <div style={{
-          position: 'absolute', inset: -20, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(124,58,237,0.22) 0%, transparent 70%)',
-          animation: 'haloBreath 3.5s ease-in-out infinite',
-        }} />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/assets/verre-prog.png" alt="Verre progressif" style={{ width: 140, height: 'auto', display: 'block', position: 'relative', zIndex: 1 }} />
-      </div>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain', marginBottom: 32, opacity: 0.7 }} />
+      <div style={{ marginBottom: 28 }}><VerreMobile size={210} /></div>
       <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>
-        Zones du verre progressif
+        Identifie les zones
       </div>
       <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', textAlign: 'center', maxWidth: 240 }}>
         En attente de la question du formateur…
@@ -2079,25 +2088,47 @@ function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
   )
 
   return (
-    <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', padding: '52px 24px 40px' }}>
-      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain', marginBottom: 28 }} />
-      <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Question {(progZoneQ || 0) + 1} / {page.zoneQuestions?.length}</div>
-      <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff', lineHeight: 1.4, marginBottom: 28 }}>{q.question}</h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', padding: '44px 24px 36px' }}>
+      {/* Logo + badge */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 20, padding: '3px 12px', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+          Q{(progZoneQ || 0) + 1} / {page.zoneQuestions?.length}
+        </div>
+      </div>
+
+      {/* Verre */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
+        <VerreMobile size={160} />
+      </div>
+
+      {/* Question */}
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.4, marginBottom: 20, textAlign: 'center' }}>{q.question}</h2>
+
+      {/* Réponses ABC */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {q.options.map((opt, i) => (
           <button key={i} onClick={() => handleSelect(i)} disabled={sent} style={{
-            background: sent ? (selected === i ? 'rgba(124,58,237,0.25)' : 'rgba(255,255,255,0.04)') : 'rgba(255,255,255,0.07)',
-            border: `2px solid ${sent && selected === i ? '#7c3aed' : 'rgba(255,255,255,0.12)'}`,
-            borderRadius: 14, padding: '16px 20px',
-            display: 'flex', alignItems: 'center', gap: 14, cursor: sent ? 'default' : 'pointer', fontFamily: 'inherit',
+            background: sent ? (selected === i ? 'rgba(124,58,237,0.22)' : 'rgba(255,255,255,0.03)') : 'rgba(255,255,255,0.07)',
+            border: `2px solid ${sent && selected === i ? '#7c3aed' : 'rgba(255,255,255,0.1)'}`,
+            borderRadius: 14, padding: '14px 18px',
+            display: 'flex', alignItems: 'center', gap: 14,
+            cursor: sent ? 'default' : 'pointer', fontFamily: 'inherit',
+            transition: 'all .2s',
           }}>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: COLORS[i], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{'ABC'[i]}</div>
-            <span style={{ fontSize: 15, fontWeight: 600, color: sent && selected === i ? '#a78bfa' : '#fff' }}>{opt}</span>
-            {sent && selected === i && <span style={{ marginLeft: 'auto', fontSize: 18 }}>✓</span>}
+            <div style={{ width: 38, height: 38, borderRadius: '50%', background: COLORS[i], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900, color: '#fff', flexShrink: 0 }}>{'ABC'[i]}</div>
+            <span style={{ fontSize: 15, fontWeight: 600, color: sent && selected === i ? '#c4b5fd' : '#fff', textAlign: 'left' }}>{opt}</span>
+            {sent && selected === i && <span style={{ marginLeft: 'auto', fontSize: 20 }}>✓</span>}
           </button>
         ))}
       </div>
-      {sent && <div style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Réponse envoyée — en attente du formateur</div>}
+
+      {sent && (
+        <div style={{ marginTop: 20, textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', display: 'inline-block' }} />
+          Réponse envoyée — en attente du formateur
+        </div>
+      )}
     </div>
   )
 }

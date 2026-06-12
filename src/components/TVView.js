@@ -1439,68 +1439,109 @@ function TVProgressifZoneInteractif({ page, pageIndex, total, progZoneQ, progZon
   const entries = Object.entries(progZoneResponses || {})
   const totalR = entries.length
   const counts = q ? q.options.map((_, i) => entries.filter(([, v]) => v === i).length) : []
-  const highlight = progZoneQ === 0 ? 'haut' : progZoneQ === 1 ? 'bas' : null
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #12013a 55%, #0d0a3a 100%)', display: 'flex', flexDirection: 'column', padding: '32px 56px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
-          <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Le Verre Progressif · Exercice interactif</span>
-        </div>
-        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #12013a 55%, #0d0a3a 100%)',
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+    }}>
+      {/* ── Gauche : verre plein écran sans labels ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        borderRight: '1px solid rgba(255,255,255,0.06)',
+        position: 'relative',
+      }}>
+        {/* Halo */}
+        <div style={{
+          position: 'absolute', width: 680, height: 680, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(124,58,237,0.22) 0%, transparent 68%)',
+          animation: 'haloPulse 3.8s ease-in-out infinite',
+          pointerEvents: 'none',
+        }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/assets/verre-prog.png"
+          alt="Verre progressif"
+          style={{
+            width: 520, height: 'auto',
+            animation: 'verreFloat 4.5s ease-in-out infinite',
+            position: 'relative', zIndex: 1,
+            filter: 'drop-shadow(0 0 56px rgba(124,58,237,0.7)) drop-shadow(0 24px 56px rgba(0,0,0,0.6))',
+          }}
+        />
       </div>
 
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 56, alignItems: 'center' }}>
-        {/* Schéma verre */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-          <TVVerreProgressifSchema highlight={highlight} />
-          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>Schéma · verre progressif</div>
+      {/* ── Droite : question + résultats ── */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        padding: '48px 60px',
+      }}>
+        {/* Header logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 48 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Identifie les zones</span>
         </div>
 
-        {/* Question + résultats */}
-        <div>
-          {q ? (
-            <>
-              <div style={{ display: 'inline-block', background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)', borderRadius: 20, padding: '5px 18px', fontSize: 13, fontWeight: 700, color: '#a78bfa', marginBottom: 20, textTransform: 'uppercase', letterSpacing: 1 }}>
-                Question {(progZoneQ || 0) + 1} / {page.zoneQuestions.length}
-              </div>
-              <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', marginBottom: 36, lineHeight: 1.2 }}>{q.question}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {q.options.map((opt, i) => {
-                  const cnt = counts[i]
-                  const pct = totalR > 0 ? (cnt / totalR) * 100 : 0
-                  const isCorrect = i === q.correct
-                  return (
-                    <div key={i} style={{ background: progZoneShowCorrect && isCorrect ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.05)', border: `1px solid ${progZoneShowCorrect && isCorrect ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 16, padding: '16px 20px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                          <div style={{ width: 40, height: 40, borderRadius: '50%', background: OPT_COLORS[i], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{'ABC'[i]}</div>
-                          <span style={{ fontSize: 18, fontWeight: 600, color: '#fff' }}>{opt}</span>
-                          {progZoneShowCorrect && isCorrect && <span style={{ fontSize: 12, color: '#4ade80', fontWeight: 700, background: 'rgba(34,197,94,0.15)', padding: '3px 12px', borderRadius: 20 }}>✓ Correct</span>}
-                        </div>
-                        <span style={{ fontSize: 28, fontWeight: 800, color: progZoneShowCorrect && isCorrect ? '#4ade80' : '#fff' }}>{cnt}</span>
-                      </div>
-                      <div style={{ height: 10, background: 'rgba(255,255,255,0.08)', borderRadius: 5, overflow: 'hidden' }}>
-                        <div style={{ height: '100%', borderRadius: 5, width: `${pct}%`, background: progZoneShowCorrect && isCorrect ? '#4ade80' : OPT_COLORS[i], transition: 'width .5s ease' }} />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-              <div style={{ marginTop: 20, fontSize: 18, color: 'rgba(255,255,255,0.4)' }}>
-                <span style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginRight: 8 }}>{totalR}</span>
-                réponse{totalR !== 1 ? 's' : ''}
-              </div>
-            </>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.4 }}>
-              <div style={{ textAlign: 'center', fontSize: 20, color: 'rgba(255,255,255,0.5)' }}>Le formateur va lancer une question…</div>
+        {q ? (
+          <>
+            <div style={{
+              display: 'inline-block', background: 'rgba(124,58,237,0.2)',
+              border: '1px solid rgba(124,58,237,0.45)', borderRadius: 20,
+              padding: '6px 20px', fontSize: 12, fontWeight: 700, color: '#a78bfa',
+              textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24, alignSelf: 'flex-start',
+            }}>
+              Question {(progZoneQ || 0) + 1} / {page.zoneQuestions.length}
             </div>
-          )}
-        </div>
+            <div style={{ fontSize: 40, fontWeight: 900, color: '#fff', marginBottom: 40, lineHeight: 1.15 }}>
+              {q.question}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {q.options.map((opt, i) => {
+                const cnt = counts[i]
+                const pct = totalR > 0 ? (cnt / totalR) * 100 : 0
+                const isCorrect = i === q.correct
+                const highlight = progZoneShowCorrect && isCorrect
+                return (
+                  <div key={i} style={{
+                    background: highlight ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${highlight ? 'rgba(34,197,94,0.45)' : 'rgba(255,255,255,0.1)'}`,
+                    borderRadius: 18, padding: '18px 24px',
+                    transition: 'all .4s',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{
+                          width: 44, height: 44, borderRadius: '50%', background: OPT_COLORS[i],
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 18, fontWeight: 900, color: '#fff', flexShrink: 0,
+                        }}>{'ABC'[i]}</div>
+                        <span style={{ fontSize: 20, fontWeight: 600, color: highlight ? '#4ade80' : '#fff' }}>{opt}</span>
+                        {highlight && <span style={{ fontSize: 12, color: '#4ade80', fontWeight: 700, background: 'rgba(34,197,94,0.15)', padding: '3px 14px', borderRadius: 20 }}>✓ Correct</span>}
+                      </div>
+                      <span style={{ fontSize: 32, fontWeight: 900, color: highlight ? '#4ade80' : '#fff', minWidth: 40, textAlign: 'right' }}>{cnt}</span>
+                    </div>
+                    <div style={{ height: 10, background: 'rgba(255,255,255,0.08)', borderRadius: 5, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: 5, width: `${pct}%`, background: highlight ? '#4ade80' : OPT_COLORS[i], transition: 'width .5s ease' }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{ marginTop: 28, fontSize: 16, color: 'rgba(255,255,255,0.35)' }}>
+              <span style={{ fontSize: 36, fontWeight: 900, color: '#fff', marginRight: 10 }}>{totalR}</span>
+              réponse{totalR !== 1 ? 's' : ''}
+            </div>
+          </>
+        ) : (
+          <div style={{ opacity: 0.45, textAlign: 'center' }}>
+            <div style={{ fontSize: 52, marginBottom: 16 }}>🎯</div>
+            <div style={{ fontSize: 22, color: '#fff', fontWeight: 600, marginBottom: 8 }}>Identifie les zones</div>
+            <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)' }}>Le formateur va lancer une question…</div>
+          </div>
+        )}
       </div>
     </div>
   )
