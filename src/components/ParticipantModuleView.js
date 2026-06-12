@@ -2718,7 +2718,20 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
 }
 
 export default function ParticipantModuleView({ forcedModule, forcedPage, pName: pNameProp }) {
-  const pNameRaw = pNameProp || (typeof window !== 'undefined' ? localStorage.getItem('participant_name') || '' : '')
+  // Quand pName est passé explicitement (participant déjà authentifié via la page d'accueil),
+  // on bypasse RhParticipantGate — la validation a déjà eu lieu dans handleParticipantJoin.
+  if (pNameProp) {
+    return (
+      <ParticipantModuleContent
+        forcedModule={forcedModule}
+        forcedPage={forcedPage}
+        pName={pNameProp}
+      />
+    )
+  }
+
+  // Accès direct via ?mode=participant → validation RH obligatoire
+  const pNameRaw = typeof window !== 'undefined' ? localStorage.getItem('participant_name') || '' : ''
   return (
     <RhParticipantGate pNameInput={pNameRaw}>
       {canonicalName => (
