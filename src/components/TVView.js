@@ -142,20 +142,17 @@ function TVImageVisual({ src, color }) {
         background: `radial-gradient(circle, ${color}35 0%, transparent 70%)`,
         animation: 'haloPulse 3.5s ease-in-out infinite',
       }} />
-      <div style={{ animation: 'verreFloat 4s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
-        <Image
-          src={src}
-          alt="Module illustration"
-          width={480}
-          height={480}
-          style={{
-            objectFit: 'contain',
-            borderRadius: 24,
-            boxShadow: `0 0 64px ${color}60, 0 24px 48px rgba(0,0,0,0.4)`,
-          }}
-          priority
-        />
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt="Module illustration"
+        style={{
+          width: 420, height: 'auto',
+          animation: 'verreFloat 4s ease-in-out infinite',
+          position: 'relative', zIndex: 1,
+          filter: `drop-shadow(0 0 48px ${color}80) drop-shadow(0 20px 40px rgba(0,0,0,0.45))`,
+        }}
+      />
     </div>
   )
 }

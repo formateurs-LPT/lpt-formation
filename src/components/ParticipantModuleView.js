@@ -1950,23 +1950,27 @@ function ProgressifCoursMobile({ page, pageIndex, total }) {
       <div style={{
         flex: '0 0 auto',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '18px 0 12px',
+        padding: '10px 0 6px',
         opacity: visible ? 1 : 0,
         transform: visible ? 'translateY(0)' : 'translateY(16px)',
         transition: 'all 0.7s cubic-bezier(0.22,1,0.36,1)',
       }}>
-        <div style={{ animation: 'verreFloat 5s ease-in-out infinite', position: 'relative' }}>
+        <div style={{ position: 'relative' }}>
           {/* Halo violet */}
           <div style={{
-            position: 'absolute', inset: -24, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%)',
+            position: 'absolute', inset: -20, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(124,58,237,0.22) 0%, transparent 70%)',
             animation: 'haloBreath 3.5s ease-in-out infinite',
           }} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/verre-prog.png"
             alt="Verre progressif"
-            style={{ width: 188, height: 'auto', display: 'block' }}
+            style={{
+              width: 220, height: 'auto', display: 'block', position: 'relative', zIndex: 1,
+              animation: 'verreFloat 5s ease-in-out infinite',
+              filter: 'drop-shadow(0 0 28px rgba(124,58,237,0.55)) drop-shadow(0 10px 20px rgba(0,0,0,0.4))',
+            }}
           />
         </div>
       </div>
@@ -1975,32 +1979,29 @@ function ProgressifCoursMobile({ page, pageIndex, total }) {
       {page.points && page.points.length > 0 && (
         <div style={{
           padding: '0 16px',
-          display: 'flex', flexDirection: 'column', gap: 9,
+          display: 'flex', flexDirection: 'column', gap: 6,
           opacity: visible ? 1 : 0,
           transition: 'opacity 0.6s ease 0.3s',
         }}>
           {page.points.map((pt, i) => (
             <div key={i} style={{
-              display: 'flex', alignItems: 'flex-start', gap: 12,
-              background: 'rgba(124,58,237,0.07)',
-              border: '1px solid rgba(124,58,237,0.20)',
-              borderLeft: '3px solid rgba(124,58,237,0.60)',
-              borderRadius: 12, padding: '12px 14px',
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '9px 12px',
+              borderRadius: 10,
+              background: 'rgba(255,255,255,0.04)',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
             }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                background: 'rgba(124,58,237,0.25)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 14,
-              }}>{typeof pt === 'object' ? pt.emoji : i + 1}</div>
-              <div style={{ paddingTop: 2 }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>
+                {typeof pt === 'object' ? pt.emoji : String(i + 1)}
+              </span>
+              <div>
                 {typeof pt === 'object' ? (
                   <>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{pt.titre}</div>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{pt.texte}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#e2d9ff', lineHeight: 1.3 }}>{pt.titre}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 1.4, marginTop: 1 }}>{pt.texte}</div>
                   </>
                 ) : (
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', fontWeight: 500, lineHeight: 1.55 }}>{pt}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: 500, lineHeight: 1.5 }}>{pt}</div>
                 )}
               </div>
             </div>
