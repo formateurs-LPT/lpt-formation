@@ -4,7 +4,6 @@ import Image from 'next/image'
 import { sbSelect, sbDelete, SESSION_CODE, getSharedState, insertSessionHistory, parseSessionHistorySummary } from '@/lib/supabase'
 import WeatherWidget from './WeatherWidget'
 import ShortcutsWidget from './ShortcutsWidget'
-import NotesWidget from './NotesWidget'
 import OnboardingView from './OnboardingView'
 import EntreesView from './EntreesView'
 import { TRAINER_AVATARS, TRAINER_CANONICAL } from '@/lib/constants'
@@ -588,8 +587,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
           <ShortcutsWidget />
         </div>
 
-        {/* Notes board */}
-        <NotesWidget pName={pName} />
       </div>
     </div>
   )
