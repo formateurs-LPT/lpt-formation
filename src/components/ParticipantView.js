@@ -350,6 +350,7 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   const [modulePage, setModulePage] = useState(0)
   const [tvScreen, setTvScreen] = useState(null)
   const [planningDay, setPlanningDay] = useState(null)
+  const [sharedState, setSharedState_] = useState(null)
 
   useEffect(() => {
     const poll = async () => {
@@ -375,17 +376,18 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
     return () => clearInterval(interval)
   }, [curStep, curSlide])
 
-  // Polling planning indépendant (trainer_state)
+  // Polling planning + sharedState complet (trainer_state)
   useEffect(() => {
     const pollPlanning = async () => {
       try {
         const state = await getSharedState()
         setTvScreen(state?.tv_screen || null)
         setPlanningDay(state?.planning_day || null)
+        setSharedState_(state || null)
       } catch {}
     }
     pollPlanning()
-    const t = setInterval(pollPlanning, 2000)
+    const t = setInterval(pollPlanning, 1500)
     return () => clearInterval(t)
   }, [])
 
@@ -495,7 +497,7 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   }
 
   // Si un module est actif, on prend le dessus sur tout le reste
-  if (activeModule) return <ParticipantModuleView forcedModule={activeModule} forcedPage={modulePage} pName={pName} />
+  if (activeModule) return <ParticipantModuleView forcedModule={activeModule} forcedPage={modulePage} pName={pName} sharedState={sharedState} />
 
   return (
     <div id="pv">

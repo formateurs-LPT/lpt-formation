@@ -2667,11 +2667,13 @@ function ParticipantPlanningScreen({ planningDay }) {
   )
 }
 
-function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
-  const sync = useModuleSync()
+function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp }) {
+  // forcedModule = via ParticipantView (polling géré là-bas) → useModuleSync désactivé
+  // sans forcedModule = accès direct ?mode=participant → useModuleSync actif
+  const sync = useModuleSync({ disabled: forcedModule != null })
   const activeModule  = forcedModule ?? sync.activeModule
   const modulePage    = forcedPage   ?? sync.modulePage
-  const sharedState   = sync.sharedState
+  const sharedState   = sharedStateProp ?? sync.sharedState
   const [planningDay, setPlanningDay]         = useState(null)
   const [tvScreen, setTvScreen]               = useState(null)
   const [progZoneQ, setProgZoneQ]             = useState(null)
@@ -2721,7 +2723,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
   )
 }
 
-export default function ParticipantModuleView({ forcedModule, forcedPage, pName: pNameProp }) {
+export default function ParticipantModuleView({ forcedModule, forcedPage, pName: pNameProp, sharedState }) {
   // Quand pName est passé explicitement (participant déjà authentifié via la page d'accueil),
   // on bypasse RhParticipantGate — la validation a déjà eu lieu dans handleParticipantJoin.
   if (pNameProp) {
@@ -2730,6 +2732,7 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
         forcedModule={forcedModule}
         forcedPage={forcedPage}
         pName={pNameProp}
+        sharedStateProp={sharedState}
       />
     )
   }
