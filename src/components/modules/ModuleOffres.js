@@ -8,6 +8,168 @@ import { TRAINER_AVATARS } from '@/lib/constants'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
+// ── Anneau décoratif ─────────────────────────────────────────────
+function Ring({ color, size = 80 }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      border: `${size * 0.14}px solid ${color}`,
+      background: 'transparent',
+      boxShadow: `0 0 24px ${color}40`,
+    }} />
+  )
+}
+
+// ── Page Classique (formateur) ───────────────────────────────────
+function CoursClassique({ onNext, onBack }) {
+  const COLOR = '#00abe9'
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · 1 / 2</span>
+        </div>
+        <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Quitter</button>
+      </div>
+
+      {/* Contenu */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }}>
+        {/* Gauche */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+            <Ring color={COLOR} size={72} />
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Les parcours LPT</div>
+              <div style={{ fontSize: 32, fontWeight: 900, color: '#fff' }}>Le parcours</div>
+              <div style={{ fontSize: 32, fontWeight: 900, color: COLOR }}>Classique</div>
+            </div>
+          </div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: `${COLOR}18`, border: `1px solid ${COLOR}50`, borderRadius: 20, padding: '6px 16px', marginBottom: 28 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: COLOR }}>Sans remboursement</span>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `3px solid ${COLOR}`, borderRadius: 14, padding: '20px 24px' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Ce qui est inclus</div>
+            {[
+              '1 paire achetée',
+              'Deuxième paire à -20%',
+              'Pas de remboursement sécu/mutuelle',
+            ].map((pt, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: COLOR, flexShrink: 0 }} />
+                <span style={{ fontSize: 15, color: '#fff', fontWeight: 500 }}>{pt}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Droite */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '20px 24px' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Tarifs indicatifs</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>Unifocal</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: COLOR }}>~157€</span>
+            </div>
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 12 }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>Progressif</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: COLOR }}>~260€</span>
+            </div>
+          </div>
+          <div style={{ background: `${COLOR}10`, border: `1px solid ${COLOR}35`, borderRadius: 16, padding: '18px 24px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+            <span style={{ fontSize: 24, flexShrink: 0 }}>🏪</span>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', lineHeight: 1.5 }}>
+              Offre éligible sur <span style={{ color: COLOR }}>l'intégralité du magasin</span><br />
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 400 }}>Monture et verres au choix</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 24, flexShrink: 0 }}>
+        <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${COLOR}, #0090c5)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 6px 24px ${COLOR}45` }}>Parcours 1=1 →</button>
+      </div>
+    </div>
+  )
+}
+
+// ── Page 1=1 (formateur) ─────────────────────────────────────────
+function Cours11({ onPrev, onStartQuiz, onBack }) {
+  const COLOR = '#c9a227'
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · 2 / 2</span>
+        </div>
+        <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Quitter</button>
+      </div>
+
+      {/* Contenu */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }}>
+        {/* Gauche */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+            <Ring color={COLOR} size={72} />
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Les parcours LPT</div>
+              <div style={{ fontSize: 32, fontWeight: 900, color: '#fff' }}>Le parcours</div>
+              <div style={{ fontSize: 32, fontWeight: 900, color: COLOR }}>1=1</div>
+            </div>
+          </div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: `${COLOR}18`, border: `1px solid ${COLOR}50`, borderRadius: 20, padding: '6px 16px', marginBottom: 28 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: COLOR }}>Sans remboursement</span>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `3px solid ${COLOR}`, borderRadius: 14, padding: '20px 24px' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Tarifs</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>Unifocal</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: COLOR }}>~157€</span>
+            </div>
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 12 }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>Progressif</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: COLOR }}>~260€</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Droite */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {[
+            { icon: '🛍️', text: '1 paire achetée', sub: null },
+            { icon: '🎁', text: 'Deuxième paire offerte', sub: 'de même qualité que la première' },
+            { icon: '🏪', text: 'Éligible sur tout le magasin', sub: 'Monture et verres au choix' },
+          ].map((item, i) => (
+            <div key={i} style={{ background: i === 1 ? `${COLOR}12` : 'rgba(255,255,255,0.04)', border: `1px solid ${i === 1 ? `${COLOR}40` : 'rgba(255,255,255,0.1)'}`, borderRadius: 14, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
+              <span style={{ fontSize: 26, flexShrink: 0 }}>{item.icon}</span>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: i === 1 ? COLOR : '#fff' }}>{item.text}</div>
+                {item.sub && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{item.sub}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Nav */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 24, flexShrink: 0 }}>
+        <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '13px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← Classique</button>
+        <button onClick={onStartQuiz} style={{ background: 'linear-gradient(135deg, #7c3aed, #9f67fa)', border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(124,58,237,0.45)' }}>🏆 Lancer le quiz →</button>
+      </div>
+    </div>
+  )
+}
+
 // ── Quiz Controller (vue formateur) ──────────────────────────────
 function QuizController({ quizQ, onNext, onEnd, onBack }) {
   const [liveAnswers, setLiveAnswers] = useState([])
@@ -292,11 +454,10 @@ function Lobby({ onStart, onBack }) {
 
 // ── Composant principal ───────────────────────────────────────────
 export default function ModuleOffres({ pName, onBack }) {
-  const [started, setStarted] = useState(false)
+  // phase: 'lobby' | 'classique' | 'un-pour-un' | 'quiz' | 'results'
+  const [phase, setPhase] = useState('lobby')
   const [quizQ, setQuizQ] = useState(0)
-  const [showGroupResults, setShowGroupResults] = useState(false)
 
-  // Signale le module en attente dès le Lobby
   useEffect(() => {
     sbUpdate('sessions', { active_module: 'offres', module_page: -1 }, `code=eq.${SESSION_CODE}`)
   }, [])
@@ -306,10 +467,20 @@ export default function ModuleOffres({ pName, onBack }) {
     onBack()
   }
 
-  const handleStart = async () => {
+  const goClassique = async () => {
+    await sbUpdate('sessions', { active_module: 'offres', module_page: 0 }, `code=eq.${SESSION_CODE}`)
+    setPhase('classique')
+  }
+
+  const go11 = async () => {
+    await sbUpdate('sessions', { active_module: 'offres', module_page: 1 }, `code=eq.${SESSION_CODE}`)
+    setPhase('un-pour-un')
+  }
+
+  const startQuiz = async () => {
     await sbUpdate('sessions', { active_module: 'offres', module_page: 100 }, `code=eq.${SESSION_CODE}`)
     setQuizQ(0)
-    setStarted(true)
+    setPhase('quiz')
   }
 
   const handleNextQuestion = async () => {
@@ -320,7 +491,7 @@ export default function ModuleOffres({ pName, onBack }) {
 
   const handleEndQuiz = async () => {
     await sbUpdate('sessions', { active_module: 'offres', module_page: 200 }, `code=eq.${SESSION_CODE}`)
-    setShowGroupResults(true)
+    setPhase('results')
   }
 
   const handleTerminateModule = async () => {
@@ -328,9 +499,10 @@ export default function ModuleOffres({ pName, onBack }) {
     onBack()
   }
 
-  if (!started) return <Lobby onStart={handleStart} onBack={handleBack} />
-
-  if (showGroupResults) return <GroupResultsView onTerminate={handleTerminateModule} />
+  if (phase === 'lobby')     return <Lobby onStart={goClassique} onBack={handleBack} />
+  if (phase === 'classique') return <CoursClassique onNext={go11} onBack={handleBack} />
+  if (phase === 'un-pour-un') return <Cours11 onPrev={goClassique} onStartQuiz={startQuiz} onBack={handleBack} />
+  if (phase === 'results')   return <GroupResultsView onTerminate={handleTerminateModule} />
 
   return (
     <QuizController

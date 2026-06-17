@@ -1633,6 +1633,113 @@ function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, p
   )
 }
 
+// ── TV Offres : Classique ─────────────────────────────────────────
+function TVOffresClassique() {
+  const COLOR = '#00abe9'
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+      {/* Gauche */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 32 }}>
+          <div style={{ width: 96, height: 96, borderRadius: '50%', border: `14px solid ${COLOR}`, boxShadow: `0 0 40px ${COLOR}50`, flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Les parcours LPT</div>
+            <div style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1 }}>Le parcours</div>
+            <div style={{ fontSize: 48, fontWeight: 900, color: COLOR, lineHeight: 1 }}>Classique</div>
+          </div>
+        </div>
+        <div style={{ display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: 8, background: `${COLOR}18`, border: `1px solid ${COLOR}50`, borderRadius: 20, padding: '8px 20px', marginBottom: 36 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR }} />
+          <span style={{ fontSize: 14, fontWeight: 700, color: COLOR }}>Sans remboursement</span>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `4px solid ${COLOR}`, borderRadius: 16, padding: '24px 28px' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>Ce qui est inclus</div>
+          {['1 paire achetée', 'Deuxième paire à -20%', 'Pas de remboursement sécu/mutuelle'].map((pt, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: i < 2 ? 16 : 0 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR, flexShrink: 0 }} />
+              <span style={{ fontSize: 20, color: '#fff', fontWeight: 500 }}>{pt}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Droite */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', gap: 24 }}>
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '28px 32px' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>Tarifs indicatifs</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <span style={{ fontSize: 22, color: 'rgba(255,255,255,0.7)' }}>Unifocal</span>
+            <span style={{ fontSize: 36, fontWeight: 900, color: COLOR }}>~157€</span>
+          </div>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 16 }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 22, color: 'rgba(255,255,255,0.7)' }}>Progressif</span>
+            <span style={{ fontSize: 36, fontWeight: 900, color: COLOR }}>~260€</span>
+          </div>
+        </div>
+        <div style={{ background: `${COLOR}10`, border: `1px solid ${COLOR}35`, borderRadius: 20, padding: '24px 32px', display: 'flex', alignItems: 'center', gap: 20 }}>
+          <span style={{ fontSize: 40 }}>🏪</span>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>Offre éligible sur <span style={{ color: COLOR }}>tout le magasin</span></div>
+            <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>Monture et verres au choix</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── TV Offres : 1=1 ───────────────────────────────────────────────
+function TVOffres11() {
+  const COLOR = '#c9a227'
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+      {/* Gauche */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 32 }}>
+          <div style={{ width: 96, height: 96, borderRadius: '50%', border: `14px solid ${COLOR}`, boxShadow: `0 0 40px ${COLOR}50`, flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Les parcours LPT</div>
+            <div style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1 }}>Le parcours</div>
+            <div style={{ fontSize: 48, fontWeight: 900, color: COLOR, lineHeight: 1 }}>1=1</div>
+          </div>
+        </div>
+        <div style={{ display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: 8, background: `${COLOR}18`, border: `1px solid ${COLOR}50`, borderRadius: 20, padding: '8px 20px', marginBottom: 36 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR }} />
+          <span style={{ fontSize: 14, fontWeight: 700, color: COLOR }}>Sans remboursement</span>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `4px solid ${COLOR}`, borderRadius: 16, padding: '24px 28px' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>Tarifs</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>Unifocal</span>
+            <span style={{ fontSize: 30, fontWeight: 900, color: COLOR }}>~157€</span>
+          </div>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 16 }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>Progressif</span>
+            <span style={{ fontSize: 30, fontWeight: 900, color: COLOR }}>~260€</span>
+          </div>
+        </div>
+      </div>
+      {/* Droite */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', gap: 20 }}>
+        {[
+          { icon: '🛍️', label: '1 paire achetée', sub: null, highlight: false },
+          { icon: '🎁', label: 'Deuxième paire offerte', sub: 'de même qualité que la première', highlight: true },
+          { icon: '🏪', label: 'Éligible sur tout le magasin', sub: 'Monture et verres au choix', highlight: false },
+        ].map((item, i) => (
+          <div key={i} style={{ background: item.highlight ? `${COLOR}14` : 'rgba(255,255,255,0.04)', border: `1px solid ${item.highlight ? `${COLOR}45` : 'rgba(255,255,255,0.1)'}`, borderRadius: 18, padding: '20px 28px', display: 'flex', alignItems: 'center', gap: 20 }}>
+            <span style={{ fontSize: 36, flexShrink: 0 }}>{item.icon}</span>
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: item.highlight ? COLOR : '#fff' }}>{item.label}</div>
+              {item.sub && <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{item.sub}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── TV Content Page (no controls, no avatar) ──────────────────────
 // ── TV Trame d'accueil ────────────────────────────────────────────
 function TVTrameAccueil({ step }) {
@@ -1697,7 +1804,9 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
 
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesPhase={troublesPhase} opticienPlaying={opticienPlaying} audioUnlocked={audioUnlocked} />
-  if (page.type === 'trame-accueil') return <TVTrameAccueil step={trameStep} />
+  if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />
+  if (page.type === 'offres-classique') return <TVOffresClassique />
+  if (page.type === 'offres-1-1')       return <TVOffres11 />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} audioUnlocked={audioUnlocked} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />

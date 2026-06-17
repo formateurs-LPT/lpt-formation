@@ -2292,6 +2292,17 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
   if (page.type === 'trame-accueil')    return <TrameAccueilMobile />
+  if (page.type === 'offres-classique' || page.type === 'offres-1-1') return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001e40 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={140} height={52} style={{ objectFit: 'contain', marginBottom: 40 }} />
+      <div style={{ fontSize: 32, marginBottom: 16 }}>🎧</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>Les offres · Formation Journée 2</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.3, marginBottom: 10 }}>
+        {page.type === 'offres-classique' ? 'Le parcours Classique' : 'Le parcours 1=1'}
+      </div>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>Écoutez le formateur.<br />Le contenu s'affiche sur l'écran.</p>
+    </div>
+  )
   if (page.type === 'troubles-intro')    return <TroublesIntroMobile      page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'troubles-list')    return <TroublesListMobile       page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'correction-scale') return <CorrectionScaleMobile    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />

@@ -248,6 +248,11 @@ export const ORD_EXAMPLE = {
   add: '+2,00',
 }
 
+export const OFFRES_PAGES = [
+  { id: 'classique',  type: 'offres-classique', color: '#00abe9' },
+  { id: 'un-pour-un', type: 'offres-1-1',       color: '#c9a227' },
+]
+
 export const OFFRES_QUIZ = [
   {
     question: 'Quel parcours propose un reste à charge de 0€ ET des verres Origine France Garantie ?',
@@ -479,7 +484,7 @@ export const MODULE_DATA = {
   'types-verres':     { pages: TYPES_VERRES_PAGES,      quiz: TYPES_VERRES_QUIZ,  label: 'Types de verres',               sub: 'Le verre unifocal' },
   'pdm':              { pages: PDM_PAGES,                quiz: PDM_QUIZ,           label: 'Prises de mesures',             sub: 'Écart pupillaire · Hauteur · LPTVISION' },
   'optique':          { pages: OPTIQUE_PAGES,            quiz: OPTIQUE_QUIZ,       label: "Les bases de l'optique",        sub: 'Troubles visuels · Corrections · Ordonnances' },
-  'offres':           { pages: [],                       quiz: OFFRES_QUIZ,        label: 'Les offres',                    sub: '100% Santé · Offres LPT · Mutuelles' },
+  'offres':           { pages: OFFRES_PAGES,              quiz: OFFRES_QUIZ,        label: 'Les offres',                    sub: 'Classique · 1=1 · Parcours LPT' },
   'entreprise':       { pages: ENTREPRISE_PAGES,         quiz: ENTREPRISE_QUIZ,    label: "Présentation de l'entreprise", sub: 'Mission · Histoire · Culture LPT' },
   'verre-progressif': { pages: PROGRESSIF_PAGES,         quiz: PROGRESSIF_QUIZ,    label: 'Le Verre Progressif',          sub: 'Anatomie · Vente · Objections · Quiz J+14' },
   'trame-accueil':    { pages: TRAME_ACCUEIL_PAGES,      quiz: [],                 label: "Trame d'accueil",              sub: 'Bonjour · Concept · Examen de vue' },
