@@ -74,11 +74,11 @@ export default function ModuleTrameAccueil({ pName, onBack }) {
   if (!started) {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', maxWidth: 500, padding: '0 24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: 500, padding: '0 24px' }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={160} height={60} style={{ objectFit: 'contain', marginBottom: 32 }} />
-          <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.3)', borderRadius: 20, padding: '4px 16px', fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Formation · Journée 2</div>
-          <h1 style={{ fontSize: 32, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Trame d'accueil</h1>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 32, lineHeight: 1.7 }}>
+          <div style={{ background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.3)', borderRadius: 20, padding: '4px 16px', fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Formation · Journée 2</div>
+          <h1 style={{ fontSize: 32, fontWeight: 800, color: '#fff', marginBottom: 10, textAlign: 'center' }}>Trame d'accueil</h1>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 32, lineHeight: 1.7, textAlign: 'center' }}>
             Présentez la trame d'accueil LPT point par point.<br />
             Le formateur pilote l'affichage sur le diffuseur.
           </p>
