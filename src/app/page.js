@@ -16,6 +16,7 @@ import ModulePDM from '@/components/modules/ModulePDM'
 import ModuleOptique from '@/components/modules/ModuleOptique'
 import ModuleOffres from '@/components/modules/ModuleOffres'
 import ModuleEntreprise from '@/components/modules/ModuleEntreprise'
+import ModuleTrameAccueil from '@/components/modules/ModuleTrameAccueil'
 import OnboardingView from '@/components/OnboardingView'
 import TVView from '@/components/TVView'
 import ParticipantModuleView from '@/components/ParticipantModuleView'
@@ -213,6 +214,12 @@ export default function Page() {
       )}
       {view === 'module-verre-progressif' && (
         <ModuleProgressif
+          pName={pName}
+          onBack={handleBackToDashboard}
+        />
+      )}
+      {view === 'module-trame-accueil' && (
+        <ModuleTrameAccueil
           pName={pName}
           onBack={handleBackToDashboard}
         />

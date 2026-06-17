@@ -464,11 +464,23 @@ export const PROGRESSIF_QUIZ = [
   },
 ]
 
+export const TRAME_ACCUEIL_POINTS = [
+  { num: 1, text: 'Bonjour et bienvenue chez Lunettes Pour Tous', color: '#00abe9', emoji: '👋' },
+  { num: 2, text: 'Connaissez-vous le concept ?', color: '#7c3aed', emoji: '💡' },
+  { num: 3, text: "Ici c'est simple, c'est la possibilité d'avoir ses lunettes de vue en seulement 10 minutes avec ou sans ordonnance.", color: '#f59e0b', emoji: '⏱️' },
+  { num: 4, text: "Je vous inscris en examen de vue ? C'est gratuit et sans rendez-vous.", color: '#22c55e', emoji: '✅' },
+]
+
+export const TRAME_ACCUEIL_PAGES = [
+  { id: 'trame', type: 'trame-accueil' },
+]
+
 export const MODULE_DATA = {
-  'types-verres':     { pages: TYPES_VERRES_PAGES,  quiz: TYPES_VERRES_QUIZ,  label: 'Types de verres',               sub: 'Le verre unifocal' },
-  'pdm':              { pages: PDM_PAGES,            quiz: PDM_QUIZ,           label: 'Prises de mesures',             sub: 'Écart pupillaire · Hauteur · LPTVISION' },
-  'optique':          { pages: OPTIQUE_PAGES,        quiz: OPTIQUE_QUIZ,       label: "Les bases de l'optique",        sub: 'Troubles visuels · Corrections · Ordonnances' },
-  'offres':           { pages: [],                   quiz: OFFRES_QUIZ,        label: 'Les offres',                    sub: '100% Santé · Offres LPT · Mutuelles' },
-  'entreprise':       { pages: ENTREPRISE_PAGES,     quiz: ENTREPRISE_QUIZ,    label: "Présentation de l'entreprise", sub: 'Mission · Histoire · Culture LPT' },
-  'verre-progressif': { pages: PROGRESSIF_PAGES,     quiz: PROGRESSIF_QUIZ,    label: 'Le Verre Progressif',          sub: 'Anatomie · Vente · Objections · Quiz J+14' },
+  'types-verres':     { pages: TYPES_VERRES_PAGES,      quiz: TYPES_VERRES_QUIZ,  label: 'Types de verres',               sub: 'Le verre unifocal' },
+  'pdm':              { pages: PDM_PAGES,                quiz: PDM_QUIZ,           label: 'Prises de mesures',             sub: 'Écart pupillaire · Hauteur · LPTVISION' },
+  'optique':          { pages: OPTIQUE_PAGES,            quiz: OPTIQUE_QUIZ,       label: "Les bases de l'optique",        sub: 'Troubles visuels · Corrections · Ordonnances' },
+  'offres':           { pages: [],                       quiz: OFFRES_QUIZ,        label: 'Les offres',                    sub: '100% Santé · Offres LPT · Mutuelles' },
+  'entreprise':       { pages: ENTREPRISE_PAGES,         quiz: ENTREPRISE_QUIZ,    label: "Présentation de l'entreprise", sub: 'Mission · Histoire · Culture LPT' },
+  'verre-progressif': { pages: PROGRESSIF_PAGES,         quiz: PROGRESSIF_QUIZ,    label: 'Le Verre Progressif',          sub: 'Anatomie · Vente · Objections · Quiz J+14' },
+  'trame-accueil':    { pages: TRAME_ACCUEIL_PAGES,      quiz: [],                 label: "Trame d'accueil",              sub: 'Bonjour · Concept · Examen de vue' },
 }

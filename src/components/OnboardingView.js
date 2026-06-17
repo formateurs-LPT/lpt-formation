@@ -49,6 +49,12 @@ const JOURNEES = (onLaunchModule) => [
     sub: 'Les offres et la vente',
     modules: [
       {
+        visual: 'emoji', icon: '🤝',
+        label: "Trame d'accueil",
+        sub: 'Bonjour · Concept LPT · Examen de vue — 4 points clés',
+        onClick: () => onLaunchModule('trame-accueil'),
+      },
+      {
         visual: 'emoji', icon: '🏷️',
         label: 'Les offres',
         sub: 'Découverte des offres LPT et argumentation commerciale',

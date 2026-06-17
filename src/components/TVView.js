@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
+import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE, getSharedState, setSharedState } from '@/lib/supabase'
 
@@ -10,6 +10,10 @@ const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
 // ── Keyframes ─────────────────────────────────────────────────────
 const STYLES = `
+  @keyframes trameSlideIn {
+    from { opacity: 0; transform: translateX(-24px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
   @keyframes verreFloat {
     0%, 100% { transform: translateY(0px) scale(1); }
     50% { transform: translateY(-16px) scale(1.04); }
@@ -1630,7 +1634,59 @@ function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, p
 }
 
 // ── TV Content Page (no controls, no avatar) ──────────────────────
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer }) {
+// ── TV Trame d'accueil ────────────────────────────────────────────
+function TVTrameAccueil({ step }) {
+  const visible = (i) => step !== null && step !== undefined && i <= step
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+      {/* Gauche : titre */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ marginBottom: 32 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={140} height={52} style={{ objectFit: 'contain' }} />
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 18 }}>Formation Journée 2</div>
+        <h1 style={{ fontSize: 44, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 0 }}>
+          La trame d'accueil<br />
+          <span style={{ color: '#00abe9' }}>Lunettes Pour Tous</span>
+        </h1>
+        <div style={{ display: 'flex', gap: 6, marginTop: 32 }}>
+          {TRAME_ACCUEIL_POINTS.map((pt, i) => (
+            <div key={i} style={{ height: 5, borderRadius: 3, flex: 1, background: visible(i) ? pt.color : 'rgba(255,255,255,0.1)', transition: 'background 0.5s ease' }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Droite : points révélés */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', gap: 20 }}>
+        {TRAME_ACCUEIL_POINTS.map((pt, i) => (
+          <div key={pt.num} style={{
+            display: 'flex', alignItems: 'flex-start', gap: 22,
+            opacity: visible(i) ? 1 : 0,
+            transform: visible(i) ? 'translateX(0)' : 'translateX(-24px)',
+            transition: 'all 0.55s cubic-bezier(0.22,1,0.36,1)',
+          }}>
+            <div style={{
+              width: 58, height: 58, borderRadius: 16, flexShrink: 0,
+              background: `${pt.color}18`, border: `2px solid ${pt.color}55`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 26, fontWeight: 900, color: pt.color,
+            }}>{pt.num}</div>
+            <div style={{
+              flex: 1, borderLeft: `4px solid ${pt.color}`,
+              background: `${pt.color}08`, border: `1px solid ${pt.color}22`,
+              borderRadius: 16, padding: '16px 22px',
+            }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', lineHeight: 1.5 }}>{pt.text}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -1641,6 +1697,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
 
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesPhase={troublesPhase} opticienPlaying={opticienPlaying} audioUnlocked={audioUnlocked} />
+  if (page.type === 'trame-accueil') return <TVTrameAccueil step={trameStep} />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} audioUnlocked={audioUnlocked} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
@@ -2289,6 +2346,8 @@ export default function TVView() {
   const [ventesResponses, setVentesResponses]           = useState({})
   const [promesseResponses, setPromesseResponses]       = useState({})
   const [planningDay, setPlanningDay]                   = useState(null)
+  // Trame d'accueil
+  const [trameStep, setTrameStep]                       = useState(null)
   // Progressif interactive state
   const [progZoneQ, setProgZoneQ]                       = useState(null)
   const [progZoneResponses, setProgZoneResponses]       = useState({})
@@ -2311,6 +2370,7 @@ export default function TVView() {
   useEffect(() => {
     if (!sharedState) return
     setTvScreen(sharedState.tv_screen || null)
+    setTrameStep(sharedState.trame_step ?? null)
     setTroublesPhase(sharedState.troubles_phase || 1)
     setOpticienPlaying(!!sharedState.opticien_playing)
     setOrdoPlaying(!!sharedState.ordo_playing)
@@ -2412,6 +2472,7 @@ export default function TVView() {
           progObjectionIdx={progObjectionIdx}
           progObjectionResponses={progObjectionResponses}
           progBestAnswer={progBestAnswer}
+          trameStep={trameStep}
         />
       ) : (
         <WelcomeScreen />
