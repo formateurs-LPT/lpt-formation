@@ -62,6 +62,20 @@ const JOURNEES = (onLaunchModule) => [
       },
     ],
   },
+  {
+    id: 'journee3',
+    numero: 3,
+    titre: 'Journée 3',
+    sub: 'La prise de mesures',
+    modules: [
+      {
+        visual: 'image', src: '/assets/LPT003-EFO-001.avif',
+        label: 'Prise de mesures',
+        sub: 'Écart pupillaire · Hauteur · LPTVISION',
+        onClick: () => onLaunchModule('pdm'),
+      },
+    ],
+  },
 ]
 
 // ── Step 1 : Choix du groupe ──────────────────────────────────────
