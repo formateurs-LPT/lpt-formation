@@ -1633,6 +1633,115 @@ function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, p
   )
 }
 
+// ── TV PDM : Pourquoi mesurer ─────────────────────────────────────
+function TVPdmPourquoi({ pageIndex, total }) {
+  const COLOR = '#00abe9'
+  const points = [
+    { label: 'Centrage optique', desc: "Le centre du verre doit être aligné exactement devant la pupille du client." },
+    { label: 'Confort visuel', desc: "Un verre mal centré provoque fatigue et flou — même avec la bonne correction." },
+    { label: 'Satisfaction garantie', desc: "Une bonne mesure = un client satisfait dès le premier port." },
+  ]
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'grid', gridTemplateColumns: '1fr 1.5fr' }}>
+      {/* Gauche : texte */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 52px', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+          Prise de mesures · {pageIndex + 1} / {total}
+        </div>
+        <h1 style={{ fontSize: 36, fontWeight: 900, color: '#fff', lineHeight: 1.2, marginBottom: 10 }}>
+          Pourquoi faire une<br /><span style={{ color: COLOR }}>prise de mesures ?</span>
+        </h1>
+        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, marginBottom: 36 }}>
+          Pour positionner le centre optique du verre exactement devant la pupille du client.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {points.map((pt, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: `${COLOR}20`, border: `1px solid ${COLOR}50`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: COLOR }}>{i + 1}</div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{pt.label}</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{pt.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Droite : schéma lunettes annoté */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 48px' }}>
+        <div style={{ position: 'relative', width: '100%', maxWidth: 620 }}>
+          {/* Image des lunettes */}
+          <img
+            src="/assets/LPT003-EFO-001.avif"
+            alt="Schéma prise de mesures"
+            style={{ width: '100%', display: 'block', borderRadius: 12, filter: 'brightness(0.92) contrast(1.05)' }}
+          />
+          {/* SVG overlay annotations */}
+          <svg
+            viewBox="0 0 100 65"
+            preserveAspectRatio="none"
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'visible' }}
+          >
+            {/* ── Croix pupille gauche ── */}
+            <line x1="35" y1="41" x2="35" y2="45" stroke={COLOR} strokeWidth="0.8" />
+            <line x1="33" y1="43" x2="37" y2="43" stroke={COLOR} strokeWidth="0.8" />
+            {/* ── Croix pupille droite ── */}
+            <line x1="65" y1="41" x2="65" y2="45" stroke={COLOR} strokeWidth="0.8" />
+            <line x1="63" y1="43" x2="67" y2="43" stroke={COLOR} strokeWidth="0.8" />
+
+            {/* ── EP gauche : bridge → pupille gauche ── */}
+            <line x1="50" y1="36" x2="35" y2="36" stroke={COLOR} strokeWidth="0.6" strokeDasharray="1.5 1" />
+            <line x1="50" y1="34.5" x2="50" y2="37.5" stroke={COLOR} strokeWidth="0.7" />
+            <line x1="35" y1="34.5" x2="35" y2="37.5" stroke={COLOR} strokeWidth="0.7" />
+            {/* Flèches EP gauche */}
+            <polygon points="36.5,36 38.5,35.2 38.5,36.8" fill={COLOR} />
+            <polygon points="48.5,36 46.5,35.2 46.5,36.8" fill={COLOR} />
+            {/* Label EP gauche */}
+            <rect x="39.5" y="33" width="7" height="5" rx="1" fill="#03112a" opacity="0.85" />
+            <text x="43" y="36.5" textAnchor="middle" fill={COLOR} fontSize="3.5" fontWeight="bold">EP</text>
+
+            {/* ── EP droit : bridge → pupille droite ── */}
+            <line x1="50" y1="36" x2="65" y2="36" stroke={COLOR} strokeWidth="0.6" strokeDasharray="1.5 1" />
+            <line x1="65" y1="34.5" x2="65" y2="37.5" stroke={COLOR} strokeWidth="0.7" />
+            <polygon points="63.5,36 61.5,35.2 61.5,36.8" fill={COLOR} />
+            <polygon points="51.5,36 53.5,35.2 53.5,36.8" fill={COLOR} />
+            <rect x="53.5" y="33" width="7" height="5" rx="1" fill="#03112a" opacity="0.85" />
+            <text x="57" y="36.5" textAnchor="middle" fill={COLOR} fontSize="3.5" fontWeight="bold">EP</text>
+
+            {/* ── H gauche : pupille → bas de verre ── */}
+            <line x1="35" y1="43" x2="35" y2="57" stroke={COLOR} strokeWidth="0.6" strokeDasharray="1.5 1" />
+            <line x1="33" y1="57" x2="37" y2="57" stroke={COLOR} strokeWidth="0.7" />
+            <polygon points="35,44.5 34.2,46.5 35.8,46.5" fill={COLOR} />
+            <polygon points="35,55.5 34.2,53.5 35.8,53.5" fill={COLOR} />
+            <rect x="27.5" y="48" width="5" height="5" rx="1" fill="#03112a" opacity="0.85" />
+            <text x="30" y="51.5" textAnchor="middle" fill={COLOR} fontSize="3.5" fontWeight="bold">H</text>
+
+            {/* ── H droit : pupille → bas de verre ── */}
+            <line x1="65" y1="43" x2="65" y2="57" stroke={COLOR} strokeWidth="0.6" strokeDasharray="1.5 1" />
+            <line x1="63" y1="57" x2="67" y2="57" stroke={COLOR} strokeWidth="0.7" />
+            <polygon points="65,44.5 64.2,46.5 65.8,46.5" fill={COLOR} />
+            <polygon points="65,55.5 64.2,53.5 65.8,53.5" fill={COLOR} />
+            <rect x="67.5" y="48" width="5" height="5" rx="1" fill="#03112a" opacity="0.85" />
+            <text x="70" y="51.5" textAnchor="middle" fill={COLOR} fontSize="3.5" fontWeight="bold">H</text>
+          </svg>
+
+          {/* Légende */}
+          <div style={{ marginTop: 20, display: 'flex', gap: 32, justifyContent: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="24" height="2" style={{ flexShrink: 0 }}><line x1="0" y1="1" x2="24" y2="1" stroke={COLOR} strokeWidth="1.5" strokeDasharray="4 2" /></svg>
+              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>EP — Écart pupillaire</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="2" height="24" style={{ flexShrink: 0 }}><line x1="1" y1="0" x2="1" y2="24" stroke={COLOR} strokeWidth="1.5" strokeDasharray="4 2" /></svg>
+              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>H — Hauteur</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── TV Offres : Classique ─────────────────────────────────────────
 function TVOffresClassique() {
   const COLOR = '#00abe9'
@@ -1790,6 +1899,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesPhase={troublesPhase} opticienPlaying={opticienPlaying} audioUnlocked={audioUnlocked} />
   if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />
+  if (page.type === 'pdm-pourquoi')     return <TVPdmPourquoi pageIndex={pageIndex} total={total} />
   if (page.type === 'offres-classique') return <TVOffresClassique />
   if (page.type === 'offres-1-1')       return <TVOffres11 step={offres11Step} />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />

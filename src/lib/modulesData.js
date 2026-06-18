@@ -25,6 +25,7 @@ export const TYPES_VERRES_PAGES = [
 export const PDM_PAGES = [
   {
     id: 'pourquoi',
+    type: 'pdm-pourquoi',
     titre: 'Pourquoi mesurer ?',
     sousTitre: 'Positionner le centre optique du verre exactement devant les yeux du client.',
     icon: '👁️',
