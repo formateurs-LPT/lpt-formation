@@ -1686,42 +1686,42 @@ function TVPdmPourquoi({ pageIndex, total }) {
             {/* Axe de symétrie central */}
             <line x1="656" y1="20" x2="656" y2="453" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeDasharray="10 6" />
 
-            {/* Croix pupille gauche */}
-            <line x1="455" y1="182" x2="455" y2="218" stroke="#e53535" strokeWidth="3.5" />
-            <line x1="437" y1="200" x2="473" y2="200" stroke="#e53535" strokeWidth="3.5" />
+            {/* Croix pupille gauche — centre optique verre gauche */}
+            <line x1="360" y1="182" x2="360" y2="218" stroke="#e53535" strokeWidth="3.5" />
+            <line x1="342" y1="200" x2="378" y2="200" stroke="#e53535" strokeWidth="3.5" />
 
-            {/* Croix pupille droite */}
-            <line x1="858" y1="182" x2="858" y2="218" stroke="#e53535" strokeWidth="3.5" />
-            <line x1="840" y1="200" x2="876" y2="200" stroke="#e53535" strokeWidth="3.5" />
+            {/* Croix pupille droite — centre optique verre droit */}
+            <line x1="953" y1="182" x2="953" y2="218" stroke="#e53535" strokeWidth="3.5" />
+            <line x1="935" y1="200" x2="971" y2="200" stroke="#e53535" strokeWidth="3.5" />
 
-            {/* EP gauche : CX(656) → pupille gauche(455) */}
-            <line x1="656" y1="168" x2="455" y2="168" stroke={C} strokeWidth="2.5" strokeDasharray="9 5" />
+            {/* EP gauche : CX(656) → pupille gauche(360) */}
+            <line x1="656" y1="168" x2="360" y2="168" stroke={C} strokeWidth="2.5" strokeDasharray="9 5" />
             <line x1="656" y1="154" x2="656" y2="182" stroke={C} strokeWidth="2.5" />
-            <line x1="455" y1="154" x2="455" y2="182" stroke={C} strokeWidth="2.5" />
-            <polygon points="471,162 485,168 471,174" fill={C} />
+            <line x1="360" y1="154" x2="360" y2="182" stroke={C} strokeWidth="2.5" />
+            <polygon points="376,162 390,168 376,174" fill={C} />
             <polygon points="641,162 627,168 641,174" fill={C} />
-            <text x="555" y="152" textAnchor="middle" fill={C} fontSize="30" fontWeight="bold" fontStyle="italic" fontFamily="system-ui,sans-serif">EP</text>
+            <text x="508" y="150" textAnchor="middle" fill={C} fontSize="30" fontWeight="bold" fontStyle="italic" fontFamily="system-ui,sans-serif">EP</text>
 
-            {/* EP droite : CX(656) → pupille droite(858) */}
-            <line x1="656" y1="168" x2="858" y2="168" stroke={C} strokeWidth="2.5" strokeDasharray="9 5" />
-            <line x1="858" y1="154" x2="858" y2="182" stroke={C} strokeWidth="2.5" />
-            <polygon points="842,162 828,168 842,174" fill={C} />
+            {/* EP droite : CX(656) → pupille droite(953) */}
+            <line x1="656" y1="168" x2="953" y2="168" stroke={C} strokeWidth="2.5" strokeDasharray="9 5" />
+            <line x1="953" y1="154" x2="953" y2="182" stroke={C} strokeWidth="2.5" />
+            <polygon points="937,162 923,168 937,174" fill={C} />
             <polygon points="671,162 685,168 671,174" fill={C} />
-            <text x="757" y="152" textAnchor="middle" fill={C} fontSize="30" fontWeight="bold" fontStyle="italic" fontFamily="system-ui,sans-serif">EP</text>
+            <text x="805" y="150" textAnchor="middle" fill={C} fontSize="30" fontWeight="bold" fontStyle="italic" fontFamily="system-ui,sans-serif">EP</text>
 
             {/* H gauche : pupille(200) → bas verre(395) */}
-            <line x1="455" y1="220" x2="455" y2="395" stroke={C} strokeWidth="2.5" strokeDasharray="9 5" />
-            <line x1="441" y1="395" x2="469" y2="395" stroke={C} strokeWidth="2.5" />
-            <polygon points="449,236 455,222 461,236" fill={C} />
-            <polygon points="449,379 455,393 461,379" fill={C} />
-            <text x="405" y="315" textAnchor="middle" fill={C} fontSize="30" fontWeight="bold" fontStyle="italic" fontFamily="system-ui,sans-serif">H</text>
+            <line x1="360" y1="220" x2="360" y2="395" stroke={C} strokeWidth="2.5" strokeDasharray="9 5" />
+            <line x1="346" y1="395" x2="374" y2="395" stroke={C} strokeWidth="2.5" />
+            <polygon points="354,236 360,222 366,236" fill={C} />
+            <polygon points="354,379 360,393 366,379" fill={C} />
+            <text x="310" y="315" textAnchor="middle" fill={C} fontSize="30" fontWeight="bold" fontStyle="italic" fontFamily="system-ui,sans-serif">H</text>
 
             {/* H droite : pupille(200) → bas verre(395) */}
-            <line x1="858" y1="220" x2="858" y2="395" stroke={C} strokeWidth="2.5" strokeDasharray="9 5" />
-            <line x1="844" y1="395" x2="872" y2="395" stroke={C} strokeWidth="2.5" />
-            <polygon points="852,236 858,222 864,236" fill={C} />
-            <polygon points="852,379 858,393 864,379" fill={C} />
-            <text x="908" y="315" textAnchor="middle" fill={C} fontSize="30" fontWeight="bold" fontStyle="italic" fontFamily="system-ui,sans-serif">H</text>
+            <line x1="953" y1="220" x2="953" y2="395" stroke={C} strokeWidth="2.5" strokeDasharray="9 5" />
+            <line x1="939" y1="395" x2="967" y2="395" stroke={C} strokeWidth="2.5" />
+            <polygon points="947,236 953,222 959,236" fill={C} />
+            <polygon points="947,379 953,393 959,379" fill={C} />
+            <text x="1003" y="315" textAnchor="middle" fill={C} fontSize="30" fontWeight="bold" fontStyle="italic" fontFamily="system-ui,sans-serif">H</text>
           </svg>
         </div>
 
