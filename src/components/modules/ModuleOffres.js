@@ -36,9 +36,8 @@ function CoursClassique({ onNext, onBack }) {
       </div>
 
       {/* Contenu */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }}>
-        {/* Gauche */}
-        <div>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', maxWidth: 600, alignSelf: 'center', width: '100%' }}>
+        <div style={{ width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
             <Ring color={COLOR} size={72} />
             <div>
@@ -63,29 +62,6 @@ function CoursClassique({ onNext, onBack }) {
                 <span style={{ fontSize: 15, color: '#fff', fontWeight: 500 }}>{pt}</span>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Droite */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '20px 24px' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Tarifs indicatifs</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>Unifocal</span>
-              <span style={{ fontSize: 22, fontWeight: 800, color: COLOR }}>~157€</span>
-            </div>
-            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 12 }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>Progressif</span>
-              <span style={{ fontSize: 22, fontWeight: 800, color: COLOR }}>~260€</span>
-            </div>
-          </div>
-          <div style={{ background: `${COLOR}10`, border: `1px solid ${COLOR}35`, borderRadius: 16, padding: '18px 24px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-            <span style={{ fontSize: 24, flexShrink: 0 }}>🏪</span>
-            <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', lineHeight: 1.5 }}>
-              Offre éligible sur <span style={{ color: COLOR }}>l'intégralité du magasin</span><br />
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 400 }}>Monture et verres au choix</span>
-            </div>
           </div>
         </div>
       </div>
@@ -144,18 +120,21 @@ function Cours11({ onPrev, onStartQuiz, onBack }) {
         </div>
 
         {/* Droite */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {[
-            { icon: '🛍️', text: '1 paire achetée', sub: null },
-            { icon: '🎁', text: 'Deuxième paire offerte', sub: 'de même qualité que la première' },
-            { icon: '🏪', text: 'Éligible sur tout le magasin', sub: 'Monture et verres au choix' },
+            { text: '1 paire achetée', sub: null, highlight: false },
+            { text: 'Deuxième paire offerte', sub: 'de même qualité que la première', highlight: true },
+            { text: 'Éligible sur tout le magasin', sub: 'Monture et verres au choix', highlight: false },
+            { text: 'Même en solaire', sub: null, highlight: false },
           ].map((item, i) => (
-            <div key={i} style={{ background: i === 1 ? `${COLOR}12` : 'rgba(255,255,255,0.04)', border: `1px solid ${i === 1 ? `${COLOR}40` : 'rgba(255,255,255,0.1)'}`, borderRadius: 14, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
-              <span style={{ fontSize: 26, flexShrink: 0 }}>{item.icon}</span>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: i === 1 ? COLOR : '#fff' }}>{item.text}</div>
-                {item.sub && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{item.sub}</div>}
-              </div>
+            <div key={i} style={{
+              background: item.highlight ? `${COLOR}12` : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${item.highlight ? `${COLOR}40` : 'rgba(255,255,255,0.1)'}`,
+              borderLeft: `3px solid ${item.highlight ? COLOR : 'rgba(255,255,255,0.15)'}`,
+              borderRadius: 14, padding: '14px 20px',
+            }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: item.highlight ? COLOR : '#fff' }}>{item.text}</div>
+              {item.sub && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 3 }}>{item.sub}</div>}
             </div>
           ))}
         </div>
@@ -445,8 +424,7 @@ function Lobby({ onStart, onBack }) {
           border: 'none', color: '#fff', padding: '16px 48px',
           borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer',
           boxShadow: '0 8px 32px rgba(0,171,233,0.45)', fontFamily: 'inherit',
-        }}>▶ Lancer le quiz</button>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>5 questions · ~5 minutes</p>
+        }}>▶ Démarrer le module</button>
       </div>
     </div>
   )
