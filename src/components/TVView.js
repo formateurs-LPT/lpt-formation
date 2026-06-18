@@ -1675,7 +1675,7 @@ function TVPdmPourquoi({ pageIndex, total }) {
           <img
             src="/assets/LPT003-EFO-001.avif"
             alt="Monture LPT — prise de mesures"
-            style={{ width: '100%', display: 'block', mixBlendMode: 'luminosity', opacity: 0.92 }}
+            style={{ width: '100%', display: 'block' }}
           />
           {/* SVG overlay — viewBox calé sur les dimensions réelles 1313×473 */}
           <svg
