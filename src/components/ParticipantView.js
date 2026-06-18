@@ -352,6 +352,10 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   const [planningDay, setPlanningDay] = useState(null)
   const [sharedState, setSharedState_] = useState(null)
 
+  // Polling rapide uniquement quand aucun module ou zone-interactif (questions temps réel)
+  // Pour tout autre module (écran statique), on ralentit à 5s pour économiser les appels Supabase
+  const pollMs = (!activeModule || activeModule === 'zone-interactif') ? 1500 : 5000
+
   useEffect(() => {
     const poll = async () => {
       try {
@@ -372,11 +376,11 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
       } catch {}
     }
     poll()
-    const interval = setInterval(poll, 1500)
+    const interval = setInterval(poll, pollMs)
     return () => clearInterval(interval)
-  }, [curStep, curSlide])
+  }, [curStep, curSlide, pollMs])
 
-  // Polling planning + sharedState complet (trainer_state)
+  // Polling sharedState (trainer_state) — même cadence adaptative
   useEffect(() => {
     const pollPlanning = async () => {
       try {
@@ -387,9 +391,9 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
       } catch {}
     }
     pollPlanning()
-    const t = setInterval(pollPlanning, 1500)
+    const t = setInterval(pollPlanning, pollMs)
     return () => clearInterval(t)
-  }, [])
+  }, [pollMs])
 
   if (ended) {
     return (
