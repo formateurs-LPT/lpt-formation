@@ -1635,109 +1635,115 @@ function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, p
 
 // ── TV PDM : Pourquoi mesurer ─────────────────────────────────────
 function TVPdmPourquoi({ pageIndex, total }) {
-  const COLOR = '#00abe9'
-  const points = [
-    { label: 'Centrage optique', desc: "Le centre du verre doit être aligné exactement devant la pupille du client." },
-    { label: 'Confort visuel', desc: "Un verre mal centré provoque fatigue et flou — même avec la bonne correction." },
-    { label: 'Satisfaction garantie', desc: "Une bonne mesure = un client satisfait dès le premier port." },
-  ]
+  const C = '#00abe9'
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'grid', gridTemplateColumns: '1fr 1.5fr' }}>
-      {/* Gauche : texte */}
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'grid', gridTemplateColumns: '40% 60%' }}>
+
+      {/* ── Gauche : texte ── */}
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 52px', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: C, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 20 }}>
           Prise de mesures · {pageIndex + 1} / {total}
         </div>
-        <h1 style={{ fontSize: 36, fontWeight: 900, color: '#fff', lineHeight: 1.2, marginBottom: 10 }}>
-          Pourquoi faire une<br /><span style={{ color: COLOR }}>prise de mesures ?</span>
-        </h1>
-        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, marginBottom: 36 }}>
-          Pour positionner le centre optique du verre exactement devant la pupille du client.
+        <div style={{ fontSize: 44, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 16 }}>
+          Pourquoi faire une<br /><span style={{ color: C }}>prise de mesures ?</span>
+        </div>
+        <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, marginBottom: 44 }}>
+          Positionner le centre optique du verre exactement devant la pupille du client.
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {points.map((pt, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: `${COLOR}20`, border: `1px solid ${COLOR}50`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: COLOR }}>{i + 1}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {[
+            { n: 1, label: 'Centrage optique', desc: "Aligner le centre du verre devant la pupille." },
+            { n: 2, label: 'Confort visuel', desc: "Un verre mal centré provoque fatigue et flou." },
+            { n: 3, label: 'Satisfaction garantie', desc: "Bonne mesure = client satisfait dès le 1er port." },
+          ].map(pt => (
+            <div key={pt.n} style={{ display: 'flex', alignItems: 'flex-start', gap: 18 }}>
+              <div style={{ width: 38, height: 38, borderRadius: '50%', background: `${C}20`, border: `1px solid ${C}50`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: C }}>{pt.n}</div>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{pt.label}</div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{pt.desc}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 3 }}>{pt.label}</div>
+                <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{pt.desc}</div>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Droite : schéma lunettes annoté */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 48px' }}>
-        <div style={{ position: 'relative', width: '100%', maxWidth: 620 }}>
-          {/* Image des lunettes */}
-          <img
-            src="/assets/LPT003-EFO-001.avif"
-            alt="Schéma prise de mesures"
-            style={{ width: '100%', display: 'block', borderRadius: 12, filter: 'brightness(0.92) contrast(1.05)' }}
-          />
-          {/* SVG overlay annotations */}
-          <svg
-            viewBox="0 0 100 65"
-            preserveAspectRatio="none"
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'visible' }}
-          >
-            {/* ── Croix pupille gauche ── */}
-            <line x1="35" y1="41" x2="35" y2="45" stroke={COLOR} strokeWidth="0.8" />
-            <line x1="33" y1="43" x2="37" y2="43" stroke={COLOR} strokeWidth="0.8" />
-            {/* ── Croix pupille droite ── */}
-            <line x1="65" y1="41" x2="65" y2="45" stroke={COLOR} strokeWidth="0.8" />
-            <line x1="63" y1="43" x2="67" y2="43" stroke={COLOR} strokeWidth="0.8" />
+      {/* ── Droite : schéma lunettes SVG ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 56px' }}>
+        <svg viewBox="0 0 540 320" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 580, height: 'auto' }}>
 
-            {/* ── EP gauche : bridge → pupille gauche ── */}
-            <line x1="50" y1="36" x2="35" y2="36" stroke={COLOR} strokeWidth="0.6" strokeDasharray="1.5 1" />
-            <line x1="50" y1="34.5" x2="50" y2="37.5" stroke={COLOR} strokeWidth="0.7" />
-            <line x1="35" y1="34.5" x2="35" y2="37.5" stroke={COLOR} strokeWidth="0.7" />
-            {/* Flèches EP gauche */}
-            <polygon points="36.5,36 38.5,35.2 38.5,36.8" fill={COLOR} />
-            <polygon points="48.5,36 46.5,35.2 46.5,36.8" fill={COLOR} />
-            {/* Label EP gauche */}
-            <rect x="39.5" y="33" width="7" height="5" rx="1" fill="#03112a" opacity="0.85" />
-            <text x="43" y="36.5" textAnchor="middle" fill={COLOR} fontSize="3.5" fontWeight="bold">EP</text>
+          {/* ── Monture ── */}
+          {/* Verre gauche */}
+          <ellipse cx="142" cy="168" rx="116" ry="98" fill="rgba(5,15,30,0.5)" stroke="rgba(210,185,145,0.6)" strokeWidth="10" />
+          {/* Verre droit */}
+          <ellipse cx="398" cy="168" rx="116" ry="98" fill="rgba(5,15,30,0.5)" stroke="rgba(210,185,145,0.6)" strokeWidth="10" />
+          {/* Pont (bridge) */}
+          <path d="M 258 150 C 265 136 275 136 282 150" fill="none" stroke="rgba(210,185,145,0.6)" strokeWidth="10" strokeLinecap="round" />
+          {/* Branche gauche */}
+          <path d="M 26 148 Q 10 138 0 132" fill="none" stroke="rgba(210,185,145,0.5)" strokeWidth="9" strokeLinecap="round" />
+          {/* Branche droite */}
+          <path d="M 514 148 Q 530 138 540 132" fill="none" stroke="rgba(210,185,145,0.5)" strokeWidth="9" strokeLinecap="round" />
 
-            {/* ── EP droit : bridge → pupille droite ── */}
-            <line x1="50" y1="36" x2="65" y2="36" stroke={COLOR} strokeWidth="0.6" strokeDasharray="1.5 1" />
-            <line x1="65" y1="34.5" x2="65" y2="37.5" stroke={COLOR} strokeWidth="0.7" />
-            <polygon points="63.5,36 61.5,35.2 61.5,36.8" fill={COLOR} />
-            <polygon points="51.5,36 53.5,35.2 53.5,36.8" fill={COLOR} />
-            <rect x="53.5" y="33" width="7" height="5" rx="1" fill="#03112a" opacity="0.85" />
-            <text x="57" y="36.5" textAnchor="middle" fill={COLOR} fontSize="3.5" fontWeight="bold">EP</text>
+          {/* ── Axe central vertical (ligne de symétrie) ── */}
+          <line x1="270" y1="40" x2="270" y2="290" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" strokeDasharray="7 5" />
 
-            {/* ── H gauche : pupille → bas de verre ── */}
-            <line x1="35" y1="43" x2="35" y2="57" stroke={COLOR} strokeWidth="0.6" strokeDasharray="1.5 1" />
-            <line x1="33" y1="57" x2="37" y2="57" stroke={COLOR} strokeWidth="0.7" />
-            <polygon points="35,44.5 34.2,46.5 35.8,46.5" fill={COLOR} />
-            <polygon points="35,55.5 34.2,53.5 35.8,53.5" fill={COLOR} />
-            <rect x="27.5" y="48" width="5" height="5" rx="1" fill="#03112a" opacity="0.85" />
-            <text x="30" y="51.5" textAnchor="middle" fill={COLOR} fontSize="3.5" fontWeight="bold">H</text>
+          {/* ── Croix pupille gauche ── */}
+          <line x1="142" y1="152" x2="142" y2="184" stroke={C} strokeWidth="2.5" />
+          <line x1="126" y1="168" x2="158" y2="168" stroke={C} strokeWidth="2.5" />
 
-            {/* ── H droit : pupille → bas de verre ── */}
-            <line x1="65" y1="43" x2="65" y2="57" stroke={COLOR} strokeWidth="0.6" strokeDasharray="1.5 1" />
-            <line x1="63" y1="57" x2="67" y2="57" stroke={COLOR} strokeWidth="0.7" />
-            <polygon points="65,44.5 64.2,46.5 65.8,46.5" fill={COLOR} />
-            <polygon points="65,55.5 64.2,53.5 65.8,53.5" fill={COLOR} />
-            <rect x="67.5" y="48" width="5" height="5" rx="1" fill="#03112a" opacity="0.85" />
-            <text x="70" y="51.5" textAnchor="middle" fill={COLOR} fontSize="3.5" fontWeight="bold">H</text>
-          </svg>
+          {/* ── Croix pupille droite ── */}
+          <line x1="398" y1="152" x2="398" y2="184" stroke={C} strokeWidth="2.5" />
+          <line x1="382" y1="168" x2="414" y2="168" stroke={C} strokeWidth="2.5" />
 
-          {/* Légende */}
-          <div style={{ marginTop: 20, display: 'flex', gap: 32, justifyContent: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <svg width="24" height="2" style={{ flexShrink: 0 }}><line x1="0" y1="1" x2="24" y2="1" stroke={COLOR} strokeWidth="1.5" strokeDasharray="4 2" /></svg>
-              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>EP — Écart pupillaire</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <svg width="2" height="24" style={{ flexShrink: 0 }}><line x1="1" y1="0" x2="1" y2="24" stroke={COLOR} strokeWidth="1.5" strokeDasharray="4 2" /></svg>
-              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>H — Hauteur</span>
-            </div>
+          {/* ── EP gauche : bridge → pupille gauche ── */}
+          <line x1="270" y1="128" x2="142" y2="128" stroke={C} strokeWidth="2" strokeDasharray="7 4" />
+          <line x1="270" y1="120" x2="270" y2="136" stroke={C} strokeWidth="2" />
+          <line x1="142" y1="120" x2="142" y2="136" stroke={C} strokeWidth="2" />
+          {/* flèches */}
+          <polygon points="157,122 168,128 157,134" fill={C} />
+          <polygon points="255,122 244,128 255,134" fill={C} />
+          {/* label */}
+          <rect x="189" y="114" width="42" height="26" rx="4" fill="#02101f" opacity="0.92" />
+          <text x="210" y="132" textAnchor="middle" fill={C} fontSize="18" fontWeight="bold" fontFamily="system-ui,sans-serif">EP</text>
+
+          {/* ── EP droite : bridge → pupille droite ── */}
+          <line x1="270" y1="128" x2="398" y2="128" stroke={C} strokeWidth="2" strokeDasharray="7 4" />
+          <line x1="398" y1="120" x2="398" y2="136" stroke={C} strokeWidth="2" />
+          <polygon points="383,122 372,128 383,134" fill={C} />
+          <polygon points="285,122 296,128 285,134" fill={C} />
+          <rect x="309" y="114" width="42" height="26" rx="4" fill="#02101f" opacity="0.92" />
+          <text x="330" y="132" textAnchor="middle" fill={C} fontSize="18" fontWeight="bold" fontFamily="system-ui,sans-serif">EP</text>
+
+          {/* ── H gauche : pupille → bas du verre ── */}
+          <line x1="142" y1="168" x2="142" y2="258" stroke={C} strokeWidth="2" strokeDasharray="7 4" />
+          <line x1="130" y1="258" x2="154" y2="258" stroke={C} strokeWidth="2" />
+          <polygon points="136,183 142,172 148,183" fill={C} />
+          <polygon points="136,245 142,256 148,245" fill={C} />
+          <rect x="60" y="202" width="32" height="26" rx="4" fill="#02101f" opacity="0.92" />
+          <text x="76" y="220" textAnchor="middle" fill={C} fontSize="18" fontWeight="bold" fontFamily="system-ui,sans-serif">H</text>
+
+          {/* ── H droite : pupille → bas du verre ── */}
+          <line x1="398" y1="168" x2="398" y2="258" stroke={C} strokeWidth="2" strokeDasharray="7 4" />
+          <line x1="386" y1="258" x2="410" y2="258" stroke={C} strokeWidth="2" />
+          <polygon points="392,183 398,172 404,183" fill={C} />
+          <polygon points="392,245 398,256 404,245" fill={C} />
+          <rect x="448" y="202" width="32" height="26" rx="4" fill="#02101f" opacity="0.92" />
+          <text x="464" y="220" textAnchor="middle" fill={C} fontSize="18" fontWeight="bold" fontFamily="system-ui,sans-serif">H</text>
+
+        </svg>
+
+        {/* ── Légende ── */}
+        <div style={{ display: 'flex', gap: 48, marginTop: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <svg width="36" height="4" style={{ flexShrink: 0 }}><line x1="0" y1="2" x2="36" y2="2" stroke={C} strokeWidth="2.5" strokeDasharray="7 4" /></svg>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.75)', fontWeight: 600 }}>EP — Écart pupillaire</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <svg width="4" height="36" style={{ flexShrink: 0 }}><line x1="2" y1="0" x2="2" y2="36" stroke={C} strokeWidth="2.5" strokeDasharray="7 4" /></svg>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.75)', fontWeight: 600 }}>H — Hauteur</span>
           </div>
         </div>
       </div>
+
     </div>
   )
 }
