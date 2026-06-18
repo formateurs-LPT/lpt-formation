@@ -1637,7 +1637,7 @@ function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, p
 function TVPdmPourquoi({ pageIndex, total }) {
   const C = '#00abe9'
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'grid', gridTemplateColumns: '40% 60%' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'grid', gridTemplateColumns: '38% 62%' }}>
 
       {/* ── Gauche : texte ── */}
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 52px', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
@@ -1667,78 +1667,72 @@ function TVPdmPourquoi({ pageIndex, total }) {
         </div>
       </div>
 
-      {/* ── Droite : schéma lunettes SVG ── */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 56px' }}>
-        <svg viewBox="0 0 540 320" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 580, height: 'auto' }}>
+      {/* ── Droite : photo réelle + annotations SVG overlay ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 48px' }}>
+        {/* Conteneur relatif pour superposer le SVG sur la photo */}
+        <div style={{ position: 'relative', width: '100%' }}>
+          {/* Photo de la monture tortoiseshell 1313×473px */}
+          <img
+            src="/assets/LPT003-EFO-001.avif"
+            alt="Monture LPT — prise de mesures"
+            style={{ width: '100%', display: 'block', mixBlendMode: 'luminosity', opacity: 0.92 }}
+          />
+          {/* SVG overlay — viewBox calé sur les dimensions réelles 1313×473 */}
+          <svg
+            viewBox="0 0 1313 473"
+            preserveAspectRatio="xMidYMid meet"
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+          >
+            {/* Axe de symétrie central */}
+            <line x1="656" y1="20" x2="656" y2="453" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeDasharray="10 6" />
 
-          {/* ── Monture ── */}
-          {/* Verre gauche */}
-          <ellipse cx="142" cy="168" rx="116" ry="98" fill="rgba(5,15,30,0.5)" stroke="rgba(210,185,145,0.6)" strokeWidth="10" />
-          {/* Verre droit */}
-          <ellipse cx="398" cy="168" rx="116" ry="98" fill="rgba(5,15,30,0.5)" stroke="rgba(210,185,145,0.6)" strokeWidth="10" />
-          {/* Pont (bridge) */}
-          <path d="M 258 150 C 265 136 275 136 282 150" fill="none" stroke="rgba(210,185,145,0.6)" strokeWidth="10" strokeLinecap="round" />
-          {/* Branche gauche */}
-          <path d="M 26 148 Q 10 138 0 132" fill="none" stroke="rgba(210,185,145,0.5)" strokeWidth="9" strokeLinecap="round" />
-          {/* Branche droite */}
-          <path d="M 514 148 Q 530 138 540 132" fill="none" stroke="rgba(210,185,145,0.5)" strokeWidth="9" strokeLinecap="round" />
+            {/* Croix pupille gauche */}
+            <line x1="455" y1="182" x2="455" y2="218" stroke="#e53535" strokeWidth="3.5" />
+            <line x1="437" y1="200" x2="473" y2="200" stroke="#e53535" strokeWidth="3.5" />
 
-          {/* ── Axe central vertical (ligne de symétrie) ── */}
-          <line x1="270" y1="40" x2="270" y2="290" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" strokeDasharray="7 5" />
+            {/* Croix pupille droite */}
+            <line x1="858" y1="182" x2="858" y2="218" stroke="#e53535" strokeWidth="3.5" />
+            <line x1="840" y1="200" x2="876" y2="200" stroke="#e53535" strokeWidth="3.5" />
 
-          {/* ── Croix pupille gauche ── */}
-          <line x1="142" y1="152" x2="142" y2="184" stroke={C} strokeWidth="2.5" />
-          <line x1="126" y1="168" x2="158" y2="168" stroke={C} strokeWidth="2.5" />
+            {/* EP gauche : CX(656) → pupille gauche(455) */}
+            <line x1="656" y1="168" x2="455" y2="168" stroke={C} strokeWidth="2.5" strokeDasharray="9 5" />
+            <line x1="656" y1="154" x2="656" y2="182" stroke={C} strokeWidth="2.5" />
+            <line x1="455" y1="154" x2="455" y2="182" stroke={C} strokeWidth="2.5" />
+            <polygon points="471,162 485,168 471,174" fill={C} />
+            <polygon points="641,162 627,168 641,174" fill={C} />
+            <text x="555" y="152" textAnchor="middle" fill={C} fontSize="30" fontWeight="bold" fontStyle="italic" fontFamily="system-ui,sans-serif">EP</text>
 
-          {/* ── Croix pupille droite ── */}
-          <line x1="398" y1="152" x2="398" y2="184" stroke={C} strokeWidth="2.5" />
-          <line x1="382" y1="168" x2="414" y2="168" stroke={C} strokeWidth="2.5" />
+            {/* EP droite : CX(656) → pupille droite(858) */}
+            <line x1="656" y1="168" x2="858" y2="168" stroke={C} strokeWidth="2.5" strokeDasharray="9 5" />
+            <line x1="858" y1="154" x2="858" y2="182" stroke={C} strokeWidth="2.5" />
+            <polygon points="842,162 828,168 842,174" fill={C} />
+            <polygon points="671,162 685,168 671,174" fill={C} />
+            <text x="757" y="152" textAnchor="middle" fill={C} fontSize="30" fontWeight="bold" fontStyle="italic" fontFamily="system-ui,sans-serif">EP</text>
 
-          {/* ── EP gauche : bridge → pupille gauche ── */}
-          <line x1="270" y1="128" x2="142" y2="128" stroke={C} strokeWidth="2" strokeDasharray="7 4" />
-          <line x1="270" y1="120" x2="270" y2="136" stroke={C} strokeWidth="2" />
-          <line x1="142" y1="120" x2="142" y2="136" stroke={C} strokeWidth="2" />
-          {/* flèches */}
-          <polygon points="157,122 168,128 157,134" fill={C} />
-          <polygon points="255,122 244,128 255,134" fill={C} />
-          {/* label */}
-          <rect x="189" y="114" width="42" height="26" rx="4" fill="#02101f" opacity="0.92" />
-          <text x="210" y="132" textAnchor="middle" fill={C} fontSize="18" fontWeight="bold" fontFamily="system-ui,sans-serif">EP</text>
+            {/* H gauche : pupille(200) → bas verre(395) */}
+            <line x1="455" y1="220" x2="455" y2="395" stroke={C} strokeWidth="2.5" strokeDasharray="9 5" />
+            <line x1="441" y1="395" x2="469" y2="395" stroke={C} strokeWidth="2.5" />
+            <polygon points="449,236 455,222 461,236" fill={C} />
+            <polygon points="449,379 455,393 461,379" fill={C} />
+            <text x="405" y="315" textAnchor="middle" fill={C} fontSize="30" fontWeight="bold" fontStyle="italic" fontFamily="system-ui,sans-serif">H</text>
 
-          {/* ── EP droite : bridge → pupille droite ── */}
-          <line x1="270" y1="128" x2="398" y2="128" stroke={C} strokeWidth="2" strokeDasharray="7 4" />
-          <line x1="398" y1="120" x2="398" y2="136" stroke={C} strokeWidth="2" />
-          <polygon points="383,122 372,128 383,134" fill={C} />
-          <polygon points="285,122 296,128 285,134" fill={C} />
-          <rect x="309" y="114" width="42" height="26" rx="4" fill="#02101f" opacity="0.92" />
-          <text x="330" y="132" textAnchor="middle" fill={C} fontSize="18" fontWeight="bold" fontFamily="system-ui,sans-serif">EP</text>
+            {/* H droite : pupille(200) → bas verre(395) */}
+            <line x1="858" y1="220" x2="858" y2="395" stroke={C} strokeWidth="2.5" strokeDasharray="9 5" />
+            <line x1="844" y1="395" x2="872" y2="395" stroke={C} strokeWidth="2.5" />
+            <polygon points="852,236 858,222 864,236" fill={C} />
+            <polygon points="852,379 858,393 864,379" fill={C} />
+            <text x="908" y="315" textAnchor="middle" fill={C} fontSize="30" fontWeight="bold" fontStyle="italic" fontFamily="system-ui,sans-serif">H</text>
+          </svg>
+        </div>
 
-          {/* ── H gauche : pupille → bas du verre ── */}
-          <line x1="142" y1="168" x2="142" y2="258" stroke={C} strokeWidth="2" strokeDasharray="7 4" />
-          <line x1="130" y1="258" x2="154" y2="258" stroke={C} strokeWidth="2" />
-          <polygon points="136,183 142,172 148,183" fill={C} />
-          <polygon points="136,245 142,256 148,245" fill={C} />
-          <rect x="60" y="202" width="32" height="26" rx="4" fill="#02101f" opacity="0.92" />
-          <text x="76" y="220" textAnchor="middle" fill={C} fontSize="18" fontWeight="bold" fontFamily="system-ui,sans-serif">H</text>
-
-          {/* ── H droite : pupille → bas du verre ── */}
-          <line x1="398" y1="168" x2="398" y2="258" stroke={C} strokeWidth="2" strokeDasharray="7 4" />
-          <line x1="386" y1="258" x2="410" y2="258" stroke={C} strokeWidth="2" />
-          <polygon points="392,183 398,172 404,183" fill={C} />
-          <polygon points="392,245 398,256 404,245" fill={C} />
-          <rect x="448" y="202" width="32" height="26" rx="4" fill="#02101f" opacity="0.92" />
-          <text x="464" y="220" textAnchor="middle" fill={C} fontSize="18" fontWeight="bold" fontFamily="system-ui,sans-serif">H</text>
-
-        </svg>
-
-        {/* ── Légende ── */}
-        <div style={{ display: 'flex', gap: 48, marginTop: 24 }}>
+        {/* Légende */}
+        <div style={{ display: 'flex', gap: 48, marginTop: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <svg width="36" height="4" style={{ flexShrink: 0 }}><line x1="0" y1="2" x2="36" y2="2" stroke={C} strokeWidth="2.5" strokeDasharray="7 4" /></svg>
+            <svg width="36" height="4" style={{ flexShrink: 0 }}><line x1="0" y1="2" x2="36" y2="2" stroke={C} strokeWidth="2.5" strokeDasharray="9 5" /></svg>
             <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.75)', fontWeight: 600 }}>EP — Écart pupillaire</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <svg width="4" height="36" style={{ flexShrink: 0 }}><line x1="2" y1="0" x2="2" y2="36" stroke={C} strokeWidth="2.5" strokeDasharray="7 4" /></svg>
+            <svg width="4" height="36" style={{ flexShrink: 0 }}><line x1="2" y1="0" x2="2" y2="36" stroke={C} strokeWidth="2.5" strokeDasharray="9 5" /></svg>
             <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.75)', fontWeight: 600 }}>H — Hauteur</span>
           </div>
         </div>
