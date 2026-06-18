@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, SESSION_CODE } from '@/lib/supabase'
+import { sbUpdate, SESSION_CODE, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { OFFRES_QUIZ } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
@@ -74,9 +74,34 @@ function CoursClassique({ onNext, onBack }) {
   )
 }
 
+const ITEMS_11 = [
+  { text: '1 paire achetée', sub: null },
+  { text: 'Deuxième paire offerte', sub: 'de même qualité que la première' },
+  { text: 'Éligible sur tout le magasin', sub: 'Monture et verres au choix' },
+  { text: 'Même en solaire', sub: null },
+]
+
 // ── Page 1=1 (formateur) ─────────────────────────────────────────
 function Cours11({ onPrev, onStartQuiz, onBack }) {
   const COLOR = '#c9a227'
+  const [step, setStep] = useState(0)
+
+  const reveal = async () => {
+    if (step >= ITEMS_11.length) return
+    const next = step + 1
+    setStep(next)
+    await setSharedState({ offres_11_step: next })
+  }
+
+  const hide = async () => {
+    if (step <= 0) return
+    const prev = step - 1
+    setStep(prev)
+    await setSharedState({ offres_11_step: prev })
+  }
+
+  const allRevealed = step >= ITEMS_11.length
+
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
       {/* Header */}
@@ -119,31 +144,42 @@ function Cours11({ onPrev, onStartQuiz, onBack }) {
           </div>
         </div>
 
-        {/* Droite */}
+        {/* Droite : points révélés un par un */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {[
-            { text: '1 paire achetée', sub: null, highlight: false },
-            { text: 'Deuxième paire offerte', sub: 'de même qualité que la première', highlight: true },
-            { text: 'Éligible sur tout le magasin', sub: 'Monture et verres au choix', highlight: false },
-            { text: 'Même en solaire', sub: null, highlight: false },
-          ].map((item, i) => (
+          {ITEMS_11.map((item, i) => (
             <div key={i} style={{
-              background: item.highlight ? `${COLOR}12` : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${item.highlight ? `${COLOR}40` : 'rgba(255,255,255,0.1)'}`,
-              borderLeft: `3px solid ${item.highlight ? COLOR : 'rgba(255,255,255,0.15)'}`,
+              opacity: i < step ? 1 : 0.15,
+              transform: i < step ? 'translateX(0)' : 'translateX(12px)',
+              transition: 'opacity 0.4s ease, transform 0.4s ease',
+              background: 'rgba(255,255,255,0.04)',
+              border: `1px solid rgba(255,255,255,0.1)`,
+              borderLeft: `3px solid ${i < step ? COLOR : 'rgba(255,255,255,0.1)'}`,
               borderRadius: 14, padding: '14px 20px',
             }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: item.highlight ? COLOR : '#fff' }}>{item.text}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{item.text}</div>
               {item.sub && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 3 }}>{item.sub}</div>}
             </div>
           ))}
+          {/* Indicateur de progression */}
+          <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+            {ITEMS_11.map((_, i) => (
+              <div key={i} style={{ height: 3, flex: 1, borderRadius: 2, background: i < step ? COLOR : 'rgba(255,255,255,0.1)', transition: 'background 0.3s' }} />
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Nav */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 24, flexShrink: 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 24, flexShrink: 0 }}>
         <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '13px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← Classique</button>
-        <button onClick={onStartQuiz} style={{ background: 'linear-gradient(135deg, #7c3aed, #9f67fa)', border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(124,58,237,0.45)' }}>🏆 Lancer le quiz →</button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={hide} disabled={step === 0} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: step === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', padding: '13px 22px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: step === 0 ? 'default' : 'pointer', fontFamily: 'inherit' }}>← Masquer</button>
+          {allRevealed ? (
+            <button onClick={onStartQuiz} style={{ background: 'linear-gradient(135deg, #7c3aed, #9f67fa)', border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(124,58,237,0.45)' }}>Lancer le quiz →</button>
+          ) : (
+            <button onClick={reveal} style={{ background: `linear-gradient(135deg, ${COLOR}, #b8871a)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 6px 24px ${COLOR}45` }}>Révéler →</button>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -452,6 +488,7 @@ export default function ModuleOffres({ pName, onBack }) {
 
   const go11 = async () => {
     await sbUpdate('sessions', { active_module: 'offres', module_page: 1 }, `code=eq.${SESSION_CODE}`)
+    await setSharedState({ offres_11_step: 0 })
     setPhase('un-pour-un')
   }
 

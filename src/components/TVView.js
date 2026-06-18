@@ -1689,7 +1689,14 @@ function TVOffresClassique() {
 }
 
 // ── TV Offres : 1=1 ───────────────────────────────────────────────
-function TVOffres11() {
+const TV_ITEMS_11 = [
+  { label: '1 paire achetée', sub: null },
+  { label: 'Deuxième paire offerte', sub: 'de même qualité que la première' },
+  { label: 'Éligible sur tout le magasin', sub: 'Monture et verres au choix' },
+  { label: 'Même en solaire', sub: null },
+]
+
+function TVOffres11({ step = 0 }) {
   const COLOR = '#c9a227'
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
@@ -1720,19 +1727,20 @@ function TVOffres11() {
           </div>
         </div>
       </div>
-      {/* Droite */}
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', gap: 20 }}>
-        {[
-          { icon: '🛍️', label: '1 paire achetée', sub: null, highlight: false },
-          { icon: '🎁', label: 'Deuxième paire offerte', sub: 'de même qualité que la première', highlight: true },
-          { icon: '🏪', label: 'Éligible sur tout le magasin', sub: 'Monture et verres au choix', highlight: false },
-        ].map((item, i) => (
-          <div key={i} style={{ background: item.highlight ? `${COLOR}14` : 'rgba(255,255,255,0.04)', border: `1px solid ${item.highlight ? `${COLOR}45` : 'rgba(255,255,255,0.1)'}`, borderRadius: 18, padding: '20px 28px', display: 'flex', alignItems: 'center', gap: 20 }}>
-            <span style={{ fontSize: 36, flexShrink: 0 }}>{item.icon}</span>
-            <div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: item.highlight ? COLOR : '#fff' }}>{item.label}</div>
-              {item.sub && <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{item.sub}</div>}
-            </div>
+      {/* Droite : points révélés progressivement */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', gap: 18 }}>
+        {TV_ITEMS_11.map((item, i) => (
+          <div key={i} style={{
+            opacity: i < step ? 1 : 0,
+            transform: i < step ? 'translateX(0)' : 'translateX(16px)',
+            transition: 'opacity 0.5s ease, transform 0.5s ease',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderLeft: `4px solid ${i < step ? COLOR : 'rgba(255,255,255,0.1)'}`,
+            borderRadius: 18, padding: '20px 28px',
+          }}>
+            <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>{item.label}</div>
+            {item.sub && <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{item.sub}</div>}
           </div>
         ))}
       </div>
@@ -1793,7 +1801,7 @@ function TVTrameAccueil({ step }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -1806,7 +1814,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesPhase={troublesPhase} opticienPlaying={opticienPlaying} audioUnlocked={audioUnlocked} />
   if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />
   if (page.type === 'offres-classique') return <TVOffresClassique />
-  if (page.type === 'offres-1-1')       return <TVOffres11 />
+  if (page.type === 'offres-1-1')       return <TVOffres11 step={offres11Step} />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} audioUnlocked={audioUnlocked} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
@@ -2457,6 +2465,8 @@ export default function TVView() {
   const [planningDay, setPlanningDay]                   = useState(null)
   // Trame d'accueil
   const [trameStep, setTrameStep]                       = useState(null)
+  // Offres 1=1
+  const [offres11Step, setOffres11Step]                 = useState(0)
   // Progressif interactive state
   const [progZoneQ, setProgZoneQ]                       = useState(null)
   const [progZoneResponses, setProgZoneResponses]       = useState({})
@@ -2480,6 +2490,7 @@ export default function TVView() {
     if (!sharedState) return
     setTvScreen(sharedState.tv_screen || null)
     setTrameStep(sharedState.trame_step ?? null)
+    setOffres11Step(sharedState.offres_11_step ?? 0)
     setTroublesPhase(sharedState.troubles_phase || 1)
     setOpticienPlaying(!!sharedState.opticien_playing)
     setOrdoPlaying(!!sharedState.ordo_playing)
@@ -2582,6 +2593,7 @@ export default function TVView() {
           progObjectionResponses={progObjectionResponses}
           progBestAnswer={progBestAnswer}
           trameStep={trameStep}
+          offres11Step={offres11Step}
         />
       ) : (
         <WelcomeScreen />
