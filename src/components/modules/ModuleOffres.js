@@ -55,7 +55,7 @@ function CoursClassique({ onNext, onBack }) {
             {[
               '1 paire achetée',
               'Deuxième paire à -20%',
-              'Pas de remboursement sécu/mutuelle',
+              'Paires à partir de 10 euros',
             ].map((pt, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: COLOR, flexShrink: 0 }} />
