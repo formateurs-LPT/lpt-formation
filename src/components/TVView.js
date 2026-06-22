@@ -339,8 +339,8 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
         </div>
       </div>
 
-      {/* Zone principale */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '12px 56px 48px', gap: 32 }}>
+      {/* Zone principale — marge droite pour laisser place à la carte avatar */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '12px 340px 48px 56px', gap: 32 }}>
 
         {/* Titre */}
         <div>
@@ -439,23 +439,36 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
         </div>
       </div>
 
-      {/* Cercle avatar opticien — en dehors de toute div à opacité variable */}
-      <div style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 10 }}>
+      {/* Carte avatar opticien — style identique au formateur, positionné hors contenu */}
+      <div style={{ position: 'absolute', bottom: 32, right: 36, zIndex: 10 }}>
         <div style={{
-          width: 200, height: 200, borderRadius: '50%', overflow: 'hidden',
-          border: `4px solid ${ordoPlaying ? 'rgba(34,197,94,0.7)' : 'rgba(0,171,233,0.5)'}`,
-          boxShadow: `0 8px 48px ${ordoPlaying ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
-          background: '#03112a',
+          background: 'rgba(10,42,92,0.88)', backdropFilter: 'blur(20px)',
+          border: `1px solid ${ordoPlaying ? 'rgba(34,197,94,0.45)' : 'rgba(0,171,233,0.35)'}`,
+          borderRadius: 24, padding: '14px 16px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+          boxShadow: `0 12px 48px ${ordoPlaying ? 'rgba(34,197,94,0.35)' : 'rgba(0,0,0,0.5)'}`,
           transition: 'border-color .3s, box-shadow .3s',
         }}>
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-          <video
-            ref={videoRef}
-            src="/assets/LectureOrdoAudioOK.mp4"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            playsInline
-            preload="auto"
-          />
+          {/* Miniature vidéo carrée */}
+          <div style={{
+            width: 240, height: 240, borderRadius: 16, overflow: 'hidden', flexShrink: 0,
+            border: `2px solid ${ordoPlaying ? 'rgba(34,197,94,0.6)' : 'rgba(0,171,233,0.4)'}`,
+            transition: 'border-color .3s',
+          }}>
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              ref={videoRef}
+              src="/assets/LectureOrdoAudioOK.mp4"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              playsInline
+              preload="auto"
+            />
+          </div>
+          {/* Label */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Opticien</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Lecture ordonnance</div>
+          </div>
         </div>
       </div>
     </div>
