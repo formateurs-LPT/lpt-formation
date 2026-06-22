@@ -1081,6 +1081,53 @@ function TVEntrepriseChiffres({ page, pageIndex, total }) {
   )
 }
 
+function CounterAnimation({ value, unit, sub, color, active }) {
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    if (!active) { setCount(0); return }
+    setCount(0)
+    const duration = 2000
+    const steps = 60
+    const increment = value / steps
+    let current = 0
+    const interval = setInterval(() => {
+      current += increment
+      if (current >= value) { setCount(value); clearInterval(interval) }
+      else setCount(Math.floor(current))
+    }, duration / steps)
+    return () => clearInterval(interval)
+  }, [active, value])
+
+  return (
+    <div style={{
+      minHeight: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '48px 40px', gap: 20,
+      background: `radial-gradient(ellipse at center, ${color}12 0%, transparent 70%)`,
+      border: `1px solid ${color}30`, borderRadius: 20,
+    }}>
+      {/* Chiffre principal */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+        <span style={{ fontSize: 24, fontWeight: 800, color, marginTop: 16 }}>+</span>
+        <span style={{ fontSize: 120, fontWeight: 900, color, lineHeight: 1, fontVariantNumeric: 'tabular-nums', textShadow: `0 0 60px ${color}60` }}>
+          {count.toLocaleString('fr-FR')}
+        </span>
+      </div>
+      {/* Unité */}
+      <div style={{ fontSize: 28, fontWeight: 700, color: '#fff', textAlign: 'center', letterSpacing: 0.5 }}>
+        {unit}
+      </div>
+      {/* Sous-titre */}
+      <div style={{
+        fontSize: 16, color: 'rgba(255,255,255,0.45)', textAlign: 'center',
+        background: `${color}15`, border: `1px solid ${color}30`,
+        borderRadius: 30, padding: '8px 24px',
+      }}>
+        {sub}
+      </div>
+    </div>
+  )
+}
+
 function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlocked }) {
   const [visible, setVisible] = useState(0)
   const videoRef = useRef(null)
@@ -1141,8 +1188,8 @@ function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlock
               ))}
             </div>
           </div>
-          {/* Droite — vidéo */}
-          <div style={{ borderRadius: 20, overflow: 'hidden', boxShadow: '0 0 60px rgba(0,0,0,0.6)', background: '#000' }}>
+          {/* Droite — vidéo ou animation */}
+          <div style={{ borderRadius: 20, overflow: 'hidden', boxShadow: '0 0 60px rgba(0,0,0,0.6)', background: selectedItem.animation ? 'transparent' : '#000' }}>
             {selectedItem.video ? (
               <video
                 ref={videoRef}
@@ -1152,6 +1199,14 @@ function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlock
                 playsInline
                 muted={!audioUnlocked}
                 style={{ width: '100%', display: 'block', maxHeight: '65vh', objectFit: 'cover' }}
+              />
+            ) : selectedItem.animation === 'counter' ? (
+              <CounterAnimation
+                value={selectedItem.counterValue}
+                unit={selectedItem.counterUnit}
+                sub={selectedItem.counterSub}
+                color={selectedItem.color}
+                active={modelePoint !== null}
               />
             ) : (
               <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 18 }}>
