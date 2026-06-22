@@ -439,19 +439,19 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
         </div>
       </div>
 
-      {/* Carte avatar opticien — style identique au formateur, positionné hors contenu */}
+      {/* Carte avatar opticien — layout horizontal identique au formateur, sans bouton */}
       <div style={{ position: 'absolute', bottom: 32, right: 36, zIndex: 10 }}>
         <div style={{
           background: 'rgba(10,42,92,0.88)', backdropFilter: 'blur(20px)',
-          border: `1px solid ${ordoPlaying ? 'rgba(34,197,94,0.45)' : 'rgba(0,171,233,0.35)'}`,
-          borderRadius: 24, padding: '14px 16px',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
-          boxShadow: `0 12px 48px ${ordoPlaying ? 'rgba(34,197,94,0.35)' : 'rgba(0,0,0,0.5)'}`,
+          border: `1px solid ${ordoPlaying ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
+          borderRadius: 20, padding: '14px 20px 14px 14px',
+          display: 'flex', alignItems: 'center', gap: 18,
+          boxShadow: `0 8px 40px ${ordoPlaying ? 'rgba(34,197,94,0.3)' : 'rgba(0,0,0,0.45)'}`,
           transition: 'border-color .3s, box-shadow .3s',
         }}>
-          {/* Miniature vidéo carrée */}
+          {/* Avatar à gauche */}
           <div style={{
-            width: 240, height: 240, borderRadius: 16, overflow: 'hidden', flexShrink: 0,
+            width: 110, height: 110, borderRadius: 14, overflow: 'hidden', flexShrink: 0,
             border: `2px solid ${ordoPlaying ? 'rgba(34,197,94,0.6)' : 'rgba(0,171,233,0.4)'}`,
             transition: 'border-color .3s',
           }}>
@@ -464,10 +464,10 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
               preload="auto"
             />
           </div>
-          {/* Label */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Opticien</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Lecture ordonnance</div>
+          {/* Texte à droite */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Opticien</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Lecture ordonnance</div>
           </div>
         </div>
       </div>
