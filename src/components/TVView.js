@@ -1081,49 +1081,55 @@ function TVEntrepriseChiffres({ page, pageIndex, total }) {
   )
 }
 
-function CounterAnimation({ value, unit, sub, color, active }) {
+function SingleCounter({ value, unit, sub, color, active, delay = 0, fontSize = 100 }) {
   const [count, setCount] = useState(0)
+  const [started, setStarted] = useState(false)
   useEffect(() => {
-    if (!active) { setCount(0); return }
-    setCount(0)
-    const duration = 2000
-    const steps = 60
-    const increment = value / steps
-    let current = 0
-    const interval = setInterval(() => {
-      current += increment
-      if (current >= value) { setCount(value); clearInterval(interval) }
-      else setCount(Math.floor(current))
-    }, duration / steps)
-    return () => clearInterval(interval)
-  }, [active, value])
+    if (!active) { setCount(0); setStarted(false); return }
+    const t = setTimeout(() => {
+      setStarted(true)
+      setCount(0)
+      const duration = 2000
+      const steps = 60
+      const increment = value / steps
+      let current = 0
+      const interval = setInterval(() => {
+        current += increment
+        if (current >= value) { setCount(value); clearInterval(interval) }
+        else setCount(Math.floor(current))
+      }, duration / steps)
+    }, delay)
+    return () => clearTimeout(t)
+  }, [active, value, delay])
 
   return (
     <div style={{
-      minHeight: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '48px 40px', gap: 20,
-      background: `radial-gradient(ellipse at center, ${color}12 0%, transparent 70%)`,
-      border: `1px solid ${color}30`, borderRadius: 20,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+      padding: '28px 32px',
+      background: `radial-gradient(ellipse at center, ${color}10 0%, transparent 70%)`,
+      border: `1px solid ${color}25`, borderRadius: 20,
+      opacity: active && !started ? 0 : 1,
+      transition: 'opacity 0.3s ease',
     }}>
-      {/* Chiffre principal */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
-        <span style={{ fontSize: 24, fontWeight: 800, color, marginTop: 16 }}>+</span>
-        <span style={{ fontSize: 120, fontWeight: 900, color, lineHeight: 1, fontVariantNumeric: 'tabular-nums', textShadow: `0 0 60px ${color}60` }}>
+        <span style={{ fontSize: fontSize * 0.22, fontWeight: 800, color, marginTop: fontSize * 0.12 }}>+</span>
+        <span style={{ fontSize, fontWeight: 900, color, lineHeight: 1, fontVariantNumeric: 'tabular-nums', textShadow: `0 0 50px ${color}55` }}>
           {count.toLocaleString('fr-FR')}
         </span>
       </div>
-      {/* Unité */}
-      <div style={{ fontSize: 28, fontWeight: 700, color: '#fff', textAlign: 'center', letterSpacing: 0.5 }}>
-        {unit}
-      </div>
-      {/* Sous-titre */}
-      <div style={{
-        fontSize: 16, color: 'rgba(255,255,255,0.45)', textAlign: 'center',
-        background: `${color}15`, border: `1px solid ${color}30`,
-        borderRadius: 30, padding: '8px 24px',
-      }}>
-        {sub}
-      </div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: '#fff', textAlign: 'center' }}>{unit}</div>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', background: `${color}15`, border: `1px solid ${color}25`, borderRadius: 30, padding: '6px 20px' }}>{sub}</div>
+    </div>
+  )
+}
+
+function CounterAnimation({ counters, color, active }) {
+  if (!counters) return null
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '24px 16px' }}>
+      {counters.map((c, i) => (
+        <SingleCounter key={i} value={c.value} unit={c.unit} sub={c.sub} color={color} active={active} delay={c.delay} fontSize={i === 0 ? 90 : 72} />
+      ))}
     </div>
   )
 }
@@ -1202,9 +1208,7 @@ function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlock
               />
             ) : selectedItem.animation === 'counter' ? (
               <CounterAnimation
-                value={selectedItem.counterValue}
-                unit={selectedItem.counterUnit}
-                sub={selectedItem.counterSub}
+                counters={selectedItem.counters}
                 color={selectedItem.color}
                 active={modelePoint !== null}
               />
