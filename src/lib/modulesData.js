@@ -298,6 +298,12 @@ export const ENTREPRISE_PAGES = [
     color: '#f59e0b',
   },
   {
+    id: 'ventes-opticien',
+    type: 'ventes-opticien',
+    titre: 'À votre avis, un opticien traditionnel vend combien de paires par jour ?',
+    color: '#a78bfa',
+  },
+  {
     id: 'naissance',
     type: 'naissance',
     titre: '2014, naissance de Lunettes pour Tous',
@@ -316,12 +322,6 @@ export const ENTREPRISE_PAGES = [
       { value: 'Des milliers', label: 'de clients équipés chaque jour', color: '#a78bfa' },
       { value: '10 minutes',   label: 'la promesse LPT',                color: '#f472b6' },
     ],
-  },
-  {
-    id: 'ventes-opticien',
-    type: 'ventes-opticien',
-    titre: 'À votre avis, un opticien traditionnel vend combien de paires par jour ?',
-    color: '#a78bfa',
   },
   {
     id: 'promesse',
