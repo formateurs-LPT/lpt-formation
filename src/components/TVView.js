@@ -2594,23 +2594,34 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
         </div>
       </div>
 
-      {/* Cercle avatar opticien */}
-      <div style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 10 }}>
+      {/* Carte avatar opticien — layout horizontal */}
+      <div style={{ position: 'absolute', bottom: 32, right: 36, zIndex: 10 }}>
         <div style={{
-          width: 200, height: 200, borderRadius: '50%', overflow: 'hidden',
-          border: `4px solid ${opticienPlaying ? 'rgba(34,197,94,0.7)' : 'rgba(0,171,233,0.5)'}`,
-          boxShadow: `0 8px 48px ${opticienPlaying ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
-          background: '#03112a',
+          background: 'rgba(10,42,92,0.88)', backdropFilter: 'blur(20px)',
+          border: `1px solid ${opticienPlaying ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
+          borderRadius: 20, padding: '14px 20px 14px 14px',
+          display: 'flex', alignItems: 'center', gap: 18,
+          boxShadow: `0 8px 40px ${opticienPlaying ? 'rgba(34,197,94,0.3)' : 'rgba(0,0,0,0.45)'}`,
           transition: 'border-color .3s, box-shadow .3s',
         }}>
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-          <video
-            ref={videoRef}
-            src="/assets/Problèmes_de_vue_Audio_OK.mp4"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            playsInline
-            preload="auto"
-          />
+          <div style={{
+            width: 110, height: 110, borderRadius: 14, overflow: 'hidden', flexShrink: 0,
+            border: `2px solid ${opticienPlaying ? 'rgba(34,197,94,0.6)' : 'rgba(0,171,233,0.4)'}`,
+            transition: 'border-color .3s',
+          }}>
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              ref={videoRef}
+              src="/assets/Problèmes_de_vue_Audio_OK.mp4"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              playsInline
+              preload="auto"
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Opticien</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Les bases de l&apos;optique</div>
+          </div>
         </div>
       </div>
     </div>
