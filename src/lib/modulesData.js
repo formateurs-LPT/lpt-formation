@@ -336,7 +336,7 @@ export const ENTREPRISE_PAGES = [
     color: '#00abe9',
     items: [
       { label: 'Des stocks de verres et montures dans chacun de nos magasins', color: '#00abe9', video: '/assets/video-stock.mp4' },
-      { label: 'Des machines à la pointe de la technologie', color: '#4ade80', video: null },
+      { label: 'Des machines à la pointe de la technologie', color: '#4ade80', video: '/assets/video-machine.mp4' },
       { label: 'Volume de ventes conséquent', color: '#f59e0b', video: null },
       { label: 'Notre propre marque', color: '#a78bfa', video: null },
       { label: '0 intermédiaire', color: '#f472b6', video: null },
