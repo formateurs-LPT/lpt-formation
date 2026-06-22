@@ -2287,7 +2287,7 @@ function TrameAccueilMobile() {
   )
 }
 
-function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses }) {
+function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
@@ -2324,8 +2324,18 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
   // Promesse — saisie libre
   if (page.type === 'promesse') return <PromesseInputMobile page={page} pName={pName || 'Anonyme'} />
 
-  // Force LPT — liste progressive
-  if (page.type === 'force-lpt') return <ForceLPTMobile page={page} pageIndex={pageIndex} total={total} />
+  // Force LPT — liste progressive (écran neutre si vidéo en cours)
+  if (page.type === 'force-lpt') {
+    if (modelePoint !== null) return (
+      <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001e40 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={120} height={45} style={{ objectFit: 'contain', marginBottom: 40 }} />
+        <div style={{ fontSize: 32, marginBottom: 16 }}>📺</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>Notre modèle · Formation Journée 1</div>
+        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>Regardez l&apos;écran.<br />Une vidéo est diffusée.</p>
+      </div>
+    )
+    return <ForceLPTMobile page={page} pageIndex={pageIndex} total={total} />
+  }
 
   // Progressif module types
   const isProgressif = moduleLabel?.includes('Progressif')
@@ -2718,6 +2728,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const [progZoneResponses, setProgZoneResponses] = useState({})
   const [progObjectionIdx, setProgObjectionIdx]   = useState(null)
   const [progObjectionResponses, setProgObjectionResponses] = useState({})
+  const [modelePoint, setModelePoint]             = useState(null)
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
@@ -2729,6 +2740,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     setProgZoneResponses(sharedState.prog_zone_responses || {})
     setProgObjectionIdx(sharedState.prog_objection_idx ?? null)
     setProgObjectionResponses(sharedState.prog_objection_responses || {})
+    setModelePoint(sharedState.modele_point ?? null)
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
@@ -2754,7 +2766,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
             : isQuiz
               ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
               : page
-                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} />
+                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} />
                 : <WaitingScreen />
       }
     </>

@@ -1068,16 +1068,90 @@ function TVEntrepriseChiffres({ page, pageIndex, total }) {
   )
 }
 
-function TVEntrepriseForceLPT({ page, pageIndex, total }) {
+function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlocked }) {
   const [visible, setVisible] = useState(0)
+  const videoRef = useRef(null)
+
+  // Auto-reveal animation quand aucun point sélectionné
   useEffect(() => {
+    if (modelePoint !== null) return
     setVisible(0)
     const timers = page.items.map((_, i) =>
       setTimeout(() => setVisible(v => Math.max(v, i + 1)), 600 + i * 700)
     )
     return () => timers.forEach(clearTimeout)
-  }, [page.id])
+  }, [page.id, modelePoint])
 
+  // Lecture vidéo synchronisée avec audioUnlocked
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    if (modelePoint !== null) {
+      v.muted = !audioUnlocked
+      v.play().catch(() => {})
+    } else {
+      v.pause()
+      v.currentTime = 0
+    }
+  }, [modelePoint, audioUnlocked])
+
+  const selectedItem = modelePoint !== null ? page.items[modelePoint] : null
+
+  // ── Mode vidéo : point sélectionné ──
+  if (selectedItem) {
+    return (
+      <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
+        <div style={{ display: 'grid', gridTemplateColumns: '38% 62%', gap: 48, flex: 1, alignItems: 'center' }}>
+          {/* Gauche — point sélectionné */}
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 24 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2 }}>
+              Les clés de notre modèle
+            </div>
+            <div style={{
+              background: `${selectedItem.color}15`,
+              border: `2px solid ${selectedItem.color}60`,
+              borderLeft: `6px solid ${selectedItem.color}`,
+              borderRadius: 20, padding: '28px 32px',
+            }}>
+              <div style={{ width: 12, height: 12, borderRadius: '50%', background: selectedItem.color, marginBottom: 16, boxShadow: `0 0 16px ${selectedItem.color}` }} />
+              <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1.4 }}>
+                {selectedItem.label}
+              </div>
+            </div>
+            {/* Autres points en petit */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {page.items.map((item, i) => i !== modelePoint && (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.3 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{item.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Droite — vidéo */}
+          <div style={{ borderRadius: 20, overflow: 'hidden', boxShadow: '0 0 60px rgba(0,0,0,0.6)', background: '#000' }}>
+            {selectedItem.video ? (
+              <video
+                ref={videoRef}
+                src={selectedItem.video}
+                preload="none"
+                loop
+                playsInline
+                muted={!audioUnlocked}
+                style={{ width: '100%', display: 'block', maxHeight: '65vh', objectFit: 'cover' }}
+              />
+            ) : (
+              <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 18 }}>
+                Vidéo à venir
+              </div>
+            )}
+          </div>
+        </div>
+      </TVEntrepriseShell>
+    )
+  }
+
+  // ── Mode normal : grille des 5 points ──
   return (
     <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
       <div style={{ textAlign: 'center', marginBottom: 40 }}>
@@ -1086,7 +1160,6 @@ function TVEntrepriseForceLPT({ page, pageIndex, total }) {
         </div>
         <h1 style={{ fontSize: 38, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>{page.titre}</h1>
       </div>
-
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, justifyContent: 'center', flex: 1, alignContent: 'center' }}>
         {page.items.map((item, i) => (
           <div key={i} style={{
@@ -1099,14 +1172,8 @@ function TVEntrepriseForceLPT({ page, pageIndex, total }) {
             transform: i < visible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
             transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
           }}>
-            <div style={{
-              width: 10, height: 10, borderRadius: '50%',
-              background: item.color, margin: '0 auto 16px', flexShrink: 0,
-              boxShadow: `0 0 12px ${item.color}`,
-            }} />
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>
-              {item.label}
-            </div>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: item.color, margin: '0 auto 16px', boxShadow: `0 0 12px ${item.color}` }} />
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>{item.label}</div>
           </div>
         ))}
       </div>
@@ -1887,7 +1954,7 @@ function TVTrameAccueil({ step }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, modelePoint }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -1914,7 +1981,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'ventes-opticien') return <TVEntrepriseVentesOpticien page={page} pageIndex={pageIndex} total={total} ventesResponses={ventesResponses} />
   if (page.type === 'promesse')        return <TVEntreprisePromesse       page={page} pageIndex={pageIndex} total={total} promesseResponses={promesseResponses} />
   if (page.type === 'chiffres')   return <TVEntrepriseChiffres  page={page} pageIndex={pageIndex} total={total} />
-  if (page.type === 'force-lpt') return <TVEntrepriseForceLPT  page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'force-lpt') return <TVEntrepriseForceLPT  page={page} pageIndex={pageIndex} total={total} modelePoint={modelePoint} audioUnlocked={audioUnlocked} />
   if (page.type === 'naissance')  return <TVEntrepriseNaissance page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'impact')     return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'probleme')   return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
@@ -2554,6 +2621,8 @@ export default function TVView() {
   const [trameStep, setTrameStep]                       = useState(null)
   // Offres 1=1
   const [offres11Step, setOffres11Step]                 = useState(0)
+  // Force LPT — point sélectionné par le formateur
+  const [modelePoint, setModelePoint]                   = useState(null)
   // Progressif interactive state
   const [progZoneQ, setProgZoneQ]                       = useState(null)
   const [progZoneResponses, setProgZoneResponses]       = useState({})
@@ -2578,6 +2647,7 @@ export default function TVView() {
     setTvScreen(sharedState.tv_screen || null)
     setTrameStep(sharedState.trame_step ?? null)
     setOffres11Step(sharedState.offres_11_step ?? 0)
+    setModelePoint(sharedState.modele_point ?? null)
     setTroublesPhase(sharedState.troubles_phase || 1)
     setOpticienPlaying(!!sharedState.opticien_playing)
     setOrdoPlaying(!!sharedState.ordo_playing)
@@ -2681,6 +2751,7 @@ export default function TVView() {
           progBestAnswer={progBestAnswer}
           trameStep={trameStep}
           offres11Step={offres11Step}
+          modelePoint={modelePoint}
         />
       ) : (
         <WelcomeScreen />

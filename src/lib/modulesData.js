@@ -335,11 +335,11 @@ export const ENTREPRISE_PAGES = [
     titre: 'Ce qui fait la force de Lunettes Pour Tous',
     color: '#00abe9',
     items: [
-      { label: 'Des stocks de verres et montures dans chacun de nos magasins', color: '#00abe9' },
-      { label: 'Des machines à la pointe de la technologie', color: '#4ade80' },
-      { label: 'Volume de ventes conséquent', color: '#f59e0b' },
-      { label: 'Notre propre marque', color: '#a78bfa' },
-      { label: '0 intermédiaire', color: '#f472b6' },
+      { label: 'Des stocks de verres et montures dans chacun de nos magasins', color: '#00abe9', video: '/assets/video-stock.mp4' },
+      { label: 'Des machines à la pointe de la technologie', color: '#4ade80', video: null },
+      { label: 'Volume de ventes conséquent', color: '#f59e0b', video: null },
+      { label: 'Notre propre marque', color: '#a78bfa', video: null },
+      { label: '0 intermédiaire', color: '#f472b6', video: null },
     ],
   },
 ]
