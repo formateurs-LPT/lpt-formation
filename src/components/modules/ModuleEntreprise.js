@@ -383,6 +383,7 @@ function ForceLPTTrainer({ page, navProps }) {
   const [selected, setSelected] = useState(null)
 
   useEffect(() => {
+    setSharedState({ modele_point: null }).catch(() => {})
     return () => { setSharedState({ modele_point: null }).catch(() => {}) }
   }, [])
 
