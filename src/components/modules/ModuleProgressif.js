@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, SESSION_CODE, getSharedState, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { NextPagePreview } from '@/lib/trainerPreview'
 import { PROGRESSIF_PAGES, PROGRESSIF_QUIZ } from '@/lib/modulesData'
 const ACCENT = '#7c3aed'
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -151,7 +152,7 @@ function PageShell({ children, pageIndex, total, onBack }) {
 }
 
 // ── Page cours (4 points + verre schéma) ──────────────────────────
-function CoursPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz }) {
+function CoursPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextPage }) {
   const [entered, setEntered] = useState(false)
   useEffect(() => { setEntered(false); const t = setTimeout(() => setEntered(true), 60); return () => clearTimeout(t) }, [page.id])
   return (
@@ -182,15 +183,18 @@ function CoursPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst
           </div>
         </div>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 340px 28px 48px', position: 'relative', zIndex: 20, flexShrink: 0 }}>
-        <button onClick={onPrev} disabled={isFirst} style={{ background: isFirst ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: isFirst ? 'default' : 'pointer', fontFamily: 'inherit' }}>← Précédent</button>
-        {isLast ? (
-          quizLaunched
-            ? <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}><span style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>✓ Quiz envoyé</span><button onClick={onBack} style={{ background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)', color: '#ff6b6b', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Terminer →</button></div>
-            : <button onClick={onLaunchQuiz} style={{ background: `linear-gradient(135deg, ${ACCENT}, #9f67fa)`, border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: `0 6px 24px ${ACCENT}50`, fontFamily: 'inherit' }}>🏆 Lancer le quiz final →</button>
-        ) : (
-          <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${ACCENT}, #9f67fa)`, border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: `0 6px 24px ${ACCENT}50`, fontFamily: 'inherit' }}>Suivant →</button>
-        )}
+      <div style={{ padding: '0 340px 0 48px', position: 'relative', zIndex: 20, flexShrink: 0 }}>
+        <NextPagePreview nextPage={nextPage} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 28 }}>
+          <button onClick={onPrev} disabled={isFirst} style={{ background: isFirst ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: isFirst ? 'default' : 'pointer', fontFamily: 'inherit' }}>← Précédent</button>
+          {isLast ? (
+            quizLaunched
+              ? <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}><span style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>✓ Quiz envoyé</span><button onClick={onBack} style={{ background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)', color: '#ff6b6b', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Terminer →</button></div>
+              : <button onClick={onLaunchQuiz} style={{ background: `linear-gradient(135deg, ${ACCENT}, #9f67fa)`, border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: `0 6px 24px ${ACCENT}50`, fontFamily: 'inherit' }}>🏆 Lancer le quiz final →</button>
+          ) : (
+            <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${ACCENT}, #9f67fa)`, border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: `0 6px 24px ${ACCENT}50`, fontFamily: 'inherit' }}>Suivant →</button>
+          )}
+        </div>
       </div>
       <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
     </PageShell>
@@ -795,6 +799,7 @@ export default function ModuleProgressif({ pName, onBack }) {
     onBack: handleBack,
     quizLaunched,
     onLaunchQuiz: handleLaunchQuiz,
+    nextPage: PROGRESSIF_PAGES[pageIndex + 1] ?? null,
   }
 
   return (

@@ -5,6 +5,7 @@ import { sbUpdate, sbSelect, SESSION_CODE, setSharedState } from '@/lib/supabase
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, OPTIQUE_QUIZ } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
+import { NextPagePreview } from '@/lib/trainerPreview'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -86,15 +87,16 @@ function AvatarBubble({ script, trainerAvatar, pName }) {
 }
 
 // ── NavBar partagée (formateur) ───────────────────────────────────
-function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextLabel }) {
+function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextLabel, nextPage }) {
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '16px 360px 24px 48px',
-      background: 'linear-gradient(0deg, rgba(3,17,42,0.95) 0%, transparent 100%)',
+      padding: '10px 360px 16px 48px',
+      background: 'linear-gradient(0deg, rgba(3,17,42,0.98) 0%, rgba(3,17,42,0.6) 100%)',
       zIndex: 20,
     }}>
+      <NextPagePreview nextPage={nextPage} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       {/* Précédent */}
       {!isFirst ? (
         <button onClick={onPrev} style={{
@@ -135,6 +137,7 @@ function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total,
           boxShadow: '0 6px 24px rgba(0,171,233,0.45)', fontFamily: 'inherit',
         }}>{nextLabel || 'Suivant →'}</button>
       )}
+      </div>
     </div>
   )
 }
@@ -1380,6 +1383,7 @@ export default function ModuleOptique({ pName, onBack }) {
     isLast: pageIndex === PAGES.length - 1,
     quizLaunched,
     onLaunchQuiz: handleLaunchQuiz,
+    nextPage: PAGES[pageIndex + 1] ?? null,
   }
 
   return (

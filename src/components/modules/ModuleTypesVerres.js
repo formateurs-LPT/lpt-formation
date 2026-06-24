@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, sbSelect, SESSION_CODE } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { NextPagePreview } from '@/lib/trainerPreview'
 import { TYPES_VERRES_PAGES as PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -117,7 +118,7 @@ function AvatarBubble({ script, trainerAvatar, pName }) {
 }
 
 // ── Page de contenu ───────────────────────────────────────────────
-function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz }) {
+function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextPage }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -234,10 +235,9 @@ function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFir
       </div>
 
       {/* Boutons navigation — padding-right décalé pour ne pas chevaucher l'avatar */}
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '0 340px 28px 48px', position: 'relative', zIndex: 20, flexShrink: 0,
-      }}>
+      <div style={{ padding: '0 340px 0 48px', position: 'relative', zIndex: 20, flexShrink: 0 }}>
+        <NextPagePreview nextPage={nextPage} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 28 }}>
         <button
           onClick={onPrev}
           style={{
@@ -281,6 +281,7 @@ function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFir
             fontFamily: 'inherit',
           }}>Suivant →</button>
         )}
+        </div>
       </div>
 
       <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
@@ -662,6 +663,7 @@ export default function ModuleTypesVerres({ pName, onBack }) {
         onBack={handleBack}
         quizLaunched={quizLaunched}
         onLaunchQuiz={handleLaunchQuiz}
+        nextPage={PAGES[pageIndex + 1] ?? null}
       />
     </>
   )

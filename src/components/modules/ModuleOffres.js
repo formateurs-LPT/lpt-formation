@@ -5,6 +5,7 @@ import { sbUpdate, SESSION_CODE, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { OFFRES_QUIZ } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
+import { NextPagePreview } from '@/lib/trainerPreview'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -67,8 +68,11 @@ function CoursClassique({ onNext, onBack }) {
       </div>
 
       {/* Nav */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 24, flexShrink: 0 }}>
-        <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${COLOR}, #0090c5)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 6px 24px ${COLOR}45` }}>Parcours 1=1 →</button>
+      <div style={{ flexShrink: 0 }}>
+        <NextPagePreview nextPage={{ type: 'offres-1-1', label: 'Offre 1=1', color: '#c9a227' }} />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}>
+          <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${COLOR}, #0090c5)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 6px 24px ${COLOR}45` }}>Parcours 1=1 →</button>
+        </div>
       </div>
     </div>
   )
@@ -170,7 +174,9 @@ function Cours11({ onPrev, onStartQuiz, onBack }) {
       </div>
 
       {/* Nav */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 24, flexShrink: 0 }}>
+      <div style={{ flexShrink: 0 }}>
+        <NextPagePreview nextPage={{ type: 'zone-interactif', label: 'Quiz offres', color: '#7c3aed' }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
         <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '13px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← Classique</button>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={hide} disabled={step === 0} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: step === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', padding: '13px 22px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: step === 0 ? 'default' : 'pointer', fontFamily: 'inherit' }}>← Masquer</button>
@@ -180,6 +186,7 @@ function Cours11({ onPrev, onStartQuiz, onBack }) {
             <button onClick={reveal} style={{ background: `linear-gradient(135deg, ${COLOR}, #b8871a)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 6px 24px ${COLOR}45` }}>Révéler →</button>
           )}
         </div>
+      </div>
       </div>
     </div>
   )
