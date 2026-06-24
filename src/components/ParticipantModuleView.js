@@ -1483,7 +1483,7 @@ function EntreprisePageMobile({ page, pageIndex, total }) {
 // ── FAQ Réveil des acquis — saisie anonyme participant ───────────
 const FAQ_JOURNEE_LABELS = { j1: 'Journée 1', j2: 'Journée 2', j3: 'Journée 3' }
 
-function FAQInputMobile({ journeeId }) {
+export function FAQInputMobile({ journeeId }) {
   const [text, setText]             = useState('')
   const [sending, setSending]       = useState(false)
   const [count, setCount]           = useState(0)  // nb questions envoyées

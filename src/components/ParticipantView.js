@@ -5,7 +5,7 @@ import { saveScenarioResponse } from '@/lib/formationSave'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import Image from 'next/image'
-import ParticipantModuleView from '@/components/ParticipantModuleView'
+import ParticipantModuleView, { FAQInputMobile } from '@/components/ParticipantModuleView'
 
 const QUIZ10 = [
   { q: 'Quel trouble visuel fait que les verres progressifs sont utiles au quotidien ?', opts: ['La myopie', 'La presbytie', "L'astigmatisme", "L'hypermétropie"], correct: 1, kind: 'standard' },
@@ -502,6 +502,9 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
 
   // Si un module est actif, on prend le dessus sur tout le reste
   if (activeModule) return <ParticipantModuleView forcedModule={activeModule} forcedPage={modulePage} pName={pName} sharedState={sharedState} />
+
+  // Si une FAQ est active (réveil des acquis)
+  if (sharedState?.faq_journee) return <FAQInputMobile journeeId={sharedState.faq_journee} />
 
   return (
     <div id="pv">
