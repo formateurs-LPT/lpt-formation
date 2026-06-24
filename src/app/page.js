@@ -216,13 +216,13 @@ export default function Page() {
       {view === 'module-verre-progressif' && (
         <ModuleProgressif
           pName={pName}
-          onBack={handleBackToDashboard}
+          onBack={handleBackToModules}
         />
       )}
       {view === 'module-trame-accueil' && (
         <ModuleTrameAccueil
           pName={pName}
-          onBack={handleBackToDashboard}
+          onBack={handleBackToModules}
         />
       )}
       {view === 'module-reveil-acquis' && (

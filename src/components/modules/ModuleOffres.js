@@ -22,7 +22,7 @@ function Ring({ color, size = 80 }) {
 }
 
 // ── Page Classique (formateur) ───────────────────────────────────
-function CoursClassique({ onNext, onBack }) {
+function CoursClassique({ onNext, onPrev, onBack }) {
   const COLOR = '#00abe9'
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
@@ -33,7 +33,11 @@ function CoursClassique({ onNext, onBack }) {
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · 1 / 2</span>
         </div>
-        <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Quitter</button>
+        <button onClick={onBack}
+          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .2s', letterSpacing: .3 }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+        >✕ Quitter</button>
       </div>
 
       {/* Contenu */}
@@ -70,7 +74,8 @@ function CoursClassique({ onNext, onBack }) {
       {/* Nav */}
       <div style={{ flexShrink: 0 }}>
         <NextPagePreview nextPage={{ type: 'offres-1-1', label: 'Offre 1=1', color: '#c9a227' }} />
-        <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8 }}>
+          <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← Précédent</button>
           <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${COLOR}, #0090c5)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 6px 24px ${COLOR}45` }}>Parcours 1=1 →</button>
         </div>
       </div>
@@ -115,7 +120,11 @@ function Cours11({ onPrev, onStartQuiz, onBack }) {
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · 2 / 2</span>
         </div>
-        <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Quitter</button>
+        <button onClick={onBack}
+          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .2s', letterSpacing: .3 }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+        >✕ Quitter</button>
       </div>
 
       {/* Contenu */}
@@ -488,6 +497,11 @@ export default function ModuleOffres({ pName, onBack }) {
     onBack()
   }
 
+  const goLobby = async () => {
+    await sbUpdate('sessions', { active_module: 'offres', module_page: -1 }, `code=eq.${SESSION_CODE}`)
+    setPhase('lobby')
+  }
+
   const goClassique = async () => {
     await sbUpdate('sessions', { active_module: 'offres', module_page: 0 }, `code=eq.${SESSION_CODE}`)
     setPhase('classique')
@@ -522,7 +536,7 @@ export default function ModuleOffres({ pName, onBack }) {
   }
 
   if (phase === 'lobby')     return <Lobby onStart={goClassique} onBack={handleBack} />
-  if (phase === 'classique') return <CoursClassique onNext={go11} onBack={handleBack} />
+  if (phase === 'classique') return <CoursClassique onNext={go11} onPrev={goLobby} onBack={handleBack} />
   if (phase === 'un-pour-un') return <Cours11 onPrev={goClassique} onStartQuiz={startQuiz} onBack={handleBack} />
   if (phase === 'results')   return <GroupResultsView onTerminate={handleTerminateModule} />
 
