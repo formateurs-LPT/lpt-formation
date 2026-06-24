@@ -369,6 +369,23 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
             <div style={{ fontSize: 11, color: '#00abe9', marginTop: 8, fontWeight: 600 }}>Voir les modules →</div>
           </div>
         ))}
+
+        {/* Tuile Réveil des acquis */}
+        <div className="dash-tile" onClick={() => onLaunchModule('reveil-acquis')} style={{ cursor: 'pointer', borderColor: 'rgba(245,158,11,0.25)' }}>
+          <div className="dash-tile-top">
+            <div style={{
+              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+              background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+            }}>⚡</div>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 20, padding: '2px 8px', letterSpacing: 0.5 }}>
+              3 journées
+            </span>
+          </div>
+          <div className="dash-tile-label" style={{ marginTop: 12 }}>Réveil des acquis</div>
+          <div className="dash-tile-sub">FAQ et quiz de consolidation</div>
+          <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 8, fontWeight: 600 }}>Voir les révéils →</div>
+        </div>
       </div>
     </div>
   )

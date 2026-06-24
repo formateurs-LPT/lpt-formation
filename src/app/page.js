@@ -17,6 +17,7 @@ import ModuleOptique from '@/components/modules/ModuleOptique'
 import ModuleOffres from '@/components/modules/ModuleOffres'
 import ModuleEntreprise from '@/components/modules/ModuleEntreprise'
 import ModuleTrameAccueil from '@/components/modules/ModuleTrameAccueil'
+import ModuleReveilAcquis from '@/components/modules/ModuleReveilAcquis'
 import OnboardingView from '@/components/OnboardingView'
 import TVView from '@/components/TVView'
 import ParticipantModuleView from '@/components/ParticipantModuleView'
@@ -222,6 +223,12 @@ export default function Page() {
         <ModuleTrameAccueil
           pName={pName}
           onBack={handleBackToDashboard}
+        />
+      )}
+      {view === 'module-reveil-acquis' && (
+        <ModuleReveilAcquis
+          pName={pName}
+          onBack={handleBackToModules}
         />
       )}
       <Toast message={message} />
