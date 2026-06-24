@@ -303,6 +303,198 @@ function SessionsHistoryView({ onBack, onToast }) {
   )
 }
 
+// ── Changelog data ───────────────────────────────────────────────
+const APP_UPDATES = [
+  {
+    id: '2026-06-24',
+    date: '24 juin 2026',
+    title: 'Réveil des acquis & FAQ anonyme',
+    tag: 'Nouveau module',
+    tagColor: '#f59e0b',
+    sections: [
+      {
+        title: 'Aperçu de la slide suivante',
+        accent: '#00abe9',
+        tag: 'Navigation',
+        items: [
+          'Une carte discrète apparaît au-dessus des boutons Précédent / Suivant sur l\'écran formateur',
+          'Elle affiche le titre et le type de la prochaine slide — plus besoin de mémoriser l\'ordre',
+          'Déployée sur tous les modules : Optique, PDM, Types de verres, Offres, Progressif, Entreprise',
+        ],
+      },
+      {
+        title: 'Réveil des acquis',
+        accent: '#f59e0b',
+        tag: 'Nouveau',
+        items: [
+          'Nouvelle tuile dédiée dans la grille des modules, aux côtés des Journées 1, 2 et 3',
+          'Le formateur choisit la journée à consolider (J1, J2 ou J3) avant de lancer l\'activité',
+          'Le QR code de connexion s\'affiche automatiquement sur la TV au clic de la tuile',
+        ],
+      },
+      {
+        title: 'FAQ anonyme',
+        accent: '#a78bfa',
+        tag: 'Interactif',
+        roles: [
+          { icon: '📱', label: 'Participant', color: '#a78bfa', desc: 'Un champ de saisie apparaît automatiquement sur le téléphone. La question est envoyée anonymement. Un bouton « Poser une autre question ? » permet d\'en ajouter plusieurs à la suite.' },
+          { icon: '📺', label: 'Diffuseur (TV)', color: '#a78bfa', desc: 'Les questions s\'affichent en nuage de bulles. Quand le formateur met une question en avant, sa bulle grossit avec un effet lumineux.' },
+          { icon: '🎓', label: 'Formateur', color: '#a78bfa', desc: 'Liste des questions dans l\'ordre d\'arrivée. Deux actions : Mettre en avant (met en lumière la bulle sur TV) et Traitée ✓ (supprime la question partout).' },
+        ],
+      },
+      {
+        title: 'Corrections & fiabilité',
+        accent: '#4ade80',
+        tag: 'Fixes',
+        items: [
+          'Aperçu de slide suivante absent sur le module Bases de l\'optique — chaque sous-composant de page ne transmettait pas la prop au composant de navigation',
+          'Participants bloqués sur l\'écran d\'attente lors du FAQ — ParticipantView n\'interceptait pas la FAQ quand aucun module de cours n\'était actif',
+          'Délai de synchronisation réduit de 5 s à 1,2 s dès qu\'une session FAQ est ouverte',
+        ],
+      },
+    ],
+  },
+]
+
+function AppUpdateModal({ update, onClose }) {
+  return (
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.7)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '20px',
+        backdropFilter: 'blur(4px)',
+      }}
+    >
+      <div style={{
+        background: '#0a1628', borderRadius: 24,
+        border: '1px solid rgba(255,255,255,0.1)',
+        width: '100%', maxWidth: 680,
+        maxHeight: '90vh', overflowY: 'auto',
+        padding: '40px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>
+              Formation LPT · Mise à jour
+            </div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{update.date}</div>
+            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{update.title}</div>
+          </div>
+          <button onClick={onClose} style={{
+            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.5)', width: 36, height: 36, borderRadius: 10,
+            fontSize: 18, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>×</button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {update.sections.map((sec, si) => (
+            <div key={si} style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: `1px solid rgba(255,255,255,0.07)`,
+              borderLeft: `4px solid ${sec.accent}`,
+              borderRadius: 16, padding: '22px 24px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{sec.title}</div>
+                <span style={{
+                  fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase',
+                  background: sec.accent + '18', color: sec.accent,
+                  border: `1px solid ${sec.accent}30`, borderRadius: 20, padding: '3px 10px',
+                }}>{sec.tag}</span>
+              </div>
+
+              {sec.items && sec.items.map((item, ii) => (
+                <div key={ii} style={{ display: 'flex', gap: 12, marginBottom: ii < sec.items.length - 1 ? 10 : 0 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: sec.accent, flexShrink: 0, marginTop: 6 }} />
+                  <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.72)', lineHeight: 1.55 }}>{item}</div>
+                </div>
+              ))}
+
+              {sec.roles && sec.roles.map((role, ri) => (
+                <div key={ri} style={{
+                  display: 'flex', gap: 12, padding: '12px 16px',
+                  background: 'rgba(255,255,255,0.03)', borderRadius: 12,
+                  marginBottom: ri < sec.roles.length - 1 ? 10 : 0,
+                }}>
+                  <span style={{ fontSize: 18, flexShrink: 0 }}>{role.icon}</span>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: role.color, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }}>{role.label}</div>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{role.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AppUpdatesWidget() {
+  const [selected, setSelected] = useState(null)
+  return (
+    <>
+      <div style={{
+        background: '#fff', border: '1px solid var(--border)',
+        borderLeft: '4px solid #a78bfa',
+        borderRadius: 'var(--r)', padding: '18px 24px',
+        marginBottom: 16,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(167,139,250,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>⚡</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Mises à jour de l'app</div>
+              <div style={{ fontSize: 11, color: 'var(--text-s)' }}>Nouveautés et corrections</div>
+            </div>
+          </div>
+          <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(167,139,250,0.12)', color: '#7c3aed', border: '1px solid rgba(167,139,250,0.25)', borderRadius: 20, padding: '3px 10px', letterSpacing: 0.5 }}>
+            {APP_UPDATES.length} entrée{APP_UPDATES.length > 1 ? 's' : ''}
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {APP_UPDATES.map(u => (
+            <div
+              key={u.id}
+              onClick={() => setSelected(u)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 14px', borderRadius: 10,
+                background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.15)',
+                cursor: 'pointer', transition: 'all .15s',
+              }}
+              onMouseOver={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.1)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.3)' }}
+              onMouseOut={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.05)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.15)' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', minWidth: 90 }}>{u.date}</span>
+                <span style={{ fontSize: 13, color: 'var(--text-s)' }}>{u.title}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{
+                  fontSize: 10, fontWeight: 700, color: u.tagColor,
+                  background: u.tagColor + '18', border: `1px solid ${u.tagColor}30`,
+                  borderRadius: 20, padding: '2px 8px', whiteSpace: 'nowrap',
+                }}>{u.tag}</span>
+                <span style={{ fontSize: 13, color: '#a78bfa', fontWeight: 600 }}>→</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {selected && <AppUpdateModal update={selected} onClose={() => setSelected(null)} />}
+    </>
+  )
+}
+
 export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onToast, onOnlineCount }) {
   const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | planning
   const [entreeCount, setEntreeCount] = useState(null)
@@ -580,6 +772,9 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
             <div className="dash-tile-sub">Lancer une nouvelle formation</div>
           </div>
         </div>
+
+        {/* App updates */}
+        <AppUpdatesWidget />
 
         {/* Weather + Progress */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
