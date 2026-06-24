@@ -2321,6 +2321,104 @@ function TVPlanningScreen({ planningDay }) {
   )
 }
 
+// ── TV FAQ Réveil des acquis ──────────────────────────────────────
+const FAQ_JOURNEE_META = {
+  j1: { label: 'Journée 1', sousTitre: 'Les fondamentaux de l\'optique', color: '#f59e0b', icon: '🌅' },
+  j2: { label: 'Journée 2', sousTitre: 'Les offres et la vente',         color: '#10b981', icon: '🤝' },
+  j3: { label: 'Journée 3', sousTitre: 'La prise de mesures',            color: '#8b5cf6', icon: '📐' },
+}
+
+function TVFAQView({ journeeId, questions }) {
+  const meta = FAQ_JOURNEE_META[journeeId] || FAQ_JOURNEE_META.j1
+  const accent = meta.color
+
+  return (
+    <div style={{
+      height: '100vh', overflow: 'hidden',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      {/* Topbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 40px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Réveil des acquis</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            background: `${accent}18`, border: `1px solid ${accent}40`,
+            borderRadius: 20, padding: '6px 16px',
+            fontSize: 12, fontWeight: 700, color: accent, letterSpacing: 0.5,
+          }}>{meta.icon} {meta.label}</div>
+        </div>
+      </div>
+
+      {/* Titre */}
+      <div style={{ textAlign: 'center', padding: '6px 120px 0', flexShrink: 0 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+          FAQ anonyme · {meta.label}
+        </div>
+        <h1 style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 4 }}>
+          Questions des participants
+        </h1>
+        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)' }}>{meta.sousTitre}</p>
+      </div>
+
+      {/* Zone bulles */}
+      <div style={{
+        flex: 1,
+        display: 'flex', flexWrap: 'wrap',
+        columnGap: 20, rowGap: 32,
+        justifyContent: 'center', alignItems: 'flex-start', alignContent: 'flex-start',
+        padding: '32px 60px 20px',
+        overflow: 'hidden',
+      }}>
+        {questions.length === 0 ? (
+          <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.2)', fontStyle: 'italic', marginTop: 40 }}>
+            En attente des questions…
+          </div>
+        ) : questions.map((q, i) => (
+          <div key={q.id} style={{
+            background: q.highlighted
+              ? `linear-gradient(135deg, ${accent}22, ${accent}0d)`
+              : 'rgba(5,20,55,0.88)',
+            border: q.highlighted
+              ? `2px solid ${accent}`
+              : `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
+            borderRadius: B_RAD[i % 12],
+            padding: q.highlighted ? '20px 32px' : '14px 22px',
+            maxWidth: q.highlighted ? 500 : 320,
+            fontSize: q.highlighted ? 22 : 17,
+            fontWeight: q.highlighted ? 700 : 600,
+            color: '#fff', lineHeight: 1.45,
+            backdropFilter: 'blur(16px)',
+            boxShadow: q.highlighted
+              ? `0 0 50px ${accent}50, 0 0 100px ${accent}20, 0 8px 32px rgba(0,0,0,0.5)`
+              : `0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}30`,
+            animation: 'bubbleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+            animationDelay: `${i * 0.07}s`,
+            marginTop: q.highlighted ? 0 : B_MT[i % 12],
+            transform: q.highlighted
+              ? 'scale(1.06) rotate(0deg)'
+              : `scale(1) rotate(${B_ROT[i % 12]}deg)`,
+            transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            zIndex: q.highlighted ? 10 : 1,
+            position: 'relative',
+          }}>
+            {q.highlighted && (
+              <div style={{ fontSize: 11, fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>
+                ★ En cours de traitement
+              </div>
+            )}
+            {q.text}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function WelcomeScreen() {
   return (
     <div style={{
@@ -2706,6 +2804,9 @@ export default function TVView() {
   const [offres11Step, setOffres11Step]                 = useState(0)
   // Force LPT — point sélectionné par le formateur
   const [modelePoint, setModelePoint]                   = useState(null)
+  // FAQ Réveil des acquis
+  const [faqJournee, setFaqJournee]                     = useState(null)
+  const [faqQuestions, setFaqQuestions]                 = useState([])
   // Progressif interactive state
   const [progZoneQ, setProgZoneQ]                       = useState(null)
   const [progZoneResponses, setProgZoneResponses]       = useState({})
@@ -2746,6 +2847,9 @@ export default function TVView() {
     setProgObjectionIdx(sharedState.prog_objection_idx ?? null)
     setProgObjectionResponses(sharedState.prog_objection_responses || {})
     setProgBestAnswer(sharedState.prog_best_answer || null)
+    const fj = sharedState.faq_journee || null
+    setFaqJournee(fj)
+    setFaqQuestions(fj ? (sharedState[`faq_${fj}_q`] || []) : [])
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
@@ -2764,12 +2868,19 @@ export default function TVView() {
     }
   }
 
-  // Pas de module actif → écran selon tv_screen
+  // Pas de module actif → écran selon tv_screen ou FAQ
   if (!loading && !activeModule && !isLobby) {
     return (
       <>
         <style>{STYLES}</style>
-        {tvScreen === 'planning' ? <TVPlanningScreen planningDay={planningDay} /> : tvScreen === 'qr' ? <WaitingScreen /> : <WelcomeScreen />}
+        {faqJournee
+          ? <TVFAQView journeeId={faqJournee} questions={faqQuestions} />
+          : tvScreen === 'planning'
+            ? <TVPlanningScreen planningDay={planningDay} />
+            : tvScreen === 'qr'
+              ? <WaitingScreen />
+              : <WelcomeScreen />
+        }
       </>
     )
   }

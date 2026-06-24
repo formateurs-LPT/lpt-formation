@@ -1480,6 +1480,114 @@ function EntreprisePageMobile({ page, pageIndex, total }) {
   )
 }
 
+// ── FAQ Réveil des acquis — saisie anonyme participant ───────────
+const FAQ_JOURNEE_LABELS = { j1: 'Journée 1', j2: 'Journée 2', j3: 'Journée 3' }
+
+function FAQInputMobile({ journeeId }) {
+  const [text, setText]             = useState('')
+  const [sending, setSending]       = useState(false)
+  const [count, setCount]           = useState(0)  // nb questions envoyées
+  const [showNew, setShowNew]       = useState(false)
+
+  const label = FAQ_JOURNEE_LABELS[journeeId] || 'FAQ'
+
+  const handleSend = async () => {
+    const trimmed = text.trim()
+    if (!trimmed || sending) return
+    setSending(true)
+    try {
+      const key = `faq_${journeeId}_q`
+      const state = await getSharedState()
+      const current = state?.[key] || []
+      const newQ = { id: Date.now().toString(), text: trimmed, highlighted: false }
+      await setSharedState({ [key]: [...current, newQ] })
+      setText('')
+      setCount(c => c + 1)
+      setShowNew(false)
+    } catch { /* ignore */ }
+    setSending(false)
+  }
+
+  const submitted = count > 0 && !showNew
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '52px 24px 40px',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38}
+        style={{ objectFit: 'contain', marginBottom: 36 }} />
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+        Réveil des acquis · {label}
+      </div>
+      <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff', lineHeight: 1.4, marginBottom: 8 }}>
+        FAQ anonyme ⚡
+      </h2>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', marginBottom: 28, lineHeight: 1.6 }}>
+        Quelle est la question qui te travaille le plus sur cette journée ?{' '}
+        <span style={{ color: 'rgba(255,255,255,0.25)' }}>Ton identité reste anonyme.</span>
+      </p>
+
+      {submitted ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{
+            background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)',
+            borderRadius: 16, padding: '20px',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#4ade80', marginBottom: 6 }}>
+              ✓ Question envoyée anonymement
+            </div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>
+              {count} question{count > 1 ? 's' : ''} posée{count > 1 ? 's' : ''}
+            </div>
+          </div>
+          <button
+            onClick={() => setShowNew(true)}
+            style={{
+              background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
+              color: '#f59e0b', borderRadius: 14, padding: '16px',
+              fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >+ Poser une autre question ?</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Écris ta question ici…"
+            rows={5}
+            style={{
+              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 16, padding: '16px', color: '#fff', fontSize: 16,
+              fontFamily: 'inherit', resize: 'none', outline: 'none', lineHeight: 1.5,
+              WebkitAppearance: 'none',
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!text.trim() || sending}
+            style={{
+              background: text.trim() ? 'linear-gradient(135deg, #d97706, #f59e0b)' : 'rgba(255,255,255,0.1)',
+              border: 'none', borderRadius: 14, padding: '16px',
+              fontSize: 16, fontWeight: 700, color: '#fff',
+              cursor: text.trim() ? 'pointer' : 'default',
+              fontFamily: 'inherit', transition: 'background .2s',
+              opacity: sending ? 0.7 : 1,
+              boxShadow: text.trim() ? '0 6px 24px rgba(245,158,11,0.35)' : 'none',
+            }}
+          >
+            {sending ? 'Envoi en cours…' : 'Envoyer anonymement →'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Freins à l'achat — saisie libre participant ───────────────────
 function FreinsInputMobile({ page, pName }) {
   const [text, setText]               = useState('')
@@ -2729,6 +2837,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const [progObjectionIdx, setProgObjectionIdx]   = useState(null)
   const [progObjectionResponses, setProgObjectionResponses] = useState({})
   const [modelePoint, setModelePoint]             = useState(null)
+  const [faqJournee, setFaqJournee]               = useState(null)
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
@@ -2741,6 +2850,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     setProgObjectionIdx(sharedState.prog_objection_idx ?? null)
     setProgObjectionResponses(sharedState.prog_objection_responses || {})
     setModelePoint(sharedState.modele_point ?? null)
+    setFaqJournee(sharedState.faq_journee || null)
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
@@ -2767,7 +2877,9 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
               ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
               : page
                 ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} />
-                : <WaitingScreen />
+                : faqJournee
+                  ? <FAQInputMobile journeeId={faqJournee} />
+                  : <WaitingScreen />
       }
     </>
   )
