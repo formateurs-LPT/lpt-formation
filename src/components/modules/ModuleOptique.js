@@ -143,7 +143,7 @@ function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total,
 }
 
 // ── Page 0 : Titre seul — question orale ─────────────────────────
-function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     setVisible(false)
@@ -208,14 +208,14 @@ function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext,
         </div>
       </div>
 
-      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} nextPage={nextPage} />
       <AvatarBubble script="Commencez par poser cette question à vos collaborateurs avant de dévoiler les réponses." trainerAvatar={trainerAvatar} pName={pName} />
     </div>
   )
 }
 
 // ── Page troubles visuels ─────────────────────────────────────────
-function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
   const [visibleCount, setVisibleCount]   = useState(0)
   const [phase, setPhase]                 = useState(1)
   const [defVisibleCount, setDefVisibleCount] = useState(0)
@@ -435,6 +435,7 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
         isFirst={isFirst} isLast={isLast}
         pageIndex={pageIndex} total={total}
         nextLabel={phase === 1 ? 'Révéler les définitions →' : 'Suivant →'}
+        nextPage={nextPage}
       />
     </div>
   )
@@ -448,7 +449,7 @@ const OPT_PLAN_W = 96  // largeur colonne Plan (fixe, ne scrolle pas)
 const OPT_ROW_H  = 46  // hauteur fixe des rangées de chips
 
 // ── Page 2 : Frise horizontale ±8,00 ─────────────────────────────
-function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
   const [step, setStep] = useState(0)
 
   useEffect(() => {
@@ -560,7 +561,7 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNex
       </div>
 
       {/* Navigation */}
-      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} nextPage={nextPage} />
 
       <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
     </div>
@@ -568,7 +569,7 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNex
 }
 
 // ── Page 3 : Lire une ordonnance ─────────────────────────────────
-function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
   const [step, setStep]     = useState(0)
   const [playing, setPlaying] = useState(false)
   const videoPreviewRef     = useRef(null)
@@ -733,7 +734,7 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
       </div>
 
       {/* Navigation */}
-      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} nextPage={nextPage} />
 
       {/* Bulle avatar opticien ordonnance */}
       <div style={{
@@ -790,7 +791,7 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
 }
 
 // ── Page 4 : Pause atelier pratique ──────────────────────────────
-function PausePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+function PausePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     setVisible(false)
@@ -866,7 +867,7 @@ function PausePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst
       </div>
 
       {/* Navigation */}
-      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} nextPage={nextPage} />
     </div>
   )
 }
@@ -892,7 +893,7 @@ function PrescLine({ eye }) {
 }
 
 // ── Page 5 : Saisie interactive (vue formateur) ───────────────────
-function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz }) {
+function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage, quizLaunched, onLaunchQuiz }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     setVisible(false)
@@ -1004,7 +1005,7 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
         </div>
       </div>
 
-      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} quizLaunched={quizLaunched} onLaunchQuiz={onLaunchQuiz} />
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} quizLaunched={quizLaunched} onLaunchQuiz={onLaunchQuiz} nextPage={nextPage} />
     </div>
   )
 }
