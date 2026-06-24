@@ -47,14 +47,55 @@ function PaulBubble({ script }) {
 }
 
 // ── Nav formateur ─────────────────────────────────────────────────
-function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast }) {
+const PAGE_TYPE_LABEL = {
+  'naissance':      { label: 'Présentation', icon: '🏢' },
+  'chiffres':       { label: 'Chiffres clés', icon: '📊' },
+  'ventes-opticien':{ label: 'Question ouverte', icon: '🙋' },
+  'promesse':       { label: 'La promesse LPT', icon: '⚡' },
+  'force-lpt':      { label: 'Points clés', icon: '💡' },
+  'freins':         { label: 'Question ouverte', icon: '🙋' },
+  'prix':           { label: 'Question ouverte', icon: '🙋' },
+  'video-lpt':      { label: 'Vidéo', icon: '🎬' },
+  'impact':         { label: 'Impact visuel', icon: '👁️' },
+  'probleme':       { label: 'Problème visuel', icon: '🔍' },
+  'machines':       { label: 'Points clés', icon: '⚙️' },
+}
+
+function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast, nextPage }) {
+  const typeInfo = nextPage ? (PAGE_TYPE_LABEL[nextPage.type] ?? { label: nextPage.type, icon: '📄' }) : null
+  const accent = nextPage?.color || '#00abe9'
+  const nextTitle = nextPage?.titre || nextPage?.question || nextPage?.label || '—'
+
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
-      background: 'rgba(3,17,42,0.92)', backdropFilter: 'blur(16px)',
+      background: 'rgba(3,17,42,0.95)', backdropFilter: 'blur(16px)',
       borderTop: '1px solid rgba(255,255,255,0.08)',
-      padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '10px 20px 14px',
     }}>
+      {/* Preview page suivante */}
+      {nextPage && (
+        <div style={{
+          marginBottom: 10,
+          background: 'rgba(255,255,255,0.04)',
+          border: `1px solid ${accent}35`,
+          borderLeft: `3px solid ${accent}`,
+          borderRadius: 10, padding: '8px 14px',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <span style={{ fontSize: 16, flexShrink: 0 }}>{typeInfo.icon}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {nextTitle}
+            </div>
+            <div style={{ fontSize: 10, color: accent, marginTop: 1 }}>{typeInfo.label}</div>
+          </div>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>suivant →</div>
+        </div>
+      )}
+
+      {/* Boutons nav */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <button onClick={onBack} style={{
         background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
         color: 'rgba(255,255,255,0.6)', padding: '9px 18px', borderRadius: 10,
@@ -86,6 +127,7 @@ function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast 
           padding: '9px 22px', borderRadius: 10, fontSize: 13, fontWeight: 700,
           cursor: isLast ? 'default' : 'pointer', fontFamily: 'inherit',
         }}>→</button>
+      </div>
       </div>
     </div>
   )
@@ -1149,6 +1191,7 @@ export default function ModuleEntreprise({ pName, onBack }) {
     onNext: () => setPageIndex(i => Math.min(i + 1, PAGES.length - 1)),
     isFirst: pageIndex === 0,
     isLast: pageIndex === PAGES.length - 1,
+    nextPage: PAGES[pageIndex + 1] ?? null,
   }
 
   return <EntreprisePage page={page} navProps={navProps} />
