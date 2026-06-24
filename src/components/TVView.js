@@ -2816,19 +2816,26 @@ export default function TVView() {
   const [progObjectionResponses, setProgObjectionResponses] = useState({})
   const [progBestAnswer, setProgBestAnswer]             = useState(null)
 
+  // Bloque l'application de tv_screen tant que le nettoyage initial n'est pas terminé
+  // (évite le flash QR au démarrage quand tv_screen='qr' est resté en DB)
+  const tvInitDoneRef = useRef(false)
+
   // À l'ouverture de la TV : remet tv_screen à null pour toujours afficher la bienvenue
   useEffect(() => {
     getSharedState().then(state => {
       if (state?.tv_screen) {
         setSharedState({ tv_screen: null }).catch(() => {})
       }
-    }).catch(() => {})
+    }).catch(() => {}).finally(() => {
+      tvInitDoneRef.current = true
+    })
   }, [])
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
     if (!sharedState) return
-    setTvScreen(sharedState.tv_screen || null)
+    // Ne pas appliquer tv_screen avant que le nettoyage initial soit terminé
+    if (tvInitDoneRef.current) setTvScreen(sharedState.tv_screen || null)
     setTrameStep(sharedState.trame_step ?? null)
     setOffres11Step(sharedState.offres_11_step ?? 0)
     setModelePoint(sharedState.modele_point ?? null)
