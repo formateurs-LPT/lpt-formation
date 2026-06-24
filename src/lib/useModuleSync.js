@@ -66,10 +66,10 @@ export function useModuleSync({ disabled = false } = {}) {
         // sur les téléphones. La lenteur SLOW_MS ne s'applique que
         // si aucun module n'est en cours.
         let next
-        if (!activeModule) {
+        if (!activeModule && !shared?.faq_journee) {
           next = IDLE_MS   // rien d'actif → 5 s
         } else {
-          next = BASE_MS   // module actif → toujours 1.2 s
+          next = BASE_MS   // module actif ou FAQ actif → toujours 1.2 s
         }
 
         if (!cancelled) {

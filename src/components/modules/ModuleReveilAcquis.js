@@ -49,7 +49,7 @@ function FAQTrainerView({ journee, onBack }) {
 
   // Activate FAQ on mount, cleanup on unmount
   useEffect(() => {
-    setSharedState({ faq_journee: journee.id }).catch(() => {})
+    setSharedState({ faq_journee: journee.id, tv_screen: null }).catch(() => {})
     return () => {
       setSharedState({ faq_journee: null, [key]: [] }).catch(() => {})
     }

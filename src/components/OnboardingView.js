@@ -371,7 +371,7 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
         ))}
 
         {/* Tuile Réveil des acquis */}
-        <div className="dash-tile" onClick={() => onLaunchModule('reveil-acquis')} style={{ cursor: 'pointer', borderColor: 'rgba(245,158,11,0.25)' }}>
+        <div className="dash-tile" onClick={() => { setSharedState({ tv_screen: 'qr' }).catch(console.warn); onLaunchModule('reveil-acquis') }} style={{ cursor: 'pointer', borderColor: 'rgba(245,158,11,0.25)' }}>
           <div className="dash-tile-top">
             <div style={{
               width: 38, height: 38, borderRadius: 10, flexShrink: 0,
