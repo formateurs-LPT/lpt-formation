@@ -256,7 +256,7 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
         {/* Frise — axe Plan */}
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <div style={{ width: TV_PLAN_W, flexShrink: 0, paddingRight: 20 }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#00abe9', lineHeight: 1 }}>Plan</div>
+            <div style={{ fontSize: 30, fontWeight: 900, color: '#00abe9', lineHeight: 1 }}>Plan</div>
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>0,00</div>
           </div>
           <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.22)', borderRadius: 1 }} />

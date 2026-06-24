@@ -458,6 +458,24 @@ function CorrectionScaleMobile({ page, pageIndex, total }) {
             </div>
           </div>
         </div>
+
+        {/* Encart clé */}
+        <div style={{
+          margin: '28px 20px 20px',
+          padding: '20px 24px',
+          borderRadius: 16,
+          background: 'rgba(0,171,233,0.07)',
+          border: '1px solid rgba(0,171,233,0.22)',
+          display: 'flex', alignItems: 'center', gap: 16,
+        }}>
+          <span style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>⚡</span>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>À retenir</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+              Fabrication en 10 minutes
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
