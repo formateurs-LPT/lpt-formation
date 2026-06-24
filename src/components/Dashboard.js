@@ -37,7 +37,7 @@ function NewsTicker() {
   )
 }
 
-function DashHeader({ pName }) {
+function DashHeader({ pName, onUpdatesClick }) {
   const rawKey = (pName || '').toLowerCase().split(' ')[0]
   const key = TRAINER_CANONICAL[rawKey] || rawKey
   const avatarSrc = TRAINER_AVATARS[key] || TRAINER_AVATARS.kevin
@@ -45,7 +45,7 @@ function DashHeader({ pName }) {
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
 
   return (
-    <div className="dash-hero">
+    <div className="dash-hero" style={{ display: 'flex', alignItems: 'center' }}>
       <Image
         src={avatarSrc}
         alt={pName}
@@ -53,11 +53,32 @@ function DashHeader({ pName }) {
         height={90}
         className="dash-hero-avatar"
       />
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
         <div className="dash-hero-label">Formation · Lunettes Pour Tous</div>
         <h2 className="dash-hero-title">Bonjour, {cap(pName)} 👋</h2>
         <p className="dash-hero-date">{cap(today)}</p>
       </div>
+      {onUpdatesClick && (
+        <button
+          onClick={onUpdatesClick}
+          title="Mises à jour de l'app"
+          style={{
+            flexShrink: 0, marginLeft: 12, zIndex: 1,
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'rgba(167,139,250,0.15)',
+            border: '1px solid rgba(167,139,250,0.35)',
+            borderRadius: 20, padding: '6px 12px 6px 10px',
+            cursor: 'pointer', fontFamily: 'inherit',
+            color: '#c4b5fd', fontSize: 12, fontWeight: 700,
+            transition: 'all .18s',
+          }}
+          onMouseOver={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.25)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.5)' }}
+          onMouseOut={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.15)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.35)' }}
+        >
+          <span style={{ fontSize: 14 }}>⚡</span>
+          <span>{APP_UPDATES.length}</span>
+        </button>
+      )}
     </div>
   )
 }
@@ -500,6 +521,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
   const [entreeCount, setEntreeCount] = useState(null)
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
+  const [selectedUpdate, setSelectedUpdate] = useState(null)
 
   const [obDay, setObDay] = useState('1')
 
@@ -701,7 +723,8 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
   return (
     <div id="dashboard">
       <div className="dash-wrap">
-        <DashHeader pName={pName} />
+        <DashHeader pName={pName} onUpdatesClick={() => setSelectedUpdate(APP_UPDATES[0])} />
+        {selectedUpdate && <AppUpdateModal update={selectedUpdate} onClose={() => setSelectedUpdate(null)} />}
         <NewsTicker />
 
         {/* OB Banner */}
@@ -772,9 +795,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
             <div className="dash-tile-sub">Lancer une nouvelle formation</div>
           </div>
         </div>
-
-        {/* App updates */}
-        <AppUpdatesWidget />
 
         {/* Weather + Progress */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
