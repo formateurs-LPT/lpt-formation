@@ -95,10 +95,10 @@ function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex,
       </div>
 
       {/* Contenu */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr', overflow: 'hidden' }}>
 
         {/* Gauche : montures */}
-        <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           {frames.map((f, i) => (
             <div key={i} style={{
               flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
@@ -106,8 +106,8 @@ function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex,
               transform: step > i ? 'translateY(0) scale(1)' : 'translateY(30px) scale(0.95)',
               transition: 'all 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)',
             }}>
-              <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '20px 16px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={f.src} alt={f.ref} style={{ width: '100%', height: 'auto', objectFit: 'contain', maxHeight: 90 }} />
+              <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '16px 12px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={f.src} alt={f.ref} style={{ width: '100%', height: 'auto', objectFit: 'contain', maxHeight: 140 }} />
               </div>
               <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, letterSpacing: 0.5 }}>{f.ref}</span>
             </div>

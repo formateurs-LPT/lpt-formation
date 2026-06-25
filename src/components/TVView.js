@@ -2101,9 +2101,9 @@ function TVMontures({ type, pageIndex, total, moduleLabel }) {
       </div>
 
       {/* Main */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr' }}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '5fr 2fr' }}>
         {/* Gauche : 3 montures */}
-        <div style={{ padding: '36px 48px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 40 }}>
+        <div style={{ padding: '28px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32 }}>
           {frames.map((f, i) => (
             <div key={i} style={{
               flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
@@ -2111,8 +2111,8 @@ function TVMontures({ type, pageIndex, total, moduleLabel }) {
               transform: step > i ? 'translateY(0) scale(1)' : 'translateY(40px) scale(0.95)',
               transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
             }}>
-              <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, padding: '32px 28px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={f.src} alt={f.ref} style={{ width: '100%', height: 'auto', objectFit: 'contain', maxHeight: 150 }} />
+              <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, padding: '28px 24px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={f.src} alt={f.ref} style={{ width: '100%', height: 'auto', objectFit: 'contain', maxHeight: 220 }} />
               </div>
               <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 600, letterSpacing: 0.5 }}>{f.ref}</span>
             </div>
@@ -2120,24 +2120,24 @@ function TVMontures({ type, pageIndex, total, moduleLabel }) {
         </div>
 
         {/* Droite : titre + infos */}
-        <div style={{ borderLeft: '1px solid rgba(255,255,255,0.08)', padding: '48px 52px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+        <div style={{ borderLeft: '1px solid rgba(255,255,255,0.08)', padding: '36px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>
             Matériaux · Journée 1
           </div>
-          <div style={{ fontSize: 60, fontWeight: 900, color: '#fff', lineHeight: 1, marginBottom: 4 }}>{title}</div>
-          <div style={{ fontSize: 24, fontWeight: 400, color: 'rgba(255,255,255,0.35)', marginBottom: 48 }}>{subtitle}</div>
+          <div style={{ fontSize: 44, fontWeight: 900, color: '#fff', lineHeight: 1, marginBottom: 4 }}>{title}</div>
+          <div style={{ fontSize: 16, fontWeight: 400, color: 'rgba(255,255,255,0.35)', marginBottom: 28 }}>{subtitle}</div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {infos.map((info, i) => (
               <div key={i} style={{
                 opacity: step > 3 ? 1 : 0,
                 transform: step > 3 ? 'translateX(0)' : 'translateX(24px)',
                 transition: `all 0.5s ease ${i * 0.12}s`,
-                display: 'flex', alignItems: 'center', gap: 18,
+                display: 'flex', alignItems: 'center', gap: 12,
                 background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                borderLeft: `3px solid ${color}70`, borderRadius: 14, padding: '14px 20px',
+                borderLeft: `3px solid ${color}70`, borderRadius: 12, padding: '10px 14px',
               }}>
-                <span style={{ fontSize: 26, flexShrink: 0 }}>{info.icon}</span>
+                <span style={{ fontSize: 20, flexShrink: 0 }}>{info.icon}</span>
                 <div>
                   <div style={{ fontSize: 17, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{info.label}</div>
                   <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>{info.desc}</div>
