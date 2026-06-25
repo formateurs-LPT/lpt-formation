@@ -2055,6 +2055,19 @@ const TV_MONTURES_DATA = {
       { icon: '🔧', label: 'Ajustable facilement', desc: 'Plaquettes et branches réglables' },
     ],
   },
+  'montures-injecte': {
+    title: 'Plastique injecté', subtitle: 'moulé industriel', color: '#4ade80',
+    frames: [
+      { src: '/assets/montures/injecte/WF01-BM-002.avif',  ref: 'WF01-BM' },
+      { src: '/assets/montures/injecte/WF02-GMV-002.avif', ref: 'WF02-GMV' },
+      { src: '/assets/montures/injecte/WF04-BU-002.avif',  ref: 'WF04-BU' },
+    ],
+    infos: [
+      { icon: '🏭', label: 'Moulé à chaud', desc: 'Injecté en série dans un moule industriel' },
+      { icon: '🪶', label: 'Léger & résistant', desc: 'Très bonne durabilité au quotidien' },
+      { icon: '💚', label: 'Accessible', desc: 'Meilleur rapport qualité / prix de la gamme' },
+    ],
+  },
 }
 
 function TVMontures({ type, pageIndex, total, moduleLabel }) {
@@ -2152,6 +2165,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />
   if (page.type === 'montures-acetate') return <TVMontures type="montures-acetate" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'montures-metal')   return <TVMontures type="montures-metal"   pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'montures-injecte') return <TVMontures type="montures-injecte" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'pdm-pourquoi')     return <TVPdmPourquoi pageIndex={pageIndex} total={total} />
   if (page.type === 'offres-classique') return <TVOffresClassique />
   if (page.type === 'offres-1-1')       return <TVOffres11 step={offres11Step} />

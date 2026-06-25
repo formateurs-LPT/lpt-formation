@@ -40,10 +40,28 @@ const METAL_NOTES = [
   { icon: '💧', title: 'Oxydation', text: "Peut apparaître avec transpiration acide. Recommander l'entretien régulier à l'eau claire. Moins adapté aux grosses corrections (cerclage fin)." },
 ]
 
+const INJECTE_FRAMES = [
+  { src: '/assets/montures/injecte/WF01-BM-002.avif',  ref: 'WF01-BM' },
+  { src: '/assets/montures/injecte/WF02-GMV-002.avif', ref: 'WF02-GMV' },
+  { src: '/assets/montures/injecte/WF04-BU-002.avif',  ref: 'WF04-BU' },
+]
+const INJECTE_INFOS = [
+  { icon: '🏭', label: 'Moulé à chaud', desc: 'Injecté en série dans un moule industriel' },
+  { icon: '🪶', label: 'Léger & résistant', desc: 'Très bonne durabilité au quotidien' },
+  { icon: '💚', label: 'Accessible', desc: 'Meilleur rapport qualité / prix de la gamme' },
+]
+const INJECTE_NOTES = [
+  { icon: '🏭', title: 'Le procédé', text: "Injecté dans un moule = production en série. C'est ce qui le rend accessible. Moins noble que l'acétate mais très pratique." },
+  { icon: '🎨', title: 'Moins de motifs', text: "Pas découpé dans une plaque — couleur uniforme, pas de veinage ni motif dans la masse. Moins de personnalisation." },
+  { icon: '❄️', title: 'Ajustable à froid', text: "Les branches se règlent mais avec moins de liberté que le métal. Pas de plaquettes réglables sur la plupart des modèles." },
+  { icon: '🎯', title: 'Cible client', text: "Budget serré, enfants, personnes qui changent souvent ou cassent régulièrement. Argument : rapport qualité/prix imbattable." },
+]
+
 // ─── Config pages ──────────────────────────────────────────────
 const PAGES_META = [
-  { type: 'acetate', title: 'Acétate', subtitle: 'de cellulose', color: '#00abe9', frames: ACETATE_FRAMES, infos: ACETATE_INFOS, notes: ACETATE_NOTES },
-  { type: 'metal',   title: 'Métal',   subtitle: 'alliage métallique', color: '#94a3b8', frames: METAL_FRAMES, infos: METAL_INFOS, notes: METAL_NOTES },
+  { type: 'acetate', title: 'Acétate',          subtitle: 'de cellulose',       color: '#00abe9', frames: ACETATE_FRAMES, infos: ACETATE_INFOS, notes: ACETATE_NOTES },
+  { type: 'metal',   title: 'Métal',             subtitle: 'alliage métallique', color: '#94a3b8', frames: METAL_FRAMES,   infos: METAL_INFOS,   notes: METAL_NOTES },
+  { type: 'injecte', title: 'Plastique injecté', subtitle: 'moulé industriel',   color: '#4ade80', frames: INJECTE_FRAMES, infos: INJECTE_INFOS, notes: INJECTE_NOTES },
 ]
 const TOTAL_PAGES = PAGES_META.length
 
@@ -188,8 +206,8 @@ function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex,
 function Lobby({ onStart, onBack }) {
   const mats = [
     { label: 'Acétate', color: '#00abe9', done: true },
-    { label: 'Métal', color: '#94a3b8', done: true },
-    { label: 'Injecté', color: 'rgba(255,255,255,0.2)', done: false },
+    { label: 'Métal',   color: '#94a3b8', done: true },
+    { label: 'Injecté', color: '#4ade80', done: true },
   ]
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
