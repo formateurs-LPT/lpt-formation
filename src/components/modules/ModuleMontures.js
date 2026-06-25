@@ -3,79 +3,55 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, SESSION_CODE } from '@/lib/supabase'
 
-// ─── Données Acétate ──────────────────────────────────────────
+// ─── Données par matériau ─────────────────────────────────────
+
 const ACETATE_FRAMES = [
   { src: '/assets/montures/acetate/SLPT038-EFO-002.avif', ref: 'SLPT038-EFO' },
   { src: '/assets/montures/acetate/SLPT067-EFO-002.avif', ref: 'SLPT067-EFO' },
   { src: '/assets/montures/acetate/SLPT075-EFOBPL-001.avif', ref: 'SLPT075-EFOBPL' },
 ]
-
 const ACETATE_INFOS = [
   { icon: '🌿', label: 'Naturel', desc: 'Pulpe de bois ou fibre de coton' },
   { icon: '✨', label: 'Premium', desc: 'Large choix de coloris & motifs' },
   { icon: '💎', label: 'Modèle unique', desc: 'Chaque paire diffère selon sa plaque' },
   { icon: '🌡️', label: 'Ajustable à chaud', desc: 'Hypoallergénique — aucun risque allergie' },
 ]
-
-const ACETATE_NOTES_ORALES = [
+const ACETATE_NOTES = [
   { icon: '🌲', title: "L'origine", text: "Plastique noble — pulpe de bois ou fibre de coton, pas du pétrole. Argument premium face au client." },
-  { icon: '🔲', title: 'La plaque', text: "Découpée dans la masse. Montrer une plaque si dispo en magasin. Chaque paire est donc légèrement unique." },
+  { icon: '🔲', title: 'La plaque', text: "Découpée dans la masse. Montrer une plaque si dispo en magasin. Chaque paire est légèrement unique." },
   { icon: '🔥', title: 'Ajustable à chaud', text: "On chauffe doucement (chaleur sèche), puis on plie. Le pont est en une seule pièce : non ajustable en largeur." },
   { icon: '⚖️', title: 'À mentionner si besoin', text: "Plus lourd que métal & injecté · Pont non ajustable en largeur." },
 ]
 
-// ─── Lobby ────────────────────────────────────────────────────
-function Lobby({ onStart, onBack }) {
-  return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-      <button onClick={onBack} style={{
-        position: 'absolute', top: 24, left: 24,
-        background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
-        color: 'rgba(255,255,255,0.6)', padding: '8px 16px', borderRadius: 10,
-        fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
-      }}>← Retour</button>
+const METAL_FRAMES = [
+  { src: '/assets/montures/metal/LPT502L-KM-002.avif', ref: 'LPT502L-KM' },
+  { src: '/assets/montures/metal/LPT523-GUN-002.avif', ref: 'LPT523-GUN' },
+  { src: '/assets/montures/metal/SLPT068-OOM-002.avif', ref: 'SLPT068-OOM' },
+]
+const METAL_INFOS = [
+  { icon: '🪶', label: 'Léger & fin', desc: 'Discret sur le visage' },
+  { icon: '🛡️', label: 'Résistant', desc: 'Alliage métallique et revêtement anti-allergique' },
+  { icon: '🔧', label: 'Ajustable facilement', desc: 'Plaquettes et branches réglables' },
+]
+const METAL_NOTES = [
+  { icon: '⚗️', title: "L'alliage", text: "Pas de l'acier pur — un alliage travaillé (souvent nickel, titane ou inox). Plus fin que l'acétate, d'où la légèreté." },
+  { icon: '🔧', title: 'Ajustable facilement', text: "Les plaquettes et branches se règlent à froid. C'est l'atout N°1 pour l'adaptation au visage — argument fort en vente." },
+  { icon: '⚠️', title: 'Allergie nickel', text: "À mentionner si le client est sensible. On a des modèles sans nickel (titane). Revêtement anti-allergique sur la plupart." },
+  { icon: '💧', title: 'Oxydation', text: "Peut apparaître avec transpiration acide. Recommander l'entretien régulier à l'eau claire. Moins adapté aux grosses corrections (cerclage fin)." },
+]
 
-      <div style={{ textAlign: 'center', maxWidth: 560, padding: '0 24px' }}>
-        <div style={{ fontSize: 56, marginBottom: 24 }}>👓</div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
-          Module · Journée 1 · Fin de journée
-        </div>
-        <h1 style={{ fontSize: 32, fontWeight: 800, color: '#fff', marginBottom: 10 }}>
-          Connaissances Montures
-        </h1>
-        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 28, lineHeight: 1.6 }}>
-          Découverte des matériaux et des montures LPT
-        </p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 36 }}>
-          {[
-            { label: 'Acétate', active: true },
-            { label: 'Métal', active: false },
-            { label: 'Injecté', active: false },
-          ].map((m, i) => (
-            <span key={i} style={{
-              padding: '4px 16px', borderRadius: 20,
-              background: m.active ? 'rgba(0,171,233,0.15)' : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${m.active ? 'rgba(0,171,233,0.4)' : 'rgba(255,255,255,0.1)'}`,
-              color: m.active ? '#00abe9' : 'rgba(255,255,255,0.3)',
-              fontSize: 12, fontWeight: 700,
-            }}>{m.label}</span>
-          ))}
-        </div>
-        <button onClick={onStart} style={{
-          background: 'linear-gradient(135deg, #0089ba, #00abe9)',
-          border: 'none', color: '#fff', padding: '16px 48px',
-          borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer',
-          boxShadow: '0 8px 32px rgba(0,171,233,0.45)', fontFamily: 'inherit',
-        }}>▶ Démarrer</button>
-      </div>
-    </div>
-  )
-}
+// ─── Config pages ──────────────────────────────────────────────
+const PAGES_META = [
+  { type: 'acetate', title: 'Acétate', subtitle: 'de cellulose', color: '#00abe9', frames: ACETATE_FRAMES, infos: ACETATE_INFOS, notes: ACETATE_NOTES },
+  { type: 'metal',   title: 'Métal',   subtitle: 'alliage métallique', color: '#94a3b8', frames: METAL_FRAMES, infos: METAL_INFOS, notes: METAL_NOTES },
+]
+const TOTAL_PAGES = PAGES_META.length
 
-// ─── Page Acétate — formateur ─────────────────────────────────
-function AcetateTrainerPage({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+// ─── Composant page générique (formateur) ────────────────────
+function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
   const [step, setStep] = useState(0)
   const [notesOpen, setNotesOpen] = useState(true)
+  const { title, subtitle, color, frames, infos, notes } = meta
 
   useEffect(() => {
     setStep(0)
@@ -100,12 +76,12 @@ function AcetateTrainerPage({ onBack, onPrev, onNext, isFirst, isLast, pageIndex
         >✕ Quitter</button>
       </div>
 
-      {/* Contenu principal */}
+      {/* Contenu */}
       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden' }}>
 
         {/* Gauche : montures */}
         <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, borderRight: '1px solid rgba(255,255,255,0.07)' }}>
-          {ACETATE_FRAMES.map((f, i) => (
+          {frames.map((f, i) => (
             <div key={i} style={{
               flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
               opacity: step > i ? 1 : 0,
@@ -120,29 +96,28 @@ function AcetateTrainerPage({ onBack, onPrev, onNext, isFirst, isLast, pageIndex
           ))}
         </div>
 
-        {/* Droite : infos + notes formateur */}
+        {/* Droite : titre + infos + notes */}
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
 
           {/* Titre */}
           <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>
               Matériaux · Journée 1
             </div>
-            <div style={{ fontSize: 34, fontWeight: 900, color: '#fff', lineHeight: 1, marginBottom: 2 }}>Acétate</div>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>de cellulose</div>
+            <div style={{ fontSize: 34, fontWeight: 900, color: '#fff', lineHeight: 1, marginBottom: 2 }}>{title}</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>{subtitle}</div>
           </div>
 
-          {/* Infos clés — miroir TV */}
+          {/* Infos clés */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
-            {ACETATE_INFOS.map((info, i) => (
+            {infos.map((info, i) => (
               <div key={i} style={{
                 opacity: step > 3 ? 1 : 0,
                 transform: step > 3 ? 'translateX(0)' : 'translateX(16px)',
                 transition: `all 0.45s ease ${i * 0.1}s`,
                 display: 'flex', alignItems: 'center', gap: 12,
                 background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                borderLeft: '3px solid rgba(0,171,233,0.45)', borderRadius: 10,
-                padding: '9px 14px',
+                borderLeft: `3px solid ${color}70`, borderRadius: 10, padding: '9px 14px',
               }}>
                 <span style={{ fontSize: 16, flexShrink: 0 }}>{info.icon}</span>
                 <div>
@@ -155,15 +130,12 @@ function AcetateTrainerPage({ onBack, onPrev, onNext, isFirst, isLast, pageIndex
 
           {/* Notes formateur */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 14 }}>
-            <button
-              onClick={() => setNotesOpen(o => !o)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                color: '#f59e0b', fontSize: 11, fontWeight: 700,
-                textTransform: 'uppercase', letterSpacing: 1, marginBottom: notesOpen ? 12 : 0, padding: 0,
-              }}
-            >
+            <button onClick={() => setNotesOpen(o => !o)} style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+              background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              color: '#f59e0b', fontSize: 11, fontWeight: 700,
+              textTransform: 'uppercase', letterSpacing: 1, marginBottom: notesOpen ? 12 : 0, padding: 0,
+            }}>
               <span>📝</span>
               <span>Notes formateur — à dire à l'oral</span>
               <span style={{ marginLeft: 'auto', fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>{notesOpen ? '▾' : '▸'}</span>
@@ -171,11 +143,10 @@ function AcetateTrainerPage({ onBack, onPrev, onNext, isFirst, isLast, pageIndex
 
             {notesOpen && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {ACETATE_NOTES_ORALES.map((note, i) => (
+                {notes.map((note, i) => (
                   <div key={i} style={{
                     background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)',
-                    borderLeft: '3px solid rgba(245,158,11,0.5)',
-                    borderRadius: 10, padding: '10px 14px',
+                    borderLeft: '3px solid rgba(245,158,11,0.5)', borderRadius: 10, padding: '10px 14px',
                   }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginBottom: 4 }}>
                       {note.icon} {note.title}
@@ -204,7 +175,7 @@ function AcetateTrainerPage({ onBack, onPrev, onNext, isFirst, isLast, pageIndex
             Terminer →
           </button>
         ) : (
-          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #00abe9, #0090c5)', border: 'none', color: '#fff', padding: '11px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 5px 20px rgba(0,171,233,0.35)' }}>
+          <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)`, border: 'none', color: '#fff', padding: '11px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 5px 20px ${color}40` }}>
             Suivant →
           </button>
         )}
@@ -213,9 +184,55 @@ function AcetateTrainerPage({ onBack, onPrev, onNext, isFirst, isLast, pageIndex
   )
 }
 
-// ─── Composant principal ──────────────────────────────────────
-const TOTAL_PAGES = 1 // Acétate — Métal et Injecté à venir
+// ─── Lobby ────────────────────────────────────────────────────
+function Lobby({ onStart, onBack }) {
+  const mats = [
+    { label: 'Acétate', color: '#00abe9', done: true },
+    { label: 'Métal', color: '#94a3b8', done: true },
+    { label: 'Injecté', color: 'rgba(255,255,255,0.2)', done: false },
+  ]
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+      <button onClick={onBack} style={{
+        position: 'absolute', top: 24, left: 24,
+        background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+        color: 'rgba(255,255,255,0.6)', padding: '8px 16px', borderRadius: 10,
+        fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+      }}>← Retour</button>
 
+      <div style={{ textAlign: 'center', maxWidth: 560, padding: '0 24px' }}>
+        <div style={{ fontSize: 56, marginBottom: 24 }}>👓</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+          Module · Journée 1 · Fin de journée
+        </div>
+        <h1 style={{ fontSize: 32, fontWeight: 800, color: '#fff', marginBottom: 10 }}>
+          Connaissances Montures
+        </h1>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 28, lineHeight: 1.6 }}>
+          Découverte des matériaux et des montures LPT
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 36 }}>
+          {mats.map((m, i) => (
+            <span key={i} style={{
+              padding: '4px 16px', borderRadius: 20,
+              background: m.done ? `${m.color}18` : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${m.done ? m.color + '50' : 'rgba(255,255,255,0.1)'}`,
+              color: m.done ? m.color : 'rgba(255,255,255,0.25)',
+              fontSize: 12, fontWeight: 700,
+            }}>{m.label}</span>
+          ))}
+        </div>
+        <button onClick={onStart} style={{
+          background: 'linear-gradient(135deg, #0089ba, #00abe9)', border: 'none', color: '#fff',
+          padding: '16px 48px', borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer',
+          boxShadow: '0 8px 32px rgba(0,171,233,0.45)', fontFamily: 'inherit',
+        }}>▶ Démarrer</button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Composant principal ──────────────────────────────────────
 export default function ModuleMontures({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [page, setPage] = useState(0)
@@ -247,7 +264,8 @@ export default function ModuleMontures({ pName, onBack }) {
   if (!started) return <Lobby onStart={handleStart} onBack={handleBack} />
 
   return (
-    <AcetateTrainerPage
+    <MonturePage
+      meta={PAGES_META[page]}
       onBack={handleBack}
       onPrev={handlePrev}
       onNext={handleNext}

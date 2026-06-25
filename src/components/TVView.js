@@ -2026,20 +2026,40 @@ function TVTrameAccueil({ step }) {
   )
 }
 
-// ── TV Montures — Acétate ─────────────────────────────────────
-const TV_ACETATE_FRAMES = [
-  { src: '/assets/montures/acetate/SLPT038-EFO-002.avif', ref: 'SLPT038-EFO' },
-  { src: '/assets/montures/acetate/SLPT067-EFO-002.avif', ref: 'SLPT067-EFO' },
-  { src: '/assets/montures/acetate/SLPT075-EFOBPL-001.avif', ref: 'SLPT075-EFOBPL' },
-]
-const TV_ACETATE_INFOS = [
-  { icon: '🌿', label: 'Naturel', desc: 'Pulpe de bois ou fibre de coton' },
-  { icon: '✨', label: 'Premium', desc: 'Large choix de coloris & motifs' },
-  { icon: '💎', label: 'Modèle unique', desc: 'Chaque paire diffère selon sa plaque' },
-  { icon: '🌡️', label: 'Ajustable à chaud', desc: 'Hypoallergénique' },
-]
+// ── TV Montures — données ─────────────────────────────────────
+const TV_MONTURES_DATA = {
+  'montures-acetate': {
+    title: 'Acétate', subtitle: 'de cellulose', color: '#00abe9',
+    frames: [
+      { src: '/assets/montures/acetate/SLPT038-EFO-002.avif', ref: 'SLPT038-EFO' },
+      { src: '/assets/montures/acetate/SLPT067-EFO-002.avif', ref: 'SLPT067-EFO' },
+      { src: '/assets/montures/acetate/SLPT075-EFOBPL-001.avif', ref: 'SLPT075-EFOBPL' },
+    ],
+    infos: [
+      { icon: '🌿', label: 'Naturel', desc: 'Pulpe de bois ou fibre de coton' },
+      { icon: '✨', label: 'Premium', desc: 'Large choix de coloris & motifs' },
+      { icon: '💎', label: 'Modèle unique', desc: 'Chaque paire diffère selon sa plaque' },
+      { icon: '🌡️', label: 'Ajustable à chaud', desc: 'Hypoallergénique' },
+    ],
+  },
+  'montures-metal': {
+    title: 'Métal', subtitle: 'alliage métallique', color: '#94a3b8',
+    frames: [
+      { src: '/assets/montures/metal/LPT502L-KM-002.avif', ref: 'LPT502L-KM' },
+      { src: '/assets/montures/metal/LPT523-GUN-002.avif', ref: 'LPT523-GUN' },
+      { src: '/assets/montures/metal/SLPT068-OOM-002.avif', ref: 'SLPT068-OOM' },
+    ],
+    infos: [
+      { icon: '🪶', label: 'Léger & fin', desc: 'Discret sur le visage' },
+      { icon: '🛡️', label: 'Résistant', desc: 'Alliage métallique et revêtement anti-allergique' },
+      { icon: '🔧', label: 'Ajustable facilement', desc: 'Plaquettes et branches réglables' },
+    ],
+  },
+}
 
-function TVMontures({ pageIndex, total, moduleLabel }) {
+function TVMontures({ type, pageIndex, total, moduleLabel }) {
+  const data = TV_MONTURES_DATA[type]
+  const { title, subtitle, color, frames, infos } = data
   const [step, setStep] = useState(0)
 
   useEffect(() => {
@@ -2061,7 +2081,7 @@ function TVMontures({ pageIndex, total, moduleLabel }) {
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
           <div style={{ display: 'flex', gap: 6 }}>
             {Array(total).fill(0).map((_, i) => (
-              <div key={i} style={{ height: 5, borderRadius: 3, width: i === pageIndex ? 24 : 5, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />
+              <div key={i} style={{ height: 5, borderRadius: 3, width: i === pageIndex ? 24 : 5, background: i === pageIndex ? color : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />
             ))}
           </div>
         </div>
@@ -2071,7 +2091,7 @@ function TVMontures({ pageIndex, total, moduleLabel }) {
       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr' }}>
         {/* Gauche : 3 montures */}
         <div style={{ padding: '36px 48px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 40 }}>
-          {TV_ACETATE_FRAMES.map((f, i) => (
+          {frames.map((f, i) => (
             <div key={i} style={{
               flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
               opacity: step > i ? 1 : 0,
@@ -2088,21 +2108,21 @@ function TVMontures({ pageIndex, total, moduleLabel }) {
 
         {/* Droite : titre + infos */}
         <div style={{ borderLeft: '1px solid rgba(255,255,255,0.08)', padding: '48px 52px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
             Matériaux · Journée 1
           </div>
-          <div style={{ fontSize: 60, fontWeight: 900, color: '#fff', lineHeight: 1, marginBottom: 4 }}>Acétate</div>
-          <div style={{ fontSize: 24, fontWeight: 400, color: 'rgba(255,255,255,0.35)', marginBottom: 48 }}>de cellulose</div>
+          <div style={{ fontSize: 60, fontWeight: 900, color: '#fff', lineHeight: 1, marginBottom: 4 }}>{title}</div>
+          <div style={{ fontSize: 24, fontWeight: 400, color: 'rgba(255,255,255,0.35)', marginBottom: 48 }}>{subtitle}</div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {TV_ACETATE_INFOS.map((info, i) => (
+            {infos.map((info, i) => (
               <div key={i} style={{
                 opacity: step > 3 ? 1 : 0,
                 transform: step > 3 ? 'translateX(0)' : 'translateX(24px)',
                 transition: `all 0.5s ease ${i * 0.12}s`,
                 display: 'flex', alignItems: 'center', gap: 18,
                 background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                borderLeft: '3px solid rgba(0,171,233,0.45)', borderRadius: 14, padding: '14px 20px',
+                borderLeft: `3px solid ${color}70`, borderRadius: 14, padding: '14px 20px',
               }}>
                 <span style={{ fontSize: 26, flexShrink: 0 }}>{info.icon}</span>
                 <div>
@@ -2130,7 +2150,8 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesPhase={troublesPhase} opticienPlaying={opticienPlaying} audioUnlocked={audioUnlocked} />
   if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />
-  if (page.type === 'montures-acetate') return <TVMontures pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'montures-acetate') return <TVMontures type="montures-acetate" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'montures-metal')   return <TVMontures type="montures-metal"   pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'pdm-pourquoi')     return <TVPdmPourquoi pageIndex={pageIndex} total={total} />
   if (page.type === 'offres-classique') return <TVOffresClassique />
   if (page.type === 'offres-1-1')       return <TVOffres11 step={offres11Step} />
