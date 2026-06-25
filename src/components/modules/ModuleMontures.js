@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, SESSION_CODE } from '@/lib/supabase'
+import { TRAINER_AVATARS } from '@/lib/constants'
 
 // ─── Données par matériau ─────────────────────────────────────
 
@@ -65,8 +66,81 @@ const PAGES_META = [
 ]
 const TOTAL_PAGES = PAGES_META.length
 
+// ─── Keyframes ────────────────────────────────────────────────
+const STYLES = `
+  @keyframes avatarPulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(0,171,233,0.4); }
+    50%       { box-shadow: 0 4px 36px rgba(0,171,233,0.9); }
+  }
+  @keyframes haloPulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50%       { opacity: 0.9; transform: scale(1.15); }
+  }
+`
+
+// ─── Avatar bulle formateur ───────────────────────────────────
+function AvatarBubble({ script, trainerAvatar, pName }) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    setVisible(false)
+    const t = setTimeout(() => setVisible(true), 800)
+    return () => clearTimeout(t)
+  }, [script])
+
+  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Formateur'
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 0, right: 0, zIndex: 50,
+      display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
+      padding: '0 28px 28px 0',
+      opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)',
+      transition: 'all .5s ease', pointerEvents: 'none',
+    }}>
+      {/* Bulle script */}
+      <div style={{
+        background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(20px)',
+        borderRadius: '18px 18px 4px 18px', padding: '14px 18px',
+        maxWidth: 280, boxShadow: '0 12px 48px rgba(0,0,0,0.25)',
+        fontSize: 13, color: '#0f172a', lineHeight: 1.6, fontWeight: 500,
+        marginBottom: 12,
+      }}>
+        {script}
+      </div>
+      {/* Carte présentateur */}
+      <div style={{
+        background: 'rgba(10,42,92,0.85)', backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(0,171,233,0.3)', borderRadius: 20,
+        padding: '12px 18px 12px 12px',
+        display: 'flex', alignItems: 'center', gap: 14,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+      }}>
+        <div style={{
+          width: 80, height: 80, borderRadius: 16, overflow: 'hidden', flexShrink: 0,
+          border: '2.5px solid #00abe9', boxShadow: '0 0 0 4px rgba(0,171,233,0.2)',
+          animation: 'avatarPulse 2.5s ease-in-out infinite',
+        }}>
+          <Image src={trainerAvatar} alt={cap(pName)} width={80} height={80} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+        </div>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{cap(pName)}</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Formateur · LPT</div>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6,
+            background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.3)',
+            borderRadius: 20, padding: '3px 10px',
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00abe9', animation: 'haloPulse 1.5s ease-in-out infinite' }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', letterSpacing: .5 }}>EN DIRECT</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Composant page générique (formateur) ────────────────────
-function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, pName, trainerAvatar }) {
   const [step, setStep] = useState(0)
   const [notesOpen, setNotesOpen] = useState(true)
   const { title, subtitle, color, frames, infos, notes } = meta
@@ -79,6 +153,7 @@ function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex,
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
+      <style>{STYLES}</style>
 
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 28px', flexShrink: 0 }}>
@@ -179,7 +254,7 @@ function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex,
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 28px 16px', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 360px 16px 28px', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
         <button onClick={onPrev} disabled={isFirst} style={{
           background: isFirst ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.09)',
           border: '1px solid rgba(255,255,255,0.15)',
@@ -198,6 +273,13 @@ function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex,
           </button>
         )}
       </div>
+
+      {/* Avatar bulle formateur */}
+      <AvatarBubble
+        script={notes[0]?.text || `Expliquez les caractéristiques de la monture ${title} à l'oral.`}
+        trainerAvatar={trainerAvatar}
+        pName={pName}
+      />
     </div>
   )
 }
@@ -254,6 +336,7 @@ function Lobby({ onStart, onBack }) {
 export default function ModuleMontures({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [page, setPage] = useState(0)
+  const trainerAvatar = TRAINER_AVATARS[(pName || '').toLowerCase()] || '/assets/avatar_kevin.png'
 
   const handleStart = async () => {
     await sbUpdate('sessions', { active_module: 'montures', module_page: 0 }, 'code=eq.' + SESSION_CODE)
@@ -291,6 +374,8 @@ export default function ModuleMontures({ pName, onBack }) {
       isLast={page >= TOTAL_PAGES - 1}
       pageIndex={page}
       total={TOTAL_PAGES}
+      pName={pName}
+      trainerAvatar={trainerAvatar}
     />
   )
 }
