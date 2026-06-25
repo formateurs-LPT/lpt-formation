@@ -40,6 +40,12 @@ const JOURNEES = (onLaunchModule) => [
         sub: 'Unifocaux, progressifs, antireflets et traitements',
         onClick: () => onLaunchModule('types-verres'),
       },
+      {
+        visual: 'emoji', icon: '👓',
+        label: 'Connaissances Montures',
+        sub: 'Acétate · Métal · Injecté — fin de journée',
+        onClick: () => onLaunchModule('montures'),
+      },
     ],
   },
   {

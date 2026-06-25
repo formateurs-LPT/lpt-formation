@@ -18,6 +18,7 @@ import ModuleOffres from '@/components/modules/ModuleOffres'
 import ModuleEntreprise from '@/components/modules/ModuleEntreprise'
 import ModuleTrameAccueil from '@/components/modules/ModuleTrameAccueil'
 import ModuleReveilAcquis from '@/components/modules/ModuleReveilAcquis'
+import ModuleMontures from '@/components/modules/ModuleMontures'
 import OnboardingView from '@/components/OnboardingView'
 import TVView from '@/components/TVView'
 import ParticipantModuleView from '@/components/ParticipantModuleView'
@@ -227,6 +228,12 @@ export default function Page() {
       )}
       {view === 'module-reveil-acquis' && (
         <ModuleReveilAcquis
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-montures' && (
+        <ModuleMontures
           pName={pName}
           onBack={handleBackToModules}
         />

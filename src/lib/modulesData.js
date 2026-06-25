@@ -492,4 +492,5 @@ export const MODULE_DATA = {
   'entreprise':       { pages: ENTREPRISE_PAGES,         quiz: ENTREPRISE_QUIZ,    label: "Présentation de l'entreprise", sub: 'Mission · Histoire · Culture LPT' },
   'verre-progressif': { pages: PROGRESSIF_PAGES,         quiz: PROGRESSIF_QUIZ,    label: 'Le Verre Progressif',          sub: 'Anatomie · Vente · Objections · Quiz J+14' },
   'trame-accueil':    { pages: TRAME_ACCUEIL_PAGES,      quiz: [],                 label: "Trame d'accueil",              sub: 'Bonjour · Concept · Examen de vue' },
+  'montures':         { pages: [{ id: 'acetate', type: 'montures-acetate' }], quiz: [], label: 'Connaissances Montures', sub: 'Acétate · Métal · Injecté' },
 }
