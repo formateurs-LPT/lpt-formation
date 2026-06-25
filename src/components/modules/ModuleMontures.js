@@ -5,9 +5,9 @@ import { sbUpdate, SESSION_CODE } from '@/lib/supabase'
 
 // ─── Données Acétate ──────────────────────────────────────────
 const ACETATE_FRAMES = [
-  { src: '/assets/monture%20app%20/Ac%C3%A9tate%20/SLPT038-EFO-002.avif', ref: 'SLPT038-EFO' },
-  { src: '/assets/monture%20app%20/Ac%C3%A9tate%20/SLPT067-EFO-002.avif', ref: 'SLPT067-EFO' },
-  { src: '/assets/monture%20app%20/Ac%C3%A9tate%20/SLPT075-EFOBPL-001.avif', ref: 'SLPT075-EFOBPL' },
+  { src: '/assets/montures/acetate/SLPT038-EFO-002.avif', ref: 'SLPT038-EFO' },
+  { src: '/assets/montures/acetate/SLPT067-EFO-002.avif', ref: 'SLPT067-EFO' },
+  { src: '/assets/montures/acetate/SLPT075-EFOBPL-001.avif', ref: 'SLPT075-EFOBPL' },
 ]
 
 const ACETATE_INFOS = [
