@@ -72,10 +72,6 @@ function CoursClassique({ onNext, onPrev, onBack }) {
               <div style={{ fontSize: 32, fontWeight: 900, color: COLOR }}>Classique</div>
             </div>
           </div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: `${COLOR}18`, border: `1px solid ${COLOR}50`, borderRadius: 20, padding: '6px 16px', marginBottom: 28 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR }} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: COLOR }}>Sans remboursement</span>
-          </div>
           <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `3px solid ${COLOR}`, borderRadius: 14, padding: '20px 24px' }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Tarifs</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -189,10 +185,6 @@ function Cours11({ onPrev, onNext, onBack }) {
               <div style={{ fontSize: 32, fontWeight: 900, color: '#fff' }}>Le parcours</div>
               <div style={{ fontSize: 32, fontWeight: 900, color: COLOR }}>1=1</div>
             </div>
-          </div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: `${COLOR}18`, border: `1px solid ${COLOR}50`, borderRadius: 20, padding: '6px 16px', marginBottom: 28 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR }} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: COLOR }}>Sans remboursement</span>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `3px solid ${COLOR}`, borderRadius: 14, padding: '20px 24px' }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Tarifs</div>
