@@ -25,6 +25,9 @@ export const NEXT_PAGE_LABELS = {
   'impact':            { label: 'Impact visuel',      icon: '👁️' },
   'probleme':          { label: 'Problème visuel',    icon: '🔍' },
   'machines':          { label: 'Points clés',        icon: '⚙️' },
+  'montures-acetate':  { label: 'Matériaux · Acétate',         icon: '🌿' },
+  'montures-metal':    { label: 'Matériaux · Métal',           icon: '🪶' },
+  'montures-injecte':  { label: 'Matériaux · Plastique injecté', icon: '🏭' },
 }
 
 export function NextPagePreview({ nextPage }) {
