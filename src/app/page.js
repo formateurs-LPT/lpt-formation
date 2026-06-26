@@ -19,6 +19,7 @@ import ModuleEntreprise from '@/components/modules/ModuleEntreprise'
 import ModuleTrameAccueil from '@/components/modules/ModuleTrameAccueil'
 import ModuleReveilAcquis from '@/components/modules/ModuleReveilAcquis'
 import ModuleMontures from '@/components/modules/ModuleMontures'
+import PlanningPage from '@/components/PlanningPage'
 import OnboardingView from '@/components/OnboardingView'
 import TVView from '@/components/TVView'
 import ParticipantModuleView from '@/components/ParticipantModuleView'
@@ -126,6 +127,7 @@ export default function Page() {
   const handleLaunchModule = (moduleId) => setView('module-' + moduleId)
   const handleBackToDashboard = () => setView('dashboard')
   const handleBackToModules = () => setView('onboarding-modules')
+  const handleOpenPlanning = () => setView('planning')
 
   if (mode === 'tv') return <TVView />
   if (mode === 'participant') return <ParticipantModuleView />
@@ -156,6 +158,7 @@ export default function Page() {
           onLaunchModule={handleLaunchModule}
           onToast={toast}
           onOnlineCount={setOnlineCount}
+          onOpenPlanning={handleOpenPlanning}
         />
       )}
       {view === 'trainer-session' && (
@@ -236,6 +239,12 @@ export default function Page() {
         <ModuleMontures
           pName={pName}
           onBack={handleBackToModules}
+        />
+      )}
+      {view === 'planning' && (
+        <PlanningPage
+          pName={pName}
+          onBack={handleBackToDashboard}
         />
       )}
       <Toast message={message} />

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbSelect, sbDelete, SESSION_CODE, getSharedState, insertSessionHistory, parseSessionHistorySummary } from '@/lib/supabase'
-import WeatherWidget from './WeatherWidget'
+import PlanningWidget from './PlanningWidget'
 import ShortcutsWidget from './ShortcutsWidget'
 import OnboardingView from './OnboardingView'
 import EntreesView from './EntreesView'
@@ -516,7 +516,7 @@ function AppUpdatesWidget() {
   )
 }
 
-export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onToast, onOnlineCount }) {
+export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onToast, onOnlineCount, onOpenPlanning }) {
   const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | planning
   const [entreeCount, setEntreeCount] = useState(null)
   const [sessionCount, setSessionCount] = useState('—')
@@ -796,9 +796,9 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
           </div>
         </div>
 
-        {/* Weather + Progress */}
+        {/* Planning + Shortcuts */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-          <WeatherWidget pName={pName} onToast={onToast} />
+          <PlanningWidget onOpen={() => onOpenPlanning()} />
           <ShortcutsWidget />
         </div>
 
