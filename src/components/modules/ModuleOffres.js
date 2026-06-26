@@ -24,7 +24,7 @@ function Ring({ color, size = 80 }) {
 const ITEMS_CLASSIQUE = [
   { text: '1 paire achetée', sub: null },
   { text: 'Deuxième paire à -20%', sub: 'Sur une sélection de montures et verres' },
-  { text: 'Paires à partir de 10 euros', sub: 'Entrée de gamme accessible' },
+  { text: '10€ en 10 minutes', sub: 'Fabrication express — le cœur du concept LPT' },
 ]
 
 // ── Page Classique (formateur) ───────────────────────────────────
@@ -79,9 +79,14 @@ function CoursClassique({ onNext, onPrev, onBack }) {
               <span style={{ fontSize: 22, fontWeight: 800, color: COLOR }}>dès 10€</span>
             </div>
             <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 12 }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>2ème paire</span>
               <span style={{ fontSize: 22, fontWeight: 800, color: COLOR }}>-20%</span>
+            </div>
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 12 }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>Fabrication</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: COLOR }}>⚡ 10 min</span>
             </div>
           </div>
         </div>
