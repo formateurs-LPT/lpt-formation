@@ -324,6 +324,13 @@ export const ENTREPRISE_PAGES = [
     ],
   },
   {
+    id: 'carte-reseau',
+    type: 'carte-reseau',
+    titre: 'Notre réseau de magasins',
+    sousTitre: 'France & Belgique · 33 magasins',
+    color: '#00abe9',
+  },
+  {
     id: 'promesse',
     type: 'promesse',
     titre: 'Comment nous tenons notre promesse ?',

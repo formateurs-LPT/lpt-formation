@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { sbUpdate, SESSION_CODE, setSharedState, getSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { ENTREPRISE_PAGES as PAGES, ENTREPRISE_QUIZ } from '@/lib/modulesData'
+import FranceNetworkMap from '@/components/FranceNetworkMap'
 
 const PAUL_AVATAR = '/assets/avatar_paul.png'
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -59,6 +60,7 @@ const PAGE_TYPE_LABEL = {
   'impact':         { label: 'Impact visuel', icon: '👁️' },
   'probleme':       { label: 'Problème visuel', icon: '🔍' },
   'machines':       { label: 'Points clés', icon: '⚙️' },
+  'carte-reseau':   { label: 'Carte réseau', icon: '🗺️' },
 }
 
 function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast, nextPage }) {
@@ -539,6 +541,28 @@ function EntreprisePage({ page, navProps }) {
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>{stat.label}</div>
           </div>
         ))}
+      </div>
+      <TrainerNav {...navProps} />
+    </div>
+  )
+
+  // ── CARTE RÉSEAU ───────────────────────────────────────────────
+  if (page.type === 'carte-reseau') return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      padding: '24px 48px 100px',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+        <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Présentation de l&apos;entreprise · Carte réseau</span>
+      </div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Notre réseau</div>
+      <h1 style={{ fontSize: 26, fontWeight: 900, color: '#fff', marginBottom: 20 }}>{page.titre}</h1>
+      <div style={{ flex: 1, minHeight: 0, maxHeight: 480 }}>
+        <FranceNetworkMap resetKey={navProps.pageIndex} />
       </div>
       <TrainerNav {...navProps} />
     </div>
