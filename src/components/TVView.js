@@ -5,7 +5,6 @@ import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE, getSharedState, setSharedState } from '@/lib/supabase'
-import FranceNetworkMap from '@/components/FranceNetworkMap'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -1254,19 +1253,6 @@ function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlock
   )
 }
 
-function TVCarteReseau({ page, pageIndex, total }) {
-  return (
-    <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 24 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2 }}>Notre réseau</div>
-        <h1 style={{ fontSize: 30, fontWeight: 900, color: '#fff', margin: 0 }}>{page.titre}</h1>
-      </div>
-      <div style={{ flex: 1, minHeight: 0 }}>
-        <FranceNetworkMap resetKey={pageIndex} />
-      </div>
-    </TVEntrepriseShell>
-  )
-}
 
 function TVEntrepriseNaissance({ page, pageIndex, total }) {
   return (
@@ -2195,8 +2181,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'video-lpt')  return <TVVideoLPT audioUnlocked={audioUnlocked} />
   if (page.type === 'ventes-opticien') return <TVEntrepriseVentesOpticien page={page} pageIndex={pageIndex} total={total} ventesResponses={ventesResponses} />
   if (page.type === 'promesse')        return <TVEntreprisePromesse       page={page} pageIndex={pageIndex} total={total} promesseResponses={promesseResponses} />
-  if (page.type === 'chiffres')     return <TVEntrepriseChiffres  page={page} pageIndex={pageIndex} total={total} />
-  if (page.type === 'carte-reseau') return <TVCarteReseau         page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'chiffres')   return <TVEntrepriseChiffres  page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'force-lpt') return <TVEntrepriseForceLPT  page={page} pageIndex={pageIndex} total={total} modelePoint={modelePoint} audioUnlocked={audioUnlocked} />
   if (page.type === 'naissance')  return <TVEntrepriseNaissance page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'impact')     return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />

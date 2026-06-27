@@ -549,20 +549,24 @@ function EntreprisePage({ page, navProps }) {
   // ── CARTE RÉSEAU ───────────────────────────────────────────────
   if (page.type === 'carte-reseau') return (
     <div style={{
-      minHeight: '100vh',
+      height: '100vh',
+      overflow: 'hidden',
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-      padding: '24px 48px 100px',
       display: 'flex', flexDirection: 'column',
+      padding: '14px 40px 90px',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
-        <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Présentation de l&apos;entreprise · Carte réseau</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexShrink: 0 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={70} height={26} style={{ objectFit: 'contain' }} />
+        <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.15)' }} />
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Présentation de l&apos;entreprise · Carte réseau</span>
       </div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Notre réseau</div>
-      <h1 style={{ fontSize: 26, fontWeight: 900, color: '#fff', marginBottom: 20 }}>{page.titre}</h1>
-      <div style={{ flex: 1, minHeight: 0, maxHeight: 480 }}>
-        <FranceNetworkMap resetKey={navProps.pageIndex} />
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 10, flexShrink: 0 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2 }}>Notre réseau</div>
+        <h1 style={{ fontSize: 20, fontWeight: 900, color: '#fff', margin: 0 }}>{page.titre}</h1>
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{page.sousTitre}</span>
+      </div>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <FranceNetworkMap compact resetKey={navProps.pageIndex} />
       </div>
       <TrainerNav {...navProps} />
     </div>
