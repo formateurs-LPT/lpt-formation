@@ -1,10 +1,11 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbSelect, SESSION_CODE } from '@/lib/supabase'
+import { sbUpdate, sbSelect, SESSION_CODE, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, OPTIQUE_QUIZ } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
+import { NextPagePreview } from '@/lib/trainerPreview'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -86,15 +87,16 @@ function AvatarBubble({ script, trainerAvatar, pName }) {
 }
 
 // ── NavBar partagée (formateur) ───────────────────────────────────
-function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz }) {
+function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextLabel, nextPage }) {
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '16px 360px 24px 48px',
-      background: 'linear-gradient(0deg, rgba(3,17,42,0.95) 0%, transparent 100%)',
+      padding: '10px 360px 16px 48px',
+      background: 'linear-gradient(0deg, rgba(3,17,42,0.98) 0%, rgba(3,17,42,0.6) 100%)',
       zIndex: 20,
     }}>
+      <NextPagePreview nextPage={nextPage} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       {/* Précédent */}
       {!isFirst ? (
         <button onClick={onPrev} style={{
@@ -133,14 +135,15 @@ function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total,
           border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12,
           fontSize: 15, fontWeight: 700, cursor: 'pointer',
           boxShadow: '0 6px 24px rgba(0,171,233,0.45)', fontFamily: 'inherit',
-        }}>Suivant →</button>
+        }}>{nextLabel || 'Suivant →'}</button>
       )}
+      </div>
     </div>
   )
 }
 
 // ── Page 0 : Titre seul — question orale ─────────────────────────
-function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     setVisible(false)
@@ -205,23 +208,64 @@ function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext,
         </div>
       </div>
 
-      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} nextPage={nextPage} />
       <AvatarBubble script="Commencez par poser cette question à vos collaborateurs avant de dévoiler les réponses." trainerAvatar={trainerAvatar} pName={pName} />
     </div>
   )
 }
 
 // ── Page troubles visuels ─────────────────────────────────────────
-function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
-  const [visibleCount, setVisibleCount] = useState(0)
+function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
+  const [visibleCount, setVisibleCount]   = useState(0)
+  const [phase, setPhase]                 = useState(1)
+  const [defVisibleCount, setDefVisibleCount] = useState(0)
+  const [playing, setPlaying]             = useState(false)
+  const videoPreviewRef                   = useRef(null)
 
+  // Reset local + Supabase à chaque changement de page
   useEffect(() => {
     setVisibleCount(0)
+    setPhase(1)
+    setDefVisibleCount(0)
+    setPlaying(false)
+    setSharedState({ troubles_phase: 1, opticien_playing: false }).catch(() => {})
     const timers = page.troubles.map((_, i) =>
       setTimeout(() => setVisibleCount(c => Math.max(c, i + 1)), 250 + i * 220)
     )
     return () => timers.forEach(clearTimeout)
   }, [page.id])
+
+  // Phase 2 : révèle les définitions + lance l'avatar opticien
+  useEffect(() => {
+    if (phase !== 2) return
+    setDefVisibleCount(0)
+    setPlaying(true)
+    setSharedState({ troubles_phase: 2, opticien_playing: true }).catch(() => {})
+    const timers = page.troubles.map((_, i) =>
+      setTimeout(() => setDefVisibleCount(c => Math.max(c, i + 1)), 500 + i * 900)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [phase])
+
+  // Synchronise la prévisualisation locale (muet — pour le formateur)
+  useEffect(() => {
+    const v = videoPreviewRef.current
+    if (!v) return
+    v.muted = true
+    if (playing) v.play().catch(() => {})
+    else v.pause()
+  }, [playing])
+
+  const togglePlay = () => {
+    const next = !playing
+    setPlaying(next)
+    setSharedState({ opticien_playing: next }).catch(() => {})
+  }
+
+  const handleNext = () => {
+    if (phase === 1) setPhase(2)
+    else onNext()
+  }
 
   return (
     <div style={{
@@ -242,6 +286,16 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {/* Badge phase */}
+          <div style={{
+            background: phase === 2 ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)',
+            border: `1px solid ${phase === 2 ? 'rgba(34,197,94,0.35)' : 'rgba(245,158,11,0.35)'}`,
+            borderRadius: 20, padding: '4px 12px',
+            fontSize: 11, fontWeight: 700,
+            color: phase === 2 ? '#4ade80' : '#fbbf24',
+          }}>
+            {phase === 1 ? 'Noms révélés · En attente' : 'Définitions en cours'}
+          </div>
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
           <div style={{ display: 'flex', gap: 5 }}>
             {Array(total).fill(0).map((_, i) => (
@@ -298,18 +352,21 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
               transform: i < visibleCount ? 'translateX(0)' : 'translateX(-28px)',
               transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
             }}>
-              {/* Numéro */}
               <span style={{ fontSize: 12, fontWeight: 800, color: t.color, letterSpacing: 1, minWidth: 26, opacity: 0.75 }}>
                 {t.num}
               </span>
-              {/* Nom */}
               <span style={{ fontSize: 26, fontWeight: 800, color: '#fff', minWidth: 220, letterSpacing: -0.3 }}>
                 {t.nom}
               </span>
-              {/* Séparateur */}
               <div style={{ width: 1, height: 26, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
-              {/* Définition */}
-              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.58)', lineHeight: 1.5, fontWeight: 400 }}>
+              {/* Définition — cachée en phase 1, révélée progressivement en phase 2 */}
+              <span style={{
+                fontSize: 15, color: 'rgba(255,255,255,0.58)', lineHeight: 1.5, fontWeight: 400,
+                opacity: phase === 2 && i < defVisibleCount ? 1 : 0,
+                transform: phase === 2 && i < defVisibleCount ? 'translateY(0)' : 'translateY(6px)',
+                transition: 'opacity 0.6s ease, transform 0.6s ease',
+                minHeight: 22, // préserve l'espace même quand invisible
+              }}>
                 {t.def}
               </span>
             </div>
@@ -317,8 +374,69 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
         </div>
       </div>
 
-      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
-      <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
+      {/* Bulle avatar opticien (apparaît en phase 2) */}
+      {phase === 2 && (
+        <div style={{
+          position: 'fixed', bottom: 80, right: 28, zIndex: 50,
+          display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10,
+        }}>
+          {/* Carte */}
+          <div style={{
+            background: 'rgba(10,42,92,0.85)', backdropFilter: 'blur(20px)',
+            border: `1px solid ${playing ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
+            borderRadius: 20, padding: '12px 14px',
+            display: 'flex', alignItems: 'center', gap: 14,
+            boxShadow: `0 8px 32px ${playing ? 'rgba(34,197,94,0.3)' : 'rgba(0,0,0,0.4)'}`,
+            transition: 'border-color .3s, box-shadow .3s',
+          }}>
+            {/* Miniature vidéo (muet) */}
+            <div style={{
+              width: 72, height: 72, borderRadius: 14, overflow: 'hidden', flexShrink: 0,
+              border: `2px solid ${playing ? 'rgba(34,197,94,0.6)' : 'rgba(0,171,233,0.4)'}`,
+              position: 'relative',
+            }}>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video
+                ref={videoPreviewRef}
+                src="/assets/Problèmes_de_vue_Audio_OK.mp4"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                playsInline
+                preload="auto"
+                muted
+              />
+            </div>
+            {/* Infos + bouton */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Opticien</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Avatar · Explication</div>
+              <button
+                onClick={togglePlay}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  background: playing ? 'rgba(34,197,94,0.2)' : 'rgba(0,171,233,0.2)',
+                  border: `1px solid ${playing ? 'rgba(34,197,94,0.5)' : 'rgba(0,171,233,0.5)'}`,
+                  borderRadius: 20, padding: '5px 12px',
+                  fontSize: 12, fontWeight: 700,
+                  color: playing ? '#4ade80' : '#00abe9',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  transition: 'all .2s',
+                }}
+              >
+                {playing ? '⏸ Pause' : '▶ Lecture'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bouton Suivant personnalisé selon la phase */}
+      <TrainerNav
+        onBack={onBack} onPrev={onPrev} onNext={handleNext}
+        isFirst={isFirst} isLast={isLast}
+        pageIndex={pageIndex} total={total}
+        nextLabel={phase === 1 ? 'Révéler les définitions →' : 'Suivant →'}
+        nextPage={nextPage}
+      />
     </div>
   )
 }
@@ -331,7 +449,7 @@ const OPT_PLAN_W = 96  // largeur colonne Plan (fixe, ne scrolle pas)
 const OPT_ROW_H  = 46  // hauteur fixe des rangées de chips
 
 // ── Page 2 : Frise horizontale ±8,00 ─────────────────────────────
-function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
   const [step, setStep] = useState(0)
 
   useEffect(() => {
@@ -443,7 +561,7 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNex
       </div>
 
       {/* Navigation */}
-      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} nextPage={nextPage} />
 
       <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
     </div>
@@ -451,15 +569,38 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNex
 }
 
 // ── Page 3 : Lire une ordonnance ─────────────────────────────────
-function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
-  const [step, setStep] = useState(0)
+function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
+  const [step, setStep]     = useState(0)
+  const [playing, setPlaying] = useState(false)
+  const videoPreviewRef     = useRef(null)
 
+  // Lance l'avatar automatiquement à l'arrivée sur la page, coupe au départ
   useEffect(() => {
     setStep(0)
+    setPlaying(true)
+    setSharedState({ ordo_playing: true }).catch(() => {})
     const T = [400, 1000, 1600, 2800, 3200, 3500, 3800, 4200, 4500, 4800, 5300]
     const timers = T.map((t, i) => setTimeout(() => setStep(s => Math.max(s, i + 1)), t))
-    return () => timers.forEach(clearTimeout)
+    return () => {
+      timers.forEach(clearTimeout)
+      setSharedState({ ordo_playing: false }).catch(() => {})
+    }
   }, [page.id])
+
+  // Prévisualisation locale muette
+  useEffect(() => {
+    const v = videoPreviewRef.current
+    if (!v) return
+    v.muted = true
+    if (playing) v.play().catch(() => {})
+    else v.pause()
+  }, [playing])
+
+  const togglePlay = () => {
+    const next = !playing
+    setPlaying(next)
+    setSharedState({ ordo_playing: next }).catch(() => {})
+  }
 
   const show = (n) => step >= n
   const cellVis = (row, col) => show(row === 0 ? 5 + col : 8 + col)
@@ -593,15 +734,64 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
       </div>
 
       {/* Navigation */}
-      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} nextPage={nextPage} />
 
-      <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
+      {/* Bulle avatar opticien ordonnance */}
+      <div style={{
+        position: 'fixed', bottom: 80, right: 28, zIndex: 50,
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10,
+      }}>
+        <div style={{
+          background: 'rgba(10,42,92,0.85)', backdropFilter: 'blur(20px)',
+          border: `1px solid ${playing ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
+          borderRadius: 20, padding: '12px 14px',
+          display: 'flex', alignItems: 'center', gap: 14,
+          boxShadow: `0 8px 32px ${playing ? 'rgba(34,197,94,0.3)' : 'rgba(0,0,0,0.4)'}`,
+          transition: 'border-color .3s, box-shadow .3s',
+        }}>
+          {/* Miniature vidéo (muet) */}
+          <div style={{
+            width: 72, height: 72, borderRadius: 14, overflow: 'hidden', flexShrink: 0,
+            border: `2px solid ${playing ? 'rgba(34,197,94,0.6)' : 'rgba(0,171,233,0.4)'}`,
+          }}>
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              ref={videoPreviewRef}
+              src="/assets/LectureOrdoAudioOK.mp4"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              playsInline
+              preload="auto"
+              muted
+            />
+          </div>
+          {/* Infos + bouton */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Opticien</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Lecture ordonnance</div>
+            <button
+              onClick={togglePlay}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: playing ? 'rgba(34,197,94,0.2)' : 'rgba(0,171,233,0.2)',
+                border: `1px solid ${playing ? 'rgba(34,197,94,0.5)' : 'rgba(0,171,233,0.5)'}`,
+                borderRadius: 20, padding: '5px 12px',
+                fontSize: 12, fontWeight: 700,
+                color: playing ? '#4ade80' : '#00abe9',
+                cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'all .2s',
+              }}
+            >
+              {playing ? '⏸ Pause' : '▶ Lecture'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
 
 // ── Page 4 : Pause atelier pratique ──────────────────────────────
-function PausePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total }) {
+function PausePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     setVisible(false)
@@ -677,7 +867,7 @@ function PausePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst
       </div>
 
       {/* Navigation */}
-      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} />
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} nextPage={nextPage} />
     </div>
   )
 }
@@ -703,7 +893,7 @@ function PrescLine({ eye }) {
 }
 
 // ── Page 5 : Saisie interactive (vue formateur) ───────────────────
-function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz }) {
+function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage, quizLaunched, onLaunchQuiz }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     setVisible(false)
@@ -815,7 +1005,7 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
         </div>
       </div>
 
-      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} quizLaunched={quizLaunched} onLaunchQuiz={onLaunchQuiz} />
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} quizLaunched={quizLaunched} onLaunchQuiz={onLaunchQuiz} nextPage={nextPage} />
     </div>
   )
 }
@@ -1194,6 +1384,7 @@ export default function ModuleOptique({ pName, onBack }) {
     isLast: pageIndex === PAGES.length - 1,
     quizLaunched,
     onLaunchQuiz: handleLaunchQuiz,
+    nextPage: PAGES[pageIndex + 1] ?? null,
   }
 
   return (

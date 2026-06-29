@@ -11,9 +11,15 @@ import { resolveParticipantName } from '@/lib/participantNames'
 import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
+import ModuleProgressif from '@/components/modules/ModuleProgressif'
 import ModulePDM from '@/components/modules/ModulePDM'
 import ModuleOptique from '@/components/modules/ModuleOptique'
 import ModuleOffres from '@/components/modules/ModuleOffres'
+import ModuleEntreprise from '@/components/modules/ModuleEntreprise'
+import ModuleTrameAccueil from '@/components/modules/ModuleTrameAccueil'
+import ModuleReveilAcquis from '@/components/modules/ModuleReveilAcquis'
+import ModuleMontures from '@/components/modules/ModuleMontures'
+import PlanningPage from '@/components/PlanningPage'
 import OnboardingView from '@/components/OnboardingView'
 import TVView from '@/components/TVView'
 import ParticipantModuleView from '@/components/ParticipantModuleView'
@@ -21,6 +27,7 @@ import ParticipantModuleView from '@/components/ParticipantModuleView'
 export default function Page() {
   const [view, setView] = useState('landing') // landing | dashboard | trainer-session | participant | module-types-verres
   const [pName, setPName] = useState('')
+  const [pPrenom, setPPrenom] = useState('')
   const [isTrainer, setIsTrainer] = useState(false)
   const [onlineCount, setOnlineCount] = useState(0)
   const [mode, setMode] = useState(() => {
@@ -89,10 +96,13 @@ export default function Page() {
     }
 
     const canonical = resolved.canonicalName
+    const prenom = resolved.prenom || raw.split(' ')[0] || ''
     const sessionCode = getRuntimeSessionCode() || SESSION_CODE
     setPName(canonical)
+    setPPrenom(prenom)
     setIsTrainer(false)
     localStorage.setItem('participant_name', canonical)
+    localStorage.setItem('participant_prenom', prenom)
     try {
       await ensureSession()
       await sbUpsert('participants', {
@@ -117,6 +127,7 @@ export default function Page() {
   const handleLaunchModule = (moduleId) => setView('module-' + moduleId)
   const handleBackToDashboard = () => setView('dashboard')
   const handleBackToModules = () => setView('onboarding-modules')
+  const handleOpenPlanning = () => setView('planning')
 
   if (mode === 'tv') return <TVView />
   if (mode === 'participant') return <ParticipantModuleView />
@@ -147,6 +158,7 @@ export default function Page() {
           onLaunchModule={handleLaunchModule}
           onToast={toast}
           onOnlineCount={setOnlineCount}
+          onOpenPlanning={handleOpenPlanning}
         />
       )}
       {view === 'trainer-session' && (
@@ -160,6 +172,7 @@ export default function Page() {
       {view === 'participant' && (
         <ParticipantView
           pName={pName}
+          pPrenom={pPrenom || localStorage.getItem('participant_prenom') || ''}
           onToast={toast}
           onOnlineCount={setOnlineCount}
         />
@@ -196,6 +209,42 @@ export default function Page() {
         <ModuleOffres
           pName={pName}
           onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-entreprise' && (
+        <ModuleEntreprise
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-verre-progressif' && (
+        <ModuleProgressif
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-trame-accueil' && (
+        <ModuleTrameAccueil
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-reveil-acquis' && (
+        <ModuleReveilAcquis
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-montures' && (
+        <ModuleMontures
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'planning' && (
+        <PlanningPage
+          pName={pName}
+          onBack={handleBackToDashboard}
         />
       )}
       <Toast message={message} />

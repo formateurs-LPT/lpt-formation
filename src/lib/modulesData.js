@@ -4,11 +4,6 @@ export const TYPES_VERRES_QUIZ = [
     options: ['9 jours', '10 minutes'],
     correct: 1,
   },
-  {
-    question: 'Où est la vision de près sur le verre progressif ?',
-    options: ['En bas du verre', 'Au centre du verre', 'En haut du verre'],
-    correct: 0,
-  },
 ]
 
 export const TYPES_VERRES_PAGES = [
@@ -25,24 +20,12 @@ export const TYPES_VERRES_PAGES = [
     avatarScript: "Le verre unifocal corrige un seul défaut visuel. Toute la surface est homogène : pas de zone de flou, une vision nette partout. C'est le verre le plus courant, idéal pour une première paire.",
     color: '#00abe9',
   },
-  {
-    id: 'progressif',
-    titre: 'Le Verre Progressif',
-    sousTitre: 'Trois zones, une liberté totale',
-    points: [
-      { emoji: '🔭', titre: 'Vision de loin', texte: 'Zone supérieure — conduite, cinéma, paysages. Nette à plus de 150 cm.' },
-      { emoji: '💻', titre: 'Vision intermédiaire', texte: 'Zone centrale — écran, comptoir, rayon. De 40 cm à 150 cm.' },
-      { emoji: '📖', titre: 'Vision de près', texte: 'Zone inférieure — lecture, smartphone, écriture. Moins de 40 cm.' },
-      { emoji: '🏆', titre: 'Argument différenciant', texte: 'Extra-large 180° avec aberrations réduites. Garantie adaptation 100 jours.' },
-    ],
-    avatarScript: "Le progressif, c'est notre produit phare. Trois zones en un seul verre : loin, intermédiaire, près. Pas besoin de changer de lunettes. La garantie 100 jours enlève toute objection client.",
-    color: '#7c3aed',
-  },
 ]
 
 export const PDM_PAGES = [
   {
     id: 'pourquoi',
+    type: 'pdm-pourquoi',
     titre: 'Pourquoi mesurer ?',
     sousTitre: 'Positionner le centre optique du verre exactement devant les yeux du client.',
     icon: '👁️',
@@ -266,6 +249,11 @@ export const ORD_EXAMPLE = {
   add: '+2,00',
 }
 
+export const OFFRES_PAGES = [
+  { id: 'classique',  type: 'offres-classique', color: '#00abe9' },
+  { id: 'un-pour-un', type: 'offres-1-1',       color: '#c9a227' },
+]
+
 export const OFFRES_QUIZ = [
   {
     question: 'Quel parcours propose un reste à charge de 0€ ET des verres Origine France Garantie ?',
@@ -294,9 +282,222 @@ export const OFFRES_QUIZ = [
   },
 ]
 
+export const ENTREPRISE_QUIZ = []
+
+export const ENTREPRISE_PAGES = [
+  {
+    id: 'freins',
+    type: 'freins',
+    titre: "Quels sont pour vous, les freins à l'achat d'une paire de lunettes ?",
+    color: '#00abe9',
+  },
+  {
+    id: 'prix',
+    type: 'prix',
+    titre: "Combien coûte une paire de lunettes en moyenne ?",
+    color: '#f59e0b',
+  },
+  {
+    id: 'ventes-opticien',
+    type: 'ventes-opticien',
+    titre: 'À votre avis, un opticien traditionnel vend combien de paires par jour ?',
+    color: '#a78bfa',
+  },
+  {
+    id: 'naissance',
+    type: 'naissance',
+    titre: '2014, naissance de Lunettes pour Tous',
+    sousTitre: 'Mission claire, rendre la vue accessible à tous',
+    color: '#00abe9',
+  },
+  {
+    id: 'chiffres',
+    type: 'chiffres',
+    titre: "Lunettes pour Tous aujourd'hui",
+    color: '#00abe9',
+    stats: [
+      { value: '32',           label: 'magasins en France',             color: '#00abe9' },
+      { value: 'France & Belgique', label: 'présence géographique',     color: '#4ade80' },
+      { value: '+1 000',       label: 'collaborateurs',                  color: '#f59e0b' },
+      { value: 'Des milliers', label: 'de clients équipés chaque jour', color: '#a78bfa' },
+      { value: '10 minutes',   label: 'la promesse LPT',                color: '#f472b6' },
+    ],
+  },
+  {
+    id: 'carte-reseau',
+    type: 'carte-reseau',
+    titre: 'Notre réseau de magasins',
+    sousTitre: 'France & Belgique · 33 magasins',
+    color: '#00abe9',
+  },
+  {
+    id: 'promesse',
+    type: 'promesse',
+    titre: 'Comment nous tenons notre promesse ?',
+    color: '#34d399',
+  },
+  {
+    id: 'force-lpt',
+    type: 'force-lpt',
+    titre: 'Ce qui fait la force de Lunettes Pour Tous',
+    color: '#00abe9',
+    items: [
+      { label: 'Des stocks de verres et montures dans chacun de nos magasins', color: '#00abe9', video: '/assets/video-stock.mp4' },
+      { label: 'Des machines à la pointe de la technologie', color: '#4ade80', video: '/assets/video-machine.mp4' },
+      { label: 'Volume de ventes conséquent', color: '#f59e0b', animation: 'counter', counters: [
+        { value: 2000, unit: 'paires vendues par jour', sub: 'sur tout le réseau LPT', delay: 0 },
+        { value: 1000000, unit: 'paires vendues en 2025', sub: "et ça continue…", delay: 2400 },
+      ]},
+      { label: 'Notre propre marque', color: '#a78bfa', video: null },
+      { label: '0 intermédiaire', color: '#f472b6', video: null },
+    ],
+  },
+]
+
+export const PROGRESSIF_PAGES = [
+  {
+    id: 'anatomie',
+    type: 'cours',
+    titre: 'Anatomie du verre progressif',
+    sousTitre: 'Trois zones actives · Aberrations latérales',
+    image: '/assets/verre-prog.png',
+    points: [
+      { emoji: '🔭', titre: 'Zone supérieure — Vision de loin', texte: 'Conduite, cinéma, paysages. Vision nette au-delà de 3 mètres. Zone la plus large du verre.' },
+      { emoji: '🖥️', titre: 'Zone centrale — Vision intermédiaire', texte: 'Écran, comptoir, bras tendu. De 40 cm à 3 m. Zone de transition fluide entre loin et près.' },
+      { emoji: '📖', titre: 'Zone inférieure — Vision de près', texte: 'Lecture, smartphone, écriture. En dessous de 40 cm. Le client regarde naturellement vers le bas.' },
+      { emoji: '↔️', titre: 'Zones latérales — Flou inévitable', texte: "Sur les bords du verre, la vision est floue. C'est physique. Apprentissage : tourner la tête, pas les yeux." },
+    ],
+    avatarScript: "Le progressif a trois zones actives : loin en haut, intermédiaire au centre, près en bas. Les bords latéraux sont flous — c'est inévitable physiquement. L'apprentissage clé : tourner la tête, pas les yeux.",
+    color: '#7c3aed',
+  },
+  {
+    id: 'zone-interactif',
+    type: 'zone-interactif',
+    titre: 'Identifie les zones !',
+    sousTitre: 'Le formateur lance chaque question depuis son écran',
+    color: '#7c3aed',
+    zoneQuestions: [
+      { question: 'Où se trouve la zone de vision de LOIN ?', options: ['Zone supérieure', 'Zone centrale', 'Zone inférieure'], correct: 0 },
+      { question: 'Où se trouve la zone de vision de PRÈS ?', options: ['Zone supérieure', 'Zone centrale', 'Zone inférieure'], correct: 2 },
+      { question: 'Pour lire confortablement, le client regarde…', options: ['Vers le haut', 'Droit devant', 'Vers le bas'], correct: 2 },
+    ],
+  },
+  {
+    id: 'presbyterie',
+    type: 'cours',
+    titre: 'Identifier un client presbyte',
+    sousTitre: "Les signaux à reconnaître — avant même d'ouvrir l'ordonnance",
+    image: '/assets/verre-prog.png',
+    points: [
+      { emoji: '📅', titre: 'Âge — premier indicateur', texte: "La presbytie apparaît généralement entre 40 et 45 ans. Dès cette tranche d'âge, pensez progressif." },
+      { emoji: '👀', titre: 'Comportement révélateur', texte: "Éloigne les documents pour lire, retire ses lunettes pour voir de près, plisse les yeux, demande plus de lumière." },
+      { emoji: '💬', titre: 'La question magique', texte: '"Vous portez vos lunettes pour lire aussi ?" Si non ou difficile → signal fort pour proposer le progressif.' },
+      { emoji: '📋', titre: "Sur l'ordonnance — mention Add", texte: 'La mention "Add" confirme la presbytie. Ex: Add +1.50. Plus l\'addition est élevée, plus la presbytie est avancée.' },
+    ],
+    avatarScript: "Un client presbyte éloigne ses documents pour lire. Dès 40-45 ans, posez la question. Sur l'ordonnance, cherchez la mention 'Add'. C'est votre déclencheur pour proposer le progressif.",
+    color: '#7c3aed',
+  },
+  {
+    id: 'retour-terrain',
+    type: 'prog-retour',
+    titre: 'Retour du terrain',
+    sousTitre: 'Partagez une expérience de vos 2 semaines en magasin',
+    question: 'Comment as-tu présenté le progressif à un client en magasin ?',
+    placeholder: "Ex: J'ai expliqué les zones au client en lui montrant le verre…",
+    color: '#7c3aed',
+  },
+  {
+    id: 'arguments-vente',
+    type: 'cours',
+    titre: 'Vendre le progressif LPT',
+    sousTitre: 'Nos arguments · Notre différence · Gestion des objections',
+    image: '/assets/verre-prog.png',
+    points: [
+      { emoji: '🏆', titre: 'Extra-large 180° — notre force', texte: 'Nos progressifs ont des zones de confort plus larges que la moyenne du marché. Adaptation plus facile, moins de flou latéral.' },
+      { emoji: '🔒', titre: 'Garantie 100 jours', texte: "L'argument ultime. \"Si vous ne vous adaptez pas en 100 jours, on change.\" Zéro risque pour le client." },
+      { emoji: '💰', titre: 'Prix accessible — notre ADN', texte: "Progressif LPT à partir de 30€. La concurrence facture 3 à 10× plus cher. Insistez sur cette rupture de prix." },
+      { emoji: '⏱️', titre: 'Fabrication rapide', texte: "Délai de fabrication : quelques heures à une journée en boutique. Argument fort face aux opticiens traditionnels." },
+    ],
+    avatarScript: "Trois arguments imbattables : nos zones extra-larges, la garantie 100 jours qui enlève toute objection, et un prix accessible sans équivalent sur le marché.",
+    color: '#7c3aed',
+  },
+  {
+    id: 'jeu-objections',
+    type: 'prog-objections',
+    titre: "Jeu d'objections",
+    sousTitre: 'Le formateur choisit une objection client — trouvez la meilleure réponse',
+    color: '#7c3aed',
+    objections: [
+      "C'est trop cher, je ne veux pas mettre autant dans des lunettes",
+      "J'ai peur de ne pas m'adapter aux progressifs",
+      "Mon opticien habituel me fait des progressifs de meilleure qualité",
+      "Je préfère avoir deux paires : une pour loin et une pour près",
+      "Mon voisin a eu des progressifs et il n'a jamais pu s'y adapter",
+    ],
+  },
+]
+
+export const PROGRESSIF_QUIZ = [
+  {
+    question: 'Dans quelle zone du verre progressif se trouve la vision de LOIN ?',
+    options: ['Zone supérieure', 'Zone centrale', 'Zone inférieure'],
+    correct: 0,
+  },
+  {
+    question: 'Quelle est la durée de la garantie adaptation LPT pour les progressifs ?',
+    options: ['30 jours', '60 jours', '100 jours'],
+    correct: 2,
+  },
+  {
+    question: 'À partir de quel âge la presbytie apparaît-elle généralement ?',
+    options: ['35 ans', '40 – 45 ans', '55 ans'],
+    correct: 1,
+  },
+  {
+    question: '"Add +1.75" sur une ordonnance signifie :',
+    options: ["L'axe de correction astigmate", "L'addition pour la vision de près (presbytie)", "La puissance sphérique totale"],
+    correct: 1,
+  },
+  {
+    question: 'Pour lire confortablement avec des progressifs, le client doit :',
+    options: ['Regarder droit devant', 'Incliner la tête et regarder vers le bas', "Tourner les yeux vers le bas sans bouger la tête"],
+    correct: 1,
+  },
+  {
+    question: "Un client dit \"j'ai peur de ne pas m'adapter\". Votre meilleure réponse ?",
+    options: ['Lui proposer deux paires unifocales', 'Rappeler la garantie 100 jours : zéro risque pour lui', "Lui dire que l'adaptation est toujours rapide"],
+    correct: 1,
+  },
+  {
+    question: 'Quelle caractéristique différencie le progressif LPT de la concurrence ?',
+    options: ["Aucune zone d'aberration latérale", 'Des zones de confort extra-larges 180°', 'Un délai de fabrication de 9 jours'],
+    correct: 1,
+  },
+  {
+    question: "Lequel de ces signes N'EST PAS caractéristique de la presbytie ?",
+    options: ['Éloigner les documents pour lire', 'Retirer ses lunettes pour voir de près', 'Plisser les yeux en regardant au loin'],
+    correct: 2,
+  },
+]
+
+export const TRAME_ACCUEIL_POINTS = [
+  { num: 1, text: 'Bonjour et bienvenue chez Lunettes Pour Tous', color: '#00abe9', emoji: '👋' },
+  { num: 2, text: 'Connaissez-vous le concept ?', color: '#7c3aed', emoji: '💡' },
+  { num: 3, text: "Ici c'est simple, c'est la possibilité d'avoir ses lunettes de vue en seulement 10 minutes avec ou sans ordonnance.", color: '#f59e0b', emoji: '⏱️' },
+  { num: 4, text: "Je vous inscris en examen de vue ? C'est gratuit et sans rendez-vous.", color: '#22c55e', emoji: '✅' },
+]
+
+export const TRAME_ACCUEIL_PAGES = [
+  { id: 'trame', type: 'trame-accueil' },
+]
+
 export const MODULE_DATA = {
-  'types-verres': { pages: TYPES_VERRES_PAGES, quiz: TYPES_VERRES_QUIZ, label: 'Types de verres' },
-  'pdm':          { pages: PDM_PAGES,          quiz: PDM_QUIZ,          label: 'Prises de mesures' },
-  'optique':      { pages: OPTIQUE_PAGES,      quiz: OPTIQUE_QUIZ,      label: "Les bases de l'optique" },
-  'offres':       { pages: [],                 quiz: OFFRES_QUIZ,       label: 'Les offres' },
+  'types-verres':     { pages: TYPES_VERRES_PAGES,      quiz: TYPES_VERRES_QUIZ,  label: 'Types de verres',               sub: 'Le verre unifocal' },
+  'pdm':              { pages: PDM_PAGES,                quiz: PDM_QUIZ,           label: 'Prises de mesures',             sub: 'Écart pupillaire · Hauteur · LPTVISION' },
+  'optique':          { pages: OPTIQUE_PAGES,            quiz: OPTIQUE_QUIZ,       label: "Les bases de l'optique",        sub: 'Troubles visuels · Corrections · Ordonnances' },
+  'offres':           { pages: OFFRES_PAGES,              quiz: OFFRES_QUIZ,        label: 'Les offres',                    sub: 'Classique · 1=1 · Parcours LPT' },
+  'entreprise':       { pages: ENTREPRISE_PAGES,         quiz: ENTREPRISE_QUIZ,    label: "Présentation de l'entreprise", sub: 'Mission · Histoire · Culture LPT' },
+  'verre-progressif': { pages: PROGRESSIF_PAGES,         quiz: PROGRESSIF_QUIZ,    label: 'Le Verre Progressif',          sub: 'Anatomie · Vente · Objections · Quiz J+14' },
+  'trame-accueil':    { pages: TRAME_ACCUEIL_PAGES,      quiz: [],                 label: "Trame d'accueil",              sub: 'Bonjour · Concept · Examen de vue' },
+  'montures':         { pages: [{ id: 'acetate', type: 'montures-acetate' }, { id: 'metal', type: 'montures-metal' }, { id: 'injecte', type: 'montures-injecte' }], quiz: [], label: 'Connaissances Montures', sub: 'Acétate · Métal · Injecté' },
 }

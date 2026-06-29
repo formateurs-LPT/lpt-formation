@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
-import { sbUpsert, sbSelect, SESSION_CODE, ensureSession } from '@/lib/supabase'
+import { PLANNING_JOURS } from '@/lib/planningData'
+import { sbUpsert, sbSelect, SESSION_CODE, ensureSession, getSharedState, setSharedState } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName } from '@/lib/participantNames'
@@ -62,7 +63,7 @@ function WaitingScreen() {
   )
 }
 
-function ParticipantModuleLobby({ moduleLabel }) {
+function ParticipantModuleLobby({ moduleLabel, moduleSub }) {
   return (
     <div style={{
       minHeight: '100dvh',
@@ -80,7 +81,7 @@ function ParticipantModuleLobby({ moduleLabel }) {
         {moduleLabel}
       </div>
       <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 40, lineHeight: 1.6 }}>
-        Troubles visuels · Corrections · Ordonnances
+        {moduleSub}
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
@@ -457,6 +458,24 @@ function CorrectionScaleMobile({ page, pageIndex, total }) {
             </div>
           </div>
         </div>
+
+        {/* Encart clé */}
+        <div style={{
+          margin: '28px 20px 20px',
+          padding: '20px 24px',
+          borderRadius: 16,
+          background: 'rgba(0,171,233,0.07)',
+          border: '1px solid rgba(0,171,233,0.22)',
+          display: 'flex', alignItems: 'center', gap: 16,
+        }}>
+          <span style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>⚡</span>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>À retenir</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+              Fabrication en 10 minutes
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -703,7 +722,10 @@ function TroublesIntroMobile({ page, pageIndex, total }) {
 // ── Troubles list — vue téléphone ────────────────────────────────
 function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
   const [visibleCount, setVisibleCount] = useState(0)
+  const [troublesPhase, setTroublesPhase] = useState(1)
+  const [defVisible, setDefVisible] = useState(0)
 
+  // Anime les lignes à l'arrivée
   useEffect(() => {
     setVisibleCount(0)
     const timers = page.troubles.map((_, i) =>
@@ -711,6 +733,28 @@ function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
     )
     return () => timers.forEach(clearTimeout)
   }, [page.id])
+
+  // Poll troubles_phase depuis trainer_state
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const state = await getSharedState()
+        setTroublesPhase(state?.troubles_phase || 1)
+      } catch { /* ignore */ }
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [])
+
+  // Stagger des définitions quand phase 2
+  useEffect(() => {
+    if (troublesPhase !== 2) { setDefVisible(0); return }
+    const timers = page.troubles.map((_, i) =>
+      setTimeout(() => setDefVisible(c => Math.max(c, i + 1)), 500 + i * 900)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [troublesPhase])
 
   return (
     <div style={{
@@ -767,7 +811,13 @@ function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
               <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: -0.3, marginBottom: 4 }}>
                 {t.nom}
               </div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5, fontWeight: 400 }}>
+              <div style={{
+                fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5, fontWeight: 400,
+                opacity: troublesPhase === 2 && i < defVisible ? 1 : 0,
+                transform: troublesPhase === 2 && i < defVisible ? 'translateY(0)' : 'translateY(4px)',
+                transition: 'opacity 0.6s ease, transform 0.6s ease',
+                minHeight: 18,
+              }}>
                 {t.def}
               </div>
             </div>
@@ -1230,16 +1280,1304 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
   )
 }
 
-function ModuleScreen({ page, pageIndex, total, moduleLabel }) {
+function EntreprisePageMobile({ page, pageIndex, total }) {
+  const [entered, setEntered] = useState(false)
+  useEffect(() => { setEntered(false); const t = setTimeout(() => setEntered(true), 80); return () => clearTimeout(t) }, [page.id])
+  const accent = page.color || '#00abe9'
+
+  const Header = () => (
+    <div style={{ padding: '16px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={56} height={22} style={{ objectFit: 'contain', opacity: 0.7 }} />
+      <div style={{ display: 'flex', gap: 5 }}>
+        {Array(total).fill(0).map((_, i) => (
+          <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIndex ? 16 : 4, background: i === pageIndex ? accent : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />
+        ))}
+      </div>
+    </div>
+  )
+
+  const base = {
+    minHeight: '100dvh',
+    background: `linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, ${accent}15 100%)`,
+    display: 'flex', flexDirection: 'column',
+    opacity: entered ? 1 : 0, transition: 'opacity .4s ease',
+  }
+
+  // Timeline
+  if (page.type === 'timeline') return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 32px', flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
+        <div style={{ position: 'relative', paddingLeft: 20 }}>
+          <div style={{ position: 'absolute', left: 7, top: 0, bottom: 0, width: 2, background: 'rgba(0,171,233,0.3)' }} />
+          {page.timeline.map((item, i) => (
+            <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 18, position: 'relative' }}>
+              <div style={{ width: 14, height: 14, borderRadius: '50%', background: i === page.timeline.length - 1 ? '#00abe9' : 'rgba(0,171,233,0.4)', border: '2px solid #00abe9', flexShrink: 0, marginTop: 3 }} />
+              <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', marginBottom: 2 }}>{item.year}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{item.label}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{item.detail}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // Piliers (3 cards)
+  if (page.type === 'piliers') return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 32px', flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {page.points.map((p, i) => (
+            <div key={i} style={{ background: `${accent}12`, border: `1px solid ${accent}35`, borderRadius: 16, padding: '20px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+              <span style={{ fontSize: 32 }}>{p.emoji}</span>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{p.titre}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{p.texte}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // Steps
+  if (page.type === 'steps') return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 32px', flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {page.steps.map((s, i) => (
+            <div key={i} style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{s.num}</div>
+              <span style={{ fontSize: 18 }}>{s.emoji}</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{s.titre}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{s.texte}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // Cases (❌/✅)
+  if (page.type === 'cases') return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 32px', flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {page.cases.map((c, i) => (
+            <div key={i} style={{ background: 'rgba(219,39,119,0.06)', border: '1px solid rgba(219,39,119,0.2)', borderRadius: 16, padding: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: 24 }}>{c.emoji}</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>{c.prenom}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{c.age} · {c.contexte}</div>
+                </div>
+              </div>
+              <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '8px 12px', marginBottom: 8, fontSize: 12, color: '#f87171' }}>❌ {c.sans}</div>
+              <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#4ade80' }}>✅ {c.avec}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // Visages
+  if (page.type === 'visages') return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 32px', flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {page.profils.map((p, i) => (
+            <div key={i} style={{ background: 'rgba(8,145,178,0.07)', border: '1px solid rgba(8,145,178,0.2)', borderRadius: 12, padding: '14px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(8,145,178,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{p.emoji}</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{p.metier}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>{p.message}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // Croissance
+  if (page.type === 'croissance') return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 32px', flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+          {page.stats.map((s, i) => (
+            <div key={i} style={{ background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.25)', borderRadius: 14, padding: '16px 12px', textAlign: 'center' }}>
+              <div style={{ fontSize: 28, fontWeight: 900, color: '#4ade80', lineHeight: 1, marginBottom: 4 }}>{s.value}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {page.points.map((p, i) => (
+            <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'center' }}>
+              <span style={{ fontSize: 18 }}>{p.emoji}</span>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>{p.titre}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{p.texte}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // Mission
+  if (page.type === 'mission') return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 32px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+          {page.temoignages.map((t, i) => (
+            <div key={i} style={{ background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.25)', borderRadius: 14, padding: '16px' }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', fontStyle: 'italic', marginBottom: 4 }}>{t.quote}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{t.context}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)', borderRadius: 12, padding: '14px 16px', fontSize: 13, fontWeight: 700, color: '#00abe9', textAlign: 'center' }}>
+          Tu participes à rendre la vue accessible à tous. 👁️
+        </div>
+      </div>
+    </div>
+  )
+
+  // Fallback pour impact, probleme, machines (generic points works great)
+  return (
+    <div style={base}>
+      <Header />
+      <div style={{ padding: '16px 20px 12px' }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{page.titre}</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 3 }}>{page.sousTitre}</div>
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, padding: '8px 20px 32px' }}>
+        {(page.points || []).map((p, i) => (
+          <div key={i} style={{ background: `${accent}10`, border: `1px solid ${accent}25`, borderRadius: 14, padding: '16px', display: 'flex', alignItems: 'flex-start', gap: 12,
+            opacity: entered ? 1 : 0, transform: entered ? 'translateY(0)' : 'translateY(12px)',
+            transition: `all .4s ease ${i * 0.08}s`,
+          }}>
+            <span style={{ fontSize: 26, flexShrink: 0 }}>{p.emoji}</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{p.titre}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{p.texte}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── FAQ Réveil des acquis — saisie anonyme participant ───────────
+const FAQ_JOURNEE_LABELS = { j1: 'Journée 1', j2: 'Journée 2', j3: 'Journée 3' }
+
+export function FAQInputMobile({ journeeId }) {
+  const [text, setText]             = useState('')
+  const [sending, setSending]       = useState(false)
+  const [count, setCount]           = useState(0)  // nb questions envoyées
+  const [showNew, setShowNew]       = useState(false)
+
+  const label = FAQ_JOURNEE_LABELS[journeeId] || 'FAQ'
+
+  const handleSend = async () => {
+    const trimmed = text.trim()
+    if (!trimmed || sending) return
+    setSending(true)
+    try {
+      const key = `faq_${journeeId}_q`
+      const state = await getSharedState()
+      const current = state?.[key] || []
+      const newQ = { id: Date.now().toString(), text: trimmed, highlighted: false }
+      await setSharedState({ [key]: [...current, newQ] })
+      setText('')
+      setCount(c => c + 1)
+      setShowNew(false)
+    } catch { /* ignore */ }
+    setSending(false)
+  }
+
+  const submitted = count > 0 && !showNew
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '52px 24px 40px',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38}
+        style={{ objectFit: 'contain', marginBottom: 36 }} />
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+        Réveil des acquis · {label}
+      </div>
+      <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff', lineHeight: 1.4, marginBottom: 8 }}>
+        FAQ anonyme ⚡
+      </h2>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', marginBottom: 28, lineHeight: 1.6 }}>
+        Quelle est la question qui te travaille le plus sur cette journée ?{' '}
+        <span style={{ color: 'rgba(255,255,255,0.25)' }}>Ton identité reste anonyme.</span>
+      </p>
+
+      {submitted ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{
+            background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)',
+            borderRadius: 16, padding: '20px',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#4ade80', marginBottom: 6 }}>
+              ✓ Question envoyée anonymement
+            </div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>
+              {count} question{count > 1 ? 's' : ''} posée{count > 1 ? 's' : ''}
+            </div>
+          </div>
+          <button
+            onClick={() => setShowNew(true)}
+            style={{
+              background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
+              color: '#f59e0b', borderRadius: 14, padding: '16px',
+              fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >+ Poser une autre question ?</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Écris ta question ici…"
+            rows={5}
+            style={{
+              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 16, padding: '16px', color: '#fff', fontSize: 16,
+              fontFamily: 'inherit', resize: 'none', outline: 'none', lineHeight: 1.5,
+              WebkitAppearance: 'none',
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!text.trim() || sending}
+            style={{
+              background: text.trim() ? 'linear-gradient(135deg, #d97706, #f59e0b)' : 'rgba(255,255,255,0.1)',
+              border: 'none', borderRadius: 14, padding: '16px',
+              fontSize: 16, fontWeight: 700, color: '#fff',
+              cursor: text.trim() ? 'pointer' : 'default',
+              fontFamily: 'inherit', transition: 'background .2s',
+              opacity: sending ? 0.7 : 1,
+              boxShadow: text.trim() ? '0 6px 24px rgba(245,158,11,0.35)' : 'none',
+            }}
+          >
+            {sending ? 'Envoi en cours…' : 'Envoyer anonymement →'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Freins à l'achat — saisie libre participant ───────────────────
+function FreinsInputMobile({ page, pName }) {
+  const [text, setText]               = useState('')
+  const [submitted, setSubmitted]     = useState(false)
+  const [submittedText, setSubmittedText] = useState('')
+  const [sending, setSending]         = useState(false)
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return
+    setSending(true)
+    try {
+      const x = Math.floor(Math.random() * 65) + 3   // 3 → 68 % (largeur écran)
+      const y = Math.floor(Math.random() * 38) + 42  // 42 → 80 % (sous la question)
+      const state = await getSharedState()
+      const current = state?.freins_responses || {}
+      await setSharedState({ freins_responses: { ...current, [pName]: { text: text.trim(), x, y } } })
+      setSubmittedText(text.trim())
+      setSubmitted(true)
+    } catch { /* ignore */ }
+    setSending(false)
+  }
+
+  const handleModify = () => {
+    setText(submittedText)
+    setSubmitted(false)
+  }
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '52px 24px 40px',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38}
+        style={{ objectFit: 'contain', marginBottom: 36 }} />
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+        Question ouverte
+      </div>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.45, marginBottom: 32 }}>
+        {page.titre}
+      </h2>
+
+      {submitted ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{
+            background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)',
+            borderRadius: 16, padding: '16px 20px',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#4ade80', marginBottom: 8 }}>✓ Réponse envoyée</div>
+            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{submittedText}</div>
+          </div>
+          <button onClick={handleModify} style={{
+            background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.3)',
+            color: '#00abe9', borderRadius: 14, padding: '14px',
+            fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}>✏️ Modifier ma réponse</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Tapez votre réponse ici…"
+            rows={5}
+            style={{
+              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 16, padding: '16px', color: '#fff', fontSize: 16,
+              fontFamily: 'inherit', resize: 'none', outline: 'none', lineHeight: 1.5,
+              WebkitAppearance: 'none',
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!text.trim() || sending}
+            style={{
+              background: text.trim() ? '#00abe9' : 'rgba(255,255,255,0.1)',
+              border: 'none', borderRadius: 14, padding: '16px',
+              fontSize: 16, fontWeight: 700, color: '#fff',
+              cursor: text.trim() ? 'pointer' : 'default',
+              fontFamily: 'inherit', transition: 'background .2s',
+              opacity: sending ? 0.7 : 1,
+            }}
+          >
+            {sending ? 'Envoi en cours…' : 'Envoyer ma réponse →'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Ventes opticien — saisie numérique participant ────────────────
+function VentesOpticienMobile({ page, pName }) {
+  const [value, setValue]              = useState('')
+  const [submitted, setSubmitted]      = useState(false)
+  const [submittedValue, setSubmittedValue] = useState('')
+  const [sending, setSending]          = useState(false)
+
+  const handleSend = async () => {
+    if (!value.trim() || sending) return
+    setSending(true)
+    try {
+      const x = Math.floor(Math.random() * 65) + 3
+      const y = Math.floor(Math.random() * 38) + 42
+      const state = await getSharedState()
+      const current = state?.ventes_responses || {}
+      await setSharedState({ ventes_responses: { ...current, [pName]: { text: value.trim(), x, y } } })
+      setSubmittedValue(value.trim())
+      setSubmitted(true)
+    } catch { /* ignore */ }
+    setSending(false)
+  }
+
+  const handleModify = () => { setValue(submittedValue); setSubmitted(false) }
+
+  return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', display: 'flex', flexDirection: 'column', padding: '52px 24px 40px' }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain', marginBottom: 36 }} />
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>Question ouverte</div>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.45, marginBottom: 32 }}>{page.titre}</h2>
+
+      {submitted ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 16, padding: '16px 20px' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#4ade80', marginBottom: 8 }}>✓ Réponse envoyée</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#fff' }}>
+              {submittedValue} <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>paires / jour</span>
+            </div>
+          </div>
+          <button onClick={handleModify} style={{ background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', color: '#a78bfa', borderRadius: 14, padding: '14px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✏️ Modifier ma réponse</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 16, padding: '0 20px', overflow: 'hidden' }}>
+            <input
+              type="number" inputMode="numeric" pattern="[0-9]*"
+              value={value}
+              onChange={e => setValue(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="0"
+              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 36, fontWeight: 900, padding: '20px 0', fontFamily: 'inherit', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+            />
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.4)', paddingLeft: 8, whiteSpace: 'nowrap' }}>paires / jour</span>
+          </div>
+          <button onClick={handleSend} disabled={!value.trim() || sending} style={{ background: value.trim() ? '#a78bfa' : 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 14, padding: '16px', fontSize: 16, fontWeight: 700, color: '#fff', cursor: value.trim() ? 'pointer' : 'default', fontFamily: 'inherit', transition: 'background .2s', opacity: sending ? 0.7 : 1 }}>
+            {sending ? 'Envoi en cours…' : 'Envoyer ma réponse →'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Promesse — saisie libre participant ───────────────────────────
+function PromesseInputMobile({ page, pName }) {
+  const [text, setText]               = useState('')
+  const [submitted, setSubmitted]     = useState(false)
+  const [submittedText, setSubmittedText] = useState('')
+  const [sending, setSending]         = useState(false)
+  const accent = '#34d399'
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return
+    setSending(true)
+    try {
+      const x = Math.floor(Math.random() * 65) + 3
+      const y = Math.floor(Math.random() * 38) + 42
+      const state = await getSharedState()
+      const current = state?.promesse_responses || {}
+      await setSharedState({ promesse_responses: { ...current, [pName]: { text: text.trim(), x, y } } })
+      setSubmittedText(text.trim())
+      setSubmitted(true)
+    } catch { /* ignore */ }
+    setSending(false)
+  }
+
+  const handleModify = () => {
+    setText(submittedText)
+    setSubmitted(false)
+  }
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '52px 24px 40px',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38}
+        style={{ objectFit: 'contain', marginBottom: 36 }} />
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+        Question ouverte
+      </div>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.45, marginBottom: 32 }}>
+        {page.titre}
+      </h2>
+
+      {submitted ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{
+            background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)',
+            borderRadius: 16, padding: '16px 20px',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: accent, marginBottom: 8 }}>✓ Réponse envoyée</div>
+            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{submittedText}</div>
+          </div>
+          <button onClick={handleModify} style={{
+            background: 'rgba(52,211,153,0.1)', border: `1px solid rgba(52,211,153,0.3)`,
+            color: accent, borderRadius: 14, padding: '14px',
+            fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}>✏️ Modifier ma réponse</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Tapez votre réponse ici…"
+            rows={5}
+            style={{
+              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 16, padding: '16px', color: '#fff', fontSize: 16,
+              fontFamily: 'inherit', resize: 'none', outline: 'none', lineHeight: 1.5,
+              WebkitAppearance: 'none',
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!text.trim() || sending}
+            style={{
+              background: text.trim() ? accent : 'rgba(255,255,255,0.1)',
+              border: 'none', borderRadius: 14, padding: '16px',
+              fontSize: 16, fontWeight: 700, color: '#fff',
+              cursor: text.trim() ? 'pointer' : 'default',
+              fontFamily: 'inherit', transition: 'background .2s',
+              opacity: sending ? 0.7 : 1,
+            }}
+          >
+            {sending ? 'Envoi en cours…' : 'Envoyer ma réponse →'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Prix moyen — saisie numérique participant ─────────────────────
+function PrixInputMobile({ page, pName }) {
+  const [value, setValue]              = useState('')
+  const [submitted, setSubmitted]      = useState(false)
+  const [submittedValue, setSubmittedValue] = useState('')
+  const [sending, setSending]          = useState(false)
+
+  const handleSend = async () => {
+    if (!value.trim() || sending) return
+    setSending(true)
+    try {
+      const x = Math.floor(Math.random() * 65) + 3
+      const y = Math.floor(Math.random() * 38) + 42
+      const state = await getSharedState()
+      const current = state?.prix_responses || {}
+      await setSharedState({ prix_responses: { ...current, [pName]: { text: value.trim(), x, y } } })
+      setSubmittedValue(value.trim())
+      setSubmitted(true)
+    } catch { /* ignore */ }
+    setSending(false)
+  }
+
+  const handleModify = () => {
+    setValue(submittedValue)
+    setSubmitted(false)
+  }
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '52px 24px 40px',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38}
+        style={{ objectFit: 'contain', marginBottom: 36 }} />
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+        Question ouverte
+      </div>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.45, marginBottom: 32 }}>
+        {page.titre}
+      </h2>
+
+      {submitted ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{
+            background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)',
+            borderRadius: 16, padding: '16px 20px',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#4ade80', marginBottom: 8 }}>✓ Réponse envoyée</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', lineHeight: 1 }}>
+              {submittedValue} <span style={{ color: '#f59e0b' }}>€</span>
+            </div>
+          </div>
+          <button onClick={handleModify} style={{
+            background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
+            color: '#f59e0b', borderRadius: 14, padding: '14px',
+            fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}>✏️ Modifier ma réponse</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Champ numérique avec € */}
+          <div style={{
+            display: 'flex', alignItems: 'center',
+            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: 16, padding: '0 20px', overflow: 'hidden',
+          }}>
+            <input
+              type="number"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={value}
+              onChange={e => setValue(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="0"
+              style={{
+                flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                color: '#fff', fontSize: 36, fontWeight: 900, padding: '20px 0',
+                fontFamily: 'inherit', fontVariantNumeric: 'tabular-nums',
+                WebkitAppearance: 'none', MozAppearance: 'textfield',
+              }}
+            />
+            <span style={{ fontSize: 36, fontWeight: 900, color: '#f59e0b', paddingLeft: 8 }}>€</span>
+          </div>
+          <button
+            onClick={handleSend}
+            disabled={!value.trim() || sending}
+            style={{
+              background: value.trim() ? '#f59e0b' : 'rgba(255,255,255,0.1)',
+              border: 'none', borderRadius: 14, padding: '16px',
+              fontSize: 16, fontWeight: 700, color: '#fff',
+              cursor: value.trim() ? 'pointer' : 'default',
+              fontFamily: 'inherit', transition: 'background .2s',
+              opacity: sending ? 0.7 : 1,
+            }}
+          >
+            {sending ? 'Envoi en cours…' : 'Envoyer ma réponse →'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ForceLPTMobile({ page, pageIndex, total }) {
+  const [visible, setVisible] = useState(0)
+  useEffect(() => {
+    setVisible(0)
+    const timers = page.items.map((_, i) =>
+      setTimeout(() => setVisible(v => Math.max(v, i + 1)), 400 + i * 500)
+    )
+    return () => timers.forEach(clearTimeout)
+  }, [page.id])
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '32px 20px 40px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIndex ? 16 : 4, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />
+          ))}
+        </div>
+      </div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Notre modèle</div>
+      <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 24, lineHeight: 1.3 }}>{page.titre}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {page.items.map((item, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 14,
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+            borderLeft: `4px solid ${item.color}`,
+            borderRadius: 14, padding: '14px 16px',
+            opacity: i < visible ? 1 : 0,
+            transform: i < visible ? 'translateX(0)' : 'translateX(-16px)',
+            transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+          }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color, flexShrink: 0, boxShadow: `0 0 6px ${item.color}` }} />
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>{item.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Progressif : Page cours avec verre 3D ────────────────────────
+function ProgressifCoursMobile({ page, pageIndex, total }) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    setVisible(false)
+    const t = setTimeout(() => setVisible(true), 80)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  const accent = '#7c3aed'
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0d1d3a 50%, #100820 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '0 0 32px',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '18px 20px 0',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexShrink: 0,
+      }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={64} height={24}
+          style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{
+              height: 4, borderRadius: 2,
+              width: i === pageIndex ? 18 : 4,
+              background: i === pageIndex ? accent : 'rgba(255,255,255,0.2)',
+              transition: 'all .4s',
+            }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Badge module */}
+      <div style={{ padding: '14px 20px 0' }}>
+        <div style={{
+          display: 'inline-block',
+          background: `${accent}20`, border: `1px solid ${accent}45`,
+          borderRadius: 20, padding: '3px 14px',
+          fontSize: 10, fontWeight: 700, color: '#a78bfa',
+          textTransform: 'uppercase', letterSpacing: 1.5,
+        }}>Le Verre Progressif</div>
+      </div>
+
+      {/* Titre */}
+      <div style={{
+        padding: '10px 20px 0',
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(10px)',
+        transition: 'all 0.5s ease',
+      }}>
+        <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>
+          {page.titre}
+        </div>
+        {page.sousTitre && (
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 4, lineHeight: 1.5 }}>
+            {page.sousTitre}
+          </div>
+        )}
+      </div>
+
+      {/* Verre 3D */}
+      <div style={{
+        flex: '0 0 auto',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '10px 0 6px',
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(16px)',
+        transition: 'all 0.7s cubic-bezier(0.22,1,0.36,1)',
+      }}>
+        <div style={{ position: 'relative' }}>
+          {/* Halo violet */}
+          <div style={{
+            position: 'absolute', inset: -20, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(124,58,237,0.22) 0%, transparent 70%)',
+            animation: 'haloBreath 3.5s ease-in-out infinite',
+          }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/verre-prog.png"
+            alt="Verre progressif"
+            style={{
+              width: 220, height: 'auto', display: 'block', position: 'relative', zIndex: 1,
+              animation: 'verreFloat 5s ease-in-out infinite',
+              filter: 'drop-shadow(0 0 28px rgba(124,58,237,0.55)) drop-shadow(0 10px 20px rgba(0,0,0,0.4))',
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Points du cours */}
+      {page.points && page.points.length > 0 && (
+        <div style={{
+          padding: '0 16px',
+          display: 'flex', flexDirection: 'column', gap: 6,
+          opacity: visible ? 1 : 0,
+          transition: 'opacity 0.6s ease 0.3s',
+        }}>
+          {page.points.map((pt, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '9px 12px',
+              borderRadius: 10,
+              background: 'rgba(255,255,255,0.04)',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>
+                {typeof pt === 'object' ? pt.emoji : String(i + 1)}
+              </span>
+              <div>
+                {typeof pt === 'object' ? (
+                  <>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#e2d9ff', lineHeight: 1.3 }}>{pt.titre}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 1.4, marginTop: 1 }}>{pt.texte}</div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: 500, lineHeight: 1.5 }}>{pt}</div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Bas de page — écoute formateur */}
+      <div style={{
+        marginTop: 'auto', paddingTop: 20, padding: '20px 20px 0',
+        display: 'flex', alignItems: 'center', gap: 8,
+        opacity: visible ? 0.7 : 0, transition: 'opacity 0.8s ease 0.5s',
+      }}>
+        <div style={{ width: 7, height: 7, borderRadius: '50%', background: accent, animation: 'waitDot 1.5s ease-in-out infinite' }} />
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
+          Écoutez le formateur et regardez l&apos;écran de diffusion
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// ── Progressif : verre animé réutilisable (défini hors composant) ──
+function ZoneVerreMobile({ size = 190 }) {
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{
+        position: 'absolute', inset: -18, borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 70%)',
+        animation: 'haloBreath 3.5s ease-in-out infinite',
+      }} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/assets/verre-prog.png" alt="Verre progressif" style={{
+        width: size, height: 'auto', display: 'block', position: 'relative', zIndex: 1,
+        animation: 'verreFloat 5s ease-in-out infinite',
+        filter: 'drop-shadow(0 0 24px rgba(124,58,237,0.5)) drop-shadow(0 8px 16px rgba(0,0,0,0.4))',
+      }} />
+    </div>
+  )
+}
+
+// ── Progressif : Zone interactif participant ──────────────────────
+function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
+  const [selected, setSelected] = useState(null)
+  const [sent, setSent] = useState(false)
+
+  useEffect(() => {
+    console.log('[ZoneInteractifMobile] 🎯 progZoneQ=', progZoneQ, '— pName=', pName)
+    setSelected(null); setSent(false)
+  }, [progZoneQ])
+
+  useEffect(() => {
+    if (progZoneQ !== null && progZoneQ !== undefined && progZoneResponses?.[pName] !== undefined) {
+      setSelected(progZoneResponses[pName])
+      setSent(true)
+    }
+  }, [progZoneResponses, pName, progZoneQ])
+
+  const q = progZoneQ !== null && progZoneQ !== undefined ? page.zoneQuestions?.[progZoneQ] : null
+  const COLORS = ['#ef4444', '#3b82f6', '#f59e0b']
+
+  const handleSelect = async (idx) => {
+    if (sent) return
+    setSelected(idx)
+    setSent(true)
+    const state = await getSharedState()
+    const current = state?.prog_zone_responses || {}
+    await setSharedState({ prog_zone_responses: { ...current, [pName]: idx } })
+  }
+
+  const bg = 'linear-gradient(160deg, #03112a 0%, #12013a 100%)'
+
+  if (!q) return (
+    <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', gap: 0 }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain', marginBottom: 32, opacity: 0.7 }} />
+      <div style={{ marginBottom: 28 }}><ZoneVerreMobile size={210} /></div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>
+        Identifie les zones
+      </div>
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', textAlign: 'center', maxWidth: 240 }}>
+        En attente de la question du formateur…
+      </div>
+      <div style={{ display: 'flex', gap: 5, marginTop: 16 }}>
+        {[0,1,2].map(i => (
+          <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: '#7c3aed', animation: `waitDot 1.4s ease-in-out ${i * 0.2}s infinite` }} />
+        ))}
+      </div>
+    </div>
+  )
+
+  return (
+    <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', padding: '44px 24px 36px' }}>
+      {/* Logo + badge */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 20, padding: '3px 12px', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+          Q{(progZoneQ || 0) + 1} / {page.zoneQuestions?.length}
+        </div>
+      </div>
+
+      {/* Verre */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
+        <ZoneVerreMobile size={160} />
+      </div>
+
+      {/* Question */}
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.4, marginBottom: 20, textAlign: 'center' }}>{q.question}</h2>
+
+      {/* Réponses ABC */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {q.options.map((opt, i) => (
+          <button key={i} onClick={() => handleSelect(i)} disabled={sent} style={{
+            background: sent ? (selected === i ? 'rgba(124,58,237,0.22)' : 'rgba(255,255,255,0.03)') : 'rgba(255,255,255,0.07)',
+            border: `2px solid ${sent && selected === i ? '#7c3aed' : 'rgba(255,255,255,0.1)'}`,
+            borderRadius: 14, padding: '14px 18px',
+            display: 'flex', alignItems: 'center', gap: 14,
+            cursor: sent ? 'default' : 'pointer', fontFamily: 'inherit',
+            transition: 'all .2s',
+          }}>
+            <div style={{ width: 38, height: 38, borderRadius: '50%', background: COLORS[i], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900, color: '#fff', flexShrink: 0 }}>{'ABC'[i]}</div>
+            <span style={{ fontSize: 15, fontWeight: 600, color: sent && selected === i ? '#c4b5fd' : '#fff', textAlign: 'left' }}>{opt}</span>
+            {sent && selected === i && <span style={{ marginLeft: 'auto', fontSize: 20 }}>✓</span>}
+          </button>
+        ))}
+      </div>
+
+      {sent && (
+        <div style={{ marginTop: 20, textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', display: 'inline-block' }} />
+          Réponse envoyée — en attente du formateur
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Progressif : Retour terrain participant ───────────────────────
+function RetourTerrainMobile({ page, pName }) {
+  const [text, setText] = useState('')
+  const [sent, setSent] = useState(false)
+  const [sentText, setSentText] = useState('')
+  const [sending, setSending] = useState(false)
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return
+    setSending(true)
+    try {
+      const state = await getSharedState()
+      const current = state?.prog_retour_responses || {}
+      await setSharedState({ prog_retour_responses: { ...current, [pName]: { text: text.trim() } } })
+      setSentText(text.trim())
+      setSent(true)
+    } catch { /* ignore */ }
+    setSending(false)
+  }
+
+  const bg = 'linear-gradient(160deg, #03112a 0%, #12013a 100%)'
+  return (
+    <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', padding: '52px 24px 40px' }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain', marginBottom: 28 }} />
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Retour du terrain · J+14</div>
+      <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff', lineHeight: 1.4, marginBottom: 8 }}>{page.question}</h2>
+      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 24 }}>Partagez une expérience réelle de vos 2 semaines en magasin</p>
+
+      {sent ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.35)', borderRadius: 16, padding: '16px 20px' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', marginBottom: 6, textTransform: 'uppercase' }}>Votre réponse</div>
+            <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.6 }}>{sentText}</div>
+          </div>
+          <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Réponse partagée avec le groupe</div>
+          <button onClick={() => setSent(false)} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '12px', borderRadius: 12, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Modifier</button>
+        </div>
+      ) : (
+        <>
+          <textarea value={text} onChange={e => setText(e.target.value)} placeholder={page.placeholder || "Décrivez votre expérience…"}
+            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 14, padding: '16px', fontSize: 15, color: '#fff', lineHeight: 1.6, resize: 'none', height: 160, fontFamily: 'inherit', marginBottom: 16, outline: 'none' }} />
+          <button onClick={handleSend} disabled={!text.trim() || sending}
+            style={{ background: text.trim() ? 'linear-gradient(135deg, #7c3aed, #9f67fa)' : 'rgba(255,255,255,0.06)', border: 'none', color: text.trim() ? '#fff' : 'rgba(255,255,255,0.3)', padding: '16px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+            {sending ? 'Envoi…' : 'Partager avec le groupe →'}
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Progressif : Jeu d'objections participant ─────────────────────
+function JeuObjectionsMobile({ page, pName, progObjectionIdx, progObjectionResponses }) {
+  const [text, setText] = useState('')
+  const [sent, setSent] = useState(false)
+  const [sentText, setSentText] = useState('')
+  const [sending, setSending] = useState(false)
+
+  useEffect(() => { setText(''); setSent(false); setSentText('') }, [progObjectionIdx])
+
+  useEffect(() => {
+    if (progObjectionIdx !== null && progObjectionIdx !== undefined && progObjectionResponses?.[pName]) {
+      const r = progObjectionResponses[pName]
+      setSentText(r.text || r)
+      setSent(true)
+    }
+  }, [progObjectionResponses, pName, progObjectionIdx])
+
+  const objection = progObjectionIdx !== null && progObjectionIdx !== undefined ? page.objections?.[progObjectionIdx] : null
+  const bg = 'linear-gradient(160deg, #03112a 0%, #12013a 100%)'
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return
+    setSending(true)
+    try {
+      const state = await getSharedState()
+      const current = state?.prog_objection_responses || {}
+      await setSharedState({ prog_objection_responses: { ...current, [pName]: { text: text.trim() } } })
+      setSentText(text.trim())
+      setSent(true)
+    } catch { /* ignore */ }
+    setSending(false)
+  }
+
+  if (!objection) return (
+    <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain', marginBottom: 32 }} />
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>Le formateur va choisir une objection…</div>
+    </div>
+  )
+
+  return (
+    <div style={{ minHeight: '100dvh', background: bg, display: 'flex', flexDirection: 'column', padding: '52px 24px 40px' }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain', marginBottom: 28 }} />
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Le client dit :</div>
+      <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 16, padding: '16px 20px', marginBottom: 24 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', lineHeight: 1.4, fontStyle: 'italic' }}>"{objection}"</div>
+      </div>
+      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 16 }}>Quelle est votre meilleure réponse à cette objection ?</p>
+
+      {sent ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.35)', borderRadius: 16, padding: '16px 20px' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', marginBottom: 6, textTransform: 'uppercase' }}>Votre réponse</div>
+            <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.6 }}>{sentText}</div>
+          </div>
+          <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>En attente du formateur</div>
+          <button onClick={() => setSent(false)} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '12px', borderRadius: 12, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Modifier</button>
+        </div>
+      ) : (
+        <>
+          <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Tapez votre meilleure réponse…"
+            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 14, padding: '16px', fontSize: 15, color: '#fff', lineHeight: 1.6, resize: 'none', height: 140, fontFamily: 'inherit', marginBottom: 16, outline: 'none' }} />
+          <button onClick={handleSend} disabled={!text.trim() || sending}
+            style={{ background: text.trim() ? 'linear-gradient(135deg, #7c3aed, #9f67fa)' : 'rgba(255,255,255,0.06)', border: 'none', color: text.trim() ? '#fff' : 'rgba(255,255,255,0.3)', padding: '16px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+            {sending ? 'Envoi…' : 'Envoyer ma réponse →'}
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
+function TrameAccueilMobile() {
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px', textAlign: 'center',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={140} height={52}
+        style={{ objectFit: 'contain', marginBottom: 40 }} />
+      <div style={{ fontSize: 32, marginBottom: 16 }}>🎧</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+        Formation Journée 2
+      </div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.3, marginBottom: 12 }}>
+        La trame d'accueil<br />
+        <span style={{ color: '#00abe9' }}>Lunettes Pour Tous</span>
+      </div>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
+        Écoutez le formateur.<br />La trame s'affiche sur l'écran.
+      </p>
+    </div>
+  )
+}
+
+function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
+  if (page.type === 'trame-accueil')    return <TrameAccueilMobile />
+  if (page.type === 'offres-classique' || page.type === 'offres-1-1') return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001e40 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={140} height={52} style={{ objectFit: 'contain', marginBottom: 40 }} />
+      <div style={{ fontSize: 32, marginBottom: 16 }}>🎧</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>Les offres · Formation Journée 2</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.3, marginBottom: 10 }}>
+        {page.type === 'offres-classique' ? 'Le parcours Classique' : 'Le parcours 1=1'}
+      </div>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>Écoutez le formateur.<br />Le contenu s'affiche sur l'écran.</p>
+    </div>
+  )
   if (page.type === 'troubles-intro')    return <TroublesIntroMobile      page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'troubles-list')    return <TroublesListMobile       page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'correction-scale') return <CorrectionScaleMobile    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <OrdonnanceMobile         page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'pause')             return <PauseMobile              page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'saisie-interactive') return <SaisieInteractiveMobile page={page} pageIndex={pageIndex} total={total} />
+
+  // Freins à l'achat — saisie libre
+  if (page.type === 'freins') return <FreinsInputMobile page={page} pName={pName || 'Anonyme'} />
+
+  // Prix moyen — saisie numérique
+  if (page.type === 'prix') return <PrixInputMobile page={page} pName={pName || 'Anonyme'} />
+
+  // Ventes opticien — saisie numérique
+  if (page.type === 'ventes-opticien') {
+    return <VentesOpticienMobile page={page} pName={pName || 'Anonyme'} />
+  }
+
+  // Promesse — saisie libre
+  if (page.type === 'promesse') return <PromesseInputMobile page={page} pName={pName || 'Anonyme'} />
+
+  // Force LPT — liste progressive (écran neutre si vidéo en cours)
+  if (page.type === 'force-lpt') {
+    if (modelePoint !== null) return (
+      <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001e40 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={120} height={45} style={{ objectFit: 'contain', marginBottom: 40 }} />
+        <div style={{ fontSize: 32, marginBottom: 16 }}>📺</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>Notre modèle · Formation Journée 1</div>
+        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>Regardez l&apos;écran.<br />Une vidéo est diffusée.</p>
+      </div>
+    )
+    return <ForceLPTMobile page={page} pageIndex={pageIndex} total={total} />
+  }
+
+  // Progressif module types
+  const isProgressif = moduleLabel?.includes('Progressif')
+  if (page.type === 'cours' && isProgressif)
+    return <ProgressifCoursMobile page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'zone-interactif') return <ZoneInteractifMobile page={page} pName={pName || 'Anonyme'} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} />
+  if (page.type === 'prog-retour')     return <RetourTerrainMobile  page={page} pName={pName || 'Anonyme'} />
+  if (page.type === 'prog-objections') return <JeuObjectionsMobile  page={page} pName={pName || 'Anonyme'} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} />
+
+  // Chiffres clés LPT
+  if (page.type === 'chiffres') return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '32px 20px 40px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIndex ? 16 : 4, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />
+          ))}
+        </div>
+      </div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Chiffres clés</div>
+      <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 24, lineHeight: 1.3 }}>{page.titre}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {page.stats.map((stat, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 14,
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+            borderLeft: `4px solid ${stat.color}`,
+            borderRadius: 14, padding: '14px 16px',
+          }}>
+            <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', minWidth: 90 }}>{stat.value}</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontWeight: 500, lineHeight: 1.4 }}>{stat.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  // Vidéo LPT — écran passif
+  if (page.type === 'video-lpt') return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px', textAlign: 'center',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={110} height={42}
+        style={{ objectFit: 'contain', marginBottom: 44 }} />
+      <div style={{
+        width: 72, height: 72, borderRadius: '50%',
+        background: 'rgba(0,171,233,0.12)', border: '2px solid rgba(0,171,233,0.25)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 34, marginBottom: 24,
+        boxShadow: '0 0 32px rgba(0,171,233,0.15)',
+      }}>🎬</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.3, marginBottom: 10 }}>
+        Vidéo en cours
+      </div>
+      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 280, marginBottom: 36 }}>
+        Regardez l&apos;écran de diffusion
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{
+            width: 7, height: 7, borderRadius: '50%', background: '#00abe9',
+            animation: `waitDot 1.4s ease-in-out ${i * 0.25}s infinite`,
+          }} />
+        ))}
+      </div>
+    </div>
+  )
+
+  // Naissance LPT — écran passif
+  if (page.type === 'naissance') return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px', textAlign: 'center',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={110} height={42}
+        style={{ objectFit: 'contain', marginBottom: 44 }} />
+      <div style={{
+        width: 72, height: 72, borderRadius: '50%',
+        background: 'rgba(0,171,233,0.12)', border: '2px solid rgba(0,171,233,0.25)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 34, marginBottom: 24,
+        boxShadow: '0 0 32px rgba(0,171,233,0.15)',
+      }}>👂</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.3, marginBottom: 10 }}>
+        Le formateur parle
+      </div>
+      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 280, marginBottom: 36 }}>
+        Écoutez et regardez l&apos;écran de diffusion
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{
+            width: 7, height: 7, borderRadius: '50%', background: '#00abe9',
+            animation: `waitDot 1.4s ease-in-out ${i * 0.25}s infinite`,
+          }} />
+        ))}
+      </div>
+    </div>
+  )
+
+  // Entreprise module types
+  if (['impact','probleme','timeline','piliers','steps','machines','cases','visages','croissance','mission'].includes(page.type))
+    return <EntreprisePageMobile page={page} pageIndex={pageIndex} total={total} />
 
   return (
     <div style={{
@@ -1447,10 +2785,91 @@ function RhParticipantGate({ pNameInput, children }) {
   return children(canonicalName)
 }
 
-function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
-  const sync = useModuleSync(forcedModule != null ? 99999 : 1200)
-  const activeModule = forcedModule ?? sync.activeModule
-  const modulePage   = forcedPage  ?? sync.modulePage
+function ParticipantPlanningScreen({ planningDay }) {
+  const jour = PLANNING_JOURS.find(j => j.id === planningDay)
+  if (!jour) return <WaitingScreen />
+
+  return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', display: 'flex', flexDirection: 'column', padding: '32px 20px 40px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ background: `${jour.color}20`, border: `1px solid ${jour.color}50`, borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1 }}>{jour.jour}</div>
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', marginBottom: 6 }}>{jour.label}</div>
+        <div style={{ width: 40, height: 3, borderRadius: 2, background: jour.color }} />
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+        {jour.blocs.map((bloc, i) => {
+          const isPause = bloc.titre === 'Pause déjeuner'
+          if (isPause) return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0' }}>
+              <div style={{ flex: 1, height: 1, background: 'rgba(245,158,11,0.3)' }} />
+              <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 20, padding: '5px 16px', fontSize: 11, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1, whiteSpace: 'nowrap' }}>
+                {bloc.horaire && <span style={{ opacity: 0.7, marginRight: 8 }}>{bloc.horaire}</span>}Pause déjeuner
+              </div>
+              <div style={{ flex: 1, height: 1, background: 'rgba(245,158,11,0.3)' }} />
+            </div>
+          )
+          return (
+            <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderTop: `2px solid ${jour.color}`, borderRadius: 14, padding: '16px 16px' }}>
+              {bloc.horaire && (
+                <div style={{ fontSize: 10, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{bloc.horaire}</div>
+              )}
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: bloc.items.length > 0 ? 10 : 0 }}>{bloc.titre}</div>
+              {bloc.items.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {bloc.items.map((item, j) => (
+                    <div key={j} style={{
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.09)',
+                      borderLeft: `2px solid ${jour.color}60`,
+                      borderRadius: 8, padding: '7px 12px',
+                      fontSize: 12, color: 'rgba(255,255,255,0.75)',
+                      fontWeight: 500, lineHeight: 1.4,
+                    }}>{item}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp }) {
+  // forcedModule = via ParticipantView (polling géré là-bas) → useModuleSync désactivé
+  // sans forcedModule = accès direct ?mode=participant → useModuleSync actif
+  const sync = useModuleSync({ disabled: forcedModule != null })
+  const activeModule  = forcedModule ?? sync.activeModule
+  const modulePage    = forcedPage   ?? sync.modulePage
+  const sharedState   = sharedStateProp ?? sync.sharedState
+  const [planningDay, setPlanningDay]         = useState(null)
+  const [tvScreen, setTvScreen]               = useState(null)
+  const [progZoneQ, setProgZoneQ]             = useState(null)
+  const [progZoneResponses, setProgZoneResponses] = useState({})
+  const [progObjectionIdx, setProgObjectionIdx]   = useState(null)
+  const [progObjectionResponses, setProgObjectionResponses] = useState({})
+  const [modelePoint, setModelePoint]             = useState(null)
+  const [faqJournee, setFaqJournee]               = useState(null)
+
+  // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
+  useEffect(() => {
+    if (!sharedState) { console.log('[ParticipantContent] sharedState null — polling pas encore actif'); return }
+    console.log('[ParticipantContent] 📥 sharedState reçu — prog_zone_q=', sharedState.prog_zone_q, 'module=', activeModule)
+    setTvScreen(sharedState.tv_screen || null)
+    setPlanningDay(sharedState.planning_day || null)
+    setProgZoneQ(sharedState.prog_zone_q ?? null)
+    setProgZoneResponses(sharedState.prog_zone_responses || {})
+    setProgObjectionIdx(sharedState.prog_objection_idx ?? null)
+    setProgObjectionResponses(sharedState.prog_objection_responses || {})
+    setModelePoint(sharedState.modele_point ?? null)
+    setFaqJournee(sharedState.faq_journee || null)
+  }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
   const pages = moduleData?.pages || []
@@ -1465,22 +2884,41 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName }) {
   return (
     <>
       <style>{STYLES}</style>
-      {isLobby
-        ? <ParticipantModuleLobby moduleLabel={moduleData?.label || ''} />
-        : isResults
-          ? <PersonalResultsScreen key="results" pName={pName} quiz={quiz} moduleId={activeModule} />
-          : isQuiz
-            ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
-            : page
-              ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} />
-              : <WaitingScreen />
+      {/* Planning prioritaire : écrase tout si le formateur diffuse le planning */}
+      {tvScreen === 'planning' && planningDay
+        ? <ParticipantPlanningScreen planningDay={planningDay} />
+        : isLobby
+          ? <ParticipantModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
+          : isResults
+            ? <PersonalResultsScreen key="results" pName={pName} quiz={quiz} moduleId={activeModule} />
+            : isQuiz
+              ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
+              : page
+                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} />
+                : faqJournee
+                  ? <FAQInputMobile journeeId={faqJournee} />
+                  : <WaitingScreen />
       }
     </>
   )
 }
 
-export default function ParticipantModuleView({ forcedModule, forcedPage, pName: pNameProp }) {
-  const pNameRaw = pNameProp || (typeof window !== 'undefined' ? localStorage.getItem('participant_name') || '' : '')
+export default function ParticipantModuleView({ forcedModule, forcedPage, pName: pNameProp, sharedState }) {
+  // Quand pName est passé explicitement (participant déjà authentifié via la page d'accueil),
+  // on bypasse RhParticipantGate — la validation a déjà eu lieu dans handleParticipantJoin.
+  if (pNameProp) {
+    return (
+      <ParticipantModuleContent
+        forcedModule={forcedModule}
+        forcedPage={forcedPage}
+        pName={pNameProp}
+        sharedStateProp={sharedState}
+      />
+    )
+  }
+
+  // Accès direct via ?mode=participant → validation RH obligatoire
+  const pNameRaw = typeof window !== 'undefined' ? localStorage.getItem('participant_name') || '' : ''
   return (
     <RhParticipantGate pNameInput={pNameRaw}>
       {canonicalName => (

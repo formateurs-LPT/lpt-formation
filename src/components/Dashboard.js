@@ -2,12 +2,13 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbSelect, sbDelete, SESSION_CODE, getSharedState, insertSessionHistory, parseSessionHistorySummary } from '@/lib/supabase'
-import WeatherWidget from './WeatherWidget'
+import PlanningWidget from './PlanningWidget'
 import ShortcutsWidget from './ShortcutsWidget'
-import NotesWidget from './NotesWidget'
 import OnboardingView from './OnboardingView'
 import EntreesView from './EntreesView'
 import { TRAINER_AVATARS, TRAINER_CANONICAL } from '@/lib/constants'
+import { PLANNING_JOURS } from '@/lib/planningData'
+import { setSharedState } from '@/lib/supabase'
 
 const NEWS_ITEMS = [
   '📚 Formation Verre Progressif — Module complet',
@@ -36,7 +37,7 @@ function NewsTicker() {
   )
 }
 
-function DashHeader({ pName }) {
+function DashHeader({ pName, onUpdatesClick }) {
   const rawKey = (pName || '').toLowerCase().split(' ')[0]
   const key = TRAINER_CANONICAL[rawKey] || rawKey
   const avatarSrc = TRAINER_AVATARS[key] || TRAINER_AVATARS.kevin
@@ -44,7 +45,7 @@ function DashHeader({ pName }) {
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
 
   return (
-    <div className="dash-hero">
+    <div className="dash-hero" style={{ display: 'flex', alignItems: 'center' }}>
       <Image
         src={avatarSrc}
         alt={pName}
@@ -52,11 +53,32 @@ function DashHeader({ pName }) {
         height={90}
         className="dash-hero-avatar"
       />
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
         <div className="dash-hero-label">Formation · Lunettes Pour Tous</div>
         <h2 className="dash-hero-title">Bonjour, {cap(pName)} 👋</h2>
         <p className="dash-hero-date">{cap(today)}</p>
       </div>
+      {onUpdatesClick && (
+        <button
+          onClick={onUpdatesClick}
+          title="Mises à jour de l'app"
+          style={{
+            flexShrink: 0, marginLeft: 12, zIndex: 1,
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'rgba(167,139,250,0.15)',
+            border: '1px solid rgba(167,139,250,0.35)',
+            borderRadius: 20, padding: '6px 12px 6px 10px',
+            cursor: 'pointer', fontFamily: 'inherit',
+            color: '#c4b5fd', fontSize: 12, fontWeight: 700,
+            transition: 'all .18s',
+          }}
+          onMouseOver={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.25)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.5)' }}
+          onMouseOut={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.15)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.35)' }}
+        >
+          <span style={{ fontSize: 14 }}>⚡</span>
+          <span>{APP_UPDATES.length}</span>
+        </button>
+      )}
     </div>
   )
 }
@@ -302,11 +324,204 @@ function SessionsHistoryView({ onBack, onToast }) {
   )
 }
 
-export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onToast, onOnlineCount }) {
-  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding
+// ── Changelog data ───────────────────────────────────────────────
+const APP_UPDATES = [
+  {
+    id: '2026-06-24',
+    date: '24 juin 2026',
+    title: 'Réveil des acquis & FAQ anonyme',
+    tag: 'Nouveau module',
+    tagColor: '#f59e0b',
+    sections: [
+      {
+        title: 'Aperçu de la slide suivante',
+        accent: '#00abe9',
+        tag: 'Navigation',
+        items: [
+          'Une carte discrète apparaît au-dessus des boutons Précédent / Suivant sur l\'écran formateur',
+          'Elle affiche le titre et le type de la prochaine slide — plus besoin de mémoriser l\'ordre',
+          'Déployée sur tous les modules : Optique, PDM, Types de verres, Offres, Progressif, Entreprise',
+        ],
+      },
+      {
+        title: 'Réveil des acquis',
+        accent: '#f59e0b',
+        tag: 'Nouveau',
+        items: [
+          'Nouvelle tuile dédiée dans la grille des modules, aux côtés des Journées 1, 2 et 3',
+          'Le formateur choisit la journée à consolider (J1, J2 ou J3) avant de lancer l\'activité',
+          'Le QR code de connexion s\'affiche automatiquement sur la TV au clic de la tuile',
+        ],
+      },
+      {
+        title: 'FAQ anonyme',
+        accent: '#a78bfa',
+        tag: 'Interactif',
+        roles: [
+          { icon: '📱', label: 'Participant', color: '#a78bfa', desc: 'Un champ de saisie apparaît automatiquement sur le téléphone. La question est envoyée anonymement. Un bouton « Poser une autre question ? » permet d\'en ajouter plusieurs à la suite.' },
+          { icon: '📺', label: 'Diffuseur (TV)', color: '#a78bfa', desc: 'Les questions s\'affichent en nuage de bulles. Quand le formateur met une question en avant, sa bulle grossit avec un effet lumineux.' },
+          { icon: '🎓', label: 'Formateur', color: '#a78bfa', desc: 'Liste des questions dans l\'ordre d\'arrivée. Deux actions : Mettre en avant (met en lumière la bulle sur TV) et Traitée ✓ (supprime la question partout).' },
+        ],
+      },
+      {
+        title: 'Corrections & fiabilité',
+        accent: '#4ade80',
+        tag: 'Fixes',
+        items: [
+          'Aperçu de slide suivante absent sur le module Bases de l\'optique — chaque sous-composant de page ne transmettait pas la prop au composant de navigation',
+          'Participants bloqués sur l\'écran d\'attente lors du FAQ — ParticipantView n\'interceptait pas la FAQ quand aucun module de cours n\'était actif',
+          'Délai de synchronisation réduit de 5 s à 1,2 s dès qu\'une session FAQ est ouverte',
+        ],
+      },
+    ],
+  },
+]
+
+function AppUpdateModal({ update, onClose }) {
+  return (
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.7)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '20px',
+        backdropFilter: 'blur(4px)',
+      }}
+    >
+      <div style={{
+        background: '#0a1628', borderRadius: 24,
+        border: '1px solid rgba(255,255,255,0.1)',
+        width: '100%', maxWidth: 680,
+        maxHeight: '90vh', overflowY: 'auto',
+        padding: '40px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>
+              Formation LPT · Mise à jour
+            </div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{update.date}</div>
+            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{update.title}</div>
+          </div>
+          <button onClick={onClose} style={{
+            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.5)', width: 36, height: 36, borderRadius: 10,
+            fontSize: 18, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>×</button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {update.sections.map((sec, si) => (
+            <div key={si} style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: `1px solid rgba(255,255,255,0.07)`,
+              borderLeft: `4px solid ${sec.accent}`,
+              borderRadius: 16, padding: '22px 24px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{sec.title}</div>
+                <span style={{
+                  fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase',
+                  background: sec.accent + '18', color: sec.accent,
+                  border: `1px solid ${sec.accent}30`, borderRadius: 20, padding: '3px 10px',
+                }}>{sec.tag}</span>
+              </div>
+
+              {sec.items && sec.items.map((item, ii) => (
+                <div key={ii} style={{ display: 'flex', gap: 12, marginBottom: ii < sec.items.length - 1 ? 10 : 0 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: sec.accent, flexShrink: 0, marginTop: 6 }} />
+                  <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.72)', lineHeight: 1.55 }}>{item}</div>
+                </div>
+              ))}
+
+              {sec.roles && sec.roles.map((role, ri) => (
+                <div key={ri} style={{
+                  display: 'flex', gap: 12, padding: '12px 16px',
+                  background: 'rgba(255,255,255,0.03)', borderRadius: 12,
+                  marginBottom: ri < sec.roles.length - 1 ? 10 : 0,
+                }}>
+                  <span style={{ fontSize: 18, flexShrink: 0 }}>{role.icon}</span>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: role.color, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }}>{role.label}</div>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{role.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AppUpdatesWidget() {
+  const [selected, setSelected] = useState(null)
+  return (
+    <>
+      <div style={{
+        background: '#fff', border: '1px solid var(--border)',
+        borderLeft: '4px solid #a78bfa',
+        borderRadius: 'var(--r)', padding: '18px 24px',
+        marginBottom: 16,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(167,139,250,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>⚡</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Mises à jour de l'app</div>
+              <div style={{ fontSize: 11, color: 'var(--text-s)' }}>Nouveautés et corrections</div>
+            </div>
+          </div>
+          <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(167,139,250,0.12)', color: '#7c3aed', border: '1px solid rgba(167,139,250,0.25)', borderRadius: 20, padding: '3px 10px', letterSpacing: 0.5 }}>
+            {APP_UPDATES.length} entrée{APP_UPDATES.length > 1 ? 's' : ''}
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {APP_UPDATES.map(u => (
+            <div
+              key={u.id}
+              onClick={() => setSelected(u)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 14px', borderRadius: 10,
+                background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.15)',
+                cursor: 'pointer', transition: 'all .15s',
+              }}
+              onMouseOver={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.1)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.3)' }}
+              onMouseOut={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.05)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.15)' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', minWidth: 90 }}>{u.date}</span>
+                <span style={{ fontSize: 13, color: 'var(--text-s)' }}>{u.title}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{
+                  fontSize: 10, fontWeight: 700, color: u.tagColor,
+                  background: u.tagColor + '18', border: `1px solid ${u.tagColor}30`,
+                  borderRadius: 20, padding: '2px 8px', whiteSpace: 'nowrap',
+                }}>{u.tag}</span>
+                <span style={{ fontSize: 13, color: '#a78bfa', fontWeight: 600 }}>→</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {selected && <AppUpdateModal update={selected} onClose={() => setSelected(null)} />}
+    </>
+  )
+}
+
+export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onToast, onOnlineCount, onOpenPlanning }) {
+  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | planning
   const [entreeCount, setEntreeCount] = useState(null)
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
+  const [selectedUpdate, setSelectedUpdate] = useState(null)
 
   const [obDay, setObDay] = useState('1')
 
@@ -370,6 +585,103 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
     )
   }
 
+  if (activeView === 'planning') {
+    return (
+      <div id="dashboard">
+        <div className="dash-wrap">
+          <button className="detail-back" onClick={() => setActiveView('home')}>← Retour au tableau de bord</button>
+          <div className="dash-header" style={{ marginBottom: 28 }}>
+            <div>
+              <h2 style={{ marginBottom: 4 }}>Planning formation</h2>
+              <p style={{ color: 'var(--text-s)', fontSize: 14 }}>Cliquez sur un jour pour l&apos;afficher sur le diffuseur et les téléphones</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+            {PLANNING_JOURS.map(jour => (
+              <div
+                key={jour.id}
+                style={{
+                  background: '#fff', border: '1px solid var(--border)',
+                  borderTop: `4px solid ${jour.color}`,
+                  borderRadius: 'var(--r)', padding: '24px 28px',
+                  transition: 'all .2s',
+                }}
+              >
+                {/* En-tête jour */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{jour.jour}</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)' }}>{jour.label}</div>
+                  </div>
+                </div>
+
+                {/* Blocs programme */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+                  {jour.blocs.map((bloc, i) => {
+                    const isPause = bloc.titre === 'Pause déjeuner'
+                    if (isPause) return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
+                        <div style={{ flex: 1, height: 1, background: `${jour.color}40` }} />
+                        <div style={{ background: `${jour.color}12`, border: `1px solid ${jour.color}35`, borderRadius: 20, padding: '3px 12px', fontSize: 10, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 0.8, whiteSpace: 'nowrap' }}>
+                          {bloc.horaire && <span style={{ opacity: 0.7, marginRight: 6 }}>{bloc.horaire}</span>}Pause déjeuner
+                        </div>
+                        <div style={{ flex: 1, height: 1, background: `${jour.color}40` }} />
+                      </div>
+                    )
+                    return (
+                      <div key={i} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderLeft: `3px solid ${jour.color}`, borderRadius: 8, padding: '10px 14px' }}>
+                        {bloc.horaire && (
+                          <div style={{ fontSize: 10, fontWeight: 700, color: jour.color, marginBottom: 2, letterSpacing: 0.5 }}>{bloc.horaire}</div>
+                        )}
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: bloc.items.length > 0 ? 6 : 0 }}>{bloc.titre}</div>
+                        {bloc.items.length > 0 && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            {bloc.items.map((item, j) => (
+                              <div key={j} style={{ fontSize: 11, color: 'var(--text-s)', background: '#fff', border: '1px solid var(--border)', borderRadius: 5, padding: '3px 8px' }}>
+                                {item}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Bouton Diffuser */}
+                <button
+                  onClick={async () => { await setSharedState({ tv_screen: 'planning', planning_day: jour.id }) }}
+                  style={{
+                    width: '100%', padding: '12px 0',
+                    background: jour.color, border: 'none',
+                    borderRadius: 10, cursor: 'pointer',
+                    fontSize: 14, fontWeight: 700, color: '#fff',
+                    fontFamily: 'inherit', letterSpacing: 0.3,
+                    boxShadow: `0 4px 14px ${jour.color}44`,
+                    transition: 'opacity .15s',
+                  }}
+                  onMouseOver={e => e.currentTarget.style.opacity = '0.85'}
+                  onMouseOut={e => e.currentTarget.style.opacity = '1'}
+                >
+                  Diffuser sur TV &amp; téléphones
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 16, background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 13, color: 'var(--text-s)' }}>Arrêter la diffusion du planning</span>
+            <button
+              onClick={async () => { await setSharedState({ tv_screen: null, planning_day: null }) }}
+              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626', borderRadius: 10, padding: '7px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            >Arrêter</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (activeView === 'modules') {
     return (
       <div id="dashboard">
@@ -379,23 +691,23 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
             <div><h2>Démarrer une session</h2><p>Choisissez le module de formation à lancer</p></div>
           </div>
           <div
-            onClick={onLaunchSession}
+            onClick={() => onLaunchModule('verre-progressif')}
             style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '28px 30px', cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 24, marginBottom: 12 }}
-            onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--lpt)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,171,233,.12)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseOver={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(124,58,237,.12)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
             onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
           >
-            <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg,#0089ba,#00abe9)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, flexShrink: 0 }}>🎓</div>
+            <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg,#7c3aed,#9f67fa)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, flexShrink: 0 }}>🔬</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--lpt)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Module disponible</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Formation — Le Verre Progressif</div>
-              <div style={{ fontSize: 13, color: 'var(--text-s)', marginBottom: 12 }}>Module complet de formation à la vente et à la compréhension du verre progressif.</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Module J+14 · Formation retour terrain</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Le Verre Progressif</div>
+              <div style={{ fontSize: 13, color: 'var(--text-s)', marginBottom: 12 }}>Module interactif complet : anatomie, zones, presbytie, arguments LPT, jeu d'objections et quiz final 8 questions.</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {['① Quiz initial', '② Les bases', '③ Arguments & Offre', '④ Ordonnances', '⑤ Quiz final'].map(t => (
-                  <span key={t} style={{ padding: '3px 10px', background: 'var(--lpt-l)', color: 'var(--lpt-dd)', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>{t}</span>
+                {['① Anatomie', '② Zones quiz', '③ Presbytie', '④ Retour terrain', '⑤ Arguments', '⑥ Objections', '⑦ Quiz 8Q'].map(t => (
+                  <span key={t} style={{ padding: '3px 10px', background: 'rgba(124,58,237,0.08)', color: '#7c3aed', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>{t}</span>
                 ))}
               </div>
             </div>
-            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--lpt)', fontSize: 14, fontWeight: 600 }}>
+            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, color: '#7c3aed', fontSize: 14, fontWeight: 600 }}>
               Lancer <span style={{ fontSize: 20 }}>→</span>
             </div>
           </div>
@@ -411,7 +723,8 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
   return (
     <div id="dashboard">
       <div className="dash-wrap">
-        <DashHeader pName={pName} />
+        <DashHeader pName={pName} onUpdatesClick={() => setSelectedUpdate(APP_UPDATES[0])} />
+        {selectedUpdate && <AppUpdateModal update={selectedUpdate} onClose={() => setSelectedUpdate(null)} />}
         <NewsTicker />
 
         {/* OB Banner */}
@@ -424,6 +737,34 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
             <div className="ob-day-badge">Jour {obDay}</div>
           </div>
           <div className="ob-banner-arrow">→</div>
+        </div>
+
+        {/* Planning banner */}
+        <div
+          onClick={() => setActiveView('planning')}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: '#fff', border: '1px solid var(--border)',
+            borderLeft: '4px solid #00abe9',
+            borderRadius: 'var(--r)', padding: '18px 24px',
+            cursor: 'pointer', marginBottom: 16, transition: 'all .2s',
+          }}
+          onMouseOver={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,171,233,.1)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+          onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,171,233,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00abe9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>4 jours · Onboarding intensif</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Planning formation</div>
+              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 1 }}>Diffusez le programme du jour sur les écrans</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#00abe9' }}>Voir →</div>
         </div>
 
         {/* Main tiles */}
@@ -455,14 +796,12 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
           </div>
         </div>
 
-        {/* Weather + Progress */}
+        {/* Planning + Shortcuts */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-          <WeatherWidget pName={pName} onToast={onToast} />
+          <PlanningWidget onOpen={() => onOpenPlanning()} />
           <ShortcutsWidget />
         </div>
 
-        {/* Notes board */}
-        <NotesWidget pName={pName} />
       </div>
     </div>
   )

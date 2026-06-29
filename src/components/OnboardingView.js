@@ -26,7 +26,7 @@ const JOURNEES = (onLaunchModule) => [
         visual: 'avatar', src: '/assets/avatar_paul.png',
         label: "Présentation de l'entreprise",
         sub: 'Paul Morlet — Histoire, valeurs et missions de LPT',
-        soon: true,
+        onClick: () => onLaunchModule('entreprise'),
       },
       {
         visual: 'emoji', icon: '👁️',
@@ -40,6 +40,12 @@ const JOURNEES = (onLaunchModule) => [
         sub: 'Unifocaux, progressifs, antireflets et traitements',
         onClick: () => onLaunchModule('types-verres'),
       },
+      {
+        visual: 'emoji', icon: '👓',
+        label: 'Connaissances Montures',
+        sub: 'Acétate · Métal · Injecté — fin de journée',
+        onClick: () => onLaunchModule('montures'),
+      },
     ],
   },
   {
@@ -49,10 +55,30 @@ const JOURNEES = (onLaunchModule) => [
     sub: 'Les offres et la vente',
     modules: [
       {
+        visual: 'emoji', icon: '🤝',
+        label: "Trame d'accueil",
+        sub: 'Bonjour · Concept LPT · Examen de vue — 4 points clés',
+        onClick: () => onLaunchModule('trame-accueil'),
+      },
+      {
         visual: 'emoji', icon: '🏷️',
         label: 'Les offres',
         sub: 'Découverte des offres LPT et argumentation commerciale',
         onClick: () => onLaunchModule('offres'),
+      },
+    ],
+  },
+  {
+    id: 'journee3',
+    numero: 3,
+    titre: 'Journée 3',
+    sub: 'La prise de mesures',
+    modules: [
+      {
+        visual: 'image', src: '/assets/LPT003-EFO-001.avif',
+        label: 'Prise de mesures',
+        sub: 'Écart pupillaire · Hauteur · LPTVISION',
+        onClick: () => onLaunchModule('pdm'),
       },
     ],
   },
@@ -332,7 +358,7 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
 
       <div className="dash-tiles" style={{ gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         {journees.map((j) => (
-          <div key={j.id} className="dash-tile" onClick={() => setSelectedJournee(j.id)} style={{ cursor: 'pointer' }}>
+          <div key={j.id} className="dash-tile" onClick={() => { setSelectedJournee(j.id); setSharedState({ tv_screen: 'qr' }).catch(console.warn) }} style={{ cursor: 'pointer' }}>
             <div className="dash-tile-top">
               <div style={{
                 width: 38, height: 38, borderRadius: 10, flexShrink: 0,
@@ -349,6 +375,23 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
             <div style={{ fontSize: 11, color: '#00abe9', marginTop: 8, fontWeight: 600 }}>Voir les modules →</div>
           </div>
         ))}
+
+        {/* Tuile Réveil des acquis */}
+        <div className="dash-tile" onClick={() => { setSharedState({ tv_screen: 'qr' }).catch(console.warn); onLaunchModule('reveil-acquis') }} style={{ cursor: 'pointer', borderColor: 'rgba(245,158,11,0.25)' }}>
+          <div className="dash-tile-top">
+            <div style={{
+              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+              background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+            }}>⚡</div>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 20, padding: '2px 8px', letterSpacing: 0.5 }}>
+              3 journées
+            </span>
+          </div>
+          <div className="dash-tile-label" style={{ marginTop: 12 }}>Réveil des acquis</div>
+          <div className="dash-tile-sub">FAQ et quiz de consolidation</div>
+          <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 8, fontWeight: 600 }}>Voir les révéils →</div>
+        </div>
       </div>
     </div>
   )

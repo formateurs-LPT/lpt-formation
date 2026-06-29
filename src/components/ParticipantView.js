@@ -1,10 +1,11 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { sbSelect, sbUpsert, sbUpdate, SESSION_CODE, ensureSession } from '@/lib/supabase'
+import { sbSelect, sbUpsert, sbUpdate, SESSION_CODE, ensureSession, getSharedState } from '@/lib/supabase'
 import { saveScenarioResponse } from '@/lib/formationSave'
 import { TRAINER_AVATARS } from '@/lib/constants'
+import { PLANNING_JOURS } from '@/lib/planningData'
 import Image from 'next/image'
-import ParticipantModuleView from '@/components/ParticipantModuleView'
+import ParticipantModuleView, { FAQInputMobile } from '@/components/ParticipantModuleView'
 
 const QUIZ10 = [
   { q: 'Quel trouble visuel fait que les verres progressifs sont utiles au quotidien ?', opts: ['La myopie', 'La presbytie', "L'astigmatisme", "L'hypermétropie"], correct: 1, kind: 'standard' },
@@ -340,13 +341,20 @@ function P3Ordonnances({ pName, sessionCode }) {
   )
 }
 
-export default function ParticipantView({ pName, onToast, onOnlineCount }) {
+export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount }) {
   const [curStep, setCurStep] = useState(-2)
   const [curSlide, setCurSlide] = useState(1)
   const [ended, setEnded] = useState(false)
   const [trainerName, setTrainerName] = useState('kevin')
   const [activeModule, setActiveModule] = useState(null)
   const [modulePage, setModulePage] = useState(0)
+  const [tvScreen, setTvScreen] = useState(null)
+  const [planningDay, setPlanningDay] = useState(null)
+  const [sharedState, setSharedState_] = useState(null)
+
+  // Polling rapide uniquement quand aucun module ou zone-interactif (questions temps réel)
+  // Pour tout autre module (écran statique), on ralentit à 5s pour économiser les appels Supabase
+  const pollMs = (!activeModule || activeModule === 'zone-interactif') ? 1500 : 5000
 
   useEffect(() => {
     const poll = async () => {
@@ -368,9 +376,24 @@ export default function ParticipantView({ pName, onToast, onOnlineCount }) {
       } catch {}
     }
     poll()
-    const interval = setInterval(poll, 1500)
+    const interval = setInterval(poll, pollMs)
     return () => clearInterval(interval)
-  }, [curStep, curSlide])
+  }, [curStep, curSlide, pollMs])
+
+  // Polling sharedState (trainer_state) — même cadence adaptative
+  useEffect(() => {
+    const pollPlanning = async () => {
+      try {
+        const state = await getSharedState()
+        setTvScreen(state?.tv_screen || null)
+        setPlanningDay(state?.planning_day || null)
+        setSharedState_(state || null)
+      } catch {}
+    }
+    pollPlanning()
+    const t = setInterval(pollPlanning, pollMs)
+    return () => clearInterval(t)
+  }, [pollMs])
 
   if (ended) {
     return (
@@ -386,6 +409,9 @@ export default function ParticipantView({ pName, onToast, onOnlineCount }) {
     )
   }
 
+  const prenom = pPrenom || (typeof window !== 'undefined' && localStorage.getItem('participant_prenom')) || pName?.split(' ')[0] || ''
+  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''
+
   const WaitScreen = () => (
     <>
       <style>{`@keyframes waitDotP { 0%,100%{opacity:.2} 50%{opacity:1} }`}</style>
@@ -394,24 +420,91 @@ export default function ParticipantView({ pName, onToast, onOnlineCount }) {
         background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', padding: '40px 24px',
+        textAlign: 'center',
       }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={160} height={60}
           style={{ objectFit: 'contain', marginBottom: 48 }} />
+
+        {prenom ? (
+          <>
+            <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
+              Bonjour {cap(prenom)} 👋
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: '#00abe9', marginBottom: 32 }}>
+              Bienvenu chez Lunettes Pour Tous
+            </div>
+          </>
+        ) : null}
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
-            width: 8, height: 8, borderRadius: '50%', background: '#00abe9',
+            width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.4)',
             animation: 'waitDotP 1.4s ease-in-out infinite',
           }} />
-          <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
-            La formation va commencer…
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>
+            La formation va bientôt commencer…
           </span>
         </div>
       </div>
     </>
   )
 
+  // Planning prioritaire : affiché dès que le formateur diffuse, peu importe l'état
+  if (tvScreen === 'planning' && planningDay) {
+    const jour = PLANNING_JOURS.find(j => j.id === planningDay)
+    if (jour) return (
+      <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', display: 'flex', flexDirection: 'column', padding: '32px 20px 40px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain', opacity: 0.7 }} />
+          <div style={{ background: `${jour.color}20`, border: `1px solid ${jour.color}50`, borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1 }}>{jour.jour}</div>
+        </div>
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', marginBottom: 6 }}>{jour.label}</div>
+          <div style={{ width: 40, height: 3, borderRadius: 2, background: jour.color }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+          {jour.blocs.map((bloc, i) => {
+            const isPause = bloc.titre === 'Pause déjeuner'
+            if (isPause) return (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0' }}>
+                <div style={{ flex: 1, height: 1, background: 'rgba(245,158,11,0.3)' }} />
+                <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 20, padding: '5px 16px', fontSize: 11, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1, whiteSpace: 'nowrap' }}>
+                  {bloc.horaire && <span style={{ opacity: 0.7, marginRight: 8 }}>{bloc.horaire}</span>}Pause déjeuner
+                </div>
+                <div style={{ flex: 1, height: 1, background: 'rgba(245,158,11,0.3)' }} />
+              </div>
+            )
+            return (
+              <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderTop: `2px solid ${jour.color}`, borderRadius: 14, padding: '16px 16px' }}>
+                {bloc.horaire && <div style={{ fontSize: 10, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{bloc.horaire}</div>}
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: bloc.items.length > 0 ? 10 : 0 }}>{bloc.titre}</div>
+                {bloc.items.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {bloc.items.map((item, j) => (
+                      <div key={j} style={{
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.09)',
+                        borderLeft: `2px solid ${jour.color}60`,
+                        borderRadius: 8, padding: '7px 12px',
+                        fontSize: 12, color: 'rgba(255,255,255,0.75)',
+                        fontWeight: 500, lineHeight: 1.4,
+                      }}>{item}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
   // Si un module est actif, on prend le dessus sur tout le reste
-  if (activeModule) return <ParticipantModuleView forcedModule={activeModule} forcedPage={modulePage} pName={pName} />
+  if (activeModule) return <ParticipantModuleView forcedModule={activeModule} forcedPage={modulePage} pName={pName} sharedState={sharedState} />
+
+  // Si une FAQ est active (réveil des acquis)
+  if (sharedState?.faq_journee) return <FAQInputMobile journeeId={sharedState.faq_journee} />
 
   return (
     <div id="pv">

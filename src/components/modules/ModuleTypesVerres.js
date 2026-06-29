@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, sbSelect, SESSION_CODE } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { NextPagePreview } from '@/lib/trainerPreview'
 import { TYPES_VERRES_PAGES as PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -117,7 +118,7 @@ function AvatarBubble({ script, trainerAvatar, pName }) {
 }
 
 // ── Page de contenu ───────────────────────────────────────────────
-function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz }) {
+function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextPage }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -234,10 +235,9 @@ function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFir
       </div>
 
       {/* Boutons navigation — padding-right décalé pour ne pas chevaucher l'avatar */}
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '0 340px 28px 48px', position: 'relative', zIndex: 20, flexShrink: 0,
-      }}>
+      <div style={{ padding: '0 340px 0 48px', position: 'relative', zIndex: 20, flexShrink: 0 }}>
+        <NextPagePreview nextPage={nextPage} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 28 }}>
         <button
           onClick={onPrev}
           style={{
@@ -281,6 +281,7 @@ function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFir
             fontFamily: 'inherit',
           }}>Suivant →</button>
         )}
+        </div>
       </div>
 
       <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
@@ -433,10 +434,10 @@ function Lobby({ onStart, onBack }) {
         <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
           Module de formation
         </div>
-        <h1 style={{ fontSize: 34, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Types de verres</h1>
+        <h1 style={{ fontSize: 34, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Le Verre Unifocal</h1>
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 36, lineHeight: 1.6 }}>
-          Unifocal · Progressif<br />
-          Présentez chaque verre avec ses arguments de vente
+          La correction simple, efficace, accessible<br />
+          Arguments de vente &amp; positionnement dans l&apos;offre LPT
         </p>
         <button onClick={onStart} style={{
           background: 'linear-gradient(135deg, #0089ba, #00abe9)',
@@ -444,7 +445,7 @@ function Lobby({ onStart, onBack }) {
           borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer',
           boxShadow: '0 8px 32px rgba(0,171,233,0.45)', fontFamily: 'inherit',
         }}>▶ Lancer le module</button>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>2 pages · ~8 minutes</p>
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>1 page · ~4 minutes</p>
       </div>
     </div>
   )
@@ -662,6 +663,7 @@ export default function ModuleTypesVerres({ pName, onBack }) {
         onBack={handleBack}
         quizLaunched={quizLaunched}
         onLaunchQuiz={handleLaunchQuiz}
+        nextPage={PAGES[pageIndex + 1] ?? null}
       />
     </>
   )
