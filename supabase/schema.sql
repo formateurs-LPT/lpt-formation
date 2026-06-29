@@ -34,6 +34,8 @@ create table if not exists public.sessions (
   trainer_id uuid references public.trainers(id) on delete set null,
   status text not null default 'waiting'
     check (status in ('waiting', 'active', 'ended')),
+  room_type text check (room_type is null or room_type in ('presentiel', 'visio')),
+  label text,
   current_step int not null default -1,
   active_scenario int not null default 0,
   active_module text,
@@ -47,8 +49,11 @@ create table if not exists public.sessions (
 create index if not exists idx_sessions_code on public.sessions(code);
 create index if not exists idx_sessions_trainer on public.sessions(trainer_id);
 create index if not exists idx_sessions_status on public.sessions(status);
+create index if not exists idx_sessions_room_type on public.sessions(room_type);
 
 comment on column public.sessions.code is 'Code court affiché au formateur (ex. K7M2), saisi par les participants';
+comment on column public.sessions.room_type is 'presentiel = Paris | visio = province + Belgique';
+comment on column public.sessions.label is 'Libellé de la salle (ex. Onboarding Paris — mardi)';
 
 -- -----------------------------------------------------------------------------
 -- 3. PARTICIPANTS (liés à une session par code)
@@ -138,6 +143,9 @@ create table if not exists public.trainer_state (
   state jsonb not null default '{}'::jsonb,
   updated_at timestamptz default now()
 );
+
+comment on table public.trainer_state is
+  'État partagé. Clé __weekly__ = liste RH globale. Clé = code session = legacy (LPT2026).';
 
 create table if not exists public.onboarding_sessions (
   id bigserial primary key,
