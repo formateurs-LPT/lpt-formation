@@ -22,9 +22,9 @@ const STORES_BY_ZONE = {
   ],
 }
 
-const TRAINERS = ['Kevin','Quentin','Nadège']
+const TRAINERS = ['Kevin','Quentin','Nadège','Thomas']
 
-const TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777' }
+const TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777', Thomas: '#f59e0b' }
 
 function trainerColor(name) {
   return TRAINER_COLORS[name] || '#64748b'
