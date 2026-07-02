@@ -49,6 +49,7 @@ export function getTrainerCredentials() {
   const kevin = process.env.NEXT_PUBLIC_TRAINER_CODE_KEVIN
   const quentin = process.env.NEXT_PUBLIC_TRAINER_CODE_QUENTIN
   const nadege = process.env.NEXT_PUBLIC_TRAINER_CODE_NADEGE
+  const thomas = process.env.NEXT_PUBLIC_TRAINER_CODE_THOMAS
 
   if (kevin?.trim()) trainers.kevin = kevin.trim()
   if (quentin?.trim()) trainers.quentin = quentin.trim()
@@ -56,6 +57,7 @@ export function getTrainerCredentials() {
     trainers.nadege = nadege.trim()
     trainers['nadège'] = nadege.trim()
   }
+  if (thomas?.trim()) trainers.thomas = thomas.trim()
 
   if (Object.keys(trainers).length === 0) {
     throw new Error(

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { sbSelect } from '@/lib/supabase'
 
-const TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777' }
+const TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777', Thomas: '#f59e0b' }
 function trainerColor(name) { return TRAINER_COLORS[name] || '#64748b' }
 
 function isoToday() { return new Date().toISOString().slice(0, 10) }

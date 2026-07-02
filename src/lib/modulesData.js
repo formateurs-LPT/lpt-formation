@@ -316,19 +316,11 @@ export const ENTREPRISE_PAGES = [
     titre: "Lunettes pour Tous aujourd'hui",
     color: '#00abe9',
     stats: [
-      { value: '32',           label: 'magasins en France',             color: '#00abe9' },
-      { value: 'France & Belgique', label: 'présence géographique',     color: '#4ade80' },
+      { value: '33',           label: 'magasins France & Belgique',     color: '#00abe9' },
       { value: '+1 000',       label: 'collaborateurs',                  color: '#f59e0b' },
       { value: 'Des milliers', label: 'de clients équipés chaque jour', color: '#a78bfa' },
       { value: '10 minutes',   label: 'la promesse LPT',                color: '#f472b6' },
     ],
-  },
-  {
-    id: 'carte-reseau',
-    type: 'carte-reseau',
-    titre: 'Notre réseau de magasins',
-    sousTitre: 'France & Belgique · 33 magasins',
-    color: '#00abe9',
   },
   {
     id: 'promesse',
@@ -348,9 +340,16 @@ export const ENTREPRISE_PAGES = [
         { value: 2000, unit: 'paires vendues par jour', sub: 'sur tout le réseau LPT', delay: 0 },
         { value: 1000000, unit: 'paires vendues en 2025', sub: "et ça continue…", delay: 2400 },
       ]},
-      { label: 'Notre propre marque', color: '#a78bfa', video: null },
+      { label: 'Notre propre marque', color: '#a78bfa', video: '/assets/D%C3%A9tails%20fabrication%20montures.mp4' },
       { label: '0 intermédiaire', color: '#f472b6', video: null },
     ],
+  },
+  {
+    id: 'zero-intermediaire',
+    type: 'zero-intermediaire',
+    titre: '0 intermédiaire',
+    sousTitre: 'Notre avantage direct',
+    color: '#f472b6',
   },
 ]
 

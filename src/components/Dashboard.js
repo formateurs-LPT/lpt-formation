@@ -54,7 +54,16 @@ function DashHeader({ pName, onUpdatesClick }) {
         className="dash-hero-avatar"
       />
       <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-        <div className="dash-hero-label">Formation · Lunettes Pour Tous</div>
+        <div className="dash-hero-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          Formation · Lunettes Pour Tous
+          {key === 'thomas' && (
+            <span title="Formateur Belgique" style={{ display: 'inline-flex', borderRadius: 3, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.4)', flexShrink: 0 }}>
+              <span style={{ display: 'block', width: 7, height: 14, background: '#1a1a1a' }} />
+              <span style={{ display: 'block', width: 7, height: 14, background: '#FDDA24' }} />
+              <span style={{ display: 'block', width: 7, height: 14, background: '#EF3340' }} />
+            </span>
+          )}
+        </div>
         <h2 className="dash-hero-title">Bonjour, {cap(pName)} 👋</h2>
         <p className="dash-hero-date">{cap(today)}</p>
       </div>

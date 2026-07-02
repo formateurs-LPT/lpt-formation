@@ -1,24 +1,27 @@
-export const TRAINER_CANONICAL = { 'nadège': 'nadege' }
+export const TRAINER_CANONICAL = { 'nadège': 'nadege', 'thomas': 'thomas' }
 
 export const TRAINER_AVATARS = {
   kevin: '/assets/avatar_kevin.png',
   quentin: '/assets/avatar_quentin.png',
   nadege: '/assets/avatar_nadege.png',
-  paul: '/assets/avatar_paul.png'
+  paul: '/assets/avatar_paul.png',
+  thomas: '/assets/avatar_thomas.png'
 }
 
 export const TRAINER_COLORS = {
   kevin: '#0089ba',
   quentin: '#7c3aed',
   nadege: '#db2777',
-  paul: '#0f766e'
+  paul: '#0f766e',
+  thomas: '#f59e0b'
 }
 
 export const TRAINER_INITIALS = {
   kevin: 'K',
   quentin: 'Q',
   nadege: 'N',
-  paul: 'PM'
+  paul: 'PM',
+  thomas: 'T'
 }
 
 export const PROG_MODULES = [
@@ -143,6 +146,44 @@ export const WEATHER_PHRASES = {
       "Nadège grimpe la montagne à son rythme. Elle y arrivera ! 🏔️",
       "Journée de combat pour Nadège. Tête dans le guidon, pieds sur terre 🚴",
       "Difficile mais Nadège ne lâche jamais. C'est pour ça qu'on l'aime ❤️"
+    ]
+  },
+  thomas: {
+    '☀️': [
+      "Thomas cartonne en Belgique ! Les collaborateurs wallons sont conquis 🇧🇪",
+      "Depuis Bruxelles, Thomas envoie du lourd. La promo est captivée ✨",
+      "Thomas illumine le Plat Pays — même les gaufres sont jalouses 🧇",
+      "Journée au top pour Thomas ! La Belgique est entre de bonnes mains 🌟",
+      "Thomas rayonne côté belge. Energie contagieuse, même par écran interposé 💫",
+      "La promo de Thomas : du chocolat belge — de la qualité pure 🍫",
+      "Thomas transforme Bruxelles en capitale de la formation optique 🎓",
+      "Énergie maximale chez Thomas ! Les collaborateurs belges absorbent tout 🚀",
+      "Thomas assure depuis la Belgique. La promo en redemande 💪",
+      "Formation 5 étoiles chez Thomas. Les Belges repartent armés pour vendre ! 🏆"
+    ],
+    '⛅': [
+      "Journée correcte pour Thomas en Belgique. Ça tourne, sans plus 🙂",
+      "Thomas gère avec brio malgré une promo un peu molle. Respect 👏",
+      "Ambiance bruxelloise : ni soleil ni pluie. Thomas s'adapte 🌤️",
+      "La promo de Thomas suit… à son rythme. Il reste patient 🧘",
+      "Correct chez Thomas. Il garde le sourire — même sous les nuages belges ☕",
+      "Thomas pilote avec calme une promo en demi-teinte 😌",
+      "La promo n'est pas au max mais Thomas assure quand même 💪",
+      "Journée ordinaire en Belgique — ce qui reste une belle performance 🌥️",
+      "Thomas avance doucement mais sûrement avec sa promo 🐢",
+      "Ni euphorie ni catastrophe. Thomas fait ce qu'il peut avec ce qu'il a !"
+    ],
+    '🌧️': [
+      "Journée difficile pour Thomas. Il tient bon sous la grisaille belge 🌂",
+      "La promo de Thomas résiste… Thomas aussi. Il gagne toujours 🥊",
+      "Orage en Belgique chez Thomas ! Il reste le phare dans la tempête 🌊",
+      "Dur dur aujourd'hui. Thomas se console avec un bon chocolat belge 🍫",
+      "Thomas face à une promo compliquée. Il sort l'artillerie lourde 💪",
+      "Tempête en formation. Thomas tient la barre — admirable 🫡",
+      "La promo de Thomas aujourd'hui… ambiance gare du Midi un lundi 😓",
+      "Thomas grimpe la montagne à son rythme. Il y arrivera ! 🏔️",
+      "Journée de combat pour Thomas. Tête dans le guidon, pieds sur terre 🚴",
+      "Difficile mais Thomas ne lâche jamais. C'est pour ça qu'on l'aime ❤️"
     ]
   }
 }
