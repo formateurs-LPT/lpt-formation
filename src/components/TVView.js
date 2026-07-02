@@ -1884,11 +1884,18 @@ function TVPdmPourquoi({ pageIndex, total }) {
 }
 
 // ── TV Offres : Classique ─────────────────────────────────────────
-function TVOffresClassique() {
+const TV_ITEMS_CLASSIQUE = [
+  { label: '1 paire achetée', sub: null },
+  { label: 'Deuxième paire à -20%', sub: 'Sur une sélection de montures et verres' },
+  { label: '10€ en 10 minutes', sub: 'Fabrication express — le cœur du concept LPT' },
+]
+
+function TVOffresClassique({ step = 0 }) {
   const COLOR = '#00abe9'
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ maxWidth: 680, width: '100%', padding: '0 56px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+      {/* Gauche */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 32 }}>
           <div style={{ width: 96, height: 96, borderRadius: '50%', border: `14px solid ${COLOR}`, boxShadow: `0 0 40px ${COLOR}50`, flexShrink: 0 }} />
           <div>
@@ -1898,12 +1905,44 @@ function TVOffresClassique() {
           </div>
         </div>
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `4px solid ${COLOR}`, borderRadius: 16, padding: '24px 28px' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>Ce qui est inclus</div>
-          {['1 paire achetée', 'Deuxième paire à -20%', 'Paires à partir de 10 euros'].map((pt, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: i < 2 ? 16 : 0 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR, flexShrink: 0 }} />
-              <span style={{ fontSize: 20, color: '#fff', fontWeight: 500 }}>{pt}</span>
-            </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>Tarifs</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>Entrée de gamme</span>
+            <span style={{ fontSize: 30, fontWeight: 900, color: COLOR }}>dès 10€</span>
+          </div>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 16 }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>2ème paire</span>
+            <span style={{ fontSize: 30, fontWeight: 900, color: COLOR }}>-20%</span>
+          </div>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 16 }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>Fabrication</span>
+            <span style={{ fontSize: 30, fontWeight: 900, color: COLOR }}>⚡ 10 min</span>
+          </div>
+        </div>
+      </div>
+      {/* Droite */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', gap: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Ce qui est inclus</div>
+        {TV_ITEMS_CLASSIQUE.map((item, i) => (
+          <div key={i} style={{
+            background: i < step ? `${COLOR}12` : 'rgba(255,255,255,0.03)',
+            border: `1px solid ${i < step ? COLOR + '50' : 'rgba(255,255,255,0.08)'}`,
+            borderLeft: `4px solid ${i < step ? COLOR : 'rgba(255,255,255,0.12)'}`,
+            borderRadius: 16, padding: '22px 28px',
+            opacity: i < step ? 1 : 0.2,
+            transform: i < step ? 'translateX(0)' : 'translateX(16px)',
+            transition: 'all 0.5s cubic-bezier(0.22,1,0.36,1)',
+          }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{item.label}</div>
+            {item.sub && <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>{item.sub}</div>}
+          </div>
+        ))}
+        {/* Barre de progression */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          {TV_ITEMS_CLASSIQUE.map((_, i) => (
+            <div key={i} style={{ height: 4, flex: 1, borderRadius: 2, background: i < step ? COLOR : 'rgba(255,255,255,0.1)', transition: 'background 0.4s' }} />
           ))}
         </div>
       </div>
@@ -2145,7 +2184,7 @@ function TVMontures({ type, pageIndex, total, moduleLabel }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, modelePoint }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -2161,7 +2200,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'montures-metal')   return <TVMontures type="montures-metal"   pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'montures-injecte') return <TVMontures type="montures-injecte" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'pdm-pourquoi')     return <TVPdmPourquoi pageIndex={pageIndex} total={total} />
-  if (page.type === 'offres-classique') return <TVOffresClassique />
+  if (page.type === 'offres-classique') return <TVOffresClassique step={offresClassiqueStep} />
   if (page.type === 'offres-1-1')       return <TVOffres11 step={offres11Step} />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} audioUnlocked={audioUnlocked} />
@@ -2924,6 +2963,7 @@ export default function TVView() {
   const [trameStep, setTrameStep]                       = useState(null)
   // Offres 1=1
   const [offres11Step, setOffres11Step]                 = useState(0)
+  const [offresClassiqueStep, setOffresClassiqueStep]   = useState(0)
   // Force LPT — point sélectionné par le formateur
   const [modelePoint, setModelePoint]                   = useState(null)
   // FAQ Réveil des acquis
@@ -2960,6 +3000,7 @@ export default function TVView() {
     if (tvInitDoneRef.current) setTvScreen(sharedState.tv_screen || null)
     setTrameStep(sharedState.trame_step ?? null)
     setOffres11Step(sharedState.offres_11_step ?? 0)
+    setOffresClassiqueStep(sharedState.offres_classique_step ?? 0)
     setModelePoint(sharedState.modele_point ?? null)
     setTroublesPhase(sharedState.troubles_phase || 1)
     setOpticienPlaying(!!sharedState.opticien_playing)
@@ -3074,6 +3115,7 @@ export default function TVView() {
           progBestAnswer={progBestAnswer}
           trameStep={trameStep}
           offres11Step={offres11Step}
+          offresClassiqueStep={offresClassiqueStep}
           modelePoint={modelePoint}
         />
       ) : (

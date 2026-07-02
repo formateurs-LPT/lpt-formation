@@ -32,14 +32,23 @@ function CoursClassique({ onNext, onPrev, onBack }) {
   const COLOR = '#00abe9'
   const [step, setStep] = useState(0)
 
+  useEffect(() => {
+    setSharedState({ offres_classique_step: 0 }).catch(() => {})
+    return () => { setSharedState({ offres_classique_step: 0 }).catch(() => {}) }
+  }, [])
+
   const reveal = async () => {
     if (step >= ITEMS_CLASSIQUE.length) return
-    setStep(s => s + 1)
+    const next = step + 1
+    setStep(next)
+    await setSharedState({ offres_classique_step: next })
   }
 
-  const hide = () => {
+  const hide = async () => {
     if (step <= 0) return
-    setStep(s => s - 1)
+    const prev = step - 1
+    setStep(prev)
+    await setSharedState({ offres_classique_step: prev })
   }
 
   const allRevealed = step >= ITEMS_CLASSIQUE.length
