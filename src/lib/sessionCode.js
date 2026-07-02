@@ -62,3 +62,30 @@ export function captureParticipantRoomFromUrl() {
   if (code) setParticipantSessionCode(code)
   return code || ''
 }
+
+/** Mode TV : ?mode=tv&room=XXXX — mémorise la salle (écran diffusion séparé) */
+export function captureTvRoomFromUrl() {
+  if (typeof window === 'undefined') return ''
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('mode') !== 'tv') return ''
+  const room = params.get('room')?.trim()
+  if (room) setTrainerActiveRoomCode(room)
+  return room || ''
+}
+
+/** True si le code est une salle dynamique (pas le legacy LPT2026 / .env) */
+export function isDynamicRoomCode(code) {
+  const c = (code || '').trim()
+  if (!c) return false
+  return c !== getLegacySessionCode()
+}
+
+export function isActiveDynamicRoom() {
+  return isDynamicRoomCode(readTrainerActiveRoomCode())
+}
+
+export function buildTvUrl(code, basePath = '/') {
+  const room = (code || '').trim()
+  if (!room || !isDynamicRoomCode(room)) return `${basePath}?mode=tv`
+  return `${basePath}?mode=tv&room=${encodeURIComponent(room)}`
+}

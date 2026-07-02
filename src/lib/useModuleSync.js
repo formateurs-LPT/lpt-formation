@@ -1,6 +1,17 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { sbSelect, getSharedState, SESSION_CODE } from '@/lib/supabase'
+import { sbSelect, getSharedState, getActiveSessionCode, getParticipantSessionCode } from '@/lib/supabase'
+
+function resolveSyncSessionCode() {
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search)
+    const isParticipantMode =
+      params.get('mode') === 'participant' ||
+      Boolean(localStorage.getItem('participant_name'))
+    if (isParticipantMode) return getParticipantSessionCode()
+  }
+  return getActiveSessionCode()
+}
 
 // ─────────────────────────────────────────────────────────────────
 //  useModuleSync — synchronisation TV / participant
@@ -36,8 +47,9 @@ export function useModuleSync({ disabled = false } = {}) {
     const poll = async () => {
       try {
         // ── Lecture session + trainer_state en parallèle ──────────
+        const sessionCode = resolveSyncSessionCode()
         const [rows, shared] = await Promise.all([
-          sbSelect('sessions', 'code=eq.' + SESSION_CODE),
+          sbSelect('sessions', 'code=eq.' + encodeURIComponent(sessionCode)),
           getSharedState(),
         ])
 

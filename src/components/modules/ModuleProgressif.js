@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, SESSION_CODE, getSharedState, setSharedState } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, getSharedState, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import { PROGRESSIF_PAGES, PROGRESSIF_QUIZ } from '@/lib/modulesData'
@@ -543,7 +543,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   useEffect(() => {
     const poll = async () => {
       const rows = await fetchTrainerQuizAnswers(
-        `session_code=eq.${SESSION_CODE}&module_id=eq.verre-progressif&question_idx=eq.${quizQ}`
+        `session_code=eq.${getActiveSessionCode()}&module_id=eq.verre-progressif&question_idx=eq.${quizQ}`
       )
       setLiveAnswers(rows || [])
     }
@@ -617,7 +617,7 @@ function GroupResultsView({ onTerminate }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchTrainerQuizAnswers(`session_code=eq.${SESSION_CODE}&module_id=eq.verre-progressif`)
+    fetchTrainerQuizAnswers(`session_code=eq.${getActiveSessionCode()}&module_id=eq.verre-progressif`)
       .then(rows => { setAnswers(rows || []); setLoading(false) })
   }, [])
 
@@ -728,38 +728,38 @@ export default function ModuleProgressif({ pName, onBack }) {
   const trainerAvatar = pName ? `/assets/avatar_${pName.toLowerCase()}.png` : '/assets/avatar_kevin.png'
 
   useEffect(() => {
-    if (started) sbUpdate('sessions', { active_module: 'verre-progressif', module_page: 0 }, 'code=eq.' + SESSION_CODE)
+    if (started) sbUpdate('sessions', { active_module: 'verre-progressif', module_page: 0 }, 'code=eq.' + getActiveSessionCode())
   }, [started])
 
   useEffect(() => {
-    if (started) sbUpdate('sessions', { module_page: pageIndex }, 'code=eq.' + SESSION_CODE)
+    if (started) sbUpdate('sessions', { module_page: pageIndex }, 'code=eq.' + getActiveSessionCode())
   }, [pageIndex, started])
 
   const handleLaunchQuiz = async () => {
-    await sbUpdate('sessions', { module_page: 100 }, 'code=eq.' + SESSION_CODE)
+    await sbUpdate('sessions', { module_page: 100 }, 'code=eq.' + getActiveSessionCode())
     setQuizQ(0)
     setQuizLaunched(true)
   }
 
   const handleNextQuestion = async () => {
     const next = quizQ + 1
-    await sbUpdate('sessions', { module_page: 100 + next }, 'code=eq.' + SESSION_CODE)
+    await sbUpdate('sessions', { module_page: 100 + next }, 'code=eq.' + getActiveSessionCode())
     setQuizQ(next)
   }
 
   const handleEndQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'verre-progressif', module_page: 200 }, 'code=eq.' + SESSION_CODE)
+    await sbUpdate('sessions', { active_module: 'verre-progressif', module_page: 200 }, 'code=eq.' + getActiveSessionCode())
     setShowGroupResults(true)
   }
 
   const handleTerminate = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + SESSION_CODE)
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
     await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_retour_responses: {}, prog_objection_idx: null, prog_objection_responses: {}, prog_best_answer: null })
     onBack()
   }
 
   const handleBack = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + SESSION_CODE)
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
     await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_retour_responses: {}, prog_objection_idx: null, prog_objection_responses: {}, prog_best_answer: null })
     onBack()
   }

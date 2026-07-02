@@ -4,8 +4,14 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbSelect, SESSION_CODE, getSharedState, setSharedState, getRuntimeSessionCode } from '@/lib/supabase'
-import { buildJoinUrl } from '@/lib/sessionCode'
+import { sbSelect, getSharedState, setSharedState, getRuntimeSessionCode } from '@/lib/supabase'
+import {
+  buildJoinUrl,
+  captureTvRoomFromUrl,
+  getLegacySessionCode,
+  isDynamicRoomCode,
+  readTrainerActiveRoomCode,
+} from '@/lib/sessionCode'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -3043,7 +3049,16 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
 // ── TV View ───────────────────────────────────────────────────────
 export default function TVView() {
   const { activeModule, modulePage, sharedState, loading } = useModuleSync()
-  const [tvScreen, setTvScreen]               = useState(null)
+  const roomCode = getRuntimeSessionCode('trainer')
+  const isRoomSession = isDynamicRoomCode(roomCode)
+
+  const [tvScreen, setTvScreen] = useState(() => {
+    if (typeof window === 'undefined') return null
+    captureTvRoomFromUrl()
+    const code = readTrainerActiveRoomCode() || roomCode
+    return isDynamicRoomCode(code) ? 'qr' : null
+  })
+  const [tvReady, setTvReady] = useState(false)
   const [troublesPhase, setTroublesPhase]     = useState(1)
   const [opticienPlaying, setOpticienPlaying] = useState(false)
   const [ordoPlaying, setOrdoPlaying]         = useState(false)
@@ -3077,22 +3092,41 @@ export default function TVView() {
   // (évite le flash QR au démarrage quand tv_screen='qr' est resté en DB)
   const tvInitDoneRef = useRef(false)
 
-  // À l'ouverture de la TV : remet tv_screen à null pour toujours afficher la bienvenue
+  // Sync TV : salle dynamique → QR par défaut ; legacy → bienvenue sauf tv_screen explicite
   useEffect(() => {
+    const code = getRuntimeSessionCode('trainer')
+    const isRoom = isDynamicRoomCode(code)
+
     getSharedState().then(state => {
+      if (isRoom) {
+        if (state?.tv_screen !== 'qr') {
+          setSharedState({ tv_screen: 'qr' }).catch(() => {})
+        }
+        setTvScreen(prev => (prev === 'planning' ? 'planning' : 'qr'))
+        return
+      }
       if (state?.tv_screen) {
         setSharedState({ tv_screen: null }).catch(() => {})
       }
+      setTvScreen(null)
     }).catch(() => {}).finally(() => {
       tvInitDoneRef.current = true
+      setTvReady(true)
     })
   }, [])
 
-  // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
+  // ── Hydratation depuis sharedState (fourni par useModuleSync) ──
   useEffect(() => {
-    if (!sharedState) return
-    // Ne pas appliquer tv_screen avant que le nettoyage initial soit terminé
-    if (tvInitDoneRef.current) setTvScreen(sharedState.tv_screen || null)
+    if (!sharedState || !tvReady) return
+
+    const nextScreen = sharedState.tv_screen || null
+    if (isRoomSession) {
+      // En salle : QR sauf planning / FAQ explicitement demandés
+      if (nextScreen === 'planning') setTvScreen('planning')
+      else if (!sharedState.faq_journee) setTvScreen('qr')
+    } else if (tvInitDoneRef.current) {
+      setTvScreen(nextScreen)
+    }
     setTrameStep(sharedState.trame_step ?? null)
     setOffres11Step(sharedState.offres_11_step ?? 0)
     setModelePoint(sharedState.modele_point ?? null)
@@ -3115,7 +3149,7 @@ export default function TVView() {
     const fj = sharedState.faq_journee || null
     setFaqJournee(fj)
     setFaqQuestions(fj ? (sharedState[`faq_${fj}_q`] || []) : [])
-  }, [sharedState])
+  }, [sharedState, tvReady, isRoomSession])
 
   const moduleData = MODULE_DATA[activeModule] || null
   const isLobby   = !!moduleData && modulePage === -1
@@ -3135,14 +3169,25 @@ export default function TVView() {
 
   // Pas de module actif → écran selon tv_screen ou FAQ
   if (!loading && !activeModule && !isLobby) {
+    const showQr = tvScreen === 'qr' || (isRoomSession && tvScreen !== 'planning' && !faqJournee)
     return (
       <>
         <style>{STYLES}</style>
+        {isRoomSession && (
+          <div style={{
+            position: 'fixed', top: 16, right: 16, zIndex: 50,
+            background: 'rgba(0,137,186,0.2)', border: '1px solid rgba(0,171,233,0.45)',
+            borderRadius: 20, padding: '8px 16px', fontSize: 12, fontWeight: 700,
+            color: '#00abe9', letterSpacing: 1,
+          }}>
+            SALLE {roomCode}
+          </div>
+        )}
         {faqJournee
           ? <TVFAQView journeeId={faqJournee} questions={faqQuestions} />
           : tvScreen === 'planning'
             ? <TVPlanningScreen planningDay={planningDay} />
-            : tvScreen === 'qr'
+            : showQr
               ? <WaitingScreen />
               : <WelcomeScreen />
         }

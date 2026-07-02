@@ -3,13 +3,14 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { generatePin } from '@/lib/pin'
-import { getSharedState, setSharedState, sbUpsert, sbSelect, SESSION_CODE } from '@/lib/supabase'
+import { getSharedState, setSharedState, sbUpsert, sbSelect, getActiveSessionCode } from '@/lib/supabase'
 import {
   countEntreesByCategory,
   entreeMatchesCategory,
   getCategoryDisplayTitle,
   listFormationCategories,
 } from '@/lib/formationCategories'
+import { getLegacySessionCode } from '@/lib/sessionCode'
 
 const JOURNEES = (onLaunchModule) => [
   {
@@ -151,7 +152,7 @@ function CollabList({ group, onNext, onBack }) {
       // Fallback : charger depuis participants Supabase si entrees_data vide
       if (data.length === 0) {
         try {
-          const rows = await sbSelect('participants', `session_code=eq.${SESSION_CODE}&order=joined_at.asc`)
+          const rows = await sbSelect('participants', `session_code=eq.${getActiveSessionCode()}&order=joined_at.asc`)
           if (rows && rows.length > 0) {
             data = rows.map(r => {
               const parts = (r.name || '').trim().split(/\s+/)
@@ -327,6 +328,17 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
   const journees = JOURNEES(onLaunchModule)
   const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
+  const roomCode = typeof window !== 'undefined' ? getActiveSessionCode() : ''
+  const isRoomSession = roomCode && roomCode !== getLegacySessionCode()
+
+  const showQrOnTv = () => {
+    setSharedState({ tv_screen: 'qr' }).catch(console.warn)
+  }
+
+  const openJournee = (journeeId) => {
+    setSelectedJournee(journeeId)
+    showQrOnTv()
+  }
 
   if (selectedJournee) {
     const journee = journees.find(j => j.id === selectedJournee)
@@ -341,13 +353,35 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
           <div className="dash-hero-label">Formation · Lunettes Pour Tous</div>
           <h2 className="dash-hero-title">Modules de formation</h2>
           <p className="dash-hero-date">{cap(dateStr)}</p>
+          {isRoomSession && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 14, alignItems: 'center' }}>
+              <span style={{
+                fontSize: 13, fontWeight: 700, color: '#00abe9',
+                background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)',
+                borderRadius: 20, padding: '6px 14px', letterSpacing: 2, fontFamily: 'monospace',
+              }}>
+                Salle {roomCode}
+              </span>
+              <button
+                type="button"
+                onClick={showQrOnTv}
+                style={{
+                  fontSize: 12, fontWeight: 700, color: '#fff',
+                  background: '#0089ba', border: 'none', borderRadius: 20,
+                  padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                Réafficher le QR sur TV
+              </button>
+            </div>
+          )}
         </div>
         <div style={{ width: 56, height: 56, background: 'rgba(255,255,255,.08)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, position: 'relative', zIndex: 1 }}>🎓</div>
       </div>
 
       <div className="dash-tiles" style={{ gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         {journees.map((j) => (
-          <div key={j.id} className="dash-tile" onClick={() => { setSelectedJournee(j.id); setSharedState({ tv_screen: 'qr' }).catch(console.warn) }} style={{ cursor: 'pointer' }}>
+          <div key={j.id} className="dash-tile" onClick={() => openJournee(j.id)} style={{ cursor: 'pointer' }}>
             <div className="dash-tile-top">
               <div style={{
                 width: 38, height: 38, borderRadius: 10, flexShrink: 0,
@@ -366,7 +400,7 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
         ))}
 
         {/* Tuile Réveil des acquis */}
-        <div className="dash-tile" onClick={() => { setSharedState({ tv_screen: 'qr' }).catch(console.warn); onLaunchModule('reveil-acquis') }} style={{ cursor: 'pointer', borderColor: 'rgba(245,158,11,0.25)' }}>
+        <div className="dash-tile" onClick={() => { showQrOnTv(); onLaunchModule('reveil-acquis') }} style={{ cursor: 'pointer', borderColor: 'rgba(245,158,11,0.25)' }}>
           <div className="dash-tile-top">
             <div style={{
               width: 38, height: 38, borderRadius: 10, flexShrink: 0,

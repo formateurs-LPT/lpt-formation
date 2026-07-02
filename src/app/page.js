@@ -10,7 +10,8 @@ import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB, ensureSes
 import { resolveParticipantName } from '@/lib/participantNames'
 import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
-import { captureParticipantRoomFromUrl, setParticipantSessionCode } from '@/lib/sessionCode'
+import { captureParticipantRoomFromUrl, captureTvRoomFromUrl, buildTvUrl, isDynamicRoomCode, setParticipantSessionCode } from '@/lib/sessionCode'
+import { getActiveSessionCode } from '@/lib/supabase'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
 import ModuleProgressif from '@/components/modules/ModuleProgressif'
 import ModulePDM from '@/components/modules/ModulePDM'
@@ -42,6 +43,7 @@ export default function Page() {
 
   useEffect(() => {
     captureParticipantRoomFromUrl()
+    captureTvRoomFromUrl()
     setDisplaySessionCode(getRuntimeSessionCode())
   }, [])
 
@@ -156,7 +158,7 @@ export default function Page() {
 
   const handleOpenRoom = ({ code }) => {
     if (code) setDisplaySessionCode(code)
-    setView('trainer-session')
+    setView('onboarding-modules')
   }
   const handleLaunchModule = (moduleId) => setView('module-' + moduleId)
   const handleBackToDashboard = () => setView('dashboard')
@@ -182,8 +184,17 @@ export default function Page() {
         isTrainer={isTrainer}
         onlineCount={onlineCount}
         sessionCode={displaySessionCode || getRuntimeSessionCode() || SESSION_CODE}
+        isRoomSession={isDynamicRoomCode(displaySessionCode || getRuntimeSessionCode() || SESSION_CODE)}
         onLogout={handleLogout}
-        onTVMode={() => setMode('tv')}
+        onTVMode={() => {
+          const code = getActiveSessionCode()
+          if (isDynamicRoomCode(code)) {
+            window.history.replaceState(null, '', buildTvUrl(code))
+          } else {
+            window.history.replaceState(null, '', '?mode=tv')
+          }
+          setMode('tv')
+        }}
       />
       {view === 'dashboard' && (
         <Dashboard

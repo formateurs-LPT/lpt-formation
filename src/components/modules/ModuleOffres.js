@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, SESSION_CODE, setSharedState } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { OFFRES_QUIZ } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
@@ -258,7 +258,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   useEffect(() => {
     const poll = async () => {
       const rows = await fetchTrainerQuizAnswers(
-        `session_code=eq.${SESSION_CODE}&module_id=eq.offres&question_idx=eq.${quizQ}`
+        `session_code=eq.${getActiveSessionCode()}&module_id=eq.offres&question_idx=eq.${quizQ}`
       )
       setLiveAnswers(rows || [])
     }
@@ -380,7 +380,7 @@ function GroupResultsView({ onTerminate }) {
   useEffect(() => {
     const fetchAnswers = async () => {
       const rows = await fetchTrainerQuizAnswers(
-        `session_code=eq.${SESSION_CODE}&module_id=eq.offres`
+        `session_code=eq.${getActiveSessionCode()}&module_id=eq.offres`
       )
       setAnswers(rows || [])
       setLoading(false)
@@ -537,49 +537,49 @@ export default function ModuleOffres({ pName, onBack }) {
   const [quizQ, setQuizQ] = useState(0)
 
   useEffect(() => {
-    sbUpdate('sessions', { active_module: 'offres', module_page: -1 }, `code=eq.${SESSION_CODE}`)
+    sbUpdate('sessions', { active_module: 'offres', module_page: -1 }, `code=eq.${getActiveSessionCode()}`)
   }, [])
 
   const handleBack = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     onBack()
   }
 
   const goLobby = async () => {
-    await sbUpdate('sessions', { active_module: 'offres', module_page: -1 }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: 'offres', module_page: -1 }, `code=eq.${getActiveSessionCode()}`)
     setPhase('lobby')
   }
 
   const goClassique = async () => {
-    await sbUpdate('sessions', { active_module: 'offres', module_page: 0 }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: 'offres', module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     setPhase('classique')
   }
 
   const go11 = async () => {
-    await sbUpdate('sessions', { active_module: 'offres', module_page: 1 }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: 'offres', module_page: 1 }, `code=eq.${getActiveSessionCode()}`)
     await setSharedState({ offres_11_step: 0 })
     setPhase('un-pour-un')
   }
 
   const startQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'offres', module_page: 100 }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: 'offres', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(0)
     setPhase('quiz')
   }
 
   const handleNextQuestion = async () => {
     const next = quizQ + 1
-    await sbUpdate('sessions', { active_module: 'offres', module_page: 100 + next }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: 'offres', module_page: 100 + next }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(next)
   }
 
   const handleEndQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'offres', module_page: 200 }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: 'offres', module_page: 200 }, `code=eq.${getActiveSessionCode()}`)
     setPhase('results')
   }
 
   const handleTerminateModule = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     onBack()
   }
 

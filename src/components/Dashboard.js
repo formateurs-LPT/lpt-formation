@@ -12,6 +12,7 @@ import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
 import { findActiveRoomForTrainer, openOrCreateRoom, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { readTrainerActiveRoomCode } from '@/lib/sessionCode'
+import { isDynamicRoomCode } from '@/lib/sessionCode'
 
 const NEWS_ITEMS = [
   '📚 Formation Verre Progressif — Module complet',
@@ -785,6 +786,45 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
         <DashHeader pName={pName} onUpdatesClick={() => setSelectedUpdate(APP_UPDATES[0])} />
         {selectedUpdate && <AppUpdateModal update={selectedUpdate} onClose={() => setSelectedUpdate(null)} />}
         <NewsTicker />
+
+        {isDynamicRoomCode(activeRoomCode) ? (
+          <div style={{
+            marginBottom: 16, padding: '14px 18px', borderRadius: 14,
+            background: 'linear-gradient(135deg, rgba(0,137,186,0.12), rgba(0,171,233,0.06))',
+            border: '1px solid rgba(0,137,186,0.35)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+          }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                Salle dédiée ouverte
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#0089ba', fontFamily: 'monospace', letterSpacing: 4, marginTop: 4 }}>
+                {activeRoomCode}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 4 }}>
+                Données isolées de LPT2026 — participants et diffusion via ce code uniquement.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleOpenRoomClick}
+              style={{
+                padding: '10px 18px', borderRadius: 10, border: 'none',
+                background: '#0089ba', color: '#fff', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              Reprendre la salle →
+            </button>
+          </div>
+        ) : (
+          <div style={{
+            marginBottom: 16, padding: '12px 16px', borderRadius: 12,
+            background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+            fontSize: 13, color: '#b45309',
+          }}>
+            Mode <strong>legacy</strong> (LPT2026) — cliquez <strong>Ma salle</strong> pour créer une salle séparée avec son propre QR.
+          </div>
+        )}
 
         {/* OB Banner */}
         <div className="ob-banner" onClick={() => setActiveView('onboarding')}>

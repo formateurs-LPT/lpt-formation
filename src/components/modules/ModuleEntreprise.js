@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, SESSION_CODE, setSharedState, getSharedState } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { ENTREPRISE_PAGES as PAGES, ENTREPRISE_QUIZ } from '@/lib/modulesData'
 
@@ -1166,7 +1166,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   useEffect(() => {
     const poll = async () => {
       const rows = await fetchTrainerQuizAnswers(
-        `session_code=eq.${SESSION_CODE}&module_id=eq.entreprise&question_idx=eq.${quizQ}`
+        `session_code=eq.${getActiveSessionCode()}&module_id=eq.entreprise&question_idx=eq.${quizQ}`
       )
       setLiveAnswers(rows || [])
     }
@@ -1240,7 +1240,7 @@ function GroupResultsView({ onTerminate }) {
 
   useEffect(() => {
     const fetch = async () => {
-      const rows = await fetchTrainerQuizAnswers(`session_code=eq.${SESSION_CODE}&module_id=eq.entreprise`)
+      const rows = await fetchTrainerQuizAnswers(`session_code=eq.${getActiveSessionCode()}&module_id=eq.entreprise`)
       setAnswers(rows || [])
       setLoading(false)
     }
@@ -1343,22 +1343,22 @@ export default function ModuleEntreprise({ pName, onBack }) {
   const [pageIndex, setPageIndex] = useState(0)
 
   useEffect(() => {
-    sbUpdate('sessions', { active_module: 'entreprise', module_page: -1 }, `code=eq.${SESSION_CODE}`)
+    sbUpdate('sessions', { active_module: 'entreprise', module_page: -1 }, `code=eq.${getActiveSessionCode()}`)
   }, [])
 
   useEffect(() => {
     if (started) {
-      sbUpdate('sessions', { active_module: 'entreprise', module_page: pageIndex }, `code=eq.${SESSION_CODE}`)
+      sbUpdate('sessions', { active_module: 'entreprise', module_page: pageIndex }, `code=eq.${getActiveSessionCode()}`)
     }
   }, [pageIndex, started])
 
   const handleBack = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     onBack()
   }
 
   const handleTerminateModule = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     onBack()
   }
 

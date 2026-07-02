@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, SESSION_CODE, setSharedState } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState } from '@/lib/supabase'
 import { TRAME_ACCUEIL_POINTS } from '@/lib/modulesData'
 
 const STYLES = `
@@ -47,7 +47,7 @@ export default function ModuleTrameAccueil({ pName, onBack }) {
 
   useEffect(() => {
     if (started) {
-      sbUpdate('sessions', { active_module: 'trame-accueil', module_page: 0 }, 'code=eq.' + SESSION_CODE)
+      sbUpdate('sessions', { active_module: 'trame-accueil', module_page: 0 }, 'code=eq.' + getActiveSessionCode())
       setSharedState({ trame_step: null }).catch(() => {})
     }
   }, [started])
@@ -66,7 +66,7 @@ export default function ModuleTrameAccueil({ pName, onBack }) {
   }
 
   const handleTerminate = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + SESSION_CODE)
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
     await setSharedState({ trame_step: null })
     onBack()
   }

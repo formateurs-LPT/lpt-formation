@@ -4,7 +4,7 @@ import {
   readTrainerActiveRoomCode,
   setTrainerActiveRoomCode,
 } from './sessionCode'
-import { getTrainerFromDB, sbSelect, sbUpdate, sbUpsert } from './supabase'
+import { getTrainerFromDB, sbSelect, sbUpdate, sbUpsert, setRoomSharedState } from './supabase'
 
 const ROOM_CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
@@ -72,6 +72,7 @@ export async function openOrCreateRoom({
   const existing = await findActiveRoomForTrainer(trainerLogin)
   if (existing?.code) {
     setTrainerActiveRoomCode(existing.code)
+    await setRoomSharedState({ tv_screen: 'qr' }, existing.code)
     return { code: existing.code, created: false, session: existing }
   }
 
@@ -98,6 +99,7 @@ export async function openOrCreateRoom({
   if (!result) throw new Error('Impossible de créer la salle en base')
 
   setTrainerActiveRoomCode(code)
+  await setRoomSharedState({ tv_screen: 'qr' }, code)
   return { code, created: true, session: row }
 }
 

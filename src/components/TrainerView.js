@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { sbSelect, sbUpdate, sbUpsert, sbDelete, SESSION_CODE, insertSessionHistory } from '@/lib/supabase'
+import { sbSelect, sbUpdate, sbUpsert, sbDelete, insertSessionHistory, getActiveSessionCode } from '@/lib/supabase'
 import {
   filterParticipantsInRh,
   loadEntreesList,
@@ -158,7 +158,7 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
   useEffect(() => {
     const interval = setInterval(async () => {
       const [data, entrees] = await Promise.all([
-        sbSelect('participants', 'session_code=eq.' + SESSION_CODE),
+        sbSelect('participants', 'session_code=eq.' + getActiveSessionCode()),
         loadEntreesList(),
       ])
       const count = filterParticipantsInRh(data || [], entrees).length
@@ -169,7 +169,7 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
   }, [])
 
   const launchFormation = async () => {
-    await sbUpdate('sessions', { current_step: 0 }, 'code=eq.' + SESSION_CODE)
+    await sbUpdate('sessions', { current_step: 0 }, 'code=eq.' + getActiveSessionCode())
     setCurStep(0)
     setLobbyActive(false)
     onToast('Formation lancée !')
@@ -178,7 +178,7 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
   const trainerGo = async (step) => {
     if (step < 0 || step > 4) return
     setCurStep(step)
-    await sbUpdate('sessions', { current_step: step, active_scenario: step === 1 ? 1 : 0 }, 'code=eq.' + SESSION_CODE)
+    await sbUpdate('sessions', { current_step: step, active_scenario: step === 1 ? 1 : 0 }, 'code=eq.' + getActiveSessionCode())
     if (step === 1) setCurSlide(1)
     onToast(`"${STEP_NAMES[step]}" diffusée`)
   }
@@ -187,7 +187,7 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
     if (curSlide < 6) {
       const next = curSlide + 1
       setCurSlide(next)
-      await sbUpdate('sessions', { active_scenario: next }, 'code=eq.' + SESSION_CODE)
+      await sbUpdate('sessions', { active_scenario: next }, 'code=eq.' + getActiveSessionCode())
     }
   }
 
@@ -195,18 +195,18 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
     if (curSlide > 1) {
       const prev = curSlide - 1
       setCurSlide(prev)
-      await sbUpdate('sessions', { active_scenario: prev }, 'code=eq.' + SESSION_CODE)
+      await sbUpdate('sessions', { active_scenario: prev }, 'code=eq.' + getActiveSessionCode())
     }
   }
 
   const endSession = async () => {
     if (!window.confirm('Terminer et enregistrer la session ?')) return
-    const participants = await sbSelect('participants', 'session_code=eq.' + SESSION_CODE)
-    const quizResults = await sbSelect('quiz_results', 'session_code=eq.' + SESSION_CODE)
-    const responses = await sbSelect('scenario_responses', 'session_code=eq.' + SESSION_CODE)
+    const participants = await sbSelect('participants', 'session_code=eq.' + getActiveSessionCode())
+    const quizResults = await sbSelect('quiz_results', 'session_code=eq.' + getActiveSessionCode())
+    const responses = await sbSelect('scenario_responses', 'session_code=eq.' + getActiveSessionCode())
     if (participants?.length || quizResults?.length) {
       await insertSessionHistory({
-        sessionCode: SESSION_CODE + '_' + Date.now(),
+        sessionCode: getActiveSessionCode() + '_' + Date.now(),
         sessionDate: new Date().toISOString(),
         trainerName: localStorage.getItem('trainer_name') || 'Formateur',
         participants: participants || [],
@@ -214,10 +214,10 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
         scenarioResponses: responses || [],
       })
     }
-    await sbDelete('participants', 'session_code=eq.' + SESSION_CODE)
-    await sbDelete('scenario_responses', 'session_code=eq.' + SESSION_CODE)
-    await sbDelete('quiz_results', 'session_code=eq.' + SESSION_CODE)
-    await sbUpdate('sessions', { current_step: -1 }, 'code=eq.' + SESSION_CODE)
+    await sbDelete('participants', 'session_code=eq.' + getActiveSessionCode())
+    await sbDelete('scenario_responses', 'session_code=eq.' + getActiveSessionCode())
+    await sbDelete('quiz_results', 'session_code=eq.' + getActiveSessionCode())
+    await sbUpdate('sessions', { current_step: -1 }, 'code=eq.' + getActiveSessionCode())
     onToast('Session enregistrée ✓')
     onBack()
   }
@@ -243,7 +243,7 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
           ))}
           <div className="ssep"></div>
           <div className="stitle">Participants</div>
-          <ParticipantList sessionCode={SESSION_CODE} />
+          <ParticipantList sessionCode={getActiveSessionCode()} />
         </div>
 
         {/* Main */}
@@ -309,7 +309,7 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
                 {Array.from({ length: 10 }, (_, i) => (
                   <div key={i} style={{ marginBottom: 12 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-m)', marginBottom: 4 }}>Question {i + 1}</div>
-                    <ResponseFeed sessionCode={SESSION_CODE} scenarioIdx={20 + i} />
+                    <ResponseFeed sessionCode={getActiveSessionCode()} scenarioIdx={20 + i} />
                   </div>
                 ))}
               </div>
@@ -320,7 +320,7 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
           {!lobbyActive && curStep === 1 && (
             <div>
               <div style={{ marginBottom: 20 }}><h2 style={{ fontSize: 20, fontWeight: 600 }}>Phase 2 — Les bases du verre progressif</h2><p style={{ fontSize: 13, color: 'var(--text-s)', marginTop: 4 }}>Présentez les slides. Les participants voient la même image sur leur écran.</p></div>
-              <SlideViewer sessionCode={SESSION_CODE} curSlide={curSlide} onPrev={prevSlide} onNext={nextSlide} />
+              <SlideViewer sessionCode={getActiveSessionCode()} curSlide={curSlide} onPrev={prevSlide} onNext={nextSlide} />
             </div>
           )}
 
@@ -340,7 +340,7 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
                 {[0, 1, 2, 3].map(i => (
                   <div key={i} style={{ marginBottom: 12 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-m)', marginBottom: 4 }}>Scénario {i + 1}</div>
-                    <ResponseFeed sessionCode={SESSION_CODE} scenarioIdx={i} />
+                    <ResponseFeed sessionCode={getActiveSessionCode()} scenarioIdx={i} />
                   </div>
                 ))}
               </div>
@@ -360,7 +360,7 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
               {[1, 2, 3, 4].map(n => (
                 <div key={n} className="tcard" style={{ marginTop: 14 }}>
                   <h3>Scénario {n}</h3>
-                  <ResponseFeed sessionCode={SESSION_CODE} scenarioIdx={n - 1} />
+                  <ResponseFeed sessionCode={getActiveSessionCode()} scenarioIdx={n - 1} />
                 </div>
               ))}
             </div>
@@ -371,7 +371,7 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
             <div>
               <div style={{ marginBottom: 20 }}><h2 style={{ fontSize: 20, fontWeight: 600 }}>Phase 5 — Quiz final</h2><p style={{ fontSize: 13, color: 'var(--text-s)', marginTop: 4 }}>Les participants répondent au quiz final. Les scores s'affichent ici.</p></div>
               <div className="tcard"><h3>🏆 Résultats en temps réel</h3>
-                <QuizResults sessionCode={SESSION_CODE} />
+                <QuizResults sessionCode={getActiveSessionCode()} />
               </div>
               <div className="tcard" style={{ marginTop: 14 }}>
                 <h3>💡 Note formateur</h3>

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { sbSelect, sbUpsert, sbUpdate, SESSION_CODE, ensureSession, getSharedState } from '@/lib/supabase'
+import { sbSelect, sbUpsert, sbUpdate, getParticipantSessionCode, ensureSession, getSharedState } from '@/lib/supabase'
 import { saveScenarioResponse } from '@/lib/formationSave'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { PLANNING_JOURS } from '@/lib/planningData'
@@ -359,7 +359,7 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   useEffect(() => {
     const poll = async () => {
       try {
-        const sessions = await sbSelect('sessions', 'code=eq.' + SESSION_CODE)
+        const sessions = await sbSelect('sessions', 'code=eq.' + getParticipantSessionCode())
         if (sessions?.[0]) {
           const step = Number(sessions[0].current_step)
           const slideNum = Number(sessions[0].active_scenario)
@@ -371,7 +371,7 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
           if (step >= 0 && step !== curStep) setCurStep(step)
           if (step === 1 && slideNum && slideNum !== curSlide) setCurSlide(slideNum)
         }
-        const pdata = await sbSelect('participants', 'session_code=eq.' + SESSION_CODE)
+        const pdata = await sbSelect('participants', 'session_code=eq.' + getParticipantSessionCode())
         onOnlineCount(pdata?.length || 0)
       } catch {}
     }
@@ -510,11 +510,11 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
     <div id="pv">
       <div className="pshell">
         {curStep < 0 && <WaitScreen />}
-        {curStep === 0 && <QuizView pName={pName} mode="initial" sessionCode={SESSION_CODE} />}
+        {curStep === 0 && <QuizView pName={pName} mode="initial" sessionCode={getParticipantSessionCode()} />}
         {curStep === 1 && <P1Slides trainerName={trainerName} slideNum={curSlide} />}
         {curStep === 2 && <P2Arguments />}
-        {curStep === 3 && <P3Ordonnances pName={pName} sessionCode={SESSION_CODE} />}
-        {curStep === 4 && <QuizView pName={pName} mode="final" sessionCode={SESSION_CODE} />}
+        {curStep === 3 && <P3Ordonnances pName={pName} sessionCode={getParticipantSessionCode()} />}
+        {curStep === 4 && <QuizView pName={pName} mode="final" sessionCode={getParticipantSessionCode()} />}
       </div>
     </div>
   )

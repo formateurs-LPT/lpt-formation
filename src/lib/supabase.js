@@ -37,6 +37,16 @@ export function getRuntimeSessionCode(role = 'any') {
   }
 }
 
+/** Code session formateur / modules / TV (salle active ou legacy) */
+export function getActiveSessionCode() {
+  return getRuntimeSessionCode('trainer') || SESSION_CODE || getLegacySessionCode()
+}
+
+/** Code session participant (QR ou liste salles) */
+export function getParticipantSessionCode() {
+  return getRuntimeSessionCode('participant') || getActiveSessionCode()
+}
+
 function assertSupabaseConfigured() {
   if (!SB_URL || !SB_KEY) {
     throw new Error(

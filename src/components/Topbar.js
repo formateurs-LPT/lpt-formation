@@ -1,14 +1,35 @@
 'use client'
 import Image from 'next/image'
 
-export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, onLogout, onTVMode }) {
+export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onLogout, onTVMode }) {
+  const code = (sessionCode || '').trim()
+
   return (
     <div className="topbar">
       <div className="tlogo">
         <Image src="/assets/avatar_kevin.png" alt="LPT" width={28} height={28} style={{ borderRadius: '50%' }} />
         LPT Formation
       </div>
-      <div style={{ fontSize: 13, color: '#888' }}>{sessionCode}</div>
+      <div style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+        {isRoomSession ? (
+          <>
+            <span style={{
+              fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6,
+              color: '#0089ba', background: 'rgba(0,137,186,0.12)', border: '1px solid rgba(0,137,186,0.35)',
+              borderRadius: 20, padding: '3px 10px',
+            }}>
+              Salle active
+            </span>
+            <span style={{ color: '#0089ba', fontWeight: 800, fontFamily: 'monospace', letterSpacing: 2 }}>
+              {code}
+            </span>
+          </>
+        ) : (
+          <span style={{ color: '#888' }} title="Mode legacy — ouvrez « Ma salle » pour une salle dédiée">
+            Legacy · {code || '—'}
+          </span>
+        )}
+      </div>
       <div className="tright">
         <div className="online">
           <div className="odot"></div>

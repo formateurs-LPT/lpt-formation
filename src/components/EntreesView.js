@@ -7,7 +7,7 @@ import {
   renameParticipantIdentity,
   normalizeEntreeList,
 } from '@/lib/participantNames'
-import { sbInsert, sbUpsert, sbSelect, getSharedState, setSharedState, SESSION_CODE, insertSessionHistory } from '@/lib/supabase'
+import { sbInsert, sbUpsert, sbSelect, getSharedState, setSharedState, getActiveSessionCode, insertSessionHistory } from '@/lib/supabase'
 import { classifyMagasin } from '@/lib/formationCategories'
 
 function fixSpaced(str) {
@@ -322,7 +322,7 @@ export default function EntreesView({ onBack, onToast, pName }) {
 
       // 2. Fallback uniquement si import RH jamais fait (pas de clé entrees_data)
       try {
-        const rows = await sbSelect('participants', `session_code=eq.${SESSION_CODE}&order=joined_at.asc`)
+        const rows = await sbSelect('participants', `session_code=eq.${getActiveSessionCode()}&order=joined_at.asc`)
         if (rows && rows.length > 0) {
           const converted = buildEntreesFromParticipants(rows)
           setEntrees(converted)
@@ -402,7 +402,7 @@ export default function EntreesView({ onBack, onToast, pName }) {
 
       // Ajouter une ligne dans session_history
       await insertSessionHistory({
-        sessionCode: SESSION_CODE,
+        sessionCode: getActiveSessionCode,
         sessionDate: weekDate,
         trainerName: pName || localStorage.getItem('trainer_name') || 'Formateur',
         participants: [],

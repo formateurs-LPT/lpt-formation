@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, SESSION_CODE } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode } from '@/lib/supabase'
 import { NextPagePreview } from '@/lib/trainerPreview'
 
 // ─── Données par matériau ─────────────────────────────────────
@@ -260,26 +260,26 @@ export default function ModuleMontures({ pName, onBack }) {
   const [page, setPage] = useState(0)
 
   const handleStart = async () => {
-    await sbUpdate('sessions', { active_module: 'montures', module_page: 0 }, 'code=eq.' + SESSION_CODE)
+    await sbUpdate('sessions', { active_module: 'montures', module_page: 0 }, 'code=eq.' + getActiveSessionCode())
     setStarted(true)
   }
 
   const handleNext = async () => {
     if (page >= TOTAL_PAGES - 1) return
     const next = page + 1
-    await sbUpdate('sessions', { active_module: 'montures', module_page: next }, 'code=eq.' + SESSION_CODE)
+    await sbUpdate('sessions', { active_module: 'montures', module_page: next }, 'code=eq.' + getActiveSessionCode())
     setPage(next)
   }
 
   const handlePrev = async () => {
     if (page <= 0) return
     const prev = page - 1
-    await sbUpdate('sessions', { active_module: 'montures', module_page: prev }, 'code=eq.' + SESSION_CODE)
+    await sbUpdate('sessions', { active_module: 'montures', module_page: prev }, 'code=eq.' + getActiveSessionCode())
     setPage(prev)
   }
 
   const handleBack = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + SESSION_CODE)
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
     onBack()
   }
 

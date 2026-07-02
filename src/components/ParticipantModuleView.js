@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbUpsert, sbSelect, SESSION_CODE, ensureSession, getSharedState, setSharedState } from '@/lib/supabase'
+import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, setSharedState } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName } from '@/lib/participantNames'
@@ -116,7 +116,7 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
     const isCorrect = optIdx === q.correct
     try {
       const saved = await saveModuleQuizAnswer({
-        sessionCode: SESSION_CODE,
+        sessionCode: getParticipantSessionCode(),
         moduleId,
         questionIdx: qIdx,
         collaborateur: pName.trim(),
@@ -219,7 +219,7 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
   useEffect(() => {
     const fetchAnswers = async () => {
       const name = pName || 'Anonyme'
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}&module_id=eq.${moduleId}&collaborateur=eq.${encodeURIComponent(name)}`)
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${moduleId}&collaborateur=eq.${encodeURIComponent(name)}`)
       const data = rows || []
       setAnswers(data)
       setLoading(false)
@@ -2765,7 +2765,7 @@ function RhParticipantGate({ pNameInput, children }) {
       try {
         await ensureSession()
         await sbUpsert('participants', {
-          session_code: SESSION_CODE,
+          session_code: getParticipantSessionCode(),
           name: canonical,
           joined_at: new Date().toISOString(),
         }, 'session_code,name')
