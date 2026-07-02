@@ -183,8 +183,134 @@ Composant **écran formateur** : `TrainerView.js` (pas une table)
 
 ## Prochaine action concrète
 
-1. Exécuter `supabase/schema.sql` sur une branche / projet de test
-2. Vérifier les tables dans le dashboard
+1. Exécuter **`supabase/migration-rooms-final.sql`** sur prod ou branche test
+2. Vérifier les tables dans le dashboard (`export-schema.sql`)
 3. Mettre à jour Vercel (2 variables)
 4. Valider que l’app actuelle tourne encore (session `LPT2026`)
-5. Démarrer Phase C (Edge Function + code dynamique)
+5. Démarrer Phase C (voir plan multi-salles ci-dessous)
+
+---
+
+## Plan multi-salles (validé — spec produit)
+
+### Modèle
+
+- **1 salle = 1 ligne `sessions`** ; `sessions.code` = identifiant unique (dans l’URL du QR aussi).
+- Données formation (`participants`, `quiz_*`, etc.) isolées par `session_code`.
+- **`trainer_state`** :
+  - clé **`__weekly__`** → liste RH (`entrees_data`), partagée entre formateurs ;
+  - clé **`session_code`** → TV, QR, module en cours **par salle**.
+
+### Création de salle
+
+Au clic **« Ouvrir ma salle »** (juste avant l’affichage TV / QR), pas au login formateur :
+
+1. Si le formateur a déjà une salle `active` → retour direct (**tuile « Ma salle »**).
+2. Sinon → choix **catégorie** + label optionnel → `INSERT sessions` (code auto, `status = active`).
+3. Affichage QR : `?join=1&code=XXXX`.
+4. **« Réafficher le QR »** après pause : même salle, pas de nouvelle ligne.
+
+**Règle** : **1 formateur = 1 salle active max** (Kevin + Nadège en parallèle = OK ; Kevin × 2 salles simultanées = non).
+
+### Fin de salle
+
+- Bouton formateur **« Terminer la salle »** → `status = ended`, `ended_at` renseigné.
+- Plus de nouvelles entrées (liste ni QR).
+- Participants déjà connectés : message « Session terminée ».
+- Reconnexion après `ended` : bloquée.
+
+### Participant — deux chemins
+
+| Chemin | Étapes |
+|--------|--------|
+| **Sans QR** | Nom → résolution RH → **catégorie** du collab → liste des salles `waiting\|active` compatibles → choix → join |
+| **Avec QR** | `?join=1&code=XXXX` → nom seulement → join (salle déjà choisie) |
+
+### Filtre par catégorie — extensible
+
+**Principe** : une **catégorie** est un **slug** partagé entre la fiche RH du collaborateur et la salle (`sessions.room_type`). Aujourd’hui : `presentiel`, `visio`. Demain : `hybride`, `belgique_presentiel`, etc. **sans changer le modèle BDD**.
+
+#### Registre central (app)
+
+Fichier prévu : `src/lib/formationCategories.js`
+
+```js
+// Exemple — source de vérité des catégories connues
+export const FORMATION_CATEGORIES = {
+  presentiel: { label: 'Présentiel · Paris', order: 1 },
+  visio:      { label: 'Visio · Province & Belgique', order: 2 },
+  // hybride: { label: 'Hybride', order: 3 },  // futur
+}
+```
+
+Ajouter une catégorie = **1 entrée dans ce registre** + formulaire création de salle + (optionnel) règle d’import RH.
+
+#### Fiche RH (`entrees_data` dans `__weekly__`)
+
+Chaque collaborateur aura un champ optionnel **`formation_category`** (slug).
+
+| Priorité | Source de la catégorie |
+|----------|------------------------|
+| 1 | `entree.formation_category` si renseigné (explicite, import RH ou édition manuelle) |
+| 2 | **Règle de repli** : magasin → catégorie (comportement actuel onboarding) |
+
+Repli v1 (inchangé fonctionnellement) :
+
+| Magasin (`classifyMagasin`) | Catégorie par défaut |
+|----------------------------|----------------------|
+| `paris` | `presentiel` |
+| `province`, `belgique` | `visio` |
+
+#### Salle (`sessions.room_type`)
+
+Même slug que `formation_category`. Le formateur choisit la catégorie à la création.
+
+#### Matching liste salles
+
+```
+salles_visibles = sessions WHERE status IN ('waiting','active')
+                  AND room_type = resolveCategory(entree)
+```
+
+Si aucune salle : message adapté (« Aucune salle {label} ouverte »).
+
+**Évolution sans migration** : nouvelle catégorie → nouveau slug dans le registre ; pas de `ALTER TABLE` si le slug respecte `[a-z][a-z0-9_]*` (contrainte SQL déjà prévue).
+
+#### QR
+
+Le QR **ne filtre pas** : il fixe la salle. La catégorie sert uniquement au parcours **sans QR**.
+
+### Deux QR (coexistence)
+
+| Contexte | URL | Rôle |
+|----------|-----|------|
+| Onboarding (tuiles Journée) | `?join=1` | Entrée semaine — flux onboarding existant |
+| Formation / modules | `?join=1&code=XXXX` | Rejoindre une salle précise |
+
+### Présence & reconnexion
+
+- `participants.left_at` + `last_seen_at` (heartbeat ~45–60 s).
+- Reconnexion même nom + même salle + pas `ended` → reprise module en cours.
+
+### Login formateur v1
+
+- PIN restent en **`.env`** pour la Phase C multi-salles.
+- Table `trainers` + Edge Function `verify-trainer` = phase ultérieure.
+
+### Phase C — ordre de dev suggéré
+
+1. Création / reprise salle formateur + `activeSessionCode`
+2. QR dynamique par `session_code`
+3. Login participant (nom → catégorie → liste salles)
+4. Présence (`left_at` / heartbeat)
+5. Fin de salle (`ended`)
+6. Basculer lecture RH vers `__weekly__` + `formation_category` sur import
+
+### Scripts BDD
+
+| Fichier | Usage |
+|---------|--------|
+| **`migration-rooms-final.sql`** | Prod incrémentale (colonnes multi-salles + `__weekly__`) |
+| `schema.sql` | Référence greenfield |
+| `fix-formation-tables-prod.sql` | Colonnes quiz (séparé) |
+
