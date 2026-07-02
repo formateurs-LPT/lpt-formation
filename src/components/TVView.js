@@ -1205,7 +1205,7 @@ function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlock
                 loop
                 playsInline
                 muted={!audioUnlocked}
-                style={{ width: '100%', display: 'block', maxHeight: '65vh', objectFit: 'cover' }}
+                style={{ width: '100%', display: 'block', maxHeight: '65vh', objectFit: 'contain' }}
               />
             ) : selectedItem.animation === 'counter' ? (
               <CounterAnimation
