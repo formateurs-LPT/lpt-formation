@@ -344,6 +344,13 @@ export const ENTREPRISE_PAGES = [
       { label: '0 intermédiaire', color: '#f472b6', video: null },
     ],
   },
+  {
+    id: 'zero-intermediaire',
+    type: 'zero-intermediaire',
+    titre: '0 intermédiaire',
+    sousTitre: 'Notre avantage direct',
+    color: '#f472b6',
+  },
 ]
 
 export const PROGRESSIF_PAGES = [
