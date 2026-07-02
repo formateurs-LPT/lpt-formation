@@ -1925,14 +1925,12 @@ function TVOffresClassique({ step = 0 }) {
       {/* Droite */}
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', gap: 20 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Ce qui est inclus</div>
-        {TV_ITEMS_CLASSIQUE.map((item, i) => (
+        {TV_ITEMS_CLASSIQUE.map((item, i) => i >= step ? null : (
           <div key={i} style={{
-            background: i < step ? `${COLOR}12` : 'rgba(255,255,255,0.03)',
-            border: `1px solid ${i < step ? COLOR + '50' : 'rgba(255,255,255,0.08)'}`,
-            borderLeft: `4px solid ${i < step ? COLOR : 'rgba(255,255,255,0.12)'}`,
+            background: `${COLOR}12`,
+            border: `1px solid ${COLOR}50`,
+            borderLeft: `4px solid ${COLOR}`,
             borderRadius: 16, padding: '22px 28px',
-            opacity: i < step ? 1 : 0.2,
-            transform: i < step ? 'translateX(0)' : 'translateX(16px)',
             transition: 'all 0.5s cubic-bezier(0.22,1,0.36,1)',
           }}>
             <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{item.label}</div>
