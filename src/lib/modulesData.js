@@ -335,7 +335,7 @@ export const ENTREPRISE_PAGES = [
     color: '#00abe9',
     items: [
       { label: 'Des stocks de verres et montures dans chacun de nos magasins', color: '#00abe9', video: '/assets/video-stock.mp4' },
-      { label: 'Des machines à la pointe de la technologie', color: '#4ade80', video: '/assets/V2%20machines.mp4' },
+      { label: 'Des machines à la pointe de la technologie', color: '#4ade80', video: '/assets/V2-machines.mp4' },
       { label: 'Volume de ventes conséquent', color: '#f59e0b', animation: 'counter', counters: [
         { value: 5000, unit: 'paires vendues par jour', sub: 'sur tout le réseau LPT', delay: 0 },
         { value: 1000000, unit: 'paires vendues en 2025', sub: "et ça continue…", delay: 2400 },
