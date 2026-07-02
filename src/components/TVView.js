@@ -1925,16 +1925,17 @@ function TVOffresClassique({ step = 0 }) {
       {/* Droite */}
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', gap: 20 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Ce qui est inclus</div>
-        {TV_ITEMS_CLASSIQUE.map((item, i) => i >= step ? null : (
+        {TV_ITEMS_CLASSIQUE.map((item, i) => (
           <div key={i} style={{
-            background: `${COLOR}12`,
-            border: `1px solid ${COLOR}50`,
+            opacity: i < step ? 1 : 0,
+            transform: i < step ? 'translateX(0)' : 'translateX(16px)',
+            transition: 'opacity 0.5s ease, transform 0.5s ease',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.1)',
             borderLeft: `4px solid ${COLOR}`,
             borderRadius: 16, padding: '22px 28px',
-            transition: 'all 0.5s cubic-bezier(0.22,1,0.36,1)',
           }}>
             <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{item.label}</div>
-            {item.sub && <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>{item.sub}</div>}
           </div>
         ))}
         {/* Barre de progression */}
