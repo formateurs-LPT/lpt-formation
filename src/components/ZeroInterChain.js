@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 
 export default function ZeroInterChain({ compact = false }) {
   const [animStep, setAnimStep] = useState(0)
@@ -72,10 +73,17 @@ export default function ZeroInterChain({ compact = false }) {
         textAlign: 'center', width: PAD,
         opacity: lpt ? 1 : 0,
         transition: 'opacity 0.5s ease 0.35s',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
       }}>
-        <div style={{ fontSize: ICO }}>🔵</div>
-        <div style={{ fontSize: compact ? 7 : 10, color: '#00abe9', marginTop: 2, fontWeight: 700, lineHeight: 1.2 }}>
-          LPT
+        <Image
+          src="/assets/logo-lpt-blanc.png"
+          alt="Lunettes Pour Tous"
+          width={compact ? 44 : 64}
+          height={compact ? 17 : 24}
+          style={{ objectFit: 'contain' }}
+        />
+        <div style={{ fontSize: compact ? 7 : 9, color: '#00abe9', fontWeight: 600, lineHeight: 1.2, whiteSpace: 'nowrap' }}>
+          Lunettes Pour Tous
         </div>
       </div>
 
