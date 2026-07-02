@@ -1897,10 +1897,6 @@ function TVOffresClassique() {
             <div style={{ fontSize: 48, fontWeight: 900, color: COLOR, lineHeight: 1 }}>Classique</div>
           </div>
         </div>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: `${COLOR}18`, border: `1px solid ${COLOR}50`, borderRadius: 20, padding: '8px 20px', marginBottom: 36 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR }} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: COLOR }}>Sans remboursement</span>
-        </div>
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `4px solid ${COLOR}`, borderRadius: 16, padding: '24px 28px' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>Ce qui est inclus</div>
           {['1 paire achetée', 'Deuxième paire à -20%', 'Paires à partir de 10 euros'].map((pt, i) => (
@@ -1936,10 +1932,6 @@ function TVOffres11({ step = 0 }) {
             <div style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1 }}>Le parcours</div>
             <div style={{ fontSize: 48, fontWeight: 900, color: COLOR, lineHeight: 1 }}>1=1</div>
           </div>
-        </div>
-        <div style={{ display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: 8, background: `${COLOR}18`, border: `1px solid ${COLOR}50`, borderRadius: 20, padding: '8px 20px', marginBottom: 36 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR }} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: COLOR }}>Sans remboursement</span>
         </div>
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `4px solid ${COLOR}`, borderRadius: 16, padding: '24px 28px' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>Tarifs</div>
