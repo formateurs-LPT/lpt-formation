@@ -340,7 +340,7 @@ export const ENTREPRISE_PAGES = [
         { value: 2000, unit: 'paires vendues par jour', sub: 'sur tout le réseau LPT', delay: 0 },
         { value: 1000000, unit: 'paires vendues en 2025', sub: "et ça continue…", delay: 2400 },
       ]},
-      { label: 'Notre propre marque', color: '#a78bfa', video: null },
+      { label: 'Notre propre marque', color: '#a78bfa', video: '/assets/D%C3%A9tails%20fabrication%20montures.mp4' },
       { label: '0 intermédiaire', color: '#f472b6', video: null },
     ],
   },
