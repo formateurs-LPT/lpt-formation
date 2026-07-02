@@ -1886,8 +1886,8 @@ function TVPdmPourquoi({ pageIndex, total }) {
 // ── TV Offres : Classique ─────────────────────────────────────────
 const TV_ITEMS_CLASSIQUE = [
   { label: '1 paire achetée', sub: null },
-  { label: 'Deuxième paire à -20%', sub: 'Sur une sélection de montures et verres' },
-  { label: '10€ en 10 minutes', sub: 'Fabrication express — le cœur du concept LPT' },
+  { label: 'Deuxième paire à -20%', sub: null },
+  { label: '10€ en 10 minutes', sub: null },
 ]
 
 function TVOffresClassique({ step = 0 }) {

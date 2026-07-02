@@ -23,8 +23,8 @@ function Ring({ color, size = 80 }) {
 
 const ITEMS_CLASSIQUE = [
   { text: '1 paire achetée', sub: null },
-  { text: 'Deuxième paire à -20%', sub: 'Sur une sélection de montures et verres' },
-  { text: '10€ en 10 minutes', sub: 'Fabrication express — le cœur du concept LPT' },
+  { text: 'Deuxième paire à -20%', sub: null },
+  { text: '10€ en 10 minutes', sub: null },
 ]
 
 // ── Page Classique (formateur) ───────────────────────────────────
