@@ -9,12 +9,12 @@ export default function ZeroInterChain({ compact = false }) {
   useEffect(() => {
     setAnimStep(0)
     const T = [
-      setTimeout(() => setAnimStep(1), 500),
-      setTimeout(() => setAnimStep(2), 820),
-      setTimeout(() => setAnimStep(3), 1140),
-      setTimeout(() => setAnimStep(4), 2350),
-      setTimeout(() => setAnimStep(5), 3150),
-      setTimeout(() => setLoopKey(k => k + 1), 5800),
+      setTimeout(() => setAnimStep(1), 900),
+      setTimeout(() => setAnimStep(2), 1500),
+      setTimeout(() => setAnimStep(3), 2100),
+      setTimeout(() => setAnimStep(4), 3600),
+      setTimeout(() => setAnimStep(5), 4700),
+      setTimeout(() => setLoopKey(k => k + 1), 8500),
     ]
     return () => T.forEach(clearTimeout)
   }, [loopKey])
@@ -108,7 +108,7 @@ export default function ZeroInterChain({ compact = false }) {
                 : 'translateY(-50%)',
               opacity: lpt || breaking ? 0 : 1,
               transition: breaking
-                ? `transform 0.65s ease-in ${delay}, opacity 0.6s ease-in ${delay}`
+                ? `transform 0.9s ease-in ${delay}, opacity 0.85s ease-in ${delay}`
                 : 'none',
             }} />
           )
@@ -126,7 +126,7 @@ export default function ZeroInterChain({ compact = false }) {
             : 'translateY(-50%)',
           opacity: lpt || breaking ? 0 : 1,
           transition: breaking
-            ? 'transform 0.65s ease-in 0.04s, opacity 0.6s ease-in 0.04s'
+            ? 'transform 0.9s ease-in 0.04s, opacity 0.85s ease-in 0.04s'
             : 'none',
         }} />
 
@@ -148,8 +148,8 @@ export default function ZeroInterChain({ compact = false }) {
                   : 'translate(0,0) rotate(0deg) scale(1)',
                 opacity: lpt || breaking ? 0 : animStep > i ? 1 : 0,
                 transition: breaking
-                  ? `all 0.6s ease-in ${i * 0.04}s`
-                  : lpt ? 'none' : 'opacity 0.35s ease',
+                  ? `all 0.85s ease-in ${i * 0.06}s`
+                  : lpt ? 'none' : 'opacity 0.5s ease',
               }} />
             </div>
           )
