@@ -6,12 +6,14 @@ import Toast, { useToast } from '@/components/Toast'
 import Dashboard from '@/components/Dashboard'
 import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
-import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB, ensureSession, getRuntimeSessionCode, sbSelect } from '@/lib/supabase'
+import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB, ensureSession, getRuntimeSessionCode, sbSelect, getActiveSessionCode } from '@/lib/supabase'
 import { resolveParticipantName } from '@/lib/participantNames'
 import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
-import { captureParticipantRoomFromUrl, captureTvRoomFromUrl, buildTvUrl, isDynamicRoomCode, setParticipantSessionCode } from '@/lib/sessionCode'
-import { getActiveSessionCode } from '@/lib/supabase'
+import { captureParticipantRoomFromUrl, captureTvRoomFromUrl, buildTvUrl, isDynamicRoomCode, setParticipantSessionCode, readParticipantSessionCode, getLegacySessionCode } from '@/lib/sessionCode'
+import { touchParticipantPresence } from '@/lib/participantPresence'
+import { endActiveRoom, getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
+import { useOnlineCount } from '@/lib/useOnlineCount'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
 import ModuleProgressif from '@/components/modules/ModuleProgressif'
 import ModulePDM from '@/components/modules/ModulePDM'
@@ -37,32 +39,95 @@ export default function Page() {
   const [displaySessionCode, setDisplaySessionCode] = useState('')
   const { message, toast } = useToast()
 
+  useOnlineCount({
+    enabled: appReady && isTrainer && ['dashboard', 'trainer-session', 'onboarding-modules'].includes(view),
+    onCount: setOnlineCount,
+  })
+
+  const restoreParticipantSession = async () => {
+    const savedName = localStorage.getItem('participant_name')
+    const sessionCode = readParticipantSessionCode() || getRuntimeSessionCode('participant')
+    if (!savedName || !sessionCode) return null
+
+    const rows = await sbSelect('sessions', `code=eq.${encodeURIComponent(sessionCode)}&limit=1`)
+    if (rows?.[0]?.status === 'ended') return null
+
+    try {
+      await ensureSession(sessionCode)
+      await touchParticipantPresence(sessionCode, savedName)
+    } catch (e) {
+      console.warn('participant restore failed:', e)
+    }
+
+    return {
+      name: savedName,
+      prenom: localStorage.getItem('participant_prenom') || '',
+      sessionCode,
+    }
+  }
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const urlMode = params.get('mode')
+    const joinFromQr = params.get('join') === '1' || params.get('code')
 
-    if (urlMode === 'tv' || urlMode === 'participant') {
-      setMode(urlMode)
-    } else {
-      const savedName = localStorage.getItem('trainer_name')
-      if (savedName) {
-        setPName(savedName)
-        setIsTrainer(true)
-        setView('dashboard')
+    const finishBootstrap = async () => {
+      let savedTrainer = null
+
+      if (urlMode === 'tv' || urlMode === 'participant') {
+        setMode(urlMode)
+        if (urlMode === 'participant') {
+          const restored = await restoreParticipantSession()
+          if (restored) {
+            setPName(restored.name)
+            setPPrenom(restored.prenom)
+            setIsTrainer(false)
+            setDisplaySessionCode(restored.sessionCode)
+          }
+        }
+      } else {
+        savedTrainer = localStorage.getItem('trainer_name')
+        if (savedTrainer) {
+          setPName(savedTrainer)
+          setIsTrainer(true)
+          setView('dashboard')
+        } else if (joinFromQr || readParticipantSessionCode()) {
+          const restored = await restoreParticipantSession()
+          if (restored) {
+            setPName(restored.name)
+            setPPrenom(restored.prenom)
+            setIsTrainer(false)
+            setDisplaySessionCode(restored.sessionCode)
+            setView('participant')
+          }
+        }
       }
+
+      captureParticipantRoomFromUrl()
+      captureTvRoomFromUrl()
+      if (savedTrainer) {
+        const code = await getLiveTrainerRoomCode(trainerLoginFromDisplayName(savedTrainer))
+        setDisplaySessionCode(code || getLegacySessionCode())
+      } else if (urlMode !== 'participant') {
+        setDisplaySessionCode(getRuntimeSessionCode('participant') || getLegacySessionCode())
+      }
+      setAppReady(true)
     }
 
-    captureParticipantRoomFromUrl()
-    captureTvRoomFromUrl()
-    setDisplaySessionCode(getRuntimeSessionCode())
-    setAppReady(true)
+    finishBootstrap()
   }, [])
 
   useEffect(() => {
-    if (view !== 'landing' && appReady) {
-      setDisplaySessionCode(getRuntimeSessionCode())
+    if (!appReady || !isTrainer || view === 'landing') return
+
+    let cancelled = false
+    const syncTrainerRoom = async () => {
+      const code = await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName))
+      if (!cancelled) setDisplaySessionCode(code || getLegacySessionCode())
     }
-  }, [view, appReady])
+    syncTrainerRoom()
+    return () => { cancelled = true }
+  }, [view, appReady, isTrainer, pName])
 
   const handleTrainerLogin = async (id, code) => {
     const idRaw = id.trim().toLowerCase()
@@ -155,6 +220,20 @@ export default function Page() {
     setView('landing')
   }
 
+  const handleEndRoom = async () => {
+    if (!window.confirm('Terminer cette salle ? Les participants ne pourront plus rejoindre.')) return
+    const code = (await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName)))
+      || getActiveSessionCode()
+    const ok = await endActiveRoom(code)
+    if (ok) {
+      toast('Salle terminée')
+      setDisplaySessionCode(getLegacySessionCode())
+      setView('dashboard')
+    } else {
+      toast('Impossible de terminer la salle')
+    }
+  }
+
   const handleOpenTv = () => {
     const code = getActiveSessionCode()
     const path = isDynamicRoomCode(code) ? buildTvUrl(code) : '/?mode=tv'
@@ -201,7 +280,7 @@ export default function Page() {
   }
 
   if (mode === 'tv') return <TVView onExit={handleExitTv} />
-  if (mode === 'participant') return <ParticipantModuleView />
+  if (mode === 'participant') return <ParticipantModuleView pName={pName || undefined} />
 
   if (view === 'landing') {
     return (
@@ -218,8 +297,8 @@ export default function Page() {
         pName={pName}
         isTrainer={isTrainer}
         onlineCount={onlineCount}
-        sessionCode={displaySessionCode || getRuntimeSessionCode() || SESSION_CODE}
-        isRoomSession={isDynamicRoomCode(displaySessionCode || getRuntimeSessionCode() || SESSION_CODE)}
+        sessionCode={displaySessionCode || getRuntimeSessionCode('trainer') || SESSION_CODE}
+        isRoomSession={isDynamicRoomCode(displaySessionCode || getRuntimeSessionCode('trainer') || SESSION_CODE)}
         onLogout={handleLogout}
         onTVMode={handleOpenTv}
       />
@@ -254,9 +333,11 @@ export default function Page() {
       {view === 'onboarding-modules' && (
         <div id="dashboard">
           <OnboardingView
+            pName={pName}
             onBack={handleBackToDashboard}
             onLaunchFormation={handleLaunchSession}
             onLaunchModule={handleLaunchModule}
+            onEndRoom={handleEndRoom}
             initialStep="modules"
           />
         </div>

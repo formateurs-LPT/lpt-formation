@@ -10,8 +10,7 @@ import RoomOpenModal from './RoomOpenModal'
 import { TRAINER_AVATARS, TRAINER_CANONICAL } from '@/lib/constants'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
-import { findActiveRoomForTrainer, openOrCreateRoom, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
-import { readTrainerActiveRoomCode } from '@/lib/sessionCode'
+import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { isDynamicRoomCode } from '@/lib/sessionCode'
 
 const NEWS_ITEMS = [
@@ -545,19 +544,17 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   useEffect(() => {
     loadTileStats()
     refreshActiveRoom()
-    const interval = setInterval(loadTileStats, 15000)
+    const interval = setInterval(() => {
+      loadTileStats()
+      refreshActiveRoom()
+    }, 15000)
     return () => clearInterval(interval)
   }, [pName])
 
   const refreshActiveRoom = async () => {
     const login = trainerLoginFromDisplayName(pName)
-    const local = readTrainerActiveRoomCode()
-    if (local) {
-      setActiveRoomCode(local)
-      return
-    }
-    const room = await findActiveRoomForTrainer(login)
-    setActiveRoomCode(room?.code || '')
+    const code = await getLiveTrainerRoomCode(login)
+    setActiveRoomCode(code)
   }
 
   const handleOpenRoomClick = async () => {
@@ -637,7 +634,8 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     return (
       <div id="dashboard">
         <OnboardingView
-          onBack={() => { setActiveView('home'); loadTileStats() }}
+          pName={pName}
+          onBack={() => { setActiveView('home'); loadTileStats(); refreshActiveRoom() }}
           onLaunchFormation={onLaunchSession}
           onLaunchModule={onLaunchModule}
         />

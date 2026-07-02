@@ -1,6 +1,7 @@
 import { TRAINER_CANONICAL } from './constants'
 import { formatDefaultRoomLabel, isValidFormationCategorySlug } from './formationCategories'
 import {
+  isDynamicRoomCode,
   readTrainerActiveRoomCode,
   setTrainerActiveRoomCode,
 } from './sessionCode'
@@ -50,9 +51,30 @@ export async function findActiveRoomForTrainer(trainerLogin) {
       `code=eq.${encodeURIComponent(activeCode)}&status=eq.active&limit=1`
     )
     if (rows?.[0]) return rows[0]
+    setTrainerActiveRoomCode('')
   }
 
   return null
+}
+
+/** Code salle formateur uniquement si status=active en BDD (nettoie le localStorage obsolète). */
+export async function getLiveTrainerRoomCode(trainerLogin) {
+  const local = readTrainerActiveRoomCode()
+  if (local) {
+    const rows = await sbSelect(
+      'sessions',
+      `code=eq.${encodeURIComponent(local)}&status=eq.active&limit=1`
+    )
+    if (rows?.[0]) return local
+    setTrainerActiveRoomCode('')
+  }
+
+  const room = await findActiveRoomForTrainer(trainerLogin)
+  if (room?.code) {
+    setTrainerActiveRoomCode(room.code)
+    return room.code
+  }
+  return ''
 }
 
 /**
@@ -105,7 +127,7 @@ export async function openOrCreateRoom({
 
 export async function endActiveRoom(code) {
   const roomCode = (code || readTrainerActiveRoomCode() || '').trim()
-  if (!roomCode) return false
+  if (!roomCode || !isDynamicRoomCode(roomCode)) return false
 
   const now = new Date().toISOString()
   const ok = await sbUpdate(
@@ -113,7 +135,7 @@ export async function endActiveRoom(code) {
     { status: 'ended', ended_at: now, updated_at: now },
     `code=eq.${encodeURIComponent(roomCode)}`
   )
-  if (ok && readTrainerActiveRoomCode() === roomCode) {
+  if (ok) {
     setTrainerActiveRoomCode('')
   }
   return ok

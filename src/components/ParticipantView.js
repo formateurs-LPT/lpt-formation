@@ -1,6 +1,8 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { sbSelect, sbUpsert, sbUpdate, getParticipantSessionCode, ensureSession, getSharedState } from '@/lib/supabase'
+import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
+import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveScenarioResponse } from '@/lib/formationSave'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { PLANNING_JOURS } from '@/lib/planningData'
@@ -342,9 +344,17 @@ function P3Ordonnances({ pName, sessionCode }) {
 }
 
 export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount }) {
+  const sessionCode = getParticipantSessionCode()
   const [curStep, setCurStep] = useState(-2)
   const [curSlide, setCurSlide] = useState(1)
   const [ended, setEnded] = useState(false)
+
+  useParticipantPresence({
+    sessionCode,
+    name: pName,
+    enabled: !!sessionCode && !!pName && !ended,
+    onSessionEnded: () => setEnded(true),
+  })
   const [trainerName, setTrainerName] = useState('kevin')
   const [activeModule, setActiveModule] = useState(null)
   const [modulePage, setModulePage] = useState(0)
@@ -359,8 +369,9 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   useEffect(() => {
     const poll = async () => {
       try {
-        const sessions = await sbSelect('sessions', 'code=eq.' + getParticipantSessionCode())
+        const sessions = await sbSelect('sessions', 'code=eq.' + sessionCode)
         if (sessions?.[0]) {
+          if (sessions[0].status === 'ended') { setEnded(true); return }
           const step = Number(sessions[0].current_step)
           const slideNum = Number(sessions[0].active_scenario)
           const mod = sessions[0].active_module ?? null
@@ -371,14 +382,14 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
           if (step >= 0 && step !== curStep) setCurStep(step)
           if (step === 1 && slideNum && slideNum !== curSlide) setCurSlide(slideNum)
         }
-        const pdata = await sbSelect('participants', 'session_code=eq.' + getParticipantSessionCode())
-        onOnlineCount(pdata?.length || 0)
+        const online = await fetchOnlineParticipantCount(sessionCode)
+        onOnlineCount(online)
       } catch {}
     }
     poll()
     const interval = setInterval(poll, pollMs)
     return () => clearInterval(interval)
-  }, [curStep, curSlide, pollMs])
+  }, [curStep, curSlide, pollMs, sessionCode, onOnlineCount])
 
   // Polling sharedState (trainer_state) — même cadence adaptative
   useEffect(() => {

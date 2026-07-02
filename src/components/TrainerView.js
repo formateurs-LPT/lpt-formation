@@ -6,6 +6,7 @@ import {
   loadEntreesList,
   shouldShowAnswerForTrainer,
 } from '@/lib/participantNames'
+import { useOnlineCount } from '@/lib/useOnlineCount'
 
 const STEP_NAMES = ['Quiz initial', 'Les bases', 'Arguments & Offre', 'Ordonnances', 'Quiz final']
 const SLIDE_NOTES = [
@@ -155,18 +156,13 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
   const [lobbyActive, setLobbyActive] = useState(true)
   const [participantCount, setParticipantCount] = useState(0)
 
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      const [data, entrees] = await Promise.all([
-        sbSelect('participants', 'session_code=eq.' + getActiveSessionCode()),
-        loadEntreesList(),
-      ])
-      const count = filterParticipantsInRh(data || [], entrees).length
+  useOnlineCount({
+    enabled: true,
+    onCount: (count) => {
       setParticipantCount(count)
-      onOnlineCount(count)
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [])
+      onOnlineCount?.(count)
+    },
+  })
 
   const launchFormation = async () => {
     await sbUpdate('sessions', { current_step: 0 }, 'code=eq.' + getActiveSessionCode())

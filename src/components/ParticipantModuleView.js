@@ -5,6 +5,7 @@ import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, setSharedState } from '@/lib/supabase'
+import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName } from '@/lib/participantNames'
@@ -39,6 +40,21 @@ const STYLES = `
     to   { opacity: 1; transform: translateY(0); }
   }
 `
+
+function SessionEndedScreen() {
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px', textAlign: 'center',
+    }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+      <h3 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 8 }}>Session terminée</h3>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>Merci pour ta participation !<br />Tu peux fermer cet onglet.</p>
+    </div>
+  )
+}
 
 function WaitingScreen() {
   return (
@@ -2768,6 +2784,8 @@ function RhParticipantGate({ pNameInput, children }) {
           session_code: getParticipantSessionCode(),
           name: canonical,
           joined_at: new Date().toISOString(),
+          left_at: null,
+          last_seen_at: new Date().toISOString(),
         }, 'session_code,name')
       } catch (e) {
         console.warn('participant upsert (module QR)', e)
@@ -2842,6 +2860,16 @@ function ParticipantPlanningScreen({ planningDay }) {
 }
 
 function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp }) {
+  const sessionCode = getParticipantSessionCode()
+  const [sessionEnded, setSessionEnded] = useState(false)
+
+  useParticipantPresence({
+    sessionCode,
+    name: pName,
+    enabled: !!sessionCode && !!pName && !sessionEnded,
+    onSessionEnded: () => setSessionEnded(true),
+  })
+
   // forcedModule = via ParticipantView (polling géré là-bas) → useModuleSync désactivé
   // sans forcedModule = accès direct ?mode=participant → useModuleSync actif
   const sync = useModuleSync({ disabled: forcedModule != null })
@@ -2880,6 +2908,8 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const isQuiz    = !!moduleData && modulePage >= 100 && modulePage < 200
   const qIdx = modulePage - 100
   const page = (!isQuiz && !isResults && !isLobby && moduleData) ? (pages[modulePage] ?? null) : null
+
+  if (sessionEnded) return <SessionEndedScreen />
 
   return (
     <>

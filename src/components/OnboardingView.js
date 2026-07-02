@@ -11,6 +11,7 @@ import {
   listFormationCategories,
 } from '@/lib/formationCategories'
 import { getLegacySessionCode, isDynamicRoomCode } from '@/lib/sessionCode'
+import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 
 const JOURNEES = (onLaunchModule) => [
   {
@@ -323,7 +324,7 @@ function JourneeModules({ journee, onBack, onLaunchModule }) {
 }
 
 // ── Step 3 : Sélection de la journée ─────────────────────────────
-function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
+function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom }) {
   const [selectedJournee, setSelectedJournee] = useState(null)
   const journees = JOURNEES(onLaunchModule)
   const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
@@ -332,8 +333,18 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
   const categories = listFormationCategories()
 
   useEffect(() => {
-    setRoomCode(getActiveSessionCode())
-  }, [])
+    let cancelled = false
+    const syncRoom = async () => {
+      const code = await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName))
+      if (!cancelled) setRoomCode(code || getLegacySessionCode())
+    }
+    syncRoom()
+    const interval = setInterval(syncRoom, 5000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [pName])
   const isRoomSession = isDynamicRoomCode(roomCode)
 
   const showQrOnTv = () => {
@@ -378,6 +389,19 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
               >
                 Réafficher le QR sur TV
               </button>
+              {onEndRoom && (
+                <button
+                  type="button"
+                  onClick={onEndRoom}
+                  style={{
+                    fontSize: 12, fontWeight: 700, color: '#fecaca',
+                    background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)',
+                    borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  Terminer la salle
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -426,7 +450,7 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
 }
 
 // ── Composant principal ───────────────────────────────────────────
-export default function OnboardingView({ onBack, onLaunchFormation, onLaunchModule, initialStep = 'select' }) {
+export default function OnboardingView({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, initialStep = 'select' }) {
   const [step, setStep] = useState(initialStep) // select | list | modules
   const [group, setGroup] = useState(null)
 
@@ -437,6 +461,6 @@ export default function OnboardingView({ onBack, onLaunchFormation, onLaunchModu
 
   if (step === 'select') return <GroupSelect onSelect={handleSelectGroup} onBack={onBack} />
   if (step === 'list') return <CollabList group={group} onNext={() => setStep('modules')} onBack={() => setStep('select')} />
-  if (step === 'modules') return <SessionModules onBack={() => setStep('list')} onLaunchFormation={onLaunchFormation} onLaunchModule={onLaunchModule} />
+  if (step === 'modules') return <SessionModules pName={pName} onBack={() => setStep('list')} onLaunchFormation={onLaunchFormation} onLaunchModule={onLaunchModule} onEndRoom={onEndRoom} />
   return null
 }
