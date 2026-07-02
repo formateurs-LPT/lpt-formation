@@ -1,14 +1,18 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 
 export default function Login({ onTrainerLogin, onParticipantJoin }) {
   const [showTrainerPanel, setShowTrainerPanel] = useState(false)
-  const isJoinMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('join') === '1'
+  const [isJoinMode, setIsJoinMode] = useState(false)
   const [trainerId, setTrainerId] = useState('')
   const [trainerCode, setTrainerCode] = useState('')
   const [pname, setPname] = useState('')
   const [scode, setScode] = useState('')
+
+  useEffect(() => {
+    setIsJoinMode(new URLSearchParams(window.location.search).get('join') === '1')
+  }, [])
 
   const handleTrainerConnect = () => {
     onTrainerLogin(trainerId, trainerCode)

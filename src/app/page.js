@@ -32,36 +32,37 @@ export default function Page() {
   const [pPrenom, setPPrenom] = useState('')
   const [isTrainer, setIsTrainer] = useState(false)
   const [onlineCount, setOnlineCount] = useState(0)
-  const [mode, setMode] = useState(() => {
-    if (typeof window === 'undefined') return null
-    const params = new URLSearchParams(window.location.search)
-    const m = params.get('mode')
-    return (m === 'tv' || m === 'participant') ? m : null
-  })
-  const [displaySessionCode, setDisplaySessionCode] = useState(SESSION_CODE || '')
+  const [mode, setMode] = useState(null)
+  const [appReady, setAppReady] = useState(false)
+  const [displaySessionCode, setDisplaySessionCode] = useState('')
   const { message, toast } = useToast()
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const urlMode = params.get('mode')
+
+    if (urlMode === 'tv' || urlMode === 'participant') {
+      setMode(urlMode)
+    } else {
+      const savedName = localStorage.getItem('trainer_name')
+      if (savedName) {
+        setPName(savedName)
+        setIsTrainer(true)
+        setView('dashboard')
+      }
+    }
+
     captureParticipantRoomFromUrl()
     captureTvRoomFromUrl()
     setDisplaySessionCode(getRuntimeSessionCode())
+    setAppReady(true)
   }, [])
 
   useEffect(() => {
-    if (view !== 'landing') {
+    if (view !== 'landing' && appReady) {
       setDisplaySessionCode(getRuntimeSessionCode())
     }
-  }, [view])
-
-  // Restaurer la session formateur au rechargement de page
-  useEffect(() => {
-    const savedName = localStorage.getItem('trainer_name')
-    if (savedName) {
-      setPName(savedName)
-      setIsTrainer(true)
-      setView('dashboard')
-    }
-  }, [])
+  }, [view, appReady])
 
   const handleTrainerLogin = async (id, code) => {
     const idRaw = id.trim().toLowerCase()
@@ -154,6 +155,36 @@ export default function Page() {
     setView('landing')
   }
 
+  const handleOpenTv = () => {
+    const code = getActiveSessionCode()
+    const path = isDynamicRoomCode(code) ? buildTvUrl(code) : '/?mode=tv'
+    const url = `${window.location.origin}${path}`
+    const opened = window.open(url, 'lpt-tv-diffusion', 'noopener,noreferrer')
+    if (!opened) {
+      toast('Autorisez les pop-ups pour ouvrir l\'écran Diffusion')
+    }
+  }
+
+  const handleExitTv = () => {
+    window.history.replaceState(null, '', '/')
+    setMode(null)
+    const savedName = localStorage.getItem('trainer_name')
+    if (savedName) {
+      setPName(savedName)
+      setIsTrainer(true)
+      setView('dashboard')
+    }
+  }
+
+  useEffect(() => {
+    const onPopState = () => {
+      const m = new URLSearchParams(window.location.search).get('mode')
+      setMode(m === 'tv' || m === 'participant' ? m : null)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
   const handleLaunchSession = () => setView('trainer-session')
 
   const handleOpenRoom = ({ code }) => {
@@ -165,7 +196,11 @@ export default function Page() {
   const handleBackToModules = () => setView('onboarding-modules')
   const handleOpenPlanning = () => setView('planning')
 
-  if (mode === 'tv') return <TVView />
+  if (!appReady) {
+    return <div style={{ minHeight: '100vh', background: '#03112a' }} aria-busy="true" />
+  }
+
+  if (mode === 'tv') return <TVView onExit={handleExitTv} />
   if (mode === 'participant') return <ParticipantModuleView />
 
   if (view === 'landing') {
@@ -186,15 +221,7 @@ export default function Page() {
         sessionCode={displaySessionCode || getRuntimeSessionCode() || SESSION_CODE}
         isRoomSession={isDynamicRoomCode(displaySessionCode || getRuntimeSessionCode() || SESSION_CODE)}
         onLogout={handleLogout}
-        onTVMode={() => {
-          const code = getActiveSessionCode()
-          if (isDynamicRoomCode(code)) {
-            window.history.replaceState(null, '', buildTvUrl(code))
-          } else {
-            window.history.replaceState(null, '', '?mode=tv')
-          }
-          setMode('tv')
-        }}
+        onTVMode={handleOpenTv}
       />
       {view === 'dashboard' && (
         <Dashboard
@@ -202,6 +229,7 @@ export default function Page() {
           onLaunchSession={handleLaunchSession}
           onLaunchModule={handleLaunchModule}
           onOpenRoom={handleOpenRoom}
+          onOpenTv={handleOpenTv}
           onToast={toast}
           onOnlineCount={setOnlineCount}
           onOpenPlanning={handleOpenPlanning}

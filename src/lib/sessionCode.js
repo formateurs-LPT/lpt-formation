@@ -86,6 +86,7 @@ export function isActiveDynamicRoom() {
 
 export function buildTvUrl(code, basePath = '/') {
   const room = (code || '').trim()
-  if (!room || !isDynamicRoomCode(room)) return `${basePath}?mode=tv`
-  return `${basePath}?mode=tv&room=${encodeURIComponent(room)}`
+  const root = basePath.endsWith('/') ? basePath : `${basePath}/`
+  if (!room || !isDynamicRoomCode(room)) return `${root}?mode=tv`
+  return `${root}?mode=tv&room=${encodeURIComponent(room)}`
 }

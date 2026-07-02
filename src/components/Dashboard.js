@@ -530,7 +530,7 @@ function AppUpdatesWidget() {
   )
 }
 
-export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onToast, onOnlineCount, onOpenPlanning }) {
+export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onOpenTv, onToast, onOnlineCount, onOpenPlanning }) {
   const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | planning
   const [entreeCount, setEntreeCount] = useState(null)
   const [sessionCount, setSessionCount] = useState('—')
@@ -801,20 +801,37 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
               <div style={{ fontSize: 22, fontWeight: 800, color: '#0089ba', fontFamily: 'monospace', letterSpacing: 4, marginTop: 4 }}>
                 {activeRoomCode}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 4, lineHeight: 1.5 }}>
                 Données isolées de LPT2026 — participants et diffusion via ce code uniquement.
+                <br />
+                Le <strong>QR code</strong> s&apos;affiche sur l&apos;écran <strong>Diffusion 📺</strong> (pas sur ce tableau de bord).
               </div>
             </div>
-            <button
-              type="button"
-              onClick={handleOpenRoomClick}
-              style={{
-                padding: '10px 18px', borderRadius: 10, border: 'none',
-                background: '#0089ba', color: '#fff', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              }}
-            >
-              Reprendre la salle →
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+              {onOpenTv && (
+                <button
+                  type="button"
+                  onClick={onOpenTv}
+                  style={{
+                    padding: '10px 18px', borderRadius: 10, border: 'none',
+                    background: '#00abe9', color: '#fff', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  Afficher le QR 📺
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleOpenRoomClick}
+                style={{
+                  padding: '10px 18px', borderRadius: 10,
+                  border: '1px solid rgba(0,137,186,0.45)',
+                  background: 'transparent', color: '#0089ba', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                Reprendre la salle →
+              </button>
+            </div>
           </div>
         ) : (
           <div style={{

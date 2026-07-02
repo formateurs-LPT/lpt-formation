@@ -1,13 +1,21 @@
 'use client'
 import Image from 'next/image'
+import { TRAINER_AVATARS, TRAINER_CANONICAL } from '@/lib/constants'
+
+function trainerAvatarSrc(pName) {
+  const rawKey = (pName || '').toLowerCase().split(/\s+/)[0]
+  const key = TRAINER_CANONICAL[rawKey] || rawKey
+  return TRAINER_AVATARS[key] || TRAINER_AVATARS.kevin
+}
 
 export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onLogout, onTVMode }) {
   const code = (sessionCode || '').trim()
+  const avatarSrc = isTrainer ? trainerAvatarSrc(pName) : '/assets/logo-lpt-blanc.png'
 
   return (
     <div className="topbar">
       <div className="tlogo">
-        <Image src="/assets/avatar_kevin.png" alt="LPT" width={28} height={28} style={{ borderRadius: '50%' }} />
+        <Image src={avatarSrc} alt={pName || 'LPT'} width={28} height={28} style={{ borderRadius: '50%', objectFit: 'cover' }} />
         LPT Formation
       </div>
       <div style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>

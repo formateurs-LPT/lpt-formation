@@ -2723,17 +2723,22 @@ function WelcomeScreen() {
 }
 
 function WaitingScreen() {
-  const [joinUrl, setJoinUrl] = useState(() => buildJoinUrl(getRuntimeSessionCode('trainer')))
-  const roomCode = getRuntimeSessionCode('trainer')
+  const [joinUrl, setJoinUrl] = useState('')
+  const [roomCode, setRoomCode] = useState('')
 
   useEffect(() => {
-    const tick = () => setJoinUrl(buildJoinUrl(getRuntimeSessionCode('trainer')))
+    const tick = () => {
+      setRoomCode(getRuntimeSessionCode('trainer'))
+      setJoinUrl(buildJoinUrl(getRuntimeSessionCode('trainer')))
+    }
     tick()
     const id = setInterval(tick, 5000)
     return () => clearInterval(id)
   }, [])
 
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(joinUrl)}`
+  const qrUrl = joinUrl
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(joinUrl)}`
+    : ''
 
   return (
     <div style={{
@@ -2758,8 +2763,12 @@ function WaitingScreen() {
           boxShadow: '0 0 40px rgba(0,171,233,0.15)',
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qrUrl} alt="QR Code" width={220} height={220}
-            style={{ display: 'block', borderRadius: 8 }} />
+          {joinUrl ? (
+            <img src={qrUrl} alt="QR Code" width={220} height={220}
+              style={{ display: 'block', borderRadius: 8 }} />
+          ) : (
+            <div style={{ width: 220, height: 220, borderRadius: 8, background: 'rgba(255,255,255,0.06)' }} />
+          )}
         </div>
 
         {/* Texte */}
@@ -3047,17 +3056,12 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
 }
 
 // ── TV View ───────────────────────────────────────────────────────
-export default function TVView() {
+export default function TVView({ onExit }) {
   const { activeModule, modulePage, sharedState, loading } = useModuleSync()
   const roomCode = getRuntimeSessionCode('trainer')
   const isRoomSession = isDynamicRoomCode(roomCode)
 
-  const [tvScreen, setTvScreen] = useState(() => {
-    if (typeof window === 'undefined') return null
-    captureTvRoomFromUrl()
-    const code = readTrainerActiveRoomCode() || roomCode
-    return isDynamicRoomCode(code) ? 'qr' : null
-  })
+  const [tvScreen, setTvScreen] = useState(null)
   const [tvReady, setTvReady] = useState(false)
   const [troublesPhase, setTroublesPhase]     = useState(1)
   const [opticienPlaying, setOpticienPlaying] = useState(false)
@@ -3094,8 +3098,13 @@ export default function TVView() {
 
   // Sync TV : salle dynamique → QR par défaut ; legacy → bienvenue sauf tv_screen explicite
   useEffect(() => {
+    captureTvRoomFromUrl()
     const code = getRuntimeSessionCode('trainer')
     const isRoom = isDynamicRoomCode(code)
+
+    if (isRoom) {
+      setTvScreen(prev => (prev === 'planning' ? 'planning' : 'qr'))
+    }
 
     getSharedState().then(state => {
       if (isRoom) {
@@ -3176,11 +3185,28 @@ export default function TVView() {
         {isRoomSession && (
           <div style={{
             position: 'fixed', top: 16, right: 16, zIndex: 50,
-            background: 'rgba(0,137,186,0.2)', border: '1px solid rgba(0,171,233,0.45)',
-            borderRadius: 20, padding: '8px 16px', fontSize: 12, fontWeight: 700,
-            color: '#00abe9', letterSpacing: 1,
+            display: 'flex', alignItems: 'center', gap: 10,
           }}>
-            SALLE {roomCode}
+            <div style={{
+              background: 'rgba(0,137,186,0.2)', border: '1px solid rgba(0,171,233,0.45)',
+              borderRadius: 20, padding: '8px 16px', fontSize: 12, fontWeight: 700,
+              color: '#00abe9', letterSpacing: 1,
+            }}>
+              SALLE {roomCode}
+            </div>
+            {onExit && (
+              <button
+                type="button"
+                onClick={onExit}
+                style={{
+                  background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 20, padding: '8px 14px', color: '#fff', fontSize: 12,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                ← Fermer
+              </button>
+            )}
           </div>
         )}
         {faqJournee

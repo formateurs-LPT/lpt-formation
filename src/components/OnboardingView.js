@@ -10,7 +10,7 @@ import {
   getCategoryDisplayTitle,
   listFormationCategories,
 } from '@/lib/formationCategories'
-import { getLegacySessionCode } from '@/lib/sessionCode'
+import { getLegacySessionCode, isDynamicRoomCode } from '@/lib/sessionCode'
 
 const JOURNEES = (onLaunchModule) => [
   {
@@ -328,8 +328,13 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
   const journees = JOURNEES(onLaunchModule)
   const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
-  const roomCode = typeof window !== 'undefined' ? getActiveSessionCode() : ''
-  const isRoomSession = roomCode && roomCode !== getLegacySessionCode()
+  const [roomCode, setRoomCode] = useState('')
+  const categories = listFormationCategories()
+
+  useEffect(() => {
+    setRoomCode(getActiveSessionCode())
+  }, [])
+  const isRoomSession = isDynamicRoomCode(roomCode)
 
   const showQrOnTv = () => {
     setSharedState({ tv_screen: 'qr' }).catch(console.warn)
