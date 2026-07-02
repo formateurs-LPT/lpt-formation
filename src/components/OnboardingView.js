@@ -4,16 +4,12 @@ import Image from 'next/image'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { generatePin } from '@/lib/pin'
 import { getSharedState, setSharedState, sbUpsert, sbSelect, SESSION_CODE } from '@/lib/supabase'
-
-const PARIS_MAGASINS = ['chatelet','st lazare','saint lazare','montparnasse','italie','commerce','bastille','cergy','creteil','créteil','belle epine','belle épine','paris','st ouen','saint ouen','ouen','beauchamp','odysseum','supply']
-const BELGIQUE_MAGASINS = ['namur','liege','liège','fripier','ixelles','charleroi','bruxelles']
-
-function classifyMagasin(magasin) {
-  const m = (magasin || '').toLowerCase()
-  if (BELGIQUE_MAGASINS.some(b => m.includes(b))) return 'belgique'
-  if (PARIS_MAGASINS.some(p => m.includes(p))) return 'paris'
-  return 'province'
-}
+import {
+  countEntreesByCategory,
+  entreeMatchesCategory,
+  getCategoryDisplayTitle,
+  listFormationCategories,
+} from '@/lib/formationCategories'
 
 const JOURNEES = (onLaunchModule) => [
   {
@@ -86,21 +82,18 @@ const JOURNEES = (onLaunchModule) => [
 
 // ── Step 1 : Choix du groupe ──────────────────────────────────────
 function GroupSelect({ onSelect, onBack }) {
-  const [counts, setCounts] = useState({ paris: 0, visio: 0 })
+  const [counts, setCounts] = useState({})
+  const categories = listFormationCategories()
 
   useEffect(() => {
     const load = async () => {
       try {
         const state = await getSharedState()
         const data = state.entrees_data || JSON.parse(localStorage.getItem('entrees_data') || '[]')
-        const paris = data.filter(e => classifyMagasin(e.magasin) === 'paris').length
-        const visio = data.filter(e => ['province', 'belgique'].includes(classifyMagasin(e.magasin))).length
-        setCounts({ paris, visio })
+        setCounts(countEntreesByCategory(data))
       } catch {
         const data = JSON.parse(localStorage.getItem('entrees_data') || '[]')
-        const paris = data.filter(e => classifyMagasin(e.magasin) === 'paris').length
-        const visio = data.filter(e => ['province', 'belgique'].includes(classifyMagasin(e.magasin))).length
-        setCounts({ paris, visio })
+        setCounts(countEntreesByCategory(data))
       }
     }
     load()
@@ -119,18 +112,19 @@ function GroupSelect({ onSelect, onBack }) {
       </div>
 
       <div className="ob-group-grid">
-        <div className="ob-group-card" onClick={() => onSelect('presentiel')}>
-          <div className="ob-group-card-icon">🏢</div>
-          <div className="ob-group-card-title">Présentiel</div>
-          <div className="ob-group-card-sub">Paris</div>
-          <div className="ob-group-card-count">{counts.paris} collaborateur{counts.paris !== 1 ? 's' : ''}</div>
-        </div>
-        <div className="ob-group-card" onClick={() => onSelect('visio')}>
-          <div className="ob-group-card-icon">💻</div>
-          <div className="ob-group-card-title">Visio</div>
-          <div className="ob-group-card-sub">Province · Belgique</div>
-          <div className="ob-group-card-count">{counts.visio} collaborateur{counts.visio !== 1 ? 's' : ''}</div>
-        </div>
+        {categories.map(({ slug, emoji, shortLabel, subLabel }) => {
+          const n = counts[slug] || 0
+          return (
+            <div key={slug} className="ob-group-card" onClick={() => onSelect(slug)}>
+              <div className="ob-group-card-icon">{emoji}</div>
+              <div className="ob-group-card-title">{shortLabel}</div>
+              {subLabel ? <div className="ob-group-card-sub">{subLabel}</div> : null}
+              <div className="ob-group-card-count">
+                {n} collaborateur{n !== 1 ? 's' : ''}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -167,12 +161,7 @@ function CollabList({ group, onNext, onBack }) {
         } catch (e) { console.warn('participants fallback échoué', e) }
       }
 
-      // Participants sans magasin → apparaissent dans les deux groupes
-      const filtered = data.filter(e => {
-        if (!e.magasin) return true
-        const cat = classifyMagasin(e.magasin)
-        return group === 'presentiel' ? cat === 'paris' : ['province', 'belgique'].includes(cat)
-      })
+      const filtered = data.filter(e => entreeMatchesCategory(e, group))
       setCollabs(filtered)
       setChecks(obData)
     }
@@ -220,7 +209,7 @@ function CollabList({ group, onNext, onBack }) {
     }, 'collaborateur,week_date').catch(console.warn)
   }
 
-  const title = group === 'presentiel' ? '🏢 Présentiel · Paris' : '💻 Visio · Province & Belgique'
+  const title = getCategoryDisplayTitle(group)
 
   return (
     <div className="dash-wrap">

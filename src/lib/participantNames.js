@@ -1,5 +1,5 @@
 import {
-  getSharedState,
+  getWeeklySharedState,
   sbSelect,
   sbDelete,
   sbUpdate,
@@ -121,25 +121,10 @@ export async function loadEntreesList() {
 
 /** Liste RH depuis Supabase uniquement (pas de localStorage) */
 export async function loadEntreesFromTrainerState() {
-  const code = getRuntimeSessionCode()
-  if (!code) return []
-
   try {
-    const rows = await sbSelect('trainer_state', `trainer=eq.${encodeURIComponent(code)}`)
-    if (!rows?.length) return []
-
-    let state = rows[0].state
-    if (typeof state === 'string') {
-      try {
-        state = JSON.parse(state)
-      } catch {
-        return []
-      }
-    }
-    if (!state || typeof state !== 'object') return []
+    const state = await getWeeklySharedState()
     const raw = state.entrees_data
     if (!Array.isArray(raw) || !raw.length) return []
-
     return normalizeEntreeList(raw)
   } catch (e) {
     console.error('[loadEntreesFromTrainerState]', e)

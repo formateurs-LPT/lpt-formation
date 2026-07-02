@@ -8,16 +8,7 @@ import {
   normalizeEntreeList,
 } from '@/lib/participantNames'
 import { sbInsert, sbUpsert, sbSelect, getSharedState, setSharedState, SESSION_CODE, insertSessionHistory } from '@/lib/supabase'
-
-const PARIS_MAGASINS = ['chatelet','st lazare','saint lazare','montparnasse','italie','commerce','bastille','cergy','creteil','créteil','belle epine','belle épine','paris','st ouen','saint ouen','ouen','beauchamp','odysseum','supply']
-const BELGIQUE_MAGASINS = ['namur','liege','liège','fripier','ixelles','charleroi','bruxelles']
-
-function classifyMagasin(magasin) {
-  const m = (magasin || '').toLowerCase()
-  if (BELGIQUE_MAGASINS.some(b => m.includes(b))) return 'belgique'
-  if (PARIS_MAGASINS.some(p => m.includes(p))) return 'paris'
-  return 'province'
-}
+import { classifyMagasin } from '@/lib/formationCategories'
 
 function fixSpaced(str) {
   let s = str.trim()

@@ -6,10 +6,11 @@ import Toast, { useToast } from '@/components/Toast'
 import Dashboard from '@/components/Dashboard'
 import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
-import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB, ensureSession, getRuntimeSessionCode } from '@/lib/supabase'
+import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB, ensureSession, getRuntimeSessionCode, sbSelect } from '@/lib/supabase'
 import { resolveParticipantName } from '@/lib/participantNames'
 import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
+import { captureParticipantRoomFromUrl, setParticipantSessionCode } from '@/lib/sessionCode'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
 import ModuleProgressif from '@/components/modules/ModuleProgressif'
 import ModulePDM from '@/components/modules/ModulePDM'
@@ -36,7 +37,19 @@ export default function Page() {
     const m = params.get('mode')
     return (m === 'tv' || m === 'participant') ? m : null
   })
+  const [displaySessionCode, setDisplaySessionCode] = useState(SESSION_CODE || '')
   const { message, toast } = useToast()
+
+  useEffect(() => {
+    captureParticipantRoomFromUrl()
+    setDisplaySessionCode(getRuntimeSessionCode())
+  }, [])
+
+  useEffect(() => {
+    if (view !== 'landing') {
+      setDisplaySessionCode(getRuntimeSessionCode())
+    }
+  }, [view])
 
   // Restaurer la session formateur au rechargement de page
   useEffect(() => {
@@ -83,6 +96,19 @@ export default function Page() {
     const raw = name.trim()
     if (!raw) { toast('Entrez votre prénom et nom'); return }
 
+    const sessionCode = getRuntimeSessionCode('participant') || SESSION_CODE
+    if (!sessionCode) {
+      toast('Application mal configurée (code session manquant). Contactez le formateur.')
+      return
+    }
+
+    const rows = await sbSelect('sessions', `code=eq.${encodeURIComponent(sessionCode)}&limit=1`)
+    const session = rows?.[0]
+    if (session?.status === 'ended') {
+      toast('Cette session est terminée.')
+      return
+    }
+
     const resolved = await resolveParticipantName(raw)
     if (!resolved.ok) {
       if (resolved.reason === 'no_session_code') {
@@ -97,22 +123,25 @@ export default function Page() {
 
     const canonical = resolved.canonicalName
     const prenom = resolved.prenom || raw.split(' ')[0] || ''
-    const sessionCode = getRuntimeSessionCode() || SESSION_CODE
     setPName(canonical)
     setPPrenom(prenom)
     setIsTrainer(false)
     localStorage.setItem('participant_name', canonical)
     localStorage.setItem('participant_prenom', prenom)
+    setParticipantSessionCode(sessionCode)
     try {
-      await ensureSession()
+      await ensureSession(sessionCode)
       await sbUpsert('participants', {
         session_code: sessionCode,
         name: canonical,
         joined_at: new Date().toISOString(),
+        left_at: null,
+        last_seen_at: new Date().toISOString(),
       }, 'session_code,name')
     } catch (e) {
       console.warn('Supabase participant upsert failed (non-blocking):', e)
     }
+    setDisplaySessionCode(sessionCode)
     setView('participant')
   }
 
@@ -124,6 +153,11 @@ export default function Page() {
   }
 
   const handleLaunchSession = () => setView('trainer-session')
+
+  const handleOpenRoom = ({ code }) => {
+    if (code) setDisplaySessionCode(code)
+    setView('trainer-session')
+  }
   const handleLaunchModule = (moduleId) => setView('module-' + moduleId)
   const handleBackToDashboard = () => setView('dashboard')
   const handleBackToModules = () => setView('onboarding-modules')
@@ -147,7 +181,7 @@ export default function Page() {
         pName={pName}
         isTrainer={isTrainer}
         onlineCount={onlineCount}
-        sessionCode={SESSION_CODE}
+        sessionCode={displaySessionCode || getRuntimeSessionCode() || SESSION_CODE}
         onLogout={handleLogout}
         onTVMode={() => setMode('tv')}
       />
@@ -156,6 +190,7 @@ export default function Page() {
           pName={pName}
           onLaunchSession={handleLaunchSession}
           onLaunchModule={handleLaunchModule}
+          onOpenRoom={handleOpenRoom}
           onToast={toast}
           onOnlineCount={setOnlineCount}
           onOpenPlanning={handleOpenPlanning}

@@ -1,14 +1,17 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbSelect, sbDelete, SESSION_CODE, getSharedState, insertSessionHistory, parseSessionHistorySummary } from '@/lib/supabase'
+import { sbSelect, sbDelete, getSharedState, insertSessionHistory, parseSessionHistorySummary, getRuntimeSessionCode } from '@/lib/supabase'
 import PlanningWidget from './PlanningWidget'
 import ShortcutsWidget from './ShortcutsWidget'
 import OnboardingView from './OnboardingView'
 import EntreesView from './EntreesView'
+import RoomOpenModal from './RoomOpenModal'
 import { TRAINER_AVATARS, TRAINER_CANONICAL } from '@/lib/constants'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
+import { findActiveRoomForTrainer, openOrCreateRoom, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
+import { readTrainerActiveRoomCode } from '@/lib/sessionCode'
 
 const NEWS_ITEMS = [
   '📚 Formation Verre Progressif — Module complet',
@@ -170,15 +173,16 @@ function SessionsHistoryView({ onBack, onToast }) {
 
   const handleCloseSession = async () => {
     setModal(null)
+    const roomCode = getRuntimeSessionCode('trainer') || SESSION_CODE
     const [participants, answers] = await Promise.all([
-      sbSelect('participants', 'session_code=eq.' + SESSION_CODE),
-      sbSelect('quiz_answers', 'session_code=eq.' + SESSION_CODE),
+      sbSelect('participants', 'session_code=eq.' + roomCode),
+      sbSelect('quiz_answers', 'session_code=eq.' + roomCode),
     ])
     if ((participants?.length || 0) + (answers?.length || 0) === 0) {
       onToast('Aucune donnée à enregistrer'); return
     }
     await insertSessionHistory({
-      sessionCode: SESSION_CODE + '_' + Date.now(),
+      sessionCode: roomCode + '_' + Date.now(),
       sessionDate: new Date().toISOString(),
       trainerName: localStorage.getItem('trainer_name') || 'Formateur',
       participants: participants || [],
@@ -186,8 +190,8 @@ function SessionsHistoryView({ onBack, onToast }) {
       scenarioResponses: [],
     })
     await Promise.all([
-      sbDelete('participants', 'session_code=eq.' + SESSION_CODE),
-      sbDelete('quiz_answers', 'session_code=eq.' + SESSION_CODE),
+      sbDelete('participants', 'session_code=eq.' + roomCode),
+      sbDelete('quiz_answers', 'session_code=eq.' + roomCode),
       sbDelete('module_results', 'id=gte.0'),
     ])
     onToast('Session clôturée ✓')
@@ -525,20 +529,66 @@ function AppUpdatesWidget() {
   )
 }
 
-export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onToast, onOnlineCount, onOpenPlanning }) {
+export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onToast, onOnlineCount, onOpenPlanning }) {
   const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | planning
   const [entreeCount, setEntreeCount] = useState(null)
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
   const [selectedUpdate, setSelectedUpdate] = useState(null)
+  const [roomModalOpen, setRoomModalOpen] = useState(false)
+  const [roomLoading, setRoomLoading] = useState(false)
+  const [activeRoomCode, setActiveRoomCode] = useState('')
 
   const [obDay, setObDay] = useState('1')
 
   useEffect(() => {
     loadTileStats()
+    refreshActiveRoom()
     const interval = setInterval(loadTileStats, 15000)
     return () => clearInterval(interval)
-  }, [])
+  }, [pName])
+
+  const refreshActiveRoom = async () => {
+    const login = trainerLoginFromDisplayName(pName)
+    const local = readTrainerActiveRoomCode()
+    if (local) {
+      setActiveRoomCode(local)
+      return
+    }
+    const room = await findActiveRoomForTrainer(login)
+    setActiveRoomCode(room?.code || '')
+  }
+
+  const handleOpenRoomClick = async () => {
+    const login = trainerLoginFromDisplayName(pName)
+    const existing = await findActiveRoomForTrainer(login)
+    if (existing?.code) {
+      onOpenRoom?.({ code: existing.code, resumed: true })
+      return
+    }
+    setRoomModalOpen(true)
+  }
+
+  const handleConfirmRoom = async (categorySlug) => {
+    setRoomLoading(true)
+    try {
+      const login = trainerLoginFromDisplayName(pName)
+      const result = await openOrCreateRoom({
+        trainerLogin: login,
+        trainerName: pName,
+        categorySlug,
+      })
+      setActiveRoomCode(result.code)
+      setRoomModalOpen(false)
+      onToast?.(result.created ? `Salle ${result.code} créée` : `Salle ${result.code} reprise`)
+      onOpenRoom?.({ code: result.code, resumed: !result.created, created: result.created })
+    } catch (e) {
+      console.error(e)
+      onToast?.('Impossible d\'ouvrir la salle')
+    } finally {
+      setRoomLoading(false)
+    }
+  }
 
   const loadTileStats = async () => {
     try {
@@ -798,6 +848,14 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
             <div className="dash-tile-sub">{sessionLast}</div>
           </div>
 
+          <div className="dash-tile dash-tile-cta" onClick={handleOpenRoomClick}>
+            <div className="dash-tile-cta-icon">🚪</div>
+            <div className="dash-tile-label">Ma salle</div>
+            <div className="dash-tile-sub">
+              {activeRoomCode ? `Code ${activeRoomCode} — reprendre` : 'Créer ou ouvrir ma salle'}
+            </div>
+          </div>
+
           <div className="dash-tile dash-tile-cta" onClick={() => setActiveView('modules')}>
             <div className="dash-tile-cta-icon">▶</div>
             <div className="dash-tile-label">Démarrer une session</div>
@@ -812,6 +870,14 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
         </div>
 
       </div>
+      {roomModalOpen && (
+        <RoomOpenModal
+          trainerName={pName}
+          loading={roomLoading}
+          onCancel={() => setRoomModalOpen(false)}
+          onConfirm={handleConfirmRoom}
+        />
+      )}
     </div>
   )
 }

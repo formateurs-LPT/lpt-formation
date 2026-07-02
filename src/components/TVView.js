@@ -4,7 +4,8 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbSelect, SESSION_CODE, getSharedState, setSharedState } from '@/lib/supabase'
+import { sbSelect, SESSION_CODE, getSharedState, setSharedState, getRuntimeSessionCode } from '@/lib/supabase'
+import { buildJoinUrl } from '@/lib/sessionCode'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -2450,7 +2451,6 @@ function TVModuleLobby({ moduleLabel, moduleSub }) {
 }
 
 // ── Waiting Screen ────────────────────────────────────────────────
-const APP_URL = 'https://lpt-formation.vercel.app?join=1'
 // ── Écran de bienvenue (avant le QR) ──────────────────────────────
 function TVPlanningScreen({ planningDay }) {
   const jour = PLANNING_JOURS.find(j => j.id === planningDay)
@@ -2716,9 +2716,19 @@ function WelcomeScreen() {
   )
 }
 
-const QR_URL  = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(APP_URL)}`
-
 function WaitingScreen() {
+  const [joinUrl, setJoinUrl] = useState(() => buildJoinUrl(getRuntimeSessionCode('trainer')))
+  const roomCode = getRuntimeSessionCode('trainer')
+
+  useEffect(() => {
+    const tick = () => setJoinUrl(buildJoinUrl(getRuntimeSessionCode('trainer')))
+    tick()
+    const id = setInterval(tick, 5000)
+    return () => clearInterval(id)
+  }, [])
+
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(joinUrl)}`
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -2742,7 +2752,7 @@ function WaitingScreen() {
           boxShadow: '0 0 40px rgba(0,171,233,0.15)',
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={QR_URL} alt="QR Code" width={220} height={220}
+          <img src={qrUrl} alt="QR Code" width={220} height={220}
             style={{ display: 'block', borderRadius: 8 }} />
         </div>
 
@@ -2755,9 +2765,18 @@ function WaitingScreen() {
           <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 12 }}>
             Scannez ce QR code<br />avec votre téléphone
           </div>
-          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', marginBottom: 28, lineHeight: 1.6 }}>
-            Connectez-vous avec votre prénom et<br />le code de session communiqué<br />par votre formateur.
+          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', marginBottom: 20, lineHeight: 1.6 }}>
+            Scannez le QR puis saisissez votre prénom et nom<br />
+            exactement comme sur la liste RH.
           </div>
+          {roomCode ? (
+            <div style={{
+              fontSize: 28, fontWeight: 800, color: '#00abe9', letterSpacing: 6,
+              marginBottom: 20, fontFamily: 'monospace',
+            }}>
+              {roomCode}
+            </div>
+          ) : null}
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.25)',

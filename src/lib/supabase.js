@@ -1,4 +1,5 @@
 import { getSessionCode } from './env'
+import { resolveSessionCode, getLegacySessionCode } from './sessionCode'
 
 // Lu au build / au démarrage de `next dev` depuis .env.local (NEXT_PUBLIC_*)
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
@@ -6,21 +7,33 @@ const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 
 export const SESSION_CODE = process.env.NEXT_PUBLIC_SESSION_CODE ?? ''
 
+/** Clé trainer_state pour la liste RH globale */
+export const TRAINER_STATE_WEEKLY_KEY = '__weekly__'
+
+/** Champs stockés sur __weekly__ (pas par salle) */
+const WEEKLY_STATE_KEYS = new Set(['entrees_data', 'ob_data', 'ob_date', 'ob_day'])
+
 /** Filtre PostgREST pour valeurs avec espaces / accents */
 export function pgEq(column, value) {
   const v = String(value ?? '').replace(/"/g, '""')
   return `${column}=eq."${v}"`
 }
 
-/** Code session (build Vercel : NEXT_PUBLIC_SESSION_CODE obligatoire) */
-export function getRuntimeSessionCode() {
+/**
+ * Code session effectif : salle active (localStorage) puis fallback .env / LPT2026.
+ * @param {'any'|'trainer'|'participant'} role
+ */
+export function getRuntimeSessionCode(role = 'any') {
+  const resolved = resolveSessionCode(role)
+  if (resolved) return resolved
+
   const raw = process.env.NEXT_PUBLIC_SESSION_CODE ?? ''
   const trimmed = String(raw).trim().replace(/^['"]|['"]$/g, '')
   if (trimmed) return trimmed
   try {
     return getSessionCode()
   } catch {
-    return ''
+    return getLegacySessionCode()
   }
 }
 
@@ -151,10 +164,10 @@ export function parseSessionHistorySummary(row) {
 }
 
 /** Garantit une ligne sessions (FK participants / quiz_answers) */
-export async function ensureSession() {
-  const code = getRuntimeSessionCode()
+export async function ensureSession(sessionCode) {
+  const code = (sessionCode || getRuntimeSessionCode()).trim()
   if (!code) {
-    console.error('[ensureSession] NEXT_PUBLIC_SESSION_CODE manquant (rebuild Vercel après ajout env)')
+    console.error('[ensureSession] code session manquant')
     return false
   }
   const result = await sbUpsert(
@@ -205,42 +218,113 @@ function parseTrainerStateRow(row) {
   return state && typeof state === 'object' ? state : {}
 }
 
-export async function getSharedState() {
-  const code = getRuntimeSessionCode()
-  if (!code) {
-    console.error('[getSharedState] NEXT_PUBLIC_SESSION_CODE manquant')
-    return {}
+function pickWeeklyFields(state) {
+  const out = {}
+  for (const key of WEEKLY_STATE_KEYS) {
+    if (state?.[key] !== undefined) out[key] = state[key]
   }
-  const rows = await sbSelect('trainer_state', `trainer=eq.${encodeURIComponent(code)}`)
-  if (!rows?.length) {
-    console.warn('[getSharedState] aucune ligne pour trainer=', code)
-    return {}
-  }
+  return out
+}
+
+async function fetchTrainerStateByKey(trainerKey) {
+  if (!trainerKey) return {}
+  const rows = await sbSelect('trainer_state', `trainer=eq.${encodeURIComponent(trainerKey)}`)
+  if (!rows?.length) return {}
   return parseTrainerStateRow(rows[0])
 }
 
-export async function setSharedState(patch) {
-  const code = getRuntimeSessionCode()
-  if (!code) {
-    console.error('[setSharedState] NEXT_PUBLIC_SESSION_CODE manquant — rien enregistré en BDD')
-    return null
-  }
-  console.log('[setSharedState] ✏️ écriture →', patch)
-  const current = await getSharedState()
+async function upsertTrainerStateByKey(trainerKey, patch) {
+  if (!trainerKey) return null
+  const current = await fetchTrainerStateByKey(trainerKey)
   const merged = { ...current, ...patch }
-  const result = await sbUpsert(
+  return sbUpsert(
     'trainer_state',
     {
-      trainer: code,
+      trainer: trainerKey,
       state: merged,
       updated_at: new Date().toISOString(),
     },
     'trainer'
   )
-  if (!result) {
-    console.error('[setSharedState] ❌ échec upsert trainer_state, clé trainer=', code)
-  } else {
-    console.log('[setSharedState] ✅ succès — prog_zone_q=', merged.prog_zone_q)
+}
+
+/** Liste RH + onboarding (clé __weekly__, repli LPT2026 si vide) */
+export async function getWeeklySharedState() {
+  let state = await fetchTrainerStateByKey(TRAINER_STATE_WEEKLY_KEY)
+  const weekly = pickWeeklyFields(state)
+
+  const legacyCode = getLegacySessionCode()
+  const needsRhFallback =
+    !Array.isArray(weekly.entrees_data) ||
+    weekly.entrees_data.length === 0
+
+  if (needsRhFallback && legacyCode && legacyCode !== TRAINER_STATE_WEEKLY_KEY) {
+    const legacy = pickWeeklyFields(await fetchTrainerStateByKey(legacyCode))
+    state = { ...legacy, ...weekly }
+    if (!weekly.entrees_data?.length && legacy.entrees_data?.length) {
+      state.entrees_data = legacy.entrees_data
+    }
+    if (!weekly.ob_data && legacy.ob_data) state.ob_data = legacy.ob_data
+    if (!weekly.ob_date && legacy.ob_date) state.ob_date = legacy.ob_date
+    if (!weekly.ob_day && legacy.ob_day) state.ob_day = legacy.ob_day
   }
+
+  return pickWeeklyFields(state)
+}
+
+/** TV, modules, quiz sync — état par salle */
+export async function getRoomSharedState(roomCode) {
+  const code = (roomCode || getRuntimeSessionCode('trainer')).trim()
+  if (!code) return {}
+  return fetchTrainerStateByKey(code)
+}
+
+/** Fusion room + RH (compatibilité app existante) */
+export async function getSharedState() {
+  const [weekly, room] = await Promise.all([
+    getWeeklySharedState(),
+    getRoomSharedState(),
+  ])
+  return { ...room, ...weekly }
+}
+
+export async function setWeeklySharedState(patch) {
+  if (!patch || typeof patch !== 'object') return null
+  console.log('[setWeeklySharedState] ✏️', patch)
+  const result = await upsertTrainerStateByKey(TRAINER_STATE_WEEKLY_KEY, patch)
+  if (!result) console.error('[setWeeklySharedState] ❌ échec __weekly__')
   return result
+}
+
+export async function setRoomSharedState(patch, roomCode) {
+  if (!patch || typeof patch !== 'object') return null
+  const code = (roomCode || getRuntimeSessionCode('trainer')).trim()
+  if (!code) {
+    console.error('[setRoomSharedState] code salle manquant')
+    return null
+  }
+  console.log('[setRoomSharedState] ✏️', code, patch)
+  const result = await upsertTrainerStateByKey(code, patch)
+  if (!result) console.error('[setRoomSharedState] ❌ échec', code)
+  return result
+}
+
+export async function setSharedState(patch) {
+  if (!patch || typeof patch !== 'object') return null
+
+  const weeklyPatch = {}
+  const roomPatch = {}
+  for (const [key, value] of Object.entries(patch)) {
+    if (WEEKLY_STATE_KEYS.has(key)) weeklyPatch[key] = value
+    else roomPatch[key] = value
+  }
+
+  let lastResult = null
+  if (Object.keys(weeklyPatch).length) {
+    lastResult = await setWeeklySharedState(weeklyPatch)
+  }
+  if (Object.keys(roomPatch).length) {
+    lastResult = await setRoomSharedState(roomPatch)
+  }
+  return lastResult
 }
