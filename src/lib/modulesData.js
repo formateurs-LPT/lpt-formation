@@ -316,8 +316,7 @@ export const ENTREPRISE_PAGES = [
     titre: "Lunettes pour Tous aujourd'hui",
     color: '#00abe9',
     stats: [
-      { value: '33',           label: 'magasins en France',             color: '#00abe9' },
-      { value: 'France & Belgique', label: 'présence géographique',     color: '#4ade80' },
+      { value: '33',           label: 'magasins France & Belgique',     color: '#00abe9' },
       { value: '+1 000',       label: 'collaborateurs',                  color: '#f59e0b' },
       { value: 'Des milliers', label: 'de clients équipés chaque jour', color: '#a78bfa' },
       { value: '10 minutes',   label: 'la promesse LPT',                color: '#f472b6' },
