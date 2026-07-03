@@ -1,5 +1,15 @@
 export const TRAINER_CANONICAL = { 'nadège': 'nadege', 'thomas': 'thomas' }
 
+export function getTrainerAvatarKey(pName) {
+  const rawKey = (pName || '').toLowerCase().split(/\s+/)[0]
+  return TRAINER_CANONICAL[rawKey] || rawKey
+}
+
+export function getTrainerAvatarSrc(pName) {
+  const key = getTrainerAvatarKey(pName)
+  return TRAINER_AVATARS[key] || TRAINER_AVATARS.kevin
+}
+
 export const TRAINER_AVATARS = {
   kevin: '/assets/avatar_kevin.png',
   quentin: '/assets/avatar_quentin.png',

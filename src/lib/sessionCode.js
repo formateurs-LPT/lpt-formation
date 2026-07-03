@@ -63,14 +63,9 @@ export function captureParticipantRoomFromUrl() {
   return code || ''
 }
 
-/** Mode TV : ?mode=tv&room=XXXX — mémorise la salle (écran diffusion séparé) */
+/** Mode TV : lit ?mode=tv&room=XXXX (ne modifie plus le localStorage). */
 export function captureTvRoomFromUrl() {
-  if (typeof window === 'undefined') return ''
-  const params = new URLSearchParams(window.location.search)
-  if (params.get('mode') !== 'tv') return ''
-  const room = params.get('room')?.trim()
-  if (room) setTrainerActiveRoomCode(room)
-  return room || ''
+  return getTvUrlRoomCode()
 }
 
 /** True si le code est une salle dynamique (pas le legacy LPT2026 / .env) */
@@ -91,13 +86,17 @@ export function buildTvUrl(code, basePath = '/') {
   return `${root}?mode=tv&room=${encodeURIComponent(room)}`
 }
 
+/** Code salle dans l’URL TV (?mode=tv&room=…) — lecture seule */
+export function getTvUrlRoomCode() {
+  if (typeof window === 'undefined') return ''
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('mode') !== 'tv') return ''
+  return params.get('room')?.trim() || ''
+}
+
 /** Code salle affiché sur l'écran TV (?room= prioritaire, sans réécrire le localStorage). */
 export function getTvDisplayRoomCode() {
-  if (typeof window === 'undefined') return readTrainerActiveRoomCode()
-  const params = new URLSearchParams(window.location.search)
-  if (params.get('mode') === 'tv') {
-    const fromUrl = params.get('room')?.trim()
-    if (fromUrl) return fromUrl
-  }
+  const fromUrl = getTvUrlRoomCode()
+  if (fromUrl) return fromUrl
   return readTrainerActiveRoomCode()
 }

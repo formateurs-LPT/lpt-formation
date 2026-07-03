@@ -7,13 +7,15 @@ import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, getSharedState, setSharedState, getRuntimeSessionCode } from '@/lib/supabase'
 import {
   buildJoinUrl,
+  buildTvUrl,
   captureTvRoomFromUrl,
   getLegacySessionCode,
-  getTvDisplayRoomCode,
+  getTvUrlRoomCode,
   isDynamicRoomCode,
   readTrainerActiveRoomCode,
   setTrainerActiveRoomCode,
 } from '@/lib/sessionCode'
+import { resolveTvRoomLiveCode } from '@/lib/sessionRoom'
 import ZeroInterChain from '@/components/ZeroInterChain'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -2756,19 +2758,20 @@ function WelcomeScreen() {
   )
 }
 
-function WaitingScreen() {
+function WaitingScreen({ roomCode: roomCodeProp }) {
   const [joinUrl, setJoinUrl] = useState('')
-  const [roomCode, setRoomCode] = useState('')
+  const [roomCode, setRoomCode] = useState(roomCodeProp || '')
 
   useEffect(() => {
     const tick = () => {
-      setRoomCode(getRuntimeSessionCode('trainer'))
-      setJoinUrl(buildJoinUrl(getRuntimeSessionCode('trainer')))
+      const code = roomCodeProp || readTrainerActiveRoomCode() || getTvUrlRoomCode()
+      setRoomCode(code)
+      setJoinUrl(code ? buildJoinUrl(code) : '')
     }
     tick()
     const id = setInterval(tick, 5000)
     return () => clearInterval(id)
-  }, [])
+  }, [roomCodeProp])
 
   const qrUrl = joinUrl
     ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(joinUrl)}`
@@ -3159,9 +3162,11 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
 // ── TV View ───────────────────────────────────────────────────────
 export default function TVView({ onExit }) {
   const { activeModule, modulePage, sharedState, loading } = useModuleSync()
-  const roomCode = getTvDisplayRoomCode() || getRuntimeSessionCode('trainer')
-  const isRoomSession = isDynamicRoomCode(roomCode)
-  const [roomLive, setRoomLive] = useState(isRoomSession ? null : true)
+  const [tvRoom, setTvRoom] = useState({ resolved: false, live: false, code: '', mode: 'legacy' })
+
+  const isRoomSession = tvRoom.mode === 'room' && !!tvRoom.code
+  const roomLive = !tvRoom.resolved ? null : tvRoom.live
+  const roomCode = tvRoom.code
 
   const [tvScreen, setTvScreen] = useState(null)
   const [tvReady, setTvReady] = useState(false)
@@ -3199,35 +3204,38 @@ export default function TVView({ onExit }) {
   // (évite le flash QR au démarrage quand tv_screen='qr' est resté en DB)
   const tvInitDoneRef = useRef(false)
 
-  // Salle dynamique : vérifie en BDD que la session est encore ouverte (poll)
+  // Salle dynamique : vérifie en BDD (localStorage prioritaire sur ?room= obsolète)
   useEffect(() => {
     let cancelled = false
-    captureTvRoomFromUrl()
 
     const syncRoomStatus = async () => {
-      const code = getTvDisplayRoomCode() || getRuntimeSessionCode('trainer')
-      if (!isDynamicRoomCode(code)) {
-        if (!cancelled) setRoomLive(true)
-        return
-      }
-
       try {
-        const rows = await sbSelect('sessions', `code=eq.${encodeURIComponent(code)}&limit=1`)
-        const session = rows?.[0]
-        const live = session && (session.status === 'waiting' || session.status === 'active')
-        if (!cancelled) {
-          setRoomLive(!!live)
-          if (!live && readTrainerActiveRoomCode() === code) {
+        const result = await resolveTvRoomLiveCode()
+        if (cancelled) return
+
+        setTvRoom({ ...result, resolved: true })
+
+        if (result.mode === 'room' && result.live) {
+          setTrainerActiveRoomCode(result.code)
+          const urlCode = getTvUrlRoomCode()
+          if (urlCode !== result.code) {
+            window.history.replaceState(null, '', buildTvUrl(result.code))
+          }
+        } else if (result.mode === 'room' && !result.live) {
+          if (readTrainerActiveRoomCode() === result.code) {
             setTrainerActiveRoomCode('')
           }
         }
       } catch {
-        if (!cancelled) setRoomLive(false)
+        if (!cancelled) {
+          setTvRoom({ resolved: true, live: false, code: getTvUrlRoomCode(), mode: 'room' })
+        }
       }
     }
 
+    captureTvRoomFromUrl()
     syncRoomStatus()
-    const interval = setInterval(syncRoomStatus, 4000)
+    const interval = setInterval(syncRoomStatus, 3000)
     return () => {
       cancelled = true
       clearInterval(interval)
@@ -3236,11 +3244,15 @@ export default function TVView({ onExit }) {
 
   // Sync TV : salle dynamique active → QR par défaut ; legacy → bienvenue sauf tv_screen explicite
   useEffect(() => {
+    if (!tvRoom.resolved) return
+    if (isRoomSession && !tvRoom.live) {
+      tvInitDoneRef.current = true
+      setTvReady(true)
+      return
+    }
     if (isRoomSession && roomLive !== true) return
 
-    captureTvRoomFromUrl()
-    const code = getRuntimeSessionCode('trainer')
-    const isRoom = isDynamicRoomCode(code)
+    const isRoom = tvRoom.mode === 'room' && tvRoom.live
 
     if (isRoom) {
       setTvScreen(prev => (prev === 'planning' ? 'planning' : 'qr'))
@@ -3262,7 +3274,7 @@ export default function TVView({ onExit }) {
       tvInitDoneRef.current = true
       setTvReady(true)
     })
-  }, [isRoomSession, roomLive])
+  }, [tvRoom, isRoomSession, roomLive])
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync) ──
   useEffect(() => {
@@ -3314,7 +3326,15 @@ export default function TVView({ onExit }) {
     return (
       <>
         <style>{STYLES}</style>
-        <WelcomeScreen />
+        <div style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: 20,
+        }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={200} height={76} style={{ objectFit: 'contain', opacity: 0.7 }} />
+          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>Connexion à la salle…</span>
+        </div>
       </>
     )
   }
@@ -3373,7 +3393,7 @@ export default function TVView({ onExit }) {
           : tvScreen === 'planning'
             ? <TVPlanningScreen planningDay={planningDay} />
             : showQr
-              ? <WaitingScreen />
+              ? <WaitingScreen roomCode={roomCode} />
               : <WelcomeScreen />
         }
       </>

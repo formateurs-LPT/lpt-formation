@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { sbSelect, getSharedState, getActiveSessionCode, getParticipantSessionCode } from '@/lib/supabase'
+import { getTvUrlRoomCode, isDynamicRoomCode, readTrainerActiveRoomCode } from '@/lib/sessionCode'
 
 function resolveSyncSessionCode() {
   if (typeof window !== 'undefined') {
@@ -9,6 +10,13 @@ function resolveSyncSessionCode() {
       params.get('mode') === 'participant' ||
       Boolean(localStorage.getItem('participant_name'))
     if (isParticipantMode) return getParticipantSessionCode()
+
+    if (params.get('mode') === 'tv') {
+      const stored = readTrainerActiveRoomCode()
+      const urlCode = getTvUrlRoomCode()
+      if (stored && isDynamicRoomCode(stored)) return stored
+      if (urlCode && isDynamicRoomCode(urlCode)) return urlCode
+    }
   }
   return getActiveSessionCode()
 }

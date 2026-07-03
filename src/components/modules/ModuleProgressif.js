@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, getSharedState, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { NextPagePreview } from '@/lib/trainerPreview'
+import TrainerAvatar from '@/components/TrainerAvatar'
 import { PROGRESSIF_PAGES, PROGRESSIF_QUIZ } from '@/lib/modulesData'
 const ACCENT = '#7c3aed'
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -80,7 +81,7 @@ function VerreProgressifSchema({ highlight, small }) {
 }
 
 // ── Avatar bulle ────────────────────────────────────────────────
-function AvatarBubble({ script, trainerAvatar, pName }) {
+function AvatarBubble({ script, pName }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     setVisible(false)
@@ -101,7 +102,7 @@ function AvatarBubble({ script, trainerAvatar, pName }) {
       </div>
       <div style={{ background: 'rgba(10,42,92,0.75)', backdropFilter: 'blur(20px)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 20, padding: '12px 18px 12px 12px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
         <div style={{ width: 80, height: 80, borderRadius: 16, overflow: 'hidden', flexShrink: 0, border: `2.5px solid ${ACCENT}`, boxShadow: `0 0 0 4px rgba(124,58,237,0.2)`, animation: 'progPulse 2.5s ease-in-out infinite' }}>
-          <Image src={trainerAvatar} alt={cap(pName)} width={80} height={80} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+          <TrainerAvatar pName={pName} size={80} alt={cap(pName)} />
         </div>
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{cap(pName)}</div>
@@ -152,7 +153,7 @@ function PageShell({ children, pageIndex, total, onBack }) {
 }
 
 // ── Page cours (4 points + verre schéma) ──────────────────────────
-function CoursPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextPage }) {
+function CoursPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextPage }) {
   const [entered, setEntered] = useState(false)
   useEffect(() => { setEntered(false); const t = setTimeout(() => setEntered(true), 60); return () => clearTimeout(t) }, [page.id])
   return (
@@ -196,13 +197,13 @@ function CoursPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst
           )}
         </div>
       </div>
-      <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
+      <AvatarBubble script={page.avatarScript} pName={pName} />
     </PageShell>
   )
 }
 
 // ── Page Zone Interactif (formateur) ─────────────────────────────
-function ZoneInteractifPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst, pageIndex, total }) {
+function ZoneInteractifPage({ page, pName, onPrev, onNext, onBack, isFirst, pageIndex, total }) {
   const [activeQ, setActiveQ] = useState(null) // null | 0 | 1 | 2
   const [responses, setResponses] = useState({})
   const [showCorrect, setShowCorrect] = useState(false)
@@ -338,7 +339,7 @@ function ZoneInteractifPage({ page, trainerAvatar, pName, onPrev, onNext, onBack
 }
 
 // ── Page Retour Terrain (formateur) ──────────────────────────────
-function RetourTerrainPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst, pageIndex, total }) {
+function RetourTerrainPage({ page, pName, onPrev, onNext, onBack, isFirst, pageIndex, total }) {
   const [responses, setResponses] = useState({})
 
   useEffect(() => {
@@ -405,13 +406,13 @@ function RetourTerrainPage({ page, trainerAvatar, pName, onPrev, onNext, onBack,
         <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← Précédent</button>
         <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${ACCENT}, #9f67fa)`, border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: `0 6px 24px ${ACCENT}50`, fontFamily: 'inherit' }}>Suivant →</button>
       </div>
-      <AvatarBubble script={page.avatarScript || "Partagez ce que vous avez vécu en magasin. Chaque expérience est précieuse pour le groupe."} trainerAvatar={trainerAvatar} pName={pName} />
+      <AvatarBubble script={page.avatarScript || "Partagez ce que vous avez vécu en magasin. Chaque expérience est précieuse pour le groupe."} pName={pName} />
     </PageShell>
   )
 }
 
 // ── Page Jeu d'objections (formateur) ────────────────────────────
-function JeuObjectionsPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz }) {
+function JeuObjectionsPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz }) {
   const [activeObj, setActiveObj] = useState(null) // null | 0-4
   const [responses, setResponses] = useState({})
   const [bestAnswer, setBestAnswer] = useState(null)
@@ -725,8 +726,6 @@ export default function ModuleProgressif({ pName, onBack }) {
   const [quizQ, setQuizQ] = useState(0)
   const [showGroupResults, setShowGroupResults] = useState(false)
 
-  const trainerAvatar = pName ? `/assets/avatar_${pName.toLowerCase()}.png` : '/assets/avatar_kevin.png'
-
   useEffect(() => {
     if (started) sbUpdate('sessions', { active_module: 'verre-progressif', module_page: 0 }, 'code=eq.' + getActiveSessionCode())
   }, [started])
@@ -792,7 +791,7 @@ export default function ModuleProgressif({ pName, onBack }) {
   }
 
   const navProps = {
-    page, trainerAvatar, pName, isFirst, isLast,
+    page, pName, isFirst, isLast,
     pageIndex, total: PROGRESSIF_PAGES.length,
     onPrev: () => setPageIndex(i => Math.max(0, i - 1)),
     onNext: handleNext,

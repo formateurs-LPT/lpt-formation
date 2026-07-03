@@ -4,6 +4,7 @@ import {
   isDynamicRoomCode,
   readTrainerActiveRoomCode,
   setTrainerActiveRoomCode,
+  getTvUrlRoomCode,
 } from './sessionCode'
 import { getTrainerFromDB, sbSelect, sbUpdate, sbUpsert, setRoomSharedState } from './supabase'
 
@@ -75,6 +76,35 @@ export async function getLiveTrainerRoomCode(trainerLogin) {
     return room.code
   }
   return ''
+}
+
+/**
+ * Résout quelle salle afficher sur l'écran TV.
+ * Priorité localStorage (nouvelle salle) puis ?room= dans l'URL.
+ */
+export async function resolveTvRoomLiveCode() {
+  const urlCode = getTvUrlRoomCode()
+  const storedCode = readTrainerActiveRoomCode()
+  const candidates = [...new Set([storedCode, urlCode].filter(c => isDynamicRoomCode(c)))]
+
+  if (!candidates.length) {
+    return { mode: 'legacy', code: '', live: true }
+  }
+
+  for (const code of candidates) {
+    const rows = await sbSelect('sessions', `code=eq.${encodeURIComponent(code)}&limit=1`)
+    const session = rows?.[0]
+    const live = session && (session.status === 'waiting' || session.status === 'active')
+    if (live) {
+      return { mode: 'room', code, live: true }
+    }
+  }
+
+  return {
+    mode: 'room',
+    code: urlCode || storedCode || candidates[0],
+    live: false,
+  }
 }
 
 /**

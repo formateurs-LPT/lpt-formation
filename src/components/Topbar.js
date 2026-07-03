@@ -1,16 +1,10 @@
 'use client'
 import Image from 'next/image'
-import { TRAINER_AVATARS, TRAINER_CANONICAL } from '@/lib/constants'
-
-function trainerAvatarSrc(pName) {
-  const rawKey = (pName || '').toLowerCase().split(/\s+/)[0]
-  const key = TRAINER_CANONICAL[rawKey] || rawKey
-  return TRAINER_AVATARS[key] || TRAINER_AVATARS.kevin
-}
+import { getTrainerAvatarSrc } from '@/lib/constants'
 
 export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onLogout, onTVMode }) {
   const code = (sessionCode || '').trim()
-  const avatarSrc = isTrainer ? trainerAvatarSrc(pName) : '/assets/logo-lpt-blanc.png'
+  const avatarSrc = isTrainer ? getTrainerAvatarSrc(pName) : '/assets/logo-lpt-blanc.png'
 
   return (
     <div className="topbar">

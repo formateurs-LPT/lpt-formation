@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { sbUpdate, sbSelect, getActiveSessionCode } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { NextPagePreview } from '@/lib/trainerPreview'
+import TrainerAvatar from '@/components/TrainerAvatar'
 import { TYPES_VERRES_PAGES as PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -52,7 +53,7 @@ function VerreAnime({ color }) {
 }
 
 // ── Présentateur (avatar + bulle) ────────────────────────────────
-function AvatarBubble({ script, trainerAvatar, pName }) {
+function AvatarBubble({ script, pName }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     setVisible(false)
@@ -96,7 +97,7 @@ function AvatarBubble({ script, trainerAvatar, pName }) {
           boxShadow: '0 0 0 4px rgba(0,171,233,0.2)',
           animation: 'avatarPulse 2.5s ease-in-out infinite',
         }}>
-          <Image src={trainerAvatar} alt={cap(pName)} width={80} height={80} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+          <TrainerAvatar pName={pName} size={80} alt={cap(pName)} />
         </div>
         {/* Nom + rôle */}
         <div>
@@ -118,7 +119,7 @@ function AvatarBubble({ script, trainerAvatar, pName }) {
 }
 
 // ── Page de contenu ───────────────────────────────────────────────
-function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextPage }) {
+function ContentPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextPage }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -284,7 +285,7 @@ function ContentPage({ page, trainerAvatar, pName, onPrev, onNext, onBack, isFir
         </div>
       </div>
 
-      <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
+      <AvatarBubble script={page.avatarScript} pName={pName} />
     </div>
   )
 }
@@ -599,10 +600,6 @@ export default function ModuleTypesVerres({ pName, onBack }) {
     onBack()
   }
 
-  const trainerAvatar = pName
-    ? `/assets/avatar_${pName.toLowerCase()}.png`
-    : '/assets/avatar_kevin.png'
-
   // Write to Supabase when module starts
   useEffect(() => {
     if (started) {
@@ -652,7 +649,6 @@ export default function ModuleTypesVerres({ pName, onBack }) {
       <style>{STYLES}</style>
       <ContentPage
         page={PAGES[pageIndex]}
-        trainerAvatar={trainerAvatar}
         pName={pName}
         pageIndex={pageIndex}
         total={PAGES.length}
