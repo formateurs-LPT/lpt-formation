@@ -32,6 +32,29 @@ export function setParticipantSessionCode(code) {
   else localStorage.removeItem(STORAGE_PARTICIPANT_ROOM)
 }
 
+/**
+ * Code salle pour sync trainer_state + sessions (participant, TV, formateur).
+ * Même logique que useModuleSync — une seule source de vérité.
+ */
+export function resolveRoomStateCode() {
+  if (typeof window === 'undefined') {
+    return getLegacySessionCode()
+  }
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('mode') === 'participant' || localStorage.getItem('participant_name')) {
+    return readParticipantSessionCode() || getLegacySessionCode()
+  }
+  if (params.get('mode') === 'tv') {
+    const stored = readTrainerActiveRoomCode()
+    const urlCode = getTvUrlRoomCode()
+    if (stored && isDynamicRoomCode(stored)) return stored
+    if (urlCode && isDynamicRoomCode(urlCode)) return urlCode
+  }
+  const trainer = readTrainerActiveRoomCode()
+  if (trainer) return trainer
+  return getLegacySessionCode()
+}
+
 /** Priorité : salle active localStorage → fallback LPT2026 / .env */
 export function resolveSessionCode(role = 'any') {
   if (typeof window !== 'undefined') {

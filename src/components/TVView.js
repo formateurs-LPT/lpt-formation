@@ -4,7 +4,9 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbSelect, getSharedState, setSharedState, getRuntimeSessionCode } from '@/lib/supabase'
+import { sbSelect, getSharedState, setSharedState } from '@/lib/supabase'
+import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { resolveRoomStateCode } from '@/lib/sessionCode'
 import {
   buildJoinUrl,
   buildTvUrl,
@@ -81,15 +83,33 @@ function VerreAnime({ color }) {
   )
 }
 
-// ── TV Quiz Question ──────────────────────────────────────────────
-function TVQuizQuestion({ question, qIdx, total, moduleLabel }) {
+// ── TV Quiz Question (réponses en direct sur le diffuseur) ────────
+function TVQuizQuestion({ question, qIdx, total, moduleLabel, moduleId, sessionCode }) {
+  const [liveAnswers, setLiveAnswers] = useState([])
+  const code = sessionCode || resolveRoomStateCode()
+
+  useEffect(() => {
+    if (!code || !moduleId) return
+    const filter = `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${encodeURIComponent(moduleId)}&question_idx=eq.${qIdx}`
+    const poll = async () => {
+      const rows = await fetchTrainerQuizAnswers(filter)
+      setLiveAnswers(rows || [])
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [code, moduleId, qIdx])
+
+  const totalAnswers = liveAnswers.length
+  const counts = question.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+
   return (
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      padding: '40px 80px', position: 'relative',
+      padding: '40px 80px 120px', position: 'relative',
     }}>
       {/* Header */}
       <div style={{ position: 'absolute', top: 24, left: 32, display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -98,41 +118,72 @@ function TVQuizQuestion({ question, qIdx, total, moduleLabel }) {
         <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Quiz · {moduleLabel}</span>
       </div>
 
+      {/* Compteur réponses */}
+      <div style={{
+        position: 'absolute', top: 24, right: 32,
+        background: totalAnswers > 0 ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.06)',
+        border: `1px solid ${totalAnswers > 0 ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.12)'}`,
+        borderRadius: 20, padding: '8px 18px',
+        fontSize: 13, fontWeight: 700,
+        color: totalAnswers > 0 ? '#4ade80' : 'rgba(255,255,255,0.45)',
+      }}>
+        {totalAnswers} réponse{totalAnswers !== 1 ? 's' : ''}
+      </div>
+
       {/* Badge question */}
       <div style={{
         background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
-        borderRadius: 20, padding: '8px 28px', marginBottom: 36,
+        borderRadius: 20, padding: '8px 28px', marginBottom: 28,
         fontSize: 14, fontWeight: 700, color: '#a78bfa',
         textTransform: 'uppercase', letterSpacing: 2,
       }}>Question {qIdx + 1} / {total}</div>
 
       {/* Question */}
       <h1 style={{
-        fontSize: 54, fontWeight: 800, color: '#fff', textAlign: 'center',
-        lineHeight: 1.2, marginBottom: 64, maxWidth: 1000,
+        fontSize: 48, fontWeight: 800, color: '#fff', textAlign: 'center',
+        lineHeight: 1.2, marginBottom: 40, maxWidth: 1000,
       }}>{question.question}</h1>
 
-      {/* Réponses */}
+      {/* Réponses + barres live */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: question.options.length === 2 ? '1fr 1fr' : 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: 24, width: '100%', maxWidth: 1000,
+        display: 'flex', flexDirection: 'column', gap: 16,
+        width: '100%', maxWidth: 960,
       }}>
-        {question.options.map((opt, i) => (
-          <div key={i} style={{
-            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 24, padding: '28px 32px',
-            display: 'flex', alignItems: 'center', gap: 20,
-          }}>
-            <div style={{
-              width: 60, height: 60, borderRadius: '50%', flexShrink: 0,
-              background: OPTION_COLORS[i],
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 26, fontWeight: 800, color: '#fff',
-            }}>{'ABCD'[i]}</div>
-            <span style={{ fontSize: 28, fontWeight: 700, color: '#fff' }}>{opt}</span>
-          </div>
-        ))}
+        {question.options.map((opt, i) => {
+          const count = counts[i]
+          const isCorrect = i === question.correct
+          const pct = totalAnswers > 0 ? (count / totalAnswers) * 100 : 0
+          return (
+            <div key={i} style={{
+              background: isCorrect ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${isCorrect ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.12)'}`,
+              borderRadius: 20, padding: '18px 24px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 12 }}>
+                <div style={{
+                  width: 52, height: 52, borderRadius: '50%', flexShrink: 0,
+                  background: OPTION_COLORS[i],
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 22, fontWeight: 800, color: '#fff',
+                }}>{'ABCD'[i]}</div>
+                <span style={{ fontSize: 24, fontWeight: 700, color: '#fff', flex: 1 }}>{opt}</span>
+                <span style={{
+                  fontSize: 18, fontWeight: 800, color: count > 0 ? '#fff' : 'rgba(255,255,255,0.25)',
+                  minWidth: 48, textAlign: 'right',
+                }}>{count}</span>
+              </div>
+              <div style={{
+                height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden',
+              }}>
+                <div style={{
+                  height: '100%', borderRadius: 4, width: `${pct}%`,
+                  background: isCorrect ? '#22c55e' : OPTION_COLORS[i],
+                  transition: 'width 0.5s ease',
+                }} />
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       {/* Instruction bas */}
@@ -143,7 +194,9 @@ function TVQuizQuestion({ question, qIdx, total, moduleLabel }) {
         borderRadius: 20, padding: '10px 24px',
       }}>
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'waitingPulse 1.4s ease-in-out infinite' }} />
-        <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>Répondez depuis votre téléphone</span>
+        <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+          {totalAnswers > 0 ? 'Les réponses s\u2019affichent en direct' : 'Répondez depuis votre téléphone'}
+        </span>
       </div>
     </div>
   )
@@ -2915,11 +2968,12 @@ function RoomClosedScreen({ onExit, previousCode }) {
 }
 
 // ── TV Group Results ──────────────────────────────────────────────
-function TVGroupResults({ moduleId, moduleLabel, quiz }) {
+function TVGroupResults({ moduleId, moduleLabel, quiz, sessionCode }) {
   const [answers, setAnswers] = useState([])
   const [loading, setLoading] = useState(true)
   const audioRef = useRef(null)
   const [muted, setMuted] = useState(true)
+  const code = sessionCode || resolveRoomStateCode()
 
   const toggleMute = () => {
     const newMuted = !muted
@@ -2933,19 +2987,20 @@ function TVGroupResults({ moduleId, moduleLabel, quiz }) {
   }
 
   useEffect(() => {
-    const sessionCode = encodeURIComponent(getRuntimeSessionCode('trainer'))
+    if (!code) return
+    const enc = encodeURIComponent(code)
     const fetchAnswers = async () => {
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${sessionCode}`)
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${enc}`)
       setAnswers(rows || [])
       setLoading(false)
     }
     fetchAnswers()
     const interval = setInterval(async () => {
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${sessionCode}`)
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${enc}`)
       setAnswers(rows || [])
     }, 3000)
     return () => clearInterval(interval)
-  }, [])
+  }, [code])
 
   const participantCount = [...new Set((answers || []).map(r => r.collaborateur))].length
 
@@ -3161,7 +3216,7 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
 
 // ── TV View ───────────────────────────────────────────────────────
 export default function TVView({ onExit }) {
-  const { activeModule, modulePage, sharedState, loading } = useModuleSync()
+  const { activeModule, modulePage, sharedState, loading, sessionCode } = useModuleSync()
   const [tvRoom, setTvRoom] = useState({ resolved: false, live: false, code: '', mode: 'legacy' })
 
   const isRoomSession = tvRoom.mode === 'room' && !!tvRoom.code
@@ -3429,13 +3484,20 @@ export default function TVView({ onExit }) {
       ) : isLobby ? (
         <TVModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
       ) : isResults ? (
-        <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
+        <TVGroupResults
+          moduleId={activeModule}
+          moduleLabel={moduleData?.label || ''}
+          quiz={moduleData?.quiz || []}
+          sessionCode={sessionCode || roomCode}
+        />
       ) : isQuiz && quizQuestion ? (
         <TVQuizQuestion
           question={quizQuestion}
           qIdx={modulePage - 100}
           total={moduleData.quiz.length}
           moduleLabel={moduleData?.label || ''}
+          moduleId={activeModule}
+          sessionCode={sessionCode || roomCode}
         />
       ) : page ? (
         <TVContentPage

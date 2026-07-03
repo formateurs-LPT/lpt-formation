@@ -1,5 +1,5 @@
 import { getSessionCode } from './env'
-import { resolveSessionCode, getLegacySessionCode } from './sessionCode'
+import { resolveSessionCode, resolveRoomStateCode, getLegacySessionCode } from './sessionCode'
 
 // Lu au build / au démarrage de `next dev` depuis .env.local (NEXT_PUBLIC_*)
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
@@ -293,16 +293,17 @@ export async function getWeeklySharedState() {
 
 /** TV, modules, quiz sync — état par salle */
 export async function getRoomSharedState(roomCode) {
-  const code = (roomCode || getRuntimeSessionCode('trainer')).trim()
+  const code = (roomCode || resolveRoomStateCode()).trim()
   if (!code) return {}
   return fetchTrainerStateByKey(code)
 }
 
 /** Fusion room + RH (compatibilité app existante) */
-export async function getSharedState() {
+export async function getSharedState(roomCode) {
+  const code = (roomCode || resolveRoomStateCode()).trim()
   const [weekly, room] = await Promise.all([
     getWeeklySharedState(),
-    getRoomSharedState(),
+    getRoomSharedState(code),
   ])
   return { ...room, ...weekly }
 }
@@ -317,7 +318,7 @@ export async function setWeeklySharedState(patch) {
 
 export async function setRoomSharedState(patch, roomCode) {
   if (!patch || typeof patch !== 'object') return null
-  const code = (roomCode || getRuntimeSessionCode('trainer')).trim()
+  const code = (roomCode || resolveRoomStateCode()).trim()
   if (!code) {
     console.error('[setRoomSharedState] code salle manquant')
     return null
