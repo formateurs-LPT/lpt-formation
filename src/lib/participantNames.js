@@ -37,15 +37,15 @@ export function normalizeNameKey(name) {
     .join(' ')
 }
 
-/** Toutes les clés possibles pour une fiche RH (ordre nom/prénom, fullName, etc.) */
-export function matchKeysForEntry(c) {
+/** Clés de connexion : nom + prénom obligatoires (pas de prénom seul) */
+export function loginKeysForEntry(c) {
   const keys = new Set()
   const nom = (c?.nom || '').trim()
   const prenom = (c?.prenom || '').trim()
   const full = entreeDisplayName(c)
-  for (const label of [full, `${nom} ${prenom}`, `${prenom} ${nom}`, nom, prenom]) {
+  for (const label of [full, `${nom} ${prenom}`, `${prenom} ${nom}`]) {
     const k = normalizeNameKey(label)
-    if (k) keys.add(k)
+    if (k && k.includes(' ')) keys.add(k)
   }
   return keys
 }
@@ -53,10 +53,13 @@ export function matchKeysForEntry(c) {
 export function findRhMatch(inputName, entrees) {
   const key = normalizeNameKey(inputName)
   if (!key || !entrees?.length) return null
+
+  if (!key.includes(' ')) return null
+
   for (const c of entrees) {
     const canonical = entreeDisplayName(c)
     if (!canonical) continue
-    if (matchKeysForEntry(c).has(key)) {
+    if (loginKeysForEntry(c).has(key)) {
       return { canonicalName: canonical, entry: c }
     }
   }
@@ -204,6 +207,15 @@ export async function resolveParticipantName(rawInput) {
 
   if (!entrees.length) {
     return { ok: false, reason: 'no_list', sessionCode }
+  }
+
+  const key = normalizeNameKey(raw)
+  if (!key.includes(' ')) {
+    const dup = entrees.filter(c => normalizeNameKey(c?.prenom || '') === key)
+    if (dup.length > 1) {
+      return { ok: false, reason: 'ambiguous_prenom', sessionCode }
+    }
+    return { ok: false, reason: 'need_full_name', sessionCode }
   }
 
   let match = findRhMatch(raw, entrees)

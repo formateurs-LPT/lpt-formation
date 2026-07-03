@@ -7,8 +7,8 @@ export default function Login({ onTrainerLogin, onParticipantJoin }) {
   const [isJoinMode, setIsJoinMode] = useState(false)
   const [trainerId, setTrainerId] = useState('')
   const [trainerCode, setTrainerCode] = useState('')
-  const [pname, setPname] = useState('')
-  const [scode, setScode] = useState('')
+  const [nom, setNom] = useState('')
+  const [prenom, setPrenom] = useState('')
 
   useEffect(() => {
     setIsJoinMode(new URLSearchParams(window.location.search).get('join') === '1')
@@ -19,8 +19,10 @@ export default function Login({ onTrainerLogin, onParticipantJoin }) {
   }
 
   const handleJoin = () => {
-    onParticipantJoin(pname, scode)
+    onParticipantJoin(nom, prenom)
   }
+
+  const canJoin = nom.trim() && prenom.trim()
 
   return (
     <div id="landing">
@@ -74,16 +76,37 @@ export default function Login({ onTrainerLogin, onParticipantJoin }) {
           )}
 
           <div className="lcard-section-label">Rejoindre une session</div>
-          <input
-            className="finput"
-            type="text"
-            placeholder="Prénom et nom (comme sur la liste RH)"
-            value={pname}
-            onChange={e => setPname(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleJoin()}
-          />
-          <button className="gbtn" style={{ width: '100%', marginTop: 4 }} onClick={handleJoin}>Rejoindre →</button>
-          <p className="hint">Prénom et nom exactement comme sur la liste RH (Entrées de la semaine)</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <input
+              className="finput"
+              type="text"
+              placeholder="Nom"
+              value={nom}
+              onChange={e => setNom(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && canJoin && handleJoin()}
+              autoComplete="family-name"
+            />
+            <input
+              className="finput"
+              type="text"
+              placeholder="Prénom"
+              value={prenom}
+              onChange={e => setPrenom(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && canJoin && handleJoin()}
+              autoComplete="given-name"
+            />
+          </div>
+          <button
+            className="gbtn"
+            style={{ width: '100%', marginTop: 10, opacity: canJoin ? 1 : 0.55 }}
+            onClick={handleJoin}
+            disabled={!canJoin}
+          >
+            Rejoindre →
+          </button>
+          <p className="hint">
+            Saisissez nom et prénom comme sur la ligne bleue « Connexion : … » (Entrées de la semaine)
+          </p>
         </div>
       </div>
     </div>

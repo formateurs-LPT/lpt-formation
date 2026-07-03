@@ -173,9 +173,14 @@ export default function Page() {
     setView('dashboard')
   }
 
-  const handleParticipantJoin = async (name) => {
-    const raw = name.trim()
-    if (!raw) { toast('Entrez votre prénom et nom'); return }
+  const handleParticipantJoin = async (nom, prenom) => {
+    const nomT = (nom || '').trim()
+    const prenomT = (prenom || '').trim()
+    if (!nomT || !prenomT) {
+      toast('Entrez votre nom et votre prénom')
+      return
+    }
+    const raw = `${nomT} ${prenomT}`
 
     const sessionCode = getRuntimeSessionCode('participant') || SESSION_CODE
     if (!sessionCode) {
@@ -196,8 +201,12 @@ export default function Page() {
         toast('Application mal configurée (code session manquant). Contactez le formateur.')
       } else if (resolved.reason === 'no_list') {
         toast('Liste RH indisponible. Le formateur doit importer « Entrées de la semaine ».')
+      } else if (resolved.reason === 'need_full_name') {
+        toast('Saisissez nom et prénom (comme sur la ligne bleue « Connexion : … »).')
+      } else if (resolved.reason === 'ambiguous_prenom') {
+        toast('Plusieurs personnes portent ce prénom — précisez aussi votre nom de famille.')
       } else {
-        toast('Nom non reconnu. Copiez-collez exactement la ligne bleue « Connexion : … » sur Entrées de la semaine.')
+        toast('Nom non reconnu. Vérifiez nom et prénom comme sur « Connexion : … » (Entrées de la semaine).')
       }
       return
     }
@@ -208,12 +217,12 @@ export default function Page() {
     }
 
     const canonical = resolved.canonicalName
-    const prenom = resolved.prenom || raw.split(' ')[0] || ''
+    const prenomDisplay = resolved.prenom || prenomT || ''
     setPName(canonical)
-    setPPrenom(prenom)
+    setPPrenom(prenomDisplay)
     setIsTrainer(false)
     localStorage.setItem('participant_name', canonical)
-    localStorage.setItem('participant_prenom', prenom)
+    localStorage.setItem('participant_prenom', prenomDisplay)
     setParticipantSessionCode(sessionCode)
     try {
       await ensureSession(sessionCode)

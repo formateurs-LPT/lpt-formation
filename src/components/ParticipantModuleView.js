@@ -2801,7 +2801,7 @@ function RhParticipantGate({ pNameInput, children }) {
       const raw = (pNameInput || '').trim()
       if (!raw) {
         if (!cancelled) {
-          setDenyMessage('Connectez-vous depuis la page d\'accueil avec votre prénom et nom (liste RH).')
+          setDenyMessage('Connectez-vous depuis la page d\'accueil avec votre nom et prénom (liste RH).')
           setStatus('denied')
         }
         return
@@ -2812,7 +2812,11 @@ function RhParticipantGate({ pNameInput, children }) {
           setDenyMessage(
             resolved.reason === 'no_list'
               ? 'Liste RH indisponible. Le formateur doit importer « Entrées de la semaine ».'
-              : 'Nom non reconnu. Reprenez le prénom et le nom comme sur la liste RH.'
+              : resolved.reason === 'need_full_name'
+                ? 'Saisissez nom et prénom (comme sur la ligne bleue « Connexion : … »).'
+                : resolved.reason === 'ambiguous_prenom'
+                  ? 'Plusieurs personnes portent ce prénom — précisez aussi votre nom de famille.'
+                  : 'Nom non reconnu. Vérifiez nom et prénom comme sur la liste RH.'
           )
           setStatus('denied')
         }
