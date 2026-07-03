@@ -4,16 +4,8 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbSelect, getSharedState, setSharedState, getRuntimeSessionCode } from '@/lib/supabase'
-import {
-  buildJoinUrl,
-  captureTvRoomFromUrl,
-  getLegacySessionCode,
-  getTvDisplayRoomCode,
-  isDynamicRoomCode,
-  readTrainerActiveRoomCode,
-  setTrainerActiveRoomCode,
-} from '@/lib/sessionCode'
+import { sbSelect, SESSION_CODE, getSharedState, setSharedState } from '@/lib/supabase'
+import ZeroInterChain from '@/components/ZeroInterChain'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -1204,7 +1196,7 @@ function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlock
             </div>
           </div>
           {/* Droite — vidéo ou animation */}
-          <div style={{ borderRadius: 20, overflow: 'hidden', boxShadow: '0 0 60px rgba(0,0,0,0.6)', background: selectedItem.animation ? 'transparent' : '#000' }}>
+          <div style={{ borderRadius: 20, overflow: 'hidden', boxShadow: '0 0 60px rgba(0,0,0,0.6)', background: selectedItem.video ? '#000' : 'transparent' }}>
             {selectedItem.video ? (
               <video
                 ref={videoRef}
@@ -1213,7 +1205,7 @@ function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlock
                 loop
                 playsInline
                 muted={!audioUnlocked}
-                style={{ width: '100%', display: 'block', maxHeight: '65vh', objectFit: 'cover' }}
+                style={{ width: '100%', display: 'block', maxHeight: '65vh', objectFit: 'contain' }}
               />
             ) : selectedItem.animation === 'counter' ? (
               <CounterAnimation
@@ -1222,8 +1214,8 @@ function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlock
                 active={modelePoint !== null}
               />
             ) : (
-              <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 18 }}>
-                Vidéo à venir
+              <div style={{ padding: '28px 32px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
+                <ZeroInterChain compact={false} />
               </div>
             )}
           </div>
@@ -1262,112 +1254,6 @@ function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlock
   )
 }
 
-
-const TV_INTERMEDIAIRES = [
-  { label: 'Importateur',      pct: '+15%', color: '#ef4444' },
-  { label: 'Grossiste',        pct: '+25%', color: '#f97316' },
-  { label: 'Agent commercial', pct: '+10%', color: '#eab308' },
-]
-
-function TVZeroIntermediaire({ page, pageIndex, total, step }) {
-  const falling  = step === 5
-  const lptVisible = step >= 6
-
-  return (
-    <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, flex: 1 }}>
-
-        {/* ── Chaîne traditionnelle ── */}
-        <div style={{
-          transform: falling ? 'translateY(400px) rotate(-6deg)' : 'translateY(0)',
-          opacity: falling ? 0 : 1,
-          filter: falling ? 'blur(12px)' : 'none',
-          transition: falling ? 'all 0.85s cubic-bezier(0.55,0,1,0.45)' : 'none',
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 16 }}>
-            La chaîne traditionnelle
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', height: 160, position: 'relative' }}>
-            {/* Usine */}
-            <div style={{ flexShrink: 0, textAlign: 'center', width: 110 }}>
-              <div style={{ fontSize: 48 }}>🏭</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 600, marginTop: 4 }}>Fournisseur</div>
-            </div>
-
-            {/* Ligne + nœuds */}
-            <div style={{ flex: 1, position: 'relative', height: '100%' }}>
-              <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 3, background: 'rgba(239,68,68,0.55)', transform: 'translateY(-50%)' }} />
-              <div style={{ position: 'absolute', top: '50%', right: -3, transform: 'translateY(-50%)', borderTop: '9px solid transparent', borderBottom: '9px solid transparent', borderLeft: '15px solid rgba(239,68,68,0.7)', width: 0, height: 0 }} />
-              {TV_INTERMEDIAIRES.map((item, i) => (
-                <div key={i} style={{
-                  position: 'absolute', left: `${20 + i * 27}%`, top: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  opacity: step > i ? 1 : 0,
-                  transition: 'opacity 0.4s ease',
-                }}>
-                  <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 10, textAlign: 'center', minWidth: 120 }}>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: item.color, marginBottom: 4 }}>{item.pct}</div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: `${item.color}22`, border: `1px solid ${item.color}55`, borderRadius: 6, padding: '3px 10px', whiteSpace: 'nowrap' }}>{item.label}</div>
-                  </div>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: item.color, border: '3px solid #fff', boxShadow: `0 0 16px ${item.color}` }} />
-                </div>
-              ))}
-              {step >= 4 && (
-                <div style={{ position: 'absolute', top: '50%', right: '6%', transform: 'translateY(-160%)',
-                  background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.45)',
-                  borderRadius: 10, padding: '6px 14px', fontSize: 16, fontWeight: 800, color: '#ef4444',
-                }}>× 2 à 3 le prix fabricant</div>
-              )}
-            </div>
-
-            {/* Opticien trad */}
-            <div style={{ flexShrink: 0, textAlign: 'center', width: 120 }}>
-              <div style={{ fontSize: 44 }}>🏪</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 600, marginTop: 4 }}>Opticien<br/>traditionnel</div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Chaîne LPT ── */}
-        <div style={{
-          marginTop: lptVisible ? 32 : 0,
-          opacity: lptVisible ? 1 : 0,
-          transform: lptVisible ? 'translateY(0)' : 'translateY(40px)',
-          transition: 'all 0.7s ease',
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 16 }}>
-            Notre modèle
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', height: 150, position: 'relative' }}>
-            <div style={{ flexShrink: 0, textAlign: 'center', width: 110 }}>
-              <div style={{ fontSize: 48 }}>🏭</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 600, marginTop: 4 }}>Fournisseur</div>
-            </div>
-            <div style={{ flex: 1, position: 'relative', height: '100%' }}>
-              <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 4, background: 'rgba(0,171,233,0.65)', transform: 'translateY(-50%)', borderRadius: 2 }} />
-              <div style={{ position: 'absolute', top: '50%', right: -3, transform: 'translateY(-50%)', borderTop: '10px solid transparent', borderBottom: '10px solid transparent', borderLeft: '16px solid rgba(0,171,233,0.75)', width: 0, height: 0 }} />
-              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -150%)',
-                background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.45)',
-                borderRadius: 24, padding: '6px 20px', fontSize: 14, fontWeight: 800, color: '#00abe9', letterSpacing: 2 }}>
-                DIRECT
-              </div>
-              <div style={{ position: 'absolute', top: '50%', right: '6%', transform: 'translateY(30%)',
-                background: 'rgba(74,222,128,0.10)', border: '1px solid rgba(74,222,128,0.4)',
-                borderRadius: 10, padding: '6px 14px', fontSize: 16, fontWeight: 800, color: '#4ade80' }}>
-                Prix réduits ✓
-              </div>
-            </div>
-            <div style={{ flexShrink: 0, textAlign: 'center', width: 120 }}>
-              <div style={{ fontSize: 44 }}>🔵</div>
-              <div style={{ fontSize: 13, color: '#00abe9', fontWeight: 700, marginTop: 4 }}>Lunettes<br/>Pour Tous</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </TVEntrepriseShell>
-  )
-}
 
 function TVEntrepriseNaissance({ page, pageIndex, total }) {
   return (
@@ -1998,11 +1884,18 @@ function TVPdmPourquoi({ pageIndex, total }) {
 }
 
 // ── TV Offres : Classique ─────────────────────────────────────────
-function TVOffresClassique() {
+const TV_ITEMS_CLASSIQUE = [
+  { label: '1 paire achetée', sub: null },
+  { label: 'Deuxième paire à -20%', sub: null },
+  { label: '10€ en 10 minutes', sub: null },
+]
+
+function TVOffresClassique({ step = 0 }) {
   const COLOR = '#00abe9'
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ maxWidth: 680, width: '100%', padding: '0 56px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+      {/* Gauche */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 32 }}>
           <div style={{ width: 96, height: 96, borderRadius: '50%', border: `14px solid ${COLOR}`, boxShadow: `0 0 40px ${COLOR}50`, flexShrink: 0 }} />
           <div>
@@ -2011,17 +1904,44 @@ function TVOffresClassique() {
             <div style={{ fontSize: 48, fontWeight: 900, color: COLOR, lineHeight: 1 }}>Classique</div>
           </div>
         </div>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: `${COLOR}18`, border: `1px solid ${COLOR}50`, borderRadius: 20, padding: '8px 20px', marginBottom: 36 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR }} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: COLOR }}>Sans remboursement</span>
-        </div>
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `4px solid ${COLOR}`, borderRadius: 16, padding: '24px 28px' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>Ce qui est inclus</div>
-          {['1 paire achetée', 'Deuxième paire à -20%', 'Paires à partir de 10 euros'].map((pt, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: i < 2 ? 16 : 0 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR, flexShrink: 0 }} />
-              <span style={{ fontSize: 20, color: '#fff', fontWeight: 500 }}>{pt}</span>
-            </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>Tarifs</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>Entrée de gamme</span>
+            <span style={{ fontSize: 30, fontWeight: 900, color: COLOR }}>dès 10€</span>
+          </div>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 16 }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>2ème paire</span>
+            <span style={{ fontSize: 30, fontWeight: 900, color: COLOR }}>-20%</span>
+          </div>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 16 }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>Fabrication</span>
+            <span style={{ fontSize: 30, fontWeight: 900, color: COLOR }}>⚡ 10 min</span>
+          </div>
+        </div>
+      </div>
+      {/* Droite */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', gap: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Ce qui est inclus</div>
+        {TV_ITEMS_CLASSIQUE.map((item, i) => (
+          <div key={i} style={{
+            opacity: i < step ? 1 : 0,
+            transform: i < step ? 'translateX(0)' : 'translateX(16px)',
+            transition: 'opacity 0.5s ease, transform 0.5s ease',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderLeft: `4px solid ${COLOR}`,
+            borderRadius: 16, padding: '22px 28px',
+          }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{item.label}</div>
+          </div>
+        ))}
+        {/* Barre de progression */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          {TV_ITEMS_CLASSIQUE.map((_, i) => (
+            <div key={i} style={{ height: 4, flex: 1, borderRadius: 2, background: i < step ? COLOR : 'rgba(255,255,255,0.1)', transition: 'background 0.4s' }} />
           ))}
         </div>
       </div>
@@ -2050,10 +1970,6 @@ function TVOffres11({ step = 0 }) {
             <div style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1 }}>Le parcours</div>
             <div style={{ fontSize: 48, fontWeight: 900, color: COLOR, lineHeight: 1 }}>1=1</div>
           </div>
-        </div>
-        <div style={{ display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: 8, background: `${COLOR}18`, border: `1px solid ${COLOR}50`, borderRadius: 20, padding: '8px 20px', marginBottom: 36 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR }} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: COLOR }}>Sans remboursement</span>
         </div>
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `4px solid ${COLOR}`, borderRadius: 16, padding: '24px 28px' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>Tarifs</div>
@@ -2267,7 +2183,7 @@ function TVMontures({ type, pageIndex, total, moduleLabel }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, modelePoint, zeroInterStep }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -2283,7 +2199,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'montures-metal')   return <TVMontures type="montures-metal"   pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'montures-injecte') return <TVMontures type="montures-injecte" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'pdm-pourquoi')     return <TVPdmPourquoi pageIndex={pageIndex} total={total} />
-  if (page.type === 'offres-classique') return <TVOffresClassique />
+  if (page.type === 'offres-classique') return <TVOffresClassique step={offresClassiqueStep} />
   if (page.type === 'offres-1-1')       return <TVOffres11 step={offres11Step} />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} audioUnlocked={audioUnlocked} />
@@ -2297,7 +2213,6 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'ventes-opticien') return <TVEntrepriseVentesOpticien page={page} pageIndex={pageIndex} total={total} ventesResponses={ventesResponses} />
   if (page.type === 'promesse')        return <TVEntreprisePromesse       page={page} pageIndex={pageIndex} total={total} promesseResponses={promesseResponses} />
   if (page.type === 'chiffres')           return <TVEntrepriseChiffres   page={page} pageIndex={pageIndex} total={total} />
-  if (page.type === 'zero-intermediaire') return <TVZeroIntermediaire    page={page} pageIndex={pageIndex} total={total} step={zeroInterStep} />
   if (page.type === 'force-lpt') return <TVEntrepriseForceLPT  page={page} pageIndex={pageIndex} total={total} modelePoint={modelePoint} audioUnlocked={audioUnlocked} />
   if (page.type === 'naissance')  return <TVEntrepriseNaissance page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'impact')     return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
@@ -2459,6 +2374,7 @@ function TVModuleLobby({ moduleLabel, moduleSub }) {
 }
 
 // ── Waiting Screen ────────────────────────────────────────────────
+const APP_URL = 'https://lpt-formation.vercel.app?join=1'
 // ── Écran de bienvenue (avant le QR) ──────────────────────────────
 function TVPlanningScreen({ planningDay }) {
   const jour = PLANNING_JOURS.find(j => j.id === planningDay)
@@ -2724,24 +2640,9 @@ function WelcomeScreen() {
   )
 }
 
+const QR_URL  = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(APP_URL)}`
+
 function WaitingScreen() {
-  const [joinUrl, setJoinUrl] = useState('')
-  const [roomCode, setRoomCode] = useState('')
-
-  useEffect(() => {
-    const tick = () => {
-      setRoomCode(getRuntimeSessionCode('trainer'))
-      setJoinUrl(buildJoinUrl(getRuntimeSessionCode('trainer')))
-    }
-    tick()
-    const id = setInterval(tick, 5000)
-    return () => clearInterval(id)
-  }, [])
-
-  const qrUrl = joinUrl
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(joinUrl)}`
-    : ''
-
   return (
     <div style={{
       minHeight: '100vh',
@@ -2765,12 +2666,8 @@ function WaitingScreen() {
           boxShadow: '0 0 40px rgba(0,171,233,0.15)',
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {joinUrl ? (
-            <img src={qrUrl} alt="QR Code" width={220} height={220}
-              style={{ display: 'block', borderRadius: 8 }} />
-          ) : (
-            <div style={{ width: 220, height: 220, borderRadius: 8, background: 'rgba(255,255,255,0.06)' }} />
-          )}
+          <img src={QR_URL} alt="QR Code" width={220} height={220}
+            style={{ display: 'block', borderRadius: 8 }} />
         </div>
 
         {/* Texte */}
@@ -2782,18 +2679,9 @@ function WaitingScreen() {
           <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 12 }}>
             Scannez ce QR code<br />avec votre téléphone
           </div>
-          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', marginBottom: 20, lineHeight: 1.6 }}>
-            Scannez le QR puis saisissez votre prénom et nom<br />
-            exactement comme sur la liste RH.
+          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', marginBottom: 28, lineHeight: 1.6 }}>
+            Connectez-vous avec votre prénom et<br />le code de session communiqué<br />par votre formateur.
           </div>
-          {roomCode ? (
-            <div style={{
-              fontSize: 28, fontWeight: 800, color: '#00abe9', letterSpacing: 6,
-              marginBottom: 20, fontFamily: 'monospace',
-            }}>
-              {roomCode}
-            </div>
-          ) : null}
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.25)',
@@ -2808,72 +2696,6 @@ function WaitingScreen() {
             </span>
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
-
-/** Diffusion : salle terminée ou introuvable — en attente d'une nouvelle ouverture */
-function RoomClosedScreen({ onExit, previousCode }) {
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: 40, textAlign: 'center', position: 'relative',
-    }}>
-      {onExit && (
-        <button
-          type="button"
-          onClick={onExit}
-          style={{
-            position: 'fixed', top: 16, right: 16, zIndex: 50,
-            background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: 20, padding: '8px 14px', color: '#fff', fontSize: 12,
-            cursor: 'pointer', fontFamily: 'inherit',
-          }}
-        >
-          ← Fermer
-        </button>
-      )}
-      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={280} height={106}
-        style={{ objectFit: 'contain', marginBottom: 48, opacity: 0.85 }} />
-      <div style={{
-        fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)',
-        textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16,
-      }}>
-        Diffusion
-      </div>
-      <h1 style={{ fontSize: 42, fontWeight: 800, color: '#fff', margin: '0 0 12px', lineHeight: 1.15 }}>
-        Salle terminée
-      </h1>
-      {previousCode ? (
-        <div style={{
-          fontSize: 14, color: 'rgba(255,255,255,0.35)', marginBottom: 28,
-          fontFamily: 'monospace', letterSpacing: 4,
-        }}>
-          {previousCode}
-        </div>
-      ) : null}
-      <p style={{
-        fontSize: 17, color: 'rgba(255,255,255,0.55)', maxWidth: 480,
-        lineHeight: 1.65, margin: '0 0 36px',
-      }}>
-        En attente d&apos;une nouvelle salle.<br />
-        Le formateur peut rouvrir une session depuis le tableau de bord.
-      </p>
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: 10,
-        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: 24, padding: '12px 22px',
-      }}>
-        <div style={{
-          width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.35)',
-          animation: 'waitingPulse 1.4s ease-in-out infinite',
-        }} />
-        <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
-          En attente du formateur…
-        </span>
       </div>
     </div>
   )
@@ -3124,14 +2946,9 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
 }
 
 // ── TV View ───────────────────────────────────────────────────────
-export default function TVView({ onExit }) {
+export default function TVView() {
   const { activeModule, modulePage, sharedState, loading } = useModuleSync()
-  const roomCode = getTvDisplayRoomCode() || getRuntimeSessionCode('trainer')
-  const isRoomSession = isDynamicRoomCode(roomCode)
-  const [roomLive, setRoomLive] = useState(isRoomSession ? null : true)
-
-  const [tvScreen, setTvScreen] = useState(null)
-  const [tvReady, setTvReady] = useState(false)
+  const [tvScreen, setTvScreen]               = useState(null)
   const [troublesPhase, setTroublesPhase]     = useState(1)
   const [opticienPlaying, setOpticienPlaying] = useState(false)
   const [ordoPlaying, setOrdoPlaying]         = useState(false)
@@ -3145,10 +2962,9 @@ export default function TVView({ onExit }) {
   const [trameStep, setTrameStep]                       = useState(null)
   // Offres 1=1
   const [offres11Step, setOffres11Step]                 = useState(0)
+  const [offresClassiqueStep, setOffresClassiqueStep]   = useState(0)
   // Force LPT — point sélectionné par le formateur
   const [modelePoint, setModelePoint]                   = useState(null)
-  // Zéro intermédiaire — étape animation
-  const [zeroInterStep, setZeroInterStep]               = useState(-1)
   // FAQ Réveil des acquis
   const [faqJournee, setFaqJournee]                     = useState(null)
   const [faqQuestions, setFaqQuestions]                 = useState([])
@@ -3165,87 +2981,26 @@ export default function TVView({ onExit }) {
   // (évite le flash QR au démarrage quand tv_screen='qr' est resté en DB)
   const tvInitDoneRef = useRef(false)
 
-  // Salle dynamique : vérifie en BDD que la session est encore ouverte (poll)
+  // À l'ouverture de la TV : remet tv_screen à null pour toujours afficher la bienvenue
   useEffect(() => {
-    let cancelled = false
-    captureTvRoomFromUrl()
-
-    const syncRoomStatus = async () => {
-      const code = getTvDisplayRoomCode() || getRuntimeSessionCode('trainer')
-      if (!isDynamicRoomCode(code)) {
-        if (!cancelled) setRoomLive(true)
-        return
-      }
-
-      try {
-        const rows = await sbSelect('sessions', `code=eq.${encodeURIComponent(code)}&limit=1`)
-        const session = rows?.[0]
-        const live = session && (session.status === 'waiting' || session.status === 'active')
-        if (!cancelled) {
-          setRoomLive(!!live)
-          if (!live && readTrainerActiveRoomCode() === code) {
-            setTrainerActiveRoomCode('')
-          }
-        }
-      } catch {
-        if (!cancelled) setRoomLive(false)
-      }
-    }
-
-    syncRoomStatus()
-    const interval = setInterval(syncRoomStatus, 4000)
-    return () => {
-      cancelled = true
-      clearInterval(interval)
-    }
-  }, [])
-
-  // Sync TV : salle dynamique active → QR par défaut ; legacy → bienvenue sauf tv_screen explicite
-  useEffect(() => {
-    if (isRoomSession && roomLive !== true) return
-
-    captureTvRoomFromUrl()
-    const code = getRuntimeSessionCode('trainer')
-    const isRoom = isDynamicRoomCode(code)
-
-    if (isRoom) {
-      setTvScreen(prev => (prev === 'planning' ? 'planning' : 'qr'))
-    }
-
     getSharedState().then(state => {
-      if (isRoom) {
-        if (state?.tv_screen !== 'qr') {
-          setSharedState({ tv_screen: 'qr' }).catch(() => {})
-        }
-        setTvScreen(prev => (prev === 'planning' ? 'planning' : 'qr'))
-        return
-      }
       if (state?.tv_screen) {
         setSharedState({ tv_screen: null }).catch(() => {})
       }
-      setTvScreen(null)
     }).catch(() => {}).finally(() => {
       tvInitDoneRef.current = true
-      setTvReady(true)
     })
-  }, [isRoomSession, roomLive])
+  }, [])
 
-  // ── Hydratation depuis sharedState (fourni par useModuleSync) ──
+  // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
-    if (!sharedState || !tvReady) return
-
-    const nextScreen = sharedState.tv_screen || null
-    if (isRoomSession) {
-      // En salle : QR sauf planning / FAQ explicitement demandés
-      if (nextScreen === 'planning') setTvScreen('planning')
-      else if (!sharedState.faq_journee) setTvScreen('qr')
-    } else if (tvInitDoneRef.current) {
-      setTvScreen(nextScreen)
-    }
+    if (!sharedState) return
+    // Ne pas appliquer tv_screen avant que le nettoyage initial soit terminé
+    if (tvInitDoneRef.current) setTvScreen(sharedState.tv_screen || null)
     setTrameStep(sharedState.trame_step ?? null)
     setOffres11Step(sharedState.offres_11_step ?? 0)
+    setOffresClassiqueStep(sharedState.offres_classique_step ?? 0)
     setModelePoint(sharedState.modele_point ?? null)
-    setZeroInterStep(sharedState.zero_inter_step ?? -1)
     setTroublesPhase(sharedState.troubles_phase || 1)
     setOpticienPlaying(!!sharedState.opticien_playing)
     setOrdoPlaying(!!sharedState.ordo_playing)
@@ -3264,25 +3019,7 @@ export default function TVView({ onExit }) {
     const fj = sharedState.faq_journee || null
     setFaqJournee(fj)
     setFaqQuestions(fj ? (sharedState[`faq_${fj}_q`] || []) : [])
-  }, [sharedState, tvReady, isRoomSession, roomLive])
-
-  if (isRoomSession && roomLive === false) {
-    return (
-      <>
-        <style>{STYLES}</style>
-        <RoomClosedScreen onExit={onExit} previousCode={roomCode} />
-      </>
-    )
-  }
-
-  if (isRoomSession && roomLive === null) {
-    return (
-      <>
-        <style>{STYLES}</style>
-        <WelcomeScreen />
-      </>
-    )
-  }
+  }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
   const isLobby   = !!moduleData && modulePage === -1
@@ -3302,42 +3039,14 @@ export default function TVView({ onExit }) {
 
   // Pas de module actif → écran selon tv_screen ou FAQ
   if (!loading && !activeModule && !isLobby) {
-    const showQr = roomLive === true && (tvScreen === 'qr' || (isRoomSession && tvScreen !== 'planning' && !faqJournee))
     return (
       <>
         <style>{STYLES}</style>
-        {isRoomSession && roomLive === true && (
-          <div style={{
-            position: 'fixed', top: 16, right: 16, zIndex: 50,
-            display: 'flex', alignItems: 'center', gap: 10,
-          }}>
-            <div style={{
-              background: 'rgba(0,137,186,0.2)', border: '1px solid rgba(0,171,233,0.45)',
-              borderRadius: 20, padding: '8px 16px', fontSize: 12, fontWeight: 700,
-              color: '#00abe9', letterSpacing: 1,
-            }}>
-              SALLE {roomCode}
-            </div>
-            {onExit && (
-              <button
-                type="button"
-                onClick={onExit}
-                style={{
-                  background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: 20, padding: '8px 14px', color: '#fff', fontSize: 12,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
-                ← Fermer
-              </button>
-            )}
-          </div>
-        )}
         {faqJournee
           ? <TVFAQView journeeId={faqJournee} questions={faqQuestions} />
           : tvScreen === 'planning'
             ? <TVPlanningScreen planningDay={planningDay} />
-            : showQr
+            : tvScreen === 'qr'
               ? <WaitingScreen />
               : <WelcomeScreen />
         }
@@ -3405,8 +3114,8 @@ export default function TVView({ onExit }) {
           progBestAnswer={progBestAnswer}
           trameStep={trameStep}
           offres11Step={offres11Step}
+          offresClassiqueStep={offresClassiqueStep}
           modelePoint={modelePoint}
-          zeroInterStep={zeroInterStep}
         />
       ) : (
         <WelcomeScreen />

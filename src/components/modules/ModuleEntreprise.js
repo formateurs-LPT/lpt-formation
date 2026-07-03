@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { ENTREPRISE_PAGES as PAGES, ENTREPRISE_QUIZ } from '@/lib/modulesData'
+import ZeroInterChain from '@/components/ZeroInterChain'
 
 const PAUL_AVATAR = '/assets/avatar_paul.png'
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -59,7 +60,6 @@ const PAGE_TYPE_LABEL = {
   'impact':         { label: 'Impact visuel', icon: '👁️' },
   'probleme':       { label: 'Problème visuel', icon: '🔍' },
   'machines':           { label: 'Points clés',     icon: '⚙️' },
-  'zero-intermediaire': { label: '0 intermédiaire', icon: '⛓️' },
 }
 
 function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast, nextPage }) {
@@ -421,7 +421,7 @@ function PromessePage({ page, navProps }) {
   )
 }
 
-// ── Force LPT — items cliquables avec reveal vidéo sur TV ────────
+// ── Force LPT — items cliquables avec reveal vidéo/animation sur TV ─
 function ForceLPTTrainer({ page, navProps }) {
   const [selected, setSelected] = useState(null)
 
@@ -436,6 +436,8 @@ function ForceLPTTrainer({ page, navProps }) {
     setSharedState({ modele_point: next }).catch(() => {})
   }
 
+  const isZeroInter = selected === 4
+
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
@@ -446,211 +448,57 @@ function ForceLPTTrainer({ page, navProps }) {
       <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Les clés de notre modèle</div>
       <h1 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 8 }}>{page.titre}</h1>
       <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginBottom: 28 }}>
-        {selected !== null ? '▶ Vidéo diffusée — recliquez pour fermer' : 'Cliquez sur un point pour lancer la vidéo sur le diffuseur'}
+        {selected !== null
+          ? isZeroInter ? '▶ Animation diffusée — recliquez pour fermer' : '▶ Vidéo diffusée — recliquez pour fermer'
+          : 'Cliquez sur un point pour lancer sur le diffuseur'}
       </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 700 }}>
-        {page.items.map((item, i) => (
-          <div key={i} onClick={() => toggle(i)} style={{
-            display: 'flex', alignItems: 'center', gap: 20,
-            background: selected === i ? `${item.color}18` : 'rgba(255,255,255,0.03)',
-            border: selected === i ? `1px solid ${item.color}80` : '1px solid rgba(255,255,255,0.08)',
-            borderLeft: `4px solid ${item.color}`,
-            borderRadius: 16, padding: '18px 24px',
-            cursor: item.video ? 'pointer' : 'default',
-            transition: 'all 0.25s ease',
-            opacity: selected !== null && selected !== i ? 0.4 : 1,
+
+      <div style={{ display: 'flex', gap: 36, alignItems: 'flex-start' }}>
+        {/* Liste des items */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: '0 0 auto', maxWidth: 460 }}>
+          {page.items.map((item, i) => (
+            <div key={i} onClick={() => toggle(i)} style={{
+              display: 'flex', alignItems: 'center', gap: 20,
+              background: selected === i ? `${item.color}18` : 'rgba(255,255,255,0.03)',
+              border: selected === i ? `1px solid ${item.color}80` : '1px solid rgba(255,255,255,0.08)',
+              borderLeft: `4px solid ${item.color}`,
+              borderRadius: 16, padding: '18px 24px',
+              cursor: 'pointer',
+              transition: 'all 0.25s ease',
+              opacity: selected !== null && selected !== i ? 0.4 : 1,
+            }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color, flexShrink: 0, boxShadow: `0 0 8px ${item.color}` }} />
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', flex: 1 }}>{item.label}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: selected === i ? item.color : 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
+                {selected === i ? '■ Stop' : i === 4 ? '▶ Anim' : (item.video || item.animation) ? '▶' : ''}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Panel animation 0 intermédiaire */}
+        {isZeroInter && (
+          <div style={{
+            flex: 1, minWidth: 0,
+            background: 'rgba(244,114,182,0.05)',
+            border: '1px solid rgba(244,114,182,0.18)',
+            borderRadius: 20, padding: '22px 28px',
+            display: 'flex', flexDirection: 'column', gap: 14,
           }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color, flexShrink: 0, boxShadow: `0 0 8px ${item.color}` }} />
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', flex: 1 }}>{item.label}</div>
-            {item.video && <div style={{ fontSize: 12, color: selected === i ? item.color : 'rgba(255,255,255,0.3)', fontWeight: 600 }}>
-              {selected === i ? '■ Stop' : '▶ Vidéo'}
-            </div>}
+            <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(244,114,182,0.7)', textTransform: 'uppercase', letterSpacing: 2 }}>
+              Animation en cours sur le diffuseur
+            </div>
+            <ZeroInterChain compact />
           </div>
-        ))}
+        )}
       </div>
+
       <TrainerNav {...navProps} />
     </div>
   )
 }
 
 // ── Rendu de page ─────────────────────────────────────────────────
-// ── Zéro Intermédiaire — animation chaîne ────────────────────────
-const INTERMEDIAIRES = [
-  { label: 'Importateur',      pct: '+15%', desc: 'Transport & droits',     color: '#ef4444' },
-  { label: 'Grossiste',        pct: '+25%', desc: 'Stockage & distribution', color: '#f97316' },
-  { label: 'Agent commercial', pct: '+10%', desc: 'Commission sur vente',    color: '#eab308' },
-]
-
-function ZeroIntermediairePage({ page, navProps }) {
-  const [step, setStep] = useState(-1)
-  const [falling, setFalling] = useState(false)
-  const [lptVisible, setLptVisible] = useState(false)
-
-  useEffect(() => {
-    setStep(-1); setFalling(false); setLptVisible(false)
-    setSharedState({ zero_inter_step: -1 }).catch(() => {})
-    return () => { setSharedState({ zero_inter_step: -1 }).catch(() => {}) }
-  }, [page.id])
-
-  const advance = () => {
-    if (step < 2) {
-      const n = step + 1; setStep(n)
-      setSharedState({ zero_inter_step: n }).catch(() => {})
-    } else if (step === 2) {
-      setStep(3); setSharedState({ zero_inter_step: 3 }).catch(() => {})
-    } else if (step === 3) {
-      setStep(4); setSharedState({ zero_inter_step: 4 }).catch(() => {})
-    } else if (step === 4) {
-      setFalling(true); setStep(5); setSharedState({ zero_inter_step: 5 }).catch(() => {})
-      setTimeout(() => { setFalling(false); setLptVisible(true); setStep(6); setSharedState({ zero_inter_step: 6 }).catch(() => {}) }, 900)
-    }
-  }
-
-  const btnLabel = step < 0   ? 'Démarrer →'
-    : step < 3  ? 'Intermédiaire suivant →'
-    : step === 3 ? 'Voir l\'impact prix →'
-    : step === 4 ? '💥 Briser la chaîne'
-    : null
-
-  const BG = 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)'
-
-  return (
-    <div style={{ height: '100vh', overflow: 'hidden', background: BG, display: 'flex', flexDirection: 'column', padding: '14px 40px 90px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexShrink: 0 }}>
-        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={70} height={26} style={{ objectFit: 'contain' }} />
-        <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.15)' }} />
-        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Présentation de l&apos;entreprise · Notre modèle</span>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 16, flexShrink: 0 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#f472b6', textTransform: 'uppercase', letterSpacing: 2 }}>Notre avantage</div>
-        <h1 style={{ fontSize: 22, fontWeight: 900, color: '#fff', margin: 0 }}>{page.titre}</h1>
-      </div>
-
-      {/* ── Chaîne traditionnelle ── */}
-      <div style={{
-        flexShrink: 0,
-        transform: falling ? 'translateY(260px) rotate(-6deg)' : 'translateY(0)',
-        opacity: falling ? 0 : 1,
-        filter: falling ? 'blur(8px)' : 'none',
-        transition: falling ? 'all 0.85s cubic-bezier(0.55,0,1,0.45)' : 'none',
-        pointerEvents: falling ? 'none' : 'auto',
-      }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
-          La chaîne traditionnelle
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0, height: 120, position: 'relative' }}>
-          {/* Usine */}
-          <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: 72 }}>
-            <div style={{ fontSize: 28 }}>🏭</div>
-            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', fontWeight: 600, textAlign: 'center' }}>Fournisseur</div>
-          </div>
-
-          {/* Ligne + nœuds */}
-          <div style={{ flex: 1, position: 'relative', height: '100%' }}>
-            {/* Trait rouge */}
-            <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 2, background: 'rgba(239,68,68,0.6)', transform: 'translateY(-50%)' }} />
-            {/* Flèche */}
-            <div style={{ position: 'absolute', top: '50%', right: -2, transform: 'translateY(-50%)', width: 0, height: 0, borderTop: '6px solid transparent', borderBottom: '6px solid transparent', borderLeft: '10px solid rgba(239,68,68,0.7)' }} />
-
-            {/* Intermédiaires */}
-            {INTERMEDIAIRES.map((item, i) => {
-              const visible = step > i
-              const xPct = 20 + i * 27
-              return (
-                <div key={i} style={{
-                  position: 'absolute', left: `${xPct}%`, top: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  opacity: visible ? 1 : 0,
-                  transition: 'opacity 0.4s ease',
-                }}>
-                  {/* Label + % au dessus */}
-                  <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 8, textAlign: 'center', minWidth: 90 }}>
-                    <div style={{ fontSize: 12, fontWeight: 900, color: item.color, marginBottom: 2 }}>{item.pct}</div>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: '#fff', background: `${item.color}22`, border: `1px solid ${item.color}55`, borderRadius: 6, padding: '2px 6px', whiteSpace: 'nowrap' }}>{item.label}</div>
-                  </div>
-                  {/* Nœud */}
-                  <div style={{ width: 18, height: 18, borderRadius: '50%', background: item.color, border: '2px solid #fff', boxShadow: `0 0 10px ${item.color}` }} />
-                </div>
-              )
-            })}
-
-            {/* Impact prix */}
-            {step >= 4 && (
-              <div style={{ position: 'absolute', top: '50%', right: '5%', transform: 'translateY(-130%)',
-                background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.5)',
-                borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 800, color: '#ef4444',
-                animation: 'fadeIn 0.4s ease',
-              }}>× 2 à 3 le prix fabricant</div>
-            )}
-          </div>
-
-          {/* Opticien traditionnel */}
-          <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: 80 }}>
-            <div style={{ fontSize: 26 }}>🏪</div>
-            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', fontWeight: 600, textAlign: 'center' }}>Opticien<br/>traditionnel</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Chaîne LPT (après break) ── */}
-      <div style={{
-        marginTop: lptVisible ? 24 : 0,
-        opacity: lptVisible ? 1 : 0,
-        transform: lptVisible ? 'translateY(0)' : 'translateY(30px)',
-        transition: 'all 0.6s ease',
-        flexShrink: 0,
-      }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
-          Notre modèle
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0, height: 110, position: 'relative' }}>
-          {/* Usine */}
-          <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: 72 }}>
-            <div style={{ fontSize: 28 }}>🏭</div>
-            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', fontWeight: 600, textAlign: 'center' }}>Fournisseur</div>
-          </div>
-
-          {/* Ligne bleue directe */}
-          <div style={{ flex: 1, position: 'relative', height: '100%' }}>
-            <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 3, background: 'rgba(0,171,233,0.7)', transform: 'translateY(-50%)', borderRadius: 2 }} />
-            <div style={{ position: 'absolute', top: '50%', right: -2, transform: 'translateY(-50%)', width: 0, height: 0, borderTop: '7px solid transparent', borderBottom: '7px solid transparent', borderLeft: '12px solid rgba(0,171,233,0.8)' }} />
-            {/* Badge DIRECT */}
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -130%)',
-              background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.5)',
-              borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 800, color: '#00abe9', letterSpacing: 1,
-            }}>DIRECT</div>
-            {/* Badge prix */}
-            <div style={{ position: 'absolute', top: '50%', right: '5%', transform: 'translateY(30%)',
-              background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.4)',
-              borderRadius: 8, padding: '4px 10px', fontSize: 12, fontWeight: 800, color: '#4ade80',
-            }}>Prix réduits ✓</div>
-          </div>
-
-          {/* LPT */}
-          <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: 80 }}>
-            <div style={{ fontSize: 26 }}>🔵</div>
-            <div style={{ fontSize: 9, color: '#00abe9', fontWeight: 700, textAlign: 'center' }}>Lunettes<br/>Pour Tous</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bouton d'avancement */}
-      {btnLabel && (
-        <div style={{ marginTop: 20, flexShrink: 0 }}>
-          <button onClick={advance} style={{
-            background: step === 4 ? 'rgba(239,68,68,0.15)' : 'rgba(0,171,233,0.12)',
-            border: step === 4 ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(0,171,233,0.35)',
-            color: step === 4 ? '#ef4444' : '#00abe9',
-            padding: '10px 22px', borderRadius: 10, fontSize: 13, fontWeight: 700,
-            cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
-          }}>{btnLabel}</button>
-        </div>
-      )}
-
-      <TrainerNav {...navProps} />
-    </div>
-  )
-}
 
 function EntreprisePage({ page, navProps }) {
   const accent = page.color || '#00abe9'
@@ -722,9 +570,6 @@ function EntreprisePage({ page, navProps }) {
       <TrainerNav {...navProps} />
     </div>
   )
-
-  // ── ZÉRO INTERMÉDIAIRE ─────────────────────────────────────────
-  if (page.type === 'zero-intermediaire') return <ZeroIntermediairePage page={page} navProps={navProps} />
 
   // ── VIDÉO LPT ──────────────────────────────────────────────────
   if (page.type === 'video-lpt') return (

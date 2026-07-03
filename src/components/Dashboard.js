@@ -340,6 +340,49 @@ function SessionsHistoryView({ onBack, onToast }) {
 // ── Changelog data ───────────────────────────────────────────────
 const APP_UPDATES = [
   {
+    id: '2026-07-02',
+    date: '2 juillet 2026',
+    title: 'Animation 0 intermédiaire · Offres Classique · Mises à jour contenu',
+    tag: 'Améliorations',
+    tagColor: '#00abe9',
+    sections: [
+      {
+        title: 'Animation « 0 intermédiaire » — refonte complète',
+        accent: '#f472b6',
+        tag: 'Nouveau',
+        items: [
+          'L\'animation est maintenant intégrée directement dans la page "Ce qui fait la force de LPT" — plus de page séparée',
+          'Le formateur clique sur "0 intermédiaire" dans la liste : un panneau apparaît à côté avec l\'animation en aperçu',
+          'Sur le diffuseur : 3 points colorés apparaissent un par un sur la chaîne rouge, puis chaque segment et chaque point s\'envole dans une direction différente',
+          'La chaîne LPT bleue (DIRECT · Prix réduits ✓) prend le dessus après le brise',
+          'L\'animation boucle automatiquement toutes les ~8 secondes — aucun clic nécessaire',
+        ],
+      },
+      {
+        title: 'Offre Classique — synchronisation avec le diffuseur',
+        accent: '#00abe9',
+        tag: 'Fix',
+        items: [
+          'Les caractéristiques de l\'offre Classique s\'affichent maintenant progressivement sur le diffuseur au rythme du formateur (comme le 1=1)',
+          'Avant ce fix, le diffuseur affichait tout d\'un coup sans attendre le formateur',
+          'Mise en page unifiée avec le 1=1 : tarifs à gauche, items à droite avec barre de progression',
+          'Les items non encore révélés sont invisibles sur le diffuseur (les collaborateurs ne voient rien en avance)',
+        ],
+      },
+      {
+        title: 'Corrections contenu',
+        accent: '#4ade80',
+        tag: 'Contenu',
+        items: [
+          'Suppression du badge "Sans remboursement" sur les offres Classique et 1=1 (diffuseur)',
+          'Suppression des sous-titres sur les items de l\'offre Classique',
+          'Compteur "Volume de ventes" : 2 000 → 5 000 paires vendues par jour',
+          'Nouvelle vidéo machines (V2) sur la page "Ce qui fait la force de LPT"',
+        ],
+      },
+    ],
+  },
+  {
     id: '2026-06-24',
     date: '24 juin 2026',
     title: 'Réveil des acquis & FAQ anonyme',
