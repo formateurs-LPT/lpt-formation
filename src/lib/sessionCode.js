@@ -41,17 +41,29 @@ export function resolveRoomStateCode() {
     return getLegacySessionCode()
   }
   const params = new URLSearchParams(window.location.search)
-  if (params.get('mode') === 'participant' || localStorage.getItem('participant_name')) {
-    return readParticipantSessionCode() || getLegacySessionCode()
-  }
-  if (params.get('mode') === 'tv') {
+  const mode = params.get('mode')
+
+  // TV diffusion (priorité absolue)
+  if (mode === 'tv') {
     const stored = readTrainerActiveRoomCode()
     const urlCode = getTvUrlRoomCode()
     if (stored && isDynamicRoomCode(stored)) return stored
     if (urlCode && isDynamicRoomCode(urlCode)) return urlCode
   }
+
+  // Formateur connecté → salle active formateur (pas le code participant résiduel)
+  if (localStorage.getItem('trainer_name')) {
+    return readTrainerActiveRoomCode() || getLegacySessionCode()
+  }
+
+  // Participant
+  if (mode === 'participant' || localStorage.getItem('participant_name')) {
+    return readParticipantSessionCode() || getLegacySessionCode()
+  }
+
   const trainer = readTrainerActiveRoomCode()
   if (trainer) return trainer
+
   return getLegacySessionCode()
 }
 

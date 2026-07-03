@@ -395,7 +395,7 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   useEffect(() => {
     const pollPlanning = async () => {
       try {
-        const state = await getSharedState()
+        const state = await getSharedState(sessionCode)
         setTvScreen(state?.tv_screen || null)
         setPlanningDay(state?.planning_day || null)
         setSharedState_(state || null)

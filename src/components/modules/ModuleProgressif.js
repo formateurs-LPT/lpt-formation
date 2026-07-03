@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, getSharedState, setSharedState } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, getSharedState, setSharedState, getRoomSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import TrainerAvatar from '@/components/TrainerAvatar'
@@ -233,7 +233,7 @@ function ZoneInteractifPage({ page, pName, onPrev, onNext, onBack, isFirst, page
     if (activeQ === null) return
     const poll = async () => {
       try {
-        const state = await getSharedState()
+        const state = await getRoomSharedState(getActiveSessionCode())
         setResponses(state?.prog_zone_responses || {})
       } catch { /* ignore */ }
     }
@@ -345,7 +345,7 @@ function RetourTerrainPage({ page, pName, onPrev, onNext, onBack, isFirst, pageI
   useEffect(() => {
     const poll = async () => {
       try {
-        const state = await getSharedState()
+        const state = await getRoomSharedState(getActiveSessionCode())
         setResponses(state?.prog_retour_responses || {})
       } catch { /* ignore */ }
     }
@@ -440,7 +440,7 @@ function JeuObjectionsPage({ page, pName, onPrev, onNext, onBack, isFirst, isLas
     if (activeObj === null) return
     const poll = async () => {
       try {
-        const state = await getSharedState()
+        const state = await getRoomSharedState(getActiveSessionCode())
         setResponses(state?.prog_objection_responses || {})
       } catch { /* ignore */ }
     }

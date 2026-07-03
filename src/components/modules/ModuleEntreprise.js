@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { ENTREPRISE_PAGES as PAGES, ENTREPRISE_QUIZ } from '@/lib/modulesData'
 import ZeroInterChain from '@/components/ZeroInterChain'
@@ -143,7 +143,7 @@ function FreinsPage({ page, navProps }) {
   useEffect(() => {
     const poll = async () => {
       try {
-        const state = await getSharedState()
+        const state = await getRoomSharedState(getActiveSessionCode())
         setResponses(state?.freins_responses || {})
       } catch { /* ignore */ }
     }
@@ -231,7 +231,7 @@ function PrixPage({ page, navProps }) {
   useEffect(() => {
     const poll = async () => {
       try {
-        const state = await getSharedState()
+        const state = await getRoomSharedState(getActiveSessionCode())
         setResponses(state?.prix_responses || {})
       } catch { /* ignore */ }
     }
@@ -314,9 +314,10 @@ function VentesOpticienPage({ page, navProps }) {
   const [responses, setResponses] = useState({})
 
   useEffect(() => {
+    const roomCode = getActiveSessionCode()
     const poll = async () => {
       try {
-        const state = await getSharedState()
+        const state = await getRoomSharedState(roomCode)
         setResponses(state?.ventes_responses || {})
       } catch { /* ignore */ }
     }
@@ -371,9 +372,10 @@ function PromessePage({ page, navProps }) {
   const accent = '#34d399'
 
   useEffect(() => {
+    const roomCode = getActiveSessionCode()
     const poll = async () => {
       try {
-        const state = await getSharedState()
+        const state = await getRoomSharedState(roomCode)
         setResponses(state?.promesse_responses || {})
       } catch { /* ignore */ }
     }

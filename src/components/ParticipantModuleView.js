@@ -9,7 +9,7 @@ import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName } from '@/lib/participantNames'
-import { canParticipantJoinSession, getCategoryJoinDeniedMessage } from '@/lib/formationCategories'
+import { mergeRoomSharedField } from '@/lib/roomSharedState'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -1629,20 +1629,32 @@ function FreinsInputMobile({ page, pName }) {
   const [submitted, setSubmitted]     = useState(false)
   const [submittedText, setSubmittedText] = useState('')
   const [sending, setSending]         = useState(false)
+  const [saveError, setSaveError]     = useState(false)
 
   const handleSend = async () => {
     if (!text.trim() || sending) return
     setSending(true)
+    setSaveError(false)
     try {
-      const x = Math.floor(Math.random() * 65) + 3   // 3 → 68 % (largeur écran)
-      const y = Math.floor(Math.random() * 38) + 42  // 42 → 80 % (sous la question)
-      const state = await getSharedState()
-      const current = state?.freins_responses || {}
-      await setSharedState({ freins_responses: { ...current, [pName]: { text: text.trim(), x, y } } })
+      const x = Math.floor(Math.random() * 65) + 3
+      const y = Math.floor(Math.random() * 38) + 42
+      const ok = await mergeRoomSharedField(
+        getParticipantSessionCode(),
+        'freins_responses',
+        pName,
+        { text: text.trim(), x, y }
+      )
+      if (!ok) {
+        setSaveError(true)
+        return
+      }
       setSubmittedText(text.trim())
       setSubmitted(true)
-    } catch { /* ignore */ }
-    setSending(false)
+    } catch {
+      setSaveError(true)
+    } finally {
+      setSending(false)
+    }
   }
 
   const handleModify = () => {
@@ -1696,6 +1708,14 @@ function FreinsInputMobile({ page, pName }) {
               WebkitAppearance: 'none',
             }}
           />
+          {saveError && (
+            <div style={{
+              background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
+              borderRadius: 12, padding: '12px 16px', fontSize: 14, color: '#fca5a5', textAlign: 'center',
+            }}>
+              Enregistrement impossible. Réessayez ou prévenez le formateur.
+            </div>
+          )}
           <button
             onClick={handleSend}
             disabled={!text.trim() || sending}
@@ -1729,9 +1749,13 @@ function VentesOpticienMobile({ page, pName }) {
     try {
       const x = Math.floor(Math.random() * 65) + 3
       const y = Math.floor(Math.random() * 38) + 42
-      const state = await getSharedState()
-      const current = state?.ventes_responses || {}
-      await setSharedState({ ventes_responses: { ...current, [pName]: { text: value.trim(), x, y } } })
+      const ok = await mergeRoomSharedField(
+        getParticipantSessionCode(),
+        'ventes_responses',
+        pName,
+        { text: value.trim(), x, y }
+      )
+      if (!ok) return
       setSubmittedValue(value.trim())
       setSubmitted(true)
     } catch { /* ignore */ }
@@ -1791,9 +1815,13 @@ function PromesseInputMobile({ page, pName }) {
     try {
       const x = Math.floor(Math.random() * 65) + 3
       const y = Math.floor(Math.random() * 38) + 42
-      const state = await getSharedState()
-      const current = state?.promesse_responses || {}
-      await setSharedState({ promesse_responses: { ...current, [pName]: { text: text.trim(), x, y } } })
+      const ok = await mergeRoomSharedField(
+        getParticipantSessionCode(),
+        'promesse_responses',
+        pName,
+        { text: text.trim(), x, y }
+      )
+      if (!ok) return
       setSubmittedText(text.trim())
       setSubmitted(true)
     } catch { /* ignore */ }
@@ -1884,9 +1912,13 @@ function PrixInputMobile({ page, pName }) {
     try {
       const x = Math.floor(Math.random() * 65) + 3
       const y = Math.floor(Math.random() * 38) + 42
-      const state = await getSharedState()
-      const current = state?.prix_responses || {}
-      await setSharedState({ prix_responses: { ...current, [pName]: { text: value.trim(), x, y } } })
+      const ok = await mergeRoomSharedField(
+        getParticipantSessionCode(),
+        'prix_responses',
+        pName,
+        { text: value.trim(), x, y }
+      )
+      if (!ok) return
       setSubmittedValue(value.trim())
       setSubmitted(true)
     } catch { /* ignore */ }
@@ -2210,9 +2242,12 @@ function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
     if (sent) return
     setSelected(idx)
     setSent(true)
-    const state = await getSharedState()
-    const current = state?.prog_zone_responses || {}
-    await setSharedState({ prog_zone_responses: { ...current, [pName]: idx } })
+    await mergeRoomSharedField(
+      getParticipantSessionCode(),
+      'prog_zone_responses',
+      pName,
+      idx
+    )
   }
 
   const bg = 'linear-gradient(160deg, #03112a 0%, #12013a 100%)'
@@ -2292,9 +2327,13 @@ function RetourTerrainMobile({ page, pName }) {
     if (!text.trim() || sending) return
     setSending(true)
     try {
-      const state = await getSharedState()
-      const current = state?.prog_retour_responses || {}
-      await setSharedState({ prog_retour_responses: { ...current, [pName]: { text: text.trim() } } })
+      const ok = await mergeRoomSharedField(
+        getParticipantSessionCode(),
+        'prog_retour_responses',
+        pName,
+        { text: text.trim() }
+      )
+      if (!ok) return
       setSentText(text.trim())
       setSent(true)
     } catch { /* ignore */ }
@@ -2356,9 +2395,13 @@ function JeuObjectionsMobile({ page, pName, progObjectionIdx, progObjectionRespo
     if (!text.trim() || sending) return
     setSending(true)
     try {
-      const state = await getSharedState()
-      const current = state?.prog_objection_responses || {}
-      await setSharedState({ prog_objection_responses: { ...current, [pName]: { text: text.trim() } } })
+      const ok = await mergeRoomSharedField(
+        getParticipantSessionCode(),
+        'prog_objection_responses',
+        pName,
+        { text: text.trim() }
+      )
+      if (!ok) return
       setSentText(text.trim())
       setSent(true)
     } catch { /* ignore */ }

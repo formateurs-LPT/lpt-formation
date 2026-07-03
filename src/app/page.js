@@ -161,6 +161,9 @@ export default function Page() {
     setPName(name)
     setIsTrainer(true)
     localStorage.setItem('trainer_name', name)
+    localStorage.removeItem('participant_name')
+    localStorage.removeItem('participant_prenom')
+    setParticipantSessionCode('')
     try {
       await sbUpsert('sessions', { code: SESSION_CODE, current_step: -1, active_scenario: 0 }, 'code')
       await sbUpdate('sessions', { current_step: -1, active_module: null, module_page: 0 }, 'code=eq.' + SESSION_CODE)
