@@ -6,6 +6,7 @@ import {
   setTrainerActiveRoomCode,
   getTvUrlRoomCode,
 } from './sessionCode'
+import { archiveAndPurgeRoom } from './roomArchive'
 import { getTrainerFromDB, sbSelect, sbUpdate, sbUpsert, setRoomSharedState } from './supabase'
 
 const ROOM_CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -155,18 +156,28 @@ export async function openOrCreateRoom({
   return { code, created: true, session: row }
 }
 
-export async function endActiveRoom(code) {
+export async function endActiveRoom(code, { trainerName } = {}) {
   const roomCode = (code || readTrainerActiveRoomCode() || '').trim()
   if (!roomCode || !isDynamicRoomCode(roomCode)) return false
+
+  const { archived, hadData } = await archiveAndPurgeRoom(roomCode, { trainerName })
 
   const now = new Date().toISOString()
   const ok = await sbUpdate(
     'sessions',
-    { status: 'ended', ended_at: now, updated_at: now },
+    {
+      status: 'ended',
+      ended_at: now,
+      updated_at: now,
+      active_module: null,
+      module_page: 0,
+      current_step: -1,
+      active_scenario: 0,
+    },
     `code=eq.${encodeURIComponent(roomCode)}`
   )
   if (ok) {
     setTrainerActiveRoomCode('')
   }
-  return ok
+  return { ok, archived, hadData }
 }

@@ -239,9 +239,9 @@ export default function Page() {
     const code = (roomCodeHint || '').trim()
       || (await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName)))
       || getActiveSessionCode()
-    const ok = await endActiveRoom(code)
-    if (ok) {
-      toast('Salle terminée')
+    const result = await endActiveRoom(code, { trainerName: pName })
+    if (result?.ok) {
+      toast(result.archived ? 'Salle terminée et archivée ✓' : 'Salle terminée ✓')
       setDisplaySessionCode(getLegacySessionCode())
       setView('dashboard')
     } else {

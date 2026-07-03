@@ -174,11 +174,22 @@ function SessionsHistoryView({ onBack, onToast }) {
   const handleCloseSession = async () => {
     setModal(null)
     const roomCode = getRuntimeSessionCode('trainer') || SESSION_CODE
-    const [participants, answers] = await Promise.all([
-      sbSelect('participants', 'session_code=eq.' + roomCode),
-      sbSelect('quiz_answers', 'session_code=eq.' + roomCode),
+    const enc = encodeURIComponent(roomCode)
+    const filter = `session_code=eq.${enc}`
+    const [participants, answers, quizResults, scenarioResponses, moduleResults] = await Promise.all([
+      sbSelect('participants', filter),
+      sbSelect('quiz_answers', filter),
+      sbSelect('quiz_results', filter),
+      sbSelect('scenario_responses', filter),
+      sbSelect('module_results', filter),
     ])
-    if ((participants?.length || 0) + (answers?.length || 0) === 0) {
+    const total =
+      (participants?.length || 0) +
+      (answers?.length || 0) +
+      (quizResults?.length || 0) +
+      (scenarioResponses?.length || 0) +
+      (moduleResults?.length || 0)
+    if (total === 0) {
       onToast('Aucune donnée à enregistrer'); return
     }
     await insertSessionHistory({
@@ -186,13 +197,21 @@ function SessionsHistoryView({ onBack, onToast }) {
       sessionDate: new Date().toISOString(),
       trainerName: localStorage.getItem('trainer_name') || 'Formateur',
       participants: participants || [],
-      quizResults: answers || [],
-      scenarioResponses: [],
+      quizResults: {
+        type: 'room_archive',
+        room_code: roomCode,
+        scores: quizResults || [],
+        answers: answers || [],
+        module_results: moduleResults || [],
+      },
+      scenarioResponses: scenarioResponses || [],
     })
     await Promise.all([
-      sbDelete('participants', 'session_code=eq.' + roomCode),
-      sbDelete('quiz_answers', 'session_code=eq.' + roomCode),
-      sbDelete('module_results', 'id=gte.0'),
+      sbDelete('participants', filter),
+      sbDelete('quiz_answers', filter),
+      sbDelete('quiz_results', filter),
+      sbDelete('scenario_responses', filter),
+      sbDelete('module_results', filter),
     ])
     onToast('Session clôturée ✓')
     load()

@@ -81,3 +81,38 @@ select
 from pg_policies
 where schemaname = 'public'
 order by tablename, policyname;
+
+-- G) Index (hors PK auto)
+select
+  t.relname as table_name,
+  i.relname as index_name,
+  pg_get_indexdef(ix.indexrelid) as index_definition
+from pg_class t
+join pg_index ix on t.oid = ix.indrelid
+join pg_class i on i.oid = ix.indexrelid
+join pg_namespace n on n.oid = t.relnamespace
+where n.nspname = 'public'
+  and t.relkind = 'r'
+  and not ix.indisprimary
+order by t.relname, i.relname;
+
+-- H) Contraintes CHECK
+select
+  tc.table_name,
+  tc.constraint_name,
+  cc.check_clause
+from information_schema.table_constraints tc
+join information_schema.check_constraints cc
+  on tc.constraint_name = cc.constraint_name
+  and tc.constraint_schema = cc.constraint_schema
+where tc.table_schema = 'public'
+  and tc.constraint_type = 'CHECK'
+order by tc.table_name, tc.constraint_name;
+
+-- I) Comptage lignes par table (aperçu données)
+select
+  relname as table_name,
+  n_live_tup as approx_row_count
+from pg_stat_user_tables
+where schemaname = 'public'
+order by relname;

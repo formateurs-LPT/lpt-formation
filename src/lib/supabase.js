@@ -160,6 +160,15 @@ export function parseSessionHistorySummary(row) {
     }
   }
 
+  if (quizResults?.type === 'room_archive') {
+    const count = Array.isArray(participants) ? participants.length : 0
+    const label = quizResults.label || quizResults.room_code || 'Salle'
+    return {
+      notes: `${label}${count ? ` · ${count} participant${count > 1 ? 's' : ''}` : ''}`,
+      count,
+    }
+  }
+
   const participants = parseJsonField(row?.participants, [])
   const count = Array.isArray(participants) ? participants.length : 0
   const trainer = row?.trainer_name?.trim()
@@ -258,28 +267,28 @@ async function upsertTrainerStateByKey(trainerKey, patch) {
   )
 }
 
-/** Liste RH + onboarding (clé __weekly__, repli LPT2026 si vide) */
+/** Liste RH + onboarding (clé __weekly__, repli LPT2026 pour champs manquants) */
 export async function getWeeklySharedState() {
-  let state = await fetchTrainerStateByKey(TRAINER_STATE_WEEKLY_KEY)
-  const weekly = pickWeeklyFields(state)
+  const weeklyRaw = await fetchTrainerStateByKey(TRAINER_STATE_WEEKLY_KEY)
+  const weekly = pickWeeklyFields(weeklyRaw)
 
   const legacyCode = getLegacySessionCode()
-  const needsRhFallback =
-    !Array.isArray(weekly.entrees_data) ||
-    weekly.entrees_data.length === 0
-
-  if (needsRhFallback && legacyCode && legacyCode !== TRAINER_STATE_WEEKLY_KEY) {
-    const legacy = pickWeeklyFields(await fetchTrainerStateByKey(legacyCode))
-    state = { ...legacy, ...weekly }
-    if (!weekly.entrees_data?.length && legacy.entrees_data?.length) {
-      state.entrees_data = legacy.entrees_data
-    }
-    if (!weekly.ob_data && legacy.ob_data) state.ob_data = legacy.ob_data
-    if (!weekly.ob_date && legacy.ob_date) state.ob_date = legacy.ob_date
-    if (!weekly.ob_day && legacy.ob_day) state.ob_day = legacy.ob_day
+  if (!legacyCode || legacyCode === TRAINER_STATE_WEEKLY_KEY) {
+    return weekly
   }
 
-  return pickWeeklyFields(state)
+  const legacy = pickWeeklyFields(await fetchTrainerStateByKey(legacyCode))
+  const merged = { ...legacy, ...weekly }
+  for (const key of WEEKLY_STATE_KEYS) {
+    const wVal = weekly[key]
+    const lVal = legacy[key]
+    const weeklyEmpty =
+      wVal == null ||
+      (key === 'entrees_data' && (!Array.isArray(wVal) || wVal.length === 0)) ||
+      (key === 'ob_data' && (typeof wVal !== 'object' || !Object.keys(wVal).length))
+    if (weeklyEmpty && lVal != null) merged[key] = lVal
+  }
+  return pickWeeklyFields(merged)
 }
 
 /** TV, modules, quiz sync — état par salle */
@@ -317,6 +326,13 @@ export async function setRoomSharedState(patch, roomCode) {
   const result = await upsertTrainerStateByKey(code, patch)
   if (!result) console.error('[setRoomSharedState] ❌ échec', code)
   return result
+}
+
+export async function deleteTrainerStateByKey(trainerKey) {
+  const key = (trainerKey || '').trim()
+  if (!key) return false
+  await sbDelete('trainer_state', `trainer=eq.${encodeURIComponent(key)}`)
+  return true
 }
 
 export async function setSharedState(patch) {
