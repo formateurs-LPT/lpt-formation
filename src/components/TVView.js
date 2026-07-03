@@ -9,8 +9,10 @@ import {
   buildJoinUrl,
   captureTvRoomFromUrl,
   getLegacySessionCode,
+  getTvDisplayRoomCode,
   isDynamicRoomCode,
   readTrainerActiveRoomCode,
+  setTrainerActiveRoomCode,
 } from '@/lib/sessionCode'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -2811,6 +2813,72 @@ function WaitingScreen() {
   )
 }
 
+/** Diffusion : salle terminée ou introuvable — en attente d'une nouvelle ouverture */
+function RoomClosedScreen({ onExit, previousCode }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: 40, textAlign: 'center', position: 'relative',
+    }}>
+      {onExit && (
+        <button
+          type="button"
+          onClick={onExit}
+          style={{
+            position: 'fixed', top: 16, right: 16, zIndex: 50,
+            background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: 20, padding: '8px 14px', color: '#fff', fontSize: 12,
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          ← Fermer
+        </button>
+      )}
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={280} height={106}
+        style={{ objectFit: 'contain', marginBottom: 48, opacity: 0.85 }} />
+      <div style={{
+        fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)',
+        textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16,
+      }}>
+        Diffusion
+      </div>
+      <h1 style={{ fontSize: 42, fontWeight: 800, color: '#fff', margin: '0 0 12px', lineHeight: 1.15 }}>
+        Salle terminée
+      </h1>
+      {previousCode ? (
+        <div style={{
+          fontSize: 14, color: 'rgba(255,255,255,0.35)', marginBottom: 28,
+          fontFamily: 'monospace', letterSpacing: 4,
+        }}>
+          {previousCode}
+        </div>
+      ) : null}
+      <p style={{
+        fontSize: 17, color: 'rgba(255,255,255,0.55)', maxWidth: 480,
+        lineHeight: 1.65, margin: '0 0 36px',
+      }}>
+        En attente d&apos;une nouvelle salle.<br />
+        Le formateur peut rouvrir une session depuis le tableau de bord.
+      </p>
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 10,
+        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 24, padding: '12px 22px',
+      }}>
+        <div style={{
+          width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.35)',
+          animation: 'waitingPulse 1.4s ease-in-out infinite',
+        }} />
+        <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
+          En attente du formateur…
+        </span>
+      </div>
+    </div>
+  )
+}
+
 // ── TV Group Results ──────────────────────────────────────────────
 function TVGroupResults({ moduleId, moduleLabel, quiz }) {
   const [answers, setAnswers] = useState([])
@@ -3058,8 +3126,9 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
 // ── TV View ───────────────────────────────────────────────────────
 export default function TVView({ onExit }) {
   const { activeModule, modulePage, sharedState, loading } = useModuleSync()
-  const roomCode = getRuntimeSessionCode('trainer')
+  const roomCode = getTvDisplayRoomCode() || getRuntimeSessionCode('trainer')
   const isRoomSession = isDynamicRoomCode(roomCode)
+  const [roomLive, setRoomLive] = useState(isRoomSession ? null : true)
 
   const [tvScreen, setTvScreen] = useState(null)
   const [tvReady, setTvReady] = useState(false)
@@ -3096,8 +3165,45 @@ export default function TVView({ onExit }) {
   // (évite le flash QR au démarrage quand tv_screen='qr' est resté en DB)
   const tvInitDoneRef = useRef(false)
 
-  // Sync TV : salle dynamique → QR par défaut ; legacy → bienvenue sauf tv_screen explicite
+  // Salle dynamique : vérifie en BDD que la session est encore ouverte (poll)
   useEffect(() => {
+    let cancelled = false
+    captureTvRoomFromUrl()
+
+    const syncRoomStatus = async () => {
+      const code = getTvDisplayRoomCode() || getRuntimeSessionCode('trainer')
+      if (!isDynamicRoomCode(code)) {
+        if (!cancelled) setRoomLive(true)
+        return
+      }
+
+      try {
+        const rows = await sbSelect('sessions', `code=eq.${encodeURIComponent(code)}&limit=1`)
+        const session = rows?.[0]
+        const live = session && (session.status === 'waiting' || session.status === 'active')
+        if (!cancelled) {
+          setRoomLive(!!live)
+          if (!live && readTrainerActiveRoomCode() === code) {
+            setTrainerActiveRoomCode('')
+          }
+        }
+      } catch {
+        if (!cancelled) setRoomLive(false)
+      }
+    }
+
+    syncRoomStatus()
+    const interval = setInterval(syncRoomStatus, 4000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [])
+
+  // Sync TV : salle dynamique active → QR par défaut ; legacy → bienvenue sauf tv_screen explicite
+  useEffect(() => {
+    if (isRoomSession && roomLive !== true) return
+
     captureTvRoomFromUrl()
     const code = getRuntimeSessionCode('trainer')
     const isRoom = isDynamicRoomCode(code)
@@ -3122,7 +3228,7 @@ export default function TVView({ onExit }) {
       tvInitDoneRef.current = true
       setTvReady(true)
     })
-  }, [])
+  }, [isRoomSession, roomLive])
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync) ──
   useEffect(() => {
@@ -3158,7 +3264,25 @@ export default function TVView({ onExit }) {
     const fj = sharedState.faq_journee || null
     setFaqJournee(fj)
     setFaqQuestions(fj ? (sharedState[`faq_${fj}_q`] || []) : [])
-  }, [sharedState, tvReady, isRoomSession])
+  }, [sharedState, tvReady, isRoomSession, roomLive])
+
+  if (isRoomSession && roomLive === false) {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <RoomClosedScreen onExit={onExit} previousCode={roomCode} />
+      </>
+    )
+  }
+
+  if (isRoomSession && roomLive === null) {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <WelcomeScreen />
+      </>
+    )
+  }
 
   const moduleData = MODULE_DATA[activeModule] || null
   const isLobby   = !!moduleData && modulePage === -1
@@ -3178,11 +3302,11 @@ export default function TVView({ onExit }) {
 
   // Pas de module actif → écran selon tv_screen ou FAQ
   if (!loading && !activeModule && !isLobby) {
-    const showQr = tvScreen === 'qr' || (isRoomSession && tvScreen !== 'planning' && !faqJournee)
+    const showQr = roomLive === true && (tvScreen === 'qr' || (isRoomSession && tvScreen !== 'planning' && !faqJournee))
     return (
       <>
         <style>{STYLES}</style>
-        {isRoomSession && (
+        {isRoomSession && roomLive === true && (
           <div style={{
             position: 'fixed', top: 16, right: 16, zIndex: 50,
             display: 'flex', alignItems: 'center', gap: 10,

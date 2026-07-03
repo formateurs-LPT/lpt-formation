@@ -90,3 +90,14 @@ export function buildTvUrl(code, basePath = '/') {
   if (!room || !isDynamicRoomCode(room)) return `${root}?mode=tv`
   return `${root}?mode=tv&room=${encodeURIComponent(room)}`
 }
+
+/** Code salle affiché sur l'écran TV (?room= prioritaire, sans réécrire le localStorage). */
+export function getTvDisplayRoomCode() {
+  if (typeof window === 'undefined') return readTrainerActiveRoomCode()
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('mode') === 'tv') {
+    const fromUrl = params.get('room')?.trim()
+    if (fromUrl) return fromUrl
+  }
+  return readTrainerActiveRoomCode()
+}

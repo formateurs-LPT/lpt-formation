@@ -8,6 +8,7 @@ import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
 import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB, ensureSession, getRuntimeSessionCode, sbSelect, getActiveSessionCode } from '@/lib/supabase'
 import { resolveParticipantName } from '@/lib/participantNames'
+import { canParticipantJoinSession, getCategoryJoinDeniedMessage } from '@/lib/formationCategories'
 import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
 import { captureParticipantRoomFromUrl, captureTvRoomFromUrl, buildTvUrl, isDynamicRoomCode, setParticipantSessionCode, readParticipantSessionCode, getLegacySessionCode } from '@/lib/sessionCode'
@@ -50,7 +51,16 @@ export default function Page() {
     if (!savedName || !sessionCode) return null
 
     const rows = await sbSelect('sessions', `code=eq.${encodeURIComponent(sessionCode)}&limit=1`)
-    if (rows?.[0]?.status === 'ended') return null
+    const session = rows?.[0]
+    if (session?.status === 'ended') return null
+
+    const resolved = await resolveParticipantName(savedName)
+    if (!resolved.ok || !canParticipantJoinSession(session, resolved.entry)) {
+      localStorage.removeItem('participant_name')
+      localStorage.removeItem('participant_prenom')
+      setParticipantSessionCode('')
+      return null
+    }
 
     try {
       await ensureSession(sessionCode)
@@ -189,6 +199,11 @@ export default function Page() {
       return
     }
 
+    if (!canParticipantJoinSession(session, resolved.entry)) {
+      toast(getCategoryJoinDeniedMessage(session, resolved.entry))
+      return
+    }
+
     const canonical = resolved.canonicalName
     const prenom = resolved.prenom || raw.split(' ')[0] || ''
     setPName(canonical)
@@ -220,9 +235,9 @@ export default function Page() {
     setView('landing')
   }
 
-  const handleEndRoom = async () => {
-    if (!window.confirm('Terminer cette salle ? Les participants ne pourront plus rejoindre.')) return
-    const code = (await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName)))
+  const handleEndRoom = async (roomCodeHint) => {
+    const code = (roomCodeHint || '').trim()
+      || (await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName)))
       || getActiveSessionCode()
     const ok = await endActiveRoom(code)
     if (ok) {

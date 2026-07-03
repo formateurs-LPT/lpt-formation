@@ -9,6 +9,7 @@ import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName } from '@/lib/participantNames'
+import { canParticipantJoinSession, getCategoryJoinDeniedMessage } from '@/lib/formationCategories'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -2774,6 +2775,27 @@ function RhParticipantGate({ pNameInput, children }) {
         }
         return
       }
+
+      const sessionRows = await sbSelect(
+        'sessions',
+        `code=eq.${encodeURIComponent(getParticipantSessionCode())}&limit=1`
+      )
+      const session = sessionRows?.[0]
+      if (session?.status === 'ended') {
+        if (!cancelled) {
+          setDenyMessage('Cette session est terminée.')
+          setStatus('denied')
+        }
+        return
+      }
+      if (!canParticipantJoinSession(session, resolved.entry)) {
+        if (!cancelled) {
+          setDenyMessage(getCategoryJoinDeniedMessage(session, resolved.entry))
+          setStatus('denied')
+        }
+        return
+      }
+
       const canonical = resolved.canonicalName
       if (typeof window !== 'undefined') {
         localStorage.setItem('participant_name', canonical)

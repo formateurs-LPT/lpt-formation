@@ -12,6 +12,7 @@ import {
 } from '@/lib/formationCategories'
 import { getLegacySessionCode, isDynamicRoomCode } from '@/lib/sessionCode'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
+import ConfirmModal from '@/components/ConfirmModal'
 
 const JOURNEES = (onLaunchModule) => [
   {
@@ -330,6 +331,8 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
   const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
   const [roomCode, setRoomCode] = useState('')
+  const [endConfirmOpen, setEndConfirmOpen] = useState(false)
+  const [endingRoom, setEndingRoom] = useState(false)
   const categories = listFormationCategories()
 
   useEffect(() => {
@@ -349,6 +352,17 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
 
   const showQrOnTv = () => {
     setSharedState({ tv_screen: 'qr' }).catch(console.warn)
+  }
+
+  const handleConfirmEndRoom = async () => {
+    if (!onEndRoom) return
+    setEndingRoom(true)
+    try {
+      await onEndRoom(roomCode)
+      setEndConfirmOpen(false)
+    } finally {
+      setEndingRoom(false)
+    }
   }
 
   const openJournee = (journeeId) => {
@@ -389,10 +403,10 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
               >
                 Réafficher le QR sur TV
               </button>
-              {onEndRoom && (
+              {onEndRoom && isRoomSession && (
                 <button
                   type="button"
-                  onClick={onEndRoom}
+                  onClick={() => setEndConfirmOpen(true)}
                   style={{
                     fontSize: 12, fontWeight: 700, color: '#fecaca',
                     background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)',
@@ -445,6 +459,18 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
           <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 8, fontWeight: 600 }}>Voir les révéils →</div>
         </div>
       </div>
+
+      {endConfirmOpen && (
+        <ConfirmModal
+          title="Terminer la salle ?"
+          message="Les participants ne pourront plus rejoindre cette salle. Cette action est définitive."
+          confirmLabel="Oui, terminer"
+          onConfirm={handleConfirmEndRoom}
+          onCancel={() => !endingRoom && setEndConfirmOpen(false)}
+          danger
+          loading={endingRoom}
+        />
+      )}
     </div>
   )
 }

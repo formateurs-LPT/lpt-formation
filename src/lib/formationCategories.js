@@ -128,6 +128,28 @@ export function sessionMatchesEntree(session, entree) {
   return session.room_type === cat
 }
 
+/** Fiche RH sans magasin ni catégorie explicite (legacy import). */
+export function entreeHasResolvableCategory(entree) {
+  return !!(entree?.formation_category || '').trim() || !!(entree?.magasin || '').trim()
+}
+
+/**
+ * Peut rejoindre cette salle ? Appliqué au join QR / login participant.
+ * Pas de blocage si la salle n'a pas de room_type ou si la fiche RH n'a pas de catégorie déductible.
+ */
+export function canParticipantJoinSession(session, entree) {
+  const roomType = (session?.room_type || '').trim()
+  if (!isValidFormationCategorySlug(roomType)) return true
+  if (!entreeHasResolvableCategory(entree)) return true
+  return sessionMatchesEntree(session, entree)
+}
+
+export function getCategoryJoinDeniedMessage(session, entree) {
+  const roomLabel = getCategoryLabel(session?.room_type) || 'cette salle'
+  const userLabel = getCategoryLabel(resolveCategoryFromEntree(entree)) || 'une autre catégorie'
+  return `Cette salle est réservée au ${roomLabel}. Votre profil correspond au ${userLabel}.`
+}
+
 const OPEN_ROOM_STATUSES = new Set(['waiting', 'active'])
 
 /** Salles ouvertes compatibles avec un collaborateur */

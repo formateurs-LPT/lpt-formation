@@ -209,7 +209,7 @@ export async function resolveParticipantName(rawInput) {
   let match = findRhMatch(raw, entrees)
   if (match) {
     const prenom = match.entry?.prenom?.trim() || raw.split(' ')[0] || ''
-    return { ok: true, canonicalName: match.canonicalName, prenom }
+    return { ok: true, canonicalName: match.canonicalName, prenom, entry: match.entry }
   }
 
   console.warn(
