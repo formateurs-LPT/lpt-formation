@@ -146,53 +146,103 @@ export const OPTIQUE_PAGES = [
 export const OPTIQUE_QUIZ = [
   {
     question: 'Un client voit bien de près mais flou de loin. Quel est son trouble ?',
-    options: ['Hypermétropie', 'Presbytie', 'Myopie'],
-    correct: 2,
-  },
-  {
-    question: 'Comment reconnaît-on une hypermétropie sur une ordonnance ?',
-    options: ['La sphère est négative', 'La sphère est positive', 'Il y a toujours une addition'],
-    correct: 1,
-  },
-  {
-    question: "Quelle est la particularité de la vision de l'astigmate ?",
-    options: ['Flou uniquement de loin', 'Flou uniquement de près', 'Vision déformée à toutes les distances'],
-    correct: 2,
-  },
-  {
-    question: 'À partir de quel âge apparaît généralement la presbytie ?',
-    options: ['30-35 ans', '40-45 ans', '55-60 ans'],
-    correct: 1,
-  },
-  {
-    question: 'De combien évolue une correction entre chaque cran en optique ?',
-    options: ['0,50 dioptrie', '0,25 dioptrie', '1,00 dioptrie'],
-    correct: 1,
-  },
-  {
-    question: 'Sur une ordonnance, une sphère négative (ex : −2,00) indique…',
-    options: ['Une myopie', 'Une hypermétropie', 'Un astigmatisme'],
+    options: ['Myope', 'Hypermétrope', 'Presbyte', 'Astigmate'],
     correct: 0,
   },
   {
-    question: 'À quoi correspond la colonne "Cylindre" sur une ordonnance ?',
-    options: ['La correction de la presbytie', 'La correction de base de la vision', "La correction de l'astigmatisme"],
+    question: 'Comment reconnaît-on une hypermétropie sur une ordonnance ?',
+    options: ['Signe + dans la sphère', 'Signe - dans la sphère', 'Entre parenthèse', 'Avec un degré'],
+    correct: 0,
+  },
+  {
+    question: "Quel est la particularité de la vision de l'astigmatisme ?",
+    options: ['Vision flou de loin', 'Vision flou de près', 'Vision déformée', 'Vision flou de loin & de près'],
     correct: 2,
   },
   {
-    question: "Dans quelle plage se situe la valeur de l'Axe sur une ordonnance ?",
-    options: ['De 0° à 90°', 'De 0° à 180°', 'De 0° à 360°'],
+    question: 'A partir de quelle âge apparait généralement la presbytie ?',
+    options: ['30-35 ans', '35-40 ans', '40-45 ans', '45-50 ans'],
+    correct: 2,
+  },
+  {
+    question: 'De combien en combien évoluent les corrections ?',
+    options: ['0,15', '0,25', '0,50', '0,10'],
     correct: 1,
   },
   {
-    question: 'La colonne "Addition" sur une ordonnance concerne…',
-    options: ['Tous les clients avec cylindre', 'Uniquement les presbytes', 'Les myopes forts uniquement'],
+    question: 'Sur une ordonnance, une sphère négative (ex : -2) indique :',
+    options: ['Myopie', 'Hypermétropie', 'Presbytie', 'Astigmatisme'],
+    correct: 0,
+  },
+  {
+    question: 'A quoi correspond le cylindre ?',
+    options: ['Hypermétropie', 'Myopie', 'Presbytie', 'Astigmatisme'],
+    correct: 3,
+  },
+  {
+    question: 'A quoi correspond la colonne « Add » ?',
+    options: ['La presbytie', "L'astigmatisme", 'La myopie', "L'hypermétropie"],
+    correct: 0,
+  },
+  {
+    question: "Sur une ordonnance, vous voyez : -2,25 (-0,50) 10°. Quelle est la bonne combinaison d'amétropie ?",
+    options: ['Hypermétrope & Astigmate', 'Astigmate & Presbyte', 'Myope & Presbyte', 'Myope & Astigmate'],
+    correct: 3,
+  },
+  {
+    question: 'Un client voit flou à toute distance et force constamment pour voir net. Quel est son trouble ?',
+    options: ['Myope & Presbyte', 'Hypermétrope', 'Astigmate & Presbyte', 'Myope'],
     correct: 1,
   },
   {
-    question: 'OD : Sph −3,00 / Cyl −1,00 / Axe 20° — Quels sont les troubles visuels de cette correction ?',
-    options: ['Myopie uniquement', 'Myopie + Astigmatisme', 'Hypermétropie + Astigmatisme'],
+    question: "Sur une ordonnance, vous voyez : +2 (-1) 145°. Quelle est la bonne combinaison d'amétropie ?",
+    options: ['Myope & Astigmate', 'Myope & Presbyte', 'Hypermétrope & Astigmate', 'Hypermétrope & Myope'],
+    correct: 2,
+  },
+  {
+    question: 'Comment appelle-t-on la valeur 0,00 ?',
+    options: ['Nulle', 'Plan', 'Inexistant', 'Correction de repos'],
     correct: 1,
+  },
+  {
+    question: "Sur une ordonnance, l'axe du cylindre est exprimé en :",
+    options: ['Millimètre', 'Degré', 'Pourcentage'],
+    correct: 1,
+  },
+  {
+    question: "Sur une ordonnance, vous voyez : -3 (-1,50) 23° ADD : +2. Quelle est la bonne combinaison d'amétropie ?",
+    options: ['Myope, Astigmate & Hypermétrope', 'Hypermétrope, Astigmate & Presbyte', 'Myope, Astigmate & Presbyte', 'Myope, Hypermétrope & Presbyte'],
+    correct: 2,
+  },
+  {
+    question: 'Comment reconnaît-on une myopie sur une ordonnance ?',
+    options: ['Signe - dans la sphère', 'Signe + dans la sphère', 'Avec un degré', 'Entre parenthèse'],
+    correct: 0,
+  },
+  {
+    question: 'Que signifie « ADD » ?',
+    options: ['Addition', 'Addiction', 'A Déduire Directement', 'Addict'],
+    correct: 0,
+  },
+  {
+    question: "Jusqu'à quelle correction va-t-on en magasin pour la myopie ?",
+    options: ['-8,00', '-2,00', '-15,00', '-5,00'],
+    correct: 0,
+  },
+  {
+    question: 'Combien de temps mettons-nous pour produire une paire de lunettes ?',
+    options: ['9 jours', '1h', '10 minutes', '30 minutes'],
+    correct: 2,
+  },
+  {
+    question: "Jusque combien allons-nous en myopie sur commande ?",
+    options: ['-8', '-22', '-25', '-15'],
+    correct: 1,
+  },
+  {
+    question: "De quoi est toujours accompagné l'axe ?",
+    options: ['La sphère', "L'addition", 'Le cylindre'],
+    correct: 2,
   },
 ]
 
