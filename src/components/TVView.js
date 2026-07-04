@@ -4,20 +4,7 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbSelect, getSharedState, setSharedState } from '@/lib/supabase'
-import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
-import { resolveRoomStateCode } from '@/lib/sessionCode'
-import {
-  buildJoinUrl,
-  buildTvUrl,
-  captureTvRoomFromUrl,
-  getLegacySessionCode,
-  getTvUrlRoomCode,
-  isDynamicRoomCode,
-  readTrainerActiveRoomCode,
-  setTrainerActiveRoomCode,
-} from '@/lib/sessionCode'
-import { resolveTvRoomLiveCode } from '@/lib/sessionRoom'
+import { sbSelect, SESSION_CODE, getSharedState, setSharedState } from '@/lib/supabase'
 import ZeroInterChain from '@/components/ZeroInterChain'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -58,6 +45,22 @@ const STYLES = `
     from { opacity: 0; transform: scale(0.6) translateY(12px); }
     to   { opacity: 1; transform: scale(1) translateY(0); }
   }
+  @keyframes podiumRise {
+    from { transform: scaleY(0); transform-origin: bottom; }
+    to   { transform: scaleY(1); transform-origin: bottom; }
+  }
+  @keyframes podiumFadeIn {
+    from { opacity: 0; transform: translateY(-18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes starPulse {
+    0%, 100% { opacity: 0.25; transform: scale(0.8); }
+    50%       { opacity: 0.9;  transform: scale(1.3); }
+  }
+  @keyframes trophyFloat {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-8px); }
+  }
 `
 
 // ── Verre animé ───────────────────────────────────────────────────
@@ -83,33 +86,15 @@ function VerreAnime({ color }) {
   )
 }
 
-// ── TV Quiz Question (réponses en direct sur le diffuseur) ────────
-function TVQuizQuestion({ question, qIdx, total, moduleLabel, moduleId, sessionCode }) {
-  const [liveAnswers, setLiveAnswers] = useState([])
-  const code = sessionCode || resolveRoomStateCode()
-
-  useEffect(() => {
-    if (!code || !moduleId) return
-    const filter = `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${encodeURIComponent(moduleId)}&question_idx=eq.${qIdx}`
-    const poll = async () => {
-      const rows = await fetchTrainerQuizAnswers(filter)
-      setLiveAnswers(rows || [])
-    }
-    poll()
-    const t = setInterval(poll, 1500)
-    return () => clearInterval(t)
-  }, [code, moduleId, qIdx])
-
-  const totalAnswers = liveAnswers.length
-  const counts = question.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
-
+// ── TV Quiz Question ──────────────────────────────────────────────
+function TVQuizQuestion({ question, qIdx, total, moduleLabel }) {
   return (
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      padding: '40px 80px 120px', position: 'relative',
+      padding: '40px 80px', position: 'relative',
     }}>
       {/* Header */}
       <div style={{ position: 'absolute', top: 24, left: 32, display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -118,72 +103,41 @@ function TVQuizQuestion({ question, qIdx, total, moduleLabel, moduleId, sessionC
         <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Quiz · {moduleLabel}</span>
       </div>
 
-      {/* Compteur réponses */}
-      <div style={{
-        position: 'absolute', top: 24, right: 32,
-        background: totalAnswers > 0 ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.06)',
-        border: `1px solid ${totalAnswers > 0 ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.12)'}`,
-        borderRadius: 20, padding: '8px 18px',
-        fontSize: 13, fontWeight: 700,
-        color: totalAnswers > 0 ? '#4ade80' : 'rgba(255,255,255,0.45)',
-      }}>
-        {totalAnswers} réponse{totalAnswers !== 1 ? 's' : ''}
-      </div>
-
       {/* Badge question */}
       <div style={{
         background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
-        borderRadius: 20, padding: '8px 28px', marginBottom: 28,
+        borderRadius: 20, padding: '8px 28px', marginBottom: 36,
         fontSize: 14, fontWeight: 700, color: '#a78bfa',
         textTransform: 'uppercase', letterSpacing: 2,
       }}>Question {qIdx + 1} / {total}</div>
 
       {/* Question */}
       <h1 style={{
-        fontSize: 48, fontWeight: 800, color: '#fff', textAlign: 'center',
-        lineHeight: 1.2, marginBottom: 40, maxWidth: 1000,
+        fontSize: 54, fontWeight: 800, color: '#fff', textAlign: 'center',
+        lineHeight: 1.2, marginBottom: 64, maxWidth: 1000,
       }}>{question.question}</h1>
 
-      {/* Réponses + barres live */}
+      {/* Réponses */}
       <div style={{
-        display: 'flex', flexDirection: 'column', gap: 16,
-        width: '100%', maxWidth: 960,
+        display: 'grid',
+        gridTemplateColumns: question.options.length === 2 ? '1fr 1fr' : 'repeat(auto-fit, minmax(320px, 1fr))',
+        gap: 24, width: '100%', maxWidth: 1000,
       }}>
-        {question.options.map((opt, i) => {
-          const count = counts[i]
-          const isCorrect = i === question.correct
-          const pct = totalAnswers > 0 ? (count / totalAnswers) * 100 : 0
-          return (
-            <div key={i} style={{
-              background: isCorrect ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${isCorrect ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.12)'}`,
-              borderRadius: 20, padding: '18px 24px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 12 }}>
-                <div style={{
-                  width: 52, height: 52, borderRadius: '50%', flexShrink: 0,
-                  background: OPTION_COLORS[i],
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 22, fontWeight: 800, color: '#fff',
-                }}>{'ABCD'[i]}</div>
-                <span style={{ fontSize: 24, fontWeight: 700, color: '#fff', flex: 1 }}>{opt}</span>
-                <span style={{
-                  fontSize: 18, fontWeight: 800, color: count > 0 ? '#fff' : 'rgba(255,255,255,0.25)',
-                  minWidth: 48, textAlign: 'right',
-                }}>{count}</span>
-              </div>
-              <div style={{
-                height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden',
-              }}>
-                <div style={{
-                  height: '100%', borderRadius: 4, width: `${pct}%`,
-                  background: isCorrect ? '#22c55e' : OPTION_COLORS[i],
-                  transition: 'width 0.5s ease',
-                }} />
-              </div>
-            </div>
-          )
-        })}
+        {question.options.map((opt, i) => (
+          <div key={i} style={{
+            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 24, padding: '28px 32px',
+            display: 'flex', alignItems: 'center', gap: 20,
+          }}>
+            <div style={{
+              width: 60, height: 60, borderRadius: '50%', flexShrink: 0,
+              background: OPTION_COLORS[i],
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 26, fontWeight: 800, color: '#fff',
+            }}>{'ABCD'[i]}</div>
+            <span style={{ fontSize: 28, fontWeight: 700, color: '#fff' }}>{opt}</span>
+          </div>
+        ))}
       </div>
 
       {/* Instruction bas */}
@@ -194,9 +148,7 @@ function TVQuizQuestion({ question, qIdx, total, moduleLabel, moduleId, sessionC
         borderRadius: 20, padding: '10px 24px',
       }}>
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'waitingPulse 1.4s ease-in-out infinite' }} />
-        <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
-          {totalAnswers > 0 ? 'Les réponses s\u2019affichent en direct' : 'Répondez depuis votre téléphone'}
-        </span>
+        <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>Répondez depuis votre téléphone</span>
       </div>
     </div>
   )
@@ -1319,112 +1271,6 @@ function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlock
 }
 
 
-const TV_INTERMEDIAIRES = [
-  { label: 'Importateur',      pct: '+15%', color: '#ef4444' },
-  { label: 'Grossiste',        pct: '+25%', color: '#f97316' },
-  { label: 'Agent commercial', pct: '+10%', color: '#eab308' },
-]
-
-function TVZeroIntermediaire({ page, pageIndex, total, step }) {
-  const falling  = step === 5
-  const lptVisible = step >= 6
-
-  return (
-    <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, flex: 1 }}>
-
-        {/* ── Chaîne traditionnelle ── */}
-        <div style={{
-          transform: falling ? 'translateY(400px) rotate(-6deg)' : 'translateY(0)',
-          opacity: falling ? 0 : 1,
-          filter: falling ? 'blur(12px)' : 'none',
-          transition: falling ? 'all 0.85s cubic-bezier(0.55,0,1,0.45)' : 'none',
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 16 }}>
-            La chaîne traditionnelle
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', height: 160, position: 'relative' }}>
-            {/* Usine */}
-            <div style={{ flexShrink: 0, textAlign: 'center', width: 110 }}>
-              <div style={{ fontSize: 48 }}>🏭</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 600, marginTop: 4 }}>Fournisseur</div>
-            </div>
-
-            {/* Ligne + nœuds */}
-            <div style={{ flex: 1, position: 'relative', height: '100%' }}>
-              <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 3, background: 'rgba(239,68,68,0.55)', transform: 'translateY(-50%)' }} />
-              <div style={{ position: 'absolute', top: '50%', right: -3, transform: 'translateY(-50%)', borderTop: '9px solid transparent', borderBottom: '9px solid transparent', borderLeft: '15px solid rgba(239,68,68,0.7)', width: 0, height: 0 }} />
-              {TV_INTERMEDIAIRES.map((item, i) => (
-                <div key={i} style={{
-                  position: 'absolute', left: `${20 + i * 27}%`, top: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  opacity: step > i ? 1 : 0,
-                  transition: 'opacity 0.4s ease',
-                }}>
-                  <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 10, textAlign: 'center', minWidth: 120 }}>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: item.color, marginBottom: 4 }}>{item.pct}</div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: `${item.color}22`, border: `1px solid ${item.color}55`, borderRadius: 6, padding: '3px 10px', whiteSpace: 'nowrap' }}>{item.label}</div>
-                  </div>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: item.color, border: '3px solid #fff', boxShadow: `0 0 16px ${item.color}` }} />
-                </div>
-              ))}
-              {step >= 4 && (
-                <div style={{ position: 'absolute', top: '50%', right: '6%', transform: 'translateY(-160%)',
-                  background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.45)',
-                  borderRadius: 10, padding: '6px 14px', fontSize: 16, fontWeight: 800, color: '#ef4444',
-                }}>× 2 à 3 le prix fabricant</div>
-              )}
-            </div>
-
-            {/* Opticien trad */}
-            <div style={{ flexShrink: 0, textAlign: 'center', width: 120 }}>
-              <div style={{ fontSize: 44 }}>🏪</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 600, marginTop: 4 }}>Opticien<br/>traditionnel</div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Chaîne LPT ── */}
-        <div style={{
-          marginTop: lptVisible ? 32 : 0,
-          opacity: lptVisible ? 1 : 0,
-          transform: lptVisible ? 'translateY(0)' : 'translateY(40px)',
-          transition: 'all 0.7s ease',
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 16 }}>
-            Notre modèle
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', height: 150, position: 'relative' }}>
-            <div style={{ flexShrink: 0, textAlign: 'center', width: 110 }}>
-              <div style={{ fontSize: 48 }}>🏭</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 600, marginTop: 4 }}>Fournisseur</div>
-            </div>
-            <div style={{ flex: 1, position: 'relative', height: '100%' }}>
-              <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 4, background: 'rgba(0,171,233,0.65)', transform: 'translateY(-50%)', borderRadius: 2 }} />
-              <div style={{ position: 'absolute', top: '50%', right: -3, transform: 'translateY(-50%)', borderTop: '10px solid transparent', borderBottom: '10px solid transparent', borderLeft: '16px solid rgba(0,171,233,0.75)', width: 0, height: 0 }} />
-              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -150%)',
-                background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.45)',
-                borderRadius: 24, padding: '6px 20px', fontSize: 14, fontWeight: 800, color: '#00abe9', letterSpacing: 2 }}>
-                DIRECT
-              </div>
-              <div style={{ position: 'absolute', top: '50%', right: '6%', transform: 'translateY(30%)',
-                background: 'rgba(74,222,128,0.10)', border: '1px solid rgba(74,222,128,0.4)',
-                borderRadius: 10, padding: '6px 14px', fontSize: 16, fontWeight: 800, color: '#4ade80' }}>
-                Prix réduits ✓
-              </div>
-            </div>
-            <div style={{ flexShrink: 0, textAlign: 'center', width: 120 }}>
-              <div style={{ fontSize: 44 }}>🔵</div>
-              <div style={{ fontSize: 13, color: '#00abe9', fontWeight: 700, marginTop: 4 }}>Lunettes<br/>Pour Tous</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </TVEntrepriseShell>
-  )
-}
-
 function TVEntrepriseNaissance({ page, pageIndex, total }) {
   return (
     <TVEntrepriseShell page={page} pageIndex={pageIndex} total={total}>
@@ -2064,6 +1910,7 @@ function TVOffresClassique({ step = 0 }) {
   const COLOR = '#00abe9'
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+      {/* Gauche */}
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 32 }}>
           <div style={{ width: 96, height: 96, borderRadius: '50%', border: `14px solid ${COLOR}`, boxShadow: `0 0 40px ${COLOR}50`, flexShrink: 0 }} />
@@ -2091,6 +1938,7 @@ function TVOffresClassique({ step = 0 }) {
           </div>
         </div>
       </div>
+      {/* Droite */}
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', gap: 20 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Ce qui est inclus</div>
         {TV_ITEMS_CLASSIQUE.map((item, i) => (
@@ -2106,6 +1954,7 @@ function TVOffresClassique({ step = 0 }) {
             <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{item.label}</div>
           </div>
         ))}
+        {/* Barre de progression */}
         <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
           {TV_ITEMS_CLASSIQUE.map((_, i) => (
             <div key={i} style={{ height: 4, flex: 1, borderRadius: 2, background: i < step ? COLOR : 'rgba(255,255,255,0.1)', transition: 'background 0.4s' }} />
@@ -2137,10 +1986,6 @@ function TVOffres11({ step = 0 }) {
             <div style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1 }}>Le parcours</div>
             <div style={{ fontSize: 48, fontWeight: 900, color: COLOR, lineHeight: 1 }}>1=1</div>
           </div>
-        </div>
-        <div style={{ display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: 8, background: `${COLOR}18`, border: `1px solid ${COLOR}50`, borderRadius: 20, padding: '8px 20px', marginBottom: 36 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR }} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: COLOR }}>Sans remboursement</span>
         </div>
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `4px solid ${COLOR}`, borderRadius: 16, padding: '24px 28px' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>Tarifs</div>
@@ -2354,7 +2199,7 @@ function TVMontures({ type, pageIndex, total, moduleLabel }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, zeroInterStep }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -2384,7 +2229,6 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'ventes-opticien') return <TVEntrepriseVentesOpticien page={page} pageIndex={pageIndex} total={total} ventesResponses={ventesResponses} />
   if (page.type === 'promesse')        return <TVEntreprisePromesse       page={page} pageIndex={pageIndex} total={total} promesseResponses={promesseResponses} />
   if (page.type === 'chiffres')           return <TVEntrepriseChiffres   page={page} pageIndex={pageIndex} total={total} />
-  if (page.type === 'zero-intermediaire') return <TVZeroIntermediaire    page={page} pageIndex={pageIndex} total={total} step={zeroInterStep} />
   if (page.type === 'force-lpt') return <TVEntrepriseForceLPT  page={page} pageIndex={pageIndex} total={total} modelePoint={modelePoint} audioUnlocked={audioUnlocked} />
   if (page.type === 'naissance')  return <TVEntrepriseNaissance page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'impact')     return <TVEntreprisePoints   page={page} pageIndex={pageIndex} total={total} />
@@ -2546,6 +2390,7 @@ function TVModuleLobby({ moduleLabel, moduleSub }) {
 }
 
 // ── Waiting Screen ────────────────────────────────────────────────
+const APP_URL = 'https://lpt-formation.vercel.app?join=1'
 // ── Écran de bienvenue (avant le QR) ──────────────────────────────
 function TVPlanningScreen({ planningDay }) {
   const jour = PLANNING_JOURS.find(j => j.id === planningDay)
@@ -2811,25 +2656,9 @@ function WelcomeScreen() {
   )
 }
 
-function WaitingScreen({ roomCode: roomCodeProp }) {
-  const [joinUrl, setJoinUrl] = useState('')
-  const [roomCode, setRoomCode] = useState(roomCodeProp || '')
+const QR_URL  = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(APP_URL)}`
 
-  useEffect(() => {
-    const tick = () => {
-      const code = roomCodeProp || readTrainerActiveRoomCode() || getTvUrlRoomCode()
-      setRoomCode(code)
-      setJoinUrl(code ? buildJoinUrl(code) : '')
-    }
-    tick()
-    const id = setInterval(tick, 5000)
-    return () => clearInterval(id)
-  }, [roomCodeProp])
-
-  const qrUrl = joinUrl
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(joinUrl)}`
-    : ''
-
+function WaitingScreen() {
   return (
     <div style={{
       minHeight: '100vh',
@@ -2853,12 +2682,8 @@ function WaitingScreen({ roomCode: roomCodeProp }) {
           boxShadow: '0 0 40px rgba(0,171,233,0.15)',
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {joinUrl ? (
-            <img src={qrUrl} alt="QR Code" width={220} height={220}
-              style={{ display: 'block', borderRadius: 8 }} />
-          ) : (
-            <div style={{ width: 220, height: 220, borderRadius: 8, background: 'rgba(255,255,255,0.06)' }} />
-          )}
+          <img src={QR_URL} alt="QR Code" width={220} height={220}
+            style={{ display: 'block', borderRadius: 8 }} />
         </div>
 
         {/* Texte */}
@@ -2870,18 +2695,9 @@ function WaitingScreen({ roomCode: roomCodeProp }) {
           <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 12 }}>
             Scannez ce QR code<br />avec votre téléphone
           </div>
-          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', marginBottom: 20, lineHeight: 1.6 }}>
-            Scannez le QR puis saisissez votre prénom et nom<br />
-            exactement comme sur la liste RH.
+          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', marginBottom: 28, lineHeight: 1.6 }}>
+            Connectez-vous avec votre prénom et<br />le code de session communiqué<br />par votre formateur.
           </div>
-          {roomCode ? (
-            <div style={{
-              fontSize: 28, fontWeight: 800, color: '#00abe9', letterSpacing: 6,
-              marginBottom: 20, fontFamily: 'monospace',
-            }}>
-              {roomCode}
-            </div>
-          ) : null}
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.25)',
@@ -2901,79 +2717,351 @@ function WaitingScreen({ roomCode: roomCodeProp }) {
   )
 }
 
-/** Diffusion : salle terminée ou introuvable — en attente d'une nouvelle ouverture */
-function RoomClosedScreen({ onExit, previousCode }) {
+// ── LPT Trophy SVG ───────────────────────────────────────────────
+function LPTTrophy({ size = 160 }) {
+  const lR = size * 0.215
+  const lY = size * 0.30
+  const lX = size * 0.30
+  const rX = size * 0.70
+  const cx = size * 0.50
+  const sW = size * 0.08
+  const sH = size * 0.20
+  const sX = cx - sW / 2
+  const sY = lY + lR + size * 0.04
+  const bW = size * 0.58
+  const bH = size * 0.08
+  const bX = cx - bW / 2
+  const bY = sY + sH
+  return (
+    <svg viewBox={`0 0 ${size} ${size * 1.15}`} width={size} height={size * 1.15} xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="tgBlue" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#38bdf8"/>
+          <stop offset="100%" stopColor="#00abe9"/>
+        </linearGradient>
+        <linearGradient id="tgGold" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fde68a"/>
+          <stop offset="100%" stopColor="#f59e0b"/>
+        </linearGradient>
+        <filter id="tgl">
+          <feGaussianBlur stdDeviation="2.5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      {/* Handles */}
+      <path d={`M ${lX - lR * 0.7} ${lY - lR * 0.5} Q ${size * 0.03} ${lY} ${sX} ${sY + sH * 0.1}`}
+        fill="none" stroke="url(#tgBlue)" strokeWidth={size * 0.03} strokeLinecap="round" filter="url(#tgl)"/>
+      <path d={`M ${rX + lR * 0.7} ${lY - lR * 0.5} Q ${size * 0.97} ${lY} ${sX + sW} ${sY + sH * 0.1}`}
+        fill="none" stroke="url(#tgBlue)" strokeWidth={size * 0.03} strokeLinecap="round" filter="url(#tgl)"/>
+      {/* Lenses */}
+      <circle cx={lX} cy={lY} r={lR} fill="rgba(0,171,233,0.07)"
+        stroke="url(#tgBlue)" strokeWidth={size * 0.05} filter="url(#tgl)"/>
+      <circle cx={rX} cy={lY} r={lR} fill="rgba(0,171,233,0.07)"
+        stroke="url(#tgBlue)" strokeWidth={size * 0.05} filter="url(#tgl)"/>
+      {/* Bridge */}
+      <line x1={lX + lR} y1={lY} x2={rX - lR} y2={lY}
+        stroke="url(#tgBlue)" strokeWidth={size * 0.03} strokeLinecap="round" filter="url(#tgl)"/>
+      {/* Stem */}
+      <rect x={sX} y={sY} width={sW} height={sH} fill="url(#tgBlue)" rx={3}/>
+      {/* Base */}
+      <rect x={bX} y={bY} width={bW} height={bH} fill="url(#tgGold)" rx={5}/>
+      <rect x={bX + bW * 0.05} y={bY + bH * 0.15} width={bW * 0.9} height={bH * 0.28}
+        fill="rgba(255,255,255,0.22)" rx={2}/>
+    </svg>
+  )
+}
+
+// ── TV Quiz Podium interstitiel (toutes les 5 questions) ──────────
+function TVQuizPodium({ qIdx, onDone }) {
+  const [top3, setTop3] = useState([])
+  const [loaded, setLoaded] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
+  const DURATION = 9
+
+  useEffect(() => {
+    sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}`).then(rows => {
+      const grouped = {}
+      ;(rows || []).filter(r => r.question_idx < qIdx).forEach(r => {
+        if (!grouped[r.collaborateur]) grouped[r.collaborateur] = 0
+        if (r.is_correct) grouped[r.collaborateur]++
+      })
+      const sorted = Object.entries(grouped)
+        .map(([name, score]) => ({ name, score }))
+        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+        .slice(0, 3)
+      setTop3(sorted)
+      setLoaded(true)
+    })
+  }, [qIdx])
+
+  useEffect(() => {
+    if (!loaded) return
+    const t = setInterval(() => {
+      setElapsed(e => {
+        if (e + 1 >= DURATION) { clearInterval(t); onDone(); return DURATION }
+        return e + 1
+      })
+    }, 1000)
+    return () => clearInterval(t)
+  }, [loaded, onDone])
+
+  const slots = [top3[1], top3[0], top3[2]]
+  const stepH = [180, 240, 150]
+  const medals = ['🥈', '🥇', '🥉']
+  const ranks = [2, 1, 3]
+  const cols = [
+    { fill: 'rgba(148,163,184,0.2)', border: '#94a3b8', score: '#cbd5e1' },
+    { fill: 'rgba(251,191,36,0.2)',  border: '#fbbf24', score: '#fde68a' },
+    { fill: 'rgba(180,83,9,0.2)',    border: '#d97706', score: '#fcd34d' },
+  ]
+
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: 40, textAlign: 'center', position: 'relative',
+      background: 'linear-gradient(135deg, #020d1f 0%, #071832 50%, #0a2040 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '32px 60px', position: 'relative', overflow: 'hidden',
     }}>
-      {onExit && (
-        <button
-          type="button"
-          onClick={onExit}
-          style={{
-            position: 'fixed', top: 16, right: 16, zIndex: 50,
-            background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: 20, padding: '8px 14px', color: '#fff', fontSize: 12,
-            cursor: 'pointer', fontFamily: 'inherit',
-          }}
-        >
-          ← Fermer
-        </button>
-      )}
-      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={280} height={106}
-        style={{ objectFit: 'contain', marginBottom: 48, opacity: 0.85 }} />
-      <div style={{
-        fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)',
-        textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16,
-      }}>
-        Diffusion
-      </div>
-      <h1 style={{ fontSize: 42, fontWeight: 800, color: '#fff', margin: '0 0 12px', lineHeight: 1.15 }}>
-        Salle terminée
-      </h1>
-      {previousCode ? (
-        <div style={{
-          fontSize: 14, color: 'rgba(255,255,255,0.35)', marginBottom: 28,
-          fontFamily: 'monospace', letterSpacing: 4,
-        }}>
-          {previousCode}
-        </div>
-      ) : null}
-      <p style={{
-        fontSize: 17, color: 'rgba(255,255,255,0.55)', maxWidth: 480,
-        lineHeight: 1.65, margin: '0 0 36px',
-      }}>
-        En attente d&apos;une nouvelle salle.<br />
-        Le formateur peut rouvrir une session depuis le tableau de bord.
-      </p>
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: 10,
-        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: 24, padding: '12px 22px',
-      }}>
-        <div style={{
-          width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.35)',
-          animation: 'waitingPulse 1.4s ease-in-out infinite',
+      {[...Array(14)].map((_, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          width: 4 + (i % 3) * 2, height: 4 + (i % 3) * 2, borderRadius: '50%',
+          background: ['#fbbf24','#00abe9','#a78bfa'][i % 3],
+          left: `${4 + i * 7}%`, top: `${8 + (i * 11) % 72}%`, opacity: 0.28,
+          animation: `starPulse ${1.8 + (i % 4) * 0.4}s ease-in-out infinite`,
+          animationDelay: `${i * 0.18}s`,
         }} />
-        <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
-          En attente du formateur…
-        </span>
+      ))}
+
+      <div style={{
+        background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.35)',
+        borderRadius: 20, padding: '7px 24px', marginBottom: 20,
+        fontSize: 13, fontWeight: 700, color: '#00abe9', letterSpacing: 2, textTransform: 'uppercase',
+      }}>⚡ Bilan après {qIdx} question{qIdx > 1 ? 's' : ''}</div>
+
+      <h2 style={{
+        fontSize: 52, fontWeight: 900, color: '#fff', marginBottom: 44, textAlign: 'center',
+        animation: 'podiumFadeIn 0.6s ease forwards',
+      }}>🏆 Classement</h2>
+
+      {loaded && (
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 12 }}>
+          {slots.map((player, i) => {
+            if (!player) return <div key={i} style={{ width: 200, height: stepH[i] }} />
+            const c = cols[i]
+            return (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{
+                  textAlign: 'center', marginBottom: 12,
+                  animation: `podiumFadeIn 0.5s ease forwards`,
+                  animationDelay: `${i * 0.15 + 0.3}s`, opacity: 0,
+                }}>
+                  <div style={{ fontSize: 32, marginBottom: 4 }}>{medals[i]}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', maxWidth: 190, lineHeight: 1.2, wordBreak: 'break-word' }}>
+                    {player.name}
+                  </div>
+                  <div style={{ fontSize: 44, fontWeight: 900, color: c.score, lineHeight: 1.1, marginTop: 4 }}>
+                    {player.score}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+                    /{qIdx} correct{player.score > 1 ? 'es' : 'e'}
+                  </div>
+                </div>
+                <div style={{
+                  width: 200, height: stepH[i],
+                  background: c.fill, border: `2px solid ${c.border}`,
+                  borderBottom: 'none', borderRadius: '14px 14px 0 0',
+                  display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 20,
+                  boxShadow: `0 0 40px ${c.border}30`,
+                  animation: `podiumRise 0.7s ease forwards`,
+                  animationDelay: `${i * 0.15}s`,
+                }}>
+                  <div style={{ fontSize: 48, fontWeight: 900, color: c.border, opacity: 0.55 }}>
+                    #{ranks[i]}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <div style={{
+        width: 630, height: 8,
+        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+        marginBottom: 36,
+      }} />
+
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        <div style={{ width: 280, height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2 }}>
+          <div style={{
+            height: '100%', borderRadius: 2, background: '#00abe9',
+            width: `${((DURATION - elapsed) / DURATION) * 100}%`,
+            transition: 'width 1s linear',
+          }} />
+        </div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>
+          Question suivante dans {Math.max(0, DURATION - elapsed)}s
+        </div>
       </div>
     </div>
   )
 }
 
+// ── TV Quiz Final Podium ──────────────────────────────────────────
+function TVQuizFinalPodium({ quiz, onDone }) {
+  const [top3, setTop3] = useState([])
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}`).then(rows => {
+      const grouped = {}
+      ;(rows || []).forEach(r => {
+        if (!grouped[r.collaborateur]) grouped[r.collaborateur] = 0
+        if (r.is_correct) grouped[r.collaborateur]++
+      })
+      const sorted = Object.entries(grouped)
+        .map(([name, score]) => ({ name, score }))
+        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+        .slice(0, 3)
+      setTop3(sorted)
+      setTimeout(() => setReady(true), 400)
+    })
+  }, [])
+
+  const slots = [top3[1], top3[0], top3[2]]
+  const stepH = [220, 300, 170]
+  const medals = ['🥈', '🥇', '🥉']
+  const ranks = [2, 1, 3]
+  const cols = [
+    { fill: 'rgba(148,163,184,0.18)', border: '#94a3b8', score: '#cbd5e1', bg: 'rgba(148,163,184,0.07)' },
+    { fill: 'rgba(251,191,36,0.18)',  border: '#fbbf24', score: '#fde68a', bg: 'rgba(251,191,36,0.07)'  },
+    { fill: 'rgba(180,83,9,0.18)',    border: '#d97706', score: '#fcd34d', bg: 'rgba(180,83,9,0.07)'    },
+  ]
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'radial-gradient(ellipse at 50% 25%, #0e2547 0%, #020d1f 70%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '28px 60px', position: 'relative', overflow: 'hidden',
+    }}>
+      {/* Rayons dorés */}
+      {[0, 40, 80, 120, 160, 200, 240, 280, 320].map((deg, i) => (
+        <div key={i} style={{
+          position: 'absolute', top: '22%', left: '50%',
+          width: 1.5, height: '85%',
+          background: 'linear-gradient(180deg, rgba(251,191,36,0.12) 0%, transparent 100%)',
+          transform: `rotate(${deg}deg)`, transformOrigin: 'top center',
+        }} />
+      ))}
+      {/* Particules */}
+      {[...Array(18)].map((_, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          width: 3 + (i % 4), height: 3 + (i % 4), borderRadius: '50%',
+          background: ['#fbbf24','#00abe9','#a78bfa','#34d399'][i % 4],
+          left: `${3 + i * 5.5}%`, top: `${5 + (i * 13) % 80}%`, opacity: 0.3,
+          animation: `starPulse ${1.5 + (i % 5) * 0.35}s ease-in-out infinite`,
+          animationDelay: `${i * 0.12}s`,
+        }} />
+      ))}
+
+      <div style={{ position: 'absolute', top: 28, left: 40 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
+      </div>
+
+      {/* Trophée */}
+      <div style={{
+        animation: 'trophyFloat 3s ease-in-out infinite',
+        filter: 'drop-shadow(0 0 32px rgba(0,171,233,0.55))',
+        marginBottom: 4,
+      }}>
+        <LPTTrophy size={130} />
+      </div>
+
+      <h1 style={{
+        fontSize: 64, fontWeight: 900, color: '#fff', marginBottom: 6, textAlign: 'center',
+        animation: 'podiumFadeIn 0.7s ease 0.2s forwards', opacity: 0,
+        textShadow: '0 0 40px rgba(251,191,36,0.45)',
+      }}>Podium final !</h1>
+      <p style={{
+        fontSize: 19, color: 'rgba(255,255,255,0.45)', marginBottom: 36, fontWeight: 500,
+        animation: 'podiumFadeIn 0.7s ease 0.35s forwards', opacity: 0,
+      }}>🎉 Bravo à tous les participants !</p>
+
+      {/* Podium */}
+      {ready && (
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 16 }}>
+          {slots.map((player, i) => {
+            if (!player) return <div key={i} style={{ width: 240, height: stepH[i] }} />
+            const c = cols[i]
+            return (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{
+                  background: c.bg, border: `1px solid ${c.border}50`,
+                  borderRadius: 20, padding: '16px 20px', marginBottom: 14,
+                  textAlign: 'center', width: 240,
+                  animation: `podiumFadeIn 0.6s ease forwards`,
+                  animationDelay: `${i * 0.2 + 0.4}s`, opacity: 0,
+                  boxShadow: `0 0 32px ${c.border}20`,
+                }}>
+                  <div style={{ fontSize: 40, marginBottom: 8 }}>{medals[i]}</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', lineHeight: 1.2, wordBreak: 'break-word' }}>
+                    {player.name}
+                  </div>
+                  <div style={{ fontSize: 58, fontWeight: 900, color: c.score, lineHeight: 1, marginTop: 8 }}>
+                    {player.score}
+                  </div>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+                    /{quiz.length} bonne{player.score > 1 ? 's' : ''} réponse{player.score > 1 ? 's' : ''}
+                  </div>
+                </div>
+                <div style={{
+                  width: 240, height: stepH[i],
+                  background: c.fill, border: `2px solid ${c.border}`,
+                  borderBottom: 'none', borderRadius: '16px 16px 0 0',
+                  display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 24,
+                  boxShadow: `0 0 55px ${c.border}22`,
+                  animation: `podiumRise 0.9s ease forwards`,
+                  animationDelay: `${i * 0.2}s`,
+                }}>
+                  <div style={{ fontSize: 62, fontWeight: 900, color: c.border, opacity: 0.45 }}>
+                    #{ranks[i]}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <div style={{
+        width: 760, height: 10,
+        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+        marginBottom: 28,
+      }} />
+
+      <button onClick={onDone} style={{
+        background: 'rgba(0,171,233,0.14)', border: '1px solid rgba(0,171,233,0.4)',
+        borderRadius: 16, padding: '12px 36px',
+        color: '#00abe9', fontSize: 16, fontWeight: 700,
+        cursor: 'pointer', fontFamily: 'inherit',
+      }}>
+        Voir le bilan détaillé →
+      </button>
+    </div>
+  )
+}
+
 // ── TV Group Results ──────────────────────────────────────────────
-function TVGroupResults({ moduleId, moduleLabel, quiz, sessionCode }) {
+function TVGroupResults({ moduleId, moduleLabel, quiz }) {
   const [answers, setAnswers] = useState([])
   const [loading, setLoading] = useState(true)
   const audioRef = useRef(null)
   const [muted, setMuted] = useState(true)
-  const code = sessionCode || resolveRoomStateCode()
 
   const toggleMute = () => {
     const newMuted = !muted
@@ -2987,20 +3075,18 @@ function TVGroupResults({ moduleId, moduleLabel, quiz, sessionCode }) {
   }
 
   useEffect(() => {
-    if (!code) return
-    const enc = encodeURIComponent(code)
     const fetchAnswers = async () => {
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${enc}`)
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}`)
       setAnswers(rows || [])
       setLoading(false)
     }
     fetchAnswers()
     const interval = setInterval(async () => {
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${enc}`)
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}`)
       setAnswers(rows || [])
     }, 3000)
     return () => clearInterval(interval)
-  }, [code])
+  }, [])
 
   const participantCount = [...new Set((answers || []).map(r => r.collaborateur))].length
 
@@ -3215,16 +3301,9 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
 }
 
 // ── TV View ───────────────────────────────────────────────────────
-export default function TVView({ onExit }) {
-  const { activeModule, modulePage, sharedState, loading, sessionCode } = useModuleSync()
-  const [tvRoom, setTvRoom] = useState({ resolved: false, live: false, code: '', mode: 'legacy' })
-
-  const isRoomSession = tvRoom.mode === 'room' && !!tvRoom.code
-  const roomLive = !tvRoom.resolved ? null : tvRoom.live
-  const roomCode = tvRoom.code
-
-  const [tvScreen, setTvScreen] = useState(null)
-  const [tvReady, setTvReady] = useState(false)
+export default function TVView() {
+  const { activeModule, modulePage, sharedState, loading } = useModuleSync()
+  const [tvScreen, setTvScreen]               = useState(null)
   const [troublesPhase, setTroublesPhase]     = useState(1)
   const [opticienPlaying, setOpticienPlaying] = useState(false)
   const [ordoPlaying, setOrdoPlaying]         = useState(false)
@@ -3241,8 +3320,6 @@ export default function TVView({ onExit }) {
   const [offresClassiqueStep, setOffresClassiqueStep]   = useState(0)
   // Force LPT — point sélectionné par le formateur
   const [modelePoint, setModelePoint]                   = useState(null)
-  // Zéro intermédiaire — étape animation
-  const [zeroInterStep, setZeroInterStep]               = useState(-1)
   // FAQ Réveil des acquis
   const [faqJournee, setFaqJournee]                     = useState(null)
   const [faqQuestions, setFaqQuestions]                 = useState([])
@@ -3255,99 +3332,36 @@ export default function TVView({ onExit }) {
   const [progObjectionResponses, setProgObjectionResponses] = useState({})
   const [progBestAnswer, setProgBestAnswer]             = useState(null)
 
+  // Quiz podium
+  const [quizInterstitialPhase, setQuizInterstitialPhase] = useState(false)
+  const [finalPodiumPhase, setFinalPodiumPhase]           = useState(false)
+  const prevQIdxRef = useRef(-1)
+  const prevIsResultsRef = useRef(false)
+
   // Bloque l'application de tv_screen tant que le nettoyage initial n'est pas terminé
   // (évite le flash QR au démarrage quand tv_screen='qr' est resté en DB)
   const tvInitDoneRef = useRef(false)
 
-  // Salle dynamique : vérifie en BDD (localStorage prioritaire sur ?room= obsolète)
+  // À l'ouverture de la TV : remet tv_screen à null pour toujours afficher la bienvenue
   useEffect(() => {
-    let cancelled = false
-
-    const syncRoomStatus = async () => {
-      try {
-        const result = await resolveTvRoomLiveCode()
-        if (cancelled) return
-
-        setTvRoom({ ...result, resolved: true })
-
-        if (result.mode === 'room' && result.live) {
-          setTrainerActiveRoomCode(result.code)
-          const urlCode = getTvUrlRoomCode()
-          if (urlCode !== result.code) {
-            window.history.replaceState(null, '', buildTvUrl(result.code))
-          }
-        } else if (result.mode === 'room' && !result.live) {
-          if (readTrainerActiveRoomCode() === result.code) {
-            setTrainerActiveRoomCode('')
-          }
-        }
-      } catch {
-        if (!cancelled) {
-          setTvRoom({ resolved: true, live: false, code: getTvUrlRoomCode(), mode: 'room' })
-        }
-      }
-    }
-
-    captureTvRoomFromUrl()
-    syncRoomStatus()
-    const interval = setInterval(syncRoomStatus, 3000)
-    return () => {
-      cancelled = true
-      clearInterval(interval)
-    }
-  }, [])
-
-  // Sync TV : salle dynamique active → QR par défaut ; legacy → bienvenue sauf tv_screen explicite
-  useEffect(() => {
-    if (!tvRoom.resolved) return
-    if (isRoomSession && !tvRoom.live) {
-      tvInitDoneRef.current = true
-      setTvReady(true)
-      return
-    }
-    if (isRoomSession && roomLive !== true) return
-
-    const isRoom = tvRoom.mode === 'room' && tvRoom.live
-
-    if (isRoom) {
-      setTvScreen(prev => (prev === 'planning' ? 'planning' : 'qr'))
-    }
-
     getSharedState().then(state => {
-      if (isRoom) {
-        if (state?.tv_screen !== 'qr') {
-          setSharedState({ tv_screen: 'qr' }).catch(() => {})
-        }
-        setTvScreen(prev => (prev === 'planning' ? 'planning' : 'qr'))
-        return
-      }
       if (state?.tv_screen) {
         setSharedState({ tv_screen: null }).catch(() => {})
       }
-      setTvScreen(null)
     }).catch(() => {}).finally(() => {
       tvInitDoneRef.current = true
-      setTvReady(true)
     })
-  }, [tvRoom, isRoomSession, roomLive])
+  }, [])
 
-  // ── Hydratation depuis sharedState (fourni par useModuleSync) ──
+  // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
-    if (!sharedState || !tvReady) return
-
-    const nextScreen = sharedState.tv_screen || null
-    if (isRoomSession) {
-      // En salle : QR sauf planning / FAQ explicitement demandés
-      if (nextScreen === 'planning') setTvScreen('planning')
-      else if (!sharedState.faq_journee) setTvScreen('qr')
-    } else if (tvInitDoneRef.current) {
-      setTvScreen(nextScreen)
-    }
+    if (!sharedState) return
+    // Ne pas appliquer tv_screen avant que le nettoyage initial soit terminé
+    if (tvInitDoneRef.current) setTvScreen(sharedState.tv_screen || null)
     setTrameStep(sharedState.trame_step ?? null)
     setOffres11Step(sharedState.offres_11_step ?? 0)
     setOffresClassiqueStep(sharedState.offres_classique_step ?? 0)
     setModelePoint(sharedState.modele_point ?? null)
-    setZeroInterStep(sharedState.zero_inter_step ?? -1)
     setTroublesPhase(sharedState.troubles_phase || 1)
     setOpticienPlaying(!!sharedState.opticien_playing)
     setOrdoPlaying(!!sharedState.ordo_playing)
@@ -3366,38 +3380,30 @@ export default function TVView({ onExit }) {
     const fj = sharedState.faq_journee || null
     setFaqJournee(fj)
     setFaqQuestions(fj ? (sharedState[`faq_${fj}_q`] || []) : [])
-  }, [sharedState, tvReady, isRoomSession, roomLive])
-
-  if (isRoomSession && roomLive === false) {
-    return (
-      <>
-        <style>{STYLES}</style>
-        <RoomClosedScreen onExit={onExit} previousCode={roomCode} />
-      </>
-    )
-  }
-
-  if (isRoomSession && roomLive === null) {
-    return (
-      <>
-        <style>{STYLES}</style>
-        <div style={{
-          minHeight: '100vh',
-          background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          gap: 20,
-        }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={200} height={76} style={{ objectFit: 'contain', opacity: 0.7 }} />
-          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>Connexion à la salle…</span>
-        </div>
-      </>
-    )
-  }
+  }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
   const isLobby   = !!moduleData && modulePage === -1
   const isResults = !!moduleData && modulePage === 200
   const isQuiz    = !!moduleData && modulePage >= 100 && modulePage < 200
+
+  // Détecte transitions podium interstitiel (toutes les 5 questions) + podium final
+  useEffect(() => {
+    const qIdx = modulePage - 100
+    if (isQuiz && qIdx > 0 && qIdx % 5 === 0 && qIdx !== prevQIdxRef.current) {
+      prevQIdxRef.current = qIdx
+      setQuizInterstitialPhase(true)
+    }
+    if (!isQuiz) {
+      if (prevQIdxRef.current !== -1) prevQIdxRef.current = -1
+      setQuizInterstitialPhase(false)
+    }
+    if (isResults && !prevIsResultsRef.current) {
+      prevIsResultsRef.current = true
+      setFinalPodiumPhase(true)
+    }
+    if (!isResults) prevIsResultsRef.current = false
+  }, [modulePage, isQuiz, isResults])
 
   let page = null
   let quizQuestion = null
@@ -3412,43 +3418,15 @@ export default function TVView({ onExit }) {
 
   // Pas de module actif → écran selon tv_screen ou FAQ
   if (!loading && !activeModule && !isLobby) {
-    const showQr = roomLive === true && (tvScreen === 'qr' || (isRoomSession && tvScreen !== 'planning' && !faqJournee))
     return (
       <>
         <style>{STYLES}</style>
-        {isRoomSession && roomLive === true && (
-          <div style={{
-            position: 'fixed', top: 16, right: 16, zIndex: 50,
-            display: 'flex', alignItems: 'center', gap: 10,
-          }}>
-            <div style={{
-              background: 'rgba(0,137,186,0.2)', border: '1px solid rgba(0,171,233,0.45)',
-              borderRadius: 20, padding: '8px 16px', fontSize: 12, fontWeight: 700,
-              color: '#00abe9', letterSpacing: 1,
-            }}>
-              SALLE {roomCode}
-            </div>
-            {onExit && (
-              <button
-                type="button"
-                onClick={onExit}
-                style={{
-                  background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: 20, padding: '8px 14px', color: '#fff', fontSize: 12,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
-                ← Fermer
-              </button>
-            )}
-          </div>
-        )}
         {faqJournee
           ? <TVFAQView journeeId={faqJournee} questions={faqQuestions} />
           : tvScreen === 'planning'
             ? <TVPlanningScreen planningDay={planningDay} />
-            : showQr
-              ? <WaitingScreen roomCode={roomCode} />
+            : tvScreen === 'qr'
+              ? <WaitingScreen />
               : <WelcomeScreen />
         }
       </>
@@ -3484,21 +3462,18 @@ export default function TVView({ onExit }) {
       ) : isLobby ? (
         <TVModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
       ) : isResults ? (
-        <TVGroupResults
-          moduleId={activeModule}
-          moduleLabel={moduleData?.label || ''}
-          quiz={moduleData?.quiz || []}
-          sessionCode={sessionCode || roomCode}
-        />
+        finalPodiumPhase
+          ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} onDone={() => setFinalPodiumPhase(false)} />
+          : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
       ) : isQuiz && quizQuestion ? (
-        <TVQuizQuestion
-          question={quizQuestion}
-          qIdx={modulePage - 100}
-          total={moduleData.quiz.length}
-          moduleLabel={moduleData?.label || ''}
-          moduleId={activeModule}
-          sessionCode={sessionCode || roomCode}
-        />
+        quizInterstitialPhase
+          ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} />
+          : <TVQuizQuestion
+              question={quizQuestion}
+              qIdx={modulePage - 100}
+              total={moduleData.quiz.length}
+              moduleLabel={moduleData?.label || ''}
+            />
       ) : page ? (
         <TVContentPage
           page={page}
@@ -3524,7 +3499,6 @@ export default function TVView({ onExit }) {
           offres11Step={offres11Step}
           offresClassiqueStep={offresClassiqueStep}
           modelePoint={modelePoint}
-          zeroInterStep={zeroInterStep}
         />
       ) : (
         <WelcomeScreen />
