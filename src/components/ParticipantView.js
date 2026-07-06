@@ -343,7 +343,47 @@ function P3Ordonnances({ pName, sessionCode }) {
   )
 }
 
-export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount }) {
+function DisconnectButton({ prenom, onDisconnect }) {
+  const [open, setOpen] = useState(false)
+  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''
+  return (
+    <div style={{ position: 'fixed', top: 14, right: 14, zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.18)',
+          borderRadius: 20, padding: '7px 16px',
+          color: 'rgba(255,255,255,0.75)', fontSize: 13, fontWeight: 600,
+          cursor: 'pointer', fontFamily: 'inherit',
+          backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', gap: 7,
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >
+        <span>👤</span>
+        {cap(prenom) || 'Moi'}
+      </button>
+      {open && (
+        <button
+          onClick={onDisconnect}
+          style={{
+            background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.45)',
+            borderRadius: 14, padding: '10px 18px',
+            color: '#f87171', fontSize: 14, fontWeight: 700,
+            cursor: 'pointer', fontFamily: 'inherit',
+            backdropFilter: 'blur(8px)',
+            whiteSpace: 'nowrap',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          Se déconnecter
+        </button>
+      )}
+    </div>
+  )
+}
+
+export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount, onDisconnect }) {
   const sessionCode = getParticipantSessionCode()
   const [curStep, setCurStep] = useState(-2)
   const [curSlide, setCurSlide] = useState(1)
@@ -511,14 +551,24 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
     )
   }
 
+  const disconnectChip = onDisconnect ? (
+    <DisconnectButton prenom={pPrenom || pName?.split(' ').pop() || ''} onDisconnect={onDisconnect} />
+  ) : null
+
   // Si un module est actif, on prend le dessus sur tout le reste
-  if (activeModule) return <ParticipantModuleView forcedModule={activeModule} forcedPage={modulePage} pName={pName} sharedState={sharedState} />
+  if (activeModule) return (
+    <>
+      {disconnectChip}
+      <ParticipantModuleView forcedModule={activeModule} forcedPage={modulePage} pName={pName} sharedState={sharedState} onDisconnect={onDisconnect} />
+    </>
+  )
 
   // Si une FAQ est active (réveil des acquis)
   if (sharedState?.faq_journee) return <FAQInputMobile journeeId={sharedState.faq_journee} />
 
   return (
     <div id="pv">
+      {disconnectChip}
       <div className="pshell">
         {curStep < 0 && <WaitScreen />}
         {curStep === 0 && <QuizView pName={pName} mode="initial" sessionCode={getParticipantSessionCode()} />}

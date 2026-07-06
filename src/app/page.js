@@ -266,6 +266,15 @@ export default function Page() {
     setView('landing')
   }
 
+  const handleParticipantDisconnect = () => {
+    localStorage.removeItem('participant_name')
+    localStorage.removeItem('participant_prenom')
+    setPName('')
+    setPPrenom('')
+    setView('landing')
+    setMode(null)
+  }
+
   const handleEndRoom = async (roomCodeHint) => {
     const code = (roomCodeHint || '').trim()
       || (await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName), pName))
@@ -337,14 +346,6 @@ export default function Page() {
 
   if (mode === 'tv') return <TVView onExit={handleExitTv} />
   if (mode === 'participant') {
-    const handleParticipantDisconnect = () => {
-      localStorage.removeItem('participant_name')
-      localStorage.removeItem('participant_prenom')
-      setPName('')
-      setPPrenom('')
-      setView('landing')
-      setMode(null)
-    }
     return <ParticipantModuleView pName={pName || undefined} onDisconnect={handleParticipantDisconnect} />
   }
 
@@ -394,6 +395,7 @@ export default function Page() {
           pPrenom={pPrenom || localStorage.getItem('participant_prenom') || ''}
           onToast={toast}
           onOnlineCount={setOnlineCount}
+          onDisconnect={handleParticipantDisconnect}
         />
       )}
       {view === 'onboarding-modules' && (
