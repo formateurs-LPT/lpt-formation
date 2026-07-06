@@ -615,13 +615,24 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
   const refreshActiveRoom = async () => {
     const login = trainerLoginFromDisplayName(pName)
-    const code = await getLiveTrainerRoomCode(login)
+    const code = await getLiveTrainerRoomCode(login, pName)
     setActiveRoomCode(code)
   }
 
+  useEffect(() => {
+    const onFocus = () => { refreshActiveRoom() }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') refreshActiveRoom()
+    })
+    return () => {
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [pName])
+
   const handleOpenRoomClick = async () => {
     const login = trainerLoginFromDisplayName(pName)
-    const existing = await findActiveRoomForTrainer(login)
+    const existing = await findActiveRoomForTrainer(login, pName)
     if (existing?.code) {
       onOpenRoom?.({ code: existing.code, resumed: true })
       return

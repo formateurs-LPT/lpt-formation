@@ -10,6 +10,24 @@ import { archiveAndPurgeRoom } from './roomArchive'
 import { getTrainerFromDB, sbSelect, sbUpdate, sbUpsert, setRoomSharedState } from './supabase'
 
 const ROOM_CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+const OPEN_ROOM_STATUSES = new Set(['waiting', 'active'])
+
+function isOpenSession(session) {
+  return OPEN_ROOM_STATUSES.has(session?.status)
+}
+
+/** Sessions ouvertes — filtre status côté client (évite les filtres PostgREST fragiles). */
+async function selectOpenSessions(extraFilter = '') {
+  const filter = extraFilter ? `${extraFilter}&order=started_at.desc` : 'order=started_at.desc'
+  const rows = await sbSelect('sessions', filter)
+  return (rows || []).filter(isOpenSession)
+}
+
+function trainerNameKey(trainerLogin, trainerName, trainer) {
+  const display = (trainerName || trainer?.display_name || '').trim()
+  const fromDisplay = display.toLowerCase().split(/\s+/)[0]
+  return fromDisplay || (trainerLogin || '').trim().toLowerCase()
+}
 
 export function trainerLoginFromDisplayName(pName) {
   const raw = (pName || '').toLowerCase().split(/\s+/)[0]
@@ -33,50 +51,50 @@ async function generateUniqueRoomCode() {
   return `${generateRoomCode(4)}${Date.now().toString(36).slice(-2).toUpperCase()}`
 }
 
-export async function findActiveRoomForTrainer(trainerLogin) {
+export async function findActiveRoomForTrainer(trainerLogin, trainerName = '') {
   const login = (trainerLogin || '').trim().toLowerCase()
   if (!login) return null
 
   const trainer = await getTrainerFromDB(login)
+  const nameKey = trainerNameKey(login, trainerName, trainer)
+
   if (trainer?.id) {
-    const rows = await sbSelect(
-      'sessions',
-      `trainer_id=eq.${trainer.id}&or=(status.eq.waiting,status.eq.active)&order=started_at.desc&limit=1`
-    )
-    if (rows?.[0]) return rows[0]
+    const byTrainer = await selectOpenSessions(`trainer_id=eq.${trainer.id}`)
+    if (byTrainer[0]) return byTrainer[0]
+  }
+
+  const openDynamic = (await selectOpenSessions()).filter(s => isDynamicRoomCode(s.code))
+
+  if (nameKey) {
+    const byLabel = openDynamic.find(s => (s.label || '').toLowerCase().includes(nameKey))
+    if (byLabel) {
+      if (trainer?.id && !byLabel.trainer_id) {
+        await sbUpdate(
+          'sessions',
+          { trainer_id: trainer.id, updated_at: new Date().toISOString() },
+          `code=eq.${encodeURIComponent(byLabel.code)}`
+        )
+      }
+      return byLabel
+    }
   }
 
   const activeCode = readTrainerActiveRoomCode()
-  if (activeCode) {
-    const rows = await sbSelect(
-      'sessions',
-      `code=eq.${encodeURIComponent(activeCode)}&or=(status.eq.waiting,status.eq.active)&limit=1`
-    )
-    if (rows?.[0]) return rows[0]
+  if (activeCode && isDynamicRoomCode(activeCode)) {
+    const byCode = openDynamic.find(s => s.code === activeCode)
+    if (byCode) return byCode
     setTrainerActiveRoomCode('')
   }
 
   return null
 }
 
-/** Code salle formateur uniquement si status=active en BDD (nettoie le localStorage obsolète). */
-export async function getLiveTrainerRoomCode(trainerLogin) {
-  const local = readTrainerActiveRoomCode()
-  if (local) {
-    const rows = await sbSelect(
-      'sessions',
-      `code=eq.${encodeURIComponent(local)}&or=(status.eq.waiting,status.eq.active)&limit=1`
-    )
-    if (rows?.[0]) return local
-    setTrainerActiveRoomCode('')
-  }
-
-  const room = await findActiveRoomForTrainer(trainerLogin)
-  if (room?.code) {
-    setTrainerActiveRoomCode(room.code)
-    return room.code
-  }
-  return ''
+/** Salle active du formateur — source de vérité = BDD, localStorage synchronisé ensuite. */
+export async function getLiveTrainerRoomCode(trainerLogin, trainerName = '') {
+  const room = await findActiveRoomForTrainer(trainerLogin, trainerName)
+  const code = room?.code || ''
+  setTrainerActiveRoomCode(code)
+  return code
 }
 
 /**
@@ -95,8 +113,7 @@ export async function resolveTvRoomLiveCode() {
   for (const code of candidates) {
     const rows = await sbSelect('sessions', `code=eq.${encodeURIComponent(code)}&limit=1`)
     const session = rows?.[0]
-    const live = session && (session.status === 'waiting' || session.status === 'active')
-    if (live) {
+    if (isOpenSession(session)) {
       return { mode: 'room', code, live: true }
     }
   }
@@ -122,7 +139,7 @@ export async function openOrCreateRoom({
     throw new Error('Catégorie de salle invalide')
   }
 
-  const existing = await findActiveRoomForTrainer(trainerLogin)
+  const existing = await findActiveRoomForTrainer(trainerLogin, trainerName)
   if (existing?.code) {
     setTrainerActiveRoomCode(existing.code)
     await setRoomSharedState({ tv_screen: 'qr' }, existing.code)

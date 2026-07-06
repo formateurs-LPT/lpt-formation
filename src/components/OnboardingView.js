@@ -338,7 +338,7 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
   useEffect(() => {
     let cancelled = false
     const syncRoom = async () => {
-      const code = await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName))
+      const code = await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName), pName)
       if (!cancelled) setRoomCode(code || getLegacySessionCode())
     }
     syncRoom()

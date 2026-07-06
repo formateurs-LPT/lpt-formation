@@ -129,7 +129,7 @@ export default function Page() {
       captureParticipantRoomFromUrl()
       captureTvRoomFromUrl()
       if (savedTrainer) {
-        const code = await getLiveTrainerRoomCode(trainerLoginFromDisplayName(savedTrainer))
+        const code = await getLiveTrainerRoomCode(trainerLoginFromDisplayName(savedTrainer), savedTrainer)
         setDisplaySessionCode(code || getLegacySessionCode())
       } else if (urlMode !== 'participant') {
         setDisplaySessionCode(getRuntimeSessionCode('participant') || getLegacySessionCode())
@@ -145,7 +145,7 @@ export default function Page() {
 
     let cancelled = false
     const syncTrainerRoom = async () => {
-      const code = await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName))
+      const code = await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName), pName)
       if (!cancelled) setDisplaySessionCode(code || getLegacySessionCode())
     }
     syncTrainerRoom()
@@ -183,6 +183,8 @@ export default function Page() {
     } catch (e) {
       console.warn('Supabase session init failed (non-blocking):', e)
     }
+    const roomCode = await getLiveTrainerRoomCode(normalized, name)
+    setDisplaySessionCode(roomCode || getLegacySessionCode())
     setView('dashboard')
   }
 
@@ -265,7 +267,7 @@ export default function Page() {
 
   const handleEndRoom = async (roomCodeHint) => {
     const code = (roomCodeHint || '').trim()
-      || (await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName)))
+      || (await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName), pName))
       || getActiveSessionCode()
     const result = await endActiveRoom(code, { trainerName: pName })
     if (result?.ok) {
