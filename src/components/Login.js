@@ -105,7 +105,7 @@ export default function Login({ onTrainerLogin, onParticipantJoin }) {
             Rejoindre →
           </button>
           <p className="hint">
-            Saisissez nom et prénom comme sur la ligne bleue « Connexion : … » (Entrées de la semaine)
+            Scannez le QR du formateur ou saisissez nom et prénom (ligne bleue « Connexion : … »)
           </p>
         </div>
       </div>

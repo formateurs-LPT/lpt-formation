@@ -4,7 +4,8 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbSelect, SESSION_CODE, getSharedState, setSharedState } from '@/lib/supabase'
+import { sbSelect, SESSION_CODE } from '@/lib/supabase'
+import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -2389,9 +2390,7 @@ function TVModuleLobby({ moduleLabel, moduleSub }) {
   )
 }
 
-// ── Waiting Screen ────────────────────────────────────────────────
-const APP_URL = 'https://lpt-formation.vercel.app?join=1'
-// ── Écran de bienvenue (avant le QR) ──────────────────────────────
+// ── Écran planning (diffusion TV) ─────────────────────────────────
 function TVPlanningScreen({ planningDay }) {
   const jour = PLANNING_JOURS.find(j => j.id === planningDay)
   const [visible, setVisible] = useState(0)
@@ -2656,9 +2655,14 @@ function WelcomeScreen() {
   )
 }
 
-const QR_URL  = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(APP_URL)}`
+function WaitingScreen({ roomCode }) {
+  const [qrUrl, setQrUrl] = useState('')
 
-function WaitingScreen() {
+  useEffect(() => {
+    const code = (roomCode || getTvDisplayRoomCode() || getLegacySessionCode()).trim()
+    setQrUrl(buildQrImageUrl(code))
+  }, [roomCode])
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -2669,24 +2673,25 @@ function WaitingScreen() {
       <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={300} height={114}
         style={{ objectFit: 'contain', marginBottom: 52, animation: 'logoBreathe 3.5s ease-in-out infinite' }} />
 
-      {/* QR + instructions */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 56,
         background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 28, padding: '36px 48px',
       }}>
-        {/* QR Code */}
         <div style={{
           background: '#0a2a5c', borderRadius: 18, padding: 12,
           border: '2px solid rgba(0,171,233,0.35)',
           boxShadow: '0 0 40px rgba(0,171,233,0.15)',
         }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={QR_URL} alt="QR Code" width={220} height={220}
-            style={{ display: 'block', borderRadius: 8 }} />
+          {qrUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={qrUrl} alt="QR Code" width={220} height={220}
+              style={{ display: 'block', borderRadius: 8 }} />
+          ) : (
+            <div style={{ width: 220, height: 220, borderRadius: 8, background: 'rgba(255,255,255,0.06)' }} />
+          )}
         </div>
 
-        {/* Texte */}
         <div>
           <div style={{
             fontSize: 11, fontWeight: 700, color: '#00abe9',
@@ -2696,7 +2701,13 @@ function WaitingScreen() {
             Scannez ce QR code<br />avec votre téléphone
           </div>
           <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', marginBottom: 28, lineHeight: 1.6 }}>
-            Connectez-vous avec votre prénom et<br />le code de session communiqué<br />par votre formateur.
+            Connectez-vous avec votre nom et prénom<br />comme sur la liste RH.
+            {roomCode && (
+              <>
+                <br />
+                <span style={{ fontFamily: 'monospace', letterSpacing: 3, color: 'rgba(0,171,233,0.85)' }}>{roomCode}</span>
+              </>
+            )}
           </div>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -3302,7 +3313,7 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
 
 // ── TV View ───────────────────────────────────────────────────────
 export default function TVView() {
-  const { activeModule, modulePage, sharedState, loading } = useModuleSync()
+  const { activeModule, modulePage, sharedState, loading, sessionCode } = useModuleSync()
   const [tvScreen, setTvScreen]               = useState(null)
   const [troublesPhase, setTroublesPhase]     = useState(1)
   const [opticienPlaying, setOpticienPlaying] = useState(false)
@@ -3338,26 +3349,10 @@ export default function TVView() {
   const prevQIdxRef = useRef(-1)
   const prevIsResultsRef = useRef(false)
 
-  // Bloque l'application de tv_screen tant que le nettoyage initial n'est pas terminé
-  // (évite le flash QR au démarrage quand tv_screen='qr' est resté en DB)
-  const tvInitDoneRef = useRef(false)
-
-  // À l'ouverture de la TV : remet tv_screen à null pour toujours afficher la bienvenue
-  useEffect(() => {
-    getSharedState().then(state => {
-      if (state?.tv_screen) {
-        setSharedState({ tv_screen: null }).catch(() => {})
-      }
-    }).catch(() => {}).finally(() => {
-      tvInitDoneRef.current = true
-    })
-  }, [])
-
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
     if (!sharedState) return
-    // Ne pas appliquer tv_screen avant que le nettoyage initial soit terminé
-    if (tvInitDoneRef.current) setTvScreen(sharedState.tv_screen || null)
+    setTvScreen(sharedState.tv_screen || null)
     setTrameStep(sharedState.trame_step ?? null)
     setOffres11Step(sharedState.offres_11_step ?? 0)
     setOffresClassiqueStep(sharedState.offres_classique_step ?? 0)
@@ -3426,7 +3421,7 @@ export default function TVView() {
           : tvScreen === 'planning'
             ? <TVPlanningScreen planningDay={planningDay} />
             : tvScreen === 'qr'
-              ? <WaitingScreen />
+              ? <WaitingScreen roomCode={sessionCode} />
               : <WelcomeScreen />
         }
       </>

@@ -90,6 +90,15 @@ export function buildJoinUrl(code, baseUrl = 'https://lpt-formation.vercel.app')
   return url.toString()
 }
 
+/** Image QR (api.qrserver.com) pointant vers l’URL de join avec code salle */
+export function buildQrImageUrl(roomCode, baseUrl) {
+  const origin = (baseUrl || '').trim()
+    || (typeof window !== 'undefined' ? window.location.origin : '')
+    || 'https://lpt-formation.vercel.app'
+  const joinUrl = buildJoinUrl(roomCode, origin)
+  return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(joinUrl)}`
+}
+
 /** Lit ?code= dans l’URL participant et le mémorise */
 export function captureParticipantRoomFromUrl() {
   if (typeof window === 'undefined') return ''

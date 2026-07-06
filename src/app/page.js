@@ -6,8 +6,9 @@ import Toast, { useToast } from '@/components/Toast'
 import Dashboard from '@/components/Dashboard'
 import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
-import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB, ensureSession, getRuntimeSessionCode, sbSelect, getActiveSessionCode } from '@/lib/supabase'
+import { sbUpsert, sbUpdate, sbInsert, SESSION_CODE, getTrainerFromDB, ensureSession, getRuntimeSessionCode, sbSelect, getActiveSessionCode, setRoomSharedState, setSharedState } from '@/lib/supabase'
 import { resolveParticipantName } from '@/lib/participantNames'
+import { resolveParticipantSessionCode, participantJoinBlockedMessage } from '@/lib/participantSession'
 import { canParticipantJoinSession, getCategoryJoinDeniedMessage } from '@/lib/formationCategories'
 import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
@@ -47,15 +48,27 @@ export default function Page() {
 
   const restoreParticipantSession = async () => {
     const savedName = localStorage.getItem('participant_name')
-    const sessionCode = readParticipantSessionCode() || getRuntimeSessionCode('participant')
-    if (!savedName || !sessionCode) return null
-
-    const rows = await sbSelect('sessions', `code=eq.${encodeURIComponent(sessionCode)}&limit=1`)
-    const session = rows?.[0]
-    if (session?.status === 'ended') return null
+    if (!savedName) return null
 
     const resolved = await resolveParticipantName(savedName)
-    if (!resolved.ok || !canParticipantJoinSession(session, resolved.entry)) {
+    if (!resolved.ok) {
+      localStorage.removeItem('participant_name')
+      localStorage.removeItem('participant_prenom')
+      setParticipantSessionCode('')
+      return null
+    }
+
+    const roomResolved = await resolveParticipantSessionCode(resolved.entry)
+    if (!roomResolved.ok) {
+      localStorage.removeItem('participant_name')
+      localStorage.removeItem('participant_prenom')
+      setParticipantSessionCode('')
+      return null
+    }
+
+    const sessionCode = roomResolved.code
+    const session = roomResolved.session
+    if (!canParticipantJoinSession(session, resolved.entry)) {
       localStorage.removeItem('participant_name')
       localStorage.removeItem('participant_prenom')
       setParticipantSessionCode('')
@@ -182,19 +195,6 @@ export default function Page() {
     }
     const raw = `${nomT} ${prenomT}`
 
-    const sessionCode = getRuntimeSessionCode('participant') || SESSION_CODE
-    if (!sessionCode) {
-      toast('Application mal configurée (code session manquant). Contactez le formateur.')
-      return
-    }
-
-    const rows = await sbSelect('sessions', `code=eq.${encodeURIComponent(sessionCode)}&limit=1`)
-    const session = rows?.[0]
-    if (session?.status === 'ended') {
-      toast('Cette session est terminée.')
-      return
-    }
-
     const resolved = await resolveParticipantName(raw)
     if (!resolved.ok) {
       if (resolved.reason === 'no_session_code') {
@@ -208,6 +208,22 @@ export default function Page() {
       } else {
         toast('Nom non reconnu. Vérifiez nom et prénom comme sur « Connexion : … » (Entrées de la semaine).')
       }
+      return
+    }
+
+    const roomResolved = await resolveParticipantSessionCode(resolved.entry)
+    if (!roomResolved.ok) {
+      toast(participantJoinBlockedMessage(roomResolved.reason, roomResolved.message))
+      return
+    }
+    if (roomResolved.autoPicked) {
+      toast(`Connexion à la salle ${roomResolved.code}`)
+    }
+
+    const sessionCode = roomResolved.code
+    const session = roomResolved.session
+    if (session?.status === 'ended') {
+      toast('Cette session est terminée.')
       return
     }
 
@@ -261,8 +277,17 @@ export default function Page() {
     }
   }
 
-  const handleOpenTv = () => {
+  const handleOpenTv = async () => {
     const code = getActiveSessionCode()
+    try {
+      if (isDynamicRoomCode(code)) {
+        await setRoomSharedState({ tv_screen: 'qr' }, code)
+      } else {
+        await setSharedState({ tv_screen: 'qr' })
+      }
+    } catch (e) {
+      console.warn('tv_screen qr', e)
+    }
     const path = isDynamicRoomCode(code) ? buildTvUrl(code) : '/?mode=tv'
     const url = `${window.location.origin}${path}`
     const opened = window.open(url, 'lpt-tv-diffusion', 'noopener,noreferrer')

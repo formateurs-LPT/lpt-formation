@@ -41,7 +41,7 @@ export async function findActiveRoomForTrainer(trainerLogin) {
   if (trainer?.id) {
     const rows = await sbSelect(
       'sessions',
-      `trainer_id=eq.${trainer.id}&status=eq.active&order=started_at.desc&limit=1`
+      `trainer_id=eq.${trainer.id}&or=(status.eq.waiting,status.eq.active)&order=started_at.desc&limit=1`
     )
     if (rows?.[0]) return rows[0]
   }
@@ -50,7 +50,7 @@ export async function findActiveRoomForTrainer(trainerLogin) {
   if (activeCode) {
     const rows = await sbSelect(
       'sessions',
-      `code=eq.${encodeURIComponent(activeCode)}&status=eq.active&limit=1`
+      `code=eq.${encodeURIComponent(activeCode)}&or=(status.eq.waiting,status.eq.active)&limit=1`
     )
     if (rows?.[0]) return rows[0]
     setTrainerActiveRoomCode('')
@@ -65,7 +65,7 @@ export async function getLiveTrainerRoomCode(trainerLogin) {
   if (local) {
     const rows = await sbSelect(
       'sessions',
-      `code=eq.${encodeURIComponent(local)}&status=eq.active&limit=1`
+      `code=eq.${encodeURIComponent(local)}&or=(status.eq.waiting,status.eq.active)&limit=1`
     )
     if (rows?.[0]) return local
     setTrainerActiveRoomCode('')

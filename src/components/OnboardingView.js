@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { generatePin } from '@/lib/pin'
-import { getSharedState, setSharedState, sbUpsert, sbSelect, getActiveSessionCode } from '@/lib/supabase'
+import { getSharedState, setSharedState, setRoomSharedState, sbUpsert, sbSelect, getActiveSessionCode } from '@/lib/supabase'
 import {
   countEntreesByCategory,
   entreeMatchesCategory,
@@ -351,7 +351,11 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
   const isRoomSession = isDynamicRoomCode(roomCode)
 
   const showQrOnTv = () => {
-    setSharedState({ tv_screen: 'qr' }).catch(console.warn)
+    if (isDynamicRoomCode(roomCode)) {
+      setRoomSharedState({ tv_screen: 'qr' }, roomCode).catch(console.warn)
+    } else {
+      setSharedState({ tv_screen: 'qr' }).catch(console.warn)
+    }
   }
 
   const handleConfirmEndRoom = async () => {
