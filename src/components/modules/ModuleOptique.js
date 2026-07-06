@@ -1020,13 +1020,6 @@ function QuizController({ quizQ, onNext, onEnd, onBack, podiumActive, onShowCorr
   const q = OPTIQUE_QUIZ[quizQ]
   const isLast = quizQ >= OPTIQUE_QUIZ.length - 1
 
-  // Réinitialise le flag et vide les réponses à chaque nouvelle question
-  // sans ça, les anciennes réponses re-déclenchent la correction immédiatement
-  useEffect(() => {
-    autoShownRef.current = false
-    setLiveAnswers([])
-  }, [quizQ])
-
   useEffect(() => {
     const poll = async () => {
       const [rows, count] = await Promise.all([
@@ -1443,6 +1436,7 @@ export default function ModuleOptique({ pName, onBack, onTerminate }) {
       <>
         <style>{STYLES}</style>
         <QuizController
+          key={quizQ}
           quizQ={quizQ}
           onNext={handleNextQuestion}
           onEnd={handleEndQuiz}
