@@ -2784,6 +2784,115 @@ function LPTTrophy({ size = 160 }) {
   )
 }
 
+// ── TV Quiz Correction (débrief après chaque question) ───────────
+function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode }) {
+  const [answers, setAnswers] = useState([])
+
+  useEffect(() => {
+    sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}`)
+      .then(rows => setAnswers(rows || []))
+    const t = setInterval(() => {
+      sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}`)
+        .then(rows => setAnswers(rows || []))
+    }, 2000)
+    return () => clearInterval(t)
+  }, [qIdx, sessionCode])
+
+  const total_answers = answers.length
+  const correct_count = answers.filter(r => r.is_correct).length
+  const wrong_count   = total_answers - correct_count
+  const counts = question.options.map((_, i) => answers.filter(r => r.answer_idx === i).length)
+
+  const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '32px 60px',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={36} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>{moduleLabel}</span>
+        </div>
+        <div style={{
+          background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)',
+          borderRadius: 20, padding: '6px 22px',
+          fontSize: 13, fontWeight: 700, color: '#4ade80', letterSpacing: 1.5, textTransform: 'uppercase',
+        }}>✓ Correction — Question {qIdx + 1} / {total}</div>
+      </div>
+
+      {/* Stats globales */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginBottom: 28 }}>
+        <div style={{
+          background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)',
+          borderRadius: 18, padding: '14px 36px', textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 48, fontWeight: 900, color: '#4ade80' }}>{correct_count}</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4 }}>bonne{correct_count > 1 ? 's' : ''} réponse{correct_count > 1 ? 's' : ''}</div>
+        </div>
+        <div style={{
+          background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)',
+          borderRadius: 18, padding: '14px 36px', textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 48, fontWeight: 900, color: '#f87171' }}>{wrong_count}</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4 }}>mauvaise{wrong_count > 1 ? 's' : ''} réponse{wrong_count > 1 ? 's' : ''}</div>
+        </div>
+      </div>
+
+      {/* Question */}
+      <div style={{
+        fontSize: 22, fontWeight: 800, color: '#fff', textAlign: 'center',
+        marginBottom: 24, lineHeight: 1.35, maxWidth: 860, alignSelf: 'center',
+      }}>{question.question}</div>
+
+      {/* Options */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 800, alignSelf: 'center', width: '100%' }}>
+        {question.options.map((opt, i) => {
+          const isCorrect = i === question.correct
+          const count = counts[i]
+          const pct = total_answers > 0 ? (count / total_answers) * 100 : 0
+          return (
+            <div key={i} style={{
+              background: isCorrect ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
+              border: `2px solid ${isCorrect ? '#4ade80' : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: 16, padding: '12px 18px',
+              boxShadow: isCorrect ? '0 0 24px rgba(74,222,128,0.2)' : 'none',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                    background: isCorrect ? '#4ade80' : OPTION_COLORS[i],
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 15, fontWeight: 800, color: isCorrect ? '#052e16' : '#fff',
+                  }}>{'ABCD'[i]}</div>
+                  <span style={{ fontSize: 16, fontWeight: isCorrect ? 800 : 500, color: isCorrect ? '#4ade80' : '#fff' }}>{opt}</span>
+                  {isCorrect && <span style={{ fontSize: 12, color: '#4ade80', fontWeight: 700, background: 'rgba(34,197,94,0.15)', padding: '2px 12px', borderRadius: 20 }}>✓ Bonne réponse</span>}
+                </div>
+                <span style={{ fontSize: 20, fontWeight: 800, color: isCorrect ? '#4ade80' : 'rgba(255,255,255,0.6)' }}>
+                  {count} <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>vote{count > 1 ? 's' : ''}</span>
+                </span>
+              </div>
+              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 4,
+                  width: `${pct}%`,
+                  background: isCorrect ? '#4ade80' : OPTION_COLORS[i],
+                  transition: 'width .5s ease',
+                }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ── TV Quiz Podium interstitiel (toutes les 5 questions) ──────────
 function TVQuizPodium({ qIdx, onDone, sessionCode }) {
   const [top3, setTop3] = useState([])
@@ -3512,12 +3621,20 @@ export default function TVView() {
         ) : isQuiz && quizQuestion ? (
           quizInterstitialPhase
             ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} />
-            : <TVQuizQuestion
-                question={quizQuestion}
-                qIdx={modulePage - 100}
-                total={moduleData.quiz.length}
-                moduleLabel={moduleData?.label || ''}
-              />
+            : sharedState?.quiz_show_correction
+              ? <TVQuizCorrection
+                  question={quizQuestion}
+                  qIdx={modulePage - 100}
+                  total={moduleData.quiz.length}
+                  moduleLabel={moduleData?.label || ''}
+                  sessionCode={sessionCode}
+                />
+              : <TVQuizQuestion
+                  question={quizQuestion}
+                  qIdx={modulePage - 100}
+                  total={moduleData.quiz.length}
+                  moduleLabel={moduleData?.label || ''}
+                />
         ) : page ? (
           <TVContentPage
             page={page}
