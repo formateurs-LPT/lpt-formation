@@ -3041,7 +3041,17 @@ function ParticipantPlanningScreen({ planningDay }) {
 
 function DisconnectChip({ pName, onDisconnect }) {
   const [open, setOpen] = useState(false)
-  const prenom = (pName || '').split(' ').pop() // dernier mot = prénom (format NOM Prénom)
+  const prenom = (pName || '').split(' ').pop()
+
+  const handleDisconnect = () => {
+    localStorage.removeItem('participant_name')
+    localStorage.removeItem('participant_prenom')
+    if (onDisconnect) {
+      onDisconnect()
+    } else {
+      window.location.reload()
+    }
+  }
 
   return (
     <div style={{ position: 'fixed', top: 14, right: 14, zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
@@ -3061,7 +3071,7 @@ function DisconnectChip({ pName, onDisconnect }) {
       </button>
       {open && (
         <button
-          onClick={onDisconnect}
+          onClick={handleDisconnect}
           style={{
             background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
             borderRadius: 12, padding: '8px 16px',
@@ -3135,7 +3145,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   return (
     <>
       <style>{STYLES}</style>
-      {onDisconnect && <DisconnectChip pName={pName} onDisconnect={onDisconnect} />}
+      <DisconnectChip pName={pName} onDisconnect={onDisconnect} />
       {/* Planning prioritaire : écrase tout si le formateur diffuse le planning */}
       {tvScreen === 'planning' && planningDay
         ? <ParticipantPlanningScreen planningDay={planningDay} />
