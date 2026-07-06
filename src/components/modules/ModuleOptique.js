@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { sbUpdate, sbSelect, getActiveSessionCode, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, OPTIQUE_QUIZ } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { NextPagePreview } from '@/lib/trainerPreview'
@@ -1014,20 +1015,38 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
 // ── Quiz Controller (vue formateur) ──────────────────────────────
 function QuizController({ quizQ, onNext, onEnd, onBack, podiumActive, onShowCorrection, correctionShown }) {
   const [liveAnswers, setLiveAnswers] = useState([])
+  const [connectedCount, setConnectedCount] = useState(0)
+  const autoShownRef = useRef(false)
   const q = OPTIQUE_QUIZ[quizQ]
   const isLast = quizQ >= OPTIQUE_QUIZ.length - 1
 
+  // Réinitialise le flag auto-correction à chaque nouvelle question
+  useEffect(() => { autoShownRef.current = false }, [quizQ])
+
   useEffect(() => {
     const poll = async () => {
-      const rows = await fetchTrainerQuizAnswers(
-        `session_code=eq.${getActiveSessionCode()}&module_id=eq.optique&question_idx=eq.${quizQ}`
-      )
+      const [rows, count] = await Promise.all([
+        fetchTrainerQuizAnswers(
+          `session_code=eq.${getActiveSessionCode()}&module_id=eq.optique&question_idx=eq.${quizQ}`
+        ),
+        fetchOnlineParticipantCount(getActiveSessionCode()),
+      ])
       setLiveAnswers(rows || [])
+      setConnectedCount(count)
     }
     poll()
     const t = setInterval(poll, 1500)
     return () => clearInterval(t)
   }, [quizQ])
+
+  // Déclenche automatiquement la correction quand tous les connectés ont répondu
+  useEffect(() => {
+    if (correctionShown || autoShownRef.current) return
+    if (connectedCount > 0 && liveAnswers.length >= connectedCount) {
+      autoShownRef.current = true
+      onShowCorrection()
+    }
+  }, [liveAnswers.length, connectedCount, correctionShown, onShowCorrection])
 
   const total = liveAnswers.length
   const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
