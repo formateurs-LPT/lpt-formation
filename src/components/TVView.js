@@ -3311,6 +3311,47 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesPhas
   )
 }
 
+// ── Bouton plein écran ────────────────────────────────────────────
+function FullscreenButton() {
+  const [isFs, setIsFs] = useState(false)
+  const [hovered, setHovered] = useState(false)
+
+  useEffect(() => {
+    const onChange = () => setIsFs(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+
+  const toggle = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {})
+    } else {
+      document.exitFullscreen().catch(() => {})
+    }
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      title={isFs ? 'Quitter le plein écran' : 'Plein écran'}
+      style={{
+        position: 'fixed', top: 16, right: 16, zIndex: 1000,
+        background: hovered ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.35)',
+        border: '1px solid rgba(255,255,255,0.2)',
+        borderRadius: 10, padding: '8px 12px',
+        color: '#fff', fontSize: 18, cursor: 'pointer',
+        backdropFilter: 'blur(8px)',
+        transition: 'all .2s',
+        lineHeight: 1,
+      }}
+    >
+      {isFs ? '⊠' : '⛶'}
+    </button>
+  )
+}
+
 // ── TV View ───────────────────────────────────────────────────────
 export default function TVView() {
   const { activeModule, modulePage, sharedState, loading, sessionCode } = useModuleSync()
@@ -3416,6 +3457,7 @@ export default function TVView() {
     return (
       <>
         <style>{STYLES}</style>
+        <FullscreenButton />
         {faqJournee
           ? <TVFAQView journeeId={faqJournee} questions={faqQuestions} />
           : tvScreen === 'planning'
@@ -3431,6 +3473,8 @@ export default function TVView() {
   return (
     <>
       <style>{STYLES}</style>
+
+      <FullscreenButton />
 
       {/* Bouton d'activation du son — à cliquer une fois au démarrage de la TV */}
       {!audioUnlocked && (
