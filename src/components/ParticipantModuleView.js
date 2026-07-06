@@ -119,6 +119,7 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
   const q = quiz[qIdx]
   const [answered, setAnswered] = useState(false)
   const [chosenIdx, setChosenIdx] = useState(null)
+  const [lastIsCorrect, setLastIsCorrect] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(false)
 
@@ -145,6 +146,7 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
         setSaving(false)
         return
       }
+      setLastIsCorrect(isCorrect)
       setAnswered(true)
       setChosenIdx(optIdx)
     } catch (e) {
@@ -158,13 +160,17 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
     return (
       <div style={{
         minHeight: '100dvh',
-        background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+        background: lastIsCorrect
+          ? 'linear-gradient(160deg, #03112a 0%, #052a14 100%)'
+          : 'linear-gradient(160deg, #03112a 0%, #2a0505 100%)',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         padding: '40px 24px', textAlign: 'center',
       }}>
-        <div style={{ fontSize: 64, marginBottom: 20 }}>✅</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 12 }}>Réponse enregistrée !</div>
+        <div style={{ fontSize: 64, marginBottom: 20 }}>{lastIsCorrect ? '✅' : '❌'}</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
+          {lastIsCorrect ? 'Bonne réponse !' : 'Mauvaise réponse'}
+        </div>
         <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>En attente de la prochaine question…</div>
       </div>
     )
