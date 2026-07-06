@@ -2783,14 +2783,14 @@ function LPTTrophy({ size = 160 }) {
 }
 
 // ── TV Quiz Podium interstitiel (toutes les 5 questions) ──────────
-function TVQuizPodium({ qIdx, onDone }) {
+function TVQuizPodium({ qIdx, onDone, sessionCode }) {
   const [top3, setTop3] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const DURATION = 9
 
   useEffect(() => {
-    sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}`).then(rows => {
+    sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}`).then(rows => {
       const grouped = {}
       ;(rows || []).filter(r => r.question_idx < qIdx).forEach(r => {
         if (!grouped[r.collaborateur]) grouped[r.collaborateur] = 0
@@ -2921,12 +2921,12 @@ function TVQuizPodium({ qIdx, onDone }) {
 }
 
 // ── TV Quiz Final Podium ──────────────────────────────────────────
-function TVQuizFinalPodium({ quiz, onDone }) {
+function TVQuizFinalPodium({ quiz, onDone, sessionCode }) {
   const [top3, setTop3] = useState([])
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}`).then(rows => {
+    sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}`).then(rows => {
       const grouped = {}
       ;(rows || []).forEach(r => {
         if (!grouped[r.collaborateur]) grouped[r.collaborateur] = 0
@@ -3458,11 +3458,11 @@ export default function TVView() {
         <TVModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
       ) : isResults ? (
         finalPodiumPhase
-          ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} onDone={() => setFinalPodiumPhase(false)} />
+          ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} onDone={() => setFinalPodiumPhase(false)} sessionCode={sessionCode} />
           : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
       ) : isQuiz && quizQuestion ? (
         quizInterstitialPhase
-          ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} />
+          ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} />
           : <TVQuizQuestion
               question={quizQuestion}
               qIdx={modulePage - 100}
