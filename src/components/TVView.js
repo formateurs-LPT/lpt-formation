@@ -12,6 +12,8 @@ const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
 // ── Keyframes ─────────────────────────────────────────────────────
 const STYLES = `
+  html, body { overflow: hidden !important; height: 100% !important; margin: 0; }
+
   @keyframes trameSlideIn {
     from { opacity: 0; transform: translateX(-24px); }
     to   { opacity: 1; transform: translateX(0); }
@@ -3458,14 +3460,16 @@ export default function TVView() {
       <>
         <style>{STYLES}</style>
         <FullscreenButton />
-        {faqJournee
-          ? <TVFAQView journeeId={faqJournee} questions={faqQuestions} />
-          : tvScreen === 'planning'
-            ? <TVPlanningScreen planningDay={planningDay} />
-            : tvScreen === 'qr'
-              ? <WaitingScreen roomCode={sessionCode} />
-              : <WelcomeScreen />
-        }
+        <div style={{ height: '100dvh', overflow: 'hidden', position: 'relative' }}>
+          {faqJournee
+            ? <TVFAQView journeeId={faqJournee} questions={faqQuestions} />
+            : tvScreen === 'planning'
+              ? <TVPlanningScreen planningDay={planningDay} />
+              : tvScreen === 'qr'
+                ? <WaitingScreen roomCode={sessionCode} />
+                : <WelcomeScreen />
+          }
+        </div>
       </>
     )
   }
@@ -3496,52 +3500,54 @@ export default function TVView() {
         </div>
       )}
 
-      {loading ? (
-        <WelcomeScreen />
-      ) : isLobby ? (
-        <TVModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
-      ) : isResults ? (
-        finalPodiumPhase
-          ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} onDone={() => setFinalPodiumPhase(false)} sessionCode={sessionCode} />
-          : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
-      ) : isQuiz && quizQuestion ? (
-        quizInterstitialPhase
-          ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} />
-          : <TVQuizQuestion
-              question={quizQuestion}
-              qIdx={modulePage - 100}
-              total={moduleData.quiz.length}
-              moduleLabel={moduleData?.label || ''}
-            />
-      ) : page ? (
-        <TVContentPage
-          page={page}
-          pageIndex={modulePage}
-          total={moduleData.pages.length}
-          moduleLabel={moduleData?.label || ''}
-          troublesPhase={troublesPhase}
-          opticienPlaying={opticienPlaying}
-          ordoPlaying={ordoPlaying}
-          audioUnlocked={audioUnlocked}
-          freinsResponses={freinsResponses}
-          prixResponses={prixResponses}
-          ventesResponses={ventesResponses}
-          promesseResponses={promesseResponses}
-          progZoneQ={progZoneQ}
-          progZoneResponses={progZoneResponses}
-          progZoneShowCorrect={progZoneShowCorrect}
-          progRetourResponses={progRetourResponses}
-          progObjectionIdx={progObjectionIdx}
-          progObjectionResponses={progObjectionResponses}
-          progBestAnswer={progBestAnswer}
-          trameStep={trameStep}
-          offres11Step={offres11Step}
-          offresClassiqueStep={offresClassiqueStep}
-          modelePoint={modelePoint}
-        />
-      ) : (
-        <WelcomeScreen />
-      )}
+      <div style={{ height: '100dvh', overflow: 'hidden', position: 'relative' }}>
+        {loading ? (
+          <WelcomeScreen />
+        ) : isLobby ? (
+          <TVModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
+        ) : isResults ? (
+          finalPodiumPhase
+            ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} onDone={() => setFinalPodiumPhase(false)} sessionCode={sessionCode} />
+            : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
+        ) : isQuiz && quizQuestion ? (
+          quizInterstitialPhase
+            ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} />
+            : <TVQuizQuestion
+                question={quizQuestion}
+                qIdx={modulePage - 100}
+                total={moduleData.quiz.length}
+                moduleLabel={moduleData?.label || ''}
+              />
+        ) : page ? (
+          <TVContentPage
+            page={page}
+            pageIndex={modulePage}
+            total={moduleData.pages.length}
+            moduleLabel={moduleData?.label || ''}
+            troublesPhase={troublesPhase}
+            opticienPlaying={opticienPlaying}
+            ordoPlaying={ordoPlaying}
+            audioUnlocked={audioUnlocked}
+            freinsResponses={freinsResponses}
+            prixResponses={prixResponses}
+            ventesResponses={ventesResponses}
+            promesseResponses={promesseResponses}
+            progZoneQ={progZoneQ}
+            progZoneResponses={progZoneResponses}
+            progZoneShowCorrect={progZoneShowCorrect}
+            progRetourResponses={progRetourResponses}
+            progObjectionIdx={progObjectionIdx}
+            progObjectionResponses={progObjectionResponses}
+            progBestAnswer={progBestAnswer}
+            trameStep={trameStep}
+            offres11Step={offres11Step}
+            offresClassiqueStep={offresClassiqueStep}
+            modelePoint={modelePoint}
+          />
+        ) : (
+          <WelcomeScreen />
+        )}
+      </div>
     </>
   )
 }
