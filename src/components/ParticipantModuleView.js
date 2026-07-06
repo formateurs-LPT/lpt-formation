@@ -3039,6 +3039,45 @@ function ParticipantPlanningScreen({ planningDay }) {
   )
 }
 
+function DisconnectChip({ pName, onDisconnect }) {
+  const [open, setOpen] = useState(false)
+  const prenom = (pName || '').split(' ').pop() // dernier mot = prénom (format NOM Prénom)
+
+  return (
+    <div style={{ position: 'fixed', top: 14, right: 14, zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)',
+          borderRadius: 20, padding: '6px 14px',
+          color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600,
+          cursor: 'pointer', fontFamily: 'inherit',
+          backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}
+      >
+        <span style={{ fontSize: 14 }}>👤</span>
+        {prenom}
+      </button>
+      {open && (
+        <button
+          onClick={onDisconnect}
+          style={{
+            background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
+            borderRadius: 12, padding: '8px 16px',
+            color: '#f87171', fontSize: 13, fontWeight: 700,
+            cursor: 'pointer', fontFamily: 'inherit',
+            backdropFilter: 'blur(8px)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Se déconnecter
+        </button>
+      )}
+    </div>
+  )
+}
+
 function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp, onDisconnect }) {
   const sessionCode = getParticipantSessionCode()
   const [sessionEnded, setSessionEnded] = useState(false)
@@ -3096,21 +3135,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   return (
     <>
       <style>{STYLES}</style>
-      {onDisconnect && (
-        <button
-          onClick={onDisconnect}
-          style={{
-            position: 'fixed', top: 14, right: 14, zIndex: 999,
-            background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: 10, padding: '6px 14px',
-            color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: 600,
-            cursor: 'pointer', fontFamily: 'inherit',
-            backdropFilter: 'blur(8px)',
-          }}
-        >
-          Se déconnecter
-        </button>
-      )}
+      {onDisconnect && <DisconnectChip pName={pName} onDisconnect={onDisconnect} />}
       {/* Planning prioritaire : écrase tout si le formateur diffuse le planning */}
       {tvScreen === 'planning' && planningDay
         ? <ParticipantPlanningScreen planningDay={planningDay} />
