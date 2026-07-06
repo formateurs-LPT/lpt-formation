@@ -3039,7 +3039,7 @@ function ParticipantPlanningScreen({ planningDay }) {
   )
 }
 
-function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp }) {
+function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp, onDisconnect }) {
   const sessionCode = getParticipantSessionCode()
   const [sessionEnded, setSessionEnded] = useState(false)
 
@@ -3096,6 +3096,21 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   return (
     <>
       <style>{STYLES}</style>
+      {onDisconnect && (
+        <button
+          onClick={onDisconnect}
+          style={{
+            position: 'fixed', top: 14, right: 14, zIndex: 999,
+            background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: 10, padding: '6px 14px',
+            color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: 600,
+            cursor: 'pointer', fontFamily: 'inherit',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          Se déconnecter
+        </button>
+      )}
       {/* Planning prioritaire : écrase tout si le formateur diffuse le planning */}
       {tvScreen === 'planning' && planningDay
         ? <ParticipantPlanningScreen planningDay={planningDay} />
@@ -3134,7 +3149,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   )
 }
 
-export default function ParticipantModuleView({ forcedModule, forcedPage, pName: pNameProp, sharedState }) {
+export default function ParticipantModuleView({ forcedModule, forcedPage, pName: pNameProp, sharedState, onDisconnect }) {
   // Quand pName est passé explicitement (participant déjà authentifié via la page d'accueil),
   // on bypasse RhParticipantGate — la validation a déjà eu lieu dans handleParticipantJoin.
   if (pNameProp) {
@@ -3144,6 +3159,7 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
         forcedPage={forcedPage}
         pName={pNameProp}
         sharedStateProp={sharedState}
+        onDisconnect={onDisconnect}
       />
     )
   }
@@ -3157,6 +3173,7 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
           forcedModule={forcedModule}
           forcedPage={forcedPage}
           pName={canonicalName}
+          onDisconnect={onDisconnect}
         />
       )}
     </RhParticipantGate>

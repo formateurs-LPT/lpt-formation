@@ -336,7 +336,17 @@ export default function Page() {
   }
 
   if (mode === 'tv') return <TVView onExit={handleExitTv} />
-  if (mode === 'participant') return <ParticipantModuleView pName={pName || undefined} />
+  if (mode === 'participant') {
+    const handleParticipantDisconnect = () => {
+      localStorage.removeItem('participant_name')
+      localStorage.removeItem('participant_prenom')
+      setPName('')
+      setPPrenom('')
+      setView('landing')
+      setMode(null)
+    }
+    return <ParticipantModuleView pName={pName || undefined} onDisconnect={handleParticipantDisconnect} />
+  }
 
   if (view === 'landing') {
     return (
