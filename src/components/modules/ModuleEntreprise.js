@@ -74,38 +74,53 @@ function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast,
       borderTop: '1px solid rgba(255,255,255,0.08)',
       padding: '10px 20px 14px',
     }}>
-      {/* Preview page suivante */}
-      {nextPage && (
-        <div style={{
-          marginBottom: 10,
-          background: 'rgba(255,255,255,0.04)',
-          border: `1px solid ${accent}35`,
-          borderLeft: `3px solid ${accent}`,
-          borderRadius: 10, padding: '8px 14px',
-          display: 'flex', alignItems: 'center', gap: 10,
-        }}>
-          <span style={{ fontSize: 16, flexShrink: 0 }}>{typeInfo.icon}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {nextTitle}
+      {/* Quitter + preview */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        {nextPage ? (
+          <div style={{
+            flex: 1, marginRight: 12,
+            background: 'rgba(255,255,255,0.04)',
+            border: `1px solid ${accent}35`,
+            borderLeft: `3px solid ${accent}`,
+            borderRadius: 10, padding: '8px 14px',
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>{typeInfo.icon}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {nextTitle}
+              </div>
+              <div style={{ fontSize: 10, color: accent, marginTop: 1 }}>{typeInfo.label}</div>
             </div>
-            <div style={{ fontSize: 10, color: accent, marginTop: 1 }}>{typeInfo.label}</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>suivant →</div>
           </div>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>suivant →</div>
-        </div>
-      )}
+        ) : <div style={{ flex: 1 }} />}
+
+        <button onClick={onBack} style={{
+          background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+          color: 'rgba(255,255,255,0.5)', padding: '7px 16px', borderRadius: 10,
+          fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+          transition: 'all .2s',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b'; e.currentTarget.style.borderColor = 'rgba(255,80,80,0.35)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)' }}
+        >✕ Quitter</button>
+      </div>
 
       {/* Boutons nav */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <button onClick={onBack} style={{
-        background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-        color: 'rgba(255,255,255,0.6)', padding: '9px 18px', borderRadius: 10,
-        fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
-      }}>← Retour</button>
+        {!isFirst ? (
+          <button onClick={onPrev} style={{
+            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.6)', padding: '9px 22px', borderRadius: 10,
+            fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .2s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.13)'; e.currentTarget.style.color = '#fff' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
+          >← Précédent</button>
+        ) : <div />}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {Array(total).fill(0).map((_, i) => (
             <div key={i} style={{
               width: i === pageIndex ? 20 : 6, height: 6, borderRadius: 3,
@@ -114,14 +129,7 @@ function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast,
             }} />
           ))}
         </div>
-      </div>
 
-      <div style={{ display: 'flex', gap: 10 }}>
-        <button onClick={onPrev} disabled={isFirst} style={{
-          background: isFirst ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
-          border: '1px solid rgba(255,255,255,0.12)', color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff',
-          padding: '9px 18px', borderRadius: 10, fontSize: 13, cursor: isFirst ? 'default' : 'pointer', fontFamily: 'inherit',
-        }}>←</button>
         {isLast ? (
           <button onClick={onTerminate} style={{
             background: 'linear-gradient(135deg, #16a34a, #22c55e)',
@@ -132,13 +140,13 @@ function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast,
           }}>✓ Terminer le module</button>
         ) : (
           <button onClick={onNext} style={{
-            background: 'linear-gradient(135deg,#0089ba,#00abe9)',
+            background: 'linear-gradient(135deg, #0089ba, #00abe9)',
             border: 'none', color: '#fff',
             padding: '9px 22px', borderRadius: 10, fontSize: 13, fontWeight: 700,
             cursor: 'pointer', fontFamily: 'inherit',
-          }}>→</button>
+            boxShadow: '0 6px 24px rgba(0,171,233,0.45)',
+          }}>Suivant →</button>
         )}
-      </div>
       </div>
     </div>
   )
@@ -1211,7 +1219,7 @@ export default function ModuleEntreprise({ pName, onBack, onTerminate }) {
 
   const handleBack = async () => {
     await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
-    onBack()
+    ;(onTerminate ?? onBack)()
   }
 
   const handleTerminateModule = async () => {

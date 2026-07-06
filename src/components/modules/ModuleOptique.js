@@ -1317,7 +1317,7 @@ export default function ModuleOptique({ pName, onBack, onTerminate }) {
 
   const handleBack = async () => {
     await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
-    onBack()
+    ;(onTerminate ?? onBack)()
   }
 
   const handleLaunchQuiz = async () => {
