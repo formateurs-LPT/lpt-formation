@@ -119,7 +119,7 @@ function AvatarBubble({ script, pName }) {
 }
 
 // ── Page de contenu ───────────────────────────────────────────────
-function ContentPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextPage }) {
+function ContentPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextPage, onTerminate }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -256,11 +256,12 @@ function ContentPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pag
           quizLaunched ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <span style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>✓ Quiz envoyé</span>
-              <button onClick={onBack} style={{
-                background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)',
-                color: '#ff6b6b', padding: '12px 24px', borderRadius: 12,
+              <button onClick={onTerminate} style={{
+                background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none',
+                color: '#fff', padding: '12px 24px', borderRadius: 12,
                 fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              }}>Terminer le module →</button>
+                boxShadow: '0 4px 16px rgba(34,197,94,0.4)',
+              }}>✓ Terminer le module</button>
             </div>
           ) : (
             <button onClick={onLaunchQuiz} style={{
@@ -660,6 +661,7 @@ export default function ModuleTypesVerres({ pName, onBack }) {
         quizLaunched={quizLaunched}
         onLaunchQuiz={handleLaunchQuiz}
         nextPage={PAGES[pageIndex + 1] ?? null}
+        onTerminate={handleTerminateModule}
       />
     </>
   )

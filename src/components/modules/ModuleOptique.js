@@ -87,7 +87,7 @@ function AvatarBubble({ script, trainerAvatar, pName }) {
 }
 
 // ── NavBar partagée (formateur) ───────────────────────────────────
-function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextLabel, nextPage }) {
+function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextLabel, nextPage, onTerminate }) {
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
@@ -115,11 +115,12 @@ function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total,
         quizLaunched ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <span style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>✓ Quiz envoyé</span>
-            <button onClick={onBack} style={{
-              background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)',
-              color: '#ff6b6b', padding: '12px 24px', borderRadius: 12,
+            <button onClick={onTerminate} style={{
+              background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none',
+              color: '#fff', padding: '12px 24px', borderRadius: 12,
               fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            }}>Terminer le module →</button>
+              boxShadow: '0 4px 16px rgba(34,197,94,0.4)',
+            }}>✓ Terminer le module</button>
           </div>
         ) : (
           <button onClick={onLaunchQuiz} style={{
@@ -1385,6 +1386,7 @@ export default function ModuleOptique({ pName, onBack }) {
     quizLaunched,
     onLaunchQuiz: handleLaunchQuiz,
     nextPage: PAGES[pageIndex + 1] ?? null,
+    onTerminate: handleTerminateModule,
   }
 
   return (

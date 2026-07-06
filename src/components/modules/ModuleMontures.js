@@ -67,7 +67,7 @@ const PAGES_META = [
 const TOTAL_PAGES = PAGES_META.length
 
 // ─── Composant page générique (formateur) ────────────────────
-function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
+function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage, onTerminate }) {
   const [step, setStep] = useState(0)
   const [notesOpen, setNotesOpen] = useState(true)
   const { title, subtitle, color, frames, infos, notes } = meta
@@ -192,8 +192,8 @@ function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex,
           }}>← Précédent</button>
 
           {isLast ? (
-            <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)', color: '#ff6b6b', padding: '11px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Terminer →
+            <button onClick={onTerminate} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '11px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(34,197,94,0.4)' }}>
+              ✓ Terminer le module
             </button>
           ) : (
             <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)`, border: 'none', color: '#fff', padding: '11px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 5px 20px ${color}40` }}>
@@ -283,6 +283,11 @@ export default function ModuleMontures({ pName, onBack }) {
     onBack()
   }
 
+  const handleTerminateModule = async () => {
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+    onBack()
+  }
+
   if (!started) return <Lobby onStart={handleStart} onBack={handleBack} />
 
   const nextMeta = page < TOTAL_PAGES - 1 ? PAGES_META[page + 1] : null
@@ -299,6 +304,7 @@ export default function ModuleMontures({ pName, onBack }) {
       pageIndex={page}
       total={TOTAL_PAGES}
       nextPage={nextPage}
+      onTerminate={handleTerminateModule}
     />
   )
 }
