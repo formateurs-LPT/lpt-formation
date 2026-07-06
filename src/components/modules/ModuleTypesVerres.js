@@ -572,7 +572,7 @@ function GroupResultsView({ onTerminate }) {
 }
 
 // ── Export principal ───────────────────────────────────────────────
-export default function ModuleTypesVerres({ pName, onBack }) {
+export default function ModuleTypesVerres({ pName, onBack, onTerminate }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
   const [quizLaunched, setQuizLaunched] = useState(false)
@@ -598,7 +598,7 @@ export default function ModuleTypesVerres({ pName, onBack }) {
 
   const handleTerminateModule = async () => {
     await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
-    onBack()
+    ;(onTerminate ?? onBack)()
   }
 
   // Write to Supabase when module starts

@@ -39,6 +39,7 @@ export default function Page() {
   const [mode, setMode] = useState(null)
   const [appReady, setAppReady] = useState(false)
   const [displaySessionCode, setDisplaySessionCode] = useState('')
+  const [returnJournee, setReturnJournee] = useState(null)
   const { message, toast } = useToast()
 
   useOnlineCount({
@@ -324,9 +325,10 @@ export default function Page() {
     if (code) setDisplaySessionCode(code)
     setView('onboarding-modules')
   }
-  const handleLaunchModule = (moduleId) => setView('module-' + moduleId)
+  const handleLaunchModule = (moduleId) => { setReturnJournee(null); setView('module-' + moduleId) }
   const handleBackToDashboard = () => setView('dashboard')
   const handleBackToModules = () => setView('onboarding-modules')
+  const handleTerminateToJournee1 = () => { setReturnJournee('journee1'); setView('onboarding-modules') }
   const handleOpenPlanning = () => setView('planning')
 
   if (!appReady) {
@@ -393,6 +395,7 @@ export default function Page() {
             onLaunchModule={handleLaunchModule}
             onEndRoom={handleEndRoom}
             initialStep="modules"
+            initialJournee={returnJournee}
           />
         </div>
       )}
@@ -400,6 +403,7 @@ export default function Page() {
         <ModuleTypesVerres
           pName={pName}
           onBack={handleBackToModules}
+          onTerminate={handleTerminateToJournee1}
         />
       )}
       {view === 'module-pdm' && (
@@ -412,6 +416,7 @@ export default function Page() {
         <ModuleOptique
           pName={pName}
           onBack={handleBackToModules}
+          onTerminate={handleTerminateToJournee1}
         />
       )}
       {view === 'module-offres' && (
@@ -424,6 +429,7 @@ export default function Page() {
         <ModuleEntreprise
           pName={pName}
           onBack={handleBackToModules}
+          onTerminate={handleTerminateToJournee1}
         />
       )}
       {view === 'module-verre-progressif' && (
@@ -448,6 +454,7 @@ export default function Page() {
         <ModuleMontures
           pName={pName}
           onBack={handleBackToModules}
+          onTerminate={handleTerminateToJournee1}
         />
       )}
       {view === 'planning' && (

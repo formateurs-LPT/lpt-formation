@@ -1294,7 +1294,7 @@ function Lobby({ onStart, onBack }) {
 }
 
 // ── Composant principal ───────────────────────────────────────────
-export default function ModuleOptique({ pName, onBack }) {
+export default function ModuleOptique({ pName, onBack, onTerminate }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
   const [quizLaunched, setQuizLaunched] = useState(false)
@@ -1339,7 +1339,7 @@ export default function ModuleOptique({ pName, onBack }) {
 
   const handleTerminateModule = async () => {
     await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
-    onBack()
+    ;(onTerminate ?? onBack)()
   }
 
   if (!started) return (

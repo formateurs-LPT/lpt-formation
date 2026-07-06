@@ -1195,7 +1195,7 @@ function Lobby({ onStart, onBack }) {
 }
 
 // ── Composant principal ───────────────────────────────────────────
-export default function ModuleEntreprise({ pName, onBack }) {
+export default function ModuleEntreprise({ pName, onBack, onTerminate }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
 
@@ -1216,7 +1216,7 @@ export default function ModuleEntreprise({ pName, onBack }) {
 
   const handleTerminateModule = async () => {
     await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
-    onBack()
+    ;(onTerminate ?? onBack)()
   }
 
   if (!started) return <Lobby onStart={() => setStarted(true)} onBack={handleBack} />
