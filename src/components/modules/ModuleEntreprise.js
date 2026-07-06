@@ -62,7 +62,7 @@ const PAGE_TYPE_LABEL = {
   'machines':           { label: 'Points clés',     icon: '⚙️' },
 }
 
-function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast, nextPage }) {
+function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast, nextPage, onTerminate }) {
   const typeInfo = nextPage ? (PAGE_TYPE_LABEL[nextPage.type] ?? { label: nextPage.type, icon: '📄' }) : null
   const accent = nextPage?.color || '#00abe9'
   const nextTitle = nextPage?.titre || nextPage?.question || nextPage?.label || '—'
@@ -122,12 +122,22 @@ function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast,
           border: '1px solid rgba(255,255,255,0.12)', color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff',
           padding: '9px 18px', borderRadius: 10, fontSize: 13, cursor: isFirst ? 'default' : 'pointer', fontFamily: 'inherit',
         }}>←</button>
-        <button onClick={onNext} disabled={isLast} style={{
-          background: isLast ? 'rgba(255,255,255,0.03)' : 'linear-gradient(135deg,#0089ba,#00abe9)',
-          border: 'none', color: isLast ? 'rgba(255,255,255,0.2)' : '#fff',
-          padding: '9px 22px', borderRadius: 10, fontSize: 13, fontWeight: 700,
-          cursor: isLast ? 'default' : 'pointer', fontFamily: 'inherit',
-        }}>→</button>
+        {isLast ? (
+          <button onClick={onTerminate} style={{
+            background: 'linear-gradient(135deg, #16a34a, #22c55e)',
+            border: 'none', color: '#fff',
+            padding: '9px 22px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+            cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 4px 16px rgba(34,197,94,0.4)',
+          }}>✓ Terminer le module</button>
+        ) : (
+          <button onClick={onNext} style={{
+            background: 'linear-gradient(135deg,#0089ba,#00abe9)',
+            border: 'none', color: '#fff',
+            padding: '9px 22px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}>→</button>
+        )}
       </div>
       </div>
     </div>
@@ -1221,6 +1231,7 @@ export default function ModuleEntreprise({ pName, onBack }) {
     isFirst: pageIndex === 0,
     isLast: pageIndex === PAGES.length - 1,
     nextPage: PAGES[pageIndex + 1] ?? null,
+    onTerminate: handleTerminateModule,
   }
 
   return <EntreprisePage page={page} navProps={navProps} />
