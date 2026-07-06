@@ -113,6 +113,111 @@ function ParticipantModuleLobby({ moduleLabel, moduleSub }) {
   )
 }
 
+// Classement en temps réel affiché au participant pendant la correction
+function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
+  const [ranking, setRanking] = useState([])
+  const [myScore, setMyScore] = useState(null)
+  const [myRank, setMyRank] = useState(null)
+
+  const refresh = async () => {
+    const rows = await sbSelect(
+      'quiz_answers',
+      `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${moduleId}`
+    )
+    if (!rows) return
+    // Score = nombre de bonnes réponses jusqu'à la question actuelle incluse
+    const scores = {}
+    rows.filter(r => r.question_idx <= qIdx).forEach(r => {
+      if (!scores[r.collaborateur]) scores[r.collaborateur] = 0
+      if (r.is_correct) scores[r.collaborateur]++
+    })
+    const sorted = Object.entries(scores)
+      .map(([name, score]) => ({ name, score }))
+      .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+    setRanking(sorted)
+    const idx = sorted.findIndex(p => p.name === pName)
+    if (idx !== -1) {
+      setMyScore(sorted[idx].score)
+      setMyRank(idx + 1)
+    }
+  }
+
+  useEffect(() => {
+    refresh()
+    const t = setInterval(refresh, 2500)
+    return () => clearInterval(t)
+  }, [pName, moduleId, qIdx])
+
+  const total = qIdx + 1
+  const MEDALS = ['🥇', '🥈', '🥉']
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #020d1f 0%, #071832 50%, #0a2040 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      padding: '40px 24px', color: '#fff',
+    }}>
+      {/* Mon score */}
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{ fontSize: 48, marginBottom: 8 }}>
+          {myRank === 1 ? '🥇' : myRank === 2 ? '🥈' : myRank === 3 ? '🥉' : '🏅'}
+        </div>
+        <div style={{
+          background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.35)',
+          borderRadius: 20, padding: '6px 22px', display: 'inline-block',
+          fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 2, textTransform: 'uppercase',
+          marginBottom: 14,
+        }}>Ton classement</div>
+        <div style={{ fontSize: 28, fontWeight: 900, marginBottom: 4 }}>
+          {myRank != null ? `${myRank}${myRank === 1 ? 'er' : 'ème'} sur ${ranking.length}` : '…'}
+        </div>
+        <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.55)' }}>
+          {myScore != null ? `${myScore} bonne${myScore > 1 ? 's' : ''} réponse${myScore > 1 ? 's' : ''} sur ${total} question${total > 1 ? 's' : ''}` : ''}
+        </div>
+      </div>
+
+      {/* Classement complet */}
+      <div style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {ranking.map((p, i) => {
+          const isMe = p.name === pName
+          const pct = total > 0 ? (p.score / total) * 100 : 0
+          return (
+            <div key={p.name} style={{
+              background: isMe ? 'rgba(0,171,233,0.15)' : 'rgba(255,255,255,0.04)',
+              border: `1.5px solid ${isMe ? 'rgba(0,171,233,0.5)' : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: 14, padding: '12px 16px',
+              boxShadow: isMe ? '0 0 20px rgba(0,171,233,0.15)' : 'none',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>
+                    {i < 3 ? MEDALS[i] : `${i + 1}.`}
+                  </span>
+                  <span style={{ fontSize: 15, fontWeight: isMe ? 800 : 600, color: isMe ? '#00abe9' : '#fff' }}>
+                    {isMe ? 'Toi' : p.name}
+                  </span>
+                </div>
+                <span style={{ fontSize: 18, fontWeight: 800, color: isMe ? '#00abe9' : '#fff' }}>
+                  {p.score}<span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: 400, marginLeft: 2 }}>pts</span>
+                </span>
+              </div>
+              <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 3,
+                  width: `${pct}%`,
+                  background: isMe ? '#00abe9' : 'rgba(255,255,255,0.25)',
+                  transition: 'width .5s ease',
+                }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // Écran réponse pour UNE question — s'affiche sur le téléphone
 // La question est sur la TV, le participant répond ici
 function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
@@ -2983,7 +3088,8 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const isQuiz    = !!moduleData && modulePage >= 100 && modulePage < 200
   const qIdx = modulePage - 100
   const page = (!isQuiz && !isResults && !isLobby && moduleData) ? (pages[modulePage] ?? null) : null
-  const quizPodiumActive = !!sharedState?.quiz_podium_active
+  const quizPodiumActive    = !!sharedState?.quiz_podium_active
+  const quizShowCorrection  = !!sharedState?.quiz_show_correction
 
   if (sessionEnded) return <SessionEndedScreen />
 
@@ -3014,6 +3120,8 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
                   </div>
                 </div>
               )
+              : isQuiz && quizShowCorrection
+              ? <ParticipantQuizRanking pName={pName} moduleId={activeModule} qIdx={qIdx} />
               : isQuiz
               ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
               : page
