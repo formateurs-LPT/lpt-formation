@@ -2983,6 +2983,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const isQuiz    = !!moduleData && modulePage >= 100 && modulePage < 200
   const qIdx = modulePage - 100
   const page = (!isQuiz && !isResults && !isLobby && moduleData) ? (pages[modulePage] ?? null) : null
+  const quizPodiumActive = !!sharedState?.quiz_podium_active
 
   if (sessionEnded) return <SessionEndedScreen />
 
@@ -2996,7 +2997,24 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
           ? <ParticipantModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
           : isResults
             ? <PersonalResultsScreen key="results" pName={pName} quiz={quiz} moduleId={activeModule} />
-            : isQuiz
+            : isQuiz && quizPodiumActive
+              ? (
+                <div style={{
+                  minHeight: '100vh',
+                  background: 'linear-gradient(135deg, #020d1f 0%, #071832 50%, #0a2040 100%)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  padding: '32px 24px', textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: 72, marginBottom: 16 }}>🏆</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
+                    Classement en cours…
+                  </div>
+                  <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)' }}>
+                    La prochaine question arrive dans quelques secondes
+                  </div>
+                </div>
+              )
+              : isQuiz
               ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
               : page
                 ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} />

@@ -1012,7 +1012,7 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
 }
 
 // ── Quiz Controller (vue formateur) ──────────────────────────────
-function QuizController({ quizQ, onNext, onEnd, onBack }) {
+function QuizController({ quizQ, onNext, onEnd, onBack, podiumActive }) {
   const [liveAnswers, setLiveAnswers] = useState([])
   const q = OPTIQUE_QUIZ[quizQ]
   const isLast = quizQ >= OPTIQUE_QUIZ.length - 1
@@ -1031,6 +1031,27 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
 
   const total = liveAnswers.length
   const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+
+  if (podiumActive) return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #020d1f 0%, #071832 50%, #0a2040 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{ fontSize: 64, marginBottom: 20 }}>🏆</div>
+      <div style={{
+        background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.35)',
+        borderRadius: 20, padding: '8px 28px', marginBottom: 20,
+        fontSize: 13, fontWeight: 700, color: '#00abe9', letterSpacing: 2, textTransform: 'uppercase',
+      }}>Podium en cours sur l&apos;écran TV</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 8 }}>
+        Classement affiché aux participants
+      </div>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
+        La question suivante s&apos;affichera automatiquement dans quelques secondes…
+      </div>
+    </div>
+  )
 
   return (
     <div style={{
@@ -1294,12 +1315,15 @@ function Lobby({ onStart, onBack }) {
 }
 
 // ── Composant principal ───────────────────────────────────────────
+const PODIUM_DURATION_MS = 9000 // correspond à DURATION dans TVQuizPodium
+
 export default function ModuleOptique({ pName, onBack, onTerminate }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
   const [quizLaunched, setQuizLaunched] = useState(false)
   const [quizQ, setQuizQ] = useState(0)
   const [showGroupResults, setShowGroupResults] = useState(false)
+  const [podiumPhase, setPodiumPhase] = useState(false)
 
   const trainerAvatar = TRAINER_AVATARS[(pName || '').toLowerCase()] || TRAINER_AVATARS.kevin
 
@@ -1328,8 +1352,17 @@ export default function ModuleOptique({ pName, onBack, onTerminate }) {
 
   const handleNextQuestion = async () => {
     const next = quizQ + 1
+    const isPodium = next > 0 && next % 5 === 0
     await sbUpdate('sessions', { active_module: 'optique', module_page: 100 + next }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(next)
+    if (isPodium) {
+      setPodiumPhase(true)
+      await setSharedState({ quiz_podium_active: true })
+      setTimeout(async () => {
+        setPodiumPhase(false)
+        await setSharedState({ quiz_podium_active: false })
+      }, PODIUM_DURATION_MS)
+    }
   }
 
   const handleEndQuiz = async () => {
@@ -1367,6 +1400,7 @@ export default function ModuleOptique({ pName, onBack, onTerminate }) {
           onNext={handleNextQuestion}
           onEnd={handleEndQuiz}
           onBack={handleEndQuiz}
+          podiumActive={podiumPhase}
         />
       </>
     )
