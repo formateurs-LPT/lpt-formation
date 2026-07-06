@@ -1020,8 +1020,12 @@ function QuizController({ quizQ, onNext, onEnd, onBack, podiumActive, onShowCorr
   const q = OPTIQUE_QUIZ[quizQ]
   const isLast = quizQ >= OPTIQUE_QUIZ.length - 1
 
-  // Réinitialise le flag auto-correction à chaque nouvelle question
-  useEffect(() => { autoShownRef.current = false }, [quizQ])
+  // Réinitialise le flag et vide les réponses à chaque nouvelle question
+  // sans ça, les anciennes réponses re-déclenchent la correction immédiatement
+  useEffect(() => {
+    autoShownRef.current = false
+    setLiveAnswers([])
+  }, [quizQ])
 
   useEffect(() => {
     const poll = async () => {
