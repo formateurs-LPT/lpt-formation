@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { getTrainerAvatarSrc } from '@/lib/constants'
 import { fetchOnlineParticipantsList, markParticipantLeft } from '@/lib/participantPresence'
-import { setSharedState } from '@/lib/supabase'
+import { setRoomSharedState } from '@/lib/supabase'
 
 function ParticipantsPanel({ sessionCode, onClose }) {
   const [participants, setParticipants] = useState([])
@@ -26,8 +26,8 @@ function ParticipantsPanel({ sessionCode, onClose }) {
   const handleKick = async (name) => {
     setKicking(k => ({ ...k, [name]: true }))
     await markParticipantLeft(sessionCode, name).catch(() => {})
-    // Ajoute au dictionnaire cumulatif forced_disconnects dans sharedState
-    await setSharedState({ forced_disconnects: { [name]: true } }).catch(() => {})
+    // Signal forced_disconnects avec le code de salle explicite
+    await setRoomSharedState({ forced_disconnects: { [name]: true } }, sessionCode).catch(() => {})
     setKicking(k => ({ ...k, [name]: false }))
     await refresh()
   }
