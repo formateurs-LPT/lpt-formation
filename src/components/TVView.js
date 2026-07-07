@@ -853,7 +853,7 @@ const B_ROT = [-5, 3, -2, 6, -4, 1, -7, 4, -1, 5, -3, 7]       // rotation deg
 const B_RAD = [20, 26, 18, 28, 22, 16, 24, 20, 26, 18, 22, 16]  // borderRadius px
 
 // ── Composant partagé : layout TV pour questions libres ───────────
-function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting }) {
+function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting, revealBanner }) {
   return (
     <div style={{
       height: '100vh', overflow: 'hidden',
@@ -900,6 +900,7 @@ function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting }) {
           </div>
         ) : children}
       </div>
+      {revealBanner}
     </div>
   )
 }
@@ -937,8 +938,25 @@ function TVEntreprisePrix({ page, pageIndex, total, prixResponses, revealPrix })
   const entries = Object.entries(prixResponses || {})
   const accent = '#f59e0b'
 
+  const prixBanner = revealPrix ? (
+    <div style={{
+      position: 'absolute', bottom: 0, left: 0, right: 0,
+      background: 'linear-gradient(135deg, rgba(245,158,11,0.97), rgba(217,119,6,0.97))',
+      backdropFilter: 'blur(16px)',
+      padding: '28px 48px',
+      display: 'flex', alignItems: 'center', gap: 20,
+      animation: 'slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both',
+    }}>
+      <span style={{ fontSize: 36 }}>💡</span>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>La bonne réponse</div>
+        <div style={{ fontSize: 52, fontWeight: 900, color: '#fff', lineHeight: 1 }}>entre 400 et 500 euros</div>
+      </div>
+    </div>
+  ) : null
+
   return (
-    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={entries.length === 0}>
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={entries.length === 0} revealBanner={prixBanner}>
       {entries.map(([pName, resp], i) => (
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)',
@@ -957,22 +975,6 @@ function TVEntreprisePrix({ page, pageIndex, total, prixResponses, revealPrix })
           <span style={{ fontSize: 20, fontWeight: 700, color: accent }}>€</span>
         </div>
       ))}
-      {revealPrix && (
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          background: 'linear-gradient(135deg, rgba(245,158,11,0.95), rgba(217,119,6,0.95))',
-          backdropFilter: 'blur(16px)',
-          padding: '28px 48px',
-          display: 'flex', alignItems: 'center', gap: 20,
-          animation: 'slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both',
-        }}>
-          <span style={{ fontSize: 36 }}>💡</span>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>La bonne réponse</div>
-            <div style={{ fontSize: 52, fontWeight: 900, color: '#fff', lineHeight: 1 }}>entre 400 et 500 euros</div>
-          </div>
-        </div>
-      )}
     </TVBubbleScreen>
   )
 }
@@ -1006,8 +1008,25 @@ function TVEntrepriseVentesOpticien({ page, pageIndex, total, ventesResponses, r
   const entries = Object.entries(ventesResponses || {})
   const accent = '#a78bfa'
 
+  const ventesBanner = revealVentes ? (
+    <div style={{
+      position: 'absolute', bottom: 0, left: 0, right: 0,
+      background: 'linear-gradient(135deg, rgba(124,58,237,0.97), rgba(109,40,217,0.97))',
+      backdropFilter: 'blur(16px)',
+      padding: '28px 48px',
+      display: 'flex', alignItems: 'center', gap: 20,
+      animation: 'slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both',
+    }}>
+      <span style={{ fontSize: 36 }}>💡</span>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>La bonne réponse</div>
+        <div style={{ fontSize: 52, fontWeight: 900, color: '#fff', lineHeight: 1 }}>entre 3 et 5 paires</div>
+      </div>
+    </div>
+  ) : null
+
   return (
-    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={entries.length === 0}>
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={entries.length === 0} revealBanner={ventesBanner}>
       {entries.map(([pName, resp], i) => (
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)', border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
@@ -1023,22 +1042,6 @@ function TVEntrepriseVentesOpticien({ page, pageIndex, total, ventesResponses, r
           <span style={{ fontSize: 18, fontWeight: 700, color: accent }}>paires</span>
         </div>
       ))}
-      {revealVentes && (
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          background: 'linear-gradient(135deg, rgba(124,58,237,0.95), rgba(109,40,217,0.95))',
-          backdropFilter: 'blur(16px)',
-          padding: '28px 48px',
-          display: 'flex', alignItems: 'center', gap: 20,
-          animation: 'slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both',
-        }}>
-          <span style={{ fontSize: 36 }}>💡</span>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>La bonne réponse</div>
-            <div style={{ fontSize: 52, fontWeight: 900, color: '#fff', lineHeight: 1 }}>entre 3 et 5 paires</div>
-          </div>
-        </div>
-      )}
     </TVBubbleScreen>
   )
 }
