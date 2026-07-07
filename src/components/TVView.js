@@ -74,11 +74,6 @@ const STYLES = `
 function VerreAnime({ color }) {
   return (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-      <div style={{
-        position: 'absolute', width: 520, height: 520, borderRadius: '50%',
-        background: `radial-gradient(circle, ${color}35 0%, transparent 70%)`,
-        animation: 'haloPulse 3.5s ease-in-out infinite',
-      }} />
       <div style={{ animation: 'verreFloat 4s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
         <Image
           src="/assets/verre-unifocal-2.png"
@@ -2068,7 +2063,7 @@ function TVOffres11({ step = 0 }) {
 const TV_ITEMS_UNIFOCAL_11 = [
   { label: "Sur l'intégralité du magasin", sub: 'Toutes nos montures et verres éligibles' },
   { label: '400 modèles de montures', sub: 'Au choix, sans contrainte' },
-  { label: 'Tous les traitements inclus', sub: 'Anti-rayure · Anti-salissure · Hydrophobe · Anti-lumière bleue' },
+  { label: 'Tous les traitements inclus', sub: 'Anti-rayure · Anti-reflets · Anti-salissure · Hydrophobe · Anti-lumière bleue' },
   { label: '⚡ Fabrication en 10 minutes', sub: null },
 ]
 
@@ -2101,7 +2096,7 @@ function TVOffresUnifocal11() {
 const TV_ITEMS_PROGRESSIF_11 = [
   { label: "Sur l'intégralité du magasin", sub: 'Toutes nos montures et verres éligibles' },
   { label: '400 modèles de montures', sub: 'Au choix, sans contrainte' },
-  { label: 'Tous les traitements inclus', sub: 'Anti-rayure · Anti-salissure · Hydrophobe · Anti-lumière bleue' },
+  { label: 'Tous les traitements inclus', sub: 'Anti-rayure · Anti-reflets · Anti-salissure · Hydrophobe · Anti-lumière bleue' },
   { label: '📅 Fabrication en 9 jours', sub: null },
 ]
 
