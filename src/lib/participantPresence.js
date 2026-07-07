@@ -91,6 +91,17 @@ export async function fetchOnlineParticipantCount(sessionCode) {
   return filterOnlineParticipants(rows || [], entrees).length
 }
 
+export async function fetchOnlineParticipantsList(sessionCode) {
+  const code = (sessionCode || '').trim()
+  if (!code) return []
+
+  const [rows, entrees] = await Promise.all([
+    sbSelect('participants', `session_code=eq.${encodeURIComponent(code)}`),
+    loadEntreesList(),
+  ])
+  return filterOnlineParticipants(rows || [], entrees)
+}
+
 export async function isSessionEnded(sessionCode) {
   const code = (sessionCode || '').trim()
   if (!code) return false

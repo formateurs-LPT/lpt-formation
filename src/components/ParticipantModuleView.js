@@ -3126,6 +3126,10 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     setProgObjectionResponses(sharedState.prog_objection_responses || {})
     setModelePoint(sharedState.modele_point ?? null)
     setFaqJournee(sharedState.faq_journee || null)
+    // Force-disconnect déclenché par le formateur
+    if (pName && sharedState.forced_disconnects?.[pName] && onDisconnect) {
+      onDisconnect()
+    }
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null

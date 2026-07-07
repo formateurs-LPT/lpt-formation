@@ -439,6 +439,10 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
         setTvScreen(state?.tv_screen || null)
         setPlanningDay(state?.planning_day || null)
         setSharedState_(state || null)
+        // Force-disconnect déclenché par le formateur
+        if (pName && state?.forced_disconnects?.[pName] && onDisconnect) {
+          onDisconnect()
+        }
       } catch {}
     }
     pollPlanning()

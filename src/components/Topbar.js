@@ -1,8 +1,126 @@
 'use client'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { getTrainerAvatarSrc } from '@/lib/constants'
+import { fetchOnlineParticipantsList, markParticipantLeft } from '@/lib/participantPresence'
+import { setSharedState } from '@/lib/supabase'
+
+function ParticipantsPanel({ sessionCode, onClose }) {
+  const [participants, setParticipants] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [kicking, setKicking] = useState({})
+  const intervalRef = useRef(null)
+
+  const refresh = async () => {
+    const list = await fetchOnlineParticipantsList(sessionCode).catch(() => [])
+    setParticipants(list)
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    refresh()
+    intervalRef.current = setInterval(refresh, 3000)
+    return () => clearInterval(intervalRef.current)
+  }, [sessionCode])
+
+  const handleKick = async (name) => {
+    setKicking(k => ({ ...k, [name]: true }))
+    await markParticipantLeft(sessionCode, name).catch(() => {})
+    // Ajoute au dictionnaire cumulatif forced_disconnects dans sharedState
+    await setSharedState({ forced_disconnects: { [name]: true } }).catch(() => {})
+    setKicking(k => ({ ...k, [name]: false }))
+    await refresh()
+  }
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 999,
+          background: 'rgba(0,0,0,0.35)',
+          backdropFilter: 'blur(2px)',
+        }}
+      />
+      {/* Panel */}
+      <div style={{
+        position: 'fixed', top: 56, right: 16, zIndex: 1000,
+        background: '#0d1f3c',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 16,
+        width: 300,
+        boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+        overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '14px 18px',
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
+              {loading ? '…' : participants.length} formé{participants.length > 1 ? 's' : ''} connecté{participants.length > 1 ? 's' : ''}
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
+              fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 4,
+            }}
+          >✕</button>
+        </div>
+
+        {/* List */}
+        <div style={{ maxHeight: 360, overflowY: 'auto', padding: '8px 0' }}>
+          {loading ? (
+            <div style={{ padding: '20px 18px', color: 'rgba(255,255,255,0.3)', fontSize: 13, textAlign: 'center' }}>
+              Chargement…
+            </div>
+          ) : participants.length === 0 ? (
+            <div style={{ padding: '20px 18px', color: 'rgba(255,255,255,0.3)', fontSize: 13, textAlign: 'center' }}>
+              Aucun formé connecté
+            </div>
+          ) : participants.map((p) => (
+            <div key={p.name} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 18px',
+              borderBottom: '1px solid rgba(255,255,255,0.04)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{p.name}</span>
+              </div>
+              <button
+                onClick={() => handleKick(p.name)}
+                disabled={kicking[p.name]}
+                style={{
+                  background: kicking[p.name] ? 'rgba(239,68,68,0.05)' : 'rgba(239,68,68,0.1)',
+                  border: '1px solid rgba(239,68,68,0.3)',
+                  borderRadius: 8, padding: '5px 10px',
+                  color: '#f87171', fontSize: 11, fontWeight: 700,
+                  cursor: kicking[p.name] ? 'not-allowed' : 'pointer',
+                  fontFamily: 'inherit', transition: 'all .15s',
+                  opacity: kicking[p.name] ? 0.5 : 1,
+                }}
+                onMouseEnter={e => { if (!kicking[p.name]) e.currentTarget.style.background = 'rgba(239,68,68,0.22)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = kicking[p.name] ? 'rgba(239,68,68,0.05)' : 'rgba(239,68,68,0.1)' }}
+              >
+                {kicking[p.name] ? '…' : 'Déconnecter'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  )
+}
 
 export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onLogout, onTVMode }) {
+  const [showPanel, setShowPanel] = useState(false)
   const code = (sessionCode || '').trim()
   const avatarSrc = isTrainer ? getTrainerAvatarSrc(pName) : '/assets/logo-lpt-blanc.png'
 
@@ -33,9 +151,15 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
         )}
       </div>
       <div className="tright">
-        <div className="online">
+        <div
+          className="online"
+          onClick={isTrainer ? () => setShowPanel(v => !v) : undefined}
+          style={isTrainer ? { cursor: 'pointer', userSelect: 'none' } : {}}
+          title={isTrainer ? 'Voir les formés connectés' : undefined}
+        >
           <div className="odot"></div>
           <span>{onlineCount} connecté(s)</span>
+          {isTrainer && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginLeft: 2 }}>▾</span>}
         </div>
         <div className={`brole ${isTrainer ? 'trainer' : 'participant'}`}>
           {isTrainer ? 'Formateur' : pName?.split(' ')[0]}
@@ -72,6 +196,13 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
           </button>
         )}
       </div>
+
+      {showPanel && isTrainer && (
+        <ParticipantsPanel
+          sessionCode={code}
+          onClose={() => setShowPanel(false)}
+        />
+      )}
     </div>
   )
 }
