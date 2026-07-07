@@ -300,8 +300,9 @@ export const ORD_EXAMPLE = {
 }
 
 export const OFFRES_PAGES = [
-  { id: 'classique',  type: 'offres-classique', color: '#00abe9' },
-  { id: 'un-pour-un', type: 'offres-1-1',       color: '#c9a227' },
+  { id: 'classique',    type: 'offres-classique',   color: '#00abe9' },
+  { id: 'un-pour-un',  type: 'offres-1-1',          color: '#c9a227' },
+  { id: 'unifocal-11', type: 'offres-unifocal-11',  color: '#c9a227' },
 ]
 
 export const OFFRES_QUIZ = [

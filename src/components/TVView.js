@@ -2064,6 +2064,38 @@ function TVOffres11({ step = 0 }) {
   )
 }
 
+// ── TV Offres : Verre unifocal dans le 1=1 ───────────────────────
+const TV_ITEMS_UNIFOCAL_11 = [
+  { label: "Sur l'intégralité du magasin", sub: 'Toutes nos montures et verres éligibles' },
+  { label: '400 modèles de montures', sub: 'Au choix, sans contrainte' },
+  { label: 'Tous les traitements inclus', sub: 'Anti-rayure · Anti-salissure · Hydrophobe · Anti-lumière bleue' },
+]
+
+function TVOffresUnifocal11() {
+  const COLOR = '#c9a227'
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '60px 40px', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <VerreAnime color={COLOR} />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Parcours 1=1 · Verre unifocal</div>
+        <div style={{ fontSize: 44, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 40 }}>
+          Le verre unifocal<br /><span style={{ color: COLOR }}>dans l&apos;offre 1=1</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {TV_ITEMS_UNIFOCAL_11.map((item, i) => (
+            <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `4px solid ${COLOR}`, borderRadius: 18, padding: '20px 28px' }}>
+              <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{item.label}</div>
+              {item.sub && <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{item.sub}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── TV Content Page (no controls, no avatar) ──────────────────────
 // ── TV Trame d'accueil ────────────────────────────────────────────
 function TVTrameAccueil({ step }) {
@@ -2258,8 +2290,9 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'montures-metal')   return <TVMontures type="montures-metal"   pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'montures-injecte') return <TVMontures type="montures-injecte" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'pdm-pourquoi')     return <TVPdmPourquoi pageIndex={pageIndex} total={total} />
-  if (page.type === 'offres-classique') return <TVOffresClassique step={offresClassiqueStep} />
-  if (page.type === 'offres-1-1')       return <TVOffres11 step={offres11Step} />
+  if (page.type === 'offres-classique')   return <TVOffresClassique step={offresClassiqueStep} />
+  if (page.type === 'offres-1-1')         return <TVOffres11 step={offres11Step} />
+  if (page.type === 'offres-unifocal-11') return <TVOffresUnifocal11 />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} audioUnlocked={audioUnlocked} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
