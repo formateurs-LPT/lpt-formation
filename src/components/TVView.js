@@ -48,6 +48,10 @@ const STYLES = `
     from { opacity: 0; transform: scale(0.6) translateY(12px); }
     to   { opacity: 1; transform: scale(1) translateY(0); }
   }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(100%); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
   @keyframes podiumRise {
     from { transform: scaleY(0); transform-origin: bottom; }
     to   { transform: scaleY(1); transform-origin: bottom; }
@@ -855,6 +859,7 @@ function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting }) {
       height: '100vh', overflow: 'hidden',
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
       display: 'flex', flexDirection: 'column',
+      position: 'relative',
     }}>
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', flexShrink: 0 }}>
@@ -928,7 +933,7 @@ function TVEntrepriseFreins({ page, pageIndex, total, freinsResponses }) {
 }
 
 // ── TV Entreprise : prix moyen ────────────────────────────────────
-function TVEntreprisePrix({ page, pageIndex, total, prixResponses }) {
+function TVEntreprisePrix({ page, pageIndex, total, prixResponses, revealPrix }) {
   const entries = Object.entries(prixResponses || {})
   const accent = '#f59e0b'
 
@@ -952,6 +957,22 @@ function TVEntreprisePrix({ page, pageIndex, total, prixResponses }) {
           <span style={{ fontSize: 20, fontWeight: 700, color: accent }}>€</span>
         </div>
       ))}
+      {revealPrix && (
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          background: 'linear-gradient(135deg, rgba(245,158,11,0.95), rgba(217,119,6,0.95))',
+          backdropFilter: 'blur(16px)',
+          padding: '28px 48px',
+          display: 'flex', alignItems: 'center', gap: 20,
+          animation: 'slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both',
+        }}>
+          <span style={{ fontSize: 36 }}>💡</span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>La bonne réponse</div>
+            <div style={{ fontSize: 52, fontWeight: 900, color: '#fff', lineHeight: 1 }}>entre 400 et 500 euros</div>
+          </div>
+        </div>
+      )}
     </TVBubbleScreen>
   )
 }
@@ -981,7 +1002,7 @@ function TVEntreprisePromesse({ page, pageIndex, total, promesseResponses }) {
   )
 }
 
-function TVEntrepriseVentesOpticien({ page, pageIndex, total, ventesResponses }) {
+function TVEntrepriseVentesOpticien({ page, pageIndex, total, ventesResponses, revealVentes }) {
   const entries = Object.entries(ventesResponses || {})
   const accent = '#a78bfa'
 
@@ -1002,6 +1023,22 @@ function TVEntrepriseVentesOpticien({ page, pageIndex, total, ventesResponses })
           <span style={{ fontSize: 18, fontWeight: 700, color: accent }}>paires</span>
         </div>
       ))}
+      {revealVentes && (
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          background: 'linear-gradient(135deg, rgba(124,58,237,0.95), rgba(109,40,217,0.95))',
+          backdropFilter: 'blur(16px)',
+          padding: '28px 48px',
+          display: 'flex', alignItems: 'center', gap: 20,
+          animation: 'slideUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both',
+        }}>
+          <span style={{ fontSize: 36 }}>💡</span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>La bonne réponse</div>
+            <div style={{ fontSize: 52, fontWeight: 900, color: '#fff', lineHeight: 1 }}>entre 3 et 5 paires</div>
+          </div>
+        </div>
+      )}
     </TVBubbleScreen>
   )
 }
@@ -2202,7 +2239,7 @@ function TVMontures({ type, pageIndex, total, moduleLabel }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -2227,9 +2264,9 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
 
   // Entreprise module types — tous dispatchés pour éviter le VerreAnime
   if (page.type === 'freins')     return <TVEntrepriseFreins   page={page} pageIndex={pageIndex} total={total} freinsResponses={freinsResponses} />
-  if (page.type === 'prix')       return <TVEntreprisePrix     page={page} pageIndex={pageIndex} total={total} prixResponses={prixResponses} />
+  if (page.type === 'prix')       return <TVEntreprisePrix     page={page} pageIndex={pageIndex} total={total} prixResponses={prixResponses} revealPrix={revealPrix} />
   if (page.type === 'video-lpt')  return <TVVideoLPT audioUnlocked={audioUnlocked} />
-  if (page.type === 'ventes-opticien') return <TVEntrepriseVentesOpticien page={page} pageIndex={pageIndex} total={total} ventesResponses={ventesResponses} />
+  if (page.type === 'ventes-opticien') return <TVEntrepriseVentesOpticien page={page} pageIndex={pageIndex} total={total} ventesResponses={ventesResponses} revealVentes={revealVentes} />
   if (page.type === 'promesse')        return <TVEntreprisePromesse       page={page} pageIndex={pageIndex} total={total} promesseResponses={promesseResponses} />
   if (page.type === 'chiffres')           return <TVEntrepriseChiffres   page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'force-lpt') return <TVEntrepriseForceLPT  page={page} pageIndex={pageIndex} total={total} modelePoint={modelePoint} audioUnlocked={audioUnlocked} />
@@ -3473,7 +3510,9 @@ export default function TVView() {
   const [audioUnlocked, setAudioUnlocked]     = useState(false)
   const [freinsResponses, setFreinsResponses]           = useState({})
   const [prixResponses, setPrixResponses]               = useState({})
+  const [revealPrix, setRevealPrix]                     = useState(false)
   const [ventesResponses, setVentesResponses]           = useState({})
+  const [revealVentes, setRevealVentes]                 = useState(false)
   const [promesseResponses, setPromesseResponses]       = useState({})
   const [planningDay, setPlanningDay]                   = useState(null)
   // Trame d'accueil
@@ -3514,7 +3553,9 @@ export default function TVView() {
     setOrdoPlaying(!!sharedState.ordo_playing)
     setFreinsResponses(sharedState.freins_responses || {})
     setPrixResponses(sharedState.prix_responses || {})
+    setRevealPrix(!!sharedState.reveal_prix)
     setVentesResponses(sharedState.ventes_responses || {})
+    setRevealVentes(!!sharedState.reveal_ventes)
     setPromesseResponses(sharedState.promesse_responses || {})
     setPlanningDay(sharedState.planning_day || null)
     setProgZoneQ(sharedState.prog_zone_q ?? null)
@@ -3647,7 +3688,9 @@ export default function TVView() {
             audioUnlocked={audioUnlocked}
             freinsResponses={freinsResponses}
             prixResponses={prixResponses}
+            revealPrix={revealPrix}
             ventesResponses={ventesResponses}
+            revealVentes={revealVentes}
             promesseResponses={promesseResponses}
             progZoneQ={progZoneQ}
             progZoneResponses={progZoneResponses}

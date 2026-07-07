@@ -245,6 +245,7 @@ function FreinsPage({ page, navProps }) {
 // ── Page interactive : prix moyen ─────────────────────────────────
 function PrixPage({ page, navProps }) {
   const [responses, setResponses] = useState({})
+  const [revealed, setRevealed] = useState(false)
 
   useEffect(() => {
     const poll = async () => {
@@ -263,6 +264,22 @@ function PrixPage({ page, navProps }) {
   const clearAll = () => {
     setSharedState({ prix_responses: {} }).catch(() => {})
     setResponses({})
+  }
+
+  const handleReveal = () => {
+    setRevealed(true)
+    setSharedState({ reveal_prix: true }).catch(() => {})
+  }
+
+  const clearReveal = () => {
+    setRevealed(false)
+    setSharedState({ reveal_prix: false }).catch(() => {})
+  }
+
+  const navPropsWithClear = {
+    ...navProps,
+    onNext: () => { clearReveal(); navProps.onNext?.() },
+    onPrev: () => { clearReveal(); navProps.onPrev?.() },
   }
 
   return (
@@ -322,7 +339,37 @@ function PrixPage({ page, navProps }) {
         </div>
       )}
 
-      <TrainerNav {...navProps} />
+      {/* Bouton révélation réponse */}
+      <div style={{ marginTop: 32 }}>
+        {!revealed ? (
+          <button onClick={handleReveal} style={{
+            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+            border: 'none', borderRadius: 14, padding: '14px 28px',
+            color: '#fff', fontSize: 15, fontWeight: 800, cursor: 'pointer',
+            fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 10,
+            boxShadow: '0 4px 20px rgba(245,158,11,0.4)',
+          }}>
+            💡 Dévoiler la réponse sur l&apos;écran diffuseur
+          </button>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              background: 'rgba(245,158,11,0.12)', border: '1.5px solid rgba(245,158,11,0.4)',
+              borderRadius: 14, padding: '12px 22px',
+              color: '#fbbf24', fontSize: 14, fontWeight: 700,
+            }}>
+              ✅ Réponse affichée sur le diffuseur : <strong>entre 400 et 500 euros</strong>
+            </div>
+            <button onClick={clearReveal} style={{
+              background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+              borderRadius: 10, padding: '10px 16px', color: '#f87171',
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}>Masquer</button>
+          </div>
+        )}
+      </div>
+
+      <TrainerNav {...navPropsWithClear} />
     </div>
   )
 }
@@ -330,6 +377,7 @@ function PrixPage({ page, navProps }) {
 // ── Page interactive : ventes opticien ───────────────────────────
 function VentesOpticienPage({ page, navProps }) {
   const [responses, setResponses] = useState({})
+  const [revealed, setRevealed] = useState(false)
 
   useEffect(() => {
     const roomCode = getActiveSessionCode()
@@ -348,6 +396,22 @@ function VentesOpticienPage({ page, navProps }) {
   const clearAll = () => {
     setSharedState({ ventes_responses: {} }).catch(() => {})
     setResponses({})
+  }
+
+  const handleReveal = () => {
+    setRevealed(true)
+    setSharedState({ reveal_ventes: true }).catch(() => {})
+  }
+
+  const clearReveal = () => {
+    setRevealed(false)
+    setSharedState({ reveal_ventes: false }).catch(() => {})
+  }
+
+  const navPropsWithClear = {
+    ...navProps,
+    onNext: () => { clearReveal(); navProps.onNext?.() },
+    onPrev: () => { clearReveal(); navProps.onPrev?.() },
   }
 
   return (
@@ -379,7 +443,38 @@ function VentesOpticienPage({ page, navProps }) {
         ))}
       </div>
       {entries.length > 0 && <div style={{ marginTop: 16, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{entries.length} réponse{entries.length > 1 ? 's' : ''} reçue{entries.length > 1 ? 's' : ''}</div>}
-      <TrainerNav {...navProps} />
+
+      {/* Bouton révélation réponse */}
+      <div style={{ marginTop: 32 }}>
+        {!revealed ? (
+          <button onClick={handleReveal} style={{
+            background: 'linear-gradient(135deg, #a78bfa, #7c3aed)',
+            border: 'none', borderRadius: 14, padding: '14px 28px',
+            color: '#fff', fontSize: 15, fontWeight: 800, cursor: 'pointer',
+            fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 10,
+            boxShadow: '0 4px 20px rgba(167,139,250,0.4)',
+          }}>
+            💡 Dévoiler la réponse sur l&apos;écran diffuseur
+          </button>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              background: 'rgba(167,139,250,0.12)', border: '1.5px solid rgba(167,139,250,0.4)',
+              borderRadius: 14, padding: '12px 22px',
+              color: '#c4b5fd', fontSize: 14, fontWeight: 700,
+            }}>
+              ✅ Réponse affichée sur le diffuseur : <strong>entre 3 et 5 paires</strong>
+            </div>
+            <button onClick={clearReveal} style={{
+              background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+              borderRadius: 10, padding: '10px 16px', color: '#f87171',
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}>Masquer</button>
+          </div>
+        )}
+      </div>
+
+      <TrainerNav {...navPropsWithClear} />
     </div>
   )
 }
