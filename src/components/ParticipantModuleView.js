@@ -3099,6 +3099,23 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     onSessionEnded: () => setSessionEnded(true),
   })
 
+  // Déconnexion automatique après 45 min d'inactivité (page en arrière-plan)
+  useEffect(() => {
+    if (!onDisconnect) return
+    const TIMEOUT_MS = 45 * 60 * 1000
+    let hiddenAt = null
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now()
+      } else if (hiddenAt !== null) {
+        if (Date.now() - hiddenAt > TIMEOUT_MS) onDisconnect()
+        hiddenAt = null
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [onDisconnect])
+
   // forcedModule = via ParticipantView (polling géré là-bas) → useModuleSync désactivé
   // sans forcedModule = accès direct ?mode=participant → useModuleSync actif
   const sync = useModuleSync({ disabled: forcedModule != null })
