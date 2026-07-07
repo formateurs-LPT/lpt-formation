@@ -25,11 +25,12 @@ function ParticipantsPanel({ sessionCode, onClose }) {
 
   const handleKick = async (name) => {
     setKicking(k => ({ ...k, [name]: true }))
+    // Retrait immédiat de la liste (optimiste)
+    setParticipants(prev => prev.filter(p => p.name !== name))
     await markParticipantLeft(sessionCode, name).catch(() => {})
     // Signal forced_disconnects avec le code de salle explicite
     await setRoomSharedState({ forced_disconnects: { [name]: true } }, sessionCode).catch(() => {})
     setKicking(k => ({ ...k, [name]: false }))
-    await refresh()
   }
 
   return (

@@ -3,8 +3,9 @@ import { useEffect, useRef } from 'react'
 import {
   PRESENCE_HEARTBEAT_MS,
   isSessionEnded,
+  joinParticipant,
   markParticipantLeftBeacon,
-  touchParticipantPresence,
+  pingParticipant,
 } from './participantPresence'
 
 /**
@@ -25,6 +26,17 @@ export function useParticipantPresence({
     let cancelled = false
     endedRef.current = false
 
+    const join = async () => {
+      if (cancelled || endedRef.current) return
+      if (await isSessionEnded(sessionCode)) {
+        endedRef.current = true
+        onSessionEnded?.()
+        return
+      }
+      // Premier appel : upsert complet (reset left_at, autorise reconnexion)
+      await joinParticipant(sessionCode, name)
+    }
+
     const ping = async () => {
       if (cancelled || endedRef.current) return
       if (await isSessionEnded(sessionCode)) {
@@ -32,10 +44,11 @@ export function useParticipantPresence({
         onSessionEnded?.()
         return
       }
-      await touchParticipantPresence(sessionCode, name)
+      // Heartbeat : met à jour last_seen_at uniquement, ne reset pas left_at
+      await pingParticipant(sessionCode, name)
     }
 
-    ping()
+    join()
     const interval = setInterval(ping, PRESENCE_HEARTBEAT_MS)
 
     const onLeave = () => {

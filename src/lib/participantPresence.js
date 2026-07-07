@@ -44,6 +44,30 @@ export async function touchParticipantPresence(sessionCode, name) {
   return result != null
 }
 
+/** Premier join : upsert complet (reset left_at pour autoriser la re-connexion). */
+export async function joinParticipant(sessionCode, name) {
+  return touchParticipantPresence(sessionCode, name)
+}
+
+/**
+ * Heartbeat : met à jour UNIQUEMENT last_seen_at, sans toucher left_at.
+ * Si le formateur a forcé la déconnexion (left_at set), le heartbeat
+ * ne réinitialise pas left_at et le participant reste "kicked".
+ */
+export async function pingParticipant(sessionCode, name) {
+  const code = (sessionCode || '').trim()
+  const participantName = (name || '').trim()
+  if (!code || !participantName) return false
+
+  const now = new Date().toISOString()
+  await sbUpdate(
+    'participants',
+    { last_seen_at: now },
+    `session_code=eq.${encodeURIComponent(code)}&${pgEq('name', participantName)}`
+  )
+  return true
+}
+
 export async function markParticipantLeft(sessionCode, name) {
   const code = (sessionCode || '').trim()
   const participantName = (name || '').trim()
