@@ -190,6 +190,7 @@ const ITEMS_UNIFOCAL_11 = [
   { text: "Sur l'intégralité du magasin", sub: 'Toutes nos montures et verres éligibles' },
   { text: '400 modèles de montures', sub: 'Au choix, sans contrainte' },
   { text: 'Tous les traitements inclus', sub: 'Anti-rayure · Anti-salissure · Hydrophobe · Anti-lumière bleue' },
+  { text: '⚡ Fabrication en 10 minutes', sub: null },
 ]
 
 function CoursUnifocal11({ onPrev, onNext, onBack }) {
@@ -212,7 +213,7 @@ function CoursUnifocal11({ onPrev, onNext, onBack }) {
         </div>
         <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <VerreAnime color={COLOR} size={260} />
+            <VerreAnime color={COLOR} size={360} />
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Parcours 1=1 · Verre unifocal</div>

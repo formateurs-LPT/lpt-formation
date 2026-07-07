@@ -2069,6 +2069,7 @@ const TV_ITEMS_UNIFOCAL_11 = [
   { label: "Sur l'intégralité du magasin", sub: 'Toutes nos montures et verres éligibles' },
   { label: '400 modèles de montures', sub: 'Au choix, sans contrainte' },
   { label: 'Tous les traitements inclus', sub: 'Anti-rayure · Anti-salissure · Hydrophobe · Anti-lumière bleue' },
+  { label: '⚡ Fabrication en 10 minutes', sub: null },
 ]
 
 function TVOffresUnifocal11() {
