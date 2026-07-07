@@ -196,6 +196,115 @@ function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving }) {
   )
 }
 
+function QuickAddModal({ onClose, onAdd }) {
+  const [nom, setNom] = useState('')
+  const [prenom, setPrenom] = useState('')
+  const [magasin, setMagasin] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const zone = classifyMagasin(magasin)
+  const zoneLabel = zone === 'paris' ? '🏢 Présentiel Paris' : zone === 'belgique' ? '💻 Visio Belgique' : '💻 Visio Province'
+  const zoneColor = zone === 'paris' ? '#0089ba' : zone === 'belgique' ? '#db2777' : '#7c3aed'
+  const hasInput = magasin.trim().length > 0
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    const nomT = nom.trim().toUpperCase()
+    const prenomT = prenom.trim()
+    const magT = magasin.trim().toUpperCase()
+    if (!nomT || !prenomT) return
+    setSaving(true)
+    await onAdd({ nom: nomT, prenom: prenomT, fullName: `${nomT} ${prenomT}`.trim(), magasin: magT, poste: '', heures: '', telephone: '' })
+    setSaving(false)
+    onClose()
+  }
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)' }} />
+      <div style={{
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+        zIndex: 201, background: '#fff', borderRadius: 16,
+        boxShadow: '0 24px 64px rgba(0,0,0,0.2)',
+        padding: '28px 32px', width: 380, maxWidth: '90vw',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>➕ Ajout rapide</div>
+            <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 2 }}>Ajoute un collaborateur à la liste existante</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-s)', lineHeight: 1 }}>✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-s)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>Nom</label>
+              <input
+                className="finput"
+                placeholder="DUPONT"
+                value={nom}
+                onChange={e => setNom(e.target.value)}
+                autoFocus
+                required
+                style={{ width: '100%', fontSize: 14, padding: '10px 12px' }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-s)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>Prénom</label>
+              <input
+                className="finput"
+                placeholder="Jean"
+                value={prenom}
+                onChange={e => setPrenom(e.target.value)}
+                required
+                style={{ width: '100%', fontSize: 14, padding: '10px 12px' }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-s)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>Magasin</label>
+            <input
+              className="finput"
+              placeholder="LPT Chatelet, LPT Lyon, Namur…"
+              value={magasin}
+              onChange={e => setMagasin(e.target.value)}
+              style={{ width: '100%', fontSize: 14, padding: '10px 12px' }}
+            />
+          </div>
+
+          {/* Aperçu classification */}
+          <div style={{
+            background: hasInput ? zoneColor + '12' : '#f5f5f5',
+            border: `1.5px solid ${hasInput ? zoneColor + '55' : '#e5e7eb'}`,
+            borderRadius: 10, padding: '10px 14px',
+            display: 'flex', alignItems: 'center', gap: 10,
+            transition: 'all .2s',
+          }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: hasInput ? zoneColor : '#d1d5db', flexShrink: 0, transition: 'all .2s' }} />
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: hasInput ? zoneColor : 'var(--text-s)' }}>
+                {hasInput ? zoneLabel : 'Classification automatique'}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-s)', marginTop: 1 }}>
+                {hasInput ? 'basé sur le magasin indiqué' : 'saisissez le magasin pour voir la catégorie'}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <button type="button" className="btn2" style={{ flex: 1 }} onClick={onClose} disabled={saving}>Annuler</button>
+            <button type="submit" className="btn1" style={{ flex: 2 }} disabled={saving || !nom.trim() || !prenom.trim()}>
+              {saving ? 'Ajout…' : '✓ Ajouter le collaborateur'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </>
+  )
+}
+
 function GroupSection({ title, items, editingIndex, savingIndex, onStartEdit, onCancelEdit, onSave }) {
   if (!items.length) return null
   return (
@@ -230,6 +339,18 @@ export default function EntreesView({ onBack, onToast, pName }) {
   const [showResults, setShowResults] = useState(false)
   const [editingIndex, setEditingIndex] = useState(null)
   const [savingIndex, setSavingIndex] = useState(null)
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
+
+  const handleQuickAdd = async (newEntry) => {
+    const next = [...entrees, newEntry]
+    setEntrees(next)
+    const synced = await persistEntreesList(next)
+    onToast(synced
+      ? `✓ ${newEntry.nom} ${newEntry.prenom} ajouté — ${classifyMagasin(newEntry.magasin) === 'paris' ? 'Présentiel Paris' : classifyMagasin(newEntry.magasin) === 'belgique' ? 'Visio Belgique' : 'Visio Province'}`
+      : `${newEntry.nom} ${newEntry.prenom} ajouté localement (sync échouée)`
+    )
+    if (!showResults) setShowResults(true)
+  }
 
   const persistEntreesList = async (list, obDataPatch = null) => {
     localStorage.setItem('entrees_data', JSON.stringify(list))
@@ -452,7 +573,12 @@ export default function EntreesView({ onBack, onToast, pName }) {
           <h2>Entrées de la semaine</h2>
           <p>Dispatch automatique : Présentiel Paris · Visio Province · Visio Belgique</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {showResults && (
+            <button className="btn1" onClick={() => setShowQuickAdd(true)} style={{ fontSize: 13, fontWeight: 700 }}>
+              ➕ Ajout rapide
+            </button>
+          )}
           {showResults && (
             <button className="btn2" onClick={() => setShowResults(false)} style={{ fontSize: 13 }}>
               ✏️ Modifier
@@ -517,6 +643,13 @@ export default function EntreesView({ onBack, onToast, pName }) {
           <GroupSection title="Visio Province" items={province} {...groupProps} />
           <GroupSection title="Visio Belgique" items={belgique} {...groupProps} />
         </>
+      )}
+
+      {showQuickAdd && (
+        <QuickAddModal
+          onClose={() => setShowQuickAdd(false)}
+          onAdd={handleQuickAdd}
+        />
       )}
     </div>
   )
