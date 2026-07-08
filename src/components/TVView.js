@@ -2100,8 +2100,11 @@ const TV_OFFRE_PROGRESSIF_11 = [
   { label: '📅 Fabrication en 9 jours', sub: null },
 ]
 const TV_ARGS_PROGRESSIF_11 = [
-  { label: "Zones d'aberrations réduites", sub: 'Confort de vision optimisé, adaptation facilitée' },
-  { label: 'Vision extra-large', sub: 'Champ visuel élargi à toutes distances' },
+  { label: "Zones d'aberrations réduites" },
+  { label: 'Vision extra large à 180°' },
+  { label: 'Offre une vision naturelle au quotidien' },
+  { label: 'Adaptation immédiate' },
+  { label: 'Garantie Adaptation — satisfait ou échangé 100 jours' },
 ]
 
 function TVOffresProgressif11() {
@@ -2119,11 +2122,9 @@ function TVOffresProgressif11() {
           />
         </div>
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, textAlign: 'center', marginBottom: 4 }}>Qualité optique</div>
           {TV_ARGS_PROGRESSIF_11.map((item, i) => (
-            <div key={i} style={{ background: `${COLOR}12`, border: `1px solid ${COLOR}40`, borderRadius: 14, padding: '14px 20px', textAlign: 'center' }}>
-              <div style={{ fontSize: 18, fontWeight: 700, color: COLOR }}>{item.label}</div>
-              {item.sub && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 3 }}>{item.sub}</div>}
+            <div key={i} style={{ background: `${COLOR}12`, border: `1px solid ${COLOR}40`, borderRadius: 12, padding: '11px 18px', textAlign: 'center' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: COLOR }}>{item.label}</div>
             </div>
           ))}
         </div>

@@ -242,9 +242,12 @@ const ITEMS_PROGRESSIF_11 = [
   { text: "Sur l'intégralité du magasin", sub: 'Toutes nos montures et verres éligibles' },
   { text: '400 modèles de montures', sub: 'Au choix, sans contrainte' },
   { text: 'Tous les traitements inclus', sub: 'Anti-rayure · Anti-reflets · Anti-salissure · Hydrophobe · Anti-lumière bleue' },
-  { text: 'Zones d\'aberrations réduites', sub: 'Confort de vision optimisé, adaptation facilitée' },
-  { text: 'Vision extra-large', sub: 'Champ visuel élargi à toutes distances' },
   { text: '📅 Fabrication en 9 jours', sub: null },
+  { text: "Zones d'aberrations réduites", sub: null },
+  { text: 'Vision extra large à 180°', sub: null },
+  { text: 'Offre une vision naturelle au quotidien', sub: null },
+  { text: 'Adaptation immédiate', sub: null },
+  { text: 'Garantie Adaptation — satisfait ou échangé 100 jours', sub: null },
 ]
 
 function VerreProgAnime({ color, size = 360 }) {
