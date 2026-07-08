@@ -848,34 +848,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
           </div>
         </div>
 
-        {/* Mini Jeux */}
-        <div
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
-            border: '1px solid rgba(139,92,246,0.35)',
-            borderLeft: '4px solid #8b5cf6',
-            borderRadius: 'var(--r)', padding: '18px 24px',
-            cursor: 'pointer', marginBottom: 16, transition: 'all .2s',
-          }}
-          onMouseOver={e => { e.currentTarget.style.boxShadow = '0 4px 20px rgba(139,92,246,.2)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-          onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{
-              width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-              background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26,
-            }}>🎮</div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>Bientôt disponible</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>Mini Jeux</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>Des activités ludiques pour animer vos formations</div>
-            </div>
-          </div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(139,92,246,0.6)', whiteSpace: 'nowrap' }}>En cours →</div>
-        </div>
-
         {/* Planning + Shortcuts */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
           <PlanningWidget onOpen={() => onOpenPlanning()} />
