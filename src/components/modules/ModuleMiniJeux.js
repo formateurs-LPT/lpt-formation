@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import Image from 'next/image'
 import { sbSelect, getActiveSessionCode, setSharedState } from '@/lib/supabase'
 
@@ -16,294 +16,584 @@ const THEMES = [
   'Un client qui souhaite une paire solaire à sa vue',
 ]
 
+export const RULES_ACCUEIL = [
+  { icon: '🎰', text: 'La machine désigne aléatoirement un Vendeur et un Client parmi les participants connectés' },
+  { icon: '🎭', text: 'Le Vendeur réalise l\'accueil complet selon la trame LPT — de l\'entrée à la découverte du besoin' },
+  { icon: '⏱️', text: 'Durée du jeu de rôle : 3 à 5 minutes en conditions réelles' },
+  { icon: '👁️', text: 'Le groupe observe en silence et prend mentalement des notes' },
+  { icon: '💬', text: 'Debriefing collectif et feedback à chaud à la fin du jeu de rôle' },
+]
+
 const STYLES = `
-  @keyframes slotSpin {
-    0%   { transform: translateY(0); }
-    100% { transform: translateY(-50%); }
+  @keyframes slotFast {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-50%); }
   }
-  @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(16px); }
+  @keyframes slotBrake {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-50%); }
+  }
+  @keyframes resultBounce {
+    0%   { transform: scale(0.82); opacity: 0; }
+    65%  { transform: scale(1.06); opacity: 1; }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+  @keyframes mjFadeUp {
+    from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-  @keyframes pulse {
+  @keyframes mjPulse {
     0%, 100% { opacity: 1; }
-    50%       { opacity: 0.6; }
-  }
-  @keyframes shimmer {
-    0%   { background-position: -200% center; }
-    100% { background-position: 200% center; }
+    50%       { opacity: 0.5; }
   }
 `
 
-// ── Slot reel ──────────────────────────────────────────────────────
-function SlotReel({ items, spinning, result, label, color }) {
-  const reelRef = useRef(null)
-  const [displayItems, setDisplayItems] = useState([])
-
-  useEffect(() => {
-    if (items.length === 0) return
-    // Double the list to create infinite scroll illusion
-    const repeated = [...items, ...items, ...items, ...items]
-    setDisplayItems(repeated)
-  }, [items])
-
-  const itemH = 56
+// ── Slot Reel with smooth brake ────────────────────────────────────
+function SlotReel({ items, reelState, result, label, color, large = false }) {
+  const ITEM_H = large ? 88 : 68
+  const repeated = useMemo(() => [...items, ...items, ...items, ...items], [items])
+  const isDone  = reelState === 'done'
+  const isBrake = reelState === 'brake'
+  const isSpin  = reelState === 'spin'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: 2 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: 2 }}>
         {label}
       </div>
       <div style={{
-        width: 180, height: itemH * 3,
-        background: 'rgba(0,0,0,0.4)',
-        border: `2px solid ${color}55`,
-        borderRadius: 16,
+        width: large ? 240 : 190,
+        height: ITEM_H * 3,
+        background: 'rgba(0,0,0,0.5)',
+        border: `2px solid ${isDone ? color : color + '44'}`,
+        borderRadius: 20,
         overflow: 'hidden',
         position: 'relative',
-        boxShadow: `0 0 24px ${color}30, inset 0 0 20px rgba(0,0,0,0.5)`,
+        boxShadow: isDone
+          ? `0 0 40px ${color}55, inset 0 0 20px rgba(0,0,0,0.3)`
+          : `0 0 18px ${color}20, inset 0 0 20px rgba(0,0,0,0.5)`,
+        transition: 'border-color 0.4s, box-shadow 0.4s',
       }}>
-        {/* Top/bottom fade masks */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 48, background: 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 48, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+        {/* Fade masks */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to bottom, rgba(0,0,0,0.9), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)', zIndex: 2, pointerEvents: 'none' }} />
         {/* Center highlight */}
         <div style={{
           position: 'absolute', top: '50%', left: 0, right: 0,
-          height: itemH, transform: 'translateY(-50%)',
-          border: `1px solid ${color}80`,
-          background: `${color}12`,
-          zIndex: 1, pointerEvents: 'none',
-          borderRadius: 8,
+          height: ITEM_H, transform: 'translateY(-50%)',
+          border: `1px solid ${color}${isDone ? 'bb' : '44'}`,
+          background: isDone ? `${color}18` : `${color}08`,
+          zIndex: 1, pointerEvents: 'none', borderRadius: 10,
+          transition: 'all 0.4s',
         }} />
-        {/* Reel */}
-        <div
-          ref={reelRef}
-          style={{
-            display: 'flex', flexDirection: 'column',
-            animation: spinning ? `slotSpin ${0.15}s linear infinite` : 'none',
-          }}
-        >
-          {(spinning ? displayItems : (result ? [result, result, result] : displayItems.slice(0, 3))).map((name, i) => (
+        {/* Scrolling reel */}
+        <div style={{
+          display: 'flex', flexDirection: 'column',
+          animation:
+            isSpin  ? 'slotFast 0.09s linear infinite' :
+            isBrake ? 'slotBrake 0.52s ease-out 1 forwards' :
+            'none',
+          filter: isSpin ? 'blur(0.8px)' : 'none',
+          transition: 'filter 0.15s',
+        }}>
+          {repeated.map((name, i) => (
             <div key={i} style={{
-              height: itemH, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 14, fontWeight: 700, color: '#fff',
-              padding: '0 12px', textAlign: 'center',
-              lineHeight: 1.2,
+              height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: large ? 20 : 15, fontWeight: 700, color: 'rgba(255,255,255,0.75)',
+              padding: '0 16px', textAlign: 'center', lineHeight: 1.2,
             }}>
               {name}
             </div>
           ))}
         </div>
+        {/* Result overlay */}
+        {isDone && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `radial-gradient(ellipse at center, ${color}18 0%, rgba(0,0,0,0.88) 100%)`,
+            animation: 'resultBounce 0.48s cubic-bezier(0.34,1.56,0.64,1)',
+            zIndex: 3,
+          }}>
+            <div style={{
+              fontSize: large ? 22 : 16, fontWeight: 800, color: '#fff',
+              padding: '0 18px', textAlign: 'center', lineHeight: 1.25,
+            }}>
+              {result}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-// ── Theme reel (wider) ─────────────────────────────────────────────
-function ThemeReel({ spinning, result }) {
-  const COLOR = '#00abe9'
-  const repeated = [...THEMES, ...THEMES, ...THEMES]
+// ── Theme Reel ─────────────────────────────────────────────────────
+function ThemeReel({ reelState, result, large = false }) {
+  const COLOR  = '#00abe9'
+  const ITEM_H = large ? 90 : 76
+  const repeated = useMemo(() => [...THEMES, ...THEMES, ...THEMES], [])
+  const isDone  = reelState === 'done'
+  const isBrake = reelState === 'brake'
+  const isSpin  = reelState === 'spin'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2 }}>
         Scénario client
       </div>
       <div style={{
-        width: '100%', maxWidth: 640, height: 72,
-        background: 'rgba(0,0,0,0.4)',
-        border: `2px solid ${COLOR}55`,
-        borderRadius: 16, overflow: 'hidden',
-        position: 'relative',
-        boxShadow: `0 0 24px ${COLOR}30, inset 0 0 20px rgba(0,0,0,0.5)`,
+        width: '100%', maxWidth: large ? 820 : 640, height: ITEM_H,
+        background: 'rgba(0,0,0,0.5)',
+        border: `2px solid ${isDone ? COLOR : COLOR + '44'}`,
+        borderRadius: 18, overflow: 'hidden', position: 'relative',
+        boxShadow: isDone ? `0 0 32px ${COLOR}50` : `0 0 16px ${COLOR}18`,
+        transition: 'border-color 0.4s, box-shadow 0.4s',
       }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 24, background: 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)', zIndex: 2 }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 24, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', zIndex: 2 }} />
-        <div style={{ animation: spinning ? `slotSpin ${0.12}s linear infinite` : 'none', display: 'flex', flexDirection: 'column' }}>
-          {(spinning ? repeated : (result ? [result, result, result] : THEMES.slice(0, 3))).map((t, i) => (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 22, background: 'linear-gradient(to bottom, rgba(0,0,0,0.85), transparent)', zIndex: 2 }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 22, background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', zIndex: 2 }} />
+        <div style={{
+          animation:
+            isSpin  ? 'slotFast 0.08s linear infinite' :
+            isBrake ? 'slotBrake 0.52s ease-out 1 forwards' :
+            'none',
+          display: 'flex', flexDirection: 'column',
+          filter: isSpin ? 'blur(0.5px)' : 'none',
+        }}>
+          {repeated.map((t, i) => (
             <div key={i} style={{
-              height: 72, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 15, fontWeight: 700, color: '#fff',
-              padding: '0 24px', textAlign: 'center', lineHeight: 1.3,
+              height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: large ? 20 : 15, fontWeight: 700, color: '#fff',
+              padding: '0 28px', textAlign: 'center', lineHeight: 1.35,
             }}>
               {t}
             </div>
           ))}
+        </div>
+        {isDone && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `radial-gradient(ellipse at center, ${COLOR}14 0%, rgba(0,0,0,0.88) 100%)`,
+            animation: 'resultBounce 0.48s cubic-bezier(0.34,1.56,0.64,1)',
+            zIndex: 3, padding: '0 28px', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: large ? 20 : 16, fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>
+              {result}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Roulette view (formateur + TV partagent la même logique) ───────
+export function RouletteView({ participants, phase, vendeur, client, theme, reel1State, reel2State, reelTState, onLaunch, onReset, isTV = false }) {
+  const isRunning = phase === 'spinning' || phase === 'vendeur' || phase === 'client'
+
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: isTV ? 52 : 36,
+      padding: isTV ? '64px 80px' : '36px 40px',
+      minHeight: isTV ? '100vh' : 'calc(100vh - 100px)',
+      background: isTV ? 'radial-gradient(ellipse at 30% 20%, #1a0a3a 0%, #03112a 50%, #0a0a1a 100%)' : undefined,
+    }}>
+      {isTV && (
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 10 }}>
+            Mini Jeux · Accueil moi si tu peux 🎰
+          </div>
+        </div>
+      )}
+      {!isTV && (
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 6 }}>Accueil moi si tu peux</div>
+          <div style={{ fontSize: 26, fontWeight: 900, color: '#fff' }}>🎰 La machine tourne…</div>
+        </div>
+      )}
+
+      {/* Reels Vendeur / Client */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: isTV ? 72 : 48 }}>
+        <SlotReel items={participants} reelState={reel1State} result={vendeur} label="🧑‍💼 Vendeur" color="#8b5cf6" large={isTV} />
+        <div style={{ fontSize: isTV ? 40 : 28, color: 'rgba(255,255,255,0.15)', fontWeight: 900 }}>VS</div>
+        <SlotReel items={participants} reelState={reel2State} result={client}  label="🛍️ Client"  color="#f59e0b" large={isTV} />
+      </div>
+
+      {/* Theme reel */}
+      <div style={{ width: '100%', maxWidth: isTV ? 820 : 640 }}>
+        <ThemeReel reelState={reelTState} result={theme} large={isTV} />
+      </div>
+
+      {/* Boutons (formateur seulement) */}
+      {!isTV && (
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+          {phase !== 'idle' && (
+            <button onClick={onReset} style={{
+              background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)',
+              color: 'rgba(255,255,255,0.65)', padding: '13px 26px', borderRadius: 13,
+              fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              ↺ Rejouer
+            </button>
+          )}
+          {phase === 'idle' && (
+            <button onClick={onLaunch} disabled={participants.length < 2} style={{
+              background: participants.length < 2
+                ? 'rgba(139,92,246,0.25)'
+                : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+              border: 'none', color: participants.length < 2 ? 'rgba(255,255,255,0.35)' : '#fff',
+              padding: '16px 48px', borderRadius: 14,
+              fontSize: 17, fontWeight: 800, cursor: participants.length < 2 ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit',
+              boxShadow: participants.length < 2 ? 'none' : '0 8px 32px rgba(139,92,246,0.5)',
+            }}>
+              🎰 Lancer la machine !
+            </button>
+          )}
+          {isRunning && (
+            <div style={{ padding: '16px 32px', color: 'rgba(255,255,255,0.45)', fontSize: 15, fontWeight: 600, animation: 'mjPulse 0.9s ease-in-out infinite' }}>
+              🎰 En cours…
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Résumé (formateur, après reveal) */}
+      {!isTV && phase === 'revealed' && vendeur && client && theme && (
+        <div style={{
+          width: '100%', maxWidth: 580,
+          background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
+          borderRadius: 20, padding: '24px 28px', textAlign: 'center',
+          animation: 'mjFadeUp 0.5s ease',
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 14 }}>Résumé du tirage</div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 18 }}>
+            <div>
+              <div style={{ fontSize: 10, color: '#8b5cf6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Vendeur</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{vendeur}</div>
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: 22, fontWeight: 900 }}>↔</div>
+            <div>
+              <div style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Client</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{client}</div>
+            </div>
+          </div>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', marginBottom: 16 }} />
+          <div style={{ fontSize: 10, color: '#00abe9', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Scénario</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', lineHeight: 1.45 }}>"{theme}"</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Rules view ─────────────────────────────────────────────────────
+function RulesView({ participants, excluded, onToggle, onStart }) {
+  const active = participants.filter(p => !excluded.has(p))
+  const canStart = active.length >= 2
+
+  return (
+    <div style={{ display: 'flex', gap: 40, padding: '36px 40px', minHeight: 'calc(100vh - 100px)', alignItems: 'flex-start' }}>
+      {/* Gauche : règles */}
+      <div style={{ flex: 1 }}>
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 8 }}>Règles du jeu</div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 6 }}>Accueil moi si tu peux 🎰</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>Jeu de rôle — trame d'accueil LPT</div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 40 }}>
+          {RULES_ACCUEIL.map((rule, i) => (
+            <div key={i} style={{
+              display: 'flex', gap: 16, alignItems: 'flex-start',
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 14, padding: '15px 20px',
+              animation: `mjFadeUp 0.35s ease ${i * 0.06}s both`,
+            }}>
+              <span style={{ fontSize: 22, flexShrink: 0, marginTop: 1 }}>{rule.icon}</span>
+              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.72)', lineHeight: 1.55 }}>{rule.text}</div>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={onStart}
+          disabled={!canStart}
+          style={{
+            background: canStart ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'rgba(139,92,246,0.2)',
+            border: 'none', color: canStart ? '#fff' : 'rgba(255,255,255,0.35)',
+            padding: '18px 52px', borderRadius: 16, fontSize: 18, fontWeight: 800,
+            cursor: canStart ? 'pointer' : 'not-allowed', fontFamily: 'inherit',
+            boxShadow: canStart ? '0 8px 32px rgba(139,92,246,0.5)' : 'none',
+            transition: 'all .2s',
+          }}
+        >
+          {canStart
+            ? '🎰 Démarrer le jeu'
+            : `Minimum 2 participants (${active.length} actif${active.length > 1 ? 's' : ''})`}
+        </button>
+      </div>
+
+      {/* Droite : liste participants */}
+      <div style={{ width: 310, flexShrink: 0 }}>
+        <div style={{
+          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 20, padding: 22,
+          position: 'sticky', top: 20,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>
+            Participants — {active.length} actif{active.length > 1 ? 's' : ''} / {participants.length}
+          </div>
+          {participants.length === 0 ? (
+            <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 13, textAlign: 'center', padding: '24px 0', animation: 'mjPulse 1.5s ease-in-out infinite' }}>
+              En attente de connexions…
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxHeight: 440, overflowY: 'auto' }}>
+              {participants.map(p => {
+                const isExcluded = excluded.has(p)
+                return (
+                  <div key={p} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '9px 13px', borderRadius: 10,
+                    background: isExcluded ? 'rgba(255,255,255,0.02)' : 'rgba(139,92,246,0.1)',
+                    border: `1px solid ${isExcluded ? 'rgba(255,255,255,0.06)' : 'rgba(139,92,246,0.22)'}`,
+                    opacity: isExcluded ? 0.4 : 1,
+                    transition: 'all 0.18s',
+                  }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', flex: 1, marginRight: 8 }}>{p}</span>
+                    <button
+                      onClick={() => onToggle(p)}
+                      title={isExcluded ? 'Réintégrer' : 'Exclure du tirage'}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                        color: isExcluded ? '#10b981' : '#ef4444',
+                        fontSize: 18, fontWeight: 700, padding: '2px 6px', borderRadius: 6, lineHeight: 1,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {isExcluded ? '+' : '×'}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-// ── Main component ─────────────────────────────────────────────────
-export default function ModuleMiniJeux({ pName, onBack }) {
-  const [participants, setParticipants]   = useState([])
-  const [spinning1,    setSpinning1]      = useState(false)
-  const [spinning2,    setSpinning2]      = useState(false)
-  const [spinningT,    setSpinningT]      = useState(false)
-  const [vendeur,      setVendeur]        = useState(null)
-  const [client,       setClient]         = useState(null)
-  const [theme,        setTheme]          = useState(null)
-  const [phase,        setPhase]          = useState('idle') // idle | spinning | revealed
+// ── Game list ──────────────────────────────────────────────────────
+function GameListView({ onSelect }) {
+  return (
+    <div style={{ padding: '44px 40px' }}>
+      <div style={{ marginBottom: 36 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 8 }}>Mini Jeux · Formation LPT</div>
+        <div style={{ fontSize: 30, fontWeight: 900, color: '#fff' }}>Choisissez un jeu 🎮</div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20, maxWidth: 860 }}>
+        <div
+          onClick={() => onSelect('accueil')}
+          style={{
+            background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.25)',
+            borderRadius: 22, padding: '28px 24px', cursor: 'pointer', transition: 'all 0.18s',
+            animation: 'mjFadeUp 0.4s ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.16)'; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.08)'; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.25)' }}
+        >
+          <div style={{ fontSize: 38, marginBottom: 14 }}>🎰</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 8 }}>Accueil moi si tu peux</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.55, marginBottom: 18 }}>
+            Jeu de rôle — trame d'accueil client<br />2 participants minimum · 3 à 5 min
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#8b5cf6' }}>Jouer →</div>
+        </div>
 
-  useEffect(() => {
-    sbSelect('participants', `session_code=eq.${getActiveSessionCode()}&order=joined_at.asc`)
-      .then(rows => setParticipants((rows || []).map(r => r.name || r.participant_name || r.collaborateur).filter(Boolean)))
+        <div style={{
+          background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)',
+          borderRadius: 22, padding: '28px 24px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.18)', textAlign: 'center', lineHeight: 1.8 }}>
+            🔜 Prochain jeu<br />à venir…
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main ──────────────────────────────────────────────────────────
+export default function ModuleMiniJeux({ pName, onBack }) {
+  const [view, setView]           = useState('list')
+  const [participants, setParticipants] = useState([])
+  const [excluded, setExcluded]   = useState(new Set())
+  const [phase, setPhase]         = useState('idle')
+  const [vendeur, setVendeur]     = useState(null)
+  const [client, setClient]       = useState(null)
+  const [theme, setTheme]         = useState(null)
+  const [reel1State, setReel1]    = useState('idle')
+  const [reel2State, setReel2]    = useState('idle')
+  const [reelTState, setReelT]    = useState('idle')
+
+  const activeParticipants = useMemo(
+    () => participants.filter(p => !excluded.has(p)),
+    [participants, excluded]
+  )
+
+  const loadParticipants = useCallback(async () => {
+    const rows = await sbSelect('participants', `session_code=eq.${getActiveSessionCode()}&order=joined_at.asc`)
+    setParticipants((rows || []).map(r => r.name || r.participant_name || r.collaborateur).filter(Boolean))
   }, [])
 
   useEffect(() => {
+    loadParticipants()
+    const iv = setInterval(loadParticipants, 8000)
+    return () => clearInterval(iv)
+  }, [loadParticipants])
+
+  // Reset TV on unmount
+  useEffect(() => {
     return () => {
-      setSharedState({ minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null, minijeu_phase: 'idle' }).catch(() => {})
+      setSharedState({ minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null, minijeu_phase: 'idle', minijeu_game: null }).catch(() => {})
     }
   }, [])
 
-  const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5)
+  const handleSelectGame = async (game) => {
+    setView('rules')
+    await setSharedState({ minijeu_phase: 'rules', minijeu_game: game }).catch(() => {})
+  }
 
-  const launch = async () => {
-    if (participants.length < 2) return
+  const handleToggle = (name) => {
+    setExcluded(prev => {
+      const next = new Set(prev)
+      next.has(name) ? next.delete(name) : next.add(name)
+      return next
+    })
+  }
+
+  const stopReel = (setFn, onDone, delay = 520) => {
+    setFn('brake')
+    setTimeout(() => { setFn('done'); onDone?.() }, delay)
+  }
+
+  const handleStart = async () => {
+    const active = participants.filter(p => !excluded.has(p))
+    if (active.length < 2) return
+
+    const shuffled = [...active].sort(() => Math.random() - 0.5)
+    const p1 = shuffled[0]
+    const p2 = shuffled[1]
+    const t  = THEMES[Math.floor(Math.random() * THEMES.length)]
+
+    setView('game')
     setPhase('spinning')
+    setReel1('spin'); setReel2('spin'); setReelT('spin')
     setVendeur(null); setClient(null); setTheme(null)
-    setSpinning1(true); setSpinning2(true); setSpinningT(true)
 
-    await setSharedState({ minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null, minijeu_phase: 'spinning' }).catch(() => {})
+    await setSharedState({ minijeu_phase: 'spinning', minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null }).catch(() => {})
 
-    const [p1, p2] = shuffle(participants)
-    const t = THEMES[Math.floor(Math.random() * THEMES.length)]
-
-    // Collaborateurs s'arrêtent après 2.5s
+    // 2.5s → stop vendeur
     setTimeout(() => {
-      setSpinning1(false); setVendeur(p1)
-      setTimeout(() => {
-        setSpinning2(false); setClient(p2)
-        // Scénario s'arrête après 1s supplémentaire
+      stopReel(setReel1, () => {
+        setVendeur(p1)
+        setPhase('vendeur')
+        setSharedState({ minijeu_phase: 'vendeur', minijeu_vendeur: p1 }).catch(() => {})
+
+        // 0.9s → stop client
         setTimeout(() => {
-          setSpinningT(false); setTheme(t)
-          setPhase('revealed')
-          setSharedState({ minijeu_vendeur: p1, minijeu_client: p2, minijeu_theme: t, minijeu_phase: 'revealed' }).catch(() => {})
-        }, 1000)
-      }, 600)
+          stopReel(setReel2, () => {
+            setClient(p2)
+            setPhase('client')
+            setSharedState({ minijeu_phase: 'client', minijeu_client: p2 }).catch(() => {})
+
+            // 1.1s → stop theme
+            setTimeout(() => {
+              stopReel(setReelT, () => {
+                setTheme(t)
+                setPhase('revealed')
+                setSharedState({ minijeu_phase: 'revealed', minijeu_theme: t }).catch(() => {})
+              })
+            }, 1100)
+          })
+        }, 900)
+      })
     }, 2500)
   }
 
-  const reset = async () => {
+  const handleReset = async () => {
     setPhase('idle')
+    setReel1('idle'); setReel2('idle'); setReelT('idle')
     setVendeur(null); setClient(null); setTheme(null)
-    setSpinning1(false); setSpinning2(false); setSpinningT(false)
-    await setSharedState({ minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null, minijeu_phase: 'idle' }).catch(() => {})
+    await setSharedState({ minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null, minijeu_phase: 'rules', minijeu_game: 'accueil' }).catch(() => {})
+    setView('rules')
+  }
+
+  const handleBack = async () => {
+    if (view === 'game') {
+      setView('rules')
+      setPhase('idle'); setReel1('idle'); setReel2('idle'); setReelT('idle')
+      await setSharedState({ minijeu_phase: 'rules', minijeu_game: 'accueil' }).catch(() => {})
+    } else if (view === 'rules') {
+      setView('list')
+      await setSharedState({ minijeu_phase: 'idle', minijeu_game: null }).catch(() => {})
+    } else {
+      onBack()
+    }
   }
 
   return (
     <>
       <style>{STYLES}</style>
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a0a1a 100%)', display: 'flex', flexDirection: 'column' }}>
-
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 40px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 40px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
-            <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Mini Jeux · Accueil moi si tu peux</span>
+            <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.15)' }} />
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)' }}>
+              Mini Jeux{view !== 'list' ? ' · Accueil moi si tu peux' : ''}
+            </span>
           </div>
-          <button onClick={onBack}
-            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
-          >✕ Quitter</button>
+          <button
+            onClick={handleBack}
+            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.5)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.15)'; e.currentTarget.style.color = '#ff6b6b' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
+          >
+            {view === 'list' ? '✕ Quitter' : '← Retour'}
+          </button>
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 40px', gap: 40 }}>
-
-          {/* Title */}
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 8 }}>Mini Jeux · Formation</div>
-            <div style={{ fontSize: 34, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>Accueil moi si tu peux 🎰</div>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>
-              {participants.length === 0
-                ? 'En attente des participants...'
-                : `${participants.length} participant${participants.length > 1 ? 's' : ''} connecté${participants.length > 1 ? 's' : ''}`}
-            </div>
-          </div>
-
-          {/* Slot machines — collaborateurs */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 40 }}>
-            <SlotReel
-              items={participants}
-              spinning={spinning1}
-              result={vendeur}
-              label="🧑‍💼 Vendeur"
-              color="#8b5cf6"
+        <div style={{ flex: 1 }}>
+          {view === 'list' && <GameListView onSelect={handleSelectGame} />}
+          {view === 'rules' && (
+            <RulesView
+              participants={participants}
+              excluded={excluded}
+              onToggle={handleToggle}
+              onStart={handleStart}
             />
-
-            <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.2)', marginBottom: 24, fontWeight: 900 }}>VS</div>
-
-            <SlotReel
-              items={participants}
-              spinning={spinning2}
-              result={client}
-              label="🛍️ Client"
-              color="#f59e0b"
+          )}
+          {view === 'game' && (
+            <RouletteView
+              participants={activeParticipants}
+              phase={phase}
+              vendeur={vendeur}
+              client={client}
+              theme={theme}
+              reel1State={reel1State}
+              reel2State={reel2State}
+              reelTState={reelTState}
+              onLaunch={handleStart}
+              onReset={handleReset}
             />
-          </div>
-
-          {/* Scénario reel */}
-          <div style={{ width: '100%', maxWidth: 640 }}>
-            <ThemeReel spinning={spinningT} result={theme} />
-          </div>
-
-          {/* Boutons */}
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            {phase !== 'idle' && (
-              <button onClick={reset}
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.6)', padding: '14px 28px', borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
-              >↺ Rejouer</button>
-            )}
-            <button
-              onClick={launch}
-              disabled={participants.length < 2 || phase === 'spinning'}
-              style={{
-                background: phase === 'spinning'
-                  ? 'rgba(139,92,246,0.3)'
-                  : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                border: 'none', color: '#fff',
-                padding: '16px 48px', borderRadius: 14,
-                fontSize: 17, fontWeight: 800, cursor: phase === 'spinning' ? 'not-allowed' : 'pointer',
-                fontFamily: 'inherit',
-                boxShadow: phase === 'spinning' ? 'none' : '0 8px 32px rgba(139,92,246,0.5)',
-                animation: phase === 'spinning' ? 'pulse 0.8s ease-in-out infinite' : 'none',
-                transition: 'all .2s',
-              }}
-            >
-              {phase === 'spinning' ? '🎰 En cours...' : '🎰 Lancer la machine !'}
-            </button>
-          </div>
-
-          {/* Result card */}
-          {phase === 'revealed' && vendeur && client && theme && (
-            <div style={{
-              width: '100%', maxWidth: 640,
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 20, padding: '28px 32px',
-              animation: 'fadeInUp 0.5s ease',
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Résumé du tirage</div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginBottom: 20 }}>
-                <div>
-                  <div style={{ fontSize: 11, color: '#8b5cf6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Vendeur</div>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{vendeur}</div>
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: 24, fontWeight: 900 }}>↔</div>
-                <div>
-                  <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Client</div>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{client}</div>
-                </div>
-              </div>
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 20 }} />
-              <div style={{ fontSize: 11, color: '#00abe9', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Scénario</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>"{theme}"</div>
-            </div>
           )}
         </div>
       </div>

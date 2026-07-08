@@ -68,6 +68,27 @@ const STYLES = `
     0%, 100% { transform: translateY(0px); }
     50%       { transform: translateY(-8px); }
   }
+  @keyframes slotFast {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-50%); }
+  }
+  @keyframes slotBrake {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-50%); }
+  }
+  @keyframes resultBounce {
+    0%   { transform: scale(0.82); opacity: 0; }
+    65%  { transform: scale(1.06); opacity: 1; }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+  @keyframes mjFadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes mjPulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.45; }
+  }
 `
 
 // ── Verre animé ───────────────────────────────────────────────────
@@ -2148,65 +2169,259 @@ function TVOffresProgressif11() {
   )
 }
 
-// ── TV Mini Jeu : Accueil moi si tu peux ─────────────────────────
-function TVMiniJeuAccueil({ vendeur, client, theme }) {
+// ── TV Mini Jeu : écran règles ────────────────────────────────────
+const TV_RULES_ACCUEIL = [
+  { icon: '🎰', text: 'La machine désigne aléatoirement un Vendeur et un Client parmi les participants connectés' },
+  { icon: '🎭', text: 'Le Vendeur réalise l\'accueil complet selon la trame LPT — de l\'entrée à la découverte du besoin' },
+  { icon: '⏱️', text: 'Durée du jeu de rôle : 3 à 5 minutes en conditions réelles' },
+  { icon: '👁️', text: 'Le groupe observe en silence et prend mentalement des notes' },
+  { icon: '💬', text: 'Debriefing collectif et feedback à chaud à la fin du jeu de rôle' },
+]
+
+function TVMiniJeuRules() {
   return (
     <div style={{
       minHeight: '100vh',
       background: 'radial-gradient(ellipse at 30% 20%, #1a0a3a 0%, #03112a 50%, #0a0a1a 100%)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      gap: 0, padding: '60px 80px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '64px 120px', gap: 48,
     }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 20 }}>
-        Mini Jeux · Accueil moi si tu peux 🎰
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 14 }}>
+          Mini Jeux · Accueil moi si tu peux 🎰
+        </div>
+        <div style={{ fontSize: 44, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 8 }}>Règles du jeu</div>
+        <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.35)' }}>Jeu de rôle — trame d'accueil LPT</div>
       </div>
-
-      {/* Deux rôles */}
-      <div style={{ display: 'flex', gap: 60, alignItems: 'center', marginBottom: 56 }}>
-        {[
-          { label: '🧑‍💼 Vendeur', name: vendeur, color: '#8b5cf6' },
-          { label: '🛍️ Client',  name: client,  color: '#f59e0b' },
-        ].map(({ label, name, color }, i) => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18, width: '100%', maxWidth: 860 }}>
+        {TV_RULES_ACCUEIL.map((rule, i) => (
           <div key={i} style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+            display: 'flex', gap: 22, alignItems: 'center',
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 18, padding: '20px 28px',
+            animation: `mjFadeUp 0.4s ease ${i * 0.08}s both`,
           }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: 2 }}>{label}</div>
-            <div style={{
-              background: `${color}15`,
-              border: `2px solid ${color}60`,
-              borderRadius: 24, padding: '24px 48px',
-              fontSize: 52, fontWeight: 900, color: '#fff',
-              boxShadow: `0 0 40px ${color}30`,
-              minWidth: 260, textAlign: 'center',
-            }}>
-              {name}
-            </div>
+            <span style={{ fontSize: 30, flexShrink: 0 }}>{rule.icon}</span>
+            <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{rule.text}</div>
           </div>
         ))}
       </div>
-
-      {/* Séparateur */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 48, width: '100%', maxWidth: 900 }}>
-        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 3 }}>Scénario</div>
-        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+      <div style={{ opacity: 0.2, animation: 'mjPulse 2s ease-in-out infinite' }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
       </div>
+    </div>
+  )
+}
 
-      {/* Thème */}
+// ── TV Mini Jeu : roulette (spinning + revealed) ──────────────────
+function TVSlotReel({ items, reelState, result, label, color }) {
+  const ITEM_H = 96
+  const repeated = [...items, ...items, ...items, ...items]
+  const isDone  = reelState === 'done'
+  const isBrake = reelState === 'brake'
+  const isSpin  = reelState === 'spin'
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: 2 }}>{label}</div>
       <div style={{
-        background: 'rgba(0,171,233,0.08)',
-        border: '2px solid rgba(0,171,233,0.3)',
-        borderRadius: 24, padding: '32px 56px',
-        maxWidth: 900, textAlign: 'center',
-        boxShadow: '0 0 40px rgba(0,171,233,0.1)',
+        width: 280, height: ITEM_H * 3,
+        background: 'rgba(0,0,0,0.5)',
+        border: `2px solid ${isDone ? color : color + '44'}`,
+        borderRadius: 24, overflow: 'hidden', position: 'relative',
+        boxShadow: isDone ? `0 0 50px ${color}55` : `0 0 20px ${color}18`,
+        transition: 'border-color 0.4s, box-shadow 0.4s',
       }}>
-        <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1.4 }}>
-          &ldquo;{theme}&rdquo;
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to bottom, rgba(0,0,0,0.92), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to top, rgba(0,0,0,0.92), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+        <div style={{
+          position: 'absolute', top: '50%', left: 0, right: 0,
+          height: ITEM_H, transform: 'translateY(-50%)',
+          border: `1px solid ${color}${isDone ? 'bb' : '44'}`,
+          background: isDone ? `${color}18` : `${color}08`,
+          zIndex: 1, pointerEvents: 'none', borderRadius: 12,
+          transition: 'all 0.4s',
+        }} />
+        <div style={{
+          display: 'flex', flexDirection: 'column',
+          animation:
+            isSpin  ? 'slotFast 0.09s linear infinite' :
+            isBrake ? 'slotBrake 0.52s ease-out 1 forwards' :
+            'none',
+          filter: isSpin ? 'blur(1px)' : 'none',
+        }}>
+          {repeated.map((name, i) => (
+            <div key={i} style={{
+              height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.75)',
+              padding: '0 18px', textAlign: 'center', lineHeight: 1.2,
+            }}>
+              {name}
+            </div>
+          ))}
         </div>
+        {isDone && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `radial-gradient(ellipse at center, ${color}18 0%, rgba(0,0,0,0.9) 100%)`,
+            animation: 'resultBounce 0.48s cubic-bezier(0.34,1.56,0.64,1)',
+            zIndex: 3,
+          }}>
+            <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', padding: '0 20px', textAlign: 'center', lineHeight: 1.2 }}>
+              {result}
+            </div>
+          </div>
+        )}
       </div>
+    </div>
+  )
+}
 
-      <div style={{ marginTop: 48, opacity: 0.25 }}>
+function TVThemeReel({ reelState, result }) {
+  const COLOR = '#00abe9'
+  const ITEM_H = 90
+  const repeated = [...TV_RULES_ACCUEIL.map((_, i) => i), ...Array(10).keys()].map(i => {
+    const themes = [
+      'Un client qui veut du progressif mais n\'en a jamais porté',
+      'Un client qui souhaite faire un test de vue pour la première fois',
+      'Un client qui dit ne pas avoir besoin de correction',
+      'Un client qui rentre avec une ordonnance en main',
+      'Un client qui rentre et connaît déjà le concept LPT',
+      'Une personne qui rentre et qui est déjà cliente',
+      'Un client qui veut une paire à 10 € en 10 minutes',
+      'Un client avec une correction de -10 : un vrai défi technique',
+      'Un client presbyte qui a des appréhensions sur le verre progressif',
+      'Un client qui souhaite une paire solaire à sa vue',
+    ]
+    return themes[i % themes.length]
+  })
+
+  const isDone  = reelState === 'done'
+  const isBrake = reelState === 'brake'
+  const isSpin  = reelState === 'spin'
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2 }}>Scénario client</div>
+      <div style={{
+        width: '100%', maxWidth: 860, height: ITEM_H,
+        background: 'rgba(0,0,0,0.5)',
+        border: `2px solid ${isDone ? COLOR : COLOR + '44'}`,
+        borderRadius: 20, overflow: 'hidden', position: 'relative',
+        boxShadow: isDone ? `0 0 40px ${COLOR}50` : `0 0 16px ${COLOR}18`,
+        transition: 'border-color 0.4s, box-shadow 0.4s',
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 22, background: 'linear-gradient(to bottom, rgba(0,0,0,0.85), transparent)', zIndex: 2 }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 22, background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', zIndex: 2 }} />
+        <div style={{
+          display: 'flex', flexDirection: 'column',
+          animation:
+            isSpin  ? 'slotFast 0.08s linear infinite' :
+            isBrake ? 'slotBrake 0.52s ease-out 1 forwards' :
+            'none',
+          filter: isSpin ? 'blur(0.5px)' : 'none',
+        }}>
+          {repeated.map((t, i) => (
+            <div key={i} style={{
+              height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 20, fontWeight: 700, color: '#fff',
+              padding: '0 32px', textAlign: 'center', lineHeight: 1.35,
+            }}>
+              {t}
+            </div>
+          ))}
+        </div>
+        {isDone && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `radial-gradient(ellipse at center, ${COLOR}14 0%, rgba(0,0,0,0.9) 100%)`,
+            animation: 'resultBounce 0.48s cubic-bezier(0.34,1.56,0.64,1)',
+            zIndex: 3, padding: '0 32px', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>{result}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function TVMiniJeuGame({ mjPhase, vendeur, client, theme }) {
+  const [participants, setParticipants] = useState([])
+  const [reel1, setReel1] = useState('idle')
+  const [reel2, setReel2] = useState('idle')
+  const [reelT, setReelT] = useState('idle')
+  const prevPhaseRef = useRef('idle')
+
+  useEffect(() => {
+    const sc = typeof window !== 'undefined'
+      ? (localStorage.getItem('participant_session_code') || localStorage.getItem('lpt_session_code') || 'LPT2026')
+      : 'LPT2026'
+    import('@/lib/supabase').then(({ sbSelect }) => {
+      sbSelect('participants', `session_code=eq.${sc}&order=joined_at.asc`)
+        .then(rows => {
+          const names = (rows || []).map(r => r.name || r.participant_name || r.collaborateur).filter(Boolean)
+          setParticipants(names.length ? names : ['Participant 1', 'Participant 2', 'Participant 3'])
+        })
+    })
+  }, [])
+
+  const PHASE_ORDER = ['spinning', 'vendeur', 'client', 'revealed']
+  const phaseIdx = (p) => PHASE_ORDER.indexOf(p)
+
+  useEffect(() => {
+    const prev = prevPhaseRef.current
+    prevPhaseRef.current = mjPhase
+
+    const brake = (setFn, onDone) => {
+      setFn('brake')
+      setTimeout(() => { setFn('done'); onDone?.() }, 560)
+    }
+
+    if (mjPhase === 'spinning' && prev !== 'spinning') {
+      setReel1('spin'); setReel2('spin'); setReelT('spin')
+    }
+
+    if (mjPhase === 'vendeur' && phaseIdx(prev) < phaseIdx('vendeur')) {
+      brake(setReel1, null)
+    }
+
+    if (mjPhase === 'client' && phaseIdx(prev) < phaseIdx('client')) {
+      if (phaseIdx(prev) < phaseIdx('vendeur')) setReel1('done')
+      brake(setReel2, null)
+    }
+
+    if (mjPhase === 'revealed' && phaseIdx(prev) < phaseIdx('revealed')) {
+      if (phaseIdx(prev) < phaseIdx('vendeur')) setReel1('done')
+      if (phaseIdx(prev) < phaseIdx('client'))  setReel2('done')
+      brake(setReelT, null)
+    }
+  }, [mjPhase])
+
+  const fallback = ['—', '—', '—', '—', '—', '—', '—', '—']
+  const reelItems = participants.length >= 2 ? participants : fallback
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'radial-gradient(ellipse at 30% 20%, #1a0a3a 0%, #03112a 50%, #0a0a1a 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: 52, padding: '64px 80px',
+    }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: 3 }}>
+        Mini Jeux · Accueil moi si tu peux 🎰
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 72 }}>
+        <TVSlotReel items={reelItems} reelState={reel1} result={vendeur} label="🧑‍💼 Vendeur" color="#8b5cf6" />
+        <div style={{ fontSize: 44, color: 'rgba(255,255,255,0.14)', fontWeight: 900 }}>VS</div>
+        <TVSlotReel items={reelItems} reelState={reel2} result={client}  label="🛍️ Client"  color="#f59e0b" />
+      </div>
+      <div style={{ width: '100%', maxWidth: 860 }}>
+        <TVThemeReel reelState={reelT} result={theme} />
+      </div>
+      <div style={{ opacity: 0.18 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
       </div>
     </div>
@@ -3850,18 +4065,31 @@ export default function TVView() {
   }
 
   // Mini jeu actif
-  if (!loading && sharedState?.minijeu_phase === 'revealed' && sharedState?.minijeu_vendeur) {
-    return (
-      <>
-        <style>{STYLES}</style>
-        <FullscreenButton />
-        <TVMiniJeuAccueil
-          vendeur={sharedState.minijeu_vendeur}
-          client={sharedState.minijeu_client}
-          theme={sharedState.minijeu_theme}
-        />
-      </>
-    )
+  const mjPhase = sharedState?.minijeu_phase
+  if (!loading && mjPhase && mjPhase !== 'idle') {
+    if (mjPhase === 'rules') {
+      return (
+        <>
+          <style>{STYLES}</style>
+          <FullscreenButton />
+          <TVMiniJeuRules />
+        </>
+      )
+    }
+    if (['spinning', 'vendeur', 'client', 'revealed'].includes(mjPhase)) {
+      return (
+        <>
+          <style>{STYLES}</style>
+          <FullscreenButton />
+          <TVMiniJeuGame
+            mjPhase={mjPhase}
+            vendeur={sharedState.minijeu_vendeur}
+            client={sharedState.minijeu_client}
+            theme={sharedState.minijeu_theme}
+          />
+        </>
+      )
+    }
   }
 
   // Pas de module actif → écran selon tv_screen ou FAQ
