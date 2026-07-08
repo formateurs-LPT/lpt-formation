@@ -7,6 +7,22 @@ import {
   markParticipantLeftBeacon,
   pingParticipant,
 } from './participantPresence'
+import { getRoomSharedState } from './supabase'
+
+const KICK_EXPIRY_MS = 30 * 60 * 1000 // 30 minutes
+
+function isKickActive(kickValue) {
+  if (!kickValue) return false
+  if (kickValue === true) return true // ancienne valeur booléenne
+  return Date.now() - Number(kickValue) < KICK_EXPIRY_MS
+}
+
+function hardDisconnect() {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem('participant_name')
+  localStorage.removeItem('participant_prenom')
+  window.location.reload()
+}
 
 /**
  * Heartbeat + left_at pour un participant connecté.
@@ -19,7 +35,6 @@ export function useParticipantPresence({
   onSessionEnded,
 }) {
   const endedRef = useRef(false)
-  // Ref pour éviter que onSessionEnded (nouvelle fonction à chaque rendu) ne relance l'effet
   const onSessionEndedRef = useRef(onSessionEnded)
   useEffect(() => { onSessionEndedRef.current = onSessionEnded }, [onSessionEnded])
 
@@ -36,7 +51,14 @@ export function useParticipantPresence({
         onSessionEndedRef.current?.()
         return
       }
-      // Premier appel : upsert complet (reset left_at, autorise reconnexion)
+      // Vérifie si le formateur a expulsé ce participant avant de rejoindre
+      try {
+        const state = await getRoomSharedState(sessionCode)
+        if (isKickActive(state?.forced_disconnects?.[name])) {
+          hardDisconnect()
+          return
+        }
+      } catch {}
       await joinParticipant(sessionCode, name)
     }
 
@@ -47,7 +69,6 @@ export function useParticipantPresence({
         onSessionEndedRef.current?.()
         return
       }
-      // Heartbeat : met à jour last_seen_at uniquement, ne reset pas left_at
       await pingParticipant(sessionCode, name)
     }
 
@@ -67,5 +88,5 @@ export function useParticipantPresence({
       window.removeEventListener('beforeunload', onLeave)
       if (!endedRef.current) markParticipantLeftBeacon(sessionCode, name)
     }
-  }, [sessionCode, name, enabled]) // onSessionEnded retiré des deps — géré via ref
+  }, [sessionCode, name, enabled])
 }

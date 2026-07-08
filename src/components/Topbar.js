@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { getTrainerAvatarSrc } from '@/lib/constants'
 import { fetchOnlineParticipantsList, markParticipantLeft } from '@/lib/participantPresence'
-import { setRoomSharedState, getRoomSharedState } from '@/lib/supabase'
+import { setRoomSharedState } from '@/lib/supabase'
 
 function ParticipantsPanel({ sessionCode, onClose }) {
   const [participants, setParticipants] = useState([])
@@ -28,20 +28,9 @@ function ParticipantsPanel({ sessionCode, onClose }) {
     // Retrait immédiat de la liste (optimiste)
     setParticipants(prev => prev.filter(p => p.name !== name))
     await markParticipantLeft(sessionCode, name).catch(() => {})
-    // Signal forced_disconnects avec le code de salle explicite
-    await setRoomSharedState({ forced_disconnects: { [name]: true } }, sessionCode).catch(() => {})
+    // Timestamp : le signal expire au bout de 30 min (assez pour toute la session)
+    await setRoomSharedState({ forced_disconnects: { [name]: Date.now() } }, sessionCode).catch(() => {})
     setKicking(k => ({ ...k, [name]: false }))
-    // Effacer le flag après 8s pour ne pas bloquer une éventuelle reconnexion manuelle
-    setTimeout(async () => {
-      try {
-        const current = await getRoomSharedState(sessionCode)
-        const fd = current?.forced_disconnects || {}
-        if (fd[name]) {
-          const { [name]: _removed, ...rest } = fd
-          await setRoomSharedState({ forced_disconnects: rest }, sessionCode)
-        }
-      } catch {}
-    }, 8000)
   }
 
   return (

@@ -3144,7 +3144,9 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     setModelePoint(sharedState.modele_point ?? null)
     setFaqJournee(sharedState.faq_journee || null)
     // Force-disconnect déclenché par le formateur
-    if (pName && sharedState.forced_disconnects?.[pName]) {
+    const kickVal = sharedState.forced_disconnects?.[pName]
+    const kicked = kickVal === true || (kickVal && Date.now() - Number(kickVal) < 30 * 60 * 1000)
+    if (pName && kicked) {
       onDisconnect?.()
       return
     }

@@ -460,7 +460,9 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
         setSharedState_(state || null)
         // Force-disconnect déclenché par le formateur
         const curPName = pNameRef.current
-        if (curPName && state?.forced_disconnects?.[curPName]) {
+        const kickVal = state?.forced_disconnects?.[curPName]
+        const kicked = kickVal === true || (kickVal && Date.now() - Number(kickVal) < 30 * 60 * 1000)
+        if (curPName && kicked) {
           onDisconnect?.()
           return
         }
