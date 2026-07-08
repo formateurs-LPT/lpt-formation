@@ -68,13 +68,13 @@ const STYLES = `
     0%, 100% { transform: translateY(0px); }
     50%       { transform: translateY(-8px); }
   }
-  @keyframes slotFast {
+  @keyframes slotScroll {
     from { transform: translateY(0); }
-    to   { transform: translateY(-50%); }
+    to   { transform: translateY(-33.333%); }
   }
   @keyframes slotBrake {
     from { transform: translateY(0); }
-    to   { transform: translateY(-50%); }
+    to   { transform: translateY(-33.333%); }
   }
   @keyframes resultBounce {
     0%   { transform: scale(0.82); opacity: 0; }
@@ -2216,7 +2216,9 @@ function TVMiniJeuRules() {
 // ── TV Mini Jeu : roulette (spinning + revealed) ──────────────────
 function TVSlotReel({ items, reelState, result, label, color }) {
   const ITEM_H = 96
-  const repeated = [...items, ...items, ...items, ...items]
+  const repeated = [...items, ...items, ...items]
+  const spinDuration = `${((items.length * ITEM_H) / 700).toFixed(2)}s`
+  const brakeDuration = `${((items.length * ITEM_H) / 700 * 5).toFixed(2)}s`
   const isDone  = reelState === 'done'
   const isBrake = reelState === 'brake'
   const isSpin  = reelState === 'spin'
@@ -2255,10 +2257,11 @@ function TVSlotReel({ items, reelState, result, label, color }) {
             <div style={{
               display: 'flex', flexDirection: 'column',
               animation:
-                isSpin  ? 'slotFast 0.34s linear infinite' :
-                isBrake ? 'slotBrake 1.2s ease-out 1 forwards' :
+                isSpin  ? `slotScroll ${spinDuration} linear infinite` :
+                isBrake ? `slotBrake ${brakeDuration} ease-out 1 forwards` :
                 'none',
-              filter: isSpin ? 'blur(0.5px)' : 'none',
+              willChange: 'transform',
+              backfaceVisibility: 'hidden',
             }}>
               {repeated.map((name, i) => (
                 <div key={i} style={{
@@ -2277,24 +2280,25 @@ function TVSlotReel({ items, reelState, result, label, color }) {
   )
 }
 
+const TV_THEMES = [
+  'Un client qui veut du progressif mais n\'en a jamais porté',
+  'Un client qui souhaite faire un test de vue pour la première fois',
+  'Un client qui dit ne pas avoir besoin de correction',
+  'Un client qui rentre avec une ordonnance en main',
+  'Un client qui rentre et connaît déjà le concept LPT',
+  'Une personne qui rentre et qui est déjà cliente',
+  'Un client qui veut une paire à 10 € en 10 minutes',
+  'Un client avec une correction de -10 : un vrai défi technique',
+  'Un client presbyte qui a des appréhensions sur le verre progressif',
+  'Un client qui souhaite une paire solaire à sa vue',
+]
+
 function TVThemeReel({ reelState, result }) {
   const COLOR = '#00abe9'
   const ITEM_H = 90
-  const repeated = [...TV_RULES_ACCUEIL.map((_, i) => i), ...Array(10).keys()].map(i => {
-    const themes = [
-      'Un client qui veut du progressif mais n\'en a jamais porté',
-      'Un client qui souhaite faire un test de vue pour la première fois',
-      'Un client qui dit ne pas avoir besoin de correction',
-      'Un client qui rentre avec une ordonnance en main',
-      'Un client qui rentre et connaît déjà le concept LPT',
-      'Une personne qui rentre et qui est déjà cliente',
-      'Un client qui veut une paire à 10 € en 10 minutes',
-      'Un client avec une correction de -10 : un vrai défi technique',
-      'Un client presbyte qui a des appréhensions sur le verre progressif',
-      'Un client qui souhaite une paire solaire à sa vue',
-    ]
-    return themes[i % themes.length]
-  })
+  const repeated = [...TV_THEMES, ...TV_THEMES, ...TV_THEMES]
+  const spinDuration = `${((TV_THEMES.length * ITEM_H) / 700).toFixed(2)}s`
+  const brakeDuration = `${((TV_THEMES.length * ITEM_H) / 700 * 5).toFixed(2)}s`
 
   const isDone  = reelState === 'done'
   const isBrake = reelState === 'brake'
@@ -2327,10 +2331,11 @@ function TVThemeReel({ reelState, result }) {
             <div style={{
               display: 'flex', flexDirection: 'column',
               animation:
-                isSpin  ? 'slotFast 0.3s linear infinite' :
-                isBrake ? 'slotBrake 1.2s ease-out 1 forwards' :
+                isSpin  ? `slotScroll ${spinDuration} linear infinite` :
+                isBrake ? `slotBrake ${brakeDuration} ease-out 1 forwards` :
                 'none',
-              filter: isSpin ? 'blur(0.3px)' : 'none',
+              willChange: 'transform',
+              backfaceVisibility: 'hidden',
             }}>
               {repeated.map((t, i) => (
                 <div key={i} style={{
@@ -2377,9 +2382,11 @@ function TVMiniJeuGame({ mjPhase, vendeur, client, theme }) {
     const prev = prevPhaseRef.current
     prevPhaseRef.current = mjPhase
 
+    const n = Math.max(participants.length, 3)
+    const brakeMs = Math.round((n * 96 / 700) * 5 * 1000)
     const brake = (setFn, onDone) => {
       setFn('brake')
-      setTimeout(() => { setFn('done'); onDone?.() }, 1200)
+      setTimeout(() => { setFn('done'); onDone?.() }, brakeMs)
     }
 
     if (mjPhase === 'spinning' && prev !== 'spinning') {
