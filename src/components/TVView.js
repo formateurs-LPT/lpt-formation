@@ -2118,7 +2118,7 @@ function TVOffresProgressif11() {
           <img
             src="/assets/verre-prog.png"
             alt="Verre progressif"
-            style={{ width: 340, height: 340, objectFit: 'contain', filter: `drop-shadow(0 0 48px ${COLOR}70) drop-shadow(0 16px 32px rgba(0,0,0,0.35))` }}
+            style={{ width: 420, height: 420, objectFit: 'contain', filter: `drop-shadow(0 0 48px ${COLOR}70) drop-shadow(0 16px 32px rgba(0,0,0,0.35))` }}
           />
         </div>
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
