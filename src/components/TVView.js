@@ -2093,39 +2093,52 @@ function TVOffresUnifocal11() {
 }
 
 // ── TV Offres : Verre progressif dans le 1=1 ─────────────────────
-const TV_ITEMS_PROGRESSIF_11 = [
+const TV_OFFRE_PROGRESSIF_11 = [
   { label: "Sur l'intégralité du magasin", sub: 'Toutes nos montures et verres éligibles' },
   { label: '400 modèles de montures', sub: 'Au choix, sans contrainte' },
   { label: 'Tous les traitements inclus', sub: 'Anti-rayure · Anti-reflets · Anti-salissure · Hydrophobe · Anti-lumière bleue' },
+  { label: '📅 Fabrication en 9 jours', sub: null },
+]
+const TV_ARGS_PROGRESSIF_11 = [
   { label: "Zones d'aberrations réduites", sub: 'Confort de vision optimisé, adaptation facilitée' },
   { label: 'Vision extra-large', sub: 'Champ visuel élargi à toutes distances' },
-  { label: '📅 Fabrication en 9 jours', sub: null },
 ]
 
 function TVOffresProgressif11() {
   const COLOR = '#c9a227'
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '60px 40px', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+      {/* Gauche : verre + arguments de vente */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 32px', borderRight: '1px solid rgba(255,255,255,0.07)', gap: 28 }}>
         <div style={{ animation: 'verreFloat 4.5s ease-in-out infinite', pointerEvents: 'none' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/verre-prog.png"
             alt="Verre progressif"
-            style={{ width: 520, height: 520, objectFit: 'contain', filter: `drop-shadow(0 0 56px ${COLOR}70) drop-shadow(0 20px 40px rgba(0,0,0,0.35))` }}
+            style={{ width: 340, height: 340, objectFit: 'contain', filter: `drop-shadow(0 0 48px ${COLOR}70) drop-shadow(0 16px 32px rgba(0,0,0,0.35))` }}
           />
         </div>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, textAlign: 'center', marginBottom: 4 }}>Qualité optique</div>
+          {TV_ARGS_PROGRESSIF_11.map((item, i) => (
+            <div key={i} style={{ background: `${COLOR}12`, border: `1px solid ${COLOR}40`, borderRadius: 14, padding: '14px 20px', textAlign: 'center' }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: COLOR }}>{item.label}</div>
+              {item.sub && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 3 }}>{item.sub}</div>}
+            </div>
+          ))}
+        </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 48px' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Parcours 1=1 · Verre progressif</div>
-        <div style={{ fontSize: 38, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 28 }}>
+      {/* Droite : titre + caractéristiques de l'offre */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '50px 48px' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Parcours 1=1 · Verre progressif</div>
+        <div style={{ fontSize: 38, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 32 }}>
           Le verre progressif<br /><span style={{ color: COLOR }}>dans l&apos;offre 1=1</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {TV_ITEMS_PROGRESSIF_11.map((item, i) => (
-            <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `4px solid ${COLOR}`, borderRadius: 14, padding: '14px 22px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {TV_OFFRE_PROGRESSIF_11.map((item, i) => (
+            <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `4px solid ${COLOR}`, borderRadius: 14, padding: '16px 22px' }}>
               <div style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>{item.label}</div>
-              {item.sub && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 3 }}>{item.sub}</div>}
+              {item.sub && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{item.sub}</div>}
             </div>
           ))}
         </div>
