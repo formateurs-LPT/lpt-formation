@@ -239,12 +239,12 @@ export function RouletteView({ participants, phase, vendeur, client, theme, reel
       {!isTV && (
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           {phase === 'revealed' && (
-            <button onClick={onReset} title="Relancer la roue" style={{
+            <button onClick={onReset} style={{
               background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)',
-              color: '#fff', padding: '13px 18px', borderRadius: 13,
-              fontSize: 22, cursor: 'pointer', lineHeight: 1,
+              color: 'rgba(255,255,255,0.65)', padding: '13px 26px', borderRadius: 13,
+              fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
             }}>
-              🥽
+              ↺ Relancer
             </button>
           )}
           {phase === 'idle' && (
@@ -499,7 +499,8 @@ export default function ModuleMiniJeux({ pName, onBack }) {
     if (active.length < 2) return
     setView('game')
     setPhase('idle')
-    // TV reste sur les règles jusqu'au lancement
+    // TV passe directement sur les roues en spin
+    await setSharedState({ minijeu_phase: 'spinning', minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null }).catch(() => {})
   }
 
   // Lancer le spin — appelé par le bouton dans GameView
