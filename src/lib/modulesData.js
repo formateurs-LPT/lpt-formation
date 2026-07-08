@@ -230,7 +230,7 @@ export const OPTIQUE_QUIZ = [
     correct: 0,
   },
   {
-    question: 'Combien de temps mettons-nous pour produire une paire de lunettes ?',
+    question: 'En combien de temps peut-on fabriquer une paire de lunettes en magasin ?',
     options: ['9 jours', '1h', '10 minutes', '30 minutes'],
     correct: 2,
   },
