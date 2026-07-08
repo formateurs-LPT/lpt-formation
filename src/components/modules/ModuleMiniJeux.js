@@ -151,6 +151,12 @@ export default function ModuleMiniJeux({ pName, onBack }) {
       .then(rows => setParticipants((rows || []).map(r => r.name || r.participant_name || r.collaborateur).filter(Boolean)))
   }, [])
 
+  useEffect(() => {
+    return () => {
+      setSharedState({ minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null, minijeu_phase: 'idle' }).catch(() => {})
+    }
+  }, [])
+
   const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5)
 
   const launch = async () => {
