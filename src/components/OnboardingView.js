@@ -394,7 +394,7 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
         </div>
 
         {/* Tuile Mini Jeux */}
-        <div className="dash-tile" style={{ cursor: 'default', borderColor: 'rgba(139,92,246,0.25)', opacity: 0.75 }}>
+        <div className="dash-tile" onClick={() => { setSharedState({ tv_screen: null }).catch(console.warn); onLaunchModule('mini-jeux') }} style={{ cursor: 'pointer', borderColor: 'rgba(139,92,246,0.25)' }}>
           <div className="dash-tile-top">
             <div style={{
               width: 38, height: 38, borderRadius: 10, flexShrink: 0,
@@ -402,12 +402,12 @@ function SessionModules({ onBack, onLaunchFormation, onLaunchModule }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
             }}>🎮</div>
             <span style={{ fontSize: 10, fontWeight: 700, color: '#8b5cf6', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 20, padding: '2px 8px', letterSpacing: 0.5 }}>
-              Bientôt
+              Nouveau
             </span>
           </div>
           <div className="dash-tile-label" style={{ marginTop: 12 }}>Mini Jeux</div>
-          <div className="dash-tile-sub">Activités ludiques de formation</div>
-          <div style={{ fontSize: 11, color: '#8b5cf6', marginTop: 8, fontWeight: 600 }}>En cours de développement</div>
+          <div className="dash-tile-sub">Accueil moi si tu peux</div>
+          <div style={{ fontSize: 11, color: '#8b5cf6', marginTop: 8, fontWeight: 600 }}>Jouer →</div>
         </div>
 
       </div>

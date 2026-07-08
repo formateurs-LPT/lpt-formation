@@ -2148,6 +2148,71 @@ function TVOffresProgressif11() {
   )
 }
 
+// ── TV Mini Jeu : Accueil moi si tu peux ─────────────────────────
+function TVMiniJeuAccueil({ vendeur, client, theme }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'radial-gradient(ellipse at 30% 20%, #1a0a3a 0%, #03112a 50%, #0a0a1a 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      gap: 0, padding: '60px 80px',
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 20 }}>
+        Mini Jeux · Accueil moi si tu peux 🎰
+      </div>
+
+      {/* Deux rôles */}
+      <div style={{ display: 'flex', gap: 60, alignItems: 'center', marginBottom: 56 }}>
+        {[
+          { label: '🧑‍💼 Vendeur', name: vendeur, color: '#8b5cf6' },
+          { label: '🛍️ Client',  name: client,  color: '#f59e0b' },
+        ].map(({ label, name, color }, i) => (
+          <div key={i} style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: 2 }}>{label}</div>
+            <div style={{
+              background: `${color}15`,
+              border: `2px solid ${color}60`,
+              borderRadius: 24, padding: '24px 48px',
+              fontSize: 52, fontWeight: 900, color: '#fff',
+              boxShadow: `0 0 40px ${color}30`,
+              minWidth: 260, textAlign: 'center',
+            }}>
+              {name}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Séparateur */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 48, width: '100%', maxWidth: 900 }}>
+        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 3 }}>Scénario</div>
+        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+      </div>
+
+      {/* Thème */}
+      <div style={{
+        background: 'rgba(0,171,233,0.08)',
+        border: '2px solid rgba(0,171,233,0.3)',
+        borderRadius: 24, padding: '32px 56px',
+        maxWidth: 900, textAlign: 'center',
+        boxShadow: '0 0 40px rgba(0,171,233,0.1)',
+      }}>
+        <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1.4 }}>
+          &ldquo;{theme}&rdquo;
+        </div>
+      </div>
+
+      <div style={{ marginTop: 48, opacity: 0.25 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+      </div>
+    </div>
+  )
+}
+
 // ── TV Content Page (no controls, no avatar) ──────────────────────
 // ── TV Trame d'accueil ────────────────────────────────────────────
 function TVTrameAccueil({ step }) {
@@ -3782,6 +3847,21 @@ export default function TVView() {
     } else if (!isResults && !isLobby) {
       page = moduleData.pages[modulePage] ?? null
     }
+  }
+
+  // Mini jeu actif
+  if (!loading && sharedState?.minijeu_phase === 'revealed' && sharedState?.minijeu_vendeur) {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <FullscreenButton />
+        <TVMiniJeuAccueil
+          vendeur={sharedState.minijeu_vendeur}
+          client={sharedState.minijeu_client}
+          theme={sharedState.minijeu_theme}
+        />
+      </>
+    )
   }
 
   // Pas de module actif → écran selon tv_screen ou FAQ
