@@ -3158,9 +3158,12 @@ function TVQuizPodium({ qIdx, onDone, sessionCode }) {
 }
 
 // ── TV Quiz Final Podium ──────────────────────────────────────────
+const FINAL_PODIUM_DURATION = 20
+
 function TVQuizFinalPodium({ quiz, onDone, sessionCode }) {
   const [top3, setTop3] = useState([])
   const [ready, setReady] = useState(false)
+  const [countdown, setCountdown] = useState(FINAL_PODIUM_DURATION)
 
   useEffect(() => {
     sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}`).then(rows => {
@@ -3177,6 +3180,16 @@ function TVQuizFinalPodium({ quiz, onDone, sessionCode }) {
       setTimeout(() => setReady(true), 400)
     })
   }, [])
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setCountdown(c => {
+        if (c <= 1) { clearInterval(t); onDone(); return 0 }
+        return c - 1
+      })
+    }, 1000)
+    return () => clearInterval(t)
+  }, [onDone])
 
   const slots = [top3[1], top3[0], top3[2]]
   const stepH = [220, 300, 170]
@@ -3296,9 +3309,10 @@ function TVQuizFinalPodium({ quiz, onDone, sessionCode }) {
         background: 'rgba(0,171,233,0.14)', border: '1px solid rgba(0,171,233,0.4)',
         borderRadius: 16, padding: '12px 36px',
         color: '#00abe9', fontSize: 16, fontWeight: 700,
-        cursor: 'pointer', fontFamily: 'inherit',
+        cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 10,
       }}>
         Voir le bilan détaillé →
+        <span style={{ background: 'rgba(0,171,233,0.25)', borderRadius: 8, padding: '2px 10px', fontSize: 14, fontWeight: 800 }}>{countdown}s</span>
       </button>
     </div>
   )
