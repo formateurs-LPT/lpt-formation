@@ -90,10 +90,10 @@ function SlotReel({ items, reelState, result, label, color, large = false }) {
         <div style={{
           display: 'flex', flexDirection: 'column',
           animation:
-            isSpin  ? 'slotFast 0.09s linear infinite' :
-            isBrake ? 'slotBrake 0.52s ease-out 1 forwards' :
+            isSpin  ? 'slotFast 0.32s linear infinite' :
+            isBrake ? 'slotBrake 1.1s ease-out 1 forwards' :
             'none',
-          filter: isSpin ? 'blur(0.8px)' : 'none',
+          filter: isSpin ? 'blur(0.5px)' : 'none',
           transition: 'filter 0.15s',
         }}>
           {repeated.map((name, i) => (
@@ -154,11 +154,11 @@ function ThemeReel({ reelState, result, large = false }) {
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 22, background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', zIndex: 2 }} />
         <div style={{
           animation:
-            isSpin  ? 'slotFast 0.08s linear infinite' :
-            isBrake ? 'slotBrake 0.52s ease-out 1 forwards' :
+            isSpin  ? 'slotFast 0.28s linear infinite' :
+            isBrake ? 'slotBrake 1.1s ease-out 1 forwards' :
             'none',
           display: 'flex', flexDirection: 'column',
-          filter: isSpin ? 'blur(0.5px)' : 'none',
+          filter: isSpin ? 'blur(0.3px)' : 'none',
         }}>
           {repeated.map((t, i) => (
             <div key={i} style={{
@@ -477,7 +477,7 @@ export default function ModuleMiniJeux({ pName, onBack }) {
     })
   }
 
-  const stopReel = (setFn, onDone, delay = 520) => {
+  const stopReel = (setFn, onDone, delay = 1100) => {
     setFn('brake')
     setTimeout(() => { setFn('done'); onDone?.() }, delay)
   }

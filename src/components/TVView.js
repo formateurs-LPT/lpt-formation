@@ -2245,10 +2245,10 @@ function TVSlotReel({ items, reelState, result, label, color }) {
         <div style={{
           display: 'flex', flexDirection: 'column',
           animation:
-            isSpin  ? 'slotFast 0.09s linear infinite' :
-            isBrake ? 'slotBrake 0.52s ease-out 1 forwards' :
+            isSpin  ? 'slotFast 0.34s linear infinite' :
+            isBrake ? 'slotBrake 1.2s ease-out 1 forwards' :
             'none',
-          filter: isSpin ? 'blur(1px)' : 'none',
+          filter: isSpin ? 'blur(0.5px)' : 'none',
         }}>
           {repeated.map((name, i) => (
             <div key={i} style={{
@@ -2317,10 +2317,10 @@ function TVThemeReel({ reelState, result }) {
         <div style={{
           display: 'flex', flexDirection: 'column',
           animation:
-            isSpin  ? 'slotFast 0.08s linear infinite' :
-            isBrake ? 'slotBrake 0.52s ease-out 1 forwards' :
+            isSpin  ? 'slotFast 0.3s linear infinite' :
+            isBrake ? 'slotBrake 1.2s ease-out 1 forwards' :
             'none',
-          filter: isSpin ? 'blur(0.5px)' : 'none',
+          filter: isSpin ? 'blur(0.3px)' : 'none',
         }}>
           {repeated.map((t, i) => (
             <div key={i} style={{
@@ -2377,7 +2377,7 @@ function TVMiniJeuGame({ mjPhase, vendeur, client, theme }) {
 
     const brake = (setFn, onDone) => {
       setFn('brake')
-      setTimeout(() => { setFn('done'); onDone?.() }, 560)
+      setTimeout(() => { setFn('done'); onDone?.() }, 1200)
     }
 
     if (mjPhase === 'spinning' && prev !== 'spinning') {
