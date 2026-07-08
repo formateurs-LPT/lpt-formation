@@ -461,9 +461,7 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
         // Force-disconnect déclenché par le formateur
         const curPName = pNameRef.current
         if (curPName && state?.forced_disconnects?.[curPName]) {
-          localStorage.removeItem('participant_name')
-          localStorage.removeItem('participant_prenom')
-          window.location.reload()
+          onDisconnect?.()
           return
         }
       } catch {}
