@@ -74,54 +74,53 @@ function SlotReel({ items, reelState, result, label, color, large = false }) {
           : `0 0 18px ${color}20, inset 0 0 20px rgba(0,0,0,0.5)`,
         transition: 'border-color 0.4s, box-shadow 0.4s',
       }}>
-        {/* Fade masks */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to bottom, rgba(0,0,0,0.9), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-        {/* Center highlight */}
-        <div style={{
-          position: 'absolute', top: '50%', left: 0, right: 0,
-          height: ITEM_H, transform: 'translateY(-50%)',
-          border: `1px solid ${color}${isDone ? 'bb' : '44'}`,
-          background: isDone ? `${color}18` : `${color}08`,
-          zIndex: 1, pointerEvents: 'none', borderRadius: 10,
-          transition: 'all 0.4s',
-        }} />
-        {/* Scrolling reel */}
-        <div style={{
-          display: 'flex', flexDirection: 'column',
-          animation:
-            isSpin  ? 'slotFast 0.32s linear infinite' :
-            isBrake ? 'slotBrake 1.1s ease-out 1 forwards' :
-            'none',
-          filter: isSpin ? 'blur(0.5px)' : 'none',
-          transition: 'filter 0.15s',
-        }}>
-          {repeated.map((name, i) => (
-            <div key={i} style={{
-              height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: large ? 20 : 15, fontWeight: 700, color: 'rgba(255,255,255,0.75)',
-              padding: '0 16px', textAlign: 'center', lineHeight: 1.2,
-            }}>
-              {name}
-            </div>
-          ))}
-        </div>
-        {/* Result overlay */}
-        {isDone && (
+        {isDone ? (
+          /* Résultat : affichage propre, plus de liste derrière */
           <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: `radial-gradient(ellipse at center, ${color}18 0%, rgba(0,0,0,0.88) 100%)`,
-            animation: 'resultBounce 0.48s cubic-bezier(0.34,1.56,0.64,1)',
-            zIndex: 3,
+            height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `radial-gradient(ellipse at center, ${color}22 0%, #050d1e 100%)`,
+            animation: 'resultBounce 0.5s cubic-bezier(0.34,1.56,0.64,1)',
           }}>
             <div style={{
-              fontSize: large ? 22 : 16, fontWeight: 800, color: '#fff',
+              fontSize: large ? 22 : 16, fontWeight: 900, color: '#fff',
               padding: '0 18px', textAlign: 'center', lineHeight: 1.25,
             }}>
               {result}
             </div>
           </div>
+        ) : (
+          <>
+            {/* Fade masks */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to bottom, rgba(0,0,0,0.92), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to top, rgba(0,0,0,0.92), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+            {/* Center highlight */}
+            <div style={{
+              position: 'absolute', top: '50%', left: 0, right: 0,
+              height: ITEM_H, transform: 'translateY(-50%)',
+              border: `1px solid ${color}44`,
+              background: `${color}08`,
+              zIndex: 1, pointerEvents: 'none', borderRadius: 10,
+            }} />
+            {/* Scrolling reel */}
+            <div style={{
+              display: 'flex', flexDirection: 'column',
+              animation:
+                isSpin  ? 'slotFast 0.32s linear infinite' :
+                isBrake ? 'slotBrake 1.1s ease-out 1 forwards' :
+                'none',
+              filter: isSpin ? 'blur(0.5px)' : 'none',
+            }}>
+              {repeated.map((name, i) => (
+                <div key={i} style={{
+                  height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: large ? 20 : 15, fontWeight: 600, color: 'rgba(255,255,255,0.75)',
+                  padding: '0 16px', textAlign: 'center', lineHeight: 1.2,
+                }}>
+                  {name}
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -150,38 +149,40 @@ function ThemeReel({ reelState, result, large = false }) {
         boxShadow: isDone ? `0 0 32px ${COLOR}50` : `0 0 16px ${COLOR}18`,
         transition: 'border-color 0.4s, box-shadow 0.4s',
       }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 22, background: 'linear-gradient(to bottom, rgba(0,0,0,0.85), transparent)', zIndex: 2 }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 22, background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', zIndex: 2 }} />
-        <div style={{
-          animation:
-            isSpin  ? 'slotFast 0.28s linear infinite' :
-            isBrake ? 'slotBrake 1.1s ease-out 1 forwards' :
-            'none',
-          display: 'flex', flexDirection: 'column',
-          filter: isSpin ? 'blur(0.3px)' : 'none',
-        }}>
-          {repeated.map((t, i) => (
-            <div key={i} style={{
-              height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: large ? 20 : 15, fontWeight: 700, color: '#fff',
-              padding: '0 28px', textAlign: 'center', lineHeight: 1.35,
-            }}>
-              {t}
-            </div>
-          ))}
-        </div>
-        {isDone && (
+        {isDone ? (
           <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: `radial-gradient(ellipse at center, ${COLOR}14 0%, rgba(0,0,0,0.88) 100%)`,
-            animation: 'resultBounce 0.48s cubic-bezier(0.34,1.56,0.64,1)',
-            zIndex: 3, padding: '0 28px', textAlign: 'center',
+            height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `radial-gradient(ellipse at center, ${COLOR}1a 0%, #050d1e 100%)`,
+            animation: 'resultBounce 0.5s cubic-bezier(0.34,1.56,0.64,1)',
+            padding: '0 28px', textAlign: 'center',
           }}>
             <div style={{ fontSize: large ? 20 : 16, fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>
               {result}
             </div>
           </div>
+        ) : (
+          <>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 22, background: 'linear-gradient(to bottom, rgba(0,0,0,0.88), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 22, background: 'linear-gradient(to top, rgba(0,0,0,0.88), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+            <div style={{
+              animation:
+                isSpin  ? 'slotFast 0.28s linear infinite' :
+                isBrake ? 'slotBrake 1.1s ease-out 1 forwards' :
+                'none',
+              display: 'flex', flexDirection: 'column',
+              filter: isSpin ? 'blur(0.3px)' : 'none',
+            }}>
+              {repeated.map((t, i) => (
+                <div key={i} style={{
+                  height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: large ? 20 : 15, fontWeight: 600, color: 'rgba(255,255,255,0.85)',
+                  padding: '0 28px', textAlign: 'center', lineHeight: 1.35,
+                }}>
+                  {t}
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

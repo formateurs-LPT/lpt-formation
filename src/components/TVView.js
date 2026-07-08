@@ -2232,46 +2232,45 @@ function TVSlotReel({ items, reelState, result, label, color }) {
         boxShadow: isDone ? `0 0 50px ${color}55` : `0 0 20px ${color}18`,
         transition: 'border-color 0.4s, box-shadow 0.4s',
       }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to bottom, rgba(0,0,0,0.92), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to top, rgba(0,0,0,0.92), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-        <div style={{
-          position: 'absolute', top: '50%', left: 0, right: 0,
-          height: ITEM_H, transform: 'translateY(-50%)',
-          border: `1px solid ${color}${isDone ? 'bb' : '44'}`,
-          background: isDone ? `${color}18` : `${color}08`,
-          zIndex: 1, pointerEvents: 'none', borderRadius: 12,
-          transition: 'all 0.4s',
-        }} />
-        <div style={{
-          display: 'flex', flexDirection: 'column',
-          animation:
-            isSpin  ? 'slotFast 0.34s linear infinite' :
-            isBrake ? 'slotBrake 1.2s ease-out 1 forwards' :
-            'none',
-          filter: isSpin ? 'blur(0.5px)' : 'none',
-        }}>
-          {repeated.map((name, i) => (
-            <div key={i} style={{
-              height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.75)',
-              padding: '0 18px', textAlign: 'center', lineHeight: 1.2,
-            }}>
-              {name}
-            </div>
-          ))}
-        </div>
-        {isDone && (
+        {isDone ? (
           <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: `radial-gradient(ellipse at center, ${color}18 0%, rgba(0,0,0,0.9) 100%)`,
-            animation: 'resultBounce 0.48s cubic-bezier(0.34,1.56,0.64,1)',
-            zIndex: 3,
+            height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `radial-gradient(ellipse at center, ${color}22 0%, #050d1e 100%)`,
+            animation: 'resultBounce 0.5s cubic-bezier(0.34,1.56,0.64,1)',
           }}>
-            <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', padding: '0 20px', textAlign: 'center', lineHeight: 1.2 }}>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', padding: '0 20px', textAlign: 'center', lineHeight: 1.2 }}>
               {result}
             </div>
           </div>
+        ) : (
+          <>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to bottom, rgba(0,0,0,0.92), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: ITEM_H, background: 'linear-gradient(to top, rgba(0,0,0,0.92), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+            <div style={{
+              position: 'absolute', top: '50%', left: 0, right: 0,
+              height: ITEM_H, transform: 'translateY(-50%)',
+              border: `1px solid ${color}44`, background: `${color}08`,
+              zIndex: 1, pointerEvents: 'none', borderRadius: 12,
+            }} />
+            <div style={{
+              display: 'flex', flexDirection: 'column',
+              animation:
+                isSpin  ? 'slotFast 0.34s linear infinite' :
+                isBrake ? 'slotBrake 1.2s ease-out 1 forwards' :
+                'none',
+              filter: isSpin ? 'blur(0.5px)' : 'none',
+            }}>
+              {repeated.map((name, i) => (
+                <div key={i} style={{
+                  height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 22, fontWeight: 600, color: 'rgba(255,255,255,0.78)',
+                  padding: '0 18px', textAlign: 'center', lineHeight: 1.2,
+                }}>
+                  {name}
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -2312,36 +2311,39 @@ function TVThemeReel({ reelState, result }) {
         boxShadow: isDone ? `0 0 40px ${COLOR}50` : `0 0 16px ${COLOR}18`,
         transition: 'border-color 0.4s, box-shadow 0.4s',
       }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 22, background: 'linear-gradient(to bottom, rgba(0,0,0,0.85), transparent)', zIndex: 2 }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 22, background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', zIndex: 2 }} />
-        <div style={{
-          display: 'flex', flexDirection: 'column',
-          animation:
-            isSpin  ? 'slotFast 0.3s linear infinite' :
-            isBrake ? 'slotBrake 1.2s ease-out 1 forwards' :
-            'none',
-          filter: isSpin ? 'blur(0.3px)' : 'none',
-        }}>
-          {repeated.map((t, i) => (
-            <div key={i} style={{
-              height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 20, fontWeight: 700, color: '#fff',
-              padding: '0 32px', textAlign: 'center', lineHeight: 1.35,
-            }}>
-              {t}
-            </div>
-          ))}
-        </div>
-        {isDone && (
+        {isDone ? (
           <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: `radial-gradient(ellipse at center, ${COLOR}14 0%, rgba(0,0,0,0.9) 100%)`,
-            animation: 'resultBounce 0.48s cubic-bezier(0.34,1.56,0.64,1)',
-            zIndex: 3, padding: '0 32px', textAlign: 'center',
+            height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `radial-gradient(ellipse at center, ${COLOR}1a 0%, #050d1e 100%)`,
+            animation: 'resultBounce 0.5s cubic-bezier(0.34,1.56,0.64,1)',
+            padding: '0 32px', textAlign: 'center',
           }}>
             <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>{result}</div>
           </div>
+        ) : (
+          <>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 22, background: 'linear-gradient(to bottom, rgba(0,0,0,0.88), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 22, background: 'linear-gradient(to top, rgba(0,0,0,0.88), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+            <div style={{
+              display: 'flex', flexDirection: 'column',
+              animation:
+                isSpin  ? 'slotFast 0.3s linear infinite' :
+                isBrake ? 'slotBrake 1.2s ease-out 1 forwards' :
+                'none',
+              filter: isSpin ? 'blur(0.3px)' : 'none',
+            }}>
+              {repeated.map((t, i) => (
+                <div key={i} style={{
+                  height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.85)',
+                  padding: '0 32px', textAlign: 'center', lineHeight: 1.35,
+                }}>
+                  {t}
+                </div>
+              ))}
+            </div>
+          </>
+
         )}
       </div>
     </div>
