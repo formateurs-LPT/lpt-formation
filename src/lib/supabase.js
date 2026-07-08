@@ -15,8 +15,9 @@ const WEEKLY_STATE_KEYS = new Set(['entrees_data', 'ob_data', 'ob_date', 'ob_day
 
 /** Filtre PostgREST pour valeurs avec espaces / accents */
 export function pgEq(column, value) {
+  // Les guillemets et espaces dans l'URL doivent être encodés pour iOS Safari
   const v = String(value ?? '').replace(/"/g, '""')
-  return `${column}=eq."${v}"`
+  return `${column}=eq.${encodeURIComponent('"' + v + '"')}`
 }
 
 /**

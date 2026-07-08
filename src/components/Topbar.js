@@ -3,7 +3,20 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { getTrainerAvatarSrc } from '@/lib/constants'
 import { fetchOnlineParticipantsList, markParticipantLeft } from '@/lib/participantPresence'
-import { setRoomSharedState } from '@/lib/supabase'
+import { setRoomSharedState, getRoomSharedState } from '@/lib/supabase'
+
+const KICK_EXPIRY_MS = 30 * 60 * 1000
+
+function filterKicked(list, fd) {
+  if (!fd || !Object.keys(fd).length) return list
+  const now = Date.now()
+  return list.filter(p => {
+    const k = fd[p.name]
+    if (!k) return true
+    if (k === true) return false
+    return now - Number(k) >= KICK_EXPIRY_MS
+  })
+}
 
 function ParticipantsPanel({ sessionCode, onClose }) {
   const [participants, setParticipants] = useState([])
@@ -12,8 +25,11 @@ function ParticipantsPanel({ sessionCode, onClose }) {
   const intervalRef = useRef(null)
 
   const refresh = async () => {
-    const list = await fetchOnlineParticipantsList(sessionCode).catch(() => [])
-    setParticipants(list)
+    const [list, roomState] = await Promise.all([
+      fetchOnlineParticipantsList(sessionCode).catch(() => []),
+      getRoomSharedState(sessionCode).catch(() => ({})),
+    ])
+    setParticipants(filterKicked(list, roomState?.forced_disconnects))
     setLoading(false)
   }
 
