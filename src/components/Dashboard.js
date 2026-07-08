@@ -1,14 +1,17 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbSelect, sbDelete, SESSION_CODE, getSharedState, insertSessionHistory, parseSessionHistorySummary } from '@/lib/supabase'
+import { sbSelect, sbDelete, getSharedState, insertSessionHistory, parseSessionHistorySummary, getRuntimeSessionCode } from '@/lib/supabase'
 import PlanningWidget from './PlanningWidget'
 import ShortcutsWidget from './ShortcutsWidget'
 import OnboardingView from './OnboardingView'
 import EntreesView from './EntreesView'
+import RoomOpenModal from './RoomOpenModal'
 import { TRAINER_AVATARS, TRAINER_CANONICAL } from '@/lib/constants'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
+import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
+import { isDynamicRoomCode } from '@/lib/sessionCode'
 
 const NEWS_ITEMS = [
   '📚 Formation Verre Progressif — Module complet',
@@ -170,25 +173,45 @@ function SessionsHistoryView({ onBack, onToast }) {
 
   const handleCloseSession = async () => {
     setModal(null)
-    const [participants, answers] = await Promise.all([
-      sbSelect('participants', 'session_code=eq.' + SESSION_CODE),
-      sbSelect('quiz_answers', 'session_code=eq.' + SESSION_CODE),
+    const roomCode = getRuntimeSessionCode('trainer') || SESSION_CODE
+    const enc = encodeURIComponent(roomCode)
+    const filter = `session_code=eq.${enc}`
+    const [participants, answers, quizResults, scenarioResponses, moduleResults] = await Promise.all([
+      sbSelect('participants', filter),
+      sbSelect('quiz_answers', filter),
+      sbSelect('quiz_results', filter),
+      sbSelect('scenario_responses', filter),
+      sbSelect('module_results', filter),
     ])
-    if ((participants?.length || 0) + (answers?.length || 0) === 0) {
+    const total =
+      (participants?.length || 0) +
+      (answers?.length || 0) +
+      (quizResults?.length || 0) +
+      (scenarioResponses?.length || 0) +
+      (moduleResults?.length || 0)
+    if (total === 0) {
       onToast('Aucune donnée à enregistrer'); return
     }
     await insertSessionHistory({
-      sessionCode: SESSION_CODE + '_' + Date.now(),
+      sessionCode: roomCode + '_' + Date.now(),
       sessionDate: new Date().toISOString(),
       trainerName: localStorage.getItem('trainer_name') || 'Formateur',
       participants: participants || [],
-      quizResults: answers || [],
-      scenarioResponses: [],
+      quizResults: {
+        type: 'room_archive',
+        room_code: roomCode,
+        scores: quizResults || [],
+        answers: answers || [],
+        module_results: moduleResults || [],
+      },
+      scenarioResponses: scenarioResponses || [],
     })
     await Promise.all([
-      sbDelete('participants', 'session_code=eq.' + SESSION_CODE),
-      sbDelete('quiz_answers', 'session_code=eq.' + SESSION_CODE),
-      sbDelete('module_results', 'id=gte.0'),
+      sbDelete('participants', filter),
+      sbDelete('quiz_answers', filter),
+      sbDelete('quiz_results', filter),
+      sbDelete('scenario_responses', filter),
+      sbDelete('module_results', filter),
     ])
     onToast('Session clôturée ✓')
     load()
@@ -568,20 +591,75 @@ function AppUpdatesWidget() {
   )
 }
 
-export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onToast, onOnlineCount, onOpenPlanning }) {
+export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onOpenTv, onToast, onOnlineCount, onOpenPlanning }) {
   const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | planning
   const [entreeCount, setEntreeCount] = useState(null)
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
   const [selectedUpdate, setSelectedUpdate] = useState(null)
+  const [roomModalOpen, setRoomModalOpen] = useState(false)
+  const [roomLoading, setRoomLoading] = useState(false)
+  const [activeRoomCode, setActiveRoomCode] = useState('')
 
   const [obDay, setObDay] = useState('1')
 
   useEffect(() => {
     loadTileStats()
-    const interval = setInterval(loadTileStats, 15000)
+    refreshActiveRoom()
+    const interval = setInterval(() => {
+      loadTileStats()
+      refreshActiveRoom()
+    }, 15000)
     return () => clearInterval(interval)
-  }, [])
+  }, [pName])
+
+  const refreshActiveRoom = async () => {
+    const login = trainerLoginFromDisplayName(pName)
+    const code = await getLiveTrainerRoomCode(login, pName)
+    setActiveRoomCode(code)
+  }
+
+  useEffect(() => {
+    const onFocus = () => { refreshActiveRoom() }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') refreshActiveRoom()
+    })
+    return () => {
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [pName])
+
+  const handleOpenRoomClick = async () => {
+    const login = trainerLoginFromDisplayName(pName)
+    const existing = await findActiveRoomForTrainer(login, pName)
+    if (existing?.code) {
+      onOpenRoom?.({ code: existing.code, resumed: true })
+      return
+    }
+    setRoomModalOpen(true)
+  }
+
+  const handleConfirmRoom = async (categorySlug) => {
+    setRoomLoading(true)
+    try {
+      const login = trainerLoginFromDisplayName(pName)
+      const result = await openOrCreateRoom({
+        trainerLogin: login,
+        trainerName: pName,
+        categorySlug,
+      })
+      setActiveRoomCode(result.code)
+      setRoomModalOpen(false)
+      onToast?.(result.created ? `Salle ${result.code} créée` : `Salle ${result.code} reprise`)
+      onOpenRoom?.({ code: result.code, resumed: !result.created, created: result.created })
+    } catch (e) {
+      console.error(e)
+      onToast?.('Impossible d\'ouvrir la salle')
+    } finally {
+      setRoomLoading(false)
+    }
+  }
 
   const loadTileStats = async () => {
     try {
@@ -629,7 +707,8 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
     return (
       <div id="dashboard">
         <OnboardingView
-          onBack={() => { setActiveView('home'); loadTileStats() }}
+          pName={pName}
+          onBack={() => { setActiveView('home'); loadTileStats(); refreshActiveRoom() }}
           onLaunchFormation={onLaunchSession}
           onLaunchModule={onLaunchModule}
         />
@@ -779,6 +858,62 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
         {selectedUpdate && <AppUpdateModal update={selectedUpdate} onClose={() => setSelectedUpdate(null)} />}
         <NewsTicker />
 
+        {isDynamicRoomCode(activeRoomCode) ? (
+          <div style={{
+            marginBottom: 16, padding: '14px 18px', borderRadius: 14,
+            background: 'linear-gradient(135deg, rgba(0,137,186,0.12), rgba(0,171,233,0.06))',
+            border: '1px solid rgba(0,137,186,0.35)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+          }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                Salle dédiée ouverte
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#0089ba', fontFamily: 'monospace', letterSpacing: 4, marginTop: 4 }}>
+                {activeRoomCode}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 4, lineHeight: 1.5 }}>
+                Données isolées de LPT2026 — participants et diffusion via ce code uniquement.
+                <br />
+                Le <strong>QR code</strong> s&apos;affiche sur l&apos;écran <strong>Diffusion 📺</strong> (pas sur ce tableau de bord).
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+              {onOpenTv && (
+                <button
+                  type="button"
+                  onClick={onOpenTv}
+                  style={{
+                    padding: '10px 18px', borderRadius: 10, border: 'none',
+                    background: '#00abe9', color: '#fff', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  Afficher le QR 📺
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleOpenRoomClick}
+                style={{
+                  padding: '10px 18px', borderRadius: 10,
+                  border: '1px solid rgba(0,137,186,0.45)',
+                  background: 'transparent', color: '#0089ba', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                Reprendre la salle →
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{
+            marginBottom: 16, padding: '12px 16px', borderRadius: 12,
+            background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+            fontSize: 13, color: '#b45309',
+          }}>
+            Mode <strong>legacy</strong> (LPT2026) — cliquez <strong>Ma salle</strong> pour créer une salle séparée avec son propre QR.
+          </div>
+        )}
+
         {/* OB Banner */}
         <div className="ob-banner" onClick={() => setActiveView('onboarding')}>
           <div className="ob-banner-icon">🚀</div>
@@ -841,6 +976,14 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
             <div className="dash-tile-sub">{sessionLast}</div>
           </div>
 
+          <div className="dash-tile dash-tile-cta" onClick={handleOpenRoomClick}>
+            <div className="dash-tile-cta-icon">🚪</div>
+            <div className="dash-tile-label">Ma salle</div>
+            <div className="dash-tile-sub">
+              {activeRoomCode ? `Code ${activeRoomCode} — reprendre` : 'Créer ou ouvrir ma salle'}
+            </div>
+          </div>
+
           <div className="dash-tile dash-tile-cta" onClick={() => setActiveView('modules')}>
             <div className="dash-tile-cta-icon">▶</div>
             <div className="dash-tile-label">Démarrer une session</div>
@@ -855,6 +998,14 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onTo
         </div>
 
       </div>
+      {roomModalOpen && (
+        <RoomOpenModal
+          trainerName={pName}
+          loading={roomLoading}
+          onCancel={() => setRoomModalOpen(false)}
+          onConfirm={handleConfirmRoom}
+        />
+      )}
     </div>
   )
 }
