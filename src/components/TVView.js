@@ -2217,8 +2217,8 @@ function TVMiniJeuRules() {
 function TVSlotReel({ items, reelState, result, label, color }) {
   const ITEM_H = 96
   const repeated = [...items, ...items, ...items]
-  const spinDuration = `${((items.length * ITEM_H) / 700).toFixed(2)}s`
-  const brakeDuration = `${((items.length * ITEM_H) / 700 * 5).toFixed(2)}s`
+  const spinDuration = `${((items.length * ITEM_H) / 580).toFixed(2)}s`
+  const brakeDuration = '1.3s'
   const isDone  = reelState === 'done'
   const isBrake = reelState === 'brake'
   const isSpin  = reelState === 'spin'
@@ -2297,8 +2297,8 @@ function TVThemeReel({ reelState, result }) {
   const COLOR = '#00abe9'
   const ITEM_H = 90
   const repeated = [...TV_THEMES, ...TV_THEMES, ...TV_THEMES]
-  const spinDuration = `${((TV_THEMES.length * ITEM_H) / 700).toFixed(2)}s`
-  const brakeDuration = `${((TV_THEMES.length * ITEM_H) / 700 * 5).toFixed(2)}s`
+  const spinDuration = `${((TV_THEMES.length * ITEM_H) / 580).toFixed(2)}s`
+  const brakeDuration = '1.3s'
 
   const isDone  = reelState === 'done'
   const isBrake = reelState === 'brake'
@@ -2382,11 +2382,9 @@ function TVMiniJeuGame({ mjPhase, vendeur, client, theme }) {
     const prev = prevPhaseRef.current
     prevPhaseRef.current = mjPhase
 
-    const n = Math.max(participants.length, 3)
-    const brakeMs = Math.round((n * 96 / 700) * 5 * 1000)
     const brake = (setFn, onDone) => {
       setFn('brake')
-      setTimeout(() => { setFn('done'); onDone?.() }, brakeMs)
+      setTimeout(() => { setFn('done'); onDone?.() }, 1300)
     }
 
     if (mjPhase === 'spinning' && prev !== 'spinning') {
