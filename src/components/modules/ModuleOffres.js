@@ -556,6 +556,13 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
 function GroupResultsView({ onTerminate }) {
   const [answers, setAnswers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [rateShowing, setRateShowing] = useState(false)
+
+  const toggleRate = async () => {
+    const next = !rateShowing
+    setRateShowing(next)
+    await setSharedState({ quiz_rate_show: next ? Date.now() : false })
+  }
 
   useEffect(() => {
     const fetchAnswers = async () => {
@@ -658,7 +665,16 @@ function GroupResultsView({ onTerminate }) {
       </div>
 
       {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 32 }}>
+        <button onClick={toggleRate} style={{
+          background: rateShowing ? 'rgba(0,171,233,0.2)' : 'rgba(0,171,233,0.1)',
+          border: `1px solid ${rateShowing ? '#00abe9' : 'rgba(0,171,233,0.4)'}`,
+          color: '#00abe9', padding: '14px 28px', borderRadius: 14,
+          fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          🎯 {rateShowing ? 'Masquer le taux' : 'Révéler le taux de réussite'}
+        </button>
         <button onClick={onTerminate} style={{
           background: 'linear-gradient(135deg, #dc2626, #ef4444)',
           border: 'none', color: '#fff', padding: '14px 42px', borderRadius: 14,

@@ -3298,6 +3298,96 @@ function TVQuizFinalPodium({ quiz, onDone, sessionCode }) {
   )
 }
 
+// ── TV Quiz Rate Reveal ───────────────────────────────────────────
+function TVQuizRateReveal({ sessionCode, moduleId, moduleLabel }) {
+  const [rate, setRate]       = useState(null)
+  const [display, setDisplay] = useState(0)
+
+  useEffect(() => {
+    sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&module_id=eq.${moduleId}`)
+      .then(rows => {
+        const total   = (rows || []).length
+        const correct = (rows || []).filter(r => r.is_correct).length
+        const pct     = total > 0 ? Math.round((correct / total) * 100) : 0
+        setTimeout(() => setRate(pct), 700)
+      })
+  }, [sessionCode, moduleId])
+
+  useEffect(() => {
+    if (rate === null) return
+    let current = 0
+    const steps    = 80
+    const interval = 2000 / steps
+    const t = setInterval(() => {
+      current = Math.min(current + rate / steps, rate)
+      setDisplay(Math.round(current))
+      if (current >= rate) clearInterval(t)
+    }, interval)
+    return () => clearInterval(t)
+  }, [rate])
+
+  const R  = 210
+  const C  = 2 * Math.PI * R
+  const pct = rate !== null ? display : 0
+  const dashoffset = C * (1 - pct / 100)
+  const arcColor = pct >= 75 ? '#22c55e' : pct >= 50 ? '#00abe9' : '#f59e0b'
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'radial-gradient(ellipse at 50% 35%, #021a3a 0%, #010d1f 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 52 }}>
+        Taux de réussite — {moduleLabel}
+      </div>
+
+      <div style={{ position: 'relative', width: 500, height: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="500" height="500" viewBox="0 0 500 500" style={{ position: 'absolute', top: 0, left: 0 }}>
+          <defs>
+            <filter id="rateGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="10" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
+          {/* Track */}
+          <circle cx="250" cy="250" r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="24" />
+          {/* Inner subtle ring */}
+          <circle cx="250" cy="250" r={R - 35} fill="none" stroke={`${arcColor}10`} strokeWidth="50" />
+          {/* Progress arc */}
+          <circle
+            cx="250" cy="250" r={R}
+            fill="none"
+            stroke={arcColor}
+            strokeWidth="24"
+            strokeLinecap="round"
+            strokeDasharray={C}
+            strokeDashoffset={dashoffset}
+            transform="rotate(-90 250 250)"
+            filter="url(#rateGlow)"
+            style={{ transition: `stroke-dashoffset ${2000 / 80}ms linear, stroke 0.4s ease` }}
+          />
+        </svg>
+        {/* Texte centré */}
+        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', pointerEvents: 'none' }}>
+          <div style={{ fontSize: 110, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -4 }}>
+            {display}
+          </div>
+          <div style={{ fontSize: 42, fontWeight: 700, color: arcColor, marginTop: -8 }}>%</div>
+          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.35)', marginTop: 10, fontWeight: 500 }}>
+            de bonnes réponses
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 28, marginTop: 48 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain', opacity: 0.4 }} />
+      </div>
+    </div>
+  )
+}
+
 // ── TV Group Results ──────────────────────────────────────────────
 function TVGroupResults({ moduleId, moduleLabel, quiz }) {
   const [answers, setAnswers] = useState([])
@@ -3620,6 +3710,7 @@ export default function TVView() {
   // Quiz podium
   const [quizInterstitialPhase, setQuizInterstitialPhase] = useState(false)
   const [finalPodiumPhase, setFinalPodiumPhase]           = useState(false)
+  const [rateRevealPhase,  setRateRevealPhase]            = useState(false)
   const prevQIdxRef = useRef(-1)
   const prevIsResultsRef = useRef(false)
 
@@ -3672,9 +3763,15 @@ export default function TVView() {
     if (isResults && !prevIsResultsRef.current) {
       prevIsResultsRef.current = true
       setFinalPodiumPhase(true)
+      setRateRevealPhase(false)
     }
-    if (!isResults) prevIsResultsRef.current = false
+    if (!isResults) { prevIsResultsRef.current = false; setRateRevealPhase(false) }
   }, [modulePage, isQuiz, isResults])
+
+  useEffect(() => {
+    if (sharedState?.quiz_rate_show) setRateRevealPhase(true)
+    else setRateRevealPhase(false)
+  }, [sharedState?.quiz_rate_show])
 
   let page = null
   let quizQuestion = null
@@ -3741,7 +3838,9 @@ export default function TVView() {
         ) : isResults ? (
           finalPodiumPhase
             ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} onDone={() => setFinalPodiumPhase(false)} sessionCode={sessionCode} />
-            : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
+            : rateRevealPhase
+              ? <TVQuizRateReveal sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} />
+              : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
         ) : isQuiz && quizQuestion ? (
           quizInterstitialPhase
             ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} skipSignal={sharedState?.quiz_podium_skip} />
