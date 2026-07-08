@@ -3020,11 +3020,8 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode }) {
 }
 
 // ── TV Quiz Podium interstitiel (toutes les 5 questions) ──────────
-function TVQuizPodium({ qIdx, onDone, sessionCode }) {
+function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal }) {
   const [top3, setTop3] = useState([])
-  const [loaded, setLoaded] = useState(false)
-  const [elapsed, setElapsed] = useState(0)
-  const DURATION = 9
 
   useEffect(() => {
     sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}`).then(rows => {
@@ -3038,20 +3035,12 @@ function TVQuizPodium({ qIdx, onDone, sessionCode }) {
         .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
         .slice(0, 3)
       setTop3(sorted)
-      setLoaded(true)
     })
   }, [qIdx])
 
   useEffect(() => {
-    if (!loaded) return
-    const t = setInterval(() => {
-      setElapsed(e => {
-        if (e + 1 >= DURATION) { clearInterval(t); onDone(); return DURATION }
-        return e + 1
-      })
-    }, 1000)
-    return () => clearInterval(t)
-  }, [loaded, onDone])
+    if (skipSignal) onDone()
+  }, [skipSignal, onDone])
 
   const slots = [top3[1], top3[0], top3[2]]
   const stepH = [180, 240, 150]
@@ -3093,7 +3082,7 @@ function TVQuizPodium({ qIdx, onDone, sessionCode }) {
         animation: 'podiumFadeIn 0.6s ease forwards',
       }}>🏆 Classement</h2>
 
-      {loaded && (
+      {top3.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 12 }}>
           {slots.map((player, i) => {
             if (!player) return <div key={i} style={{ width: 200, height: stepH[i] }} />
@@ -3141,17 +3130,8 @@ function TVQuizPodium({ qIdx, onDone, sessionCode }) {
         marginBottom: 36,
       }} />
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-        <div style={{ width: 280, height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2 }}>
-          <div style={{
-            height: '100%', borderRadius: 2, background: '#00abe9',
-            width: `${((DURATION - elapsed) / DURATION) * 100}%`,
-            transition: 'width 1s linear',
-          }} />
-        </div>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>
-          Question suivante dans {Math.max(0, DURATION - elapsed)}s
-        </div>
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 500, marginTop: 8 }}>
+        En attente du formateur…
       </div>
     </div>
   )
@@ -3764,7 +3744,7 @@ export default function TVView() {
             : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
         ) : isQuiz && quizQuestion ? (
           quizInterstitialPhase
-            ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} />
+            ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} skipSignal={sharedState?.quiz_podium_skip} />
             : sharedState?.quiz_show_correction
               ? <TVQuizCorrection
                   question={quizQuestion}

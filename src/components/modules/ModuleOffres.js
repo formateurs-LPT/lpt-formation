@@ -523,21 +523,30 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
           <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginRight: 6 }}>{total}</span>
           participant{total !== 1 ? 's' : ''} {total !== 1 ? 'ont' : 'a'} répondu
         </div>
-        {isLast ? (
-          <button onClick={onEnd} style={{
-            background: 'linear-gradient(135deg, #16a34a, #22c55e)',
-            border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
-            fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            boxShadow: '0 6px 24px rgba(34,197,94,0.4)',
-          }}>✓ Terminer le quiz</button>
-        ) : (
-          <button onClick={onNext} style={{
-            background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
-            border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
-            fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            boxShadow: '0 6px 24px rgba(124,58,237,0.45)',
-          }}>Question suivante →</button>
-        )}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          {quizQ > 0 && quizQ % 5 === 0 && (
+            <button onClick={() => setSharedState({ quiz_podium_skip: Date.now() })} style={{
+              background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)',
+              color: '#fbbf24', padding: '14px 28px', borderRadius: 14,
+              fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}>🏆 Passer le podium →</button>
+          )}
+          {isLast ? (
+            <button onClick={onEnd} style={{
+              background: 'linear-gradient(135deg, #16a34a, #22c55e)',
+              border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
+              fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 6px 24px rgba(34,197,94,0.4)',
+            }}>✓ Terminer le quiz</button>
+          ) : (
+            <button onClick={onNext} style={{
+              background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
+              border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
+              fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 6px 24px rgba(124,58,237,0.45)',
+            }}>Question suivante →</button>
+          )}
+        </div>
       </div>
     </div>
   )
