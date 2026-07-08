@@ -3144,8 +3144,11 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     setModelePoint(sharedState.modele_point ?? null)
     setFaqJournee(sharedState.faq_journee || null)
     // Force-disconnect déclenché par le formateur
-    if (pName && sharedState.forced_disconnects?.[pName] && onDisconnect) {
-      onDisconnect()
+    if (pName && sharedState.forced_disconnects?.[pName]) {
+      localStorage.removeItem('participant_name')
+      localStorage.removeItem('participant_prenom')
+      window.location.reload()
+      return
     }
   }, [sharedState])
 

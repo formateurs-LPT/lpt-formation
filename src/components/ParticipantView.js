@@ -388,6 +388,8 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   const [curStep, setCurStep] = useState(-2)
   const [curSlide, setCurSlide] = useState(1)
   const [ended, setEnded] = useState(false)
+  const pNameRef = useRef(pName)
+  useEffect(() => { pNameRef.current = pName }, [pName])
 
   useParticipantPresence({
     sessionCode,
@@ -457,8 +459,12 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
         setPlanningDay(state?.planning_day || null)
         setSharedState_(state || null)
         // Force-disconnect déclenché par le formateur
-        if (pName && state?.forced_disconnects?.[pName] && onDisconnect) {
-          onDisconnect()
+        const curPName = pNameRef.current
+        if (curPName && state?.forced_disconnects?.[curPName]) {
+          localStorage.removeItem('participant_name')
+          localStorage.removeItem('participant_prenom')
+          window.location.reload()
+          return
         }
       } catch {}
     }
