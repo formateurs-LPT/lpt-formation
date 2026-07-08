@@ -499,8 +499,8 @@ export default function ModuleMiniJeux({ pName, onBack }) {
     if (active.length < 2) return
     setView('game')
     setPhase('idle')
-    // TV passe directement sur les roues en spin
-    await setSharedState({ minijeu_phase: 'spinning', minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null }).catch(() => {})
+    // TV affiche les roues en attente (sans spin)
+    await setSharedState({ minijeu_phase: 'game_ready', minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null }).catch(() => {})
   }
 
   // Lancer le spin — appelé par le bouton dans GameView

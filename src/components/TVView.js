@@ -2387,6 +2387,10 @@ function TVMiniJeuGame({ mjPhase, vendeur, client, theme }) {
       setTimeout(() => { setFn('done'); onDone?.() }, 850)
     }
 
+    if (mjPhase === 'game_ready') {
+      setReel1('idle'); setReel2('idle'); setReelT('idle')
+    }
+
     if (mjPhase === 'spinning' && prev !== 'spinning') {
       setReel1('spin'); setReel2('spin'); setReelT('spin')
     }
@@ -4083,7 +4087,7 @@ export default function TVView() {
         </>
       )
     }
-    if (['spinning', 'vendeur', 'client', 'revealed'].includes(mjPhase)) {
+    if (['game_ready', 'spinning', 'vendeur', 'client', 'revealed'].includes(mjPhase)) {
       return (
         <>
           <style>{STYLES}</style>
