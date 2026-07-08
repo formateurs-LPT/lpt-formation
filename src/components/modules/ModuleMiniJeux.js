@@ -55,7 +55,7 @@ function SlotReel({ items, reelState, result, label, color, large = false }) {
   const repeated = useMemo(() => [...items, ...items, ...items], [items])
   // Vitesse constante ~700px/s quelle que soit la liste
   const spinDuration = useMemo(() => `${((items.length * ITEM_H) / 580).toFixed(2)}s`, [items.length, ITEM_H])
-  const brakeDuration = '1.2s'
+  const brakeDuration = '0.8s'
   const isDone  = reelState === 'done'
   const isBrake = reelState === 'brake'
   const isSpin  = reelState === 'spin'
@@ -138,7 +138,7 @@ function ThemeReel({ reelState, result, large = false }) {
   const ITEM_H = large ? 90 : 76
   const repeated = useMemo(() => [...THEMES, ...THEMES, ...THEMES], [])
   const spinDuration = `${((THEMES.length * ITEM_H) / 580).toFixed(2)}s`
-  const brakeDuration = '1.2s'
+  const brakeDuration = '0.8s'
   const isDone  = reelState === 'done'
   const isBrake = reelState === 'brake'
   const isSpin  = reelState === 'spin'
@@ -238,13 +238,13 @@ export function RouletteView({ participants, phase, vendeur, client, theme, reel
       {/* Boutons (formateur seulement) */}
       {!isTV && (
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-          {phase !== 'idle' && (
-            <button onClick={onReset} style={{
+          {phase === 'revealed' && (
+            <button onClick={onReset} title="Relancer la roue" style={{
               background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)',
-              color: 'rgba(255,255,255,0.65)', padding: '13px 26px', borderRadius: 13,
-              fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              color: '#fff', padding: '13px 18px', borderRadius: 13,
+              fontSize: 22, cursor: 'pointer', lineHeight: 1,
             }}>
-              ↺ Rejouer
+              🥽
             </button>
           )}
           {phase === 'idle' && (
@@ -486,7 +486,7 @@ export default function ModuleMiniJeux({ pName, onBack }) {
     })
   }
 
-  const BRAKE_MS = 1200
+  const BRAKE_MS = 800
 
   const stopReel = useCallback((setFn, onDone) => {
     setFn('brake')
@@ -518,8 +518,8 @@ export default function ModuleMiniJeux({ pName, onBack }) {
 
     await setSharedState({ minijeu_phase: 'spinning', minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null }).catch(() => {})
 
-    // 2s → stop vendeur (brake 1.2s) → 0.5s → stop client (brake 1.2s) → 0.5s → stop theme
-    // Total : 2 + 1.2 + 0.5 + 1.2 + 0.5 + 1.2 = 6.6s
+    // 1.5s → stop vendeur (brake 0.8s) → 0.3s → stop client (brake 0.8s) → 0.3s → stop theme
+    // Total : 1.5 + 0.8 + 0.3 + 0.8 + 0.3 + 0.8 = 4.5s
     setTimeout(() => {
       stopReel(setReel1, () => {
         setVendeur(p1)
@@ -538,19 +538,19 @@ export default function ModuleMiniJeux({ pName, onBack }) {
                 setPhase('revealed')
                 setSharedState({ minijeu_phase: 'revealed', minijeu_theme: t }).catch(() => {})
               })
-            }, 500)
+            }, 300)
           })
-        }, 500)
+        }, 300)
       })
-    }, 2000)
+    }, 1500)
   }, [participants, excluded, stopReel])
 
   const handleReset = async () => {
     setPhase('idle')
     setReel1('idle'); setReel2('idle'); setReelT('idle')
     setVendeur(null); setClient(null); setTheme(null)
-    await setSharedState({ minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null, minijeu_phase: 'rules', minijeu_game: 'accueil' }).catch(() => {})
-    setView('rules')
+    await setSharedState({ minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null }).catch(() => {})
+    setTimeout(() => handleLaunch(), 80)
   }
 
   const handleBack = async () => {

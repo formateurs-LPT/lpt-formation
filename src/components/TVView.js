@@ -2218,7 +2218,7 @@ function TVSlotReel({ items, reelState, result, label, color }) {
   const ITEM_H = 96
   const repeated = [...items, ...items, ...items]
   const spinDuration = `${((items.length * ITEM_H) / 580).toFixed(2)}s`
-  const brakeDuration = '1.3s'
+  const brakeDuration = '0.85s'
   const isDone  = reelState === 'done'
   const isBrake = reelState === 'brake'
   const isSpin  = reelState === 'spin'
@@ -2298,7 +2298,7 @@ function TVThemeReel({ reelState, result }) {
   const ITEM_H = 90
   const repeated = [...TV_THEMES, ...TV_THEMES, ...TV_THEMES]
   const spinDuration = `${((TV_THEMES.length * ITEM_H) / 580).toFixed(2)}s`
-  const brakeDuration = '1.3s'
+  const brakeDuration = '0.85s'
 
   const isDone  = reelState === 'done'
   const isBrake = reelState === 'brake'
@@ -2384,7 +2384,7 @@ function TVMiniJeuGame({ mjPhase, vendeur, client, theme }) {
 
     const brake = (setFn, onDone) => {
       setFn('brake')
-      setTimeout(() => { setFn('done'); onDone?.() }, 1300)
+      setTimeout(() => { setFn('done'); onDone?.() }, 850)
     }
 
     if (mjPhase === 'spinning' && prev !== 'spinning') {
