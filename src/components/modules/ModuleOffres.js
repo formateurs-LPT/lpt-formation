@@ -242,24 +242,20 @@ const ITEMS_PROGRESSIF_11 = [
   { text: "Sur l'intégralité du magasin", sub: 'Toutes nos montures et verres éligibles' },
   { text: '400 modèles de montures', sub: 'Au choix, sans contrainte' },
   { text: 'Tous les traitements inclus', sub: 'Anti-rayure · Anti-reflets · Anti-salissure · Hydrophobe · Anti-lumière bleue' },
+  { text: 'Zones d\'aberrations réduites', sub: 'Confort de vision optimisé, adaptation facilitée' },
+  { text: 'Vision extra-large', sub: 'Champ visuel élargi à toutes distances' },
   { text: '📅 Fabrication en 9 jours', sub: null },
 ]
 
 function VerreProgAnime({ color, size = 360 }) {
   return (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-      <div style={{
-        position: 'absolute', width: size * 1.3, height: size * 1.3, borderRadius: '50%',
-        background: `radial-gradient(circle, ${color}28 0%, transparent 70%)`,
-        animation: 'haloPulse 3.5s ease-in-out infinite',
-      }} />
       <div style={{ animation: 'verreFloat 4.5s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src="/assets/verre-prog.png"
           alt="Verre progressif"
-          width={size} height={size}
-          style={{ objectFit: 'contain', filter: `drop-shadow(0 0 36px ${color}60) drop-shadow(0 10px 28px rgba(0,0,0,0.28))` }}
-          priority
+          style={{ width: size, height: size, objectFit: 'contain', filter: `drop-shadow(0 0 36px ${color}60) drop-shadow(0 10px 28px rgba(0,0,0,0.28))` }}
         />
       </div>
     </div>
