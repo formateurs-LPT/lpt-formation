@@ -9,6 +9,34 @@ import { NextPagePreview } from '@/lib/trainerPreview'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
+const STYLES = `
+  @keyframes verreFloat {
+    0%, 100% { transform: translateY(0px) scale(1); }
+    50% { transform: translateY(-12px) scale(1.03); }
+  }
+  @keyframes haloPulse {
+    0%, 100% { opacity: 0.45; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.12); }
+  }
+`
+
+// ── Verre animé (formateur) ──────────────────────────────────────
+function VerreAnime({ color, size = 260 }) {
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+      <div style={{ animation: 'verreFloat 4s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
+        <Image
+          src="/assets/verre-unifocal-2.png"
+          alt="Verre unifocal"
+          width={size} height={size}
+          style={{ objectFit: 'contain', filter: `drop-shadow(0 0 36px ${color}60) drop-shadow(0 10px 28px rgba(0,0,0,0.28))` }}
+          priority
+        />
+      </div>
+    </div>
+  )
+}
+
 // ── Anneau décoratif ─────────────────────────────────────────────
 function Ring({ color, size = 80 }) {
   return (
@@ -60,7 +88,7 @@ function CoursClassique({ onNext, onPrev, onBack }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · 2 / 2</span>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · 4 / 4</span>
         </div>
         <button onClick={onBack}
           style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .2s', letterSpacing: .3 }}
@@ -152,6 +180,141 @@ const ITEMS_11 = [
 ]
 
 // ── Page 1=1 (formateur) ─────────────────────────────────────────
+// ── Page Unifocal 1=1 (formateur) ────────────────────────────────
+const ITEMS_UNIFOCAL_11 = [
+  { text: "Sur l'intégralité du magasin", sub: 'Toutes nos montures et verres éligibles' },
+  { text: '400 modèles de montures', sub: 'Au choix, sans contrainte' },
+  { text: 'Tous les traitements inclus', sub: 'Anti-rayure · Anti-reflets · Anti-salissure · Hydrophobe · Anti-lumière bleue' },
+  { text: '⚡ Fabrication en 10 minutes', sub: null },
+]
+
+function CoursUnifocal11({ onPrev, onNext, onBack }) {
+  const COLOR = '#c9a227'
+  return (
+    <>
+      <style>{STYLES}</style>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+            <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · 2 / 4</span>
+          </div>
+          <button onClick={onBack}
+            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+          >✕ Quitter</button>
+        </div>
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <VerreAnime color={COLOR} size={360} />
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Parcours 1=1 · Verre unifocal</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 24 }}>
+              Le verre unifocal<br /><span style={{ color: COLOR }}>dans l'offre 1=1</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {ITEMS_UNIFOCAL_11.map((item, i) => (
+                <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.1)`, borderLeft: `3px solid ${COLOR}`, borderRadius: 14, padding: '14px 20px' }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{item.text}</div>
+                  {item.sub && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>{item.sub}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{ flexShrink: 0 }}>
+          <NextPagePreview nextPage={{ type: 'offres-progressif-11', label: 'Verre progressif 1=1', color: '#c9a227' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
+            <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '13px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← 1=1</button>
+            <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${COLOR}, #b8871a)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 6px 24px ${COLOR}45` }}>Verre progressif →</button>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Page Progressif 1=1 (formateur) ──────────────────────────────
+const ITEMS_PROGRESSIF_11 = [
+  { text: "Sur l'intégralité du magasin", sub: 'Toutes nos montures et verres éligibles' },
+  { text: '400 modèles de montures', sub: 'Au choix, sans contrainte' },
+  { text: 'Tous les traitements inclus', sub: 'Anti-rayure · Anti-reflets · Anti-salissure · Hydrophobe · Anti-lumière bleue' },
+  { text: '📅 Fabrication en 9 jours', sub: null },
+]
+
+function VerreProgAnime({ color, size = 360 }) {
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+      <div style={{
+        position: 'absolute', width: size * 1.3, height: size * 1.3, borderRadius: '50%',
+        background: `radial-gradient(circle, ${color}28 0%, transparent 70%)`,
+        animation: 'haloPulse 3.5s ease-in-out infinite',
+      }} />
+      <div style={{ animation: 'verreFloat 4.5s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
+        <Image
+          src="/assets/verre-prog.png"
+          alt="Verre progressif"
+          width={size} height={size}
+          style={{ objectFit: 'contain', filter: `drop-shadow(0 0 36px ${color}60) drop-shadow(0 10px 28px rgba(0,0,0,0.28))` }}
+          priority
+        />
+      </div>
+    </div>
+  )
+}
+
+function CoursProgressif11({ onPrev, onNext, onBack }) {
+  const COLOR = '#c9a227'
+  return (
+    <>
+      <style>{STYLES}</style>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+            <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · 3 / 4</span>
+          </div>
+          <button onClick={onBack}
+            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+          >✕ Quitter</button>
+        </div>
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <VerreProgAnime color={COLOR} size={360} />
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Parcours 1=1 · Verre progressif</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 24 }}>
+              Le verre progressif<br /><span style={{ color: COLOR }}>dans l'offre 1=1</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {ITEMS_PROGRESSIF_11.map((item, i) => (
+                <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.1)`, borderLeft: `3px solid ${COLOR}`, borderRadius: 14, padding: '14px 20px' }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{item.text}</div>
+                  {item.sub && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>{item.sub}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{ flexShrink: 0 }}>
+          <NextPagePreview nextPage={{ type: 'offres-classique', label: 'Parcours Classique', color: '#00abe9' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
+            <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '13px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← Unifocal</button>
+            <button onClick={onNext} style={{ background: `linear-gradient(135deg, #00abe9, #0090c5)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,171,233,0.45)' }}>Parcours Classique →</button>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
 function Cours11({ onPrev, onNext, onBack }) {
   const COLOR = '#c9a227'
   const [step, setStep] = useState(0)
@@ -179,7 +342,7 @@ function Cours11({ onPrev, onNext, onBack }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · 1 / 2</span>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · 1 / 4</span>
         </div>
         <button onClick={onBack}
           style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .2s', letterSpacing: .3 }}
@@ -241,13 +404,13 @@ function Cours11({ onPrev, onNext, onBack }) {
 
       {/* Nav */}
       <div style={{ flexShrink: 0 }}>
-        <NextPagePreview nextPage={{ type: 'offres-classique', label: 'Parcours Classique', color: '#00abe9' }} />
+        <NextPagePreview nextPage={{ type: 'offres-unifocal-11', label: 'Verre unifocal 1=1', color: '#c9a227' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
           <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '13px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← Précédent</button>
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={hide} disabled={step === 0} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: step === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', padding: '13px 22px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: step === 0 ? 'default' : 'pointer', fontFamily: 'inherit' }}>← Masquer</button>
             {allRevealed ? (
-              <button onClick={onNext} style={{ background: `linear-gradient(135deg, #00abe9, #0090c5)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,171,233,0.45)' }}>Parcours Classique →</button>
+              <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${COLOR}, #b8871a)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 6px 24px ${COLOR}45` }}>Verre unifocal →</button>
             ) : (
               <button onClick={reveal} style={{ background: `linear-gradient(135deg, ${COLOR}, #b8871a)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 6px 24px ${COLOR}45` }}>Révéler →</button>
             )}
@@ -570,6 +733,16 @@ export default function ModuleOffres({ pName, onBack }) {
     setPhase('un-pour-un')
   }
 
+  const goUnifocal11 = async () => {
+    await sbUpdate('sessions', { active_module: 'offres', module_page: 2 }, `code=eq.${getActiveSessionCode()}`)
+    setPhase('unifocal-11')
+  }
+
+  const goProgressif11 = async () => {
+    await sbUpdate('sessions', { active_module: 'offres', module_page: 3 }, `code=eq.${getActiveSessionCode()}`)
+    setPhase('progressif-11')
+  }
+
   const startQuiz = async () => {
     await sbUpdate('sessions', { active_module: 'offres', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(0)
@@ -592,9 +765,11 @@ export default function ModuleOffres({ pName, onBack }) {
     onBack()
   }
 
-  if (phase === 'lobby')      return <Lobby onStart={go11} onBack={handleBack} />
-  if (phase === 'un-pour-un') return <Cours11 onPrev={goLobby} onNext={goClassique} onBack={handleBack} />
-  if (phase === 'classique')  return <CoursClassique onNext={startQuiz} onPrev={go11} onBack={handleBack} />
+  if (phase === 'lobby')         return <Lobby onStart={go11} onBack={handleBack} />
+  if (phase === 'un-pour-un')    return <Cours11 onPrev={goLobby} onNext={goUnifocal11} onBack={handleBack} />
+  if (phase === 'unifocal-11')   return <CoursUnifocal11 onPrev={go11} onNext={goProgressif11} onBack={handleBack} />
+  if (phase === 'progressif-11') return <CoursProgressif11 onPrev={goUnifocal11} onNext={goClassique} onBack={handleBack} />
+  if (phase === 'classique')     return <CoursClassique onNext={startQuiz} onPrev={goProgressif11} onBack={handleBack} />
   if (phase === 'results')   return <GroupResultsView onTerminate={handleTerminateModule} />
 
   return (
