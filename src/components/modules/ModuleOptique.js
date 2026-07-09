@@ -1325,6 +1325,7 @@ export default function ModuleOptique({ pName, onBack }) {
   const [quizLaunched, setQuizLaunched] = useState(false)
   const [quizQ, setQuizQ] = useState(0)
   const [quizInterstitial, setQuizInterstitial] = useState(false)
+  const [quizFinalPhase, setQuizFinalPhase] = useState(null) // 'podium' | 'rate' | null
   const [showGroupResults, setShowGroupResults] = useState(false)
 
   const trainerAvatar = TRAINER_AVATARS[(pName || '').toLowerCase()] || TRAINER_AVATARS.kevin
@@ -1348,9 +1349,10 @@ export default function ModuleOptique({ pName, onBack }) {
 
   const handleLaunchQuiz = async () => {
     await sbUpdate('sessions', { active_module: 'optique', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
-    await setSharedState({ quiz_interstitial_q: null })
+    await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: null })
     setQuizQ(0)
     setQuizLaunched(true)
+    setQuizFinalPhase(null)
   }
 
   const handleNextQuestion = async () => {
@@ -1370,11 +1372,23 @@ export default function ModuleOptique({ pName, onBack }) {
 
   const handleEndQuiz = async () => {
     await sbUpdate('sessions', { active_module: 'optique', module_page: 200 }, `code=eq.${getActiveSessionCode()}`)
-    await setSharedState({ quiz_interstitial_q: null })
+    await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: 'podium' })
+    setQuizFinalPhase('podium')
+  }
+
+  const handleShowRate = async () => {
+    await setSharedState({ quiz_final_phase: 'rate' })
+    setQuizFinalPhase('rate')
+  }
+
+  const handleShowRecap = async () => {
+    await setSharedState({ quiz_final_phase: 'recap' })
+    setQuizFinalPhase(null)
     setShowGroupResults(true)
   }
 
   const handleTerminateModule = async () => {
+    await setSharedState({ quiz_final_phase: null })
     await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     onBack()
   }
@@ -1385,6 +1399,68 @@ export default function ModuleOptique({ pName, onBack }) {
       <Lobby onStart={() => setStarted(true)} onBack={handleBack} />
     </>
   )
+
+  if (quizFinalPhase === 'podium') {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <div style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28,
+        }}>
+          <img src="/assets/troph%C3%A9-quiz.png" alt="Trophée" style={{ width: 120, height: 120, objectFit: 'contain' }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
+              Podium final affiché sur le diffuseur
+            </div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
+              Commentez le classement avec le groupe…
+            </div>
+          </div>
+          <button onClick={handleShowRate} style={{
+            background: 'linear-gradient(135deg, #0089ba, #00abe9)',
+            border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
+            fontSize: 17, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 6px 24px rgba(0,171,233,0.45)',
+          }}>
+            Afficher le taux de réussite →
+          </button>
+        </div>
+      </>
+    )
+  }
+
+  if (quizFinalPhase === 'rate') {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <div style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28,
+        }}>
+          <div style={{ fontSize: 72 }}>📊</div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
+              Taux de réussite affiché sur le diffuseur
+            </div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
+              Commentez les résultats avec le groupe…
+            </div>
+          </div>
+          <button onClick={handleShowRecap} style={{
+            background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
+            border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
+            fontSize: 17, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 6px 24px rgba(124,58,237,0.45)',
+          }}>
+            Faire apparaître le récap →
+          </button>
+        </div>
+      </>
+    )
+  }
 
   if (showGroupResults) {
     return (

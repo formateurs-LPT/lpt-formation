@@ -3411,7 +3411,8 @@ function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal }) {
         filter: 'drop-shadow(0 0 24px rgba(251,191,36,0.5))',
         marginBottom: 8,
       }}>
-        <Image src="/assets/trophé-quiz.png" alt="Trophée" width={110} height={110} style={{ objectFit: 'contain' }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/troph%C3%A9-quiz.png" alt="Trophée" width={110} height={110} style={{ objectFit: 'contain', display: 'block' }} />
       </div>
 
       <h2 style={{
@@ -3486,12 +3487,9 @@ function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal }) {
 }
 
 // ── TV Quiz Final Podium ──────────────────────────────────────────
-const FINAL_PODIUM_DURATION = 20
-
-function TVQuizFinalPodium({ quiz, onDone, sessionCode }) {
+function TVQuizFinalPodium({ quiz, sessionCode }) {
   const [top3, setTop3] = useState([])
   const [ready, setReady] = useState(false)
-  const [countdown, setCountdown] = useState(FINAL_PODIUM_DURATION)
   const phraseRef = useRef(null)
 
   useEffect(() => {
@@ -3513,16 +3511,6 @@ function TVQuizFinalPodium({ quiz, onDone, sessionCode }) {
       setTimeout(() => setReady(true), 400)
     })
   }, [])
-
-  useEffect(() => {
-    const t = setInterval(() => {
-      setCountdown(c => {
-        if (c <= 1) { clearInterval(t); onDone(); return 0 }
-        return c - 1
-      })
-    }, 1000)
-    return () => clearInterval(t)
-  }, [onDone])
 
   const slots = [top3[1], top3[0], top3[2]]
   const stepH = [220, 300, 170]
@@ -3573,7 +3561,8 @@ function TVQuizFinalPodium({ quiz, onDone, sessionCode }) {
         filter: 'drop-shadow(0 0 40px rgba(251,191,36,0.6))',
         marginBottom: 4,
       }}>
-        <Image src="/assets/trophé-quiz.png" alt="Trophée champion" width={150} height={150} style={{ objectFit: 'contain' }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/troph%C3%A9-quiz.png" alt="Trophée champion" width={150} height={150} style={{ objectFit: 'contain', display: 'block' }} />
       </div>
 
       <h1 style={{
@@ -3646,18 +3635,12 @@ function TVQuizFinalPodium({ quiz, onDone, sessionCode }) {
       <div style={{
         width: 760, height: 10,
         background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
-        marginTop: 28, marginBottom: 28,
+        marginTop: 28, marginBottom: 8,
       }} />
 
-      <button onClick={onDone} style={{
-        background: 'rgba(0,171,233,0.14)', border: '1px solid rgba(0,171,233,0.4)',
-        borderRadius: 16, padding: '12px 36px',
-        color: '#00abe9', fontSize: 16, fontWeight: 700,
-        cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 10,
-      }}>
-        Voir le bilan détaillé →
-        <span style={{ background: 'rgba(0,171,233,0.25)', borderRadius: 8, padding: '2px 10px', fontSize: 14, fontWeight: 800 }}>{countdown}s</span>
-      </button>
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 500, marginTop: 8 }}>
+        En attente du formateur…
+      </div>
     </div>
   )
 }
@@ -4091,7 +4074,6 @@ export default function TVView() {
   const [quizInterstitialPhase, setQuizInterstitialPhase] = useState(false)
   const [finalPodiumPhase, setFinalPodiumPhase]           = useState(false)
   const [rateRevealPhase,  setRateRevealPhase]            = useState(false)
-  const prevIsResultsRef = useRef(false)
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
@@ -4135,20 +4117,12 @@ export default function TVView() {
     else setQuizInterstitialPhase(false)
   }, [sharedState?.quiz_interstitial_q])
 
-  // Podium final — déclenché quand module_page passe à 200
+  // Podium final — piloté par quiz_final_phase dans sharedState (formateur contrôle l'ordre)
   useEffect(() => {
-    if (isResults && !prevIsResultsRef.current) {
-      prevIsResultsRef.current = true
-      setFinalPodiumPhase(true)
-      setRateRevealPhase(false)
-    }
-    if (!isResults) { prevIsResultsRef.current = false; setRateRevealPhase(false) }
-  }, [isResults])
-
-  useEffect(() => {
-    if (sharedState?.quiz_rate_show) setRateRevealPhase(true)
-    else setRateRevealPhase(false)
-  }, [sharedState?.quiz_rate_show])
+    const phase = sharedState?.quiz_final_phase
+    setFinalPodiumPhase(phase === 'podium')
+    setRateRevealPhase(phase === 'rate')
+  }, [sharedState?.quiz_final_phase])
 
   let page = null
   let quizQuestion = null
@@ -4242,7 +4216,7 @@ export default function TVView() {
           <TVModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
         ) : isResults ? (
           finalPodiumPhase
-            ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} onDone={() => setFinalPodiumPhase(false)} sessionCode={sessionCode} />
+            ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} sessionCode={sessionCode} />
             : rateRevealPhase
               ? <TVQuizRateReveal sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} />
               : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
