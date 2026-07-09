@@ -980,6 +980,32 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           <div style={{ fontSize: 13, fontWeight: 600, color: '#c9a227' }}>Ouvrir ↗</div>
         </div>
 
+        {/* Fiche accès */}
+        <div
+          onClick={() => window.open('/fiche-acces', '_blank')}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: '#fff', border: '1px solid var(--border)',
+            borderLeft: '4px solid #0089ba',
+            borderRadius: 'var(--r)', padding: '18px 24px',
+            cursor: 'pointer', marginBottom: 16, transition: 'all .2s',
+          }}
+          onMouseOver={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,137,186,.12)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+          onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,137,186,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>
+              🔑
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>À partager aux formés</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Fiche accès LPT</div>
+              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 1 }}>Gmail · Slack · LPTBot — exportable en PDF</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#0089ba' }}>Ouvrir ↗</div>
+        </div>
+
         {/* Main tiles */}
         <div className="dash-tiles">
           <div className="dash-tile" onClick={() => setActiveView('entrees')}>
