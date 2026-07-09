@@ -204,8 +204,7 @@ export default function FichePratique() {
               <Card accent={BLUE}>
                 <Label color={BLUE}>Repères clés</Label>
                 <TableRow label="Paliers de correction" value="0,25 dioptrie" accent={BLUE_LIGHT} />
-                <TableRow label="Myopie en boutique jusqu'à" value="−8" accent={BLUE_LIGHT} />
-                <TableRow label="Myopie commande jusqu'à" value="−22" accent={BLUE_LIGHT} />
+                <TableRow label="Sphère en stock (fabrication 10 min)" value="−8 à +7,25" accent={BLUE_LIGHT} />
                 <TableRow label="Fabrication unifocal" value="10 min" accent={BLUE_LIGHT} />
                 <TableRow label="Fabrication progressif" value="9 jours" accent={BLUE_LIGHT} last />
               </Card>
