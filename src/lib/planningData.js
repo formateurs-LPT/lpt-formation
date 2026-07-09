@@ -42,17 +42,17 @@ export const PLANNING_JOURS = [
     color: '#4ade80',
     blocs: [
       {
-        horaire: '9h – 10h',
+        horaire: '10h – 11h',
         titre: 'Merch montures',
         items: [],
       },
       {
-        horaire: '10h – 11h',
+        horaire: '11h – 12h',
         titre: 'Réveil des acquis',
         items: [],
       },
       {
-        horaire: '11h – 13h',
+        horaire: '12h – 13h',
         titre: "Trame d'accueil",
         items: [
           'Présentation du concept aux clients',
