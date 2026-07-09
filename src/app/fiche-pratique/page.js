@@ -351,7 +351,7 @@ export default function FichePratique() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[
                   { icon: '📋', text: 'Avoir une ordonnance valable (ophtalmologiste ou renouvellement adapté par un opticien)' },
-                  { icon: '⏳', text: 'Respecter les délais de renouvellement selon l'âge' },
+                  { icon: '⏳', text: "Respecter les délais de renouvellement selon l'âge" },
                   { icon: '🏥', text: 'Être couvert par une mutuelle complémentaire santé pour un remboursement significatif' },
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
