@@ -236,7 +236,7 @@ export default function FicheAcces() {
                   <span style={{ color: TEXT_SUB, fontSize: 14 }}>@lunettespourtous.com</span>
                 </div>
                 <div style={{ marginTop: 12, fontSize: 13, color: TEXT_SUB }}>
-                  Exemple : <Code>qbordeau@lunettespourtous.com</Code>
+                  Exemple : <Code>qbahougne@lunettespourtous.com</Code>
                 </div>
               </div>
             </div>
@@ -251,7 +251,7 @@ export default function FicheAcces() {
             </Step>
 
             <Step num={3} title="Saisir vos identifiants LPT" accent={BLUE}>
-              <div>Adresse mail : <Code>prénomnom@lunettespourtous.com</Code></div>
+              <div>Adresse mail : <Code>[1ère lettre prénom][nom]@lunettespourtous.com</Code></div>
               <div style={{ marginTop: 8 }}>
                 Mot de passe temporaire : <Code>bonjour</Code> + votre prénom
                 <div style={{ marginTop: 6, fontSize: 12 }}>
@@ -329,7 +329,7 @@ export default function FicheAcces() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {[
-                { icon: '📧', label: 'Mail LPT', value: 'prénomnom@lunettespourtous.com', color: BLUE_LIGHT },
+                { icon: '📧', label: 'Mail LPT', value: '[1ère lettre prénom][nom]@lunettespourtous.com', color: BLUE_LIGHT },
                 { icon: '🔑', label: 'Mot de passe temporaire', value: '"bonjour" + votre prénom', color: BLUE_LIGHT },
                 { icon: '💬', label: 'Slack', value: 'Connexion Google avec le mail LPT', color: PURPLE },
                 { icon: '🤖', label: 'LPTBot', value: 'Mot de passe back-end tous les lundis', color: GREEN },
