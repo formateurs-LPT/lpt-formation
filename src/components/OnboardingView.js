@@ -491,6 +491,22 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
           <div className="dash-tile-sub">Accueil moi si tu peux</div>
           <div style={{ fontSize: 11, color: '#8b5cf6', marginTop: 8, fontWeight: 600 }}>Lancer le jeu →</div>
         </div>
+
+        <div className="dash-tile" onClick={() => onLaunchModule('quiz-final')} style={{ cursor: 'pointer', borderColor: 'rgba(201,162,39,0.35)' }}>
+          <div className="dash-tile-top">
+            <div style={{
+              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+              background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+            }}>🏆</div>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#c9a227', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.3)', borderRadius: 20, padding: '2px 8px', letterSpacing: 0.5 }}>
+              26 questions
+            </span>
+          </div>
+          <div className="dash-tile-label" style={{ marginTop: 12 }}>Quiz Final</div>
+          <div className="dash-tile-sub">Toute la formation en un quiz</div>
+          <div style={{ fontSize: 11, color: '#c9a227', marginTop: 8, fontWeight: 600 }}>Lancer le quiz →</div>
+        </div>
       </div>
 
       {endConfirmOpen && (

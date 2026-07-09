@@ -26,6 +26,7 @@ import ModuleTrameAccueil from '@/components/modules/ModuleTrameAccueil'
 import ModuleReveilAcquis from '@/components/modules/ModuleReveilAcquis'
 import ModuleMontures from '@/components/modules/ModuleMontures'
 import ModuleMiniJeux from '@/components/modules/ModuleMiniJeux'
+import ModuleQuizFinal from '@/components/modules/ModuleQuizFinal'
 import PlanningPage from '@/components/PlanningPage'
 import OnboardingView from '@/components/OnboardingView'
 import TVView from '@/components/TVView'
@@ -472,6 +473,12 @@ export default function Page() {
       )}
       {view === 'module-mini-jeux' && (
         <ModuleMiniJeux
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-quiz-final' && (
+        <ModuleQuizFinal
           pName={pName}
           onBack={handleBackToModules}
         />
