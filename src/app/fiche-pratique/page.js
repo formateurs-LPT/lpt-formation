@@ -243,7 +243,7 @@ export default function FichePratique() {
                   { champ: 'Sphère', desc: 'Myopie (−) ou Hypermétropie (+)' },
                   { champ: 'Cylindre', desc: 'Astigmatisme' },
                   { champ: 'Axe', desc: 'Toujours présent avec le Cylindre (en °)' },
-                  { champ: 'Add', desc: 'Presbytie — valeur ajoutée pour le près' },
+                  { champ: 'Add', desc: 'Valeur ajoutée à la sphère pour la vision de près (presbytie)' },
                 ].map((row, i, arr) => (
                   <TableRow key={i} label={row.desc} value={row.champ} accent={BLUE_LIGHT} last={i === arr.length - 1} />
                 ))}
