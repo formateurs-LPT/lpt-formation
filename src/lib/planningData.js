@@ -20,13 +20,18 @@ export const PLANNING_JOURS = [
         items: [],
       },
       {
-        horaire: '14h – 18h',
+        horaire: '14h – 17h',
         titre: "Les bases de l'optique",
         items: [
           'Pourquoi porte-on des lunettes',
           'Les troubles visuels',
           "Lecture d'une ordonnance",
         ],
+      },
+      {
+        horaire: '17h – 18h',
+        titre: 'Découverte des montures',
+        items: [],
       },
     ],
   },
@@ -36,6 +41,11 @@ export const PLANNING_JOURS = [
     jour: 'Jour 2',
     color: '#4ade80',
     blocs: [
+      {
+        horaire: '9h – 10h',
+        titre: 'Merch montures',
+        items: [],
+      },
       {
         horaire: '10h – 11h',
         titre: 'Réveil des acquis',
