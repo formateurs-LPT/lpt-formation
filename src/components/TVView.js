@@ -3751,7 +3751,7 @@ function TVQuizRateReveal({ sessionCode, moduleId, moduleLabel }) {
 }
 
 // ── TV Group Results ──────────────────────────────────────────────
-function TVGroupResults({ moduleId, moduleLabel, quiz }) {
+function TVGroupResults({ moduleId, moduleLabel, quiz, sessionCode }) {
   const [answers, setAnswers] = useState([])
   const [loading, setLoading] = useState(true)
   const audioRef = useRef(null)
@@ -3769,18 +3769,20 @@ function TVGroupResults({ moduleId, moduleLabel, quiz }) {
   }
 
   useEffect(() => {
+    const code = sessionCode || SESSION_CODE
+    const query = `session_code=eq.${code}&module_id=eq.${moduleId}`
     const fetchAnswers = async () => {
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}`)
+      const rows = await sbSelect('quiz_answers', query)
       setAnswers(rows || [])
       setLoading(false)
     }
     fetchAnswers()
     const interval = setInterval(async () => {
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}`)
+      const rows = await sbSelect('quiz_answers', query)
       setAnswers(rows || [])
     }, 3000)
     return () => clearInterval(interval)
-  }, [])
+  }, [moduleId, sessionCode])
 
   const participantCount = [...new Set((answers || []).map(r => r.collaborateur))].length
 
@@ -4219,7 +4221,7 @@ export default function TVView() {
             ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} sessionCode={sessionCode} />
             : rateRevealPhase
               ? <TVQuizRateReveal sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} />
-              : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
+              : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} sessionCode={sessionCode} />
         ) : isQuiz && quizQuestion ? (
           quizInterstitialPhase
             ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} skipSignal={sharedState?.quiz_podium_skip} />
