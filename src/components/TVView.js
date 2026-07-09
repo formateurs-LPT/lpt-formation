@@ -4083,7 +4083,6 @@ export default function TVView() {
   const [quizInterstitialPhase, setQuizInterstitialPhase] = useState(false)
   const [finalPodiumPhase, setFinalPodiumPhase]           = useState(false)
   const [rateRevealPhase,  setRateRevealPhase]            = useState(false)
-  const prevQIdxRef = useRef(-1)
   const prevIsResultsRef = useRef(false)
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
@@ -4122,27 +4121,21 @@ export default function TVView() {
   const isResults = !!moduleData && modulePage === 200
   const isQuiz    = !!moduleData && modulePage >= 100 && modulePage < 200
 
-  // Détecte transitions podium interstitiel (toutes les 5 questions) + podium final
+  // Podium interstitiel piloté par quiz_interstitial_q dans sharedState
   useEffect(() => {
-    const qIdx = modulePage - 100
-    if (isQuiz && qIdx > 0 && qIdx % 5 === 0 && qIdx !== prevQIdxRef.current) {
-      prevQIdxRef.current = qIdx
-      setQuizInterstitialPhase(true)
-    }
-    if (isQuiz && qIdx % 5 !== 0) {
-      setQuizInterstitialPhase(false)
-    }
-    if (!isQuiz) {
-      if (prevQIdxRef.current !== -1) prevQIdxRef.current = -1
-      setQuizInterstitialPhase(false)
-    }
+    if (sharedState?.quiz_interstitial_q) setQuizInterstitialPhase(true)
+    else setQuizInterstitialPhase(false)
+  }, [sharedState?.quiz_interstitial_q])
+
+  // Podium final — déclenché quand module_page passe à 200
+  useEffect(() => {
     if (isResults && !prevIsResultsRef.current) {
       prevIsResultsRef.current = true
       setFinalPodiumPhase(true)
       setRateRevealPhase(false)
     }
     if (!isResults) { prevIsResultsRef.current = false; setRateRevealPhase(false) }
-  }, [modulePage, isQuiz, isResults])
+  }, [isResults])
 
   useEffect(() => {
     if (sharedState?.quiz_rate_show) setRateRevealPhase(true)
