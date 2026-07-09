@@ -43,12 +43,12 @@ export const PLANNING_JOURS = [
     blocs: [
       {
         horaire: '10h – 11h',
-        titre: 'Merch montures',
+        titre: 'Réveil des acquis',
         items: [],
       },
       {
         horaire: '11h – 12h',
-        titre: 'Réveil des acquis',
+        titre: 'Merch montures',
         items: [],
       },
       {
