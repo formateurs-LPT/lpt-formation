@@ -20,13 +20,18 @@ export const PLANNING_JOURS = [
         items: [],
       },
       {
-        horaire: '14h – 18h',
+        horaire: '14h – 17h',
         titre: "Les bases de l'optique",
         items: [
           'Pourquoi porte-on des lunettes',
           'Les troubles visuels',
           "Lecture d'une ordonnance",
         ],
+      },
+      {
+        horaire: '17h – 18h',
+        titre: 'Découverte des montures',
+        items: [],
       },
     ],
   },
@@ -42,7 +47,12 @@ export const PLANNING_JOURS = [
         items: [],
       },
       {
-        horaire: '11h – 13h',
+        horaire: '11h – 12h',
+        titre: 'Merch montures',
+        items: [],
+      },
+      {
+        horaire: '12h – 13h',
         titre: "Trame d'accueil",
         items: [
           'Présentation du concept aux clients',

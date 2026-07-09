@@ -335,16 +335,8 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
 }
 
 // ── TV Ordonnance (type = ordonnance) ────────────────────────────
-function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioUnlocked }) {
-  const [step, setStep] = useState(0)
+function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRevealStep, audioUnlocked }) {
   const videoRef = useRef(null)
-
-  useEffect(() => {
-    setStep(0)
-    const T = [400, 1000, 1600, 2800, 3200, 3500, 3800, 4200, 4500, 4800, 5300]
-    const timers = T.map((t, i) => setTimeout(() => setStep(s => Math.max(s, i + 1)), t))
-    return () => timers.forEach(clearTimeout)
-  }, [page.id])
 
   // Contrôle play/pause — attend que l'audio soit débloqué
   useEffect(() => {
@@ -357,8 +349,11 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
     }
   }, [ordoPlaying, audioUnlocked])
 
-  const show = (n) => step >= n
-  const cellVis = (row, col) => show(row === 0 ? 5 + col : 8 + col)
+  // Visibilité pilotée par le formateur (revealStep sync via sharedState)
+  const showCard = (i) => i === 0 ? ordoRevealStep >= 1 : ordoRevealStep >= 2
+  const showTable = ordoRevealStep >= 1
+  const showCell = (col) => col === 0 ? ordoRevealStep >= 1 : ordoRevealStep >= 2
+  const showAdd = ordoRevealStep >= 3
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -395,8 +390,8 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
               background: `${col.color}0d`, border: `1px solid ${col.color}28`,
               borderTop: `4px solid ${col.color}`, borderRadius: 18,
               padding: '28px 28px 22px',
-              opacity: show(i + 1) ? 1 : 0,
-              transform: show(i + 1) ? 'translateY(0)' : 'translateY(20px)',
+              opacity: showCard(i) ? 1 : 0,
+              transform: showCard(i) ? 'translateY(0)' : 'translateY(20px)',
               transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
             }}>
               <div style={{
@@ -418,8 +413,8 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
 
         {/* Phase 2 — Table ordonnance */}
         <div style={{
-          opacity: show(4) ? 1 : 0,
-          transform: show(4) ? 'translateY(0)' : 'translateY(16px)',
+          opacity: showTable ? 1 : 0,
+          transform: showTable ? 'translateY(0)' : 'translateY(16px)',
           transition: 'all 0.5s ease',
           flex: 1,
         }}>
@@ -444,7 +439,7 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
               {ORD_COLS.map((col, ci) => (
                 <div key={col.key} style={{
                   padding: '20px 28px', borderLeft: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center',
-                  opacity: cellVis(0, ci) ? 1 : 0, transform: cellVis(0, ci) ? 'translateX(0)' : 'translateX(-12px)', transition: 'all 0.35s ease',
+                  opacity: showCell(ci) ? 1 : 0, transform: showCell(ci) ? 'translateX(0)' : 'translateX(-12px)', transition: 'all 0.35s ease',
                 }}>
                   <span style={{ fontSize: 28, fontWeight: 700, color: col.color, fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.od[col.key]}</span>
                 </div>
@@ -457,7 +452,7 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
               {ORD_COLS.map((col, ci) => (
                 <div key={col.key} style={{
                   padding: '20px 28px', borderLeft: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center',
-                  opacity: cellVis(1, ci) ? 1 : 0, transform: cellVis(1, ci) ? 'translateX(0)' : 'translateX(-12px)', transition: 'all 0.35s ease',
+                  opacity: showCell(ci) ? 1 : 0, transform: showCell(ci) ? 'translateX(0)' : 'translateX(-12px)', transition: 'all 0.35s ease',
                 }}>
                   <span style={{ fontSize: 28, fontWeight: 700, color: col.color, fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.og[col.key]}</span>
                 </div>
@@ -470,7 +465,7 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
             marginTop: 18, display: 'flex', alignItems: 'center', gap: 24,
             padding: '18px 28px',
             background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 18,
-            opacity: show(11) ? 1 : 0, transform: show(11) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s ease',
+            opacity: showAdd ? 1 : 0, transform: showAdd ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s ease',
           }}>
             <div style={{ fontSize: 12, fontWeight: 800, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 1.5 }}>Addition</div>
             <div style={{ fontSize: 32, fontWeight: 800, color: '#4ade80', fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.add}</div>
@@ -1849,80 +1844,6 @@ function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, p
   )
 }
 
-// ── TV PDM : LPT VISION — grande photo statique ───────────────────
-function TVPdmLptVision({ page, pageIndex, total }) {
-  const C = page.color || '#f59e0b'
-  const [entered, setEntered] = useState(false)
-  useEffect(() => { setEntered(false); const t = setTimeout(() => setEntered(true), 80); return () => clearTimeout(t) }, [page.id])
-
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-      display: 'flex', flexDirection: 'column', position: 'relative',
-    }}>
-      {/* Topbar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
-          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Prises de mesures</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
-          <div style={{ display: 'flex', gap: 5 }}>
-            {Array(total).fill(0).map((_, i) => (
-              <div key={i} style={{ height: 5, borderRadius: 3, transition: 'all .3s', width: i === pageIndex ? 22 : 5, background: i === pageIndex ? C : 'rgba(255,255,255,0.2)' }} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Zone principale — 36% texte / 64% image */}
-      <div style={{
-        flex: 1, display: 'grid', gridTemplateColumns: '36% 64%',
-        gap: 40, padding: '12px 48px 28px', alignItems: 'center',
-      }}>
-        {/* Texte gauche */}
-        <div style={{ opacity: entered ? 1 : 0, transform: entered ? 'translateX(0)' : 'translateX(-24px)', transition: 'all .55s ease' }}>
-          <div style={{ display: 'inline-block', background: `${C}20`, border: `1px solid ${C}45`, borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: C, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Formation LPT</div>
-          <h1 style={{ fontSize: 42, fontWeight: 800, color: '#fff', lineHeight: 1.1, marginBottom: 10 }}>{page.titre}</h1>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 28, fontWeight: 400, lineHeight: 1.6 }}>{page.sousTitre}</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {(page.points || []).map((pt, i) => (
-              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', opacity: entered ? 1 : 0, transform: entered ? 'translateX(0)' : 'translateX(-16px)', transition: `all .45s ease ${0.1 + i * 0.09}s` }}>
-                <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: `${C}18`, border: `1px solid ${C}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17 }}>{pt.emoji}</div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{pt.titre}</div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{pt.texte}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Image droite — grande, statique, bien visible */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          opacity: entered ? 1 : 0, transition: 'opacity .7s ease .15s',
-        }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={page.image}
-            alt="LPTVISION"
-            style={{
-              width: '94%',
-              height: 'auto',
-              borderRadius: 20,
-              boxShadow: `0 0 80px ${C}40, 0 32px 64px rgba(0,0,0,0.5)`,
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── TV PDM : Pourquoi mesurer ─────────────────────────────────────
 function TVPdmPourquoi({ pageIndex, total }) {
   const C = '#00abe9'
@@ -2691,7 +2612,7 @@ function TVMontures({ type, pageIndex, total, moduleLabel }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -2706,14 +2627,13 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'montures-acetate') return <TVMontures type="montures-acetate" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'montures-metal')   return <TVMontures type="montures-metal"   pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'montures-injecte') return <TVMontures type="montures-injecte" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'pdm-lptvision')    return <TVPdmLptVision page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'pdm-pourquoi')     return <TVPdmPourquoi pageIndex={pageIndex} total={total} />
   if (page.type === 'offres-classique')   return <TVOffresClassique step={offresClassiqueStep} />
   if (page.type === 'offres-1-1')         return <TVOffres11 step={offres11Step} />
   if (page.type === 'offres-unifocal-11')   return <TVOffresUnifocal11 />
   if (page.type === 'offres-progressif-11') return <TVOffresProgressif11 />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} audioUnlocked={audioUnlocked} />
+  if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} ordoRevealStep={ordoRevealStep} audioUnlocked={audioUnlocked} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
 
@@ -3385,9 +3305,48 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode }) {
   )
 }
 
+// ── Phrases d'humour podium (top 5 uniquement) ───────────────────
+const PHRASES_P1 = [
+  "[Prénom] voit tout et répond juste — même son opticien prend des notes.",
+  "Correction parfaite, score parfait. [Prénom] n'a clairement pas besoin de lunettes pour voir les bonnes réponses.",
+  "[Prénom] : vision 10/10, sans ordonnance. Le reste de l'équipe peut prendre rendez-vous.",
+  "[Prénom] a tout bon. On se demande même s'il n'avait pas les réponses avant.",
+  "[Prénom] écrase la concurrence. Quelqu'un a vérifié qu'il ne triche pas avec des lunettes à caméra ?",
+  "Respect [Prénom]. On parle de toi dans la salle de pause depuis 10 minutes.",
+]
+const PHRASES_P2 = [
+  "[Prénom] était si proche… une dioptrie de plus et c'était l'or.",
+  "L'argent c'est élégant [Prénom] — mais la prochaine fois, vise la première marche.",
+  "[Prénom] voit bien… mais pas aussi loin que le premier.",
+  "[Prénom] : deuxième. C'est la place des gens intelligents qui laissent les autres gagner par politesse.",
+  "[Prénom] aurait pu gagner… mais il a sûrement été distrait par une belle monture.",
+  "Deuxième [Prénom] — t'inquiète, le premier a sûrement triché.",
+]
+const PHRASES_P3 = [
+  "[Prénom] est sur le podium. C'est déjà mieux que de regarder depuis le fond du magasin.",
+  "Bronze pour [Prénom] — en optique on dirait que la mise au point est presque parfaite.",
+  "[Prénom] sur la troisième marche — là où les vrais professionnels se posent.",
+  "[Prénom] : troisième. C'est le nombre de zones d'un verre progressif, c'est forcément un signe.",
+  "Podium assuré pour [Prénom]. Maintenant il faut juste travailler les deux premières marches.",
+]
+const PHRASES_P45 = [
+  "[Prénom] : juste en dehors du podium. Comme un verre sans traitement — presque parfait.",
+  "[Prénom] a frôlé la médaille. On sent que l'adaptation est en cours.",
+  "Si près, si loin [Prénom]… un peu comme essayer des lunettes sans les essayer vraiment.",
+  "[Prénom] : premier des non-médaillés. C'est une médaille en soi… presque.",
+  "[Prénom] a manqué le podium d'un souffle. Ou d'une question. On va dire d'un souffle.",
+]
+const PHRASES_TOP5 = [...PHRASES_P1, ...PHRASES_P2, ...PHRASES_P3, ...PHRASES_P45]
+
+function pickPhrase(pool, firstName) {
+  const raw = pool[Math.floor(Math.random() * pool.length)]
+  return raw.replace(/\[Prénom\]/g, firstName)
+}
+
 // ── TV Quiz Podium interstitiel (toutes les 5 questions) ──────────
 function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal }) {
   const [top3, setTop3] = useState([])
+  const phraseRef = useRef(null)
 
   useEffect(() => {
     sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}`).then(rows => {
@@ -3401,6 +3360,10 @@ function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal }) {
         .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
         .slice(0, 3)
       setTop3(sorted)
+      if (sorted[0]) {
+        const firstName = sorted[0].name.split(' ').pop()
+        phraseRef.current = pickPhrase(PHRASES_TOP5, firstName)
+      }
     })
   }, [qIdx])
 
@@ -3490,13 +3453,24 @@ function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal }) {
         </div>
       )}
 
+      {phraseRef.current && (
+        <div style={{
+          maxWidth: 680, textAlign: 'center', marginTop: 32, marginBottom: 8,
+          fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.75)',
+          fontStyle: 'italic', lineHeight: 1.5,
+          animation: 'podiumFadeIn 0.8s ease 0.6s forwards', opacity: 0,
+        }}>
+          💬 {phraseRef.current}
+        </div>
+      )}
+
       <div style={{
         width: 630, height: 8,
         background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
-        marginBottom: 36,
+        marginTop: 28, marginBottom: 20,
       }} />
 
-      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 500, marginTop: 8 }}>
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>
         En attente du formateur…
       </div>
     </div>
@@ -3510,6 +3484,7 @@ function TVQuizFinalPodium({ quiz, onDone, sessionCode }) {
   const [top3, setTop3] = useState([])
   const [ready, setReady] = useState(false)
   const [countdown, setCountdown] = useState(FINAL_PODIUM_DURATION)
+  const phraseRef = useRef(null)
 
   useEffect(() => {
     sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}`).then(rows => {
@@ -3523,6 +3498,10 @@ function TVQuizFinalPodium({ quiz, onDone, sessionCode }) {
         .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
         .slice(0, 3)
       setTop3(sorted)
+      if (sorted[0]) {
+        const firstName = sorted[0].name.split(' ').pop()
+        phraseRef.current = pickPhrase(PHRASES_P1, firstName)
+      }
       setTimeout(() => setReady(true), 400)
     })
   }, [])
@@ -3645,10 +3624,21 @@ function TVQuizFinalPodium({ quiz, onDone, sessionCode }) {
         </div>
       )}
 
+      {phraseRef.current && (
+        <div style={{
+          maxWidth: 720, textAlign: 'center', marginTop: 28, marginBottom: 4,
+          fontSize: 22, fontWeight: 600, color: 'rgba(255,255,255,0.8)',
+          fontStyle: 'italic', lineHeight: 1.5,
+          animation: 'podiumFadeIn 0.8s ease 0.8s forwards', opacity: 0,
+        }}>
+          💬 {phraseRef.current}
+        </div>
+      )}
+
       <div style={{
         width: 760, height: 10,
         background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
-        marginBottom: 28,
+        marginTop: 28, marginBottom: 28,
       }} />
 
       <button onClick={onDone} style={{
@@ -3747,7 +3737,22 @@ function TVQuizRateReveal({ sessionCode, moduleId, moduleLabel }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 28, marginTop: 48 }}>
+      {rate !== null && (
+        <div style={{
+          marginTop: 36, fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.7)',
+          textAlign: 'center', maxWidth: 600, lineHeight: 1.5,
+          opacity: 1, animation: 'fadeInUp 0.6s ease both',
+          fontStyle: 'italic',
+        }}>
+          {pct >= 80
+            ? "L'optique n'a plus de secrets pour cette équipe — même les astigmates voient clair maintenant."
+            : pct >= 60
+              ? "Pas mal du tout ! Il reste quelques dioptries à peaufiner, mais les bases sont solides."
+              : "On retient l'essentiel... et on revoit les ordonnances — c'est exactement pour ça qu'on est là !"}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 28, marginTop: 40 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain', opacity: 0.4 }} />
       </div>
     </div>
@@ -4046,6 +4051,7 @@ export default function TVView() {
   const [troublesPhase, setTroublesPhase]     = useState(1)
   const [opticienPlaying, setOpticienPlaying] = useState(false)
   const [ordoPlaying, setOrdoPlaying]         = useState(false)
+  const [ordoRevealStep, setOrdoRevealStep]   = useState(1)
   const [audioUnlocked, setAudioUnlocked]     = useState(false)
   const [freinsResponses, setFreinsResponses]           = useState({})
   const [prixResponses, setPrixResponses]               = useState({})
@@ -4077,7 +4083,6 @@ export default function TVView() {
   const [quizInterstitialPhase, setQuizInterstitialPhase] = useState(false)
   const [finalPodiumPhase, setFinalPodiumPhase]           = useState(false)
   const [rateRevealPhase,  setRateRevealPhase]            = useState(false)
-  const prevQIdxRef = useRef(-1)
   const prevIsResultsRef = useRef(false)
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
@@ -4091,6 +4096,7 @@ export default function TVView() {
     setTroublesPhase(sharedState.troubles_phase || 1)
     setOpticienPlaying(!!sharedState.opticien_playing)
     setOrdoPlaying(!!sharedState.ordo_playing)
+    setOrdoRevealStep(sharedState.ordo_reveal_step ?? 1)
     setFreinsResponses(sharedState.freins_responses || {})
     setPrixResponses(sharedState.prix_responses || {})
     setRevealPrix(!!sharedState.reveal_prix)
@@ -4115,24 +4121,21 @@ export default function TVView() {
   const isResults = !!moduleData && modulePage === 200
   const isQuiz    = !!moduleData && modulePage >= 100 && modulePage < 200
 
-  // Détecte transitions podium interstitiel (toutes les 5 questions) + podium final
+  // Podium interstitiel piloté par quiz_interstitial_q dans sharedState
   useEffect(() => {
-    const qIdx = modulePage - 100
-    if (isQuiz && qIdx > 0 && qIdx % 5 === 0 && qIdx !== prevQIdxRef.current) {
-      prevQIdxRef.current = qIdx
-      setQuizInterstitialPhase(true)
-    }
-    if (!isQuiz) {
-      if (prevQIdxRef.current !== -1) prevQIdxRef.current = -1
-      setQuizInterstitialPhase(false)
-    }
+    if (sharedState?.quiz_interstitial_q) setQuizInterstitialPhase(true)
+    else setQuizInterstitialPhase(false)
+  }, [sharedState?.quiz_interstitial_q])
+
+  // Podium final — déclenché quand module_page passe à 200
+  useEffect(() => {
     if (isResults && !prevIsResultsRef.current) {
       prevIsResultsRef.current = true
       setFinalPodiumPhase(true)
       setRateRevealPhase(false)
     }
     if (!isResults) { prevIsResultsRef.current = false; setRateRevealPhase(false) }
-  }, [modulePage, isQuiz, isResults])
+  }, [isResults])
 
   useEffect(() => {
     if (sharedState?.quiz_rate_show) setRateRevealPhase(true)
@@ -4150,9 +4153,9 @@ export default function TVView() {
     }
   }
 
-  // Mini jeu actif
+  // Mini jeu actif — seulement si aucun module n'est en cours
   const mjPhase = sharedState?.minijeu_phase
-  if (!loading && mjPhase && mjPhase !== 'idle') {
+  if (!loading && !activeModule && mjPhase && mjPhase !== 'idle') {
     if (mjPhase === 'rules') {
       return (
         <>
@@ -4261,6 +4264,7 @@ export default function TVView() {
             troublesPhase={troublesPhase}
             opticienPlaying={opticienPlaying}
             ordoPlaying={ordoPlaying}
+            ordoRevealStep={ordoRevealStep}
             audioUnlocked={audioUnlocked}
             freinsResponses={freinsResponses}
             prixResponses={prixResponses}

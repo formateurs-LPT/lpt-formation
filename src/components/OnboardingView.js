@@ -45,6 +45,12 @@ const JOURNEES = (onLaunchModule) => [
         sub: 'Acétate · Métal · Injecté — fin de journée',
         onClick: () => onLaunchModule('montures'),
       },
+      {
+        visual: 'emoji', icon: '🔍',
+        label: 'Découverte des montures',
+        sub: 'Activité terrain — ~17h00',
+        soon: true,
+      },
     ],
   },
   {
@@ -53,6 +59,12 @@ const JOURNEES = (onLaunchModule) => [
     titre: 'Journée 2',
     sub: 'Les offres et la vente',
     modules: [
+      {
+        visual: 'emoji', icon: '🪟',
+        label: 'Merch montures',
+        sub: 'Merchandising — avant l\'accueil (matin)',
+        soon: true,
+      },
       {
         visual: 'emoji', icon: '🤝',
         label: "Trame d'accueil",
