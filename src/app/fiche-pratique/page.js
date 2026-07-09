@@ -3,7 +3,7 @@
 const BLUE = '#0089ba'
 const BLUE_LIGHT = '#00abe9'
 const GOLD = '#c9a227'
-const BORDEAUX = '#8B1527'
+const BORDEAUX = '#9B3626'
 const BG = '#03112a'
 const BG2 = '#0d1f3c'
 const CARD = 'rgba(255,255,255,0.04)'
@@ -273,13 +273,6 @@ export default function FichePratique() {
                     <TableRow key={i} label={item.usage} value={item.zone} accent={BLUE_LIGHT} last={i === arr.length - 1} />
                   ))}
                 </Card>
-                <Card accent='#e05555'>
-                  <Label color='#e05555'>Point clé</Label>
-                  <div style={{ fontSize: 13, color: TEXT_SUB, lineHeight: 1.6 }}>
-                    Les côtés sont flous : c'est <strong style={{ color: TEXT }}>inévitable</strong>.<br />
-                    Apprendre à <strong style={{ color: '#e05555' }}>tourner la tête</strong>, pas les yeux.
-                  </div>
-                </Card>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <Card accent={GOLD}>
@@ -315,7 +308,7 @@ export default function FichePratique() {
               <div style={{ fontSize: 14, fontWeight: 700, color: GOLD, marginBottom: 4 }}>Règle absolue</div>
               <div style={{ fontSize: 13, color: TEXT_SUB }}>
                 <strong style={{ color: TEXT }}>LPTVISION est obligatoire.</strong> Aucune mesure manuelle autorisée.<br />
-                Objectif : centrer parfaitement le verre devant la pupille → confort et efficacité optimaux.
+                Objectif : positionner précisément le verre face à la pupille pour une correction parfaite.
               </div>
             </Card>
             <Label color={BLUE}>Les 3 conditions pour une mesure fiable</Label>
@@ -345,13 +338,14 @@ export default function FichePratique() {
           <div className="print-section" style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 18, padding: '24px 26px' }}>
             <SectionTitle accent='#22c55e'>Droits au remboursement des lunettes en France</SectionTitle>
 
+            {/* Conditions */}
             <Card accent='#22c55e' style={{ marginBottom: 14 }}>
               <Label color='#22c55e'>Conditions pour être remboursé</Label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[
                   { icon: '📋', text: 'Avoir une ordonnance valable (ophtalmologiste ou renouvellement adapté par un opticien)' },
                   { icon: '⏳', text: "Respecter les délais de renouvellement selon l'âge" },
-                  { icon: '🏥', text: 'Être couvert par une mutuelle complémentaire santé pour un remboursement significatif' },
+                  { icon: '🏥', text: 'Avoir une mutuelle ou la CSS (Complémentaire Santé Solidaire)' },
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                     <span style={{ fontSize: 15, flexShrink: 0 }}>{item.icon}</span>
@@ -361,38 +355,33 @@ export default function FichePratique() {
               </div>
             </Card>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            {/* Délais + Renouvellement adapté */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
               <Card accent={BLUE}>
-                <Label color={BLUE}>Délais de renouvellement (remboursement Sécu)</Label>
-                {[
-                  { label: 'Enfants (< 6 ans)', value: '1 an' },
-                  { label: 'Enfants (6–15 ans)', value: '2 ans' },
-                  { label: 'Adultes (16 ans et +)', value: '2 ans' },
-                ].map((row, i, arr) => (
-                  <TableRow key={i} label={row.label} value={row.value} accent={BLUE_LIGHT} last={i === arr.length - 1} />
-                ))}
+                <Label color={BLUE}>Délais de renouvellement</Label>
+                <TableRow label="Moins de 16 ans" value="1 an" accent={BLUE_LIGHT} />
+                <TableRow label="16 ans et +" value="2 ans" accent={BLUE_LIGHT} last />
               </Card>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <Card accent={GOLD}>
-                  <Label color={GOLD}>Exception — sans délai minimum</Label>
-                  <div style={{ fontSize: 13, color: TEXT_SUB, lineHeight: 1.6 }}>
-                    Si le changement de correction est <strong style={{ color: GOLD }}>≥ 0,5 dioptrie</strong>, le remboursement est possible avant le délai habituel.
-                  </div>
-                </Card>
-
-                <Card accent='#a78bfa'>
-                  <Label color='#a78bfa'>Renouvellement adapté</Label>
-                  <div style={{ fontSize: 13, color: TEXT_SUB, lineHeight: 1.6 }}>
-                    Un opticien peut prolonger une ordonnance expirée <strong style={{ color: TEXT }}>(adultes 16–42 ans, unifocaux)</strong> si la correction est stable — valable <strong style={{ color: '#a78bfa' }}>1 an</strong>.
-                  </div>
-                </Card>
-              </div>
+              <Card accent='#a78bfa'>
+                <Label color='#a78bfa'>Renouvellement adapté (par l'opticien)</Label>
+                <TableRow label="Moins de 16 ans" value="Sans délai" accent='#a78bfa' />
+                <TableRow label="16 ans et + (après 1 an et 1 jour)" value="Possible" accent='#a78bfa' last />
+              </Card>
             </div>
 
-            <Card accent={BORDEAUX} style={{ marginTop: 14 }}>
+            {/* Validité des ordonnances */}
+            <Card accent={GOLD} style={{ marginBottom: 14 }}>
+              <Label color={GOLD}>Validité des ordonnances</Label>
+              <TableRow label="Enfants (moins de 16 ans)" value="1 an" accent={GOLD} />
+              <TableRow label="Adultes (16–40 ans)" value="3 ans" accent={GOLD} />
+              <TableRow label="Adultes presbytes (40 ans et +)" value="3 ans" accent={GOLD} last />
+            </Card>
+
+            {/* Tiers payant */}
+            <Card accent={BORDEAUX}>
               <Label color={BORDEAUX}>Tiers payant</Label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: TEXT, marginBottom: 4 }}>Tiers payant partiel</div>
                   <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.5 }}>
@@ -402,9 +391,18 @@ export default function FichePratique() {
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: BORDEAUX, marginBottom: 4 }}>Tiers payant complet ✓</div>
                   <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.5 }}>
-                    La Sécu <strong style={{ color: TEXT }}>et</strong> la mutuelle paient directement l'opticien. Le client ne débourse <strong style={{ color: BORDEAUX }}>rien</strong>. Requis pour le Parcours Suprême.
+                    La Sécu <strong style={{ color: TEXT }}>et</strong> la mutuelle paient directement l'opticien. Le client ne débourse rien. Requis pour le Parcours Suprême.
                   </div>
                 </div>
+              </div>
+              <div style={{
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: 10, padding: '12px 16px', textAlign: 'center',
+              }}>
+                <span style={{ fontSize: 14, fontWeight: 800, color: TEXT }}>
+                  Chez Lunettes Pour Tous, le reste à charge est de{' '}
+                  <span style={{ color: '#22c55e' }}>0 €</span>
+                </span>
               </div>
             </Card>
           </div>
