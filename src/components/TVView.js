@@ -335,16 +335,8 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
 }
 
 // ── TV Ordonnance (type = ordonnance) ────────────────────────────
-function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioUnlocked }) {
-  const [step, setStep] = useState(0)
+function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRevealStep, audioUnlocked }) {
   const videoRef = useRef(null)
-
-  useEffect(() => {
-    setStep(0)
-    const T = [400, 1000, 1600, 2800, 3200, 3500, 3800, 4200, 4500, 4800, 5300]
-    const timers = T.map((t, i) => setTimeout(() => setStep(s => Math.max(s, i + 1)), t))
-    return () => timers.forEach(clearTimeout)
-  }, [page.id])
 
   // Contrôle play/pause — attend que l'audio soit débloqué
   useEffect(() => {
@@ -357,8 +349,11 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
     }
   }, [ordoPlaying, audioUnlocked])
 
-  const show = (n) => step >= n
-  const cellVis = (row, col) => show(row === 0 ? 5 + col : 8 + col)
+  // Visibilité pilotée par le formateur (revealStep sync via sharedState)
+  const showCard = (i) => i === 0 ? ordoRevealStep >= 1 : ordoRevealStep >= 2
+  const showTable = ordoRevealStep >= 1
+  const showCell = (col) => col === 0 ? ordoRevealStep >= 1 : ordoRevealStep >= 2
+  const showAdd = ordoRevealStep >= 3
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -395,8 +390,8 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
               background: `${col.color}0d`, border: `1px solid ${col.color}28`,
               borderTop: `4px solid ${col.color}`, borderRadius: 18,
               padding: '28px 28px 22px',
-              opacity: show(i + 1) ? 1 : 0,
-              transform: show(i + 1) ? 'translateY(0)' : 'translateY(20px)',
+              opacity: showCard(i) ? 1 : 0,
+              transform: showCard(i) ? 'translateY(0)' : 'translateY(20px)',
               transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
             }}>
               <div style={{
@@ -418,8 +413,8 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
 
         {/* Phase 2 — Table ordonnance */}
         <div style={{
-          opacity: show(4) ? 1 : 0,
-          transform: show(4) ? 'translateY(0)' : 'translateY(16px)',
+          opacity: showTable ? 1 : 0,
+          transform: showTable ? 'translateY(0)' : 'translateY(16px)',
           transition: 'all 0.5s ease',
           flex: 1,
         }}>
@@ -444,7 +439,7 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
               {ORD_COLS.map((col, ci) => (
                 <div key={col.key} style={{
                   padding: '20px 28px', borderLeft: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center',
-                  opacity: cellVis(0, ci) ? 1 : 0, transform: cellVis(0, ci) ? 'translateX(0)' : 'translateX(-12px)', transition: 'all 0.35s ease',
+                  opacity: showCell(ci) ? 1 : 0, transform: showCell(ci) ? 'translateX(0)' : 'translateX(-12px)', transition: 'all 0.35s ease',
                 }}>
                   <span style={{ fontSize: 28, fontWeight: 700, color: col.color, fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.od[col.key]}</span>
                 </div>
@@ -457,7 +452,7 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
               {ORD_COLS.map((col, ci) => (
                 <div key={col.key} style={{
                   padding: '20px 28px', borderLeft: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center',
-                  opacity: cellVis(1, ci) ? 1 : 0, transform: cellVis(1, ci) ? 'translateX(0)' : 'translateX(-12px)', transition: 'all 0.35s ease',
+                  opacity: showCell(ci) ? 1 : 0, transform: showCell(ci) ? 'translateX(0)' : 'translateX(-12px)', transition: 'all 0.35s ease',
                 }}>
                   <span style={{ fontSize: 28, fontWeight: 700, color: col.color, fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.og[col.key]}</span>
                 </div>
@@ -470,7 +465,7 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, audioU
             marginTop: 18, display: 'flex', alignItems: 'center', gap: 24,
             padding: '18px 28px',
             background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 18,
-            opacity: show(11) ? 1 : 0, transform: show(11) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s ease',
+            opacity: showAdd ? 1 : 0, transform: showAdd ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s ease',
           }}>
             <div style={{ fontSize: 12, fontWeight: 800, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 1.5 }}>Addition</div>
             <div style={{ fontSize: 32, fontWeight: 800, color: '#4ade80', fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.add}</div>
@@ -2617,7 +2612,7 @@ function TVMontures({ type, pageIndex, total, moduleLabel }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -2638,7 +2633,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'offres-unifocal-11')   return <TVOffresUnifocal11 />
   if (page.type === 'offres-progressif-11') return <TVOffresProgressif11 />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} audioUnlocked={audioUnlocked} />
+  if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} ordoRevealStep={ordoRevealStep} audioUnlocked={audioUnlocked} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
 
@@ -3742,7 +3737,22 @@ function TVQuizRateReveal({ sessionCode, moduleId, moduleLabel }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 28, marginTop: 48 }}>
+      {rate !== null && (
+        <div style={{
+          marginTop: 36, fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.7)',
+          textAlign: 'center', maxWidth: 600, lineHeight: 1.5,
+          opacity: 1, animation: 'fadeInUp 0.6s ease both',
+          fontStyle: 'italic',
+        }}>
+          {pct >= 80
+            ? "L'optique n'a plus de secrets pour cette équipe — même les astigmates voient clair maintenant."
+            : pct >= 60
+              ? "Pas mal du tout ! Il reste quelques dioptries à peaufiner, mais les bases sont solides."
+              : "On retient l'essentiel... et on revoit les ordonnances — c'est exactement pour ça qu'on est là !"}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 28, marginTop: 40 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain', opacity: 0.4 }} />
       </div>
     </div>
@@ -4041,6 +4051,7 @@ export default function TVView() {
   const [troublesPhase, setTroublesPhase]     = useState(1)
   const [opticienPlaying, setOpticienPlaying] = useState(false)
   const [ordoPlaying, setOrdoPlaying]         = useState(false)
+  const [ordoRevealStep, setOrdoRevealStep]   = useState(1)
   const [audioUnlocked, setAudioUnlocked]     = useState(false)
   const [freinsResponses, setFreinsResponses]           = useState({})
   const [prixResponses, setPrixResponses]               = useState({})
@@ -4086,6 +4097,7 @@ export default function TVView() {
     setTroublesPhase(sharedState.troubles_phase || 1)
     setOpticienPlaying(!!sharedState.opticien_playing)
     setOrdoPlaying(!!sharedState.ordo_playing)
+    setOrdoRevealStep(sharedState.ordo_reveal_step ?? 1)
     setFreinsResponses(sharedState.freins_responses || {})
     setPrixResponses(sharedState.prix_responses || {})
     setRevealPrix(!!sharedState.reveal_prix)
@@ -4116,6 +4128,9 @@ export default function TVView() {
     if (isQuiz && qIdx > 0 && qIdx % 5 === 0 && qIdx !== prevQIdxRef.current) {
       prevQIdxRef.current = qIdx
       setQuizInterstitialPhase(true)
+    }
+    if (isQuiz && qIdx % 5 !== 0) {
+      setQuizInterstitialPhase(false)
     }
     if (!isQuiz) {
       if (prevQIdxRef.current !== -1) prevQIdxRef.current = -1
@@ -4256,6 +4271,7 @@ export default function TVView() {
             troublesPhase={troublesPhase}
             opticienPlaying={opticienPlaying}
             ordoPlaying={ordoPlaying}
+            ordoRevealStep={ordoRevealStep}
             audioUnlocked={audioUnlocked}
             freinsResponses={freinsResponses}
             prixResponses={prixResponses}

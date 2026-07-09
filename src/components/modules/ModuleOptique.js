@@ -578,9 +578,13 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
   useEffect(() => {
     setRevealStep(1)
     setPlaying(true)
-    setSharedState({ ordo_playing: true }).catch(() => {})
+    setSharedState({ ordo_playing: true, ordo_reveal_step: 1 }).catch(() => {})
     return () => { setSharedState({ ordo_playing: false }).catch(() => {}) }
   }, [page.id])
+
+  useEffect(() => {
+    setSharedState({ ordo_reveal_step: revealStep }).catch(() => {})
+  }, [revealStep])
 
   useEffect(() => {
     const v = videoPreviewRef.current
