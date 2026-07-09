@@ -1,4 +1,5 @@
 'use client'
+// fix: getActiveSessionCode pour sync TV
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { sbUpdate, sbSelect, getActiveSessionCode, setSharedState } from '@/lib/supabase'
