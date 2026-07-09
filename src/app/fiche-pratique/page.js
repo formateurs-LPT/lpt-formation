@@ -120,28 +120,75 @@ export default function FichePratique() {
           {/* ── ENTREPRISE ── */}
           <div className="print-section" style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 18, padding: '24px 26px' }}>
             <SectionTitle accent={BLUE}>L'entreprise</SectionTitle>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+
+            {/* Chiffres clés */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
               {[
                 { label: 'Fondée en', value: '2014' },
                 { label: 'Magasins', value: '33' },
                 { label: 'Collaborateurs', value: '+1 000' },
-                { label: 'Fabrication', value: '10 min' },
                 { label: 'Paires / jour (réseau)', value: '5 000' },
-                { label: 'Objectif 2025', value: '1 M paires' },
+                { label: 'Année 2025', value: '1 M de paires vendues' },
               ].map((item, i) => (
                 <Card key={i} accent={BLUE} style={{ padding: '14px 18px' }}>
                   <div style={{ fontSize: 11, color: TEXT_SUB, marginBottom: 4 }}>{item.label}</div>
-                  <div style={{ fontSize: 20, fontWeight: 900, color: BLUE_LIGHT }}>{item.value}</div>
+                  <div style={{ fontSize: i === 4 ? 15 : 20, fontWeight: 900, color: BLUE_LIGHT }}>{item.value}</div>
                 </Card>
               ))}
             </div>
-            <Card accent={GOLD}>
-              <Label color={GOLD}>Différenciation LPT</Label>
-              <div style={{ fontSize: 13, color: TEXT_SUB, lineHeight: 1.7 }}>
-                Zéro intermédiaire · Marque propre · Machines en boutique<br />
-                Prix du marché traditionnel : <strong style={{ color: TEXT }}>400–500 €</strong> → LPT bien en dessous
+
+            {/* Promesse 10 min — mise en avant */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(0,137,186,0.18) 0%, rgba(0,171,233,0.08) 100%)',
+              border: `2px solid ${BLUE}`,
+              borderRadius: 16, padding: '22px 28px', marginBottom: 14,
+              display: 'flex', alignItems: 'center', gap: 24,
+            }}>
+              <div style={{
+                flexShrink: 0, width: 80, height: 80, borderRadius: 20,
+                background: BLUE, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', lineHeight: 1 }}>10</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: 1 }}>MIN</div>
               </div>
-            </Card>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: BLUE_LIGHT, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>
+                  Notre promesse — ce qui nous différencie
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: TEXT, lineHeight: 1.3 }}>
+                  Vos lunettes fabriquées en 10 minutes
+                </div>
+                <div style={{ fontSize: 13, color: TEXT_SUB, marginTop: 4 }}>
+                  Avec ou sans ordonnance · Prix du marché traditionnel : <strong style={{ color: TEXT }}>400–500 €</strong> → LPT bien en dessous
+                </div>
+              </div>
+            </div>
+
+            {/* Ce qui rend la promesse possible */}
+            <div style={{ fontSize: 10, fontWeight: 700, color: TEXT_SUB, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+              Ce qui rend cette promesse possible
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { icon: '📦', title: 'Stocks en magasin', desc: 'Verres et montures disponibles immédiatement sur place — aucune commande à attendre.' },
+                { icon: '⚙️', title: 'Machines à la pointe de la technologie', desc: 'Équipements de taille et montage de verres directement en boutique, précis et rapides.' },
+                { icon: '🚚', title: 'Centre logistique national', desc: "Un centre logistique approvisionne chaque magasin quotidiennement pour maintenir les stocks à flot." },
+              ].map((item, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 14,
+                  background: CARD, border: `1px solid ${BORDER}`,
+                  borderLeft: `4px solid ${BLUE_LIGHT}`,
+                  borderRadius: 12, padding: '14px 18px',
+                }}>
+                  <span style={{ fontSize: 22, flexShrink: 0 }}>{item.icon}</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: TEXT, marginBottom: 3 }}>{item.title}</div>
+                    <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.5 }}>{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* ── TRAME D'ACCUEIL ── */}
