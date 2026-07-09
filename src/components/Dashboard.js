@@ -954,6 +954,32 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           <div style={{ fontSize: 13, fontWeight: 600, color: '#00abe9' }}>Voir →</div>
         </div>
 
+        {/* Fiche pratique */}
+        <div
+          onClick={() => window.open('/fiche-pratique', '_blank')}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: '#fff', border: '1px solid var(--border)',
+            borderLeft: '4px solid #c9a227',
+            borderRadius: 'var(--r)', padding: '18px 24px',
+            cursor: 'pointer', marginBottom: 16, transition: 'all .2s',
+          }}
+          onMouseOver={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(201,162,39,.12)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+          onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(201,162,39,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>
+              📄
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>Formateur uniquement</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Fiche pratique</div>
+              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 1 }}>Synthèse de la formation — exportable en PDF</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#c9a227' }}>Ouvrir ↗</div>
+        </div>
+
         {/* Main tiles */}
         <div className="dash-tiles">
           <div className="dash-tile" onClick={() => setActiveView('entrees')}>
