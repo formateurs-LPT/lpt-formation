@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbSelect, SESSION_CODE, setSharedState } from '@/lib/supabase'
+import { sbUpdate, sbSelect, getActiveSessionCode, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, OPTIQUE_QUIZ } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
@@ -1024,7 +1024,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   useEffect(() => {
     const poll = async () => {
       const rows = await fetchTrainerQuizAnswers(
-        `session_code=eq.${SESSION_CODE}&module_id=eq.optique&question_idx=eq.${quizQ}`
+        `session_code=eq.${getActiveSessionCode()}&module_id=eq.optique&question_idx=eq.${quizQ}`
       )
       setLiveAnswers(rows || [])
     }
@@ -1153,7 +1153,7 @@ function GroupResultsView({ onTerminate }) {
   useEffect(() => {
     const fetchAnswers = async () => {
       const rows = await fetchTrainerQuizAnswers(
-        `session_code=eq.${SESSION_CODE}&module_id=eq.optique`
+        `session_code=eq.${getActiveSessionCode()}&module_id=eq.optique`
       )
       setAnswers(rows || [])
       setLoading(false)
@@ -1325,40 +1325,40 @@ export default function ModuleOptique({ pName, onBack }) {
 
   // Dès que le Lobby s'affiche → on signale le module en attente de lancement
   useEffect(() => {
-    sbUpdate('sessions', { active_module: 'optique', module_page: -1 }, `code=eq.${SESSION_CODE}`)
+    sbUpdate('sessions', { active_module: 'optique', module_page: -1 }, `code=eq.${getActiveSessionCode()}`)
   }, [])
 
   // Sync Supabase seulement quand le module est lancé
   useEffect(() => {
     if (started) {
-      sbUpdate('sessions', { active_module: 'optique', module_page: pageIndex }, `code=eq.${SESSION_CODE}`)
+      sbUpdate('sessions', { active_module: 'optique', module_page: pageIndex }, `code=eq.${getActiveSessionCode()}`)
     }
   }, [pageIndex, started])
 
   const handleBack = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     onBack()
   }
 
   const handleLaunchQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'optique', module_page: 100 }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: 'optique', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(0)
     setQuizLaunched(true)
   }
 
   const handleNextQuestion = async () => {
     const next = quizQ + 1
-    await sbUpdate('sessions', { active_module: 'optique', module_page: 100 + next }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: 'optique', module_page: 100 + next }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(next)
   }
 
   const handleEndQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'optique', module_page: 200 }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: 'optique', module_page: 200 }, `code=eq.${getActiveSessionCode()}`)
     setShowGroupResults(true)
   }
 
   const handleTerminateModule = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${SESSION_CODE}`)
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     onBack()
   }
 
