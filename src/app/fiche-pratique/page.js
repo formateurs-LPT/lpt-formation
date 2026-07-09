@@ -494,7 +494,7 @@ export default function FichePratique() {
             <Card accent={GOLD} style={{ marginBottom: 14 }}>
               <Label color={GOLD}>Validité des ordonnances</Label>
               <TableRow label="Enfants (moins de 16 ans)" value="1 an" accent={GOLD} />
-              <TableRow label="Adultes (16–40 ans)" value="3 ans" accent={GOLD} />
+              <TableRow label="Adultes (16–42 ans)" value="5 ans" accent={GOLD} />
               <TableRow label="Adultes presbytes (40 ans et +)" value="3 ans" accent={GOLD} last />
             </Card>
 
