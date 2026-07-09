@@ -1828,6 +1828,80 @@ function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, p
   )
 }
 
+// ── TV PDM : LPT VISION — grande photo statique ───────────────────
+function TVPdmLptVision({ page, pageIndex, total }) {
+  const C = page.color || '#f59e0b'
+  const [entered, setEntered] = useState(false)
+  useEffect(() => { setEntered(false); const t = setTimeout(() => setEntered(true), 80); return () => clearTimeout(t) }, [page.id])
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', position: 'relative',
+    }}>
+      {/* Topbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Prises de mesures</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {Array(total).fill(0).map((_, i) => (
+              <div key={i} style={{ height: 5, borderRadius: 3, transition: 'all .3s', width: i === pageIndex ? 22 : 5, background: i === pageIndex ? C : 'rgba(255,255,255,0.2)' }} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Zone principale — 36% texte / 64% image */}
+      <div style={{
+        flex: 1, display: 'grid', gridTemplateColumns: '36% 64%',
+        gap: 40, padding: '12px 48px 28px', alignItems: 'center',
+      }}>
+        {/* Texte gauche */}
+        <div style={{ opacity: entered ? 1 : 0, transform: entered ? 'translateX(0)' : 'translateX(-24px)', transition: 'all .55s ease' }}>
+          <div style={{ display: 'inline-block', background: `${C}20`, border: `1px solid ${C}45`, borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: C, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Formation LPT</div>
+          <h1 style={{ fontSize: 42, fontWeight: 800, color: '#fff', lineHeight: 1.1, marginBottom: 10 }}>{page.titre}</h1>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 28, fontWeight: 400, lineHeight: 1.6 }}>{page.sousTitre}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {(page.points || []).map((pt, i) => (
+              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', opacity: entered ? 1 : 0, transform: entered ? 'translateX(0)' : 'translateX(-16px)', transition: `all .45s ease ${0.1 + i * 0.09}s` }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: `${C}18`, border: `1px solid ${C}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17 }}>{pt.emoji}</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{pt.titre}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{pt.texte}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Image droite — grande, statique, bien visible */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          opacity: entered ? 1 : 0, transition: 'opacity .7s ease .15s',
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={page.image}
+            alt="LPTVISION"
+            style={{
+              width: '94%',
+              height: 'auto',
+              borderRadius: 20,
+              boxShadow: `0 0 80px ${C}40, 0 32px 64px rgba(0,0,0,0.5)`,
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── TV PDM : Pourquoi mesurer ─────────────────────────────────────
 function TVPdmPourquoi({ pageIndex, total }) {
   const C = '#00abe9'
@@ -2341,6 +2415,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'montures-acetate') return <TVMontures type="montures-acetate" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'montures-metal')   return <TVMontures type="montures-metal"   pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'montures-injecte') return <TVMontures type="montures-injecte" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'pdm-lptvision')    return <TVPdmLptVision page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'pdm-pourquoi')     return <TVPdmPourquoi pageIndex={pageIndex} total={total} />
   if (page.type === 'offres-classique')   return <TVOffresClassique step={offresClassiqueStep} />
   if (page.type === 'offres-1-1')         return <TVOffres11 step={offres11Step} />
