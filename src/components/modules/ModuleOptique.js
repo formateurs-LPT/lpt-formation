@@ -1,9 +1,8 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbSelect, getActiveSessionCode, setSharedState } from '@/lib/supabase'
+import { sbUpdate, sbSelect, SESSION_CODE, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
-import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, OPTIQUE_QUIZ } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { NextPagePreview } from '@/lib/trainerPreview'
@@ -88,7 +87,7 @@ function AvatarBubble({ script, trainerAvatar, pName }) {
 }
 
 // ── NavBar partagée (formateur) ───────────────────────────────────
-function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextLabel, nextPage, onTerminate }) {
+function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextLabel, nextPage }) {
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
@@ -116,12 +115,11 @@ function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total,
         quizLaunched ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <span style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>✓ Quiz envoyé</span>
-            <button onClick={onTerminate} style={{
-              background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none',
-              color: '#fff', padding: '12px 24px', borderRadius: 12,
+            <button onClick={onBack} style={{
+              background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)',
+              color: '#ff6b6b', padding: '12px 24px', borderRadius: 12,
               fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              boxShadow: '0 4px 16px rgba(34,197,94,0.4)',
-            }}>✓ Terminer le module</button>
+            }}>Terminer le module →</button>
           </div>
         ) : (
           <button onClick={onLaunchQuiz} style={{
@@ -1013,61 +1011,25 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
 }
 
 // ── Quiz Controller (vue formateur) ──────────────────────────────
-function QuizController({ quizQ, onNext, onEnd, onBack, podiumActive, onShowCorrection, correctionShown }) {
+function QuizController({ quizQ, onNext, onEnd, onBack }) {
   const [liveAnswers, setLiveAnswers] = useState([])
-  const [connectedCount, setConnectedCount] = useState(0)
-  const autoShownRef = useRef(false)
   const q = OPTIQUE_QUIZ[quizQ]
   const isLast = quizQ >= OPTIQUE_QUIZ.length - 1
 
   useEffect(() => {
     const poll = async () => {
-      const [rows, count] = await Promise.all([
-        fetchTrainerQuizAnswers(
-          `session_code=eq.${getActiveSessionCode()}&module_id=eq.optique&question_idx=eq.${quizQ}`
-        ),
-        fetchOnlineParticipantCount(getActiveSessionCode()),
-      ])
+      const rows = await fetchTrainerQuizAnswers(
+        `session_code=eq.${SESSION_CODE}&module_id=eq.optique&question_idx=eq.${quizQ}`
+      )
       setLiveAnswers(rows || [])
-      setConnectedCount(count)
     }
     poll()
     const t = setInterval(poll, 1500)
     return () => clearInterval(t)
   }, [quizQ])
 
-  // Déclenche automatiquement la correction quand tous les connectés ont répondu
-  useEffect(() => {
-    if (correctionShown || autoShownRef.current) return
-    if (connectedCount > 0 && liveAnswers.length >= connectedCount) {
-      autoShownRef.current = true
-      onShowCorrection()
-    }
-  }, [liveAnswers.length, connectedCount, correctionShown, onShowCorrection])
-
   const total = liveAnswers.length
   const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
-
-  if (podiumActive) return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #020d1f 0%, #071832 50%, #0a2040 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <div style={{ fontSize: 64, marginBottom: 20 }}>🏆</div>
-      <div style={{
-        background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.35)',
-        borderRadius: 20, padding: '8px 28px', marginBottom: 20,
-        fontSize: 13, fontWeight: 700, color: '#00abe9', letterSpacing: 2, textTransform: 'uppercase',
-      }}>Podium en cours sur l&apos;écran TV</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 8 }}>
-        Classement affiché aux participants
-      </div>
-      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
-        La question suivante s&apos;affichera automatiquement dans quelques secondes…
-      </div>
-    </div>
-  )
 
   return (
     <div style={{
@@ -1151,35 +1113,21 @@ function QuizController({ quizQ, onNext, onEnd, onBack, podiumActive, onShowCorr
           <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginRight: 6 }}>{total}</span>
           participant{total !== 1 ? 's' : ''} {total !== 1 ? 'ont' : 'a'} répondu
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          {/* Étape 1 : afficher la correction sur le TV */}
-          {!correctionShown && (
-            <button onClick={onShowCorrection} style={{
-              background: 'linear-gradient(135deg, #0369a1, #0ea5e9)',
-              border: 'none', color: '#fff', padding: '14px 28px', borderRadius: 14,
-              fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              boxShadow: '0 6px 24px rgba(14,165,233,0.4)',
-            }}>✓ Afficher la correction</button>
-          )}
-          {/* Étape 2 : passer à la suite (visible seulement après correction) */}
-          {correctionShown && (
-            isLast ? (
-              <button onClick={onEnd} style={{
-                background: 'linear-gradient(135deg, #16a34a, #22c55e)',
-                border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
-                fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                boxShadow: '0 6px 24px rgba(34,197,94,0.4)',
-              }}>✓ Terminer le quiz</button>
-            ) : (
-              <button onClick={onNext} style={{
-                background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
-                border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
-                fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                boxShadow: '0 6px 24px rgba(124,58,237,0.45)',
-              }}>Question suivante →</button>
-            )
-          )}
-        </div>
+        {isLast ? (
+          <button onClick={onEnd} style={{
+            background: 'linear-gradient(135deg, #16a34a, #22c55e)',
+            border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
+            fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 6px 24px rgba(34,197,94,0.4)',
+          }}>✓ Terminer le quiz</button>
+        ) : (
+          <button onClick={onNext} style={{
+            background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
+            border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
+            fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 6px 24px rgba(124,58,237,0.45)',
+          }}>Question suivante →</button>
+        )}
       </div>
     </div>
   )
@@ -1189,11 +1137,18 @@ function QuizController({ quizQ, onNext, onEnd, onBack, podiumActive, onShowCorr
 function GroupResultsView({ onTerminate }) {
   const [answers, setAnswers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [rateShowing, setRateShowing] = useState(false)
+
+  const toggleRate = async () => {
+    const next = !rateShowing
+    setRateShowing(next)
+    await setSharedState({ quiz_rate_show: next ? Date.now() : false })
+  }
 
   useEffect(() => {
     const fetchAnswers = async () => {
       const rows = await fetchTrainerQuizAnswers(
-        `session_code=eq.${getActiveSessionCode()}&module_id=eq.optique`
+        `session_code=eq.${SESSION_CODE}&module_id=eq.optique`
       )
       setAnswers(rows || [])
       setLoading(false)
@@ -1291,7 +1246,16 @@ function GroupResultsView({ onTerminate }) {
       </div>
 
       {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 32 }}>
+        <button onClick={toggleRate} style={{
+          background: rateShowing ? 'rgba(0,171,233,0.2)' : 'rgba(0,171,233,0.1)',
+          border: `1px solid ${rateShowing ? '#00abe9' : 'rgba(0,171,233,0.4)'}`,
+          color: '#00abe9', padding: '14px 28px', borderRadius: 14,
+          fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          🎯 {rateShowing ? 'Masquer le taux' : 'Révéler le taux de réussite'}
+        </button>
         <button onClick={onTerminate} style={{
           background: 'linear-gradient(135deg, #dc2626, #ef4444)',
           border: 'none', color: '#fff', padding: '14px 42px', borderRadius: 14,
@@ -1345,74 +1309,52 @@ function Lobby({ onStart, onBack }) {
 }
 
 // ── Composant principal ───────────────────────────────────────────
-const PODIUM_DURATION_MS = 9000 // correspond à DURATION dans TVQuizPodium
-
-export default function ModuleOptique({ pName, onBack, onTerminate }) {
+export default function ModuleOptique({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
   const [quizLaunched, setQuizLaunched] = useState(false)
   const [quizQ, setQuizQ] = useState(0)
   const [showGroupResults, setShowGroupResults] = useState(false)
-  const [podiumPhase, setPodiumPhase] = useState(false)
-  const [correctionShown, setCorrectionShown] = useState(false)
 
   const trainerAvatar = TRAINER_AVATARS[(pName || '').toLowerCase()] || TRAINER_AVATARS.kevin
 
   // Dès que le Lobby s'affiche → on signale le module en attente de lancement
   useEffect(() => {
-    sbUpdate('sessions', { active_module: 'optique', module_page: -1 }, `code=eq.${getActiveSessionCode()}`)
+    sbUpdate('sessions', { active_module: 'optique', module_page: -1 }, `code=eq.${SESSION_CODE}`)
   }, [])
 
   // Sync Supabase seulement quand le module est lancé
   useEffect(() => {
     if (started) {
-      sbUpdate('sessions', { active_module: 'optique', module_page: pageIndex }, `code=eq.${getActiveSessionCode()}`)
+      sbUpdate('sessions', { active_module: 'optique', module_page: pageIndex }, `code=eq.${SESSION_CODE}`)
     }
   }, [pageIndex, started])
 
   const handleBack = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
-    ;(onTerminate ?? onBack)()
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${SESSION_CODE}`)
+    onBack()
   }
 
   const handleLaunchQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'optique', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
+    await sbUpdate('sessions', { active_module: 'optique', module_page: 100 }, `code=eq.${SESSION_CODE}`)
     setQuizQ(0)
     setQuizLaunched(true)
   }
 
-  const handleShowCorrection = async () => {
-    setCorrectionShown(true)
-    await setSharedState({ quiz_show_correction: true })
-  }
-
   const handleNextQuestion = async () => {
     const next = quizQ + 1
-    const isPodium = next > 0 && next % 5 === 0
-    setCorrectionShown(false)
-    await setSharedState({ quiz_show_correction: false })
-    await sbUpdate('sessions', { active_module: 'optique', module_page: 100 + next }, `code=eq.${getActiveSessionCode()}`)
+    await sbUpdate('sessions', { active_module: 'optique', module_page: 100 + next }, `code=eq.${SESSION_CODE}`)
     setQuizQ(next)
-    if (isPodium) {
-      setPodiumPhase(true)
-      await setSharedState({ quiz_podium_active: true })
-      setTimeout(async () => {
-        setPodiumPhase(false)
-        await setSharedState({ quiz_podium_active: false })
-      }, PODIUM_DURATION_MS)
-    }
   }
 
   const handleEndQuiz = async () => {
-    setCorrectionShown(false)
-    await setSharedState({ quiz_show_correction: false })
-    await sbUpdate('sessions', { active_module: 'optique', module_page: 200 }, `code=eq.${getActiveSessionCode()}`)
+    await sbUpdate('sessions', { active_module: 'optique', module_page: 200 }, `code=eq.${SESSION_CODE}`)
     setShowGroupResults(true)
   }
 
   const handleTerminateModule = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
-    ;(onTerminate ?? onBack)()
+    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${SESSION_CODE}`)
+    onBack()
   }
 
   if (!started) return (
@@ -1436,14 +1378,10 @@ export default function ModuleOptique({ pName, onBack, onTerminate }) {
       <>
         <style>{STYLES}</style>
         <QuizController
-          key={quizQ}
           quizQ={quizQ}
           onNext={handleNextQuestion}
           onEnd={handleEndQuiz}
           onBack={handleEndQuiz}
-          podiumActive={podiumPhase}
-          onShowCorrection={handleShowCorrection}
-          correctionShown={correctionShown}
         />
       </>
     )
@@ -1463,7 +1401,6 @@ export default function ModuleOptique({ pName, onBack, onTerminate }) {
     quizLaunched,
     onLaunchQuiz: handleLaunchQuiz,
     nextPage: PAGES[pageIndex + 1] ?? null,
-    onTerminate: handleTerminateModule,
   }
 
   return (
