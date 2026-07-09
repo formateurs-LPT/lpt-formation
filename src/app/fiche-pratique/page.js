@@ -1,4 +1,5 @@
 'use client'
+import { useState, useEffect } from 'react'
 
 const BLUE = '#0089ba'
 const BLUE_LIGHT = '#00abe9'
@@ -66,11 +67,71 @@ function TableRow({ label, value, accent = BLUE, last = false }) {
   )
 }
 
+function QrModal({ url, onClose }) {
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&color=ffffff&bgcolor=03112a&data=${encodeURIComponent(url)}`
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: BG2, border: `1px solid ${BORDER}`,
+          borderRadius: 24, padding: '40px 48px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24,
+          boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+        }}
+      >
+        <div style={{ fontSize: 10, fontWeight: 700, color: BLUE_LIGHT, textTransform: 'uppercase', letterSpacing: 2 }}>
+          Fiche pratique
+        </div>
+        <div style={{
+          background: '#03112a', borderRadius: 16, padding: 14,
+          border: `2px solid ${BLUE}`,
+          boxShadow: `0 0 40px ${BLUE}30`,
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={qrSrc} alt="QR Code Fiche Pratique" width={260} height={260} style={{ display: 'block', borderRadius: 8 }} />
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: TEXT, marginBottom: 6 }}>
+            Scannez pour accéder à la fiche
+          </div>
+          <div style={{ fontSize: 12, color: TEXT_SUB }}>{url}</div>
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'rgba(255,255,255,0.08)', border: `1px solid ${BORDER}`,
+            color: TEXT_SUB, fontSize: 13, fontWeight: 600,
+            padding: '10px 28px', borderRadius: 12, cursor: 'pointer',
+          }}
+        >
+          Fermer
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function FichePratique() {
+  const [showQr, setShowQr] = useState(false)
+  const [ficheUrl, setFicheUrl] = useState('')
+
+  useEffect(() => {
+    setFicheUrl(window.location.origin + '/fiche-pratique')
+  }, [])
+
   const handlePrint = () => window.print()
 
   return (
     <>
+      {showQr && ficheUrl && <QrModal url={ficheUrl} onClose={() => setShowQr(false)} />}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -98,21 +159,36 @@ export default function FichePratique() {
               Synthèse de la formation — points essentiels
             </div>
           </div>
-          <button
-            className="no-print"
-            onClick={handlePrint}
-            style={{
-              background: `${BLUE}18`, border: `1px solid ${BLUE}60`,
-              color: BLUE_LIGHT, fontSize: 13, fontWeight: 700,
-              padding: '10px 20px', borderRadius: 12,
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-              transition: 'all .2s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = `${BLUE}35` }}
-            onMouseLeave={e => { e.currentTarget.style.background = `${BLUE}18` }}
-          >
-            ⬇ Exporter en PDF
-          </button>
+          <div className="no-print" style={{ display: 'flex', gap: 10 }}>
+            <button
+              onClick={() => setShowQr(true)}
+              style={{
+                background: `${GOLD}18`, border: `1px solid ${GOLD}60`,
+                color: GOLD, fontSize: 13, fontWeight: 700,
+                padding: '10px 20px', borderRadius: 12,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                transition: 'all .2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}35` }}
+              onMouseLeave={e => { e.currentTarget.style.background = `${GOLD}18` }}
+            >
+              ⬜ QR Code
+            </button>
+            <button
+              onClick={handlePrint}
+              style={{
+                background: `${BLUE}18`, border: `1px solid ${BLUE}60`,
+                color: BLUE_LIGHT, fontSize: 13, fontWeight: 700,
+                padding: '10px 20px', borderRadius: 12,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                transition: 'all .2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = `${BLUE}35` }}
+              onMouseLeave={e => { e.currentTarget.style.background = `${BLUE}18` }}
+            >
+              ⬇ Exporter en PDF
+            </button>
+          </div>
         </div>
 
         <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 28 }}>
