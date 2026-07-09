@@ -39,6 +39,7 @@ export const PDM_PAGES = [
   },
   {
     id: 'outil',
+    type: 'pdm-lptvision',
     titre: 'LPTVISION',
     sousTitre: "L'outil intégré LPT — rapide, précis, obligatoire sur chaque vente",
     image: '/assets/lptvision-tangentes.png',
