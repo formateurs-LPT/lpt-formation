@@ -570,24 +570,17 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNex
 
 // ── Page 3 : Lire une ordonnance ─────────────────────────────────
 function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
-  const [step, setStep]     = useState(0)
+  const [revealStep, setRevealStep] = useState(1) // 1=sphère, 2=cylindre+axe, 3=addition
   const [playing, setPlaying] = useState(false)
-  const videoPreviewRef     = useRef(null)
+  const videoPreviewRef = useRef(null)
 
-  // Lance l'avatar automatiquement à l'arrivée sur la page, coupe au départ
   useEffect(() => {
-    setStep(0)
+    setRevealStep(1)
     setPlaying(true)
     setSharedState({ ordo_playing: true }).catch(() => {})
-    const T = [400, 1000, 1600, 2800, 3200, 3500, 3800, 4200, 4500, 4800, 5300]
-    const timers = T.map((t, i) => setTimeout(() => setStep(s => Math.max(s, i + 1)), t))
-    return () => {
-      timers.forEach(clearTimeout)
-      setSharedState({ ordo_playing: false }).catch(() => {})
-    }
+    return () => { setSharedState({ ordo_playing: false }).catch(() => {}) }
   }, [page.id])
 
-  // Prévisualisation locale muette
   useEffect(() => {
     const v = videoPreviewRef.current
     if (!v) return
@@ -602,8 +595,16 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
     setSharedState({ ordo_playing: next }).catch(() => {})
   }
 
-  const show = (n) => step >= n
-  const cellVis = (row, col) => show(row === 0 ? 5 + col : 8 + col)
+  const handleNextReveal = () => {
+    if (revealStep < 3) setRevealStep(r => r + 1)
+    else onNext()
+  }
+
+  // revealStep 1 = sphère seule, 2 = +cylindre+axe, 3 = +addition
+  const showCard = (i) => i === 0 ? revealStep >= 1 : revealStep >= 2
+  const showTable = revealStep >= 1
+  const showCell = (row, col) => col === 0 ? revealStep >= 1 : revealStep >= 2
+  const showAdd = revealStep >= 3
 
   return (
     <div style={{
@@ -650,8 +651,8 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
               background: `${col.color}0d`, border: `1px solid ${col.color}28`,
               borderTop: `3px solid ${col.color}`, borderRadius: 16,
               padding: '22px 22px 18px',
-              opacity: show(i + 1) ? 1 : 0,
-              transform: show(i + 1) ? 'translateY(0)' : 'translateY(18px)',
+              opacity: showCard(i) ? 1 : 0,
+              transform: showCard(i) ? 'translateY(0)' : 'translateY(18px)',
               transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
             }}>
               <div style={{
@@ -673,8 +674,8 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
 
         {/* Phase 2 — Table ordonnance */}
         <div style={{
-          opacity: show(4) ? 1 : 0,
-          transform: show(4) ? 'translateY(0)' : 'translateY(16px)',
+          opacity: showTable ? 1 : 0,
+          transform: showTable ? 'translateY(0)' : 'translateY(16px)',
           transition: 'all 0.5s ease',
         }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 14 }}>
@@ -698,7 +699,7 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
               {ORD_COLS.map((col, ci) => (
                 <div key={col.key} style={{
                   padding: '14px 20px', borderLeft: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center',
-                  opacity: cellVis(0, ci) ? 1 : 0, transform: cellVis(0, ci) ? 'translateX(0)' : 'translateX(-10px)', transition: 'all 0.35s ease',
+                  opacity: showCell(0, ci) ? 1 : 0, transform: showCell(0, ci) ? 'translateX(0)' : 'translateX(-10px)', transition: 'all 0.35s ease',
                 }}>
                   <span style={{ fontSize: 20, fontWeight: 700, color: col.color, fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.od[col.key]}</span>
                 </div>
@@ -711,7 +712,7 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
               {ORD_COLS.map((col, ci) => (
                 <div key={col.key} style={{
                   padding: '14px 20px', borderLeft: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center',
-                  opacity: cellVis(1, ci) ? 1 : 0, transform: cellVis(1, ci) ? 'translateX(0)' : 'translateX(-10px)', transition: 'all 0.35s ease',
+                  opacity: showCell(1, ci) ? 1 : 0, transform: showCell(1, ci) ? 'translateX(0)' : 'translateX(-10px)', transition: 'all 0.35s ease',
                 }}>
                   <span style={{ fontSize: 20, fontWeight: 700, color: col.color, fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.og[col.key]}</span>
                 </div>
@@ -724,7 +725,7 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
             marginTop: 14, display: 'flex', alignItems: 'center', gap: 20,
             padding: '14px 22px',
             background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 14,
-            opacity: show(11) ? 1 : 0, transform: show(11) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s ease',
+            opacity: showAdd ? 1 : 0, transform: showAdd ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s ease',
           }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 1.5 }}>Addition</div>
             <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80', fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.add}</div>
@@ -734,7 +735,11 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
       </div>
 
       {/* Navigation */}
-      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} nextPage={nextPage} />
+      <TrainerNav
+        onBack={onBack} onPrev={onPrev} onNext={handleNextReveal}
+        isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} nextPage={nextPage}
+        nextLabel={revealStep === 1 ? 'Cylindre & Axe →' : revealStep === 2 ? 'Addition →' : 'Suivant →'}
+      />
 
       {/* Bulle avatar opticien ordonnance */}
       <div style={{
