@@ -236,7 +236,7 @@ export default function FichePratique() {
                   Vos lunettes fabriquées en 10 minutes
                 </div>
                 <div style={{ fontSize: 13, color: TEXT_SUB, marginTop: 4 }}>
-                  Avec ou sans ordonnance · Prix du marché traditionnel : <strong style={{ color: TEXT }}>400–500 €</strong> → LPT bien en dessous
+                  Avec ou sans ordonnance
                 </div>
               </div>
             </div>
