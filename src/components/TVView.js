@@ -3800,7 +3800,7 @@ function TVGroupResults({ moduleId, moduleLabel, quiz }) {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100vh', overflowY: 'auto',
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
       display: 'flex', flexDirection: 'column', padding: '32px 64px 48px', position: 'relative',
     }}>
