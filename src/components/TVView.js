@@ -3406,10 +3406,18 @@ function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal }) {
         fontSize: 13, fontWeight: 700, color: '#00abe9', letterSpacing: 2, textTransform: 'uppercase',
       }}>⚡ Bilan après {qIdx} question{qIdx > 1 ? 's' : ''}</div>
 
+      <div style={{
+        animation: 'trophyFloat 3s ease-in-out infinite',
+        filter: 'drop-shadow(0 0 24px rgba(251,191,36,0.5))',
+        marginBottom: 8,
+      }}>
+        <Image src="/assets/trophé-quiz.png" alt="Trophée" width={110} height={110} style={{ objectFit: 'contain' }} />
+      </div>
+
       <h2 style={{
         fontSize: 52, fontWeight: 900, color: '#fff', marginBottom: 44, textAlign: 'center',
         animation: 'podiumFadeIn 0.6s ease forwards',
-      }}>🏆 Classement</h2>
+      }}>Classement</h2>
 
       {top3.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 12 }}>
@@ -3562,10 +3570,10 @@ function TVQuizFinalPodium({ quiz, onDone, sessionCode }) {
       {/* Trophée */}
       <div style={{
         animation: 'trophyFloat 3s ease-in-out infinite',
-        filter: 'drop-shadow(0 0 32px rgba(0,171,233,0.55))',
+        filter: 'drop-shadow(0 0 40px rgba(251,191,36,0.6))',
         marginBottom: 4,
       }}>
-        <LPTTrophy size={130} />
+        <Image src="/assets/trophé-quiz.png" alt="Trophée champion" width={150} height={150} style={{ objectFit: 'contain' }} />
       </div>
 
       <h1 style={{
