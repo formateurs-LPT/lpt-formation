@@ -266,8 +266,7 @@ export default function FichePratique() {
               <Card accent={BLUE}>
                 <Label color={BLUE}>Parcours Classique</Label>
                 <TableRow label="1ère paire" value="dès 10 €" accent={BLUE_LIGHT} />
-                <TableRow label="2ème paire" value="−20 %" accent={BLUE_LIGHT} />
-                <TableRow label="Fabrication" value="⚡ 10 min" accent={BLUE_LIGHT} last />
+                <TableRow label="2ème paire" value="−20 %" accent={BLUE_LIGHT} last />
               </Card>
 
               <Card accent={GOLD}>
@@ -285,21 +284,19 @@ export default function FichePratique() {
                 <Label color={BORDEAUX}>Parcours Suprême</Label>
                 <div style={{ fontSize: 13, color: TEXT_SUB, lineHeight: 1.6, marginBottom: 12 }}>
                   1 paire achetée = <strong style={{ color: BORDEAUX }}>1 paire offerte</strong><br />
-                  <strong style={{ color: TEXT }}>Verres Origine France</strong> garantie
+                  Verres <strong style={{ color: TEXT }}>Origine France</strong> garantie<br />
+                  Éligible tout le magasin · Même en solaire
                 </div>
-                <div style={{
-                  background: `${BORDEAUX}18`, border: `1px solid ${BORDEAUX}50`,
-                  borderRadius: 8, padding: '8px 12px', fontSize: 12,
-                  color: BORDEAUX, fontWeight: 700,
-                }}>
-                  ⚠ Uniquement possible en tiers payant complet
-                </div>
+                <TableRow label="Condition" value="Tiers payant complet" accent={BORDEAUX} last />
               </Card>
 
               <Card accent={BLUE_LIGHT}>
                 <Label color={BLUE_LIGHT}>Pack Plan</Label>
-                <div style={{ fontSize: 24, fontWeight: 900, color: BLUE_LIGHT, marginBottom: 6 }}>95 €</div>
-                <div style={{ fontSize: 13, color: TEXT_SUB }}>2 paires · Sans ordonnance</div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: BLUE_LIGHT, marginBottom: 10 }}>95 €</div>
+                <TableRow label="Nombre de paires" value="2 paires" accent={BLUE_LIGHT} />
+                <TableRow label="Correction" value="Sans correction" accent={BLUE_LIGHT} />
+                <TableRow label="Traitements" value="Au choix" accent={BLUE_LIGHT} />
+                <TableRow label="Montures" value="Au choix" accent={BLUE_LIGHT} last />
               </Card>
 
             </div>
