@@ -3,6 +3,7 @@
 const BLUE = '#0089ba'
 const BLUE_LIGHT = '#00abe9'
 const GOLD = '#c9a227'
+const BORDEAUX = '#8B1527'
 const BG = '#03112a'
 const BG2 = '#0d1f3c'
 const CARD = 'rgba(255,255,255,0.04)'
@@ -146,13 +147,28 @@ export default function FichePratique() {
           {/* ── TRAME D'ACCUEIL ── */}
           <div className="print-section" style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 18, padding: '24px 26px' }}>
             <SectionTitle accent={GOLD}>Trame d'accueil</SectionTitle>
-            <Card accent={GOLD}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: TEXT, lineHeight: 1.8, fontStyle: 'italic' }}>
-                "Bonjour ! Connaissez-vous le concept LPT ?<br />
-                Nous fabriquons vos lunettes en 10 minutes, avec ou sans ordonnance.<br />
-                L'examen de vue est <strong style={{ color: GOLD }}>gratuit</strong>."
-              </div>
-            </Card>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { num: 1, text: 'Bonjour et bienvenue chez Lunettes Pour Tous', color: BLUE_LIGHT, emoji: '👋' },
+                { num: 2, text: 'Connaissez-vous le concept ?', color: '#7c3aed', emoji: '💡' },
+                { num: 3, text: "Ici c'est simple, c'est la possibilité d'avoir ses lunettes de vue en seulement 10 minutes avec ou sans ordonnance.", color: '#f59e0b', emoji: '⏱️' },
+                { num: 4, text: "Je vous inscris en examen de vue ? C'est gratuit et sans rendez-vous.", color: '#22c55e', emoji: '✅' },
+              ].map(step => (
+                <Card key={step.num} accent={step.color} style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                    background: `${step.color}20`, border: `2px solid ${step.color}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, fontWeight: 900, color: step.color,
+                  }}>{step.num}</div>
+                  <div style={{ paddingTop: 4 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: TEXT, lineHeight: 1.6 }}>
+                      {step.emoji} {step.text}
+                    </span>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
 
           {/* ── OPTIQUE ── */}
@@ -219,22 +235,27 @@ export default function FichePratique() {
                 <TableRow label="Progressif" value="~260 €" accent={GOLD} last />
               </Card>
 
+              <Card accent={BORDEAUX}>
+                <Label color={BORDEAUX}>Parcours Suprême</Label>
+                <div style={{ fontSize: 13, color: TEXT_SUB, lineHeight: 1.6, marginBottom: 12 }}>
+                  1 paire achetée = <strong style={{ color: BORDEAUX }}>1 paire offerte</strong><br />
+                  <strong style={{ color: TEXT }}>Verres Origine France</strong> garantie
+                </div>
+                <div style={{
+                  background: `${BORDEAUX}18`, border: `1px solid ${BORDEAUX}50`,
+                  borderRadius: 8, padding: '8px 12px', fontSize: 12,
+                  color: BORDEAUX, fontWeight: 700,
+                }}>
+                  ⚠ Uniquement possible en tiers payant complet
+                </div>
+              </Card>
+
               <Card accent={BLUE_LIGHT}>
                 <Label color={BLUE_LIGHT}>Pack Plan</Label>
                 <div style={{ fontSize: 24, fontWeight: 900, color: BLUE_LIGHT, marginBottom: 6 }}>95 €</div>
                 <div style={{ fontSize: 13, color: TEXT_SUB }}>2 paires · Sans ordonnance</div>
               </Card>
 
-              <Card accent='#22c55e'>
-                <Label color='#22c55e'>GlassProtect — Garantie verre</Label>
-                {[
-                  { label: 'Basic', desc: 'Protection de base' },
-                  { label: 'Silver', desc: 'Protection renforcée' },
-                  { label: 'Gold', desc: 'Casse + rayure — 1 an ✓' },
-                ].map((item, i, arr) => (
-                  <TableRow key={i} label={item.desc} value={item.label} accent='#22c55e' last={i === arr.length - 1} />
-                ))}
-              </Card>
             </div>
           </div>
 
@@ -319,6 +340,74 @@ export default function FichePratique() {
                 </Card>
               ))}
             </div>
+          </div>
+
+          {/* ── REMBOURSEMENT ── */}
+          <div className="print-section" style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 18, padding: '24px 26px' }}>
+            <SectionTitle accent='#22c55e'>Droits au remboursement des lunettes en France</SectionTitle>
+
+            <Card accent='#22c55e' style={{ marginBottom: 14 }}>
+              <Label color='#22c55e'>Conditions pour être remboursé</Label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  { icon: '📋', text: 'Avoir une ordonnance valable (ophtalmologiste ou renouvellement adapté par un opticien)' },
+                  { icon: '⏳', text: 'Respecter les délais de renouvellement selon l'âge' },
+                  { icon: '🏥', text: 'Être couvert par une mutuelle complémentaire santé pour un remboursement significatif' },
+                ].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <span style={{ fontSize: 15, flexShrink: 0 }}>{item.icon}</span>
+                    <span style={{ fontSize: 13, color: TEXT_SUB, lineHeight: 1.5 }}>{item.text}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <Card accent={BLUE}>
+                <Label color={BLUE}>Délais de renouvellement (remboursement Sécu)</Label>
+                {[
+                  { label: 'Enfants (< 6 ans)', value: '1 an' },
+                  { label: 'Enfants (6–15 ans)', value: '2 ans' },
+                  { label: 'Adultes (16 ans et +)', value: '2 ans' },
+                ].map((row, i, arr) => (
+                  <TableRow key={i} label={row.label} value={row.value} accent={BLUE_LIGHT} last={i === arr.length - 1} />
+                ))}
+              </Card>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <Card accent={GOLD}>
+                  <Label color={GOLD}>Exception — sans délai minimum</Label>
+                  <div style={{ fontSize: 13, color: TEXT_SUB, lineHeight: 1.6 }}>
+                    Si le changement de correction est <strong style={{ color: GOLD }}>≥ 0,5 dioptrie</strong>, le remboursement est possible avant le délai habituel.
+                  </div>
+                </Card>
+
+                <Card accent='#a78bfa'>
+                  <Label color='#a78bfa'>Renouvellement adapté</Label>
+                  <div style={{ fontSize: 13, color: TEXT_SUB, lineHeight: 1.6 }}>
+                    Un opticien peut prolonger une ordonnance expirée <strong style={{ color: TEXT }}>(adultes 16–42 ans, unifocaux)</strong> si la correction est stable — valable <strong style={{ color: '#a78bfa' }}>1 an</strong>.
+                  </div>
+                </Card>
+              </div>
+            </div>
+
+            <Card accent={BORDEAUX} style={{ marginTop: 14 }}>
+              <Label color={BORDEAUX}>Tiers payant</Label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: TEXT, marginBottom: 4 }}>Tiers payant partiel</div>
+                  <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.5 }}>
+                    La Sécu paie sa part directement à l'opticien. Le client avance uniquement la part de sa mutuelle.
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: BORDEAUX, marginBottom: 4 }}>Tiers payant complet ✓</div>
+                  <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.5 }}>
+                    La Sécu <strong style={{ color: TEXT }}>et</strong> la mutuelle paient directement l'opticien. Le client ne débourse <strong style={{ color: BORDEAUX }}>rien</strong>. Requis pour le Parcours Suprême.
+                  </div>
+                </div>
+              </div>
+            </Card>
           </div>
 
           {/* Footer */}
