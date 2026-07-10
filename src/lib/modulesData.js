@@ -42,7 +42,6 @@ export const PDM_PAGES = [
   },
   {
     id: 'outil',
-    type: 'pdm-lptvision',
     titre: 'LPTVISION',
     sousTitre: "L'outil intégré LPT — rapide, précis, obligatoire sur chaque vente",
     image: '/assets/lptvision-tangentes.png',
@@ -104,10 +103,10 @@ export const OPTIQUE_PAGES = [
     icon: '👁️',
     color: '#00abe9',
     troubles: [
-      { num: '01', nom: 'Myope',        def: 'Voit bien de près, flou de loin.',                                     color: '#00abe9' },
-      { num: '02', nom: 'Hypermétrope', def: 'Flou à toutes distances, force constamment pour voir net.',             color: '#7c3aed' },
-      { num: '03', nom: 'Astigmate',    def: 'Vision déformée à toutes distances.',                                   color: '#f59e0b' },
-      { num: '04', nom: 'Presbyte',     def: 'Vision floue de près à partir de 40-45 ans.',                          color: '#22c55e' },
+      { num: '01', nom: 'Myope',        def: 'Voit bien de près, flou de loin.',                                     color: '#00abe9', video: '/assets/opticien-videos/myopie.mp4' },
+      { num: '02', nom: 'Hypermétrope', def: 'Flou à toutes distances, force constamment pour voir net.',             color: '#7c3aed', video: '/assets/opticien-videos/hypermetropie.mp4' },
+      { num: '03', nom: 'Astigmate',    def: 'Vision déformée à toutes distances.',                                   color: '#f59e0b', video: '/assets/opticien-videos/astigmate.mp4' },
+      { num: '04', nom: 'Presbyte',     def: 'Vision floue de près à partir de 40-45 ans.',                          color: '#22c55e', video: '/assets/opticien-videos/presbytie.mp4' },
     ],
     avatarScript: "On porte des lunettes pour corriger un trouble visuel. Il en existe 4 principaux : myopie, hypermétropie, astigmatisme et presbytie. Chacun affecte la vision différemment — et chacun a sa correction adaptée.",
   },
@@ -540,13 +539,12 @@ export const TRAME_ACCUEIL_PAGES = [
 ]
 
 export const MODULE_DATA = {
-  'types-verres':     { pages: TYPES_VERRES_PAGES,      quiz: TYPES_VERRES_QUIZ,        label: 'Types de verres',               sub: 'Le verre unifocal' },
-  'pdm':              { pages: PDM_PAGES,                quiz: PDM_QUIZ,                 label: 'Prises de mesures',             sub: 'Écart pupillaire · Hauteur · LPTVISION' },
-  'optique':          { pages: OPTIQUE_PAGES,            quiz: OPTIQUE_QUIZ,             label: "Les bases de l'optique",        sub: 'Troubles visuels · Corrections · Ordonnances' },
-  'offres':           { pages: OFFRES_PAGES,              quiz: OFFRES_QUIZ,              label: 'Les offres',                    sub: 'Classique · 1=1 · Parcours LPT' },
-  'entreprise':       { pages: ENTREPRISE_PAGES,         quiz: ENTREPRISE_QUIZ,          label: "Présentation de l'entreprise", sub: 'Mission · Histoire · Culture LPT' },
-  'verre-progressif': { pages: PROGRESSIF_PAGES,         quiz: PROGRESSIF_QUIZ,          label: 'Le Verre Progressif',          sub: 'Anatomie · Vente · Objections · Quiz J+14' },
-  'trame-accueil':    { pages: TRAME_ACCUEIL_PAGES,      quiz: [],                       label: "Trame d'accueil",              sub: 'Bonjour · Concept · Examen de vue' },
+  'types-verres':     { pages: TYPES_VERRES_PAGES,      quiz: TYPES_VERRES_QUIZ,  label: 'Types de verres',               sub: 'Le verre unifocal' },
+  'pdm':              { pages: PDM_PAGES,                quiz: PDM_QUIZ,           label: 'Prises de mesures',             sub: 'Écart pupillaire · Hauteur · LPTVISION' },
+  'optique':          { pages: OPTIQUE_PAGES,            quiz: OPTIQUE_QUIZ,       label: "Les bases de l'optique",        sub: 'Troubles visuels · Corrections · Ordonnances' },
+  'offres':           { pages: OFFRES_PAGES,              quiz: OFFRES_QUIZ,        label: 'Les offres',                    sub: 'Classique · 1=1 · Parcours LPT' },
+  'entreprise':       { pages: ENTREPRISE_PAGES,         quiz: ENTREPRISE_QUIZ,    label: "Présentation de l'entreprise", sub: 'Mission · Histoire · Culture LPT' },
+  'verre-progressif': { pages: PROGRESSIF_PAGES,         quiz: PROGRESSIF_QUIZ,    label: 'Le Verre Progressif',          sub: 'Anatomie · Vente · Objections · Quiz J+14' },
+  'trame-accueil':    { pages: TRAME_ACCUEIL_PAGES,      quiz: [],                 label: "Trame d'accueil",              sub: 'Bonjour · Concept · Examen de vue' },
   'montures':         { pages: [{ id: 'acetate', type: 'montures-acetate' }, { id: 'metal', type: 'montures-metal' }, { id: 'injecte', type: 'montures-injecte' }], quiz: [], label: 'Connaissances Montures', sub: 'Acétate · Métal · Injecté' },
-  'quiz-final':       { pages: [],                       quiz: QUIZ_FINAL_QUESTIONS,     label: 'Quiz de fin de formation',     sub: 'Trame · Optique · Offres · Remboursement' },
 }

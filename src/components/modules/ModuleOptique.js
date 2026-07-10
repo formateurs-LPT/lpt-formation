@@ -217,55 +217,26 @@ function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext,
 
 // ── Page troubles visuels ─────────────────────────────────────────
 function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
-  const [visibleCount, setVisibleCount]   = useState(0)
-  const [phase, setPhase]                 = useState(1)
-  const [defVisibleCount, setDefVisibleCount] = useState(0)
-  const [playing, setPlaying]             = useState(false)
-  const videoPreviewRef                   = useRef(null)
+  const [visibleCount, setVisibleCount] = useState(0)
+  const [selected, setSelected]         = useState(null)
 
-  // Reset local + Supabase à chaque changement de page
   useEffect(() => {
     setVisibleCount(0)
-    setPhase(1)
-    setDefVisibleCount(0)
-    setPlaying(false)
-    setSharedState({ troubles_phase: 1, opticien_playing: false }).catch(() => {})
+    setSelected(null)
+    setSharedState({ troubles_selected: null }).catch(() => {})
     const timers = page.troubles.map((_, i) =>
       setTimeout(() => setVisibleCount(c => Math.max(c, i + 1)), 250 + i * 220)
     )
-    return () => timers.forEach(clearTimeout)
+    return () => {
+      timers.forEach(clearTimeout)
+      setSharedState({ troubles_selected: null }).catch(() => {})
+    }
   }, [page.id])
 
-  // Phase 2 : révèle les définitions + lance l'avatar opticien
-  useEffect(() => {
-    if (phase !== 2) return
-    setDefVisibleCount(0)
-    setPlaying(true)
-    setSharedState({ troubles_phase: 2, opticien_playing: true }).catch(() => {})
-    const timers = page.troubles.map((_, i) =>
-      setTimeout(() => setDefVisibleCount(c => Math.max(c, i + 1)), 500 + i * 900)
-    )
-    return () => timers.forEach(clearTimeout)
-  }, [phase])
-
-  // Synchronise la prévisualisation locale (muet — pour le formateur)
-  useEffect(() => {
-    const v = videoPreviewRef.current
-    if (!v) return
-    v.muted = true
-    if (playing) v.play().catch(() => {})
-    else v.pause()
-  }, [playing])
-
-  const togglePlay = () => {
-    const next = !playing
-    setPlaying(next)
-    setSharedState({ opticien_playing: next }).catch(() => {})
-  }
-
-  const handleNext = () => {
-    if (phase === 1) setPhase(2)
-    else onNext()
+  const toggle = (i) => {
+    const next = selected === i ? null : i
+    setSelected(next)
+    setSharedState({ troubles_selected: next }).catch(() => {})
   }
 
   return (
@@ -287,16 +258,6 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* Badge phase */}
-          <div style={{
-            background: phase === 2 ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)',
-            border: `1px solid ${phase === 2 ? 'rgba(34,197,94,0.35)' : 'rgba(245,158,11,0.35)'}`,
-            borderRadius: 20, padding: '4px 12px',
-            fontSize: 11, fontWeight: 700,
-            color: phase === 2 ? '#4ade80' : '#fbbf24',
-          }}>
-            {phase === 1 ? 'Noms révélés · En attente' : 'Définitions en cours'}
-          </div>
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
           <div style={{ display: 'flex', gap: 5 }}>
             {Array(total).fill(0).map((_, i) => (
@@ -335,23 +296,24 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
           <h1 style={{ fontSize: 34, fontWeight: 800, color: '#fff', lineHeight: 1.1, marginBottom: 6, margin: 0 }}>
             {page.titre}
           </h1>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', fontWeight: 400, marginTop: 8 }}>
-            {page.sousTitre}
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 400, marginTop: 8 }}>
+            {selected !== null ? '▶ Vidéo diffusée — cliquez à nouveau pour fermer' : 'Cliquez sur un trouble pour lancer la vidéo sur le diffuseur'}
           </p>
         </div>
 
-        {/* Liste des troubles */}
+        {/* Liste des troubles — cliquables */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
           {page.troubles.map((t, i) => (
-            <div key={i} style={{
+            <div key={i} onClick={() => i < visibleCount && toggle(i)} style={{
               display: 'flex', alignItems: 'center', gap: 24,
-              background: i < visibleCount ? `${t.color}09` : 'transparent',
-              border: `1px solid ${i < visibleCount ? t.color + '28' : 'transparent'}`,
+              background: selected === i ? `${t.color}18` : i < visibleCount ? `${t.color}09` : 'transparent',
+              border: `1px solid ${selected === i ? t.color + '80' : i < visibleCount ? t.color + '28' : 'transparent'}`,
               borderLeft: `4px solid ${i < visibleCount ? t.color : 'transparent'}`,
               borderRadius: 16, padding: '20px 28px',
-              opacity: i < visibleCount ? 1 : 0,
+              opacity: i < visibleCount ? (selected !== null && selected !== i ? 0.4 : 1) : 0,
               transform: i < visibleCount ? 'translateX(0)' : 'translateX(-28px)',
               transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+              cursor: i < visibleCount ? 'pointer' : 'default',
             }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: t.color, letterSpacing: 1, minWidth: 26, opacity: 0.75 }}>
                 {t.num}
@@ -360,82 +322,29 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
                 {t.nom}
               </span>
               <div style={{ width: 1, height: 26, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
-              {/* Définition — cachée en phase 1, révélée progressivement en phase 2 */}
               <span style={{
-                fontSize: 15, color: 'rgba(255,255,255,0.58)', lineHeight: 1.5, fontWeight: 400,
-                opacity: phase === 2 && i < defVisibleCount ? 1 : 0,
-                transform: phase === 2 && i < defVisibleCount ? 'translateY(0)' : 'translateY(6px)',
-                transition: 'opacity 0.6s ease, transform 0.6s ease',
-                minHeight: 22, // préserve l'espace même quand invisible
+                fontSize: 15, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5, fontWeight: 400, flex: 1,
+                opacity: selected === i ? 1 : 0.28,
+                transition: 'opacity 0.4s ease',
               }}>
                 {t.def}
               </span>
+              <div style={{
+                fontSize: 12, fontWeight: 700, flexShrink: 0, minWidth: 64, textAlign: 'right',
+                color: selected === i ? t.color : 'rgba(255,255,255,0.25)',
+                transition: 'color .3s',
+              }}>
+                {selected === i ? '■ Stop' : '▶ Vidéo'}
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Bulle avatar opticien (apparaît en phase 2) */}
-      {phase === 2 && (
-        <div style={{
-          position: 'fixed', bottom: 80, right: 28, zIndex: 50,
-          display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10,
-        }}>
-          {/* Carte */}
-          <div style={{
-            background: 'rgba(10,42,92,0.85)', backdropFilter: 'blur(20px)',
-            border: `1px solid ${playing ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
-            borderRadius: 20, padding: '12px 14px',
-            display: 'flex', alignItems: 'center', gap: 14,
-            boxShadow: `0 8px 32px ${playing ? 'rgba(34,197,94,0.3)' : 'rgba(0,0,0,0.4)'}`,
-            transition: 'border-color .3s, box-shadow .3s',
-          }}>
-            {/* Miniature vidéo (muet) */}
-            <div style={{
-              width: 72, height: 72, borderRadius: 14, overflow: 'hidden', flexShrink: 0,
-              border: `2px solid ${playing ? 'rgba(34,197,94,0.6)' : 'rgba(0,171,233,0.4)'}`,
-              position: 'relative',
-            }}>
-              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-              <video
-                ref={videoPreviewRef}
-                src="/assets/Problèmes_de_vue_Audio_OK.mp4"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                playsInline
-                preload="auto"
-                muted
-              />
-            </div>
-            {/* Infos + bouton */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Opticien</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Avatar · Explication</div>
-              <button
-                onClick={togglePlay}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  background: playing ? 'rgba(34,197,94,0.2)' : 'rgba(0,171,233,0.2)',
-                  border: `1px solid ${playing ? 'rgba(34,197,94,0.5)' : 'rgba(0,171,233,0.5)'}`,
-                  borderRadius: 20, padding: '5px 12px',
-                  fontSize: 12, fontWeight: 700,
-                  color: playing ? '#4ade80' : '#00abe9',
-                  cursor: 'pointer', fontFamily: 'inherit',
-                  transition: 'all .2s',
-                }}
-              >
-                {playing ? '⏸ Pause' : '▶ Lecture'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bouton Suivant personnalisé selon la phase */}
       <TrainerNav
-        onBack={onBack} onPrev={onPrev} onNext={handleNext}
+        onBack={onBack} onPrev={onPrev} onNext={onNext}
         isFirst={isFirst} isLast={isLast}
         pageIndex={pageIndex} total={total}
-        nextLabel={phase === 1 ? 'Révéler les définitions →' : 'Suivant →'}
         nextPage={nextPage}
       />
     </div>
@@ -1325,6 +1234,7 @@ export default function ModuleOptique({ pName, onBack }) {
   const [quizLaunched, setQuizLaunched] = useState(false)
   const [quizQ, setQuizQ] = useState(0)
   const [quizInterstitial, setQuizInterstitial] = useState(false)
+  const [quizFinalPhase, setQuizFinalPhase] = useState(null) // 'podium' | 'rate' | null
   const [showGroupResults, setShowGroupResults] = useState(false)
 
   const trainerAvatar = TRAINER_AVATARS[(pName || '').toLowerCase()] || TRAINER_AVATARS.kevin
@@ -1348,9 +1258,10 @@ export default function ModuleOptique({ pName, onBack }) {
 
   const handleLaunchQuiz = async () => {
     await sbUpdate('sessions', { active_module: 'optique', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
-    await setSharedState({ quiz_interstitial_q: null })
+    await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: null })
     setQuizQ(0)
     setQuizLaunched(true)
+    setQuizFinalPhase(null)
   }
 
   const handleNextQuestion = async () => {
@@ -1370,11 +1281,23 @@ export default function ModuleOptique({ pName, onBack }) {
 
   const handleEndQuiz = async () => {
     await sbUpdate('sessions', { active_module: 'optique', module_page: 200 }, `code=eq.${getActiveSessionCode()}`)
-    await setSharedState({ quiz_interstitial_q: null })
+    await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: 'podium' })
+    setQuizFinalPhase('podium')
+  }
+
+  const handleShowRate = async () => {
+    await setSharedState({ quiz_final_phase: 'rate' })
+    setQuizFinalPhase('rate')
+  }
+
+  const handleShowRecap = async () => {
+    await setSharedState({ quiz_final_phase: 'recap' })
+    setQuizFinalPhase(null)
     setShowGroupResults(true)
   }
 
   const handleTerminateModule = async () => {
+    await setSharedState({ quiz_final_phase: null })
     await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     onBack()
   }
@@ -1385,6 +1308,68 @@ export default function ModuleOptique({ pName, onBack }) {
       <Lobby onStart={() => setStarted(true)} onBack={handleBack} />
     </>
   )
+
+  if (quizFinalPhase === 'podium') {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <div style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28,
+        }}>
+          <img src="/assets/troph%C3%A9-quiz.png" alt="Trophée" style={{ width: 120, height: 120, objectFit: 'contain' }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
+              Podium final affiché sur le diffuseur
+            </div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
+              Commentez le classement avec le groupe…
+            </div>
+          </div>
+          <button onClick={handleShowRate} style={{
+            background: 'linear-gradient(135deg, #0089ba, #00abe9)',
+            border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
+            fontSize: 17, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 6px 24px rgba(0,171,233,0.45)',
+          }}>
+            Afficher le taux de réussite →
+          </button>
+        </div>
+      </>
+    )
+  }
+
+  if (quizFinalPhase === 'rate') {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <div style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28,
+        }}>
+          <div style={{ fontSize: 72 }}>📊</div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
+              Taux de réussite affiché sur le diffuseur
+            </div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
+              Commentez les résultats avec le groupe…
+            </div>
+          </div>
+          <button onClick={handleShowRecap} style={{
+            background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
+            border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
+            fontSize: 17, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 6px 24px rgba(124,58,237,0.45)',
+          }}>
+            Faire apparaître le récap →
+          </button>
+        </div>
+      </>
+    )
+  }
 
   if (showGroupResults) {
     return (
