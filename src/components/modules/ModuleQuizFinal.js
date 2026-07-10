@@ -5,6 +5,11 @@ import { sbUpdate, getActiveSessionCode, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { QUIZ_FINAL_QUESTIONS } from '@/lib/quizFinalData'
 
+// quiz_final_phase values (same mechanism as ModuleOptique):
+// null → TV shows TVGroupResults
+// 'podium' → TV shows TVQuizFinalPodium
+// 'rate'   → TV shows TVQuizRateReveal
+
 const MODULE_ID = 'quiz-final'
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -146,12 +151,16 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
 function GroupResultsView({ onTerminate }) {
   const [answers, setAnswers] = useState([])
   const [loading, setLoading] = useState(true)
-  const [rateShowing, setRateShowing] = useState(false)
+  const [phase, setPhase] = useState('podium') // 'podium' | 'rate' | 'recap'
 
-  const toggleRate = async () => {
-    const next = !rateShowing
-    setRateShowing(next)
-    await setSharedState({ quiz_rate_show: next ? Date.now() : false })
+  const showRate = async () => {
+    await setSharedState({ quiz_final_phase: 'rate' })
+    setPhase('rate')
+  }
+
+  const hideRate = async () => {
+    await setSharedState({ quiz_final_phase: null })
+    setPhase('recap')
   }
 
   useEffect(() => {
@@ -255,15 +264,27 @@ function GroupResultsView({ onTerminate }) {
 
       {/* Footer */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 32 }}>
-        <button onClick={toggleRate} style={{
-          background: rateShowing ? 'rgba(201,162,39,0.2)' : 'rgba(201,162,39,0.1)',
-          border: `1px solid ${rateShowing ? '#c9a227' : 'rgba(201,162,39,0.4)'}`,
-          color: '#c9a227', padding: '14px 28px', borderRadius: 14,
-          fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          🎯 {rateShowing ? 'Masquer le taux' : 'Révéler le taux de réussite'}
-        </button>
+        {phase === 'podium' && (
+          <button onClick={showRate} style={{
+            background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.4)',
+            color: '#c9a227', padding: '14px 28px', borderRadius: 14,
+            fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            🎯 Révéler le taux de réussite
+          </button>
+        )}
+        {phase === 'rate' && (
+          <button onClick={hideRate} style={{
+            background: 'rgba(201,162,39,0.2)', border: '1px solid #c9a227',
+            color: '#c9a227', padding: '14px 28px', borderRadius: 14,
+            fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            📊 Afficher les résultats groupe
+          </button>
+        )}
+        {phase === 'recap' && <div />}
         <button onClick={onTerminate} style={{
           background: 'linear-gradient(135deg, #dc2626, #ef4444)',
           border: 'none', color: '#fff', padding: '14px 42px', borderRadius: 14,
@@ -335,7 +356,7 @@ export default function ModuleQuizFinal({ pName, onBack }) {
 
   const handleStart = async () => {
     await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
-    await setSharedState({ quiz_interstitial_q: null })
+    await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: null })
     setQuizQ(0)
     setStarted(true)
   }
@@ -357,11 +378,12 @@ export default function ModuleQuizFinal({ pName, onBack }) {
 
   const handleEndQuiz = async () => {
     await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 200 }, `code=eq.${getActiveSessionCode()}`)
-    await setSharedState({ quiz_interstitial_q: null })
+    await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: 'podium' })
     setShowGroupResults(true)
   }
 
   const handleTerminateModule = async () => {
+    await setSharedState({ quiz_final_phase: null })
     await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     onBack()
   }

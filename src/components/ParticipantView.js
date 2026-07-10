@@ -421,9 +421,9 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   const [planningDay, setPlanningDay] = useState(null)
   const [sharedState, setSharedState_] = useState(null)
 
-  // Polling rapide uniquement quand aucun module ou zone-interactif (questions temps réel)
-  // Pour tout autre module (écran statique), on ralentit à 5s pour économiser les appels Supabase
-  const pollMs = (!activeModule || activeModule === 'zone-interactif') ? 1500 : 5000
+  // Polling rapide : sans module, zone-interactif, ou phase quiz active (réponses en temps réel)
+  const isInQuizPhase = !!activeModule && modulePage >= 100 && modulePage < 200
+  const pollMs = (!activeModule || activeModule === 'zone-interactif' || isInQuizPhase) ? 1500 : 5000
 
   useEffect(() => {
     const poll = async () => {
