@@ -3953,18 +3953,38 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSele
             </div>
           </div>
 
-          {/* Droite — vidéo */}
-          <div style={{ background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-            <video
-              ref={videoRef}
-              key={sel.video}
-              src={sel.video}
-              preload="auto"
-              playsInline
-              muted={!audioUnlocked}
-              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-            />
+          {/* Droite — bulle opticien */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `radial-gradient(ellipse at center, ${sel.color}12 0%, transparent 70%)`,
+            position: 'relative',
+          }}>
+            {/* Halo derrière la bulle */}
+            <div style={{
+              position: 'absolute',
+              width: 440, height: 440, borderRadius: '50%',
+              background: `radial-gradient(circle, ${sel.color}22 0%, transparent 70%)`,
+              filter: 'blur(32px)',
+            }} />
+            {/* Bulle vidéo */}
+            <div style={{
+              width: 400, height: 400, borderRadius: '50%',
+              overflow: 'hidden', flexShrink: 0,
+              border: `3px solid ${sel.color}80`,
+              boxShadow: `0 0 0 6px ${sel.color}18, 0 0 60px ${sel.color}40`,
+              position: 'relative', zIndex: 1,
+            }}>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video
+                ref={videoRef}
+                key={sel.video}
+                src={sel.video}
+                preload="auto"
+                playsInline
+                muted={!audioUnlocked}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 15%', display: 'block' }}
+              />
+            </div>
           </div>
         </div>
       </div>
