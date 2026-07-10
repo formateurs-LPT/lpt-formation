@@ -421,9 +421,10 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   const [planningDay, setPlanningDay] = useState(null)
   const [sharedState, setSharedState_] = useState(null)
 
-  // Polling rapide : sans module, zone-interactif, ou phase quiz active (réponses en temps réel)
-  const isInQuizPhase = !!activeModule && modulePage >= 100 && modulePage < 200
-  const pollMs = (!activeModule || activeModule === 'zone-interactif' || isInQuizPhase) ? 1500 : 5000
+  // Polling rapide : sans module, zone-interactif, lobby (-1), quiz (100-199) ou résultats (200)
+  // → lent (5s) seulement pour les pages statiques d'un module (0-99 hors quiz)
+  const isInteractive = !activeModule || activeModule === 'zone-interactif' || modulePage === -1 || modulePage >= 100
+  const pollMs = isInteractive ? 1500 : 5000
 
   useEffect(() => {
     const poll = async () => {
