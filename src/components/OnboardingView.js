@@ -362,11 +362,17 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
   }, [pName])
   const isRoomSession = isDynamicRoomCode(roomCode)
 
-  const showQrOnTv = () => {
-    if (isDynamicRoomCode(roomCode)) {
-      setRoomSharedState({ tv_screen: 'qr' }, roomCode).catch(console.warn)
-    } else {
-      setSharedState({ tv_screen: 'qr' }).catch(console.warn)
+  const showQrOnTv = async () => {
+    // roomCode peut être vide si l'async n'est pas terminé → fallback localStorage immédiat
+    const code = (isDynamicRoomCode(roomCode) ? roomCode : null) || getActiveSessionCode()
+    try {
+      if (isDynamicRoomCode(code)) {
+        await setRoomSharedState({ tv_screen: 'qr' }, code)
+      } else {
+        await setSharedState({ tv_screen: 'qr' })
+      }
+    } catch (e) {
+      console.warn('[showQrOnTv]', e)
     }
   }
 

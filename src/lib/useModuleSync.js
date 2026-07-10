@@ -14,7 +14,7 @@ import { resolveRoomStateCode } from '@/lib/sessionCode'
 // ─────────────────────────────────────────────────────────────────
 
 const BASE_MS = 1200    // polling rapide — module actif avec changements
-const IDLE_MS = 5000    // polling lent  — aucun module en cours
+const IDLE_MS = 2000    // polling lent  — aucun module en cours (réduit pour réactivité TV)
 
 export function useModuleSync({ disabled = false } = {}) {
   const [state, setState] = useState({
