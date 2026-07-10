@@ -3646,16 +3646,19 @@ function TVQuizFinalPodium({ quiz, sessionCode }) {
 }
 
 // ── TV Quiz Rate Reveal ───────────────────────────────────────────
-function TVQuizRateReveal({ sessionCode, moduleId, moduleLabel }) {
+function TVQuizRateReveal({ sessionCode, moduleId, moduleLabel, quiz }) {
   const [rate, setRate]       = useState(null)
   const [display, setDisplay] = useState(0)
 
   useEffect(() => {
     sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&module_id=eq.${moduleId}`)
       .then(rows => {
-        const total   = (rows || []).length
-        const correct = (rows || []).filter(r => r.is_correct).length
-        const pct     = total > 0 ? Math.round((correct / total) * 100) : 0
+        const data             = rows || []
+        const correct          = data.filter(r => r.is_correct).length
+        const participants     = new Set(data.map(r => r.collaborateur)).size
+        const totalQ           = (quiz || []).length
+        const totalPossible    = totalQ * participants
+        const pct              = totalPossible > 0 ? Math.round((correct / totalPossible) * 100) : 0
         setTimeout(() => setRate(pct), 700)
       })
   }, [sessionCode, moduleId])
@@ -4265,7 +4268,7 @@ export default function TVView() {
           finalPodiumPhase
             ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} sessionCode={sessionCode} />
             : rateRevealPhase
-              ? <TVQuizRateReveal sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} />
+              ? <TVQuizRateReveal sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
               : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} sessionCode={sessionCode} />
         ) : isQuiz && quizQuestion ? (
           quizInterstitialPhase
