@@ -2832,6 +2832,52 @@ function TVPartenaOffre({ partenaRevealed }) {
 }
 
 // ── TV Remboursement France — Conditions ─────────────────────────
+function TVTiersPayant({ tiersPayantRevealed }) {
+  return (
+    <div style={{
+      minHeight: '100vh', background: '#03112a',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '60px 80px', boxSizing: 'border-box',
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 32 }}>
+        Les parcours remboursés
+      </div>
+
+      {/* Question */}
+      <h1 style={{
+        fontSize: tiersPayantRevealed ? 32 : 48,
+        fontWeight: 900, color: '#fff', textAlign: 'center',
+        lineHeight: 1.2, marginBottom: tiersPayantRevealed ? 48 : 0,
+        maxWidth: 800, transition: 'font-size .4s ease',
+      }}>
+        C'est quoi le tiers payant pour vous ?
+      </h1>
+
+      {/* Définition révélée */}
+      {tiersPayantRevealed && (
+        <div style={{
+          maxWidth: 760, width: '100%',
+          background: 'rgba(0,137,186,0.08)', border: '1px solid rgba(0,137,186,0.25)',
+          borderRadius: 24, padding: '40px 48px',
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>
+            Définition
+          </div>
+          <p style={{ fontSize: 24, color: '#fff', fontWeight: 600, lineHeight: 1.55, margin: 0 }}>
+            Le tiers payant est un système qui permet au client de{' '}
+            <span style={{ color: '#00abe9' }}>ne pas avancer les frais</span>.
+          </p>
+          <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.65)', lineHeight: 1.6, marginTop: 20, marginBottom: 0 }}>
+            La Sécurité Sociale et la mutuelle règlent directement l'opticien.
+            Le client ne paie que son éventuel reste à charge.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TVParcoursOffres({ parcoursRevealed }) {
   const revealed = parcoursRevealed || []
 
@@ -3242,7 +3288,7 @@ function TVMutuellesReveal({ mutuellesRevealed }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, parcoursRevealed }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, parcoursRevealed, tiersPayantRevealed }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -3256,6 +3302,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'partena-offre')      return <TVPartenaOffre partenaRevealed={partenaRevealed} />
   if (page.type === 'rembfr-conditions')  return <TVRembFrConditions rembfrRevealed={rembfrRevealed} />
   if (page.type === 'parcours-rembourses-offres') return <TVParcoursOffres parcoursRevealed={parcoursRevealed} />
+  if (page.type === 'parcours-tiers-payant')      return <TVTiersPayant tiersPayantRevealed={tiersPayantRevealed} />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />
   if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />
@@ -4844,6 +4891,7 @@ export default function TVView() {
   const [partenaRevealed, setPartenaRevealed]             = useState(false)
   const [rembfrRevealed, setRembfrRevealed]               = useState([])
   const [parcoursRevealed, setParcoursRevealed]           = useState([])
+  const [tiersPayantRevealed, setTiersPayantRevealed]     = useState(false)
 
   // Quiz podium
   const [quizInterstitialPhase, setQuizInterstitialPhase] = useState(false)
@@ -4886,6 +4934,7 @@ export default function TVView() {
     setPartenaRevealed(!!sharedState.partena_revealed)
     setRembfrRevealed(sharedState.rembfr_revealed || [])
     setParcoursRevealed(sharedState.parcours_revealed || [])
+    setTiersPayantRevealed(!!sharedState.tiers_payant_revealed)
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
@@ -5068,6 +5117,7 @@ export default function TVView() {
             partenaRevealed={partenaRevealed}
             rembfrRevealed={rembfrRevealed}
             parcoursRevealed={parcoursRevealed}
+            tiersPayantRevealed={tiersPayantRevealed}
           />
         ) : (
           <WelcomeScreen />

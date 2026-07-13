@@ -97,6 +97,7 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
   const [parcoursRevealed, setParcoursRevealed] = useState([])
+  const [tiersPayantRevealed, setTiersPayantRevealed] = useState(false)
   const [revealing, setRevealing] = useState(false)
   const syncedRef = useRef(false)
 
@@ -113,6 +114,17 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
     }
   }
 
+  const toggleTiersPayant = async () => {
+    setRevealing(true)
+    try {
+      const next = !tiersPayantRevealed
+      setTiersPayantRevealed(next)
+      await setSharedState({ tiers_payant_revealed: next })
+    } finally {
+      setRevealing(false)
+    }
+  }
+
   const syncAndWrite = async (data) => {
     if (!syncedRef.current) {
       await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName), pName)
@@ -123,7 +135,7 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
 
   useEffect(() => {
     if (!started) return
-    setSharedState({ parcours_revealed: [] })
+    setSharedState({ parcours_revealed: [], tiers_payant_revealed: false })
     syncAndWrite({ active_module: MODULE_ID, module_page: 0 })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started])
@@ -138,7 +150,7 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
   const handleBack = async () => {
     await Promise.all([
       sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
-      setSharedState({ parcours_revealed: [] }),
+      setSharedState({ parcours_revealed: [], tiers_payant_revealed: false }),
     ])
     onBack()
   }
@@ -146,7 +158,7 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
   const handleTerminate = async () => {
     await Promise.all([
       sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
-      setSharedState({ parcours_revealed: [] }),
+      setSharedState({ parcours_revealed: [], tiers_payant_revealed: false }),
     ])
     onBack()
   }
@@ -225,6 +237,46 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
             toggleOffre={toggleOffre}
             pageIndex={pageIndex}
           />
+        ) : page?.type === 'parcours-tiers-payant' ? (
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 6 }}>
+              Vue formateur · Page {pageIndex + 1}
+            </div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 20 }}>Le tiers payant</h2>
+            <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '20px 24px', marginBottom: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 6 }}>🏥 Question ouverte sur le diffuseur</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>« C'est quoi le tiers payant pour vous ? »</div>
+            </div>
+            <div style={{ background: 'rgba(0,137,186,0.07)', border: '1px solid rgba(0,137,186,0.2)', borderRadius: 14, padding: '20px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: tiersPayantRevealed ? 16 : 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#00abe9' }}>Définition à révéler</div>
+                <button
+                  onClick={toggleTiersPayant}
+                  disabled={revealing}
+                  style={{
+                    padding: '8px 18px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                    cursor: revealing ? 'default' : 'pointer', fontFamily: 'inherit',
+                    transition: 'all .2s', flexShrink: 0,
+                    background: tiersPayantRevealed ? 'rgba(74,222,128,0.12)' : 'rgba(0,137,186,0.12)',
+                    border: tiersPayantRevealed ? '1px solid rgba(74,222,128,0.35)' : '1px solid rgba(0,137,186,0.35)',
+                    color: tiersPayantRevealed ? '#4ade80' : '#00abe9',
+                  }}
+                >
+                  {tiersPayantRevealed ? '✓ Révélé — Masquer' : '👁 Dévoiler la définition'}
+                </button>
+              </div>
+              {tiersPayantRevealed && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <p style={{ fontSize: 13, color: '#fff', fontWeight: 600, margin: 0, lineHeight: 1.55 }}>
+                    Le tiers payant est un système qui permet au client de <span style={{ color: '#00abe9' }}>ne pas avancer les frais</span>.
+                  </p>
+                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.55 }}>
+                    La Sécurité Sociale et la mutuelle règlent directement l'opticien. Le client ne paie que son éventuel reste à charge.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', textAlign: 'center' }}>
             <div style={{ maxWidth: 560 }}>
