@@ -8,57 +8,86 @@ import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessi
 const MODULE_ID = 'parcours-rembourses'
 const PAGES = MODULE_DATA[MODULE_ID]?.pages || []
 
-function PageOffresFormateur({ pageIndex }) {
-  const offres = [
-    {
-      id: 'supreme',
-      icon: '👑',
-      nom: 'Le Suprême',
-      color: '#c9a227',
-      colorBg: 'rgba(201,162,39,0.08)',
-      colorBorder: 'rgba(201,162,39,0.25)',
-      description: 'Notre offre phare — remboursée par la mutuelle selon le contrat du client.',
-    },
-    {
-      id: '1=1',
-      icon: '✅',
-      nom: 'Le 1=1 · 100% Santé',
-      color: '#4ade80',
-      colorBg: 'rgba(74,222,128,0.08)',
-      colorBorder: 'rgba(74,222,128,0.25)',
-      description: 'Offre 100% prise en charge — zéro reste à charge pour le patient assuré.',
-    },
-  ]
+const OFFRES = [
+  {
+    id: 'supreme',
+    nom: 'Suprême',
+    color: '#c9a227',
+    colorBg: 'rgba(201,162,39,0.08)',
+    colorBorder: 'rgba(201,162,39,0.25)',
+    points: [
+      '1 paire achetée, une paire offerte',
+      'Choix sur tout le magasin (montures et verres)',
+      'Verres Origine France Garantie',
+      'Uniquement avec tiers payant complet',
+    ],
+  },
+  {
+    id: '1=1',
+    nom: '1=1',
+    color: '#4ade80',
+    colorBg: 'rgba(74,222,128,0.08)',
+    colorBorder: 'rgba(74,222,128,0.25)',
+    points: [
+      '1 paire achetée, une paire offerte',
+      'Sur tout le magasin (montures et verres au choix)',
+      'Tarifs 100% Santé : 0 € de reste à charge quelle que soit la mutuelle',
+    ],
+  },
+]
+
+function PageOffresFormateur({ parcoursRevealed, revealing, toggleOffre, pageIndex }) {
+  const revealed = parcoursRevealed || []
 
   return (
     <div>
       <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 6 }}>
         Vue formateur · Page {pageIndex + 1}
       </div>
-      <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 8 }}>Les offres remboursées</h2>
-      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 24, lineHeight: 1.5 }}>
-        Les deux parcours affichés sur l'écran diffuseur. Développez ensuite avec vos explications.
-      </p>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 20 }}>Les offres remboursées</h2>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {offres.map(o => (
-          <div key={o.id} style={{
-            background: o.colorBg, border: `1px solid ${o.colorBorder}`,
-            borderRadius: 16, padding: '20px 24px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-              <span style={{ fontSize: 28 }}>{o.icon}</span>
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: o.color }}>{o.nom}</div>
+        {OFFRES.map(o => {
+          const isRevealed = revealed.includes(o.id)
+          return (
+            <div key={o.id} style={{
+              background: o.colorBg, border: `1px solid ${o.colorBorder}`,
+              borderRadius: 16, padding: '20px 24px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: isRevealed ? 16 : 0 }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: o.color }}>{o.nom}</div>
+                <button
+                  onClick={() => toggleOffre(o.id)}
+                  disabled={revealing}
+                  style={{
+                    padding: '8px 18px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                    cursor: revealing ? 'default' : 'pointer', fontFamily: 'inherit',
+                    transition: 'all .2s', flexShrink: 0,
+                    background: isRevealed ? 'rgba(74,222,128,0.12)' : 'rgba(0,137,186,0.12)',
+                    border: isRevealed ? '1px solid rgba(74,222,128,0.35)' : '1px solid rgba(0,137,186,0.35)',
+                    color: isRevealed ? '#4ade80' : '#00abe9',
+                  }}
+                >
+                  {isRevealed ? '✓ Révélé — Masquer' : '👁 Dévoiler'}
+                </button>
               </div>
+              {isRevealed && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {o.points.map((p, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <div style={{ width: 5, height: 5, borderRadius: '50%', background: o.color, marginTop: 7, flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.55 }}>{p}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', margin: 0, lineHeight: 1.6 }}>{o.description}</p>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      <div style={{ marginTop: 24, padding: '14px 18px', background: 'rgba(0,137,186,0.08)', border: '1px solid rgba(0,137,186,0.2)', borderRadius: 12, fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>
-        💡 Le contenu de chaque offre est affiché sur l'écran diffuseur. Animez la discussion à l'oral à partir de ce que les formés voient.
+      <div style={{ marginTop: 20, padding: '12px 16px', background: 'rgba(0,137,186,0.07)', border: '1px solid rgba(0,137,186,0.18)', borderRadius: 10, fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
+        💡 Utilisez "Dévoiler" pour faire apparaître les critères sur l'écran diffuseur.
       </div>
     </div>
   )
@@ -67,7 +96,22 @@ function PageOffresFormateur({ pageIndex }) {
 export default function ModuleParcoursRembourses({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
+  const [parcoursRevealed, setParcoursRevealed] = useState([])
+  const [revealing, setRevealing] = useState(false)
   const syncedRef = useRef(false)
+
+  const toggleOffre = async (id) => {
+    setRevealing(true)
+    try {
+      const next = parcoursRevealed.includes(id)
+        ? parcoursRevealed.filter(x => x !== id)
+        : [...parcoursRevealed, id]
+      setParcoursRevealed(next)
+      await setSharedState({ parcours_revealed: next })
+    } finally {
+      setRevealing(false)
+    }
+  }
 
   const syncAndWrite = async (data) => {
     if (!syncedRef.current) {
@@ -79,6 +123,7 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
 
   useEffect(() => {
     if (!started) return
+    setSharedState({ parcours_revealed: [] })
     syncAndWrite({ active_module: MODULE_ID, module_page: 0 })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started])
@@ -91,12 +136,18 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
   }, [pageIndex])
 
   const handleBack = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+    await Promise.all([
+      sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
+      setSharedState({ parcours_revealed: [] }),
+    ])
     onBack()
   }
 
   const handleTerminate = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+    await Promise.all([
+      sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
+      setSharedState({ parcours_revealed: [] }),
+    ])
     onBack()
   }
 
@@ -168,7 +219,12 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
       {/* Contenu formateur */}
       <div style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
         {page?.type === 'parcours-rembourses-offres' ? (
-          <PageOffresFormateur pageIndex={pageIndex} />
+          <PageOffresFormateur
+            parcoursRevealed={parcoursRevealed}
+            revealing={revealing}
+            toggleOffre={toggleOffre}
+            pageIndex={pageIndex}
+          />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', textAlign: 'center' }}>
             <div style={{ maxWidth: 560 }}>
