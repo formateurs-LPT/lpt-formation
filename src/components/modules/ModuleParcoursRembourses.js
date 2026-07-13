@@ -271,7 +271,8 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
                     Le tiers payant est un système qui permet au client de <span style={{ color: '#00abe9' }}>ne pas avancer les frais</span>.
                   </p>
                   <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.55 }}>
-                    La Sécurité Sociale et la mutuelle règlent directement l'opticien. Le client ne paie que son éventuel reste à charge.
+                    La Sécurité Sociale et la mutuelle règlent directement l'opticien. Le client ne paie que son éventuel reste à charge —{' '}
+                    <span style={{ color: '#4ade80', fontWeight: 700 }}>chez nous, ce reste à charge est de 0 €, donc le client ne paie rien.</span>
                   </p>
                 </div>
               )}

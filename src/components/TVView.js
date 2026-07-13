@@ -2870,7 +2870,8 @@ function TVTiersPayant({ tiersPayantRevealed }) {
           </p>
           <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.65)', lineHeight: 1.6, marginTop: 20, marginBottom: 0 }}>
             La Sécurité Sociale et la mutuelle règlent directement l'opticien.
-            Le client ne paie que son éventuel reste à charge.
+            Le client ne paie que son éventuel reste à charge —{' '}
+            <span style={{ color: '#4ade80', fontWeight: 700 }}>chez nous, ce reste à charge est de 0 €, donc le client ne paie rien.</span>
           </p>
         </div>
       )}
