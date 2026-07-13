@@ -989,12 +989,76 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     return <IdeesView onBack={() => setActiveView('home')} pName={pName} />
   }
 
+  if (activeView === 'onboarding-choix') {
+    return (
+      <div id="dashboard">
+        <div className="dash-wrap">
+          <button className="detail-back" onClick={() => setActiveView('home')}>← Retour au tableau de bord</button>
+          <div className="dash-hero" style={{ marginBottom: 32 }}>
+            <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+              <div className="dash-hero-label">Formation · Suivi collaborateurs</div>
+              <h2 className="dash-hero-title">ONBOARDING</h2>
+              <p className="dash-hero-date">Choisissez le programme de formation</p>
+            </div>
+            <div style={{ width: 56, height: 56, background: 'rgba(255,255,255,.08)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, position: 'relative', zIndex: 1 }}>🚀</div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {/* France */}
+            <div
+              onClick={() => setActiveView('onboarding')}
+              style={{
+                background: 'linear-gradient(135deg, #03112a 0%, #0a2040 100%)',
+                border: '1px solid rgba(0,137,186,0.3)',
+                borderRadius: 18, padding: '32px 28px', cursor: 'pointer',
+                transition: 'all .2s', display: 'flex', flexDirection: 'column', gap: 16,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,137,186,0.7)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,137,186,0.3)'; e.currentTarget.style.transform = 'translateY(0)' }}
+            >
+              <div style={{ fontSize: 48 }}>🇫🇷</div>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Onboarding France</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>
+                  Optique · Offres · Prise de mesures · Remboursements
+                </div>
+              </div>
+              <div style={{ marginTop: 'auto', fontSize: 13, fontWeight: 700, color: '#00abe9' }}>Accéder →</div>
+            </div>
+
+            {/* Belgique */}
+            <div
+              onClick={() => setActiveView('onboarding-belgique')}
+              style={{
+                background: 'linear-gradient(135deg, #1a1200 0%, #3a2800 100%)',
+                border: '1px solid rgba(201,162,39,0.3)',
+                borderRadius: 18, padding: '32px 28px', cursor: 'pointer',
+                transition: 'all .2s', display: 'flex', flexDirection: 'column', gap: 16,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(201,162,39,0.7)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(201,162,39,0.3)'; e.currentTarget.style.transform = 'translateY(0)' }}
+            >
+              <div style={{ fontSize: 48 }}>🇧🇪</div>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Onboarding Belgique</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>
+                  Mutuelles · INAMI · PARTENA · Spécificités belges
+                </div>
+              </div>
+              <div style={{ marginTop: 'auto', fontSize: 13, fontWeight: 700, color: '#c9a227' }}>Accéder →</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (activeView === 'onboarding') {
     return (
       <div id="dashboard">
         <OnboardingView
           pName={pName}
-          onBack={() => { setActiveView('home'); loadTileStats(); refreshActiveRoom() }}
+          onBack={() => setActiveView('onboarding-choix')}
           onLaunchFormation={onLaunchSession}
           onLaunchModule={onLaunchModule}
         />
@@ -1007,7 +1071,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
       <div id="dashboard">
         <OnboardingViewBelgique
           pName={pName}
-          onBack={() => { setActiveView('home'); loadTileStats(); refreshActiveRoom() }}
+          onBack={() => setActiveView('onboarding-choix')}
           onLaunchFormation={onLaunchSession}
           onLaunchModule={(moduleId, journeeId) => onLaunchModule(moduleId, 'onboarding-modules-belgique', journeeId)}
         />
@@ -1213,25 +1277,13 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           </div>
         )}
 
-        {/* OB Banner — France */}
-        <div className="ob-banner" onClick={() => setActiveView('onboarding')}>
+        {/* OB Banner */}
+        <div className="ob-banner" onClick={() => setActiveView('onboarding-choix')}>
           <div className="ob-banner-icon">🚀</div>
           <div className="ob-banner-body">
             <div className="ob-banner-label">Formation · Suivi collaborateurs</div>
             <div className="ob-banner-title">Onboarding LPT</div>
-            <div className="ob-banner-sub">Gérez la présence et le suivi de vos collaborateurs</div>
-            <div className="ob-day-badge">Jour {obDay}</div>
-          </div>
-          <div className="ob-banner-arrow">→</div>
-        </div>
-
-        {/* OB Banner — Belgique */}
-        <div className="ob-banner" onClick={() => setActiveView('onboarding-belgique')} style={{ background: 'linear-gradient(135deg, #1a1200 0%, #3a2800 50%, #5a3e00 100%)' }}>
-          <div className="ob-banner-icon">🇧🇪</div>
-          <div className="ob-banner-body">
-            <div className="ob-banner-label">Formation · Suivi collaborateurs</div>
-            <div className="ob-banner-title">Onboarding LPT Belgique</div>
-            <div className="ob-banner-sub">Gérez la présence et le suivi de vos collaborateurs</div>
+            <div className="ob-banner-sub">France · Belgique — gérez la présence et le suivi de vos collaborateurs</div>
             <div className="ob-day-badge">Jour {obDay}</div>
           </div>
           <div className="ob-banner-arrow">→</div>
