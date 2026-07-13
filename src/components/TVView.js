@@ -3001,6 +3001,7 @@ function TVParcoursOffres({ parcoursRevealed }) {
         'Sur tout le magasin (montures et verres au choix)',
         'Tarifs 100% Santé : 0 € de reste à charge quelle que soit la mutuelle',
       ],
+      note: '💡 Le 100% Santé est un dispositif légal qui garantit des lunettes entièrement remboursées par la Sécu et la mutuelle — sans aucun reste à charge pour le client.',
     },
   ]
 
@@ -3038,6 +3039,11 @@ function TVParcoursOffres({ parcoursRevealed }) {
                       <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{p}</span>
                     </div>
                   ))}
+                  {o.note && (
+                    <div style={{ marginTop: 6, padding: '12px 16px', background: 'rgba(255,255,255,0.04)', borderLeft: `3px solid ${o.color}`, borderRadius: '0 10px 10px 0' }}>
+                      <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', lineHeight: 1.55 }}>{o.note}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

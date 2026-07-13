@@ -33,6 +33,7 @@ const OFFRES = [
       'Sur tout le magasin (montures et verres au choix)',
       'Tarifs 100% Santé : 0 € de reste à charge quelle que soit la mutuelle',
     ],
+    note: 'Le 100% Santé est un dispositif légal qui garantit des lunettes entièrement remboursées par la Sécu et la mutuelle — sans aucun reste à charge pour le client.',
   },
 ]
 
@@ -79,6 +80,11 @@ function PageOffresFormateur({ parcoursRevealed, revealing, toggleOffre, pageInd
                       <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.55 }}>{p}</span>
                     </div>
                   ))}
+                  {o.note && (
+                    <div style={{ marginTop: 4, padding: '10px 12px', background: 'rgba(255,255,255,0.03)', borderLeft: `2px solid ${o.color}`, borderRadius: '0 8px 8px 0' }}>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontStyle: 'italic', lineHeight: 1.6 }}>{o.note}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
