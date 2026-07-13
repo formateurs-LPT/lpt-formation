@@ -13,7 +13,7 @@ import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
 import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { isDynamicRoomCode } from '@/lib/sessionCode'
-import { loadIdees, deleteIdee } from '@/components/IdeesButton'
+import { loadIdees, deleteIdee, voteIdee, updateIdee } from '@/components/IdeesButton'
 
 const NEWS_ITEMS = [
   '📚 Formation Verre Progressif — Module complet',
@@ -594,16 +594,29 @@ function AppUpdatesWidget() {
 }
 
 // ── Vue Idées ─────────────────────────────────────────────────────
-function IdeesView({ onBack }) {
+function IdeesView({ onBack, pName }) {
   const [idees, setIdees] = useState(() => loadIdees())
+  const [subTab, setSubTab] = useState('pending') // 'pending' | 'validated'
 
-  const handleDelete = (id) => {
-    deleteIdee(id)
-    setIdees(loadIdees())
+  const refresh = () => setIdees(loadIdees())
+
+  const handleVote = (id, vote) => { voteIdee(id, pName || 'Formateur', vote); refresh() }
+  const handleValidate = (id) => { updateIdee(id, { status: 'validated' }); refresh() }
+  const handleReject = (id) => { deleteIdee(id); refresh() }
+  const handleDone = (id) => { deleteIdee(id); refresh() }
+
+  const pending = idees.filter(i => !i.status || i.status === 'pending')
+  const validated = idees.filter(i => i.status === 'validated')
+
+  const formatDate = (ts) => {
+    try {
+      const d = new Date(ts)
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+        + ' · ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    } catch { return '' }
   }
 
-  // Grouper par module puis par page
-  const grouped = idees.reduce((acc, idee) => {
+  const groupByModule = (list) => list.reduce((acc, idee) => {
     const mKey = idee.moduleLabel || idee.moduleId || 'Module inconnu'
     if (!acc[mKey]) acc[mKey] = {}
     const pKey = idee.pageLabel || 'Page inconnue'
@@ -612,25 +625,180 @@ function IdeesView({ onBack }) {
     return acc
   }, {})
 
-  const formatDate = (ts) => {
-    try {
-      const d = new Date(ts)
-      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
-        + ' · ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-    } catch { return '' }
+  const pendingGrouped = groupByModule(pending)
+  const validatedGrouped = groupByModule(validated)
+
+  const VoteBtn = ({ idee, side }) => {
+    const votes = idee.votes || { ok: [], pas_ok: [] }
+    const list = votes[side] || []
+    const mine = list.includes(pName || 'Formateur')
+    const isOk = side === 'ok'
+    return (
+      <button
+        onClick={() => handleVote(idee.id, side)}
+        title={isOk ? 'Je suis OK' : 'Je ne suis pas OK'}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+          cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+          background: mine
+            ? (isOk ? 'rgba(74,222,128,0.18)' : 'rgba(239,68,68,0.18)')
+            : 'rgba(255,255,255,0.06)',
+          border: mine
+            ? (isOk ? '1px solid rgba(74,222,128,0.45)' : '1px solid rgba(239,68,68,0.45)')
+            : '1px solid rgba(255,255,255,0.12)',
+          color: mine ? (isOk ? '#4ade80' : '#f87171') : 'var(--text-s)',
+        }}
+      >
+        {isOk ? '👍' : '👎'} {list.length > 0 ? list.length : ''}
+        {list.length > 0 && (
+          <span style={{ fontSize: 10, opacity: 0.7 }}>({list.join(', ')})</span>
+        )}
+      </button>
+    )
+  }
+
+  const IdeeCard = ({ idee, validated: isValidated }) => (
+    <div style={{
+      background: 'var(--bg)', borderRadius: 12,
+      border: `1px solid ${isValidated ? 'rgba(74,222,128,0.2)' : 'var(--border)'}`,
+      borderLeft: `3px solid ${isValidated ? '#4ade80' : 'rgba(245,158,11,0.5)'}`,
+      padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10,
+    }}>
+      {/* Texte + meta */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, marginBottom: 6 }}>
+            {idee.text}
+          </div>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+            {idee.auteur && (
+              <span style={{ fontSize: 11, color: 'var(--text-s)' }}>👤 {idee.auteur}</span>
+            )}
+            <span style={{ fontSize: 11, color: 'var(--text-s)' }}>🕐 {formatDate(idee.timestamp)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Row boutons vote + actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        {!isValidated && (
+          <>
+            <VoteBtn idee={idee} side="ok" />
+            <VoteBtn idee={idee} side="pas_ok" />
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={() => handleValidate(idee.id)}
+              style={{
+                padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'inherit',
+                background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.35)',
+                color: '#4ade80',
+              }}
+            >✅ On le fait</button>
+            <button
+              onClick={() => handleReject(idee.id)}
+              style={{
+                padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'inherit',
+                background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.28)',
+                color: '#f87171',
+              }}
+            >❌ On fait pas</button>
+          </>
+        )}
+        {isValidated && (
+          <>
+            <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 600 }}>✓ Validée</span>
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={() => handleDone(idee.id)}
+              style={{
+                padding: '5px 16px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'inherit',
+                background: 'rgba(0,137,186,0.14)', border: '1px solid rgba(0,137,186,0.4)',
+                color: '#00abe9',
+              }}
+            >✓ C'est fait !</button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+
+  const renderGrouped = (grouped, isValidated) => {
+    const entries = Object.entries(grouped)
+    if (entries.length === 0) return (
+      <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--text-s)' }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>{isValidated ? '🎯' : '💡'}</div>
+        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
+          {isValidated ? 'Aucune idée validée pour l\'instant' : 'Aucune idée en attente'}
+        </div>
+        <div style={{ fontSize: 13 }}>
+          {isValidated
+            ? 'Validez des idées depuis l\'onglet "En attente de vote"'
+            : 'Utilisez le bouton 💡 durant les modules pour noter des idées'}
+        </div>
+      </div>
+    )
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {entries.map(([moduleLabel, pages]) => (
+          <div key={moduleLabel} style={{
+            background: 'var(--card)', border: '1px solid var(--border)',
+            borderRadius: 'var(--r)', overflow: 'hidden',
+          }}>
+            <div style={{
+              padding: '12px 18px',
+              background: isValidated ? 'rgba(74,222,128,0.04)' : 'rgba(245,158,11,0.06)',
+              borderBottom: isValidated ? '1px solid rgba(74,222,128,0.12)' : '1px solid rgba(245,158,11,0.15)',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{moduleLabel}</span>
+              <span style={{
+                marginLeft: 'auto', fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '2px 10px',
+                background: isValidated ? 'rgba(74,222,128,0.1)' : 'rgba(245,158,11,0.12)',
+                border: isValidated ? '1px solid rgba(74,222,128,0.25)' : '1px solid rgba(245,158,11,0.25)',
+                color: isValidated ? '#4ade80' : '#d97706',
+              }}>
+                {Object.values(pages).flat().length} idée{Object.values(pages).flat().length > 1 ? 's' : ''}
+              </span>
+            </div>
+            <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {Object.entries(pages).map(([pageLabel, pageIdees]) => (
+                <div key={pageLabel}>
+                  <div style={{
+                    fontSize: 11, fontWeight: 700, color: 'var(--text-s)',
+                    textTransform: 'uppercase', letterSpacing: 0.8,
+                    marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8,
+                  }}>
+                    <div style={{ height: 1, flex: 1, background: 'var(--border)' }} />
+                    {pageLabel}
+                    <div style={{ height: 1, flex: 1, background: 'var(--border)' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {pageIdees.sort((a, b) => a.timestamp > b.timestamp ? 1 : -1).map(idee => (
+                      <IdeeCard key={idee.id} idee={idee} validated={isValidated} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   return (
     <div className="dash-wrap">
       <button className="detail-back" onClick={onBack}>← Retour au tableau de bord</button>
 
-      <div className="dash-header" style={{ marginBottom: 28 }}>
+      <div className="dash-header" style={{ marginBottom: 24 }}>
         <div>
-          <h2 style={{ marginBottom: 4 }}>💡 Idées notées</h2>
+          <h2 style={{ marginBottom: 4 }}>💡 Idées</h2>
           <p style={{ color: 'var(--text-s)', fontSize: 14 }}>
-            {idees.length === 0
-              ? 'Aucune idée pour l\'instant — utilisez le bouton 💡 durant les modules'
-              : `${idees.length} idée${idees.length > 1 ? 's' : ''} enregistrée${idees.length > 1 ? 's' : ''}`}
+            {pending.length} en attente · {validated.length} validée{validated.length > 1 ? 's' : ''}
           </p>
         </div>
         {idees.length > 0 && (
@@ -645,97 +813,39 @@ function IdeesView({ onBack }) {
         )}
       </div>
 
-      {idees.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-s)' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>💡</div>
-          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Aucune idée enregistrée</div>
-          <div style={{ fontSize: 14 }}>Cliquez sur le bouton 💡 durant un module pour noter vos idées en temps réel</div>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          {Object.entries(grouped).map(([moduleLabel, pages]) => (
-            <div key={moduleLabel} style={{
-              background: 'var(--card)', border: '1px solid var(--border)',
-              borderRadius: 'var(--r)', overflow: 'hidden',
-            }}>
-              {/* Header module */}
-              <div style={{
-                padding: '14px 20px',
-                background: 'rgba(245,158,11,0.06)', borderBottom: '1px solid rgba(245,158,11,0.15)',
-                display: 'flex', alignItems: 'center', gap: 10,
-              }}>
-                <span style={{ fontSize: 16 }}>💡</span>
-                <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{moduleLabel}</span>
-                <span style={{
-                  marginLeft: 'auto', fontSize: 11, fontWeight: 700,
-                  background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)',
-                  color: '#d97706', borderRadius: 20, padding: '2px 10px',
-                }}>
-                  {Object.values(pages).flat().length} idée{Object.values(pages).flat().length > 1 ? 's' : ''}
-                </span>
-              </div>
+      {/* Sous-onglets */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: 'var(--card)', borderRadius: 12, padding: 4, width: 'fit-content', border: '1px solid var(--border)' }}>
+        {[
+          { key: 'pending', label: `💡 En attente de vote`, count: pending.length },
+          { key: 'validated', label: `🎯 Validées à réaliser`, count: validated.length },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setSubTab(tab.key)}
+            style={{
+              padding: '8px 18px', borderRadius: 9, fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+              background: subTab === tab.key ? (tab.key === 'validated' ? 'rgba(74,222,128,0.15)' : 'rgba(245,158,11,0.15)') : 'transparent',
+              border: subTab === tab.key ? (tab.key === 'validated' ? '1px solid rgba(74,222,128,0.35)' : '1px solid rgba(245,158,11,0.35)') : '1px solid transparent',
+              color: subTab === tab.key ? (tab.key === 'validated' ? '#4ade80' : '#f59e0b') : 'var(--text-s)',
+            }}
+          >
+            {tab.label}
+            {tab.count > 0 && (
+              <span style={{
+                marginLeft: 8, fontSize: 11, fontWeight: 800,
+                background: subTab === tab.key
+                  ? (tab.key === 'validated' ? 'rgba(74,222,128,0.2)' : 'rgba(245,158,11,0.2)')
+                  : 'rgba(255,255,255,0.08)',
+                borderRadius: 10, padding: '1px 7px',
+              }}>{tab.count}</span>
+            )}
+          </button>
+        ))}
+      </div>
 
-              {/* Pages */}
-              <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {Object.entries(pages).map(([pageLabel, pageIdees]) => (
-                  <div key={pageLabel}>
-                    {/* Label page */}
-                    <div style={{
-                      fontSize: 11, fontWeight: 700, color: 'var(--text-s)',
-                      textTransform: 'uppercase', letterSpacing: 0.8,
-                      marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8,
-                    }}>
-                      <div style={{ height: 1, flex: 1, background: 'var(--border)' }} />
-                      {pageLabel}
-                      <div style={{ height: 1, flex: 1, background: 'var(--border)' }} />
-                    </div>
-
-                    {/* Idées de cette page */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {pageIdees.sort((a, b) => a.timestamp > b.timestamp ? 1 : -1).map(idee => (
-                        <div key={idee.id} style={{
-                          display: 'flex', alignItems: 'flex-start', gap: 12,
-                          background: 'var(--bg)', border: '1px solid var(--border)',
-                          borderLeft: '3px solid rgba(245,158,11,0.5)',
-                          borderRadius: 10, padding: '12px 14px',
-                        }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.55, marginBottom: 6 }}>
-                              {idee.text}
-                            </div>
-                            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                              {idee.auteur && (
-                                <span style={{ fontSize: 11, color: 'var(--text-s)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                  👤 {idee.auteur}
-                                </span>
-                              )}
-                              <span style={{ fontSize: 11, color: 'var(--text-s)' }}>
-                                🕐 {formatDate(idee.timestamp)}
-                              </span>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => handleDelete(idee.id)}
-                            title="Supprimer"
-                            style={{
-                              background: 'none', border: 'none', cursor: 'pointer',
-                              color: 'rgba(239,68,68,0.4)', fontSize: 16, padding: '2px 4px',
-                              borderRadius: 6, flexShrink: 0,
-                              transition: 'color .15s',
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                            onMouseLeave={e => e.currentTarget.style.color = 'rgba(239,68,68,0.4)'}
-                          >✕</button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {subTab === 'pending' && renderGrouped(pendingGrouped, false)}
+      {subTab === 'validated' && renderGrouped(validatedGrouped, true)}
     </div>
   )
 }
@@ -853,7 +963,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   }
 
   if (activeView === 'idees') {
-    return <IdeesView onBack={() => setActiveView('home')} />
+    return <IdeesView onBack={() => setActiveView('home')} pName={pName} />
   }
 
   if (activeView === 'onboarding') {

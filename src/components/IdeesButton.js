@@ -20,6 +20,27 @@ export function deleteIdee(id) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(idees))
 }
 
+export function updateIdee(id, updates) {
+  const idees = loadIdees().map(i => i.id === id ? { ...i, ...updates } : i)
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(idees))
+}
+
+export function voteIdee(id, pName, vote) {
+  const idees = loadIdees()
+  const idee = idees.find(i => i.id === id)
+  if (!idee) return
+  const votes = idee.votes ? { ok: [...(idee.votes.ok || [])], pas_ok: [...(idee.votes.pas_ok || [])] } : { ok: [], pas_ok: [] }
+  const opposite = vote === 'ok' ? 'pas_ok' : 'ok'
+  votes[opposite] = votes[opposite].filter(n => n !== pName)
+  if (votes[vote].includes(pName)) {
+    votes[vote] = votes[vote].filter(n => n !== pName)
+  } else {
+    votes[vote] = [...votes[vote], pName]
+  }
+  const updated = idees.map(i => i.id === id ? { ...i, votes } : i)
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+}
+
 export default function IdeesButton({ moduleId, pName }) {
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
