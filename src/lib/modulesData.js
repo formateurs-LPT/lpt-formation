@@ -548,4 +548,5 @@ export const MODULE_DATA = {
   'trame-accueil':    { pages: TRAME_ACCUEIL_PAGES,      quiz: [],                 label: "Trame d'accueil",              sub: 'Bonjour · Concept · Examen de vue' },
   'montures':         { pages: [{ id: 'acetate', type: 'montures-acetate' }, { id: 'metal', type: 'montures-metal' }, { id: 'injecte', type: 'montures-injecte' }], quiz: [], label: 'Connaissances Montures', sub: 'Acétate · Métal · Injecté' },
   'quiz-final':       { pages: [], quiz: QUIZ_FINAL_QUESTIONS, label: 'Quiz de fin de formation', sub: 'Trame · Optique · Offres · Remboursement' },
+  'mutuelles-inami':  { pages: [], quiz: [],                   label: 'Mutuelles et INAMI',        sub: 'Remboursements · INAMI · Mutuelles belges' },
 }

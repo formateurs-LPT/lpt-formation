@@ -88,6 +88,12 @@ const JOURNEES_BELGIQUE = (onLaunchModule) => [
         sub: 'Écart pupillaire · Hauteur · LPTVISION',
         onClick: () => onLaunchModule('pdm'),
       },
+      {
+        visual: 'emoji', icon: '🛡️',
+        label: 'Mutuelles et INAMI',
+        sub: 'Remboursements · INAMI · Mutuelles belges',
+        onClick: () => onLaunchModule('mutuelles-inami'),
+      },
     ],
   },
 ]
