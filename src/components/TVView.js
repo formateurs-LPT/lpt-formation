@@ -2839,9 +2839,9 @@ function TVParcoursOffres({ parcoursRevealed }) {
     {
       id: 'supreme',
       nom: 'Suprême',
-      color: '#c9a227',
-      colorBg: 'rgba(201,162,39,0.07)',
-      colorBorder: 'rgba(201,162,39,0.3)',
+      color: '#b03050',
+      colorBg: 'rgba(139,28,46,0.1)',
+      colorBorder: 'rgba(139,28,46,0.35)',
       points: [
         '1 paire achetée, une paire offerte',
         'Choix sur tout le magasin (montures et verres)',
