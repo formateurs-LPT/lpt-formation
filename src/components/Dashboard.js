@@ -724,7 +724,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           pName={pName}
           onBack={() => { setActiveView('home'); loadTileStats(); refreshActiveRoom() }}
           onLaunchFormation={onLaunchSession}
-          onLaunchModule={(moduleId) => onLaunchModule(moduleId, 'onboarding-modules-belgique')}
+          onLaunchModule={(moduleId, journeeId) => onLaunchModule(moduleId, 'onboarding-modules-belgique', journeeId)}
         />
       </div>
     )

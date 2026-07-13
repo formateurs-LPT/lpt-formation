@@ -45,6 +45,7 @@ export default function Page() {
   const [displaySessionCode, setDisplaySessionCode] = useState('')
   const [returnJournee, setReturnJournee] = useState(null)
   const [moduleReturnTo, setModuleReturnTo] = useState('onboarding-modules')
+  const [returnJourneeBelgique, setReturnJourneeBelgique] = useState(null)
   const { message, toast } = useToast()
 
   useOnlineCount({
@@ -340,7 +341,12 @@ export default function Page() {
     if (code) setDisplaySessionCode(code)
     setView('onboarding-modules')
   }
-  const handleLaunchModule = (moduleId, returnTo = 'onboarding-modules') => { setReturnJournee(null); setModuleReturnTo(returnTo); setView('module-' + moduleId) }
+  const handleLaunchModule = (moduleId, returnTo = 'onboarding-modules', journeeId = null) => {
+    setReturnJournee(null)
+    setModuleReturnTo(returnTo)
+    setReturnJourneeBelgique(returnTo === 'onboarding-modules-belgique' ? journeeId : null)
+    setView('module-' + moduleId)
+  }
   const handleBackToDashboard = () => setView('dashboard')
   const handleBackToModules = () => setView(moduleReturnTo)
   const handleTerminateToJournee1 = () => { setReturnJournee('journee1'); setView('onboarding-modules') }
@@ -423,8 +429,9 @@ export default function Page() {
             pName={pName}
             onBack={handleBackToDashboard}
             onLaunchFormation={handleLaunchSession}
-            onLaunchModule={(moduleId) => handleLaunchModule(moduleId, 'onboarding-modules-belgique')}
+            onLaunchModule={(moduleId, journeeId) => handleLaunchModule(moduleId, 'onboarding-modules-belgique', journeeId)}
             initialStep="modules"
+            initialJournee={returnJourneeBelgique}
           />
         </div>
       )}
