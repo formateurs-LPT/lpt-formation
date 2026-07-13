@@ -177,9 +177,17 @@ function FAQTrainerView({ journee, onBack }) {
                   marginTop: 1,
                 }}>{i + 1}</div>
 
-                {/* Texte */}
-                <div style={{ flex: 1, fontSize: 15, color: q.highlighted ? '#fff' : 'rgba(255,255,255,0.8)', lineHeight: 1.5, fontWeight: q.highlighted ? 600 : 400 }}>
-                  {q.text}
+                {/* Texte + auteur */}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, color: q.highlighted ? '#fff' : 'rgba(255,255,255,0.8)', lineHeight: 1.5, fontWeight: q.highlighted ? 600 : 400 }}>
+                    {q.text}
+                  </div>
+                  {q.author && (
+                    <div style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '3px 10px' }}>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>👤</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)' }}>{q.author}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions */}

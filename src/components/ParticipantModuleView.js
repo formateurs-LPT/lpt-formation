@@ -1626,7 +1626,7 @@ function EntreprisePageMobile({ page, pageIndex, total }) {
   )
 }
 
-// ── FAQ Réveil des acquis — saisie anonyme participant ───────────
+// ── FAQ Réveil des acquis — saisie participant ───────────────────
 const FAQ_JOURNEE_LABELS = { j1: 'Journée 1', j2: 'Journée 2', j3: 'Journée 3' }
 
 export function FAQInputMobile({ journeeId }) {
@@ -1645,7 +1645,10 @@ export function FAQInputMobile({ journeeId }) {
       const key = `faq_${journeeId}_q`
       const state = await getSharedState()
       const current = state?.[key] || []
-      const newQ = { id: Date.now().toString(), text: trimmed, highlighted: false }
+      const nom    = typeof window !== 'undefined' ? (localStorage.getItem('participant_name') || '') : ''
+      const prenom = typeof window !== 'undefined' ? (localStorage.getItem('participant_prenom') || '') : ''
+      const author = [prenom, nom].filter(Boolean).join(' ') || 'Anonyme'
+      const newQ = { id: Date.now().toString(), text: trimmed, highlighted: false, author }
       await setSharedState({ [key]: [...current, newQ] })
       setText('')
       setCount(c => c + 1)
