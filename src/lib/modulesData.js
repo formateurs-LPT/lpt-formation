@@ -575,10 +575,10 @@ export const MUTUELLES_BELGIQUE = [
   },
   {
     id: 'partena',
-    nom: 'Mutualités Libres (Partena, OZ, Euromut, Securex…)',
+    nom: 'Mutualité Partena',
     type: 'Mutuelle',
     complementaire: true,
-    montant: '75 € (0–12 ans) / 50 € (12 ans et +)',
+    montant: "Jusqu'à 75 €",
     frequence: 'Tous les 2 ans',
     particularites: "Achat chez opticien physique dans l'UE. Prescription non obligatoire si la facture mentionne la dioptrie.",
   },
