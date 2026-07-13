@@ -2966,35 +2966,45 @@ function TVFAQView({ journeeId, questions }) {
       </div>
 
       {/* Corps : colonne thèmes | colonne questions */}
-      <div style={{ flex: 1, display: 'flex', gap: 0, overflow: 'hidden', padding: '0 0 16px' }}>
+      <div style={{ flex: 1, display: 'flex', gap: 0, overflow: 'hidden' }}>
 
         {/* ── Colonne gauche : thèmes abordés ── */}
         <div style={{
-          width: 300, flexShrink: 0,
+          width: 340, flexShrink: 0,
           display: 'flex', flexDirection: 'column',
-          padding: '8px 20px 8px 36px',
-          borderRight: '1px solid rgba(255,255,255,0.07)',
+          background: 'rgba(0,0,0,0.25)',
+          borderRight: `2px solid ${accent}40`,
           overflowY: 'auto',
+          padding: '16px 0 16px',
         }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 14 }}>
-            Thèmes abordés
+          {/* Header thèmes */}
+          <div style={{
+            padding: '0 20px 14px 24px',
+            borderBottom: `1px solid ${accent}30`,
+            marginBottom: 14,
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: 2 }}>
+              Thèmes abordés
+            </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+          {/* Cards thèmes */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 16px 0 20px' }}>
             {themes.map((theme, i) => (
               <div key={i} style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.09)',
-                borderLeft: `3px solid ${accent}`,
+                background: `${accent}14`,
+                border: `1px solid ${accent}35`,
+                borderLeft: `4px solid ${accent}`,
                 borderRadius: 10,
-                padding: '10px 12px',
+                padding: '11px 14px',
               }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: theme.items.length ? 6 : 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: theme.items.length ? 7 : 0 }}>
                   {theme.icon} {theme.label}
                 </div>
                 {theme.items.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                     {theme.items.map((item, j) => (
-                      <div key={j} style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', paddingLeft: 8, lineHeight: 1.4 }}>
+                      <div key={j} style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', paddingLeft: 6, lineHeight: 1.5 }}>
                         · {item}
                       </div>
                     ))}
@@ -3003,18 +3013,20 @@ function TVFAQView({ journeeId, questions }) {
               </div>
             ))}
           </div>
-          <div style={{ marginTop: 20, padding: '10px 12px', background: `${accent}12`, border: `1px solid ${accent}30`, borderRadius: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: accent, marginBottom: 4 }}>💬 Comment participer ?</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
+
+          {/* Aide participation */}
+          <div style={{ margin: '18px 16px 0 20px', padding: '12px 14px', background: `${accent}18`, border: `1px solid ${accent}40`, borderRadius: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: accent, marginBottom: 4 }}>💬 Comment participer ?</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
               Posez vos questions sur votre téléphone de manière anonyme
             </div>
           </div>
         </div>
 
         {/* ── Colonne droite : titre + bulles questions ── */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingBottom: 16 }}>
           {/* Titre */}
-          <div style={{ textAlign: 'center', padding: '6px 40px 14px', flexShrink: 0 }}>
+          <div style={{ textAlign: 'center', padding: '14px 40px 14px', flexShrink: 0 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>
               FAQ anonyme · {meta.label}
             </div>
@@ -4195,6 +4207,7 @@ export default function TVView() {
   const [quizInterstitialPhase, setQuizInterstitialPhase] = useState(false)
   const [finalPodiumPhase, setFinalPodiumPhase]           = useState(false)
   const [rateRevealPhase,  setRateRevealPhase]            = useState(false)
+  const [finalEndedPhase,  setFinalEndedPhase]            = useState(false)
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
@@ -4244,6 +4257,7 @@ export default function TVView() {
     const phase = sharedState?.quiz_final_phase
     setFinalPodiumPhase(phase === 'podium')
     setRateRevealPhase(phase === 'rate')
+    setFinalEndedPhase(phase === 'ended')
   }, [sharedState?.quiz_final_phase])
 
   let page = null
@@ -4337,11 +4351,13 @@ export default function TVView() {
         ) : isLobby ? (
           <TVModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
         ) : isResults ? (
-          finalPodiumPhase
-            ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} sessionCode={sessionCode} />
-            : rateRevealPhase
-              ? <TVQuizRateReveal sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
-              : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} sessionCode={sessionCode} />
+          finalEndedPhase
+            ? <WelcomeScreen />
+            : finalPodiumPhase
+              ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} sessionCode={sessionCode} />
+              : rateRevealPhase
+                ? <TVQuizRateReveal sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
+                : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} sessionCode={sessionCode} />
         ) : isQuiz && quizQuestion ? (
           quizInterstitialPhase
             ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} skipSignal={sharedState?.quiz_podium_skip} />

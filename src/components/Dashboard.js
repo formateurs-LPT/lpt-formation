@@ -5,6 +5,7 @@ import { sbSelect, sbDelete, getSharedState, insertSessionHistory, parseSessionH
 import PlanningWidget from './PlanningWidget'
 import ShortcutsWidget from './ShortcutsWidget'
 import OnboardingView from './OnboardingView'
+import OnboardingViewBelgique from './OnboardingViewBelgique'
 import EntreesView from './EntreesView'
 import RoomOpenModal from './RoomOpenModal'
 import { TRAINER_AVATARS, TRAINER_CANONICAL } from '@/lib/constants'
@@ -719,7 +720,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   if (activeView === 'onboarding-belgique') {
     return (
       <div id="dashboard">
-        <OnboardingView
+        <OnboardingViewBelgique
           pName={pName}
           onBack={() => { setActiveView('home'); loadTileStats(); refreshActiveRoom() }}
           onLaunchFormation={onLaunchSession}
