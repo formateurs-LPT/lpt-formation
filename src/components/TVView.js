@@ -85,6 +85,10 @@ const STYLES = `
     from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
   @keyframes mjPulse {
     0%, 100% { opacity: 1; }
     50%       { opacity: 0.45; }
@@ -511,7 +515,80 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
 }
 
 // ── TV Pause (type = pause) ───────────────────────────────────────
-function TVPause({ page, pageIndex, total, moduleLabel }) {
+function OpenAnswersFeed({ sessionCode, pageId }) {
+  const [answers, setAnswers] = useState([])
+  const [knownIds, setKnownIds] = useState(new Set())
+
+  useEffect(() => {
+    if (!sessionCode || !pageId) return
+    const poll = async () => {
+      try {
+        const rows = await sbSelect(
+          'open_answers',
+          `session_code=eq.${encodeURIComponent(sessionCode)}&page_id=eq.${encodeURIComponent(pageId)}&order=created_at.asc&limit=20`
+        )
+        if (rows) {
+          setAnswers(rows.slice(-8))
+          setKnownIds(prev => {
+            const next = new Set(prev)
+            rows.forEach(r => next.add(r.id))
+            return next
+          })
+        }
+      } catch {}
+    }
+    poll()
+    const t = setInterval(poll, 3000)
+    return () => clearInterval(t)
+  }, [sessionCode, pageId])
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'waitingPulse 1.5s ease-in-out infinite' }} />
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+          Réponses en direct
+        </span>
+        {answers.length > 0 && (
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginLeft: 4 }}>({answers.length})</span>
+        )}
+      </div>
+
+      {answers.length === 0 ? (
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: 10,
+          color: 'rgba(255,255,255,0.2)', textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 32 }}>💬</div>
+          <div style={{ fontSize: 14, fontWeight: 500 }}>En attente de réponses…</div>
+          <div style={{ fontSize: 11 }}>Les réponses apparaîtront ici</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, overflow: 'hidden' }}>
+          {answers.map((a, i) => (
+            <div key={a.id} style={{
+              background: 'rgba(0,137,186,0.08)',
+              border: '1px solid rgba(0,137,186,0.2)',
+              borderRadius: 14, padding: '12px 16px',
+              animation: 'fadeSlideUp .4s ease both',
+              animationDelay: `${i * 0.05}s`,
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', marginBottom: 4 }}>
+                {a.participant_name}
+              </div>
+              <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)', lineHeight: 1.45 }}>
+                {a.answer}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TVPause({ page, pageIndex, total, moduleLabel, sessionCode }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     setVisible(false)
@@ -542,38 +619,45 @@ function TVPause({ page, pageIndex, total, moduleLabel }) {
         </div>
       </div>
 
-      {/* Centre */}
+      {/* Corps : question + réponses */}
       <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', gap: 36,
+        flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr',
+        gap: 0, padding: '0 0 0 0',
         opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)',
         transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
       }}>
+        {/* Question */}
         <div style={{
-          width: 160, height: 160, borderRadius: '50%',
-          background: 'rgba(0,171,233,0.1)', border: '2px solid rgba(0,171,233,0.25)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 0 80px rgba(0,171,233,0.18)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 28, padding: '40px 48px',
+          borderRight: '1px solid rgba(255,255,255,0.07)',
         }}>
-          <span style={{ fontSize: 80, lineHeight: 1 }}>{page.icon}</span>
+          {page.icon && (
+            <div style={{
+              width: 120, height: 120, borderRadius: '50%',
+              background: 'rgba(0,171,233,0.1)', border: '2px solid rgba(0,171,233,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 60px rgba(0,171,233,0.18)',
+            }}>
+              <span style={{ fontSize: 60, lineHeight: 1 }}>{page.icon}</span>
+            </div>
+          )}
+          <div style={{ textAlign: 'center' }}>
+            <h1 style={{ fontSize: 44, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 14 }}>
+              {page.titre}
+            </h1>
+            {page.sousTitre && (
+              <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.5)', fontWeight: 400 }}>
+                {page.sousTitre}
+              </p>
+            )}
+          </div>
         </div>
 
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: 64, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 18 }}>
-            {page.titre}
-          </h1>
-          <p style={{ fontSize: 24, color: 'rgba(255,255,255,0.5)', fontWeight: 400 }}>
-            {page.sousTitre}
-          </p>
-        </div>
-
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 12,
-          background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)',
-          borderRadius: 40, padding: '16px 32px',
-        }}>
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#00abe9', animation: 'waitingPulse 1.5s ease-in-out infinite' }} />
-          <span style={{ fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>En cours avec le formateur…</span>
+        {/* Réponses */}
+        <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column' }}>
+          <OpenAnswersFeed sessionCode={sessionCode} pageId={page.id} />
         </div>
       </div>
     </div>
@@ -2832,49 +2916,59 @@ function TVPartenaOffre({ partenaRevealed }) {
 }
 
 // ── TV Remboursement France — Conditions ─────────────────────────
-function TVTiersPayant({ tiersPayantRevealed }) {
+function TVTiersPayant({ tiersPayantRevealed, sessionCode, pageId }) {
   return (
     <div style={{
       minHeight: '100vh', background: '#03112a',
       display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: '60px 80px', boxSizing: 'border-box',
     }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 32 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 2, padding: '28px 60px 0' }}>
         Les parcours remboursés
       </div>
 
-      {/* Question */}
-      <h1 style={{
-        fontSize: tiersPayantRevealed ? 32 : 48,
-        fontWeight: 900, color: '#fff', textAlign: 'center',
-        lineHeight: 1.2, marginBottom: tiersPayantRevealed ? 48 : 0,
-        maxWidth: 800, transition: 'font-size .4s ease',
-      }}>
-        C'est quoi le tiers payant pour vous ?
-      </h1>
-
-      {/* Définition révélée */}
-      {tiersPayantRevealed && (
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 0 }}>
+        {/* Question + définition */}
         <div style={{
-          maxWidth: 760, width: '100%',
-          background: 'rgba(0,137,186,0.08)', border: '1px solid rgba(0,137,186,0.25)',
-          borderRadius: 24, padding: '40px 48px',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          padding: '40px 56px', gap: 32,
+          borderRight: '1px solid rgba(255,255,255,0.07)',
         }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>
-            Définition
-          </div>
-          <p style={{ fontSize: 24, color: '#fff', fontWeight: 600, lineHeight: 1.55, margin: 0 }}>
-            Le tiers payant est un système qui permet au client de{' '}
-            <span style={{ color: '#00abe9' }}>ne pas avancer les frais</span>.
-          </p>
-          <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.65)', lineHeight: 1.6, marginTop: 20, marginBottom: 0 }}>
-            La Sécurité Sociale et la mutuelle règlent directement l'opticien.
-            Le client ne paie que son éventuel reste à charge —{' '}
-            <span style={{ color: '#4ade80', fontWeight: 700 }}>chez nous, ce reste à charge est de 0 €, donc le client ne paie rien.</span>
-          </p>
+          <h1 style={{
+            fontSize: tiersPayantRevealed ? 34 : 48,
+            fontWeight: 900, color: '#fff', textAlign: 'center',
+            lineHeight: 1.2, transition: 'font-size .4s ease',
+          }}>
+            C'est quoi le tiers payant pour vous ?
+          </h1>
+
+          {tiersPayantRevealed && (
+            <div style={{
+              width: '100%',
+              background: 'rgba(0,137,186,0.08)', border: '1px solid rgba(0,137,186,0.25)',
+              borderRadius: 20, padding: '28px 36px',
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>
+                Définition
+              </div>
+              <p style={{ fontSize: 20, color: '#fff', fontWeight: 600, lineHeight: 1.55, margin: 0 }}>
+                Le tiers payant est un système qui permet au client de{' '}
+                <span style={{ color: '#00abe9' }}>ne pas avancer les frais</span>.
+              </p>
+              <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.65)', lineHeight: 1.6, marginTop: 14, marginBottom: 0 }}>
+                La Sécurité Sociale et la mutuelle règlent directement l'opticien.
+                Le client ne paie que son éventuel reste à charge —{' '}
+                <span style={{ color: '#4ade80', fontWeight: 700 }}>chez nous, ce reste à charge est de 0 €, donc le client ne paie rien.</span>
+              </p>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Réponses */}
+        <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column' }}>
+          <OpenAnswersFeed sessionCode={sessionCode} pageId={pageId} />
+        </div>
+      </div>
     </div>
   )
 }
@@ -3289,7 +3383,7 @@ function TVMutuellesReveal({ mutuellesRevealed }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, parcoursRevealed, tiersPayantRevealed }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, parcoursRevealed, tiersPayantRevealed, sessionCode }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -3303,7 +3397,8 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'partena-offre')      return <TVPartenaOffre partenaRevealed={partenaRevealed} />
   if (page.type === 'rembfr-conditions')  return <TVRembFrConditions rembfrRevealed={rembfrRevealed} />
   if (page.type === 'parcours-rembourses-offres') return <TVParcoursOffres parcoursRevealed={parcoursRevealed} />
-  if (page.type === 'parcours-tiers-payant')      return <TVTiersPayant tiersPayantRevealed={tiersPayantRevealed} />
+  if (page.type === 'parcours-tiers-payant')      return <TVTiersPayant tiersPayantRevealed={tiersPayantRevealed} sessionCode={sessionCode} pageId={page.id} />
+  if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />
   if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />
@@ -3317,7 +3412,6 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'offres-progressif-11') return <TVOffresProgressif11 />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} ordoRevealStep={ordoRevealStep} audioUnlocked={audioUnlocked} />
-  if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
 
   // Entreprise module types — tous dispatchés pour éviter le VerreAnime
@@ -5119,6 +5213,7 @@ export default function TVView() {
             rembfrRevealed={rembfrRevealed}
             parcoursRevealed={parcoursRevealed}
             tiersPayantRevealed={tiersPayantRevealed}
+            sessionCode={sessionCode}
           />
         ) : (
           <WelcomeScreen />

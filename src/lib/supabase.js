@@ -330,6 +330,30 @@ export async function setRoomSharedState(patch, roomCode) {
   return result
 }
 
+// ── Réponses libres aux questions ouvertes ────────────────────────
+export async function insertOpenAnswer({ sessionCode, pageId, participantName, answer }) {
+  return sbInsert('open_answers', {
+    session_code: sessionCode,
+    page_id: pageId,
+    participant_name: participantName || 'Anonyme',
+    answer: answer.trim(),
+  })
+}
+
+export async function fetchOpenAnswers(sessionCode, pageId) {
+  return sbSelect(
+    'open_answers',
+    `session_code=eq.${encodeURIComponent(sessionCode)}&page_id=eq.${encodeURIComponent(pageId)}&order=created_at.asc&limit=20`
+  )
+}
+
+export async function clearOpenAnswers(sessionCode, pageId) {
+  await sbDelete(
+    'open_answers',
+    `session_code=eq.${encodeURIComponent(sessionCode)}&page_id=eq.${encodeURIComponent(pageId)}`
+  )
+}
+
 export async function deleteTrainerStateByKey(trainerKey) {
   const key = (trainerKey || '').trim()
   if (!key) return false

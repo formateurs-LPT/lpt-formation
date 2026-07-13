@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, setSharedState } from '@/lib/supabase'
+import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, setSharedState, insertOpenAnswer } from '@/lib/supabase'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
@@ -734,13 +734,37 @@ function OrdonnanceMobile({ page, pageIndex, total }) {
 }
 
 // ── Pause atelier — vue téléphone ────────────────────────────────
-function PauseMobile({ page, pageIndex, total }) {
+function PauseMobile({ page, pageIndex, total, pName }) {
   const [visible, setVisible] = useState(false)
+  const [text, setText] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+
   useEffect(() => {
     setVisible(false)
+    setText('')
+    setSent(false)
     const t = setTimeout(() => setVisible(true), 100)
     return () => clearTimeout(t)
   }, [page.id])
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return
+    setSending(true)
+    try {
+      await insertOpenAnswer({
+        sessionCode: getParticipantSessionCode(),
+        pageId: page.id,
+        participantName: pName || 'Anonyme',
+        answer: text.trim(),
+      })
+      setText('')
+      setSent(true)
+      setTimeout(() => setSent(false), 2500)
+    } finally {
+      setSending(false)
+    }
+  }
 
   return (
     <div style={{
@@ -762,35 +786,73 @@ function PauseMobile({ page, pageIndex, total }) {
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        gap: 24, padding: '40px 24px',
+        gap: 24, padding: '32px 24px 24px',
         opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)',
         transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
       }}>
-        <div style={{
-          width: 96, height: 96, borderRadius: '50%',
-          background: 'rgba(0,171,233,0.1)', border: '2px solid rgba(0,171,233,0.25)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 0 40px rgba(0,171,233,0.15)',
-        }}>
-          <span style={{ fontSize: 44, lineHeight: 1 }}>{page.icon}</span>
-        </div>
+        {page.icon && (
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            background: 'rgba(0,171,233,0.1)', border: '2px solid rgba(0,171,233,0.25)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 40px rgba(0,171,233,0.15)',
+          }}>
+            <span style={{ fontSize: 38, lineHeight: 1 }}>{page.icon}</span>
+          </div>
+        )}
 
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', lineHeight: 1.2, marginBottom: 12 }}>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', lineHeight: 1.25, marginBottom: 8 }}>
             {page.titre}
           </div>
-          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', fontWeight: 400, lineHeight: 1.5 }}>
-            {page.sousTitre}
-          </div>
+          {page.sousTitre && (
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: 400, lineHeight: 1.5 }}>
+              {page.sousTitre}
+            </div>
+          )}
         </div>
 
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)',
-          borderRadius: 30, padding: '10px 20px',
-        }}>
-          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#00abe9', animation: 'waitDot 1.5s ease-in-out infinite' }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>En cours avec le formateur…</span>
+        {/* Zone de réponse */}
+        <div style={{ width: '100%', maxWidth: 420 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+            Votre réponse
+          </div>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Écrivez votre réponse…"
+            rows={3}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 14, padding: '14px 16px',
+              color: '#fff', fontSize: 15, fontFamily: 'inherit', lineHeight: 1.5,
+              resize: 'none', outline: 'none',
+            }}
+            onFocus={e => { e.target.style.borderColor = 'rgba(0,171,233,0.5)' }}
+            onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.15)' }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!text.trim() || sending}
+            style={{
+              marginTop: 10, width: '100%',
+              padding: '14px 20px', borderRadius: 14,
+              fontFamily: 'inherit', fontSize: 15, fontWeight: 700,
+              cursor: (!text.trim() || sending) ? 'default' : 'pointer',
+              transition: 'all .2s',
+              background: sent
+                ? 'rgba(74,222,128,0.15)'
+                : (!text.trim() || sending)
+                  ? 'rgba(255,255,255,0.07)'
+                  : 'linear-gradient(135deg, #0070a0, #0089ba)',
+              border: sent ? '1px solid rgba(74,222,128,0.4)' : 'none',
+              color: sent ? '#4ade80' : (!text.trim() || sending) ? 'rgba(255,255,255,0.3)' : '#fff',
+              boxShadow: (!text.trim() || sending || sent) ? 'none' : '0 4px 16px rgba(0,137,186,0.35)',
+            }}
+          >
+            {sent ? '✓ Envoyée !' : sending ? '…' : 'Envoyer'}
+          </button>
         </div>
       </div>
     </div>
@@ -2607,7 +2669,8 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
   if (page.type === 'troubles-list')    return <TroublesListMobile       page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'correction-scale') return <CorrectionScaleMobile    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <OrdonnanceMobile         page={page} pageIndex={pageIndex} total={total} />
-  if (page.type === 'pause')             return <PauseMobile              page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'pause')             return <PauseMobile              page={page} pageIndex={pageIndex} total={total} pName={pName} />
+  if (page.type === 'parcours-tiers-payant') return <PauseMobile          page={page} pageIndex={pageIndex} total={total} pName={pName} />
   if (page.type === 'saisie-interactive') return <SaisieInteractiveMobile page={page} pageIndex={pageIndex} total={total} />
 
   // Freins à l'achat — saisie libre
