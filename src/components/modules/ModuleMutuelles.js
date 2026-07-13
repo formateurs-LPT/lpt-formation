@@ -230,8 +230,9 @@ export default function ModuleMutuelles({ pName, onBack }) {
             <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>Les organismes assureurs en Belgique</div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {MUTUELLES_BELGIQUE.map((m) => {
+          {/* Cartes individuelles — avec optique */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
+            {MUTUELLES_BELGIQUE.filter(m => m.complementaire).map((m) => {
               const isRevealed = revealedIds.includes(m.id)
               return (
                 <div key={m.id} style={{
@@ -241,28 +242,18 @@ export default function ModuleMutuelles({ pName, onBack }) {
                   borderRadius: 12, padding: '14px 16px',
                   display: 'flex', flexDirection: 'column', gap: 8,
                 }}>
-                  {/* Nom + type */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.3, marginBottom: 3 }}>{m.nom}</div>
                       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{m.type}</div>
                     </div>
-                    <span style={{
-                      fontSize: 9, fontWeight: 700, borderRadius: 20, padding: '2px 8px', flexShrink: 0,
-                      background: m.complementaire ? 'rgba(74,222,128,0.12)' : 'rgba(239,68,68,0.1)',
-                      border: `1px solid ${m.complementaire ? 'rgba(74,222,128,0.3)' : 'rgba(239,68,68,0.25)'}`,
-                      color: m.complementaire ? '#4ade80' : '#f87171',
-                    }}>
-                      {m.complementaire ? '✓ Optique' : '✗ Pas d\'optique'}
+                    <span style={{ fontSize: 9, fontWeight: 700, borderRadius: 20, padding: '2px 8px', flexShrink: 0, background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', color: '#4ade80' }}>
+                      ✓ Optique
                     </span>
                   </div>
 
-                  {/* Détails si révélé */}
                   {isRevealed && m.montant !== null && (
-                    <div style={{
-                      background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '10px 12px',
-                      display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 10px',
-                    }}>
+                    <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '10px 12px', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 10px' }}>
                       <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.7 }}>Montant</span>
                       <span style={{ fontSize: 13, fontWeight: 800, color: '#c9a227' }}>{m.montant}</span>
                       <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.7 }}>Fréquence</span>
@@ -276,7 +267,6 @@ export default function ModuleMutuelles({ pName, onBack }) {
                     </div>
                   )}
 
-                  {/* Bouton Révéler / Masquer */}
                   <button
                     onClick={() => toggleReveal(m.id)}
                     disabled={revealing}
@@ -295,6 +285,24 @@ export default function ModuleMutuelles({ pName, onBack }) {
                 </div>
               )
             })}
+          </div>
+
+          {/* Carte groupée — sans optique */}
+          <div style={{
+            background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
+            borderLeft: '3px solid rgba(239,68,68,0.45)', borderRadius: 12, padding: '14px 18px',
+            display: 'flex', alignItems: 'center', gap: 16,
+          }}>
+            <span style={{ fontSize: 9, fontWeight: 700, borderRadius: 20, padding: '3px 10px', flexShrink: 0, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
+              ✗ Pas de complémentaire optique
+            </span>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {MUTUELLES_BELGIQUE.filter(m => !m.complementaire).map(m => (
+                <span key={m.id} style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '4px 12px' }}>
+                  {m.nom}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       ) : (

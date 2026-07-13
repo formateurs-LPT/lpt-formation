@@ -2742,13 +2742,16 @@ function TVInamiInfo({ inamiRevealed }) {
 // ── TV Mutuelles Reveal ───────────────────────────────────────────
 function TVMutuellesReveal({ mutuellesRevealed }) {
   const revealed = mutuellesRevealed || []
+  const avecOptique = MUTUELLES_BELGIQUE.filter(m => m.complementaire)
+  const sansOptique = MUTUELLES_BELGIQUE.filter(m => !m.complementaire)
+
   return (
     <div style={{
       minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)',
       display: 'flex', flexDirection: 'column', padding: '40px 56px',
     }}>
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 28 }}>
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 10,
           background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)',
@@ -2763,11 +2766,10 @@ function TVMutuellesReveal({ mutuellesRevealed }) {
         </div>
       </div>
 
-      {/* Grid 2 colonnes */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, flex: 1 }}>
-        {MUTUELLES_BELGIQUE.map((m) => {
+      {/* Cartes individuelles — avec optique */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 14 }}>
+        {avecOptique.map((m) => {
           const isRevealed = revealed.includes(m.id)
-          const hasDetails = m.montant !== null
           return (
             <div key={m.id} style={{
               background: isRevealed ? 'rgba(201,162,39,0.08)' : 'rgba(255,255,255,0.04)',
@@ -2777,71 +2779,66 @@ function TVMutuellesReveal({ mutuellesRevealed }) {
               transition: 'all .4s ease',
               display: 'flex', flexDirection: 'column', gap: 10,
             }}>
-              {/* Nom + badges */}
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: isRevealed ? '#fff' : 'rgba(255,255,255,0.75)', lineHeight: 1.3 }}>
                   {m.nom}
                 </div>
-                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, borderRadius: 20, padding: '2px 9px',
-                    background: m.complementaire ? 'rgba(74,222,128,0.12)' : 'rgba(239,68,68,0.1)',
-                    border: `1px solid ${m.complementaire ? 'rgba(74,222,128,0.35)' : 'rgba(239,68,68,0.3)'}`,
-                    color: m.complementaire ? '#4ade80' : '#f87171',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {m.complementaire ? '✓ Optique complémentaire' : '✗ Pas de complémentaire'}
-                  </span>
-                </div>
+                <span style={{
+                  fontSize: 10, fontWeight: 700, borderRadius: 20, padding: '2px 9px', flexShrink: 0,
+                  background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.35)', color: '#4ade80',
+                }}>✓ Optique</span>
               </div>
-
-              {/* Type */}
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>{m.type}</div>
 
-              {/* Détails revealed */}
-              {isRevealed && hasDetails && (
+              {isRevealed && m.montant && (
                 <div style={{
                   display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 14px',
-                  background: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: '12px 14px',
-                  marginTop: 4,
+                  background: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: '12px 14px', marginTop: 4,
                 }}>
                   <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, alignSelf: 'center' }}>Montant</span>
                   <span style={{ fontSize: 15, fontWeight: 800, color: '#c9a227' }}>{m.montant}</span>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, alignSelf: 'flex-start' }}>Fréquence</span>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8 }}>Fréquence</span>
                   <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{m.frequence}</span>
                   {m.particularites && m.particularites !== '/' && (
                     <>
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, alignSelf: 'flex-start' }}>Particularités</span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8 }}>Particularités</span>
                       <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>{m.particularites}</span>
                     </>
                   )}
                 </div>
               )}
 
-              {isRevealed && !hasDetails && (
-                <div style={{
-                  background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '10px 14px',
-                  fontSize: 12, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic',
-                }}>
-                  Pas de données de remboursement complémentaire disponibles
-                </div>
-              )}
-
               {!isRevealed && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-                  <div style={{
-                    width: 6, height: 6, borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.2)',
-                    animation: 'waitingPulse 2s ease-in-out infinite',
-                  }} />
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
-                    En attente de révélation…
-                  </span>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', animation: 'waitingPulse 2s ease-in-out infinite' }} />
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>En attente de révélation…</span>
                 </div>
               )}
             </div>
           )
         })}
+      </div>
+
+      {/* Carte groupée — sans optique */}
+      <div style={{
+        background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
+        borderLeft: '3px solid rgba(239,68,68,0.5)',
+        borderRadius: 14, padding: '18px 24px',
+        display: 'flex', alignItems: 'center', gap: 20,
+      }}>
+        <span style={{
+          fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '3px 12px', flexShrink: 0,
+          background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171',
+        }}>✗ Pas de complémentaire optique</span>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {sansOptique.map(m => (
+            <span key={m.id} style={{
+              fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.55)',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 8, padding: '5px 14px',
+            }}>{m.nom}</span>
+          ))}
+        </div>
       </div>
     </div>
   )
