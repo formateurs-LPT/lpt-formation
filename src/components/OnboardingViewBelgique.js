@@ -5,9 +5,6 @@ import { TRAINER_AVATARS } from '@/lib/constants'
 import { generatePin } from '@/lib/pin'
 import { getSharedState, setSharedState, setRoomSharedState, sbUpsert, sbSelect, getActiveSessionCode } from '@/lib/supabase'
 import {
-  countEntreesByCategory,
-  entreeMatchesCategory,
-  getCategoryDisplayTitle,
   listFormationCategories,
 } from '@/lib/formationCategories'
 import { getLegacySessionCode, isDynamicRoomCode } from '@/lib/sessionCode'
@@ -95,58 +92,8 @@ const JOURNEES_BELGIQUE = (onLaunchModule) => [
   },
 ]
 
-// ── Step 1 : Choix du groupe ──────────────────────────────────────
-function GroupSelectBelgique({ onSelect, onBack }) {
-  const [counts, setCounts] = useState({})
-  const categories = listFormationCategories()
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const state = await getSharedState()
-        const data = state.entrees_data || JSON.parse(localStorage.getItem('entrees_data') || '[]')
-        setCounts(countEntreesByCategory(data))
-      } catch {
-        const data = JSON.parse(localStorage.getItem('entrees_data') || '[]')
-        setCounts(countEntreesByCategory(data))
-      }
-    }
-    load()
-  }, [])
-
-  return (
-    <div className="dash-wrap">
-      <button className="detail-back" onClick={onBack}>← Retour</button>
-      <div className="dash-hero" style={{ marginBottom: 24 }}>
-        <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-          <div className="dash-hero-label">Formation · Suivi collaborateurs</div>
-          <h2 className="dash-hero-title">ONBOARDING BELGIQUE</h2>
-          <p className="dash-hero-date">Choisissez le groupe que vous accompagnez aujourd'hui</p>
-        </div>
-        <div style={{ width: 56, height: 56, background: 'rgba(255,255,255,.08)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, position: 'relative', zIndex: 1 }}>🇧🇪</div>
-      </div>
-
-      <div className="ob-group-grid">
-        {categories.map(({ slug, emoji, shortLabel, subLabel }) => {
-          const n = counts[slug] || 0
-          return (
-            <div key={slug} className="ob-group-card" onClick={() => onSelect(slug)}>
-              <div className="ob-group-card-icon">{emoji}</div>
-              <div className="ob-group-card-title">{shortLabel}</div>
-              {subLabel ? <div className="ob-group-card-sub">{subLabel}</div> : null}
-              <div className="ob-group-card-count">
-                {n} collaborateur{n !== 1 ? 's' : ''}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// ── Step 2 : Liste présence ───────────────────────────────────────
-function CollabListBelgique({ group, onNext, onBack }) {
+// ── Step 1 : Liste présence ───────────────────────────────────────
+function CollabListBelgique({ onNext, onBack }) {
   const [collabs, setCollabs] = useState([])
   const [checks, setChecks] = useState({})
 
@@ -176,12 +123,11 @@ function CollabListBelgique({ group, onNext, onBack }) {
         } catch (e) { console.warn('participants fallback échoué', e) }
       }
 
-      const filtered = data.filter(e => entreeMatchesCategory(e, group))
-      setCollabs(filtered)
+      setCollabs(data)
       setChecks(obData)
     }
     load()
-  }, [group])
+  }, [])
 
   // Calcule le lundi de la semaine courante (clé week_date)
   const getWeekDate = () => {
@@ -224,15 +170,13 @@ function CollabListBelgique({ group, onNext, onBack }) {
     }, 'collaborateur,week_date').catch(console.warn)
   }
 
-  const title = getCategoryDisplayTitle(group)
-
   return (
     <div className="dash-wrap">
       <button className="detail-back" onClick={onBack}>← Retour</button>
       <div className="dash-hero" style={{ marginBottom: 24 }}>
         <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
           <div className="dash-hero-label">ONBOARDING BELGIQUE · Suivi présence</div>
-          <h2 className="dash-hero-title">{title}</h2>
+          <h2 className="dash-hero-title">Tous les collaborateurs</h2>
           <p className="dash-hero-date">Cochez la présence, la signature du contrat et laissez un commentaire par collaborateur</p>
         </div>
         <div style={{ width: 56, height: 56, background: 'rgba(255,255,255,.08)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, position: 'relative', zIndex: 1 }}>👥</div>
@@ -530,17 +474,10 @@ function SessionModulesBelgique({ pName, onBack, onLaunchFormation, onLaunchModu
 }
 
 // ── Composant principal ───────────────────────────────────────────
-export default function OnboardingViewBelgique({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, initialStep = 'select', initialJournee = null }) {
-  const [step, setStep] = useState(initialStep) // select | list | modules
-  const [group, setGroup] = useState(null)
+export default function OnboardingViewBelgique({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, initialStep = 'list', initialJournee = null }) {
+  const [step, setStep] = useState(initialStep) // list | modules
 
-  const handleSelectGroup = (g) => {
-    setGroup(g)
-    setStep('list')
-  }
-
-  if (step === 'select') return <GroupSelectBelgique onSelect={handleSelectGroup} onBack={onBack} />
-  if (step === 'list') return <CollabListBelgique group={group} onNext={() => setStep('modules')} onBack={() => setStep('select')} />
+  if (step === 'list') return <CollabListBelgique onNext={() => setStep('modules')} onBack={onBack} />
   if (step === 'modules') return <SessionModulesBelgique pName={pName} onBack={() => setStep('list')} onLaunchFormation={onLaunchFormation} onLaunchModule={onLaunchModule} onEndRoom={onEndRoom} initialJournee={initialJournee} />
   return null
 }
