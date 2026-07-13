@@ -556,6 +556,7 @@ export const MODULE_DATA = {
   ], quiz: [], label: 'Mutuelles et INAMI', sub: 'Remboursements · INAMI · Mutuelles belges' },
   'remboursement-france': { pages: [
     { id: 'rembfr-q1', type: 'pause', icon: '🇫🇷', titre: 'Quelles sont les conditions pour avoir droit au remboursement optique en France ?', sousTitre: 'Partagez ce que vous savez déjà' },
+    { id: 'rembfr-conditions', type: 'rembfr-conditions', titre: 'Les conditions de remboursement' },
   ], quiz: [], label: 'Remboursement optique en France', sub: 'SS · Mutuelle · 100% Santé · Conditions' },
 }
 

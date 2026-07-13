@@ -2831,6 +2831,162 @@ function TVPartenaOffre({ partenaRevealed }) {
   )
 }
 
+// ── TV Remboursement France — Conditions ─────────────────────────
+function TVRembFrConditions({ rembfrRevealed }) {
+  const revealed = rembfrRevealed || []
+  const ordoRevealed = revealed.includes('ordonnance')
+  const delaisRevealed = revealed.includes('delais')
+
+  const BG = '#03112a'
+  const CARD = '#0d1f3c'
+  const BLUE = '#0089ba'
+  const BLUE_L = '#00abe9'
+
+  const LockDots = () => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 20 }}>
+      <div style={{ fontSize: 22, opacity: 0.3 }}>🔒</div>
+      {[1,2,3].map(i => (
+        <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', animation: `pulse ${0.9 + i * 0.2}s ease-in-out infinite alternate` }} />
+      ))}
+    </div>
+  )
+
+  const conditions = [
+    {
+      id: 'couverture',
+      num: '01',
+      titre: 'Être couvert par la Sécurité Sociale',
+      detail: 'et une mutuelle complémentaire ou la Complémentaire Santé Solidaire (CSS)',
+      alwaysVisible: true,
+      content: (
+        <div style={{ marginTop: 16, display: 'flex', gap: 10, flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(0,137,186,0.1)', borderRadius: 10, border: '1px solid rgba(0,137,186,0.2)' }}>
+            <span style={{ fontSize: 18 }}>🏥</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Sécurité Sociale</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Remboursement de base</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(0,137,186,0.1)', borderRadius: 10, border: '1px solid rgba(0,137,186,0.2)' }}>
+            <span style={{ fontSize: 18 }}>🤝</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Mutuelle / CSS</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Complète le remboursement SS</div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'ordonnance',
+      num: '02',
+      titre: 'Avoir une ordonnance en cours de validité',
+      detail: 'La durée de validité dépend de l\'âge du patient',
+      alwaysVisible: false,
+      content: ordoRevealed ? (
+        <div style={{ marginTop: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[
+              { label: 'Moins de 16 ans', duree: '1 an', color: '#f59e0b' },
+              { label: 'De 16 à 42 ans', duree: '5 ans', color: BLUE_L },
+              { label: '43 ans et plus', duree: '3 ans', color: '#a78bfa' },
+            ].map(row => (
+              <div key={row.label} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 14px', borderRadius: 10,
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+              }}>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>{row.label}</span>
+                <span style={{ fontSize: 16, fontWeight: 900, color: row.color }}>{row.duree}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : <LockDots />,
+    },
+    {
+      id: 'delais',
+      num: '03',
+      titre: 'Respecter les délais de renouvellement',
+      detail: 'Des règles différentes selon l\'âge',
+      alwaysVisible: false,
+      content: delaisRevealed ? (
+        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Moins de 16 ans */}
+          <div style={{ padding: '12px 14px', background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>Moins de 16 ans</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
+              Renouvellement <strong style={{ color: '#fff' }}>tous les ans</strong> sans condition<br />
+              Renouvellement <strong style={{ color: '#fff' }}>sans délai</strong> si changement de correction ≥ 0,50
+            </div>
+          </div>
+          {/* Plus de 16 ans */}
+          <div style={{ padding: '12px 14px', background: `rgba(0,171,233,0.07)`, border: `1px solid rgba(0,171,233,0.2)`, borderRadius: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: BLUE_L, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>16 ans et plus</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
+              Renouvellement <strong style={{ color: '#fff' }}>tous les 2 ans</strong><br />
+              Anticipé après <strong style={{ color: '#fff' }}>1 an et 1 jour</strong> si changement ≥ 0,50
+            </div>
+          </div>
+          {/* AMELIPRO */}
+          <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>💻</span>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
+              Date du dernier remboursement vérifiable sur <strong style={{ color: BLUE_L }}>AMELIPRO</strong> via le numéro de sécurité sociale du patient
+            </div>
+          </div>
+        </div>
+      ) : <LockDots />,
+    },
+  ]
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: `linear-gradient(135deg, ${BG} 0%, #001a3d 100%)`,
+      display: 'flex', flexDirection: 'column',
+      padding: '40px 48px',
+      fontFamily: 'inherit',
+    }}>
+      {/* Header */}
+      <div style={{ marginBottom: 32, textAlign: 'center' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: BLUE, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+          Remboursement optique · France
+        </div>
+        <h1 style={{ fontSize: 32, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: -0.5 }}>
+          Les conditions de remboursement
+        </h1>
+      </div>
+
+      {/* 3 cartes */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, flex: 1 }}>
+        {conditions.map(c => (
+          <div key={c.id} style={{
+            background: CARD, border: `1px solid rgba(255,255,255,0.08)`,
+            borderRadius: 18, padding: '24px 22px',
+            display: 'flex', flexDirection: 'column',
+          }}>
+            {/* Numéro */}
+            <div style={{
+              fontSize: 11, fontWeight: 900, color: BLUE, letterSpacing: 2,
+              marginBottom: 12,
+            }}>{c.num}</div>
+            {/* Titre */}
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 6 }}>
+              {c.titre}
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, marginBottom: 4 }}>
+              {c.detail}
+            </div>
+            {/* Contenu */}
+            <div style={{ flex: 1 }}>{c.content}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── TV Mutuelles Reveal ───────────────────────────────────────────
 function TVMutuellesReveal({ mutuellesRevealed }) {
   const revealed = mutuellesRevealed || []
@@ -2996,7 +3152,7 @@ function TVMutuellesReveal({ mutuellesRevealed }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed, partenaRevealed }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -3005,9 +3161,10 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
     return () => clearTimeout(t)
   }, [page.id])
 
-  if (page.type === 'mutuelles-reveal') return <TVMutuellesReveal mutuellesRevealed={mutuellesRevealed} />
-  if (page.type === 'inami-info')       return <TVInamiInfo inamiRevealed={inamiRevealed} />
-  if (page.type === 'partena-offre')    return <TVPartenaOffre partenaRevealed={partenaRevealed} />
+  if (page.type === 'mutuelles-reveal')   return <TVMutuellesReveal mutuellesRevealed={mutuellesRevealed} />
+  if (page.type === 'inami-info')         return <TVInamiInfo inamiRevealed={inamiRevealed} />
+  if (page.type === 'partena-offre')      return <TVPartenaOffre partenaRevealed={partenaRevealed} />
+  if (page.type === 'rembfr-conditions')  return <TVRembFrConditions rembfrRevealed={rembfrRevealed} />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />
   if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />
@@ -4594,6 +4751,7 @@ export default function TVView() {
   const [mutuellesRevealed, setMutuellesRevealed]         = useState([])
   const [inamiRevealed, setInamiRevealed]                 = useState(false)
   const [partenaRevealed, setPartenaRevealed]             = useState(false)
+  const [rembfrRevealed, setRembfrRevealed]               = useState([])
 
   // Quiz podium
   const [quizInterstitialPhase, setQuizInterstitialPhase] = useState(false)
@@ -4634,6 +4792,7 @@ export default function TVView() {
     setMutuellesRevealed(sharedState.mutuelles_revealed || [])
     setInamiRevealed(!!sharedState.inami_revealed)
     setPartenaRevealed(!!sharedState.partena_revealed)
+    setRembfrRevealed(sharedState.rembfr_revealed || [])
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
@@ -4814,6 +4973,7 @@ export default function TVView() {
             mutuellesRevealed={mutuellesRevealed}
             inamiRevealed={inamiRevealed}
             partenaRevealed={partenaRevealed}
+            rembfrRevealed={rembfrRevealed}
           />
         ) : (
           <WelcomeScreen />
