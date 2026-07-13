@@ -2832,8 +2832,6 @@ function TVPartenaOffre({ partenaRevealed }) {
 }
 
 // ── TV Mutuelles Reveal ───────────────────────────────────────────
-const MUTUELLE_ICONS = { mc: '🛡️', partena: '🤝', neutre: '⚖️', solidaris: '🏥', liberale: '🏛️', caami: '🏢' }
-
 function TVMutuellesReveal({ mutuellesRevealed }) {
   const revealed = mutuellesRevealed || []
   const avecOptique = MUTUELLES_BELGIQUE.filter(m => m.complementaire)
@@ -2896,23 +2894,13 @@ function TVMutuellesReveal({ mutuellesRevealed }) {
               }} />
 
               <div style={{ padding: '22px 24px', flex: 1, display: 'flex', flexDirection: 'column', gap: 18 }}>
-                {/* Icône + nom */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={{
-                    width: 56, height: 56, borderRadius: 16, flexShrink: 0,
-                    background: isRevealed ? 'rgba(201,162,39,0.18)' : 'rgba(255,255,255,0.07)',
-                    border: `1px solid ${isRevealed ? 'rgba(201,162,39,0.35)' : 'rgba(255,255,255,0.1)'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28,
-                  }}>
-                    {MUTUELLE_ICONS[m.id]}
+                {/* Nom */}
+                <div>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.25, marginBottom: 4 }}>
+                    {m.nom}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.25, marginBottom: 4 }}>
-                      {m.nom}
-                    </div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>
-                      {m.type}
-                    </div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                    {m.type}
                   </div>
                 </div>
 
@@ -2995,21 +2983,11 @@ function TVMutuellesReveal({ mutuellesRevealed }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
           {sansOptique.map(m => (
             <div key={m.id} style={{
-              display: 'flex', alignItems: 'center', gap: 12,
               background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(239,68,68,0.15)',
               borderRadius: 10, padding: '12px 16px',
             }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-              }}>
-                {MUTUELLE_ICONS[m.id]}
-              </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)', lineHeight: 1.3 }}>{m.nom}</div>
-                <div style={{ fontSize: 10, color: 'rgba(239,68,68,0.6)', marginTop: 2 }}>{m.type}</div>
-              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)', lineHeight: 1.3 }}>{m.nom}</div>
+              <div style={{ fontSize: 10, color: 'rgba(239,68,68,0.6)', marginTop: 2 }}>{m.type}</div>
             </div>
           ))}
         </div>
