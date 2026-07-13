@@ -385,6 +385,7 @@ export default function Page() {
         isRoomSession={isDynamicRoomCode(displaySessionCode || getRuntimeSessionCode('trainer') || SESSION_CODE)}
         onLogout={handleLogout}
         onTVMode={handleOpenTv}
+        onStartSession={handleLaunchSession}
       />
       {view === 'dashboard' && (
         <Dashboard

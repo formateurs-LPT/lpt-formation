@@ -136,7 +136,7 @@ function ParticipantsPanel({ sessionCode, onClose }) {
   )
 }
 
-export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onLogout, onTVMode }) {
+export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onLogout, onTVMode, onStartSession }) {
   const [showPanel, setShowPanel] = useState(false)
   const code = (sessionCode || '').trim()
   const avatarSrc = isTrainer ? getTrainerAvatarSrc(pName) : '/assets/logo-lpt-blanc.png'
@@ -181,6 +181,24 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
         <div className={`brole ${isTrainer ? 'trainer' : 'participant'}`}>
           {isTrainer ? 'Formateur' : pName?.split(' ')[0]}
         </div>
+        {isTrainer && onStartSession && (
+          <button onClick={onStartSession} style={{
+            background: '#0089ba',
+            border: 'none',
+            color: '#fff',
+            fontSize: 12, fontWeight: 700,
+            padding: '6px 14px',
+            borderRadius: 20,
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 5,
+            transition: 'all .2s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = '#00abe9'}
+          onMouseLeave={e => e.currentTarget.style.background = '#0089ba'}
+          >
+            ▶ Démarrer
+          </button>
+        )}
         {isTrainer && onTVMode && (
           <button onClick={onTVMode} style={{
             background: 'rgba(0,171,233,0.08)',

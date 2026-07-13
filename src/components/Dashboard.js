@@ -1378,11 +1378,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-label">Idées notées</div>
             <div className="dash-tile-sub">Idées notées durant les formations</div>
           </div>
-          <div className="dash-tile dash-tile-cta" onClick={() => setActiveView('modules')}>
-            <div className="dash-tile-cta-icon">▶</div>
-            <div className="dash-tile-label">Démarrer une session</div>
-            <div className="dash-tile-sub">Lancer une nouvelle formation</div>
-          </div>
         </div>
 
         {/* Planning + Shortcuts + Fiches */}
