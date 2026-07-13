@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { sbSelect, getSharedState } from '@/lib/supabase'
-import { resolveRoomStateCode } from '@/lib/sessionCode'
+import { resolveRoomStateCode, isDynamicRoomCode } from '@/lib/sessionCode'
 
 // ─────────────────────────────────────────────────────────────────
 //  useModuleSync — synchronisation TV / participant
@@ -14,7 +14,20 @@ import { resolveRoomStateCode } from '@/lib/sessionCode'
 // ─────────────────────────────────────────────────────────────────
 
 const BASE_MS = 1200    // polling rapide — module actif avec changements
-const IDLE_MS = 5000    // polling lent  — aucun module en cours
+const IDLE_MS = 2000    // polling lent  — aucun module en cours
+
+// En mode TV sans ?room= dans l'URL (vidéoprojecteur ouvert manuellement),
+// on cherche la salle dynamique ouverte pour lire le bon trainer_state.
+async function resolveTvSessionCode(legacyCode) {
+  try {
+    const rows = await sbSelect('sessions', 'order=updated_at.desc&limit=10')
+    const active = (rows || []).find(r =>
+      isDynamicRoomCode(r.code) && (r.status === 'active' || r.status === 'waiting')
+    )
+    if (active?.code) return active.code
+  } catch {}
+  return legacyCode
+}
 
 export function useModuleSync({ disabled = false } = {}) {
   const [state, setState] = useState({
@@ -27,15 +40,30 @@ export function useModuleSync({ disabled = false } = {}) {
 
   const timerRef    = useRef(null)
   const snapshotRef = useRef(null)
-  const stableRef   = useRef(0)
+  const resolvedCodeRef = useRef('')   // cache du code salle découvert
 
   useEffect(() => {
     if (disabled) return
     let cancelled = false
 
+    const isTvMode = typeof window !== 'undefined'
+      && new URLSearchParams(window.location.search).get('mode') === 'tv'
+
     const poll = async () => {
       try {
-        const sessionCode = resolveRoomStateCode()
+        let sessionCode = resolveRoomStateCode()
+
+        // TV sur appareil séparé sans ?room= → auto-découverte de la salle dynamique
+        if (isTvMode && !isDynamicRoomCode(sessionCode)) {
+          // On réutilise le code découvert précédemment, ou on cherche à nouveau
+          if (resolvedCodeRef.current && isDynamicRoomCode(resolvedCodeRef.current)) {
+            sessionCode = resolvedCodeRef.current
+          } else {
+            sessionCode = await resolveTvSessionCode(sessionCode)
+            if (isDynamicRoomCode(sessionCode)) resolvedCodeRef.current = sessionCode
+          }
+        }
+
         const [rows, shared] = await Promise.all([
           sbSelect('sessions', 'code=eq.' + encodeURIComponent(sessionCode)),
           getSharedState(sessionCode),
@@ -47,14 +75,17 @@ export function useModuleSync({ disabled = false } = {}) {
         const activeModule = session?.active_module ?? null
         const modulePage   = session?.module_page   ?? 0
 
+        // Si plus aucune session active sur ce code, effacer le cache pour re-chercher
+        if (isTvMode && !isDynamicRoomCode(resolveRoomStateCode())) {
+          const stillActive = session?.status === 'active' || session?.status === 'waiting'
+          if (!stillActive) resolvedCodeRef.current = ''
+        }
+
         const newSnap = `${sessionCode}:${activeModule}:${modulePage}:${JSON.stringify(shared)}`
 
         if (newSnap !== snapshotRef.current) {
           snapshotRef.current = newSnap
-          stableRef.current = 0
           setState({ activeModule, modulePage, sharedState: shared, loading: false, sessionCode })
-        } else {
-          stableRef.current += 1
         }
 
         const next = (!activeModule && !shared?.faq_journee) ? IDLE_MS : BASE_MS

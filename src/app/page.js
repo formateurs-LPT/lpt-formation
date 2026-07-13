@@ -244,6 +244,7 @@ export default function Page() {
     setIsTrainer(false)
     localStorage.setItem('participant_name', canonical)
     localStorage.setItem('participant_prenom', prenomDisplay)
+    localStorage.setItem('participant_joined_at', Date.now().toString())
     setParticipantSessionCode(sessionCode)
     try {
       await ensureSession(sessionCode)

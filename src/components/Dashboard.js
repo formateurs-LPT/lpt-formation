@@ -5,6 +5,7 @@ import { sbSelect, sbDelete, getSharedState, insertSessionHistory, parseSessionH
 import PlanningWidget from './PlanningWidget'
 import ShortcutsWidget from './ShortcutsWidget'
 import OnboardingView from './OnboardingView'
+import OnboardingViewBelgique from './OnboardingViewBelgique'
 import EntreesView from './EntreesView'
 import RoomOpenModal from './RoomOpenModal'
 import { TRAINER_AVATARS, TRAINER_CANONICAL } from '@/lib/constants'
@@ -592,7 +593,7 @@ function AppUpdatesWidget() {
 }
 
 export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onOpenTv, onToast, onOnlineCount, onOpenPlanning }) {
-  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | planning
+  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning
   const [entreeCount, setEntreeCount] = useState(null)
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
@@ -707,6 +708,19 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     return (
       <div id="dashboard">
         <OnboardingView
+          pName={pName}
+          onBack={() => { setActiveView('home'); loadTileStats(); refreshActiveRoom() }}
+          onLaunchFormation={onLaunchSession}
+          onLaunchModule={onLaunchModule}
+        />
+      </div>
+    )
+  }
+
+  if (activeView === 'onboarding-belgique') {
+    return (
+      <div id="dashboard">
+        <OnboardingViewBelgique
           pName={pName}
           onBack={() => { setActiveView('home'); loadTileStats(); refreshActiveRoom() }}
           onLaunchFormation={onLaunchSession}
@@ -914,12 +928,24 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           </div>
         )}
 
-        {/* OB Banner */}
+        {/* OB Banner — France */}
         <div className="ob-banner" onClick={() => setActiveView('onboarding')}>
           <div className="ob-banner-icon">🚀</div>
           <div className="ob-banner-body">
             <div className="ob-banner-label">Formation · Suivi collaborateurs</div>
             <div className="ob-banner-title">Onboarding LPT</div>
+            <div className="ob-banner-sub">Gérez la présence et le suivi de vos collaborateurs</div>
+            <div className="ob-day-badge">Jour {obDay}</div>
+          </div>
+          <div className="ob-banner-arrow">→</div>
+        </div>
+
+        {/* OB Banner — Belgique */}
+        <div className="ob-banner" onClick={() => setActiveView('onboarding-belgique')} style={{ background: 'linear-gradient(135deg, #1a1200 0%, #3a2800 50%, #5a3e00 100%)' }}>
+          <div className="ob-banner-icon">🇧🇪</div>
+          <div className="ob-banner-body">
+            <div className="ob-banner-label">Formation · Suivi collaborateurs</div>
+            <div className="ob-banner-title">Onboarding LPT Belgique</div>
             <div className="ob-banner-sub">Gérez la présence et le suivi de vos collaborateurs</div>
             <div className="ob-day-badge">Jour {obDay}</div>
           </div>

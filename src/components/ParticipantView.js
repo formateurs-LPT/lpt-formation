@@ -421,9 +421,10 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   const [planningDay, setPlanningDay] = useState(null)
   const [sharedState, setSharedState_] = useState(null)
 
-  // Polling rapide : sans module, zone-interactif, ou phase quiz active (réponses en temps réel)
-  const isInQuizPhase = !!activeModule && modulePage >= 100 && modulePage < 200
-  const pollMs = (!activeModule || activeModule === 'zone-interactif' || isInQuizPhase) ? 1500 : 5000
+  // Polling rapide : sans module, zone-interactif, lobby (-1), quiz (100-199) ou résultats (200)
+  // → lent (5s) seulement pour les pages statiques d'un module (0-99 hors quiz)
+  const isInteractive = !activeModule || activeModule === 'zone-interactif' || modulePage === -1 || modulePage >= 100
+  const pollMs = isInteractive ? 1500 : 5000
 
   useEffect(() => {
     const poll = async () => {
@@ -459,9 +460,11 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
         setPlanningDay(state?.planning_day || null)
         setSharedState_(state || null)
         // Force-disconnect déclenché par le formateur
+        // Le signal est ignoré si le formé s'est reconnecté après le kick (joined_at > kickTimestamp)
         const curPName = pNameRef.current
-        const kickVal = state?.forced_disconnects?.[curPName]
-        const kicked = kickVal === true || (kickVal && Date.now() - Number(kickVal) < 30 * 60 * 1000)
+        const kickTimestamp = Number(state?.forced_disconnects?.[curPName]) || 0
+        const joinedAt = Number(localStorage.getItem('participant_joined_at')) || 0
+        const kicked = kickTimestamp > joinedAt && Date.now() - kickTimestamp < 30 * 60 * 1000
         if (curPName && kicked) {
           onDisconnect?.()
           return

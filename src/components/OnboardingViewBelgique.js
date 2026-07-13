@@ -14,7 +14,7 @@ import { getLegacySessionCode, isDynamicRoomCode } from '@/lib/sessionCode'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import ConfirmModal from '@/components/ConfirmModal'
 
-const JOURNEES = (onLaunchModule) => [
+const JOURNEES_BELGIQUE = (onLaunchModule) => [
   {
     id: 'journee1',
     numero: 1,
@@ -96,7 +96,7 @@ const JOURNEES = (onLaunchModule) => [
 ]
 
 // ── Step 1 : Choix du groupe ──────────────────────────────────────
-function GroupSelect({ onSelect, onBack }) {
+function GroupSelectBelgique({ onSelect, onBack }) {
   const [counts, setCounts] = useState({})
   const categories = listFormationCategories()
 
@@ -120,10 +120,10 @@ function GroupSelect({ onSelect, onBack }) {
       <div className="dash-hero" style={{ marginBottom: 24 }}>
         <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
           <div className="dash-hero-label">Formation · Suivi collaborateurs</div>
-          <h2 className="dash-hero-title">ONBOARDING</h2>
+          <h2 className="dash-hero-title">ONBOARDING BELGIQUE</h2>
           <p className="dash-hero-date">Choisissez le groupe que vous accompagnez aujourd'hui</p>
         </div>
-        <div style={{ width: 56, height: 56, background: 'rgba(255,255,255,.08)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, position: 'relative', zIndex: 1 }}>🚀</div>
+        <div style={{ width: 56, height: 56, background: 'rgba(255,255,255,.08)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, position: 'relative', zIndex: 1 }}>🇧🇪</div>
       </div>
 
       <div className="ob-group-grid">
@@ -146,7 +146,7 @@ function GroupSelect({ onSelect, onBack }) {
 }
 
 // ── Step 2 : Liste présence ───────────────────────────────────────
-function CollabList({ group, onNext, onBack }) {
+function CollabListBelgique({ group, onNext, onBack }) {
   const [collabs, setCollabs] = useState([])
   const [checks, setChecks] = useState({})
 
@@ -231,7 +231,7 @@ function CollabList({ group, onNext, onBack }) {
       <button className="detail-back" onClick={onBack}>← Retour</button>
       <div className="dash-hero" style={{ marginBottom: 24 }}>
         <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-          <div className="dash-hero-label">ONBOARDING · Suivi présence</div>
+          <div className="dash-hero-label">ONBOARDING BELGIQUE · Suivi présence</div>
           <h2 className="dash-hero-title">{title}</h2>
           <p className="dash-hero-date">Cochez la présence, la signature du contrat et laissez un commentaire par collaborateur</p>
         </div>
@@ -282,7 +282,7 @@ function CollabList({ group, onNext, onBack }) {
 }
 
 // ── Step 3a : Modules d'une journée ──────────────────────────────
-function JourneeModules({ journee, onBack, onLaunchModule }) {
+function JourneeModulesBelgique({ journee, onBack, onLaunchModule }) {
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
   const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
@@ -291,7 +291,7 @@ function JourneeModules({ journee, onBack, onLaunchModule }) {
       <button className="detail-back" onClick={onBack}>← Retour aux journées</button>
       <div className="dash-hero" style={{ marginBottom: 24 }}>
         <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-          <div className="dash-hero-label">Formation · Lunettes Pour Tous</div>
+          <div className="dash-hero-label">Formation · Lunettes Pour Tous Belgique</div>
           <h2 className="dash-hero-title">{journee.titre}</h2>
           <p className="dash-hero-date">{cap(dateStr)}</p>
         </div>
@@ -337,9 +337,9 @@ function JourneeModules({ journee, onBack, onLaunchModule }) {
 }
 
 // ── Step 3 : Sélection de la journée ─────────────────────────────
-function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, initialJournee = null }) {
+function SessionModulesBelgique({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, initialJournee = null }) {
   const [selectedJournee, setSelectedJournee] = useState(initialJournee)
-  const journees = JOURNEES(onLaunchModule)
+  const journees = JOURNEES_BELGIQUE(onLaunchModule)
   const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
   const [roomCode, setRoomCode] = useState('')
@@ -363,7 +363,6 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
   const isRoomSession = isDynamicRoomCode(roomCode)
 
   const showQrOnTv = async () => {
-    // roomCode peut être vide si l'async n'est pas terminé → fallback localStorage immédiat
     const code = (isDynamicRoomCode(roomCode) ? roomCode : null) || getActiveSessionCode()
     try {
       if (isDynamicRoomCode(code)) {
@@ -394,7 +393,7 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
 
   if (selectedJournee) {
     const journee = journees.find(j => j.id === selectedJournee)
-    return <JourneeModules journee={journee} onBack={() => setSelectedJournee(null)} onLaunchModule={onLaunchModule} />
+    return <JourneeModulesBelgique journee={journee} onBack={() => setSelectedJournee(null)} onLaunchModule={onLaunchModule} />
   }
 
   return (
@@ -402,7 +401,7 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
       <button className="detail-back" onClick={onBack}>← Retour à la liste</button>
       <div className="dash-hero" style={{ marginBottom: 24 }}>
         <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-          <div className="dash-hero-label">Formation · Lunettes Pour Tous</div>
+          <div className="dash-hero-label">Formation · Lunettes Pour Tous Belgique</div>
           <h2 className="dash-hero-title">Modules de formation</h2>
           <p className="dash-hero-date">{cap(dateStr)}</p>
           {isRoomSession && (
@@ -531,7 +530,7 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
 }
 
 // ── Composant principal ───────────────────────────────────────────
-export default function OnboardingView({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, initialStep = 'select', initialJournee = null }) {
+export default function OnboardingViewBelgique({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, initialStep = 'select', initialJournee = null }) {
   const [step, setStep] = useState(initialStep) // select | list | modules
   const [group, setGroup] = useState(null)
 
@@ -540,8 +539,8 @@ export default function OnboardingView({ pName, onBack, onLaunchFormation, onLau
     setStep('list')
   }
 
-  if (step === 'select') return <GroupSelect onSelect={handleSelectGroup} onBack={onBack} />
-  if (step === 'list') return <CollabList group={group} onNext={() => setStep('modules')} onBack={() => setStep('select')} />
-  if (step === 'modules') return <SessionModules pName={pName} onBack={() => setStep('list')} onLaunchFormation={onLaunchFormation} onLaunchModule={onLaunchModule} onEndRoom={onEndRoom} initialJournee={initialJournee} />
+  if (step === 'select') return <GroupSelectBelgique onSelect={handleSelectGroup} onBack={onBack} />
+  if (step === 'list') return <CollabListBelgique group={group} onNext={() => setStep('modules')} onBack={() => setStep('select')} />
+  if (step === 'modules') return <SessionModulesBelgique pName={pName} onBack={() => setStep('list')} onLaunchFormation={onLaunchFormation} onLaunchModule={onLaunchModule} onEndRoom={onEndRoom} initialJournee={initialJournee} />
   return null
 }

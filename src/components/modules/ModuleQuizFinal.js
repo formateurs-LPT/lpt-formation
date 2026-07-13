@@ -347,6 +347,7 @@ export default function ModuleQuizFinal({ pName, onBack }) {
 
   useEffect(() => {
     sbUpdate('sessions', { active_module: MODULE_ID, module_page: -1 }, `code=eq.${getActiveSessionCode()}`)
+    setSharedState({ quiz_final_phase: null })
   }, [])
 
   const handleBack = async () => {
@@ -383,7 +384,7 @@ export default function ModuleQuizFinal({ pName, onBack }) {
   }
 
   const handleTerminateModule = async () => {
-    await setSharedState({ quiz_final_phase: null })
+    await setSharedState({ quiz_final_phase: 'ended' })
     await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     onBack()
   }
