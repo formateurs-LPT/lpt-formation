@@ -72,9 +72,14 @@ function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoo
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, zIndex: 1 }}>
         {hasRoom ? (
           <>
-            <div style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginRight: 4,
-            }}>
+            <div
+              onClick={onOpenRoom}
+              title="Gérer la salle"
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginRight: 4,
+                cursor: 'pointer',
+              }}
+            >
               <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(0,171,233,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>Salle active</span>
               <span style={{ fontSize: 16, fontWeight: 900, color: '#00abe9', fontFamily: 'monospace', letterSpacing: 3, lineHeight: 1.2 }}>{activeRoomCode}</span>
             </div>
@@ -111,7 +116,22 @@ function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoo
               Reprendre →
             </button>
           </>
-        ) : null}
+        ) : (
+          <button
+            onClick={onOpenRoom}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)',
+              borderRadius: 20, padding: '6px 14px',
+              cursor: 'pointer', fontFamily: 'inherit',
+              color: '#00abe9', fontSize: 12, fontWeight: 700, transition: 'all .18s',
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.22)' }}
+            onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.12)' }}
+          >
+            🚪 Créer une salle
+          </button>
+        )}
 
         {onUpdatesClick && (
           <button
@@ -1389,14 +1409,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-label">Idées notées</div>
             <div className="dash-tile-sub">Idées notées durant les formations</div>
           </div>
-          <div className="dash-tile dash-tile-cta" onClick={handleOpenRoomClick}>
-            <div className="dash-tile-cta-icon">🚪</div>
-            <div className="dash-tile-label">Ma salle</div>
-            <div className="dash-tile-sub">
-              {activeRoomCode ? `Code ${activeRoomCode} — reprendre` : 'Créer ou ouvrir ma salle'}
-            </div>
-          </div>
-
           <div className="dash-tile dash-tile-cta" onClick={() => setActiveView('modules')}>
             <div className="dash-tile-cta-icon">▶</div>
             <div className="dash-tile-label">Démarrer une session</div>
