@@ -6,21 +6,21 @@ const SHORTCUTS = [
     url: 'https://app.slack.com/get-started?redir=%2Fgantry%2Fauth%3Fapp%3Dclient%26lc%3D1779297919%26return_to%3D%252Fclient%252FT022Y71C2F9%252FD0A7NJKB615%26teams%3D#/find',
     favicon: 'https://www.google.com/s2/favicons?domain=slack.com&sz=64',
     emoji: '💬',
-    color: '#4A154B',
+    bg: '#fff',
   },
   {
     label: 'Skello',
     url: 'https://app.skello.io/users/sign_in?lang=fr',
     favicon: 'https://www.google.com/s2/favicons?domain=skello.io&sz=64',
     emoji: '📅',
-    color: '#00B899',
+    bg: '#fff',
   },
   {
     label: 'Back-End',
     url: 'https://admin.lpt-network.com/login',
-    favicon: 'https://www.google.com/s2/favicons?domain=admin.lpt-network.com&sz=64',
+    localLogo: '/assets/logo-backend.svg',
     emoji: '⚙️',
-    color: '#0089ba',
+    bg: '#2d2f33',
   },
 ]
 
@@ -48,18 +48,31 @@ export default function ShortcutsWidget() {
           >
             <div style={{
               width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-              background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: s.bg || '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               overflow: 'hidden',
             }}>
-              <img
-                src={s.favicon}
-                alt={s.label}
-                width={24}
-                height={24}
-                style={{ objectFit: 'contain' }}
-                onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block' }}
-              />
-              <span style={{ display: 'none', fontSize: 18 }}>{s.emoji}</span>
+              {s.localLogo ? (
+                <img
+                  src={s.localLogo}
+                  alt={s.label}
+                  width={26}
+                  height={26}
+                  style={{ objectFit: 'contain' }}
+                />
+              ) : (
+                <>
+                  <img
+                    src={s.favicon}
+                    alt={s.label}
+                    width={24}
+                    height={24}
+                    style={{ objectFit: 'contain' }}
+                    onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block' }}
+                  />
+                  <span style={{ display: 'none', fontSize: 18 }}>{s.emoji}</span>
+                </>
+              )}
             </div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{s.label}</div>

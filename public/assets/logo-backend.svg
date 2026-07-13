@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Bras haut -->
+  <polygon points="50,5 61,19 50,24 39,19" fill="white"/>
+  <!-- Bras droit -->
+  <polygon points="95,50 81,61 76,50 81,39" fill="white"/>
+  <!-- Bras bas -->
+  <polygon points="50,95 39,81 50,76 61,81" fill="white"/>
+  <!-- Bras gauche -->
+  <polygon points="5,50 19,39 24,50 19,61" fill="white"/>
+
+  <!-- Bloc NW (haut-gauche) -->
+  <path d="M19,19 L44,19 L44,25 L25,25 L25,44 L19,44 Z" fill="white"/>
+  <!-- Diagonale NW coin intérieur -->
+  <polygon points="44,19 50,24 44,25" fill="white"/>
+  <polygon points="19,44 24,50 25,44" fill="white"/>
+
+  <!-- Bloc NE (haut-droit) -->
+  <path d="M81,19 L56,19 L56,25 L75,25 L75,44 L81,44 Z" fill="white"/>
+  <!-- Diagonale NE coin intérieur -->
+  <polygon points="56,19 50,24 56,25" fill="white"/>
+  <polygon points="81,44 76,50 75,44" fill="white"/>
+
+  <!-- Bloc SE (bas-droit) -->
+  <path d="M81,81 L56,81 L56,75 L75,75 L75,56 L81,56 Z" fill="white"/>
+  <!-- Diagonale SE coin intérieur -->
+  <polygon points="56,81 50,76 56,75" fill="white"/>
+  <polygon points="81,56 76,50 75,56" fill="white"/>
+
+  <!-- Bloc SW (bas-gauche) -->
+  <path d="M19,81 L44,81 L44,75 L25,75 L25,56 L19,56 Z" fill="white"/>
+  <!-- Diagonale SW coin intérieur -->
+  <polygon points="44,81 50,76 44,75" fill="white"/>
+  <polygon points="19,56 24,50 25,56" fill="white"/>
+
+  <!-- Barrettes intérieures horizontales et verticales (effet 3D) -->
+  <rect x="25" y="44" width="19" height="6" fill="white" opacity="0.6"/>
+  <rect x="25" y="50" width="19" height="6" fill="white" opacity="0.4"/>
+  <rect x="56" y="44" width="19" height="6" fill="white" opacity="0.6"/>
+  <rect x="56" y="50" width="19" height="6" fill="white" opacity="0.4"/>
+  <rect x="44" y="25" width="6" height="19" fill="white" opacity="0.6"/>
+  <rect x="50" y="25" width="6" height="19" fill="white" opacity="0.4"/>
+  <rect x="44" y="56" width="6" height="19" fill="white" opacity="0.6"/>
+  <rect x="50" y="56" width="6" height="19" fill="white" opacity="0.4"/>
+</svg>
