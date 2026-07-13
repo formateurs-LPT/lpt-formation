@@ -2832,6 +2832,8 @@ function TVPartenaOffre({ partenaRevealed }) {
 }
 
 // ── TV Mutuelles Reveal ───────────────────────────────────────────
+const MUTUELLE_ICONS = { mc: '🛡️', partena: '🤝', neutre: '⚖️', solidaris: '🏥', liberale: '🏛️', caami: '🏢' }
+
 function TVMutuellesReveal({ mutuellesRevealed }) {
   const revealed = mutuellesRevealed || []
   const avecOptique = MUTUELLES_BELGIQUE.filter(m => m.complementaire)
@@ -2840,95 +2842,175 @@ function TVMutuellesReveal({ mutuellesRevealed }) {
   return (
     <div style={{
       minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)',
-      display: 'flex', flexDirection: 'column', padding: '40px 56px',
+      display: 'flex', flexDirection: 'column', padding: '32px 52px', gap: 20,
     }}>
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 10,
-          background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)',
-          borderRadius: 20, padding: '5px 18px', marginBottom: 14,
-        }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1.5 }}>
-            Mutuelles et INAMI · Belgique
-          </span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center',
+            background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)',
+            borderRadius: 20, padding: '4px 16px', marginBottom: 10,
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              Mutuelles et INAMI · Belgique
+            </span>
+          </div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>
+            Les organismes assureurs reconnus
+          </div>
         </div>
-        <div style={{ fontSize: 34, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>
-          Les organismes assureurs reconnus
+        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#4ade80' }}>{avecOptique.length}</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>avec optique</div>
+          </div>
+          <div style={{ width: 1, height: 36, background: 'rgba(255,255,255,0.1)' }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#f87171' }}>{sansOptique.length}</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>sans optique</div>
+          </div>
         </div>
       </div>
 
-      {/* Cartes individuelles — avec optique */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 14 }}>
+      {/* Cartes avec optique — 3 colonnes, pleine hauteur */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, flex: 1 }}>
         {avecOptique.map((m) => {
           const isRevealed = revealed.includes(m.id)
           return (
             <div key={m.id} style={{
-              background: isRevealed ? 'rgba(201,162,39,0.08)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${isRevealed ? 'rgba(201,162,39,0.45)' : 'rgba(255,255,255,0.08)'}`,
-              borderLeft: `3px solid ${isRevealed ? '#c9a227' : 'rgba(255,255,255,0.12)'}`,
-              borderRadius: 14, padding: '16px 20px',
+              background: isRevealed
+                ? 'linear-gradient(160deg, rgba(201,162,39,0.12) 0%, rgba(201,162,39,0.04) 100%)'
+                : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${isRevealed ? 'rgba(201,162,39,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: 18, overflow: 'hidden',
+              display: 'flex', flexDirection: 'column',
               transition: 'all .4s ease',
-              display: 'flex', flexDirection: 'column', gap: 10,
             }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: isRevealed ? '#fff' : 'rgba(255,255,255,0.75)', lineHeight: 1.3 }}>
-                  {m.nom}
-                </div>
-                <span style={{
-                  fontSize: 10, fontWeight: 700, borderRadius: 20, padding: '2px 9px', flexShrink: 0,
-                  background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.35)', color: '#4ade80',
-                }}>✓ Optique</span>
-              </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>{m.type}</div>
+              {/* Barre top colorée */}
+              <div style={{
+                height: 5,
+                background: isRevealed
+                  ? 'linear-gradient(90deg, #a07818, #c9a227)'
+                  : 'rgba(255,255,255,0.07)',
+              }} />
 
-              {isRevealed && m.montant && (
+              <div style={{ padding: '22px 24px', flex: 1, display: 'flex', flexDirection: 'column', gap: 18 }}>
+                {/* Icône + nom */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div style={{
+                    width: 56, height: 56, borderRadius: 16, flexShrink: 0,
+                    background: isRevealed ? 'rgba(201,162,39,0.18)' : 'rgba(255,255,255,0.07)',
+                    border: `1px solid ${isRevealed ? 'rgba(201,162,39,0.35)' : 'rgba(255,255,255,0.1)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28,
+                  }}>
+                    {MUTUELLE_ICONS[m.id]}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.25, marginBottom: 4 }}>
+                      {m.nom}
+                    </div>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                      {m.type}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Badge optique */}
                 <div style={{
-                  display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 14px',
-                  background: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: '12px 14px', marginTop: 4,
+                  display: 'inline-flex', alignItems: 'center', gap: 7,
+                  background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)',
+                  borderRadius: 10, padding: '8px 14px', alignSelf: 'flex-start',
                 }}>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, alignSelf: 'center' }}>Montant</span>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: '#c9a227' }}>{m.montant}</span>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8 }}>Fréquence</span>
-                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{m.frequence}</span>
-                  {m.particularites && m.particularites !== '/' && (
-                    <>
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8 }}>Particularités</span>
-                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>{m.particularites}</span>
-                    </>
-                  )}
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 6px #4ade80' }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>Assurance complémentaire optique</span>
                 </div>
-              )}
 
-              {!isRevealed && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', animation: 'waitingPulse 2s ease-in-out infinite' }} />
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>En attente de révélation…</span>
-                </div>
-              )}
+                {/* Séparateur */}
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.07)' }} />
+
+                {/* Zone détails / attente */}
+                {isRevealed && m.montant ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+                    {/* Montant mis en valeur */}
+                    <div style={{
+                      background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.3)',
+                      borderRadius: 12, padding: '14px 18px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 0.8 }}>Montant</span>
+                      <span style={{ fontSize: 26, fontWeight: 900, color: '#c9a227', letterSpacing: -0.5 }}>{m.montant}</span>
+                    </div>
+                    {/* Fréquence */}
+                    <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: '12px 14px' }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Fréquence</div>
+                      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.45 }}>{m.frequence}</div>
+                    </div>
+                    {/* Particularités */}
+                    {m.particularites && m.particularites !== '/' && (
+                      <div style={{ background: 'rgba(0,0,0,0.15)', borderRadius: 10, padding: '12px 14px', flex: 1 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Particularités</div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.55 }}>{m.particularites}</div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: '20px 0' }}>
+                    <div style={{
+                      width: 48, height: 48, borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 22,
+                    }}>🔒</div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic', marginBottom: 8 }}>
+                        En attente de révélation
+                      </div>
+                      <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
+                        {[0,1,2].map(i => (
+                          <div key={i} style={{
+                            width: 5, height: 5, borderRadius: '50%',
+                            background: 'rgba(255,255,255,0.15)',
+                            animation: `waitingPulse 1.4s ease-in-out ${i * 0.2}s infinite`,
+                          }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )
         })}
       </div>
 
-      {/* Carte groupée — sans optique */}
+      {/* Section sans optique — 3 mini-cartes côte à côte */}
       <div style={{
-        background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
-        borderLeft: '3px solid rgba(239,68,68,0.5)',
-        borderRadius: 14, padding: '18px 24px',
-        display: 'flex', alignItems: 'center', gap: 20,
+        background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.18)',
+        borderRadius: 14, padding: '16px 20px',
       }}>
-        <span style={{
-          fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '3px 12px', flexShrink: 0,
-          background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171',
-        }}>✗ Pas de complémentaire optique</span>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#f87171', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 12 }}>
+          ✗ Sans assurance complémentaire optique
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
           {sansOptique.map(m => (
-            <span key={m.id} style={{
-              fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.55)',
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 8, padding: '5px 14px',
-            }}>{m.nom}</span>
+            <div key={m.id} style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(239,68,68,0.15)',
+              borderRadius: 10, padding: '12px 16px',
+            }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+              }}>
+                {MUTUELLE_ICONS[m.id]}
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)', lineHeight: 1.3 }}>{m.nom}</div>
+                <div style={{ fontSize: 10, color: 'rgba(239,68,68,0.6)', marginTop: 2 }}>{m.type}</div>
+              </div>
+            </div>
           ))}
         </div>
       </div>
