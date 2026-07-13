@@ -560,7 +560,7 @@ export const MODULE_DATA = {
   ], quiz: [], label: 'Remboursement optique en France', sub: 'SS · Mutuelle · 100% Santé · Conditions' },
   'parcours-rembourses': { pages: [
     { id: 'parcours-offres', type: 'parcours-rembourses-offres', titre: 'Les offres remboursées' },
-    { id: 'parcours-tiers-payant', type: 'pause', icon: '💳', titre: 'C\'est quoi le tiers payant pour vous ?', sousTitre: 'Partagez ce que vous savez déjà' },
+    { id: 'parcours-tiers-payant', type: 'pause', icon: '🏥', titre: 'C\'est quoi le tiers payant pour vous ?', sousTitre: 'Partagez ce que vous savez déjà' },
   ], quiz: [], label: 'Les parcours remboursés', sub: 'Le Suprême · Le 1=1 · 100% Santé' },
 }
 
