@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbSelect, SESSION_CODE } from '@/lib/supabase'
+import { sbSelect, SESSION_CODE, fetchOpenAnswers } from '@/lib/supabase'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
 
@@ -113,8 +113,288 @@ function VerreAnime({ color }) {
   )
 }
 
+// ── TV Quiz — helpers ────────────────────────────────────────────────
+function TVQuizHeader({ qIdx, total, moduleLabel }) {
+  return (
+    <>
+      <div style={{ position: 'absolute', top: 24, left: 32, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+        <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Quiz · {moduleLabel}</span>
+      </div>
+      <div style={{
+        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '8px 28px', marginBottom: 36,
+        fontSize: 14, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2,
+      }}>Question {qIdx + 1} / {total}</div>
+    </>
+  )
+}
+
+function TVQuizFooter() {
+  return (
+    <div style={{
+      position: 'absolute', bottom: 32,
+      display: 'flex', alignItems: 'center', gap: 10,
+      background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.2)',
+      borderRadius: 20, padding: '10px 24px',
+    }}>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'waitingPulse 1.4s ease-in-out infinite' }} />
+      <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>Répondez depuis votre téléphone</span>
+    </div>
+  )
+}
+
+function TVOrdonnanceDisplay({ ordonnance }) {
+  const { od, og } = ordonnance
+  const hasCyl = od.cyl || og.cyl
+  const hasAdd = od.add || og.add
+  const cellStyle = { padding: '8px 16px', textAlign: 'center', fontSize: 22, fontWeight: 700, color: '#fff' }
+  const headerStyle = { padding: '6px 16px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1 }
+  const labelStyle = { padding: '8px 20px', textAlign: 'right', fontSize: 16, fontWeight: 800, color: '#a78bfa' }
+  return (
+    <div style={{
+      background: 'rgba(124,58,237,0.08)', border: '2px solid rgba(124,58,237,0.3)',
+      borderRadius: 20, padding: '16px 0', marginBottom: 36, alignSelf: 'stretch', maxWidth: 720,
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', letterSpacing: 2, textTransform: 'uppercase', textAlign: 'center', marginBottom: 12 }}>ORDONNANCE</div>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr>
+            <th style={{ width: 80 }}></th>
+            <th style={headerStyle}>Sphère</th>
+            {hasCyl && <th style={headerStyle}>Cylindre</th>}
+            {hasCyl && <th style={headerStyle}>Axe</th>}
+            {hasAdd && <th style={headerStyle}>Addition</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {[{ label: 'OD', data: od }, { label: 'OG', data: og }].map(({ label, data }) => (
+            <tr key={label} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <td style={labelStyle}>{label}</td>
+              <td style={cellStyle}>{data.sph || '—'}</td>
+              {hasCyl && <td style={cellStyle}>{data.cyl || 'Plan'}</td>}
+              {hasCyl && <td style={cellStyle}>{data.axe || '—'}</td>}
+              {hasAdd && <td style={cellStyle}>{data.add || '—'}</td>}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// ── TV texte libre ──────────────────────────────────────────────────
+function TVQuizTextOpen({ question, qIdx, total, moduleLabel, sessionCode }) {
+  const [answers, setAnswers] = useState([])
+  useEffect(() => {
+    if (!sessionCode) return
+    const poll = async () => {
+      const rows = await fetchOpenAnswers(sessionCode, `quiz-j1:${qIdx}`)
+      setAnswers(rows || [])
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [sessionCode, qIdx])
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '60px 80px', position: 'relative',
+    }}>
+      <TVQuizHeader qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+      <h1 style={{ fontSize: 52, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 40, maxWidth: 1000 }}>
+        {question.question}
+      </h1>
+      <div style={{
+        background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.2)',
+        borderRadius: 16, padding: '14px 32px', marginBottom: answers.length ? 32 : 0,
+        fontSize: 18, color: 'rgba(255,255,255,0.6)', fontWeight: 500,
+      }}>
+        ✍️ Saisissez votre réponse depuis votre téléphone
+      </div>
+      {answers.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, maxWidth: 1000, justifyContent: 'center' }}>
+          {answers.slice(0, 10).map(a => (
+            <div key={a.participant_name} style={{
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 12, padding: '10px 20px',
+              fontSize: 16, color: 'rgba(255,255,255,0.8)',
+            }}>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 2 }}>{a.participant_name}</span>
+              {a.answer}
+            </div>
+          ))}
+        </div>
+      )}
+      <TVQuizFooter />
+    </div>
+  )
+}
+
+// ── TV remplir ordonnance ────────────────────────────────────────────
+function TVQuizOrdonnanceFill({ question, qIdx, total, moduleLabel }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '60px 80px', position: 'relative',
+    }}>
+      <TVQuizHeader qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+      <h1 style={{ fontSize: 46, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 40, maxWidth: 900 }}>
+        {question.question}
+      </h1>
+      <TVOrdonnanceDisplay ordonnance={question.ordonnance} />
+      <div style={{
+        background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.2)',
+        borderRadius: 16, padding: '12px 28px',
+        fontSize: 16, color: 'rgba(255,255,255,0.6)', fontWeight: 500,
+      }}>
+        📱 Saisissez les valeurs sur votre téléphone
+      </div>
+      <TVQuizFooter />
+    </div>
+  )
+}
+
+// ── TV QCM avec ordonnance ───────────────────────────────────────────
+function TVQuizOrdonnanceQCM({ question, qIdx, total, moduleLabel }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '40px 80px', position: 'relative',
+    }}>
+      <TVQuizHeader qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+      <h1 style={{ fontSize: 38, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 28, maxWidth: 900 }}>
+        {question.question}
+      </h1>
+      <TVOrdonnanceDisplay ordonnance={question.ordonnance} />
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: question.options.length === 2 ? '1fr 1fr' : 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: 18, width: '100%', maxWidth: 900,
+      }}>
+        {question.options.map((opt, i) => (
+          <div key={i} style={{
+            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 20, padding: '20px 24px',
+            display: 'flex', alignItems: 'center', gap: 16,
+          }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
+              background: OPTION_COLORS[i],
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 20, fontWeight: 800, color: '#fff',
+            }}>{'ABCD'[i]}</div>
+            <span style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>{opt}</span>
+          </div>
+        ))}
+      </div>
+      <TVQuizFooter />
+    </div>
+  )
+}
+
+// ── TV sélecteur puissances ──────────────────────────────────────────
+function TVQuizPowerSel({ question, qIdx, total, moduleLabel }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '60px 80px', position: 'relative',
+    }}>
+      <TVQuizHeader qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+      <h1 style={{ fontSize: 48, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 48, maxWidth: 900 }}>
+        {question.question}
+      </h1>
+      <div style={{ display: 'flex', gap: 40, marginBottom: 40 }}>
+        {[{ label: 'Positif max', color: '#4ade80' }, { label: 'Négatif max', color: '#60a5fa' }].map(({ label, color }) => (
+          <div key={label} style={{
+            background: 'rgba(255,255,255,0.06)', border: `2px solid ${color}40`,
+            borderRadius: 20, padding: '24px 40px', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>{label}</div>
+            <div style={{
+              width: 120, height: 56, background: 'rgba(255,255,255,0.08)', borderRadius: 12,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, color: 'rgba(255,255,255,0.3)',
+            }}>▾ Sélectionnez</div>
+          </div>
+        ))}
+      </div>
+      <TVQuizFooter />
+    </div>
+  )
+}
+
+// ── TV QCM multi-sélection ───────────────────────────────────────────
+function TVQuizMultiQuestion({ question, qIdx, total, moduleLabel }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '40px 80px', position: 'relative',
+    }}>
+      <TVQuizHeader qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+      <h1 style={{ fontSize: 50, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 16, maxWidth: 1000 }}>
+        {question.question}
+      </h1>
+      {question.instruction && (
+        <div style={{ fontSize: 18, color: '#f59e0b', fontWeight: 600, marginBottom: 40 }}>{question.instruction}</div>
+      )}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gap: 24, width: '100%', maxWidth: 1000,
+      }}>
+        {question.options.map((opt, i) => (
+          <div key={i} style={{
+            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 24, padding: '28px 32px',
+            display: 'flex', alignItems: 'center', gap: 20,
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+              background: OPTION_COLORS[i],
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, fontWeight: 800, color: '#fff',
+            }}>{'ABCD'[i]}</div>
+            <span style={{ fontSize: 26, fontWeight: 700, color: '#fff' }}>{opt}</span>
+          </div>
+        ))}
+      </div>
+      <TVQuizFooter />
+    </div>
+  )
+}
+
 // ── TV Quiz Question ──────────────────────────────────────────────
-function TVQuizQuestion({ question, qIdx, total, moduleLabel }) {
+function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode }) {
+  const type = question.type || 'qcm'
+
+  if (type === 'text-open') {
+    return <TVQuizTextOpen question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} />
+  }
+  if (type === 'ordonnance-fill') {
+    return <TVQuizOrdonnanceFill question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+  }
+  if (type === 'qcm-ordonnance') {
+    return <TVQuizOrdonnanceQCM question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+  }
+  if (type === 'power-selector') {
+    return <TVQuizPowerSel question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+  }
+  if (type === 'qcm-multi') {
+    return <TVQuizMultiQuestion question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+  }
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -5412,6 +5692,7 @@ export default function TVView() {
                   qIdx={modulePage - 100}
                   total={moduleData.quiz.length}
                   moduleLabel={moduleData?.label || ''}
+                  sessionCode={sessionCode}
                 />
         ) : page ? (
           <TVContentPage

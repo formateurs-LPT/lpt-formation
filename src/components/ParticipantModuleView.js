@@ -218,10 +218,438 @@ function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
   )
 }
 
+// ── Réponse résultat partagé ──────────────────────────────────────
+function QuizResultScreen({ isCorrect }) {
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: isCorrect
+        ? 'linear-gradient(160deg, #03112a 0%, #052a14 100%)'
+        : 'linear-gradient(160deg, #03112a 0%, #2a0505 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px', textAlign: 'center',
+    }}>
+      <div style={{ fontSize: 64, marginBottom: 20 }}>{isCorrect ? '✅' : '❌'}</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
+        {isCorrect ? 'Bonne réponse !' : 'Mauvaise réponse'}
+      </div>
+      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>En attente de la prochaine question…</div>
+    </div>
+  )
+}
+
+// ── Quiz texte libre ──────────────────────────────────────────────
+function QuizTextOpen({ pName, q, qIdx, moduleId }) {
+  const [text, setText] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [validated, setValidated] = useState(null) // null | true | false
+
+  useEffect(() => {
+    if (!submitted) return
+    const poll = async () => {
+      const rows = await sbSelect(
+        'quiz_answers',
+        `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${encodeURIComponent(moduleId)}&question_idx=eq.${qIdx}&collaborateur=eq.${encodeURIComponent(pName.trim())}`
+      )
+      if (rows && rows.length > 0) setValidated(rows[0].is_correct)
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [submitted, qIdx, moduleId, pName])
+
+  const handleSubmit = async () => {
+    if (!text.trim() || saving) return
+    setSaving(true)
+    await insertOpenAnswer({
+      sessionCode: getParticipantSessionCode(),
+      pageId: `quiz-j1:${qIdx}`,
+      participantName: pName.trim(),
+      answer: text.trim(),
+    })
+    setSaving(false)
+    setSubmitted(true)
+  }
+
+  if (validated !== null) return <QuizResultScreen isCorrect={validated} />
+
+  if (submitted) {
+    return (
+      <div style={{
+        minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: '40px 24px', textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>✍️</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Réponse envoyée !</div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>En attente de la validation du formateur…</div>
+        <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
+        <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+    }}>
+      <div style={{
+        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
+      }}>Question {qIdx + 1}</div>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 32, textAlign: 'center' }}>
+        Regardez la question sur l&apos;écran<br />et tapez votre réponse
+      </div>
+      <textarea
+        value={text}
+        onChange={e => setText(e.target.value)}
+        placeholder="Votre réponse…"
+        rows={4}
+        style={{
+          width: '100%', maxWidth: 400, padding: '16px', borderRadius: 16,
+          background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+          color: '#fff', fontSize: 16, fontFamily: 'inherit', resize: 'none',
+          outline: 'none', marginBottom: 20,
+        }}
+      />
+      <button onClick={handleSubmit} disabled={!text.trim() || saving} style={{
+        background: text.trim() ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
+        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
+        fontSize: 16, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default',
+        fontFamily: 'inherit', width: '100%', maxWidth: 400,
+      }}>
+        {saving ? 'Envoi…' : '✓ Envoyer'}
+      </button>
+    </div>
+  )
+}
+
+// ── Quiz multi-sélection ──────────────────────────────────────────
+function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
+  const [selected, setSelected] = useState([])
+  const [answered, setAnswered] = useState(false)
+  const [isCorrect, setIsCorrect] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  const toggle = (i) => {
+    if (answered) return
+    setSelected(s => s.includes(i) ? s.filter(x => x !== i) : [...s, i])
+  }
+
+  const handleSubmit = async () => {
+    if (selected.length === 0 || saving || answered) return
+    setSaving(true)
+    const correctArr = [...q.correct].sort()
+    const selectedSorted = [...selected].sort()
+    const ok = JSON.stringify(correctArr) === JSON.stringify(selectedSorted)
+    const answerIdx = selectedSorted[0] ?? 0
+    await saveModuleQuizAnswer({
+      sessionCode: getParticipantSessionCode(),
+      moduleId, questionIdx: qIdx,
+      collaborateur: pName.trim(),
+      answerIdx, isCorrect: ok,
+    })
+    setIsCorrect(ok)
+    setAnswered(true)
+    setSaving(false)
+  }
+
+  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
+
+  return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+    }}>
+      <div style={{
+        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16,
+      }}>Question {qIdx + 1}</div>
+      {q.instruction && (
+        <div style={{ fontSize: 13, color: '#f59e0b', fontWeight: 600, marginBottom: 24, textAlign: 'center' }}>{q.instruction}</div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 400, marginBottom: 24 }}>
+        {q.options.map((opt, i) => {
+          const sel = selected.includes(i)
+          return (
+            <button key={i} onClick={() => toggle(i)} style={{
+              background: sel ? `${OPTION_COLORS[i]}cc` : 'rgba(255,255,255,0.06)',
+              border: `2px solid ${sel ? OPTION_COLORS[i] : 'rgba(255,255,255,0.12)'}`,
+              borderRadius: 16, padding: '18px 20px',
+              display: 'flex', alignItems: 'center', gap: 14,
+              cursor: 'pointer', fontFamily: 'inherit', width: '100%',
+              transition: 'all .15s',
+            }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+                background: sel ? 'rgba(0,0,0,0.25)' : OPTION_COLORS[i],
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 800, color: '#fff',
+              }}>{sel ? '✓' : 'ABCD'[i]}</div>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', textAlign: 'left' }}>{opt}</span>
+            </button>
+          )
+        })}
+      </div>
+      <button onClick={handleSubmit} disabled={selected.length === 0 || saving} style={{
+        background: selected.length > 0 ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
+        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
+        fontSize: 16, fontWeight: 700, cursor: selected.length > 0 ? 'pointer' : 'default',
+        fontFamily: 'inherit', width: '100%', maxWidth: 400,
+      }}>
+        {saving ? 'Envoi…' : '✓ Valider ma sélection'}
+      </button>
+    </div>
+  )
+}
+
+// ── Quiz remplir ordonnance ──────────────────────────────────────
+function genSphOpts() {
+  const opts = []
+  for (let v = -800; v <= 725; v += 25) {
+    if (v === 0) { opts.push('Plan'); continue }
+    opts.push(`${v > 0 ? '+' : ''}${(v / 100).toFixed(2).replace('.', ',')}`)
+  }
+  return opts
+}
+function genCylOpts() {
+  const opts = []
+  for (let v = -400; v <= 400; v += 25) {
+    if (v === 0) { opts.push('Plan'); continue }
+    opts.push(`${v > 0 ? '+' : ''}${(v / 100).toFixed(2).replace('.', ',')}`)
+  }
+  return opts
+}
+function genAxeOpts() {
+  const opts = []
+  for (let v = 5; v <= 180; v += 5) opts.push(`${v}`)
+  return opts
+}
+function genAddOpts() {
+  const opts = []
+  for (let v = 50; v <= 350; v += 25) opts.push(`+${(v / 100).toFixed(2).replace('.', ',')}`)
+  return opts
+}
+const SPH_OPTS = genSphOpts()
+const CYL_OPTS = genCylOpts()
+const AXE_OPTS = genAxeOpts()
+const ADD_OPTS = genAddOpts()
+
+function OrdoSelect({ value, onChange, options, placeholder }) {
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)} style={{
+      flex: 1, padding: '10px 8px', borderRadius: 10,
+      background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.2)',
+      color: value ? '#fff' : 'rgba(255,255,255,0.35)', fontSize: 15, fontWeight: 600,
+      fontFamily: 'inherit', outline: 'none', appearance: 'none', textAlign: 'center',
+    }}>
+      <option value="">{placeholder}</option>
+      {options.map(o => <option key={o} value={o} style={{ background: '#0d1f3c', color: '#fff' }}>{o}</option>)}
+    </select>
+  )
+}
+
+function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
+  const hasCyl = !!(q.ordonnance.od.cyl || q.ordonnance.og.cyl)
+  const hasAdd = !!(q.ordonnance.od.add || q.ordonnance.og.add)
+
+  const [vals, setVals] = useState({
+    od_sph: '', od_cyl: '', od_axe: '', od_add: '',
+    og_sph: '', og_cyl: '', og_axe: '', og_add: '',
+  })
+  const [answered, setAnswered] = useState(false)
+  const [isCorrect, setIsCorrect] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  const set = (k, v) => setVals(prev => ({ ...prev, [k]: v }))
+
+  const allFilled = () => {
+    if (!vals.od_sph || !vals.og_sph) return false
+    if (hasCyl && (!vals.od_cyl || !vals.od_axe || !vals.og_cyl || !vals.og_axe)) return false
+    if (hasAdd && (!vals.od_add || !vals.og_add)) return false
+    return true
+  }
+
+  const checkCorrect = () => {
+    const { od, og } = q.ordonnance
+    const match = (entered, expected) => {
+      if (!expected) return true
+      return entered.trim().replace('.', ',') === expected.trim().replace('.', ',')
+    }
+    return (
+      match(vals.od_sph, od.sph) &&
+      match(vals.og_sph, og.sph) &&
+      (!hasCyl || (match(vals.od_cyl, od.cyl) && match(vals.od_axe, od.axe) && match(vals.og_cyl, og.cyl) && match(vals.og_axe, og.axe))) &&
+      (!hasAdd || (match(vals.od_add, od.add) && match(vals.og_add, og.add)))
+    )
+  }
+
+  const handleSubmit = async () => {
+    if (!allFilled() || saving) return
+    setSaving(true)
+    const ok = checkCorrect()
+    await saveModuleQuizAnswer({
+      sessionCode: getParticipantSessionCode(),
+      moduleId, questionIdx: qIdx,
+      collaborateur: pName.trim(),
+      answerIdx: 0, isCorrect: ok,
+    })
+    setIsCorrect(ok)
+    setAnswered(true)
+    setSaving(false)
+  }
+
+  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
+
+  const rowStyle = { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }
+  const labelStyle = { fontSize: 13, fontWeight: 800, color: '#a78bfa', width: 28, flexShrink: 0 }
+
+  return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+    }}>
+      <div style={{
+        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20,
+      }}>Question {qIdx + 1}</div>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 8, textAlign: 'center' }}>
+        Regardez l&apos;ordonnance sur l&apos;écran
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 24, textAlign: 'center' }}>
+        {q.question}
+      </div>
+
+      {/* Colonnes */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8, width: '100%', maxWidth: 400, paddingLeft: 36 }}>
+        <div style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Sph</div>
+        {hasCyl && <div style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Cyl</div>}
+        {hasCyl && <div style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Axe</div>}
+        {hasAdd && <div style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Add</div>}
+      </div>
+
+      <div style={{ width: '100%', maxWidth: 400 }}>
+        {[{ key: 'od', label: 'OD' }, { key: 'og', label: 'OG' }].map(({ key, label }) => (
+          <div key={key} style={rowStyle}>
+            <div style={labelStyle}>{label}</div>
+            <OrdoSelect value={vals[`${key}_sph`]} onChange={v => set(`${key}_sph`, v)} options={SPH_OPTS} placeholder="—" />
+            {hasCyl && <OrdoSelect value={vals[`${key}_cyl`]} onChange={v => set(`${key}_cyl`, v)} options={CYL_OPTS} placeholder="—" />}
+            {hasCyl && <OrdoSelect value={vals[`${key}_axe`]} onChange={v => set(`${key}_axe`, v)} options={AXE_OPTS} placeholder="—" />}
+            {hasAdd && <OrdoSelect value={vals[`${key}_add`]} onChange={v => set(`${key}_add`, v)} options={ADD_OPTS} placeholder="—" />}
+          </div>
+        ))}
+      </div>
+
+      <button onClick={handleSubmit} disabled={!allFilled() || saving} style={{
+        background: allFilled() ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
+        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
+        fontSize: 16, fontWeight: 700, cursor: allFilled() ? 'pointer' : 'default',
+        fontFamily: 'inherit', width: '100%', maxWidth: 400, marginTop: 16,
+      }}>
+        {saving ? 'Envoi…' : '✓ Valider'}
+      </button>
+    </div>
+  )
+}
+
+// ── Quiz sélecteur de puissances ─────────────────────────────────
+function genPosOpts() {
+  const opts = []
+  for (let v = 25; v <= 725; v += 25) opts.push(`+${(v / 100).toFixed(2).replace('.', ',')}`)
+  return opts
+}
+function genNegOpts() {
+  const opts = []
+  for (let v = 25; v <= 800; v += 25) opts.push(`-${(v / 100).toFixed(2).replace('.', ',')}`)
+  return opts
+}
+const POS_OPTS = genPosOpts()
+const NEG_OPTS = genNegOpts()
+
+function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
+  const [posVal, setPosVal] = useState('')
+  const [negVal, setNegVal] = useState('')
+  const [answered, setAnswered] = useState(false)
+  const [isCorrect, setIsCorrect] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!posVal || !negVal || saving) return
+    setSaving(true)
+    const ok = posVal === q.correctPos && negVal === q.correctNeg
+    await saveModuleQuizAnswer({
+      sessionCode: getParticipantSessionCode(),
+      moduleId, questionIdx: qIdx,
+      collaborateur: pName.trim(),
+      answerIdx: 0, isCorrect: ok,
+    })
+    setIsCorrect(ok)
+    setAnswered(true)
+    setSaving(false)
+  }
+
+  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
+
+  const selectStyle = {
+    flex: 1, padding: '14px 10px', borderRadius: 14,
+    background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.2)',
+    color: '#fff', fontSize: 20, fontWeight: 800,
+    fontFamily: 'inherit', outline: 'none', appearance: 'none', textAlign: 'center',
+  }
+
+  return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+    }}>
+      <div style={{
+        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
+      }}>Question {qIdx + 1}</div>
+      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 32, textAlign: 'center' }}>
+        Regardez la question sur l&apos;écran<br />et choisissez les valeurs
+      </div>
+
+      <div style={{ display: 'flex', gap: 16, width: '100%', maxWidth: 360, marginBottom: 12 }}>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Positif max</div>
+          <select value={posVal} onChange={e => setPosVal(e.target.value)} style={selectStyle}>
+            <option value="">— +</option>
+            {POS_OPTS.map(o => <option key={o} value={o} style={{ background: '#0d1f3c' }}>{o}</option>)}
+          </select>
+        </div>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Négatif max</div>
+          <select value={negVal} onChange={e => setNegVal(e.target.value)} style={selectStyle}>
+            <option value="">— -</option>
+            {NEG_OPTS.map(o => <option key={o} value={o} style={{ background: '#0d1f3c' }}>{o}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <button onClick={handleSubmit} disabled={!posVal || !negVal || saving} style={{
+        background: (posVal && negVal) ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
+        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
+        fontSize: 16, fontWeight: 700, cursor: (posVal && negVal) ? 'pointer' : 'default',
+        fontFamily: 'inherit', width: '100%', maxWidth: 360, marginTop: 16,
+      }}>
+        {saving ? 'Envoi…' : '✓ Valider'}
+      </button>
+    </div>
+  )
+}
+
 // Écran réponse pour UNE question — s'affiche sur le téléphone
 // La question est sur la TV, le participant répond ici
-function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
-  const q = quiz[qIdx]
+// QCM standard (ordonnance sur TV comptent aussi comme qcm-ordonnance)
+function QuizQCMAnswer({ pName, q, qIdx, quiz, moduleId }) {
   const [answered, setAnswered] = useState(false)
   const [chosenIdx, setChosenIdx] = useState(null)
   const [lastIsCorrect, setLastIsCorrect] = useState(null)
@@ -230,76 +658,41 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
 
   const handleAnswer = async (optIdx) => {
     if (answered || saving) return
-    if (!pName?.trim()) {
-      setSaveError(true)
-      return
-    }
+    if (!pName?.trim()) { setSaveError(true); return }
     setSaving(true)
     setSaveError(false)
     const isCorrect = optIdx === q.correct
     try {
       const saved = await saveModuleQuizAnswer({
         sessionCode: getParticipantSessionCode(),
-        moduleId,
-        questionIdx: qIdx,
+        moduleId, questionIdx: qIdx,
         collaborateur: pName.trim(),
-        answerIdx: optIdx,
-        isCorrect,
+        answerIdx: optIdx, isCorrect,
       })
-      if (!saved) {
-        setSaveError(true)
-        setSaving(false)
-        return
-      }
+      if (!saved) { setSaveError(true); setSaving(false); return }
       setLastIsCorrect(isCorrect)
       setAnswered(true)
       setChosenIdx(optIdx)
-    } catch (e) {
-      console.error(e)
-      setSaveError(true)
-    }
+    } catch (e) { console.error(e); setSaveError(true) }
     setSaving(false)
   }
 
-  if (answered) {
-    return (
-      <div style={{
-        minHeight: '100dvh',
-        background: lastIsCorrect
-          ? 'linear-gradient(160deg, #03112a 0%, #052a14 100%)'
-          : 'linear-gradient(160deg, #03112a 0%, #2a0505 100%)',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        padding: '40px 24px', textAlign: 'center',
-      }}>
-        <div style={{ fontSize: 64, marginBottom: 20 }}>{lastIsCorrect ? '✅' : '❌'}</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
-          {lastIsCorrect ? 'Bonne réponse !' : 'Mauvaise réponse'}
-        </div>
-        <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>En attente de la prochaine question…</div>
-      </div>
-    )
-  }
+  if (answered) return <QuizResultScreen isCorrect={lastIsCorrect} />
 
   return (
     <div style={{
-      minHeight: '100dvh',
-      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      padding: '48px 20px 40px',
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
     }}>
-      {/* Badge */}
       <div style={{
         background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
         borderRadius: 20, padding: '6px 20px',
         fontSize: 11, fontWeight: 700, color: '#a78bfa',
         textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
       }}>Question {qIdx + 1} / {quiz.length}</div>
-
       <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 40, textAlign: 'center' }}>
-        Regardez la question sur l'écran<br />et choisissez votre réponse
+        Regardez la question sur l&apos;écran<br />et choisissez votre réponse
       </div>
-
       {saveError && (
         <div style={{
           background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
@@ -309,19 +702,13 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
           Enregistrement impossible. Rechargez la page ou prévenez le formateur.
         </div>
       )}
-
-      {/* Boutons réponse — gros et tactiles */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 400 }}>
         {q.options.map((opt, i) => (
           <button key={i} onClick={() => handleAnswer(i)} style={{
-            background: OPTION_COLORS[i],
-            border: 'none', borderRadius: 18,
-            padding: '22px 24px',
-            display: 'flex', alignItems: 'center', gap: 16,
+            background: OPTION_COLORS[i], border: 'none', borderRadius: 18,
+            padding: '22px 24px', display: 'flex', alignItems: 'center', gap: 16,
             cursor: 'pointer', fontFamily: 'inherit', width: '100%',
             boxShadow: `0 6px 24px ${OPTION_COLORS[i]}55`,
-            transition: 'transform .1s, opacity .1s',
-            active: { transform: 'scale(0.97)' },
           }}>
             <div style={{
               width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
@@ -335,6 +722,16 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
       </div>
     </div>
   )
+}
+
+function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
+  const q = quiz[qIdx]
+  const type = q?.type || 'qcm'
+  if (type === 'text-open') return <QuizTextOpen pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
+  if (type === 'qcm-multi') return <QuizMultiSelect pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
+  if (type === 'ordonnance-fill') return <QuizOrdonnanceFill pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
+  if (type === 'power-selector') return <QuizPowerSelector pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
+  return <QuizQCMAnswer pName={pName} q={q} qIdx={qIdx} quiz={quiz} moduleId={moduleId} />
 }
 
 function PersonalResultsScreen({ pName, quiz, moduleId }) {
