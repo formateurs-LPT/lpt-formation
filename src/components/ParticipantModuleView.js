@@ -4,12 +4,10 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, setSharedState } from '@/lib/supabase'
-import { useParticipantPresence } from '@/lib/useParticipantPresence'
+import { sbUpsert, sbSelect, SESSION_CODE, ensureSession, getSharedState, setSharedState } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName } from '@/lib/participantNames'
-import { mergeRoomSharedField } from '@/lib/roomSharedState'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -42,17 +40,49 @@ const STYLES = `
   }
 `
 
-function SessionEndedScreen() {
+function QuizInterstitialWaitScreen() {
   return (
     <div style={{
       minHeight: '100dvh',
       background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '40px 24px', textAlign: 'center',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center',
     }}>
-      <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-      <h3 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 8 }}>Session terminée</h3>
-      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>Merci pour ta participation !<br />Tu peux fermer cet onglet.</p>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={140} height={52} style={{ objectFit: 'contain', marginBottom: 40 }} />
+      <div style={{ fontSize: 52, marginBottom: 20 }}>🏆</div>
+      <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Classement en cours</div>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>
+        Le podium est affiché sur l&apos;écran.<br />La suite arrive dans un instant…
+      </div>
+      <div style={{ display: 'flex', gap: 6, marginTop: 32 }}>
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: '#fbbf24', opacity: 0.6, animation: `waitDot 1.4s ease-in-out ${i * 0.2}s infinite` }} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function QuizPodiumWaitScreen() {
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={140} height={52} style={{ objectFit: 'contain', marginBottom: 40 }} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/assets/troph%C3%A9-quiz.png" alt="Trophée" style={{ width: 100, height: 100, objectFit: 'contain', marginBottom: 16 }} />
+      <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Podium final en cours</div>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>
+        Les résultats sont présentés sur l&apos;écran.<br />Vos résultats personnels arrivent bientôt…
+      </div>
+      <div style={{ display: 'flex', gap: 6, marginTop: 32 }}>
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: '#fbbf24', opacity: 0.6, animation: `waitDot 1.4s ease-in-out ${i * 0.2}s infinite` }} />
+        ))}
+      </div>
     </div>
   )
 }
@@ -113,118 +143,12 @@ function ParticipantModuleLobby({ moduleLabel, moduleSub }) {
   )
 }
 
-// Classement en temps réel affiché au participant pendant la correction
-function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
-  const [ranking, setRanking] = useState([])
-  const [myScore, setMyScore] = useState(null)
-  const [myRank, setMyRank] = useState(null)
-
-  const refresh = async () => {
-    const rows = await sbSelect(
-      'quiz_answers',
-      `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${moduleId}`
-    )
-    if (!rows) return
-    // Score = nombre de bonnes réponses jusqu'à la question actuelle incluse
-    const scores = {}
-    rows.filter(r => r.question_idx <= qIdx).forEach(r => {
-      if (!scores[r.collaborateur]) scores[r.collaborateur] = 0
-      if (r.is_correct) scores[r.collaborateur]++
-    })
-    const sorted = Object.entries(scores)
-      .map(([name, score]) => ({ name, score }))
-      .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
-    setRanking(sorted)
-    const idx = sorted.findIndex(p => p.name === pName)
-    if (idx !== -1) {
-      setMyScore(sorted[idx].score)
-      setMyRank(idx + 1)
-    }
-  }
-
-  useEffect(() => {
-    refresh()
-    const t = setInterval(refresh, 2500)
-    return () => clearInterval(t)
-  }, [pName, moduleId, qIdx])
-
-  const total = qIdx + 1
-  const MEDALS = ['🥇', '🥈', '🥉']
-
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #020d1f 0%, #071832 50%, #0a2040 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      padding: '40px 24px', color: '#fff',
-    }}>
-      {/* Mon score */}
-      <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        <div style={{ fontSize: 48, marginBottom: 8 }}>
-          {myRank === 1 ? '🥇' : myRank === 2 ? '🥈' : myRank === 3 ? '🥉' : '🏅'}
-        </div>
-        <div style={{
-          background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.35)',
-          borderRadius: 20, padding: '6px 22px', display: 'inline-block',
-          fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 2, textTransform: 'uppercase',
-          marginBottom: 14,
-        }}>Ton classement</div>
-        <div style={{ fontSize: 28, fontWeight: 900, marginBottom: 4 }}>
-          {myRank != null ? `${myRank}${myRank === 1 ? 'er' : 'ème'} sur ${ranking.length}` : '…'}
-        </div>
-        <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.55)' }}>
-          {myScore != null ? `${myScore} bonne${myScore > 1 ? 's' : ''} réponse${myScore > 1 ? 's' : ''} sur ${total} question${total > 1 ? 's' : ''}` : ''}
-        </div>
-      </div>
-
-      {/* Classement complet */}
-      <div style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {ranking.map((p, i) => {
-          const isMe = p.name === pName
-          const pct = total > 0 ? (p.score / total) * 100 : 0
-          return (
-            <div key={p.name} style={{
-              background: isMe ? 'rgba(0,171,233,0.15)' : 'rgba(255,255,255,0.04)',
-              border: `1.5px solid ${isMe ? 'rgba(0,171,233,0.5)' : 'rgba(255,255,255,0.08)'}`,
-              borderRadius: 14, padding: '12px 16px',
-              boxShadow: isMe ? '0 0 20px rgba(0,171,233,0.15)' : 'none',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>
-                    {i < 3 ? MEDALS[i] : `${i + 1}.`}
-                  </span>
-                  <span style={{ fontSize: 15, fontWeight: isMe ? 800 : 600, color: isMe ? '#00abe9' : '#fff' }}>
-                    {isMe ? 'Toi' : p.name}
-                  </span>
-                </div>
-                <span style={{ fontSize: 18, fontWeight: 800, color: isMe ? '#00abe9' : '#fff' }}>
-                  {p.score}<span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: 400, marginLeft: 2 }}>pts</span>
-                </span>
-              </div>
-              <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%', borderRadius: 3,
-                  width: `${pct}%`,
-                  background: isMe ? '#00abe9' : 'rgba(255,255,255,0.25)',
-                  transition: 'width .5s ease',
-                }} />
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 // Écran réponse pour UNE question — s'affiche sur le téléphone
 // La question est sur la TV, le participant répond ici
 function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
   const q = quiz[qIdx]
   const [answered, setAnswered] = useState(false)
   const [chosenIdx, setChosenIdx] = useState(null)
-  const [lastIsCorrect, setLastIsCorrect] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(false)
 
@@ -239,7 +163,7 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
     const isCorrect = optIdx === q.correct
     try {
       const saved = await saveModuleQuizAnswer({
-        sessionCode: getParticipantSessionCode(),
+        sessionCode: SESSION_CODE,
         moduleId,
         questionIdx: qIdx,
         collaborateur: pName.trim(),
@@ -251,7 +175,6 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
         setSaving(false)
         return
       }
-      setLastIsCorrect(isCorrect)
       setAnswered(true)
       setChosenIdx(optIdx)
     } catch (e) {
@@ -265,17 +188,13 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
     return (
       <div style={{
         minHeight: '100dvh',
-        background: lastIsCorrect
-          ? 'linear-gradient(160deg, #03112a 0%, #052a14 100%)'
-          : 'linear-gradient(160deg, #03112a 0%, #2a0505 100%)',
+        background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         padding: '40px 24px', textAlign: 'center',
       }}>
-        <div style={{ fontSize: 64, marginBottom: 20 }}>{lastIsCorrect ? '✅' : '❌'}</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
-          {lastIsCorrect ? 'Bonne réponse !' : 'Mauvaise réponse'}
-        </div>
+        <div style={{ fontSize: 64, marginBottom: 20 }}>✅</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 12 }}>Réponse enregistrée !</div>
         <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>En attente de la prochaine question…</div>
       </div>
     )
@@ -347,7 +266,7 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
   useEffect(() => {
     const fetchAnswers = async () => {
       const name = pName || 'Anonyme'
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${moduleId}&collaborateur=eq.${encodeURIComponent(name)}`)
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${SESSION_CODE}&module_id=eq.${moduleId}&collaborateur=eq.${encodeURIComponent(name)}`)
       const data = rows || []
       setAnswers(data)
       setLoading(false)
@@ -1740,32 +1659,20 @@ function FreinsInputMobile({ page, pName }) {
   const [submitted, setSubmitted]     = useState(false)
   const [submittedText, setSubmittedText] = useState('')
   const [sending, setSending]         = useState(false)
-  const [saveError, setSaveError]     = useState(false)
 
   const handleSend = async () => {
     if (!text.trim() || sending) return
     setSending(true)
-    setSaveError(false)
     try {
-      const x = Math.floor(Math.random() * 65) + 3
-      const y = Math.floor(Math.random() * 38) + 42
-      const ok = await mergeRoomSharedField(
-        getParticipantSessionCode(),
-        'freins_responses',
-        pName,
-        { text: text.trim(), x, y }
-      )
-      if (!ok) {
-        setSaveError(true)
-        return
-      }
+      const x = Math.floor(Math.random() * 65) + 3   // 3 → 68 % (largeur écran)
+      const y = Math.floor(Math.random() * 38) + 42  // 42 → 80 % (sous la question)
+      const state = await getSharedState()
+      const current = state?.freins_responses || {}
+      await setSharedState({ freins_responses: { ...current, [pName]: { text: text.trim(), x, y } } })
       setSubmittedText(text.trim())
       setSubmitted(true)
-    } catch {
-      setSaveError(true)
-    } finally {
-      setSending(false)
-    }
+    } catch { /* ignore */ }
+    setSending(false)
   }
 
   const handleModify = () => {
@@ -1819,14 +1726,6 @@ function FreinsInputMobile({ page, pName }) {
               WebkitAppearance: 'none',
             }}
           />
-          {saveError && (
-            <div style={{
-              background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
-              borderRadius: 12, padding: '12px 16px', fontSize: 14, color: '#fca5a5', textAlign: 'center',
-            }}>
-              Enregistrement impossible. Réessayez ou prévenez le formateur.
-            </div>
-          )}
           <button
             onClick={handleSend}
             disabled={!text.trim() || sending}
@@ -1860,13 +1759,9 @@ function VentesOpticienMobile({ page, pName }) {
     try {
       const x = Math.floor(Math.random() * 65) + 3
       const y = Math.floor(Math.random() * 38) + 42
-      const ok = await mergeRoomSharedField(
-        getParticipantSessionCode(),
-        'ventes_responses',
-        pName,
-        { text: value.trim(), x, y }
-      )
-      if (!ok) return
+      const state = await getSharedState()
+      const current = state?.ventes_responses || {}
+      await setSharedState({ ventes_responses: { ...current, [pName]: { text: value.trim(), x, y } } })
       setSubmittedValue(value.trim())
       setSubmitted(true)
     } catch { /* ignore */ }
@@ -1926,13 +1821,9 @@ function PromesseInputMobile({ page, pName }) {
     try {
       const x = Math.floor(Math.random() * 65) + 3
       const y = Math.floor(Math.random() * 38) + 42
-      const ok = await mergeRoomSharedField(
-        getParticipantSessionCode(),
-        'promesse_responses',
-        pName,
-        { text: text.trim(), x, y }
-      )
-      if (!ok) return
+      const state = await getSharedState()
+      const current = state?.promesse_responses || {}
+      await setSharedState({ promesse_responses: { ...current, [pName]: { text: text.trim(), x, y } } })
       setSubmittedText(text.trim())
       setSubmitted(true)
     } catch { /* ignore */ }
@@ -2023,13 +1914,9 @@ function PrixInputMobile({ page, pName }) {
     try {
       const x = Math.floor(Math.random() * 65) + 3
       const y = Math.floor(Math.random() * 38) + 42
-      const ok = await mergeRoomSharedField(
-        getParticipantSessionCode(),
-        'prix_responses',
-        pName,
-        { text: value.trim(), x, y }
-      )
-      if (!ok) return
+      const state = await getSharedState()
+      const current = state?.prix_responses || {}
+      await setSharedState({ prix_responses: { ...current, [pName]: { text: value.trim(), x, y } } })
       setSubmittedValue(value.trim())
       setSubmitted(true)
     } catch { /* ignore */ }
@@ -2353,12 +2240,9 @@ function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
     if (sent) return
     setSelected(idx)
     setSent(true)
-    await mergeRoomSharedField(
-      getParticipantSessionCode(),
-      'prog_zone_responses',
-      pName,
-      idx
-    )
+    const state = await getSharedState()
+    const current = state?.prog_zone_responses || {}
+    await setSharedState({ prog_zone_responses: { ...current, [pName]: idx } })
   }
 
   const bg = 'linear-gradient(160deg, #03112a 0%, #12013a 100%)'
@@ -2438,13 +2322,9 @@ function RetourTerrainMobile({ page, pName }) {
     if (!text.trim() || sending) return
     setSending(true)
     try {
-      const ok = await mergeRoomSharedField(
-        getParticipantSessionCode(),
-        'prog_retour_responses',
-        pName,
-        { text: text.trim() }
-      )
-      if (!ok) return
+      const state = await getSharedState()
+      const current = state?.prog_retour_responses || {}
+      await setSharedState({ prog_retour_responses: { ...current, [pName]: { text: text.trim() } } })
       setSentText(text.trim())
       setSent(true)
     } catch { /* ignore */ }
@@ -2506,13 +2386,9 @@ function JeuObjectionsMobile({ page, pName, progObjectionIdx, progObjectionRespo
     if (!text.trim() || sending) return
     setSending(true)
     try {
-      const ok = await mergeRoomSharedField(
-        getParticipantSessionCode(),
-        'prog_objection_responses',
-        pName,
-        { text: text.trim() }
-      )
-      if (!ok) return
+      const state = await getSharedState()
+      const current = state?.prog_objection_responses || {}
+      await setSharedState({ prog_objection_responses: { ...current, [pName]: { text: text.trim() } } })
       setSentText(text.trim())
       setSent(true)
     } catch { /* ignore */ }
@@ -2912,7 +2788,7 @@ function RhParticipantGate({ pNameInput, children }) {
       const raw = (pNameInput || '').trim()
       if (!raw) {
         if (!cancelled) {
-          setDenyMessage('Connectez-vous depuis la page d\'accueil avec votre nom et prénom (liste RH).')
+          setDenyMessage('Connectez-vous depuis la page d\'accueil avec votre prénom et nom (liste RH).')
           setStatus('denied')
         }
         return
@@ -2923,37 +2799,12 @@ function RhParticipantGate({ pNameInput, children }) {
           setDenyMessage(
             resolved.reason === 'no_list'
               ? 'Liste RH indisponible. Le formateur doit importer « Entrées de la semaine ».'
-              : resolved.reason === 'need_full_name'
-                ? 'Saisissez nom et prénom (comme sur la ligne bleue « Connexion : … »).'
-                : resolved.reason === 'ambiguous_prenom'
-                  ? 'Plusieurs personnes portent ce prénom — précisez aussi votre nom de famille.'
-                  : 'Nom non reconnu. Vérifiez nom et prénom comme sur la liste RH.'
+              : 'Nom non reconnu. Reprenez le prénom et le nom comme sur la liste RH.'
           )
           setStatus('denied')
         }
         return
       }
-
-      const sessionRows = await sbSelect(
-        'sessions',
-        `code=eq.${encodeURIComponent(getParticipantSessionCode())}&limit=1`
-      )
-      const session = sessionRows?.[0]
-      if (session?.status === 'ended') {
-        if (!cancelled) {
-          setDenyMessage('Cette session est terminée.')
-          setStatus('denied')
-        }
-        return
-      }
-      if (!canParticipantJoinSession(session, resolved.entry)) {
-        if (!cancelled) {
-          setDenyMessage(getCategoryJoinDeniedMessage(session, resolved.entry))
-          setStatus('denied')
-        }
-        return
-      }
-
       const canonical = resolved.canonicalName
       if (typeof window !== 'undefined') {
         localStorage.setItem('participant_name', canonical)
@@ -2961,11 +2812,9 @@ function RhParticipantGate({ pNameInput, children }) {
       try {
         await ensureSession()
         await sbUpsert('participants', {
-          session_code: getParticipantSessionCode(),
+          session_code: SESSION_CODE,
           name: canonical,
           joined_at: new Date().toISOString(),
-          left_at: null,
-          last_seen_at: new Date().toISOString(),
         }, 'session_code,name')
       } catch (e) {
         console.warn('participant upsert (module QR)', e)
@@ -3039,83 +2888,7 @@ function ParticipantPlanningScreen({ planningDay }) {
   )
 }
 
-function DisconnectChip({ pName, onDisconnect }) {
-  const [open, setOpen] = useState(false)
-  const prenom = (pName || '').split(' ').pop()
-
-  const handleDisconnect = () => {
-    localStorage.removeItem('participant_name')
-    localStorage.removeItem('participant_prenom')
-    if (onDisconnect) {
-      onDisconnect()
-    } else {
-      window.location.reload()
-    }
-  }
-
-  return (
-    <div style={{ position: 'fixed', top: 14, right: 14, zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)',
-          borderRadius: 20, padding: '6px 14px',
-          color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600,
-          cursor: 'pointer', fontFamily: 'inherit',
-          backdropFilter: 'blur(8px)',
-          display: 'flex', alignItems: 'center', gap: 6,
-        }}
-      >
-        <span style={{ fontSize: 14 }}>👤</span>
-        {prenom}
-      </button>
-      {open && (
-        <button
-          onClick={handleDisconnect}
-          style={{
-            background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
-            borderRadius: 12, padding: '8px 16px',
-            color: '#f87171', fontSize: 13, fontWeight: 700,
-            cursor: 'pointer', fontFamily: 'inherit',
-            backdropFilter: 'blur(8px)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Se déconnecter
-        </button>
-      )}
-    </div>
-  )
-}
-
-function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp, onDisconnect }) {
-  const sessionCode = getParticipantSessionCode()
-  const [sessionEnded, setSessionEnded] = useState(false)
-
-  useParticipantPresence({
-    sessionCode,
-    name: pName,
-    enabled: !!sessionCode && !!pName && !sessionEnded,
-    onSessionEnded: () => setSessionEnded(true),
-  })
-
-  // Déconnexion automatique après 45 min d'inactivité (page en arrière-plan)
-  useEffect(() => {
-    if (!onDisconnect) return
-    const TIMEOUT_MS = 45 * 60 * 1000
-    let hiddenAt = null
-    const onVisibility = () => {
-      if (document.visibilityState === 'hidden') {
-        hiddenAt = Date.now()
-      } else if (hiddenAt !== null) {
-        if (Date.now() - hiddenAt > TIMEOUT_MS) onDisconnect()
-        hiddenAt = null
-      }
-    }
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => document.removeEventListener('visibilitychange', onVisibility)
-  }, [onDisconnect])
-
+function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp }) {
   // forcedModule = via ParticipantView (polling géré là-bas) → useModuleSync désactivé
   // sans forcedModule = accès direct ?mode=participant → useModuleSync actif
   const sync = useModuleSync({ disabled: forcedModule != null })
@@ -3130,6 +2903,8 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const [progObjectionResponses, setProgObjectionResponses] = useState({})
   const [modelePoint, setModelePoint]             = useState(null)
   const [faqJournee, setFaqJournee]               = useState(null)
+  const [quizInterstitialQ, setQuizInterstitialQ] = useState(null)
+  const [quizFinalPhase, setQuizFinalPhase]       = useState(null)
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
@@ -3143,13 +2918,8 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     setProgObjectionResponses(sharedState.prog_objection_responses || {})
     setModelePoint(sharedState.modele_point ?? null)
     setFaqJournee(sharedState.faq_journee || null)
-    // Force-disconnect déclenché par le formateur
-    const kickVal = sharedState.forced_disconnects?.[pName]
-    const kicked = kickVal === true || (kickVal && Date.now() - Number(kickVal) < 30 * 60 * 1000)
-    if (pName && kicked) {
-      onDisconnect?.()
-      return
-    }
+    setQuizInterstitialQ(sharedState.quiz_interstitial_q ?? null)
+    setQuizFinalPhase(sharedState.quiz_final_phase ?? null)
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
@@ -3161,43 +2931,23 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const isQuiz    = !!moduleData && modulePage >= 100 && modulePage < 200
   const qIdx = modulePage - 100
   const page = (!isQuiz && !isResults && !isLobby && moduleData) ? (pages[modulePage] ?? null) : null
-  const quizPodiumActive    = !!sharedState?.quiz_podium_active
-  const quizShowCorrection  = !!sharedState?.quiz_show_correction
-
-  if (sessionEnded) return <SessionEndedScreen />
 
   return (
     <>
       <style>{STYLES}</style>
-      <DisconnectChip pName={pName} onDisconnect={onDisconnect} />
       {/* Planning prioritaire : écrase tout si le formateur diffuse le planning */}
       {tvScreen === 'planning' && planningDay
         ? <ParticipantPlanningScreen planningDay={planningDay} />
         : isLobby
           ? <ParticipantModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
           : isResults
-            ? <PersonalResultsScreen key="results" pName={pName} quiz={quiz} moduleId={activeModule} />
-            : isQuiz && quizPodiumActive
-              ? (
-                <div style={{
-                  minHeight: '100vh',
-                  background: 'linear-gradient(135deg, #020d1f 0%, #071832 50%, #0a2040 100%)',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  padding: '32px 24px', textAlign: 'center',
-                }}>
-                  <div style={{ fontSize: 72, marginBottom: 16 }}>🏆</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
-                    Classement en cours…
-                  </div>
-                  <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)' }}>
-                    La prochaine question arrive dans quelques secondes
-                  </div>
-                </div>
-              )
-              : isQuiz && quizShowCorrection
-              ? <ParticipantQuizRanking pName={pName} moduleId={activeModule} qIdx={qIdx} />
-              : isQuiz
-              ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
+            ? (quizFinalPhase === 'podium' || quizFinalPhase === 'rate')
+              ? <QuizPodiumWaitScreen />
+              : <PersonalResultsScreen key="results" pName={pName} quiz={quiz} moduleId={activeModule} />
+            : isQuiz
+              ? quizInterstitialQ !== null
+                ? <QuizInterstitialWaitScreen />
+                : <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
               : page
                 ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} />
                 : faqJournee
@@ -3208,7 +2958,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   )
 }
 
-export default function ParticipantModuleView({ forcedModule, forcedPage, pName: pNameProp, sharedState, onDisconnect }) {
+export default function ParticipantModuleView({ forcedModule, forcedPage, pName: pNameProp, sharedState }) {
   // Quand pName est passé explicitement (participant déjà authentifié via la page d'accueil),
   // on bypasse RhParticipantGate — la validation a déjà eu lieu dans handleParticipantJoin.
   if (pNameProp) {
@@ -3218,7 +2968,6 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
         forcedPage={forcedPage}
         pName={pNameProp}
         sharedStateProp={sharedState}
-        onDisconnect={onDisconnect}
       />
     )
   }
@@ -3232,7 +2981,6 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
           forcedModule={forcedModule}
           forcedPage={forcedPage}
           pName={canonicalName}
-          onDisconnect={onDisconnect}
         />
       )}
     </RhParticipantGate>
