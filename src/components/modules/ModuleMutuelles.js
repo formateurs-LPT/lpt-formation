@@ -1,8 +1,9 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode } from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
+import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 
 const MODULE_ID = 'mutuelles-inami'
 const PAGES = MODULE_DATA[MODULE_ID]?.pages || []
@@ -10,11 +11,21 @@ const PAGES = MODULE_DATA[MODULE_ID]?.pages || []
 export default function ModuleMutuelles({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
+  const syncedRef = useRef(false)
+
+  const syncAndWrite = async (data) => {
+    if (!syncedRef.current) {
+      await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName), pName)
+      syncedRef.current = true
+    }
+    sbUpdate('sessions', data, 'code=eq.' + getActiveSessionCode())
+  }
 
   useEffect(() => {
     if (started) {
-      sbUpdate('sessions', { active_module: MODULE_ID, module_page: pageIndex }, 'code=eq.' + getActiveSessionCode())
+      syncAndWrite({ active_module: MODULE_ID, module_page: pageIndex })
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started, pageIndex])
 
   const handleBack = async () => {

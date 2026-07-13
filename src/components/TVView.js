@@ -4271,6 +4271,18 @@ export default function TVView() {
     }
   }
 
+  // Module actif mais inconnu du JS courant → rechargement pour obtenir le dernier bundle
+  if (!loading && activeModule && !moduleData) {
+    if (typeof window !== 'undefined') {
+      const key = `tv_reload_for_${activeModule}`
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1')
+        window.location.reload()
+      }
+    }
+    return null
+  }
+
   // Mini jeu actif — seulement si aucun module n'est en cours
   const mjPhase = sharedState?.minijeu_phase
   if (!loading && !activeModule && mjPhase && mjPhase !== 'idle') {
