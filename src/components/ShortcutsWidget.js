@@ -18,9 +18,9 @@ const SHORTCUTS = [
   {
     label: 'Back-End',
     url: 'https://admin.lpt-network.com/login',
-    localLogo: '/assets/logo-backend.svg',
+    localLogo: '/assets/logo-lpt.png',
     emoji: '⚙️',
-    bg: '#2d2f33',
+    bg: '#03112a',
   },
 ]
 
