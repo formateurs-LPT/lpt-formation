@@ -595,7 +595,7 @@ export const MUTUELLES_BELGIQUE = [
     id: 'liberale',
     nom: 'Mutualité libérale',
     type: 'Mutuelle',
-    complementaire: true,
+    complementaire: false,
     montant: null,
     frequence: null,
     particularites: null,
@@ -608,14 +608,5 @@ export const MUTUELLES_BELGIQUE = [
     montant: 'Aucun',
     frequence: '/',
     particularites: '/',
-  },
-  {
-    id: 'sncb',
-    nom: 'Caisse des soins de santé HR Rail (SNCB)',
-    type: 'Caisse spécifique',
-    complementaire: true,
-    montant: null,
-    frequence: null,
-    particularites: null,
   },
 ]
