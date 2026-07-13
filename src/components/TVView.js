@@ -2832,6 +2832,91 @@ function TVPartenaOffre({ partenaRevealed }) {
 }
 
 // ── TV Remboursement France — Conditions ─────────────────────────
+function TVParcoursOffres() {
+  const BG = '#03112a'
+  const CARD = '#0d1f3c'
+
+  const offres = [
+    {
+      id: 'supreme',
+      icon: '👑',
+      nom: 'Le Suprême',
+      tag: 'Remboursé par la mutuelle',
+      color: '#c9a227',
+      colorBg: 'rgba(201,162,39,0.08)',
+      colorBorder: 'rgba(201,162,39,0.3)',
+      points: [
+        'Large choix de montures et verres premium',
+        'Remboursement selon le contrat mutuelle du client',
+        'Reste à charge selon le niveau de garantie',
+      ],
+    },
+    {
+      id: '1=1',
+      icon: '✅',
+      nom: 'Le 1=1',
+      tag: '100% Santé — Zéro reste à charge',
+      color: '#4ade80',
+      colorBg: 'rgba(74,222,128,0.08)',
+      colorBorder: 'rgba(74,222,128,0.3)',
+      points: [
+        'Sélection de montures au tarif de responsabilité',
+        'Verres avec équipements essentiels inclus',
+        'Pris en charge à 100% par la SS + mutuelle',
+      ],
+    },
+  ]
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: BG,
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '48px 60px', boxSizing: 'border-box',
+    }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+        Les parcours remboursés
+      </div>
+      <h1 style={{ fontSize: 42, fontWeight: 900, color: '#fff', textAlign: 'center', marginBottom: 48, lineHeight: 1.15 }}>
+        Deux offres, <span style={{ color: '#00abe9' }}>deux parcours</span>
+      </h1>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, width: '100%', maxWidth: 1000 }}>
+        {offres.map(o => (
+          <div key={o.id} style={{
+            background: o.colorBg,
+            border: `2px solid ${o.colorBorder}`,
+            borderRadius: 24, padding: '40px 36px',
+            display: 'flex', flexDirection: 'column', gap: 20,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 16,
+                background: 'rgba(255,255,255,0.06)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 28, flexShrink: 0,
+              }}>{o.icon}</div>
+              <div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: o.color, lineHeight: 1.1 }}>{o.nom}</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 4, fontWeight: 500 }}>{o.tag}</div>
+              </div>
+            </div>
+            <div style={{ width: '100%', height: 1, background: `${o.colorBorder}` }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {o.points.map((p, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: o.color, marginTop: 7, flexShrink: 0 }} />
+                  <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.72)', lineHeight: 1.55 }}>{p}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function TVRembFrConditions({ rembfrRevealed }) {
   const revealed = rembfrRevealed || []
   const ordoRevealed = revealed.includes('ordonnance')
@@ -3180,6 +3265,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'inami-info')         return <TVInamiInfo inamiRevealed={inamiRevealed} />
   if (page.type === 'partena-offre')      return <TVPartenaOffre partenaRevealed={partenaRevealed} />
   if (page.type === 'rembfr-conditions')  return <TVRembFrConditions rembfrRevealed={rembfrRevealed} />
+  if (page.type === 'parcours-rembourses-offres') return <TVParcoursOffres />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />
   if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />

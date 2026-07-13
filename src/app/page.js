@@ -29,6 +29,7 @@ import ModuleMiniJeux from '@/components/modules/ModuleMiniJeux'
 import ModuleQuizFinal from '@/components/modules/ModuleQuizFinal'
 import ModuleMutuelles from '@/components/modules/ModuleMutuelles'
 import ModuleRemboursementFrance from '@/components/modules/ModuleRemboursementFrance'
+import ModuleParcoursRembourses from '@/components/modules/ModuleParcoursRembourses'
 import IdeesButton from '@/components/IdeesButton'
 import PlanningPage from '@/components/PlanningPage'
 import OnboardingView from '@/components/OnboardingView'
@@ -517,6 +518,12 @@ export default function Page() {
       )}
       {view === 'module-remboursement-france' && (
         <ModuleRemboursementFrance
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-parcours-rembourses' && (
+        <ModuleParcoursRembourses
           pName={pName}
           onBack={handleBackToModules}
         />

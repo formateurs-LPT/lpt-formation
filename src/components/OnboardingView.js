@@ -97,6 +97,12 @@ const JOURNEES = (onLaunchModule) => [
         sub: 'SS · Mutuelle · 100% Santé · Conditions',
         onClick: () => onLaunchModule('remboursement-france'),
       },
+      {
+        visual: 'emoji', icon: '💳',
+        label: 'Les parcours remboursés',
+        sub: 'Le Suprême · Le 1=1 · 100% Santé',
+        onClick: () => onLaunchModule('parcours-rembourses'),
+      },
     ],
   },
 ]
