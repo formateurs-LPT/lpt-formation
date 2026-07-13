@@ -927,6 +927,53 @@ function IdeesView({ onBack, pName }) {
   )
 }
 
+const FICHES = [
+  { label: 'Fiche pratique', href: '/fiche-pratique', icon: '📄', color: '#c9a227', sub: 'Synthèse de la formation' },
+  { label: 'Fiche accès LPT', href: '/fiche-acces', icon: '🔑', color: '#0089ba', sub: 'Gmail · Slack · LPTBot' },
+  { label: 'Fiche récap', href: '/fiche-recap.pdf', icon: '📋', color: '#4ade80', sub: 'Document récapitulatif' },
+]
+
+function FichesAnnexesWidget() {
+  return (
+    <div className="dash-tile" style={{ cursor: 'default' }}>
+      <div className="dash-tile-top">
+        <div className="dash-tile-icon">📎</div>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,.4)', letterSpacing: '.4px' }}>Fiches annexes</span>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+        {FICHES.map(f => (
+          <button
+            key={f.label}
+            onClick={() => window.open(f.href, '_blank', 'noopener,noreferrer')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.07)',
+              borderRadius: 10, padding: '9px 12px', cursor: 'pointer',
+              transition: 'all .18s', width: '100%', textAlign: 'left',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,.10)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,.15)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,.07)' }}
+          >
+            <div style={{
+              width: 32, height: 32, borderRadius: 7, flexShrink: 0,
+              background: `rgba(${f.color === '#c9a227' ? '201,162,39' : f.color === '#0089ba' ? '0,137,186' : '74,222,128'},0.15)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+            }}>
+              {f.icon}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.label}</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', marginTop: 1 }}>{f.sub}</div>
+            </div>
+            <span style={{ fontSize: 11, color: f.color, flexShrink: 0 }}>↗</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onOpenTv, onToast, onOnlineCount, onOpenPlanning }) {
   const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning
   const [entreeCount, setEntreeCount] = useState(null)
@@ -1326,57 +1373,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           <div style={{ fontSize: 13, fontWeight: 600, color: '#00abe9' }}>Voir →</div>
         </div>
 
-        {/* Fiche pratique */}
-        <div
-          onClick={() => window.open('/fiche-pratique', '_blank')}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#fff', border: '1px solid var(--border)',
-            borderLeft: '4px solid #c9a227',
-            borderRadius: 'var(--r)', padding: '18px 24px',
-            cursor: 'pointer', marginBottom: 16, transition: 'all .2s',
-          }}
-          onMouseOver={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(201,162,39,.12)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-          onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(201,162,39,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>
-              📄
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>Formateur uniquement</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Fiche pratique</div>
-              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 1 }}>Synthèse de la formation — exportable en PDF</div>
-            </div>
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#c9a227' }}>Ouvrir ↗</div>
-        </div>
-
-        {/* Fiche accès */}
-        <div
-          onClick={() => window.open('/fiche-acces', '_blank')}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#fff', border: '1px solid var(--border)',
-            borderLeft: '4px solid #0089ba',
-            borderRadius: 'var(--r)', padding: '18px 24px',
-            cursor: 'pointer', marginBottom: 16, transition: 'all .2s',
-          }}
-          onMouseOver={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,137,186,.12)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-          onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,137,186,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>
-              🔑
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>À partager aux formés</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Fiche accès LPT</div>
-              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 1 }}>Gmail · Slack · LPTBot — exportable en PDF</div>
-            </div>
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#0089ba' }}>Ouvrir ↗</div>
-        </div>
 
         {/* Main tiles */}
         <div className="dash-tiles">
@@ -1416,10 +1412,11 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           </div>
         </div>
 
-        {/* Planning + Shortcuts */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+        {/* Planning + Shortcuts + Fiches */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
           <PlanningWidget onOpen={() => onOpenPlanning()} />
           <ShortcutsWidget />
+          <FichesAnnexesWidget />
         </div>
 
       </div>
