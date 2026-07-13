@@ -2917,8 +2917,32 @@ const FAQ_JOURNEE_META = {
   j3: { label: 'Journée 3', sousTitre: 'La prise de mesures',            color: '#8b5cf6', icon: '📐' },
 }
 
+// Thèmes cumulatifs par journée (j2 = j1+j2, j3 = j1+j2+j3)
+const FAQ_THEMES = {
+  j1: [
+    { icon: '🏢', label: "Présentation de l'entreprise", items: ["Histoire & vision LPT", "L'accessibilité des lunettes", "Visite magasin & produits"] },
+    { icon: '👁️', label: "Les bases de l'optique",       items: ["Pourquoi porte-on des lunettes", "Les troubles visuels", "Lecture d'une ordonnance"] },
+    { icon: '🔬', label: "Les types de verres",           items: ["Le verre unifocal", "Unifocal vs progressif"] },
+  ],
+  j2: [
+    { icon: '🏢', label: "Présentation de l'entreprise", items: ["Histoire & vision LPT", "L'accessibilité des lunettes"] },
+    { icon: '👁️', label: "Les bases de l'optique",       items: ["Troubles visuels", "Corrections", "Ordonnances"] },
+    { icon: '🔬', label: "Les types de verres",           items: ["Verre unifocal", "Verre progressif"] },
+    { icon: '🤝', label: "Trame d'accueil",               items: ["Présentation du concept aux clients"] },
+    { icon: '🏷️', label: "Les offres LPT",               items: ["Parcours classique", "Parcours 1+1", "Immersion magasin"] },
+  ],
+  j3: [
+    { icon: '🏢', label: "Présentation de l'entreprise", items: [] },
+    { icon: '👁️', label: "Les bases de l'optique",       items: ["Troubles visuels", "Ordonnances"] },
+    { icon: '🏷️', label: "Les offres LPT",               items: ["Parcours classique", "1+1", "Suprême", "Tiers payant"] },
+    { icon: '🤝', label: "Trame d'accueil",               items: ["Accueil client", "Simulation vente"] },
+    { icon: '📐', label: "Prise de mesures",              items: ["Écart pupillaire", "Hauteur", "LPTVISION", "Téléphone"] },
+  ],
+}
+
 function TVFAQView({ journeeId, questions }) {
-  const meta = FAQ_JOURNEE_META[journeeId] || FAQ_JOURNEE_META.j1
+  const meta   = FAQ_JOURNEE_META[journeeId] || FAQ_JOURNEE_META.j1
+  const themes = FAQ_THEMES[journeeId] || FAQ_THEMES.j1
   const accent = meta.color
 
   return (
@@ -2928,81 +2952,129 @@ function TVFAQView({ journeeId, questions }) {
       display: 'flex', flexDirection: 'column',
     }}>
       {/* Topbar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 40px', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 36px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
-          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Réveil des acquis</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            background: `${accent}18`, border: `1px solid ${accent}40`,
-            borderRadius: 20, padding: '6px 16px',
-            fontSize: 12, fontWeight: 700, color: accent, letterSpacing: 0.5,
-          }}>{meta.icon} {meta.label}</div>
-        </div>
+        <div style={{
+          background: `${accent}18`, border: `1px solid ${accent}40`,
+          borderRadius: 20, padding: '6px 16px',
+          fontSize: 12, fontWeight: 700, color: accent, letterSpacing: 0.5,
+        }}>{meta.icon} {meta.label}</div>
       </div>
 
-      {/* Titre */}
-      <div style={{ textAlign: 'center', padding: '6px 120px 0', flexShrink: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
-          FAQ anonyme · {meta.label}
-        </div>
-        <h1 style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 4 }}>
-          Questions des participants
-        </h1>
-        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)' }}>{meta.sousTitre}</p>
-      </div>
+      {/* Corps : colonne thèmes | colonne questions */}
+      <div style={{ flex: 1, display: 'flex', gap: 0, overflow: 'hidden', padding: '0 0 16px' }}>
 
-      {/* Zone bulles */}
-      <div style={{
-        flex: 1,
-        display: 'flex', flexWrap: 'wrap',
-        columnGap: 20, rowGap: 32,
-        justifyContent: 'center', alignItems: 'flex-start', alignContent: 'flex-start',
-        padding: '32px 60px 20px',
-        overflow: 'hidden',
-      }}>
-        {questions.length === 0 ? (
-          <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.2)', fontStyle: 'italic', marginTop: 40 }}>
-            En attente des questions…
+        {/* ── Colonne gauche : thèmes abordés ── */}
+        <div style={{
+          width: 300, flexShrink: 0,
+          display: 'flex', flexDirection: 'column',
+          padding: '8px 20px 8px 36px',
+          borderRight: '1px solid rgba(255,255,255,0.07)',
+          overflowY: 'auto',
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 14 }}>
+            Thèmes abordés
           </div>
-        ) : questions.map((q, i) => (
-          <div key={q.id} style={{
-            background: q.highlighted
-              ? `linear-gradient(135deg, ${accent}22, ${accent}0d)`
-              : 'rgba(5,20,55,0.88)',
-            border: q.highlighted
-              ? `2px solid ${accent}`
-              : `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
-            borderRadius: B_RAD[i % 12],
-            padding: q.highlighted ? '20px 32px' : '14px 22px',
-            maxWidth: q.highlighted ? 500 : 320,
-            fontSize: q.highlighted ? 22 : 17,
-            fontWeight: q.highlighted ? 700 : 600,
-            color: '#fff', lineHeight: 1.45,
-            backdropFilter: 'blur(16px)',
-            boxShadow: q.highlighted
-              ? `0 0 50px ${accent}50, 0 0 100px ${accent}20, 0 8px 32px rgba(0,0,0,0.5)`
-              : `0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}30`,
-            animation: 'bubbleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
-            animationDelay: `${i * 0.07}s`,
-            marginTop: q.highlighted ? 0 : B_MT[i % 12],
-            transform: q.highlighted
-              ? 'scale(1.06) rotate(0deg)'
-              : `scale(1) rotate(${B_ROT[i % 12]}deg)`,
-            transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            zIndex: q.highlighted ? 10 : 1,
-            position: 'relative',
-          }}>
-            {q.highlighted && (
-              <div style={{ fontSize: 11, fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>
-                ★ En cours de traitement
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {themes.map((theme, i) => (
+              <div key={i} style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.09)',
+                borderLeft: `3px solid ${accent}`,
+                borderRadius: 10,
+                padding: '10px 12px',
+              }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: theme.items.length ? 6 : 0 }}>
+                  {theme.icon} {theme.label}
+                </div>
+                {theme.items.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    {theme.items.map((item, j) => (
+                      <div key={j} style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', paddingLeft: 8, lineHeight: 1.4 }}>
+                        · {item}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-            {q.text}
+            ))}
           </div>
-        ))}
+          <div style={{ marginTop: 20, padding: '10px 12px', background: `${accent}12`, border: `1px solid ${accent}30`, borderRadius: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: accent, marginBottom: 4 }}>💬 Comment participer ?</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
+              Posez vos questions sur votre téléphone de manière anonyme
+            </div>
+          </div>
+        </div>
+
+        {/* ── Colonne droite : titre + bulles questions ── */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Titre */}
+          <div style={{ textAlign: 'center', padding: '6px 40px 14px', flexShrink: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>
+              FAQ anonyme · {meta.label}
+            </div>
+            <h1 style={{ fontSize: 30, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 2 }}>
+              Questions des participants
+            </h1>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>{meta.sousTitre}</p>
+          </div>
+
+          {/* Zone bulles */}
+          <div style={{
+            flex: 1,
+            display: 'flex', flexWrap: 'wrap',
+            columnGap: 16, rowGap: 24,
+            justifyContent: 'center', alignItems: 'flex-start', alignContent: 'flex-start',
+            padding: '8px 40px 16px',
+            overflow: 'hidden',
+          }}>
+            {questions.length === 0 ? (
+              <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.2)', fontStyle: 'italic', marginTop: 40 }}>
+                En attente des questions…
+              </div>
+            ) : questions.map((q, i) => (
+              <div key={q.id} style={{
+                background: q.highlighted
+                  ? `linear-gradient(135deg, ${accent}22, ${accent}0d)`
+                  : 'rgba(5,20,55,0.88)',
+                border: q.highlighted
+                  ? `2px solid ${accent}`
+                  : `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
+                borderRadius: B_RAD[i % 12],
+                padding: q.highlighted ? '18px 28px' : '12px 20px',
+                maxWidth: q.highlighted ? 420 : 280,
+                fontSize: q.highlighted ? 20 : 15,
+                fontWeight: q.highlighted ? 700 : 600,
+                color: '#fff', lineHeight: 1.45,
+                backdropFilter: 'blur(16px)',
+                boxShadow: q.highlighted
+                  ? `0 0 50px ${accent}50, 0 0 100px ${accent}20, 0 8px 32px rgba(0,0,0,0.5)`
+                  : `0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}30`,
+                animation: 'bubbleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+                animationDelay: `${i * 0.07}s`,
+                marginTop: q.highlighted ? 0 : B_MT[i % 12],
+                transform: q.highlighted
+                  ? 'scale(1.06) rotate(0deg)'
+                  : `scale(1) rotate(${B_ROT[i % 12]}deg)`,
+                transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                zIndex: q.highlighted ? 10 : 1,
+                position: 'relative',
+              }}>
+                {q.highlighted && (
+                  <div style={{ fontSize: 10, fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>
+                    ★ En cours de traitement
+                  </div>
+                )}
+                {q.text}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )
