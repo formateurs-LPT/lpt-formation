@@ -62,6 +62,15 @@ function PageConditionsFormateur({ rembfrRevealed, revealing, toggleCondition, p
               <span style={{ fontSize: 14, fontWeight: 800, color: r.color }}>{r.duree}</span>
             </div>
           ))}
+          {/* LYLEOO */}
+          <div style={{ marginTop: 4, padding: '10px 12px', background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.25)', borderRadius: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#c9a227', marginBottom: 4 }}>💡 Pas d'ordonnance valable ? → LYLEOO</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
+              Service disponible <strong style={{ color: '#fff' }}>en magasin pour les +18 ans</strong>.<br />
+              À utiliser <strong style={{ color: '#fff' }}>uniquement pour débloquer un remboursement</strong> — service payé par LPT.<br />
+              Toujours vérifier les autres critères <strong style={{ color: '#fff' }}>avant</strong> de lancer LYLEOO. Si pas de remboursement possible, pas besoin d'ordonnance.
+            </div>
+          </div>
         </div>
       ),
     },

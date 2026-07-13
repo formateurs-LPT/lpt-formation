@@ -2884,22 +2884,37 @@ function TVRembFrConditions({ rembfrRevealed }) {
       detail: 'La durée de validité dépend de l\'âge du patient',
       alwaysVisible: false,
       content: ordoRevealed ? (
-        <div style={{ marginTop: 16 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[
-              { label: 'Moins de 16 ans', duree: '1 an', color: '#f59e0b' },
-              { label: 'De 16 à 42 ans', duree: '5 ans', color: BLUE_L },
-              { label: '43 ans et plus', duree: '3 ans', color: '#a78bfa' },
-            ].map(row => (
-              <div key={row.label} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 14px', borderRadius: 10,
-                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-              }}>
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>{row.label}</span>
-                <span style={{ fontSize: 16, fontWeight: 900, color: row.color }}>{row.duree}</span>
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {[
+            { label: 'Moins de 16 ans', duree: '1 an', color: '#f59e0b' },
+            { label: 'De 16 à 42 ans', duree: '5 ans', color: BLUE_L },
+            { label: '43 ans et plus', duree: '3 ans', color: '#a78bfa' },
+          ].map(row => (
+            <div key={row.label} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 14px', borderRadius: 10,
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            }}>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>{row.label}</span>
+              <span style={{ fontSize: 16, fontWeight: 900, color: row.color }}>{row.duree}</span>
+            </div>
+          ))}
+          {/* LYLEOO */}
+          <div style={{
+            marginTop: 4, padding: '11px 14px',
+            background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.25)',
+            borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: 10,
+          }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>💡</span>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#c9a227', marginBottom: 3 }}>
+                Pas d'ordonnance valable ? → LYLEOO
               </div>
-            ))}
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
+                Pour les +18 ans uniquement · Uniquement pour débloquer un remboursement ·
+                Après vérification de tous les autres critères
+              </div>
+            </div>
           </div>
         </div>
       ) : <LockDots />,
