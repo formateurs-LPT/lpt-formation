@@ -64,11 +64,18 @@ export default function ModuleMutuelles({ pName, onBack }) {
   }
 
   useEffect(() => {
-    if (started) {
-      syncAndWrite({ active_module: MODULE_ID, module_page: pageIndex })
+    if (!started) return
+    setSharedState({ mutuelles_revealed: [], inami_revealed: false, partena_revealed: false })
+    syncAndWrite({ active_module: MODULE_ID, module_page: 0 })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [started])
+
+  useEffect(() => {
+    if (started && pageIndex > 0) {
+      syncAndWrite({ module_page: pageIndex })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [started, pageIndex])
+  }, [pageIndex])
 
   const handleBack = async () => {
     await Promise.all([
