@@ -27,6 +27,7 @@ import ModuleReveilAcquis from '@/components/modules/ModuleReveilAcquis'
 import ModuleMontures from '@/components/modules/ModuleMontures'
 import ModuleMiniJeux from '@/components/modules/ModuleMiniJeux'
 import ModuleQuizFinal from '@/components/modules/ModuleQuizFinal'
+import ModuleMutuelles from '@/components/modules/ModuleMutuelles'
 import PlanningPage from '@/components/PlanningPage'
 import OnboardingView from '@/components/OnboardingView'
 import TVView from '@/components/TVView'
@@ -480,6 +481,12 @@ export default function Page() {
       )}
       {view === 'module-quiz-final' && (
         <ModuleQuizFinal
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-mutuelles-inami' && (
+        <ModuleMutuelles
           pName={pName}
           onBack={handleBackToModules}
         />
