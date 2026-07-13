@@ -552,6 +552,7 @@ export const MODULE_DATA = {
     { id: 'mutuelles-q1', type: 'pause', icon: '🛡️', titre: 'Que savez-vous des mutuelles ?', sousTitre: 'Partagez ce que vous savez déjà' },
     { id: 'mutuelles-reveal', type: 'mutuelles-reveal', titre: 'Les organismes assureurs en Belgique' },
     { id: 'inami-info', type: 'inami-info', titre: 'INAMI' },
+    { id: 'partena-offre', type: 'partena-offre', titre: 'PARTENA' },
   ], quiz: [], label: 'Mutuelles et INAMI', sub: 'Remboursements · INAMI · Mutuelles belges' },
 }
 

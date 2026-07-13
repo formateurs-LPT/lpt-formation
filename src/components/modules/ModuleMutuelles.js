@@ -41,6 +41,20 @@ export default function ModuleMutuelles({ pName, onBack }) {
     }
   }
 
+  const [partenaRevealed, setPartenaRevealed] = useState(false)
+  const [partenaRevealing, setPartenaRevealing] = useState(false)
+
+  const togglePartena = async () => {
+    setPartenaRevealing(true)
+    try {
+      const next = !partenaRevealed
+      setPartenaRevealed(next)
+      await setSharedState({ partena_revealed: next })
+    } finally {
+      setPartenaRevealing(false)
+    }
+  }
+
   const syncAndWrite = async (data) => {
     if (!syncedRef.current) {
       await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName), pName)
@@ -59,7 +73,7 @@ export default function ModuleMutuelles({ pName, onBack }) {
   const handleBack = async () => {
     await Promise.all([
       sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
-      setSharedState({ mutuelles_revealed: [], inami_revealed: false }),
+      setSharedState({ mutuelles_revealed: [], inami_revealed: false, partena_revealed: false }),
     ])
     onBack()
   }
@@ -67,7 +81,7 @@ export default function ModuleMutuelles({ pName, onBack }) {
   const handleTerminate = async () => {
     await Promise.all([
       sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
-      setSharedState({ mutuelles_revealed: [], inami_revealed: false }),
+      setSharedState({ mutuelles_revealed: [], inami_revealed: false, partena_revealed: false }),
     ])
     onBack()
   }
@@ -143,7 +157,70 @@ export default function ModuleMutuelles({ pName, onBack }) {
       </div>
 
       {/* Page principale — contenu formateur */}
-      {page?.type === 'inami-info' ? (
+      {page?.type === 'partena-offre' ? (
+        <div style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 8 }}>
+              Vue formateur · Page 4 (dernière)
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: -1, marginBottom: 6 }}>PARTENA</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 20 }}>
+              Offre partenaire Lunettes Pour Tous
+            </div>
+
+            {/* Offre toujours visible côté formateur */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              {[
+                { montant: '50 €', label: 'Verres unifocaux', icon: '👓' },
+                { montant: '100 €', label: 'Verres progressifs', icon: '🔭' },
+              ].map(o => (
+                <div key={o.label} style={{
+                  background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.3)',
+                  borderRadius: 12, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14,
+                }}>
+                  <span style={{ fontSize: 26 }}>{o.icon}</span>
+                  <div>
+                    <div style={{ fontSize: 28, fontWeight: 900, color: '#c9a227', lineHeight: 1 }}>{o.montant}</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>pour une paire à {o.label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+              {[
+                'Avantage disponible une fois tous les 2 ans',
+                "Non cumulable avec l'Avantage Partenamut classique (75 € tous les 2 ans sur montures, verres correcteurs ou lentilles, chez l'opticien de son choix)",
+                'Pas besoin de prescription ophtalmologique',
+              ].map((c, i) => (
+                <div key={i} style={{
+                  display: 'flex', gap: 10, alignItems: 'flex-start',
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                  borderLeft: '2px solid rgba(201,162,39,0.4)', borderRadius: 8, padding: '10px 14px',
+                }}>
+                  <span style={{ color: '#c9a227', flexShrink: 0 }}>●</span>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>{c}</span>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={togglePartena}
+              disabled={partenaRevealing}
+              style={{
+                background: partenaRevealed ? 'rgba(239,68,68,0.12)' : 'linear-gradient(135deg, #a07818, #c9a227)',
+                border: partenaRevealed ? '1px solid rgba(239,68,68,0.3)' : 'none',
+                color: partenaRevealed ? '#f87171' : '#fff',
+                padding: '12px 32px', borderRadius: 10, fontSize: 14, fontWeight: 700,
+                cursor: partenaRevealing ? 'default' : 'pointer', fontFamily: 'inherit',
+                opacity: partenaRevealing ? 0.7 : 1,
+              }}
+            >
+              {partenaRevealed ? '🙈 Masquer l\'offre sur TV' : '👁 Dévoiler l\'offre sur TV'}
+            </button>
+          </div>
+        </div>
+      ) : page?.type === 'inami-info' ? (
         <div style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
           {/* Présentation INAMI */}
           <div style={{ marginBottom: 28 }}>

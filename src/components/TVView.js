@@ -2739,6 +2739,98 @@ function TVInamiInfo({ inamiRevealed }) {
   )
 }
 
+// ── TV Partena Offre ──────────────────────────────────────────────
+function TVPartenaOffre({ partenaRevealed }) {
+  const OFFRE = [
+    { montant: '50 €', label: 'Verres unifocaux', icon: '👓' },
+    { montant: '100 €', label: 'Verres progressifs', icon: '🔭' },
+  ]
+  const CONDITIONS = [
+    'Avantage disponible une fois tous les 2 ans',
+    "Non cumulable avec l'Avantage Partenamut classique (75 € tous les 2 ans sur montures, verres correcteurs ou lentilles de contact, chez l'opticien de son choix)",
+    "Pas besoin de prescription ophtalmologique",
+  ]
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', padding: '44px 64px',
+    }}>
+      {/* Header */}
+      <div style={{ marginBottom: partenaRevealed ? 32 : 0, flex: partenaRevealed ? 0 : 1, display: 'flex', flexDirection: 'column', justifyContent: partenaRevealed ? 'flex-start' : 'center' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <div style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.35)', borderRadius: 20, padding: '5px 18px' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              Partenariat · Lunettes Pour Tous Belgique
+            </span>
+          </div>
+        </div>
+
+        <div style={{ fontSize: partenaRevealed ? 64 : 96, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -2, marginBottom: 16 }}>
+          PARTENA
+        </div>
+
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 12,
+          background: 'rgba(0,137,186,0.1)', border: '1px solid rgba(0,137,186,0.25)',
+          borderRadius: 14, padding: '12px 20px', maxWidth: 600,
+        }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>🤝</span>
+          <p style={{ fontSize: partenaRevealed ? 14 : 18, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5, margin: 0, fontStyle: 'italic' }}>
+            Mutualité Partena — Offre partenaire Lunettes Pour Tous
+          </p>
+        </div>
+      </div>
+
+      {/* Offre révélée */}
+      {partenaRevealed && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1 }}>
+          {/* Montants */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {OFFRE.map((o) => (
+              <div key={o.label} style={{
+                background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.35)',
+                borderRadius: 16, padding: '24px 28px',
+                display: 'flex', alignItems: 'center', gap: 20,
+              }}>
+                <span style={{ fontSize: 36, flexShrink: 0 }}>{o.icon}</span>
+                <div>
+                  <div style={{ fontSize: 42, fontWeight: 900, color: '#c9a227', lineHeight: 1, letterSpacing: -1 }}>{o.montant}</div>
+                  <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.65)', marginTop: 6 }}>pour une paire à {o.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Conditions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {CONDITIONS.map((c, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 14,
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                borderLeft: '3px solid rgba(201,162,39,0.4)',
+                borderRadius: 12, padding: '12px 18px',
+              }}>
+                <span style={{ fontSize: 14, color: '#c9a227', flexShrink: 0, marginTop: 1 }}>●</span>
+                <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', lineHeight: 1.55 }}>{c}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!partenaRevealed && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 32 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', animation: 'waitingPulse 2s ease-in-out infinite' }} />
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
+            Le formateur va vous présenter l&apos;offre partenaire…
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── TV Mutuelles Reveal ───────────────────────────────────────────
 function TVMutuellesReveal({ mutuellesRevealed }) {
   const revealed = mutuellesRevealed || []
@@ -2844,7 +2936,7 @@ function TVMutuellesReveal({ mutuellesRevealed }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed, partenaRevealed }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -2855,6 +2947,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
 
   if (page.type === 'mutuelles-reveal') return <TVMutuellesReveal mutuellesRevealed={mutuellesRevealed} />
   if (page.type === 'inami-info')       return <TVInamiInfo inamiRevealed={inamiRevealed} />
+  if (page.type === 'partena-offre')    return <TVPartenaOffre partenaRevealed={partenaRevealed} />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />
   if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />
@@ -4440,6 +4533,7 @@ export default function TVView() {
   // Mutuelles Belgique
   const [mutuellesRevealed, setMutuellesRevealed]         = useState([])
   const [inamiRevealed, setInamiRevealed]                 = useState(false)
+  const [partenaRevealed, setPartenaRevealed]             = useState(false)
 
   // Quiz podium
   const [quizInterstitialPhase, setQuizInterstitialPhase] = useState(false)
@@ -4479,6 +4573,7 @@ export default function TVView() {
     setFaqQuestions(fj ? (sharedState[`faq_${fj}_q`] || []) : [])
     setMutuellesRevealed(sharedState.mutuelles_revealed || [])
     setInamiRevealed(!!sharedState.inami_revealed)
+    setPartenaRevealed(!!sharedState.partena_revealed)
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
@@ -4658,6 +4753,7 @@ export default function TVView() {
             modelePoint={modelePoint}
             mutuellesRevealed={mutuellesRevealed}
             inamiRevealed={inamiRevealed}
+            partenaRevealed={partenaRevealed}
           />
         ) : (
           <WelcomeScreen />
