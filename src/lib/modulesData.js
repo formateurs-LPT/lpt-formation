@@ -554,6 +554,9 @@ export const MODULE_DATA = {
     { id: 'inami-info', type: 'inami-info', titre: 'INAMI' },
     { id: 'partena-offre', type: 'partena-offre', titre: 'PARTENA' },
   ], quiz: [], label: 'Mutuelles et INAMI', sub: 'Remboursements · INAMI · Mutuelles belges' },
+  'remboursement-france': { pages: [
+    { id: 'rembfr-q1', type: 'pause', icon: '🇫🇷', titre: 'Quelles sont les conditions pour avoir droit au remboursement optique en France ?', sousTitre: 'Partagez ce que vous savez déjà' },
+  ], quiz: [], label: 'Remboursement optique en France', sub: 'SS · Mutuelle · 100% Santé · Conditions' },
 }
 
 export const MUTUELLES_BELGIQUE = [

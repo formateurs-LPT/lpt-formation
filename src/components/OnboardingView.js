@@ -91,6 +91,12 @@ const JOURNEES = (onLaunchModule) => [
         sub: 'Écart pupillaire · Hauteur · LPTVISION',
         onClick: () => onLaunchModule('pdm'),
       },
+      {
+        visual: 'emoji', icon: '🇫🇷',
+        label: 'Remboursement optique en France',
+        sub: 'SS · Mutuelle · 100% Santé · Conditions',
+        onClick: () => onLaunchModule('remboursement-france'),
+      },
     ],
   },
 ]
