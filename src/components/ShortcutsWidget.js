@@ -56,9 +56,9 @@ export default function ShortcutsWidget() {
                 <img
                   src={s.localLogo}
                   alt={s.label}
-                  width={26}
-                  height={26}
-                  style={{ objectFit: 'contain' }}
+                  width={36}
+                  height={36}
+                  style={{ objectFit: 'contain', width: '100%', height: '100%', padding: 4 }}
                 />
               ) : (
                 <>
