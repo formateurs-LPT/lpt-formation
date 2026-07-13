@@ -11,6 +11,12 @@ export default function ModuleMutuelles({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
 
+  // Lobby visible sur TV dès l'ouverture du module
+  useEffect(() => {
+    sbUpdate('sessions', { active_module: MODULE_ID, module_page: -1 }, 'code=eq.' + getActiveSessionCode())
+  }, [])
+
+  // Mise à jour TV quand le formateur démarre ou navigue
   useEffect(() => {
     if (started) {
       sbUpdate('sessions', { active_module: MODULE_ID, module_page: pageIndex }, 'code=eq.' + getActiveSessionCode())

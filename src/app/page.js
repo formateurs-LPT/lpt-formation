@@ -30,6 +30,7 @@ import ModuleQuizFinal from '@/components/modules/ModuleQuizFinal'
 import ModuleMutuelles from '@/components/modules/ModuleMutuelles'
 import PlanningPage from '@/components/PlanningPage'
 import OnboardingView from '@/components/OnboardingView'
+import OnboardingViewBelgique from '@/components/OnboardingViewBelgique'
 import TVView from '@/components/TVView'
 import ParticipantModuleView from '@/components/ParticipantModuleView'
 
@@ -43,6 +44,7 @@ export default function Page() {
   const [appReady, setAppReady] = useState(false)
   const [displaySessionCode, setDisplaySessionCode] = useState('')
   const [returnJournee, setReturnJournee] = useState(null)
+  const [moduleReturnTo, setModuleReturnTo] = useState('onboarding-modules')
   const { message, toast } = useToast()
 
   useOnlineCount({
@@ -338,9 +340,9 @@ export default function Page() {
     if (code) setDisplaySessionCode(code)
     setView('onboarding-modules')
   }
-  const handleLaunchModule = (moduleId) => { setReturnJournee(null); setView('module-' + moduleId) }
+  const handleLaunchModule = (moduleId, returnTo = 'onboarding-modules') => { setReturnJournee(null); setModuleReturnTo(returnTo); setView('module-' + moduleId) }
   const handleBackToDashboard = () => setView('dashboard')
-  const handleBackToModules = () => setView('onboarding-modules')
+  const handleBackToModules = () => setView(moduleReturnTo)
   const handleTerminateToJournee1 = () => { setReturnJournee('journee1'); setView('onboarding-modules') }
   const handleOpenPlanning = () => setView('planning')
 
@@ -412,6 +414,17 @@ export default function Page() {
             onEndRoom={handleEndRoom}
             initialStep="modules"
             initialJournee={returnJournee}
+          />
+        </div>
+      )}
+      {view === 'onboarding-modules-belgique' && (
+        <div id="dashboard">
+          <OnboardingViewBelgique
+            pName={pName}
+            onBack={handleBackToDashboard}
+            onLaunchFormation={handleLaunchSession}
+            onLaunchModule={(moduleId) => handleLaunchModule(moduleId, 'onboarding-modules-belgique')}
+            initialStep="modules"
           />
         </div>
       )}
