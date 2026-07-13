@@ -15,32 +15,6 @@ import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, tra
 import { isDynamicRoomCode } from '@/lib/sessionCode'
 import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees } from '@/components/IdeesButton'
 
-const NEWS_ITEMS = [
-  '📚 Formation Verre Progressif — Module complet',
-  '🎯 Objectif : maîtriser les arguments de vente',
-  '💡 3 zones : Vision de loin · Vision intermédiaire · Vision de près',
-  '🔬 Zones d\'aberrations réduites = Vision extra-large à 180°',
-  '💊 Garantie Adaptation 100 jours — satisfait ou échangé',
-  '🏆 Offre 100% Santé : 2 paires à 0€',
-  '⭐ Offre 1=1 : 2 paires pour ~260€',
-  '📋 Quiz initial → Formation → Quiz final',
-]
-
-function NewsTicker() {
-  const doubled = [...NEWS_ITEMS, ...NEWS_ITEMS]
-  return (
-    <div className="news-ticker">
-      <div className="news-ticker-track running">
-        {doubled.map((item, i) => (
-          <span key={i} className="news-item">
-            <span className="news-item-dot"></span>
-            {item}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoom }) {
   const rawKey = (pName || '').toLowerCase().split(' ')[0]
@@ -1331,7 +1305,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           onOpenRoom={handleOpenRoomClick}
         />
         {selectedUpdate && <AppUpdateModal update={selectedUpdate} onClose={() => setSelectedUpdate(null)} />}
-        <NewsTicker />
 
         {/* OB Banner */}
         <div className="ob-banner" onClick={() => setActiveView('onboarding-choix')}>
