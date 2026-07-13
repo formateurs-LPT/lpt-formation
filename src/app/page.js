@@ -300,6 +300,14 @@ export default function Page() {
 
   const handleOpenTv = async () => {
     const code = getActiveSessionCode()
+    // Ouvrir la fenêtre en premier (geste utilisateur direct, avant tout await)
+    const path = isDynamicRoomCode(code) ? buildTvUrl(code) : '/?mode=tv'
+    const url = `${window.location.origin}${path}`
+    const opened = window.open(url, 'lpt-tv-diffusion', 'noopener,noreferrer')
+    if (!opened) {
+      toast('Autorisez les pop-ups pour ouvrir l\'écran Diffusion')
+    }
+    // Puis on met à jour l'état Supabase
     try {
       if (isDynamicRoomCode(code)) {
         await setRoomSharedState({ tv_screen: 'qr' }, code)
@@ -308,12 +316,6 @@ export default function Page() {
       }
     } catch (e) {
       console.warn('tv_screen qr', e)
-    }
-    const path = isDynamicRoomCode(code) ? buildTvUrl(code) : '/?mode=tv'
-    const url = `${window.location.origin}${path}`
-    const opened = window.open(url, 'lpt-tv-diffusion', 'noopener,noreferrer')
-    if (!opened) {
-      toast('Autorisez les pop-ups pour ouvrir l\'écran Diffusion')
     }
   }
 
