@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS } from '@/lib/modulesData'
+import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE } from '@/lib/supabase'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
@@ -2612,7 +2612,115 @@ function TVMontures({ type, pageIndex, total, moduleLabel }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes }) {
+// ── TV Mutuelles Reveal ───────────────────────────────────────────
+function TVMutuellesReveal({ mutuellesRevealed }) {
+  const revealed = mutuellesRevealed || []
+  return (
+    <div style={{
+      minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', padding: '40px 56px',
+    }}>
+      {/* Header */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 10,
+          background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)',
+          borderRadius: 20, padding: '5px 18px', marginBottom: 14,
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+            Mutuelles et INAMI · Belgique
+          </span>
+        </div>
+        <div style={{ fontSize: 34, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>
+          Les organismes assureurs reconnus
+        </div>
+      </div>
+
+      {/* Grid 2 colonnes */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, flex: 1 }}>
+        {MUTUELLES_BELGIQUE.map((m) => {
+          const isRevealed = revealed.includes(m.id)
+          const hasDetails = m.montant !== null
+          return (
+            <div key={m.id} style={{
+              background: isRevealed ? 'rgba(201,162,39,0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${isRevealed ? 'rgba(201,162,39,0.45)' : 'rgba(255,255,255,0.08)'}`,
+              borderLeft: `3px solid ${isRevealed ? '#c9a227' : 'rgba(255,255,255,0.12)'}`,
+              borderRadius: 14, padding: '16px 20px',
+              transition: 'all .4s ease',
+              display: 'flex', flexDirection: 'column', gap: 10,
+            }}>
+              {/* Nom + badges */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: isRevealed ? '#fff' : 'rgba(255,255,255,0.75)', lineHeight: 1.3 }}>
+                  {m.nom}
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, borderRadius: 20, padding: '2px 9px',
+                    background: m.complementaire ? 'rgba(74,222,128,0.12)' : 'rgba(239,68,68,0.1)',
+                    border: `1px solid ${m.complementaire ? 'rgba(74,222,128,0.35)' : 'rgba(239,68,68,0.3)'}`,
+                    color: m.complementaire ? '#4ade80' : '#f87171',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {m.complementaire ? '✓ Optique complémentaire' : '✗ Pas de complémentaire'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Type */}
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>{m.type}</div>
+
+              {/* Détails revealed */}
+              {isRevealed && hasDetails && (
+                <div style={{
+                  display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 14px',
+                  background: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: '12px 14px',
+                  marginTop: 4,
+                }}>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, alignSelf: 'center' }}>Montant</span>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: '#c9a227' }}>{m.montant}</span>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, alignSelf: 'flex-start' }}>Fréquence</span>
+                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{m.frequence}</span>
+                  {m.particularites && m.particularites !== '/' && (
+                    <>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, alignSelf: 'flex-start' }}>Particularités</span>
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>{m.particularites}</span>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {isRevealed && !hasDetails && (
+                <div style={{
+                  background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '10px 14px',
+                  fontSize: 12, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic',
+                }}>
+                  Pas de données de remboursement complémentaire disponibles
+                </div>
+              )}
+
+              {!isRevealed && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                  <div style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.2)',
+                    animation: 'waitingPulse 2s ease-in-out infinite',
+                  }} />
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
+                    En attente de révélation…
+                  </span>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -2621,6 +2729,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
     return () => clearTimeout(t)
   }, [page.id])
 
+  if (page.type === 'mutuelles-reveal') return <TVMutuellesReveal mutuellesRevealed={mutuellesRevealed} />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />
   if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />
@@ -4203,6 +4312,9 @@ export default function TVView() {
   const [progObjectionResponses, setProgObjectionResponses] = useState({})
   const [progBestAnswer, setProgBestAnswer]             = useState(null)
 
+  // Mutuelles Belgique
+  const [mutuellesRevealed, setMutuellesRevealed]         = useState([])
+
   // Quiz podium
   const [quizInterstitialPhase, setQuizInterstitialPhase] = useState(false)
   const [finalPodiumPhase, setFinalPodiumPhase]           = useState(false)
@@ -4239,6 +4351,7 @@ export default function TVView() {
     const fj = sharedState.faq_journee || null
     setFaqJournee(fj)
     setFaqQuestions(fj ? (sharedState[`faq_${fj}_q`] || []) : [])
+    setMutuellesRevealed(sharedState.mutuelles_revealed || [])
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
@@ -4416,6 +4529,7 @@ export default function TVView() {
             offres11Step={offres11Step}
             offresClassiqueStep={offresClassiqueStep}
             modelePoint={modelePoint}
+            mutuellesRevealed={mutuellesRevealed}
           />
         ) : (
           <WelcomeScreen />
