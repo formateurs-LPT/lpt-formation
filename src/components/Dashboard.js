@@ -13,7 +13,7 @@ import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
 import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { isDynamicRoomCode } from '@/lib/sessionCode'
-import { loadIdees, deleteIdee, voteIdee, updateIdee } from '@/components/IdeesButton'
+import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees } from '@/components/IdeesButton'
 
 const NEWS_ITEMS = [
   '📚 Formation Verre Progressif — Module complet',
@@ -595,15 +595,27 @@ function AppUpdatesWidget() {
 
 // ── Vue Idées ─────────────────────────────────────────────────────
 function IdeesView({ onBack, pName }) {
-  const [idees, setIdees] = useState(() => loadIdees())
+  const [idees, setIdees] = useState([])
+  const [loading, setLoading] = useState(true)
   const [subTab, setSubTab] = useState('pending') // 'pending' | 'validated'
 
-  const refresh = () => setIdees(loadIdees())
+  const refresh = async () => {
+    const data = await loadIdeesFromSupabase()
+    setIdees(data)
+    setLoading(false)
+  }
 
-  const handleVote = (id, vote) => { voteIdee(id, pName || 'Formateur', vote); refresh() }
-  const handleValidate = (id) => { updateIdee(id, { status: 'validated' }); refresh() }
-  const handleReject = (id) => { deleteIdee(id); refresh() }
-  const handleDone = (id) => { deleteIdee(id); refresh() }
+  useEffect(() => {
+    refresh()
+    const interval = setInterval(refresh, 10000)
+    return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleVote = async (id, vote) => { await voteIdee(id, pName || 'Formateur', vote); refresh() }
+  const handleValidate = async (id) => { await updateIdee(id, { status: 'validated' }); refresh() }
+  const handleReject = async (id) => { await deleteIdee(id); refresh() }
+  const handleDone = async (id) => { await deleteIdee(id); refresh() }
 
   const pending = idees.filter(i => !i.status || i.status === 'pending')
   const validated = idees.filter(i => i.status === 'validated')
@@ -790,6 +802,12 @@ function IdeesView({ onBack, pName }) {
     )
   }
 
+  if (loading) return (
+    <div className="dash-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
+      <div style={{ color: 'var(--text-s)', fontSize: 14 }}>Chargement des idées…</div>
+    </div>
+  )
+
   return (
     <div className="dash-wrap">
       <button className="detail-back" onClick={onBack}>← Retour au tableau de bord</button>
@@ -798,12 +816,12 @@ function IdeesView({ onBack, pName }) {
         <div>
           <h2 style={{ marginBottom: 4 }}>💡 Idées</h2>
           <p style={{ color: 'var(--text-s)', fontSize: 14 }}>
-            {pending.length} en attente · {validated.length} validée{validated.length > 1 ? 's' : ''}
+            {pending.length} en attente · {validated.length} validée{validated.length > 1 ? 's' : ''} · <span style={{ opacity: 0.5 }}>sync toutes les 10s</span>
           </p>
         </div>
         {idees.length > 0 && (
           <button
-            onClick={() => { if (window.confirm('Supprimer toutes les idées ?')) { localStorage.removeItem('lpt_idees'); setIdees([]) } }}
+            onClick={async () => { if (window.confirm('Supprimer toutes les idées ?')) { await clearAllIdees(); setIdees([]) } }}
             style={{
               background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
               color: '#ef4444', borderRadius: 10, padding: '8px 16px',
@@ -861,6 +879,11 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   const [activeRoomCode, setActiveRoomCode] = useState('')
 
   const [obDay, setObDay] = useState('1')
+  const [ideeCount, setIdeeCount] = useState(0)
+
+  useEffect(() => {
+    loadIdeesFromSupabase().then(list => setIdeeCount(list.length)).catch(() => {})
+  }, [])
 
   useEffect(() => {
     loadTileStats()
@@ -1321,7 +1344,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
               <div className="dash-tile-icon">💡</div>
               <span className="dash-tile-link">Voir tout →</span>
             </div>
-            <div className="dash-tile-count">{typeof window !== 'undefined' ? loadIdees().length : 0}</div>
+            <div className="dash-tile-count">{ideeCount}</div>
             <div className="dash-tile-label">Idées notées</div>
             <div className="dash-tile-sub">Idées notées durant les formations</div>
           </div>

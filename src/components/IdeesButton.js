@@ -1,46 +1,53 @@
 'use client'
 import { useState } from 'react'
-import { sbSelect, getActiveSessionCode } from '@/lib/supabase'
+import { sbSelect, getActiveSessionCode, getWeeklySharedState, setWeeklySharedState } from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
 
-const STORAGE_KEY = 'lpt_idees'
+// ── Lecture / écriture Supabase ───────────────────────────────────
 
-export function loadIdees() {
-  if (typeof window === 'undefined') return []
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') } catch { return [] }
-}
-
-function saveIdee(idee) {
-  const idees = loadIdees()
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...idees, idee]))
-}
-
-export function deleteIdee(id) {
-  const idees = loadIdees().filter(i => i.id !== id)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(idees))
-}
-
-export function updateIdee(id, updates) {
-  const idees = loadIdees().map(i => i.id === id ? { ...i, ...updates } : i)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(idees))
-}
-
-export function voteIdee(id, pName, vote) {
-  const idees = loadIdees()
-  const idee = idees.find(i => i.id === id)
-  if (!idee) return
-  const votes = idee.votes ? { ok: [...(idee.votes.ok || [])], pas_ok: [...(idee.votes.pas_ok || [])] } : { ok: [], pas_ok: [] }
-  const opposite = vote === 'ok' ? 'pas_ok' : 'ok'
-  votes[opposite] = votes[opposite].filter(n => n !== pName)
-  if (votes[vote].includes(pName)) {
-    votes[vote] = votes[vote].filter(n => n !== pName)
-  } else {
-    votes[vote] = [...votes[vote], pName]
+export async function loadIdeesFromSupabase() {
+  try {
+    const state = await getWeeklySharedState()
+    return Array.isArray(state?.lpt_idees) ? state.lpt_idees : []
+  } catch {
+    return []
   }
-  const updated = idees.map(i => i.id === id ? { ...i, votes } : i)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
 }
 
+async function writeIdees(idees) {
+  await setWeeklySharedState({ lpt_idees: idees })
+}
+
+export async function deleteIdee(id) {
+  const idees = await loadIdeesFromSupabase()
+  await writeIdees(idees.filter(i => i.id !== id))
+}
+
+export async function updateIdee(id, updates) {
+  const idees = await loadIdeesFromSupabase()
+  await writeIdees(idees.map(i => i.id === id ? { ...i, ...updates } : i))
+}
+
+export async function voteIdee(id, pName, vote) {
+  const idees = await loadIdeesFromSupabase()
+  const updated = idees.map(i => {
+    if (i.id !== id) return i
+    const votes = { ok: [...(i.votes?.ok || [])], pas_ok: [...(i.votes?.pas_ok || [])] }
+    const opposite = vote === 'ok' ? 'pas_ok' : 'ok'
+    votes[opposite] = votes[opposite].filter(n => n !== pName)
+    votes[vote] = votes[vote].includes(pName)
+      ? votes[vote].filter(n => n !== pName)
+      : [...votes[vote], pName]
+    return { ...i, votes }
+  })
+  await writeIdees(updated)
+}
+
+export async function clearAllIdees() {
+  await writeIdees([])
+}
+
+// ── Composant bouton flottant ─────────────────────────────────────
 export default function IdeesButton({ moduleId, pName }) {
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
@@ -64,7 +71,7 @@ export default function IdeesButton({ moduleId, pName }) {
         ? `Page ${pageIndex + 1} — ${page.titre}`
         : `Page ${pageIndex + 1}`
 
-      saveIdee({
+      const newIdee = {
         id: Date.now().toString(),
         text: text.trim(),
         moduleId,
@@ -73,7 +80,10 @@ export default function IdeesButton({ moduleId, pName }) {
         pageLabel,
         auteur: pName || 'Formateur',
         timestamp: new Date().toISOString(),
-      })
+      }
+
+      const current = await loadIdeesFromSupabase()
+      await writeIdees([...current, newIdee])
 
       setText('')
       setSaved(true)
@@ -122,7 +132,6 @@ export default function IdeesButton({ moduleId, pName }) {
               boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
             }}
           >
-            {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
               <div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 4 }}>💡 Nouvelle idée</div>
@@ -143,7 +152,6 @@ export default function IdeesButton({ moduleId, pName }) {
               >✕</button>
             </div>
 
-            {/* Textarea */}
             <textarea
               autoFocus
               value={text}
@@ -165,7 +173,6 @@ export default function IdeesButton({ moduleId, pName }) {
               ⌘/Ctrl + Entrée pour enregistrer
             </div>
 
-            {/* Actions */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
               <button
                 onClick={() => setOpen(false)}
