@@ -42,22 +42,17 @@ function NewsTicker() {
   )
 }
 
-function DashHeader({ pName, onUpdatesClick }) {
+function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoom }) {
   const rawKey = (pName || '').toLowerCase().split(' ')[0]
   const key = TRAINER_CANONICAL[rawKey] || rawKey
   const avatarSrc = TRAINER_AVATARS[key] || TRAINER_AVATARS.kevin
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
+  const hasRoom = isDynamicRoomCode(activeRoomCode)
 
   return (
     <div className="dash-hero" style={{ display: 'flex', alignItems: 'center' }}>
-      <Image
-        src={avatarSrc}
-        alt={pName}
-        width={90}
-        height={90}
-        className="dash-hero-avatar"
-      />
+      <Image src={avatarSrc} alt={pName} width={90} height={90} className="dash-hero-avatar" />
       <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
         <div className="dash-hero-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           Formation · Lunettes Pour Tous
@@ -72,27 +67,71 @@ function DashHeader({ pName, onUpdatesClick }) {
         <h2 className="dash-hero-title">Bonjour, {cap(pName)} 👋</h2>
         <p className="dash-hero-date">{cap(today)}</p>
       </div>
-      {onUpdatesClick && (
-        <button
-          onClick={onUpdatesClick}
-          title="Mises à jour de l'app"
-          style={{
-            flexShrink: 0, marginLeft: 12, zIndex: 1,
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'rgba(167,139,250,0.15)',
-            border: '1px solid rgba(167,139,250,0.35)',
-            borderRadius: 20, padding: '6px 12px 6px 10px',
-            cursor: 'pointer', fontFamily: 'inherit',
-            color: '#c4b5fd', fontSize: 12, fontWeight: 700,
-            transition: 'all .18s',
-          }}
-          onMouseOver={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.25)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.5)' }}
-          onMouseOut={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.15)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.35)' }}
-        >
-          <span style={{ fontSize: 14 }}>⚡</span>
-          <span>{APP_UPDATES.length}</span>
-        </button>
-      )}
+
+      {/* Zone salle active */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, zIndex: 1 }}>
+        {hasRoom ? (
+          <>
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginRight: 4,
+            }}>
+              <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(0,171,233,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>Salle active</span>
+              <span style={{ fontSize: 16, fontWeight: 900, color: '#00abe9', fontFamily: 'monospace', letterSpacing: 3, lineHeight: 1.2 }}>{activeRoomCode}</span>
+            </div>
+            {onOpenTv && (
+              <button
+                onClick={onOpenTv}
+                title="Afficher le QR code sur le diffuseur"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.35)',
+                  borderRadius: 20, padding: '6px 12px',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  color: '#00abe9', fontSize: 12, fontWeight: 700, transition: 'all .18s',
+                }}
+                onMouseOver={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.25)' }}
+                onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.15)' }}
+              >
+                📺 QR
+              </button>
+            )}
+            <button
+              onClick={onOpenRoom}
+              title="Reprendre la salle"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)',
+                borderRadius: 20, padding: '6px 12px',
+                cursor: 'pointer', fontFamily: 'inherit',
+                color: '#00abe9', fontSize: 12, fontWeight: 700, transition: 'all .18s',
+              }}
+              onMouseOver={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.2)' }}
+              onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.1)' }}
+            >
+              Reprendre →
+            </button>
+          </>
+        ) : null}
+
+        {onUpdatesClick && (
+          <button
+            onClick={onUpdatesClick}
+            title="Mises à jour de l'app"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.35)',
+              borderRadius: 20, padding: '6px 12px 6px 10px',
+              cursor: 'pointer', fontFamily: 'inherit',
+              color: '#c4b5fd', fontSize: 12, fontWeight: 700, transition: 'all .18s',
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.25)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.5)' }}
+            onMouseOut={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.15)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.35)' }}
+          >
+            <span style={{ fontSize: 14 }}>⚡</span>
+            <span>{APP_UPDATES.length}</span>
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -1217,65 +1256,15 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   return (
     <div id="dashboard">
       <div className="dash-wrap">
-        <DashHeader pName={pName} onUpdatesClick={() => setSelectedUpdate(APP_UPDATES[0])} />
+        <DashHeader
+          pName={pName}
+          onUpdatesClick={() => setSelectedUpdate(APP_UPDATES[0])}
+          activeRoomCode={activeRoomCode}
+          onOpenTv={onOpenTv}
+          onOpenRoom={handleOpenRoomClick}
+        />
         {selectedUpdate && <AppUpdateModal update={selectedUpdate} onClose={() => setSelectedUpdate(null)} />}
         <NewsTicker />
-
-        {isDynamicRoomCode(activeRoomCode) ? (
-          <div style={{
-            marginBottom: 16, padding: '14px 18px', borderRadius: 14,
-            background: 'linear-gradient(135deg, rgba(0,137,186,0.12), rgba(0,171,233,0.06))',
-            border: '1px solid rgba(0,137,186,0.35)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
-          }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 0.8 }}>
-                Salle dédiée ouverte
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#0089ba', fontFamily: 'monospace', letterSpacing: 4, marginTop: 4 }}>
-                {activeRoomCode}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 4, lineHeight: 1.5 }}>
-                Données isolées de LPT2026 — participants et diffusion via ce code uniquement.
-                <br />
-                Le <strong>QR code</strong> s&apos;affiche sur l&apos;écran <strong>Diffusion 📺</strong> (pas sur ce tableau de bord).
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
-              {onOpenTv && (
-                <button
-                  type="button"
-                  onClick={onOpenTv}
-                  style={{
-                    padding: '10px 18px', borderRadius: 10, border: 'none',
-                    background: '#00abe9', color: '#fff', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                  }}
-                >
-                  Afficher le QR 📺
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={handleOpenRoomClick}
-                style={{
-                  padding: '10px 18px', borderRadius: 10,
-                  border: '1px solid rgba(0,137,186,0.45)',
-                  background: 'transparent', color: '#0089ba', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
-                Reprendre la salle →
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div style={{
-            marginBottom: 16, padding: '12px 16px', borderRadius: 12,
-            background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
-            fontSize: 13, color: '#b45309',
-          }}>
-            Mode <strong>legacy</strong> (LPT2026) — cliquez <strong>Ma salle</strong> pour créer une salle séparée avec son propre QR.
-          </div>
-        )}
 
         {/* OB Banner */}
         <div className="ob-banner" onClick={() => setActiveView('onboarding-choix')}>
