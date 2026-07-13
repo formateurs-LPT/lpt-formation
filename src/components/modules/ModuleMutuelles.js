@@ -14,6 +14,8 @@ export default function ModuleMutuelles({ pName, onBack }) {
   const syncedRef = useRef(false)
   const [revealedIds, setRevealedIds] = useState([])
   const [revealing, setRevealing] = useState(false)
+  const [inamiRevealed, setInamiRevealed] = useState(false)
+  const [inamiRevealing, setInamiRevealing] = useState(false)
 
   const toggleReveal = async (id) => {
     setRevealing(true)
@@ -25,6 +27,17 @@ export default function ModuleMutuelles({ pName, onBack }) {
       await setSharedState({ mutuelles_revealed: next })
     } finally {
       setRevealing(false)
+    }
+  }
+
+  const toggleInami = async () => {
+    setInamiRevealing(true)
+    try {
+      const next = !inamiRevealed
+      setInamiRevealed(next)
+      await setSharedState({ inami_revealed: next })
+    } finally {
+      setInamiRevealing(false)
     }
   }
 
@@ -46,7 +59,7 @@ export default function ModuleMutuelles({ pName, onBack }) {
   const handleBack = async () => {
     await Promise.all([
       sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
-      setSharedState({ mutuelles_revealed: [] }),
+      setSharedState({ mutuelles_revealed: [], inami_revealed: false }),
     ])
     onBack()
   }
@@ -54,7 +67,7 @@ export default function ModuleMutuelles({ pName, onBack }) {
   const handleTerminate = async () => {
     await Promise.all([
       sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
-      setSharedState({ mutuelles_revealed: [] }),
+      setSharedState({ mutuelles_revealed: [], inami_revealed: false }),
     ])
     onBack()
   }
@@ -130,7 +143,85 @@ export default function ModuleMutuelles({ pName, onBack }) {
       </div>
 
       {/* Page principale — contenu formateur */}
-      {page?.type === 'mutuelles-reveal' ? (
+      {page?.type === 'inami-info' ? (
+        <div style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
+          {/* Présentation INAMI */}
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 8 }}>
+              Vue formateur · Page 3
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: -1, marginBottom: 6 }}>INAMI</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 16 }}>
+              Institut National d&apos;Assurance Maladie-Invalidité
+            </div>
+            <div style={{
+              background: 'rgba(0,137,186,0.08)', border: '1px solid rgba(0,137,186,0.2)',
+              borderRadius: 12, padding: '12px 18px',
+              fontSize: 13, color: 'rgba(255,255,255,0.6)', fontStyle: 'italic', lineHeight: 1.6,
+              marginBottom: 24,
+            }}>
+              🏛️ C&apos;est l&apos;organisme public qui gère l&apos;assurance obligatoire soins de santé en Belgique, c&apos;est donc lui qui fixe les règles.
+            </div>
+
+            {/* Conditions (toujours visibles côté formateur) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 28 }}>
+              {[
+                {
+                  titre: '👁️ Seuils de correction',
+                  items: [
+                    '< 18 ans : dès 0,25 dioptrie',
+                    '18–64 ans : à partir de ± 6,00 dioptries',
+                    '≥ 65 ans : à partir de ± 4,25 dioptries (bifocaux/progressifs)',
+                  ],
+                },
+                {
+                  titre: '🔄 Fréquence',
+                  items: [
+                    '< 18 ans : tous les 2 ans',
+                    '≥ 18 ans : tous les 5 ans',
+                    'Exception : si Δ dioptrie ≥ 0,5 vs précédente délivrance → droit immédiat',
+                  ],
+                },
+                {
+                  titre: '📄 Documents requis',
+                  items: [
+                    'Attestation de délivrance signée par l\'opticien (Annexe 15)',
+                    'Prescription ophtalmologue valable (< 6 mois)',
+                  ],
+                },
+              ].map((section) => (
+                <div key={section.titre} style={{
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                  borderTop: '2px solid rgba(201,162,39,0.5)', borderRadius: 10, padding: '14px 16px',
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#c9a227', marginBottom: 10 }}>{section.titre}</div>
+                  <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {section.items.map((item, i) => (
+                      <li key={i} style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+
+            {/* Bouton Dévoiler */}
+            <button
+              onClick={toggleInami}
+              disabled={inamiRevealing}
+              style={{
+                background: inamiRevealed ? 'rgba(239,68,68,0.12)' : 'linear-gradient(135deg, #a07818, #c9a227)',
+                border: inamiRevealed ? '1px solid rgba(239,68,68,0.3)' : 'none',
+                color: inamiRevealed ? '#f87171' : '#fff',
+                padding: '12px 32px', borderRadius: 10, fontSize: 14, fontWeight: 700,
+                cursor: inamiRevealing ? 'default' : 'pointer', fontFamily: 'inherit',
+                opacity: inamiRevealing ? 0.7 : 1,
+              }}
+            >
+              {inamiRevealed ? '🙈 Masquer les conditions sur TV' : '👁 Dévoiler les conditions sur TV'}
+            </button>
+          </div>
+        </div>
+      ) : page?.type === 'mutuelles-reveal' ? (
         <div style={{ flex: 1, padding: '28px 40px', overflowY: 'auto' }}>
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 6 }}>

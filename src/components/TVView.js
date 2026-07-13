@@ -2612,6 +2612,133 @@ function TVMontures({ type, pageIndex, total, moduleLabel }) {
   )
 }
 
+// ── TV INAMI Info ─────────────────────────────────────────────────
+function TVInamiInfo({ inamiRevealed }) {
+  const CONDITIONS = [
+    {
+      titre: 'Seuils de correction',
+      icon: '👁️',
+      items: [
+        { label: 'Moins de 18 ans', detail: 'Intervention dès 0,25 dioptrie' },
+        { label: '18 à 64 ans', detail: 'Intervention à partir de ± 6,00 dioptries' },
+        { label: '65 ans et plus', detail: 'À partir de ± 4,25 dioptries pour les verres bifocaux ou progressifs' },
+      ],
+    },
+    {
+      titre: 'Fréquence de renouvellement',
+      icon: '🔄',
+      items: [
+        { label: 'Moins de 18 ans', detail: 'Un nouveau droit tous les 2 ans' },
+        { label: '18 ans et plus', detail: 'Un nouveau droit tous les 5 ans' },
+        { label: 'Exception', detail: 'Si la nouvelle prescription diffère d\'au moins 0,5 dioptrie par rapport à la précédente délivrance, un nouveau droit s\'ouvre immédiatement, sans attendre le délai standard' },
+      ],
+    },
+    {
+      titre: 'Documents requis',
+      icon: '📄',
+      items: [
+        { label: 'Attestation', detail: 'Une attestation de délivrance signée, établie par l\'opticien (le fameux document "Annexe 15")' },
+        { label: 'Prescription', detail: 'Une prescription d\'ophtalmologue valable, datée de moins de 6 mois' },
+      ],
+    },
+  ]
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', padding: '44px 64px',
+    }}>
+      {/* Header INAMI */}
+      <div style={{ marginBottom: inamiRevealed ? 28 : 0, flex: inamiRevealed ? 0 : 1, display: 'flex', flexDirection: 'column', justifyContent: inamiRevealed ? 'flex-start' : 'center' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <div style={{
+            background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.35)',
+            borderRadius: 20, padding: '5px 18px',
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              Mutuelles et INAMI · Belgique
+            </span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 24, marginBottom: 20 }}>
+          <div style={{ fontSize: inamiRevealed ? 64 : 96, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -2 }}>
+            INAMI
+          </div>
+          <div style={{ paddingBottom: inamiRevealed ? 8 : 14 }}>
+            <div style={{ fontSize: inamiRevealed ? 16 : 22, fontWeight: 300, color: 'rgba(255,255,255,0.5)', letterSpacing: 1 }}>
+              Institut National d&apos;Assurance
+            </div>
+            <div style={{ fontSize: inamiRevealed ? 16 : 22, fontWeight: 300, color: 'rgba(255,255,255,0.5)', letterSpacing: 1 }}>
+              Maladie-Invalidité
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          display: 'inline-flex', alignItems: 'flex-start', gap: 14,
+          background: 'rgba(0,137,186,0.1)', border: '1px solid rgba(0,137,186,0.25)',
+          borderRadius: 14, padding: '14px 20px', maxWidth: 720,
+        }}>
+          <span style={{ fontSize: 20, flexShrink: 0, marginTop: 2 }}>🏛️</span>
+          <p style={{ fontSize: inamiRevealed ? 14 : 18, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>
+            C&apos;est l&apos;organisme public qui gère l&apos;assurance obligatoire soins de santé en Belgique,
+            c&apos;est donc lui qui fixe les règles.
+          </p>
+        </div>
+      </div>
+
+      {/* Conditions révélées */}
+      {inamiRevealed && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, flex: 1 }}>
+          {CONDITIONS.map((section) => (
+            <div key={section.titre} style={{
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
+              borderTop: '2px solid rgba(201,162,39,0.6)',
+              borderRadius: 14, padding: '18px 20px',
+              display: 'flex', flexDirection: 'column', gap: 14,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 20 }}>{section.icon}</span>
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                  {section.titre}
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {section.items.map((item, i) => (
+                  <div key={i} style={{
+                    background: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: '10px 14px',
+                    borderLeft: '2px solid rgba(201,162,39,0.4)',
+                  }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 4 }}>
+                      {item.label}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.55 }}>
+                      {item.detail}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!inamiRevealed && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 32 }}>
+          <div style={{
+            width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.25)',
+            animation: 'waitingPulse 2s ease-in-out infinite',
+          }} />
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
+            Le formateur va vous présenter les conditions de remboursement…
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── TV Mutuelles Reveal ───────────────────────────────────────────
 function TVMutuellesReveal({ mutuellesRevealed }) {
   const revealed = mutuellesRevealed || []
@@ -2720,7 +2847,7 @@ function TVMutuellesReveal({ mutuellesRevealed }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -2730,6 +2857,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   }, [page.id])
 
   if (page.type === 'mutuelles-reveal') return <TVMutuellesReveal mutuellesRevealed={mutuellesRevealed} />
+  if (page.type === 'inami-info')       return <TVInamiInfo inamiRevealed={inamiRevealed} />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />
   if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />
@@ -4314,6 +4442,7 @@ export default function TVView() {
 
   // Mutuelles Belgique
   const [mutuellesRevealed, setMutuellesRevealed]         = useState([])
+  const [inamiRevealed, setInamiRevealed]                 = useState(false)
 
   // Quiz podium
   const [quizInterstitialPhase, setQuizInterstitialPhase] = useState(false)
@@ -4352,6 +4481,7 @@ export default function TVView() {
     setFaqJournee(fj)
     setFaqQuestions(fj ? (sharedState[`faq_${fj}_q`] || []) : [])
     setMutuellesRevealed(sharedState.mutuelles_revealed || [])
+    setInamiRevealed(!!sharedState.inami_revealed)
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
@@ -4530,6 +4660,7 @@ export default function TVView() {
             offresClassiqueStep={offresClassiqueStep}
             modelePoint={modelePoint}
             mutuellesRevealed={mutuellesRevealed}
+            inamiRevealed={inamiRevealed}
           />
         ) : (
           <WelcomeScreen />
