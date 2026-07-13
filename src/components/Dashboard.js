@@ -13,6 +13,7 @@ import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
 import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { isDynamicRoomCode } from '@/lib/sessionCode'
+import { loadIdees, deleteIdee } from '@/components/IdeesButton'
 
 const NEWS_ITEMS = [
   '📚 Formation Verre Progressif — Module complet',
@@ -592,6 +593,153 @@ function AppUpdatesWidget() {
   )
 }
 
+// ── Vue Idées ─────────────────────────────────────────────────────
+function IdeesView({ onBack }) {
+  const [idees, setIdees] = useState(() => loadIdees())
+
+  const handleDelete = (id) => {
+    deleteIdee(id)
+    setIdees(loadIdees())
+  }
+
+  // Grouper par module puis par page
+  const grouped = idees.reduce((acc, idee) => {
+    const mKey = idee.moduleLabel || idee.moduleId || 'Module inconnu'
+    if (!acc[mKey]) acc[mKey] = {}
+    const pKey = idee.pageLabel || 'Page inconnue'
+    if (!acc[mKey][pKey]) acc[mKey][pKey] = []
+    acc[mKey][pKey].push(idee)
+    return acc
+  }, {})
+
+  const formatDate = (ts) => {
+    try {
+      const d = new Date(ts)
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+        + ' · ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    } catch { return '' }
+  }
+
+  return (
+    <div className="dash-wrap">
+      <button className="detail-back" onClick={onBack}>← Retour au tableau de bord</button>
+
+      <div className="dash-header" style={{ marginBottom: 28 }}>
+        <div>
+          <h2 style={{ marginBottom: 4 }}>💡 Idées notées</h2>
+          <p style={{ color: 'var(--text-s)', fontSize: 14 }}>
+            {idees.length === 0
+              ? 'Aucune idée pour l\'instant — utilisez le bouton 💡 durant les modules'
+              : `${idees.length} idée${idees.length > 1 ? 's' : ''} enregistrée${idees.length > 1 ? 's' : ''}`}
+          </p>
+        </div>
+        {idees.length > 0 && (
+          <button
+            onClick={() => { if (window.confirm('Supprimer toutes les idées ?')) { localStorage.removeItem('lpt_idees'); setIdees([]) } }}
+            style={{
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+              color: '#ef4444', borderRadius: 10, padding: '8px 16px',
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >Tout effacer</button>
+        )}
+      </div>
+
+      {idees.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-s)' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>💡</div>
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Aucune idée enregistrée</div>
+          <div style={{ fontSize: 14 }}>Cliquez sur le bouton 💡 durant un module pour noter vos idées en temps réel</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {Object.entries(grouped).map(([moduleLabel, pages]) => (
+            <div key={moduleLabel} style={{
+              background: 'var(--card)', border: '1px solid var(--border)',
+              borderRadius: 'var(--r)', overflow: 'hidden',
+            }}>
+              {/* Header module */}
+              <div style={{
+                padding: '14px 20px',
+                background: 'rgba(245,158,11,0.06)', borderBottom: '1px solid rgba(245,158,11,0.15)',
+                display: 'flex', alignItems: 'center', gap: 10,
+              }}>
+                <span style={{ fontSize: 16 }}>💡</span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{moduleLabel}</span>
+                <span style={{
+                  marginLeft: 'auto', fontSize: 11, fontWeight: 700,
+                  background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)',
+                  color: '#d97706', borderRadius: 20, padding: '2px 10px',
+                }}>
+                  {Object.values(pages).flat().length} idée{Object.values(pages).flat().length > 1 ? 's' : ''}
+                </span>
+              </div>
+
+              {/* Pages */}
+              <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {Object.entries(pages).map(([pageLabel, pageIdees]) => (
+                  <div key={pageLabel}>
+                    {/* Label page */}
+                    <div style={{
+                      fontSize: 11, fontWeight: 700, color: 'var(--text-s)',
+                      textTransform: 'uppercase', letterSpacing: 0.8,
+                      marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8,
+                    }}>
+                      <div style={{ height: 1, flex: 1, background: 'var(--border)' }} />
+                      {pageLabel}
+                      <div style={{ height: 1, flex: 1, background: 'var(--border)' }} />
+                    </div>
+
+                    {/* Idées de cette page */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {pageIdees.sort((a, b) => a.timestamp > b.timestamp ? 1 : -1).map(idee => (
+                        <div key={idee.id} style={{
+                          display: 'flex', alignItems: 'flex-start', gap: 12,
+                          background: 'var(--bg)', border: '1px solid var(--border)',
+                          borderLeft: '3px solid rgba(245,158,11,0.5)',
+                          borderRadius: 10, padding: '12px 14px',
+                        }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.55, marginBottom: 6 }}>
+                              {idee.text}
+                            </div>
+                            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                              {idee.auteur && (
+                                <span style={{ fontSize: 11, color: 'var(--text-s)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  👤 {idee.auteur}
+                                </span>
+                              )}
+                              <span style={{ fontSize: 11, color: 'var(--text-s)' }}>
+                                🕐 {formatDate(idee.timestamp)}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleDelete(idee.id)}
+                            title="Supprimer"
+                            style={{
+                              background: 'none', border: 'none', cursor: 'pointer',
+                              color: 'rgba(239,68,68,0.4)', fontSize: 16, padding: '2px 4px',
+                              borderRadius: 6, flexShrink: 0,
+                              transition: 'color .15s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                            onMouseLeave={e => e.currentTarget.style.color = 'rgba(239,68,68,0.4)'}
+                          >✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onOpenTv, onToast, onOnlineCount, onOpenPlanning }) {
   const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning
   const [entreeCount, setEntreeCount] = useState(null)
@@ -702,6 +850,10 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
         <EntreesView onBack={() => { setActiveView('home'); loadTileStats() }} onToast={onToast} pName={pName} />
       </div>
     )
+  }
+
+  if (activeView === 'idees') {
+    return <IdeesView onBack={() => setActiveView('home')} />
   }
 
   if (activeView === 'onboarding') {
@@ -1054,6 +1206,15 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-sub">{sessionLast}</div>
           </div>
 
+          <div className="dash-tile" onClick={() => setActiveView('idees')}>
+            <div className="dash-tile-top">
+              <div className="dash-tile-icon">💡</div>
+              <span className="dash-tile-link">Voir tout →</span>
+            </div>
+            <div className="dash-tile-count">{typeof window !== 'undefined' ? loadIdees().length : 0}</div>
+            <div className="dash-tile-label">Idées notées</div>
+            <div className="dash-tile-sub">Idées notées durant les formations</div>
+          </div>
           <div className="dash-tile dash-tile-cta" onClick={handleOpenRoomClick}>
             <div className="dash-tile-cta-icon">🚪</div>
             <div className="dash-tile-label">Ma salle</div>

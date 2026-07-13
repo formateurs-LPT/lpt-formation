@@ -28,6 +28,7 @@ import ModuleMontures from '@/components/modules/ModuleMontures'
 import ModuleMiniJeux from '@/components/modules/ModuleMiniJeux'
 import ModuleQuizFinal from '@/components/modules/ModuleQuizFinal'
 import ModuleMutuelles from '@/components/modules/ModuleMutuelles'
+import IdeesButton from '@/components/IdeesButton'
 import PlanningPage from '@/components/PlanningPage'
 import OnboardingView from '@/components/OnboardingView'
 import OnboardingViewBelgique from '@/components/OnboardingViewBelgique'
@@ -516,6 +517,9 @@ export default function Page() {
           pName={pName}
           onBack={handleBackToDashboard}
         />
+      )}
+      {view.startsWith('module-') && (
+        <IdeesButton moduleId={view.slice(7)} pName={pName} />
       )}
       <Toast message={message} />
     </div>
