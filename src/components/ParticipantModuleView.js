@@ -2671,6 +2671,18 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
   if (page.type === 'ordonnance')        return <OrdonnanceMobile         page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'pause')             return <PauseMobile              page={page} pageIndex={pageIndex} total={total} pName={pName} />
   if (page.type === 'parcours-tiers-payant') return <PauseMobile          page={page} pageIndex={pageIndex} total={total} pName={pName} />
+  if (page.type === 'tiers-payant-explication') return (
+    <div style={{ minHeight: '100vh', background: '#03112a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 52, marginBottom: 20 }}>📺</div>
+      <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Regardez le grand écran</h2>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 280 }}>
+        L'animation explique comment fonctionne le tiers payant complet et partiel.
+      </p>
+      <div style={{ marginTop: 28, background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 16, padding: '12px 24px' }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: '#4ade80' }}>Dans les deux cas : 0 € reste à charge 🎉</span>
+      </div>
+    </div>
+  )
   if (page.type === 'saisie-interactive') return <SaisieInteractiveMobile page={page} pageIndex={pageIndex} total={total} />
 
   // Freins à l'achat — saisie libre

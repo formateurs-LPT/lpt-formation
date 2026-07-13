@@ -561,6 +561,7 @@ export const MODULE_DATA = {
   'parcours-rembourses': { pages: [
     { id: 'parcours-offres', type: 'parcours-rembourses-offres', titre: 'Les offres remboursées' },
     { id: 'parcours-tiers-payant', type: 'parcours-tiers-payant', titre: 'C\'est quoi le tiers payant pour vous ?' },
+    { id: 'tiers-payant-explication', type: 'tiers-payant-explication', titre: 'Comment fonctionne le tiers payant ?' },
   ], quiz: [], label: 'Les parcours remboursés', sub: 'Le Suprême · Le 1=1 · 100% Santé' },
 }
 

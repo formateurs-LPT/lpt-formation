@@ -278,6 +278,35 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
               )}
             </div>
           </div>
+        ) : page?.type === 'tiers-payant-explication' ? (
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 6 }}>
+              Vue formateur · Page {pageIndex + 1}
+            </div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 20 }}>Comment fonctionne le tiers payant ?</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div style={{ background: 'rgba(74,222,128,0.07)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 14, padding: '18px 20px' }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#4ade80', marginBottom: 10 }}>✅ Tiers payant complet</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.55 }}>
+                  <span>💳 Carte Vitale → règle LPT</span>
+                  <span>💳 Mutuelle → règle LPT</span>
+                  <span style={{ color: '#4ade80', fontWeight: 700 }}>🧑 Client → 0 € reste à charge</span>
+                </div>
+              </div>
+              <div style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 14, padding: '18px 20px' }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#f59e0b', marginBottom: 10 }}>⚡ Tiers payant partiel</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.55 }}>
+                  <span>💳 Vitale + Client → règlent LPT</span>
+                  <span>📄 Client envoie facture à la mutuelle</span>
+                  <span>💰 Mutuelle rembourse le client</span>
+                  <span style={{ color: '#4ade80', fontWeight: 700 }}>🧑 Client → 0 € reste à charge</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ marginTop: 14, padding: '12px 16px', background: 'rgba(0,137,186,0.07)', border: '1px solid rgba(0,137,186,0.18)', borderRadius: 10, fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>
+              💡 L'animation est diffusée en direct sur le grand écran.
+            </div>
+          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', textAlign: 'center' }}>
             <div style={{ maxWidth: 560 }}>
