@@ -16,7 +16,7 @@ const SHORTCUTS = [
     color: '#00B899',
   },
   {
-    label: 'Back-Office LPT',
+    label: 'Back-End',
     url: 'https://admin.lpt-network.com/login',
     favicon: 'https://www.google.com/s2/favicons?domain=admin.lpt-network.com&sz=64',
     emoji: '⚙️',
