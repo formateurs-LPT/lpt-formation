@@ -114,10 +114,19 @@ function parseRHTable(rawText) {
   return results
 }
 
-function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving }) {
-  const cat = classifyMagasin(c.magasin)
-  const colors = { paris: '#0089ba', province: '#7c3aed', belgique: '#db2777' }
-  const color = colors[cat] || '#888'
+const CAT_META = {
+  paris:    { label: 'Présentiel',     icon: '🏢', color: '#0089ba', bg: '#f0f9ff', border: '#bae6fd' },
+  province: { label: 'Visio Province', icon: '💻', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+  belgique: { label: 'Visio Belgique', icon: '💻', color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
+}
+
+function effectiveCat(c) {
+  return c._forceCat || classifyMagasin(c.magasin) || 'province'
+}
+
+function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving, onToggleMode }) {
+  const cat = effectiveCat(c)
+  const meta = CAT_META[cat] || CAT_META.province
   const fullName = entreeDisplayName(c)
   const pin = generatePin(fullName)
   const [nom, setNom] = useState(c.nom || '')
@@ -132,7 +141,7 @@ function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving }) {
 
   return (
     <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
-      <div style={{ width: 36, height: 36, borderRadius: '50%', background: color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color, flexShrink: 0 }}>
+      <div style={{ width: 36, height: 36, borderRadius: '50%', background: meta.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: meta.color, flexShrink: 0 }}>
         {(c.nom || '?')[0]}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -171,13 +180,31 @@ function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving }) {
           </>
         )}
       </div>
-      <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+      <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
         {/* PIN */}
         <div style={{
           background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8,
           padding: '3px 10px', fontSize: 13, fontWeight: 800,
           color: '#0089ba', letterSpacing: 1,
         }}>🔑 {pin}</div>
+        {/* Bascule mode */}
+        {!editing && (
+          <button
+            type="button"
+            onClick={onToggleMode}
+            title="Changer le mode (présentiel / visio)"
+            style={{
+              background: meta.bg, border: `1px solid ${meta.border}`,
+              borderRadius: 8, padding: '3px 10px',
+              fontSize: 11, fontWeight: 700, color: meta.color,
+              cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', gap: 4,
+            }}
+          >
+            {meta.icon} {meta.label}
+            {c._forceCat && <span style={{ opacity: 0.5, fontSize: 9, marginLeft: 2 }}>✎</span>}
+          </button>
+        )}
         {c.heures && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-s)' }}>{c.heures}h/sem</div>}
         {c.telephone && <div style={{ fontSize: 11, color: 'var(--text-m)' }}>{c.telephone}</div>}
       </div>
@@ -305,7 +332,7 @@ function QuickAddModal({ onClose, onAdd }) {
   )
 }
 
-function GroupSection({ title, items, editingIndex, savingIndex, onStartEdit, onCancelEdit, onSave }) {
+function GroupSection({ title, items, editingIndex, savingIndex, onStartEdit, onCancelEdit, onSave, onToggleMode }) {
   if (!items.length) return null
   return (
     <div style={{ marginBottom: 24 }}>
@@ -322,6 +349,7 @@ function GroupSection({ title, items, editingIndex, savingIndex, onStartEdit, on
           onStartEdit={() => onStartEdit(index)}
           onCancelEdit={onCancelEdit}
           onSave={(nom, prenom) => onSave(index, nom, prenom)}
+          onToggleMode={() => onToggleMode(index)}
         />
       ))}
     </div>
@@ -552,17 +580,40 @@ export default function EntreesView({ onBack, onToast, pName }) {
     }
   }
 
-  const withIndex = (pred) =>
-    entrees.map((c, index) => ({ c, index })).filter(({ c }) => pred(c))
-  const paris = withIndex(c => classifyMagasin(c.magasin) === 'paris')
-  const province = withIndex(c => classifyMagasin(c.magasin) === 'province')
-  const belgique = withIndex(c => classifyMagasin(c.magasin) === 'belgique')
+  const handleToggleMode = async (index) => {
+    const c = entrees[index]
+    const current = effectiveCat(c)
+    // Cycle : paris → province/belgique auto → paris → …
+    // Si forcé en paris mais auto = visio : retirer le forcage (revenir à l'auto)
+    // Si forcé en visio ou auto = visio : forcer paris
+    // Si auto = paris et pas de force : forcer province
+    let newForce
+    if (current === 'paris') {
+      const auto = classifyMagasin(c.magasin)
+      newForce = (auto !== 'paris') ? null : 'province' // retirer le forcage si auto est visio, sinon forcer province
+    } else {
+      newForce = 'paris'
+    }
+    const next = [...entrees]
+    next[index] = { ...c, _forceCat: newForce }
+    setEntrees(next)
+    await persistEntreesList(next)
+    const finalCat = effectiveCat(next[index])
+    const label = CAT_META[finalCat]?.label || finalCat
+    onToast(`${entreeDisplayName(c)} → ${label}`)
+  }
+
+  const paris    = entrees.map((c, i) => ({ c, index: i })).filter(({ c }) => effectiveCat(c) === 'paris')
+  const province = entrees.map((c, i) => ({ c, index: i })).filter(({ c }) => effectiveCat(c) === 'province')
+  const belgique = entrees.map((c, i) => ({ c, index: i })).filter(({ c }) => effectiveCat(c) === 'belgique')
+
   const groupProps = {
     editingIndex,
     savingIndex,
     onStartEdit: setEditingIndex,
     onCancelEdit: () => setEditingIndex(null),
     onSave: handleSaveCollab,
+    onToggleMode: handleToggleMode,
   }
 
   return (
