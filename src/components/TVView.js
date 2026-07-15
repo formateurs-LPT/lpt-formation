@@ -4049,7 +4049,10 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Les verres progressifs</span>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>Verre progressif Pulsar Next</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>Rodenstock · Allemagne</div>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 5 }}>
           {Array(total).fill(0).map((_, i) => (
@@ -4062,10 +4065,27 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
         </div>
       </div>
 
+      {/* Phrase cle presbytie */}
+      <div style={{
+        padding: '0 40px', flexShrink: 0,
+        opacity: entered ? 1 : 0, transform: entered ? 'translateY(0)' : 'translateY(-10px)',
+        transition: 'all .6s ease .1s',
+      }}>
+        <div style={{
+          display: 'inline-block',
+          background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.3)',
+          borderRadius: 10, padding: '10px 20px',
+        }}>
+          <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', fontWeight: 500, lineHeight: 1.5 }}>
+            Concu pour les presbytes — une seule paire qui fonctionne du matin au soir, sans jongler entre deux paires de lunettes.
+          </span>
+        </div>
+      </div>
+
       {/* Verre + zones */}
       <div style={{
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        gap: 72, padding: '20px 80px 40px',
+        gap: 72, padding: '16px 80px 32px',
       }}>
         {/* Verre */}
         <div style={{
@@ -4081,15 +4101,15 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
           <Image
             src="/assets/verre-prog.png"
             alt="Verre progressif"
-            width={340}
-            height={438}
+            width={300}
+            height={386}
             style={{ objectFit: 'contain', display: 'block', position: 'relative', zIndex: 1 }}
             priority
           />
         </div>
 
         {/* Labels apparaissant un par un */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
           {TV_TYPES_VERRES_ZONES.map((z, i) => (
             <div key={i} style={{
               opacity: revealed > i ? 1 : 0,
@@ -4097,10 +4117,10 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
               transition: 'opacity .5s ease, transform .5s ease',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-                <div style={{ width: 4, height: 56, borderRadius: 2, background: z.color, flexShrink: 0 }} />
+                <div style={{ width: 4, height: 52, borderRadius: 2, background: z.color, flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: 30, fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>{z.label}</div>
-                  <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', marginTop: 5 }}>{z.sub}</div>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>{z.label}</div>
+                  <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{z.sub}</div>
                 </div>
               </div>
             </div>
