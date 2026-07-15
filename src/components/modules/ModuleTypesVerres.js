@@ -440,7 +440,7 @@ function ContentPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pag
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {page.points.map((pt, i) => (
+            {(page.points || []).map((pt, i) => (
               <div key={i} style={{
                 display: 'flex', gap: 12, alignItems: 'flex-start',
                 opacity: entered ? 1 : 0,
