@@ -19,15 +19,9 @@ export const TYPES_VERRES_QUIZ = [
 export const TYPES_VERRES_PAGES = [
   {
     id: 'unifocal',
+    type: 'unifocal',
     titre: 'Le Verre Unifocal',
-    sousTitre: 'La correction simple, efficace, accessible',
-    points: [
-      { emoji: '🎯', titre: 'Une seule correction', texte: 'Corrige un seul défaut visuel : myopie, hypermétropie ou astigmatisme.' },
-      { emoji: '👁️', titre: 'Pour qui ?', texte: 'Clients non presbytes, ou presbytes souhaitant des verres dédiés à une seule distance (lecture ou écran).' },
-      { emoji: '💡', titre: 'Avantage clé', texte: 'Vision nette sur toute la surface du verre — sans zone de flou.' },
-      { emoji: '💰', titre: 'Dans notre offre', texte: 'Proposé en 100% Santé (0€) ou en offre 1=1. Idéal pour une première paire.' },
-    ],
-    avatarScript: "Le verre unifocal corrige un seul défaut visuel. Toute la surface est homogène : pas de zone de flou, une vision nette partout. C'est le verre le plus courant, idéal pour une première paire.",
+    avatarScript: "Le verre unifocal, c'est la correction la plus simple : une seule correction sur toute la surface. Pas de zone de flou. Il est destine aux clients qui n'ont qu'un seul probleme a corriger, mais aussi aux presbytes qui veulent une paire dediee a une distance precise.",
     color: '#00abe9',
   },
   {

@@ -3897,6 +3897,117 @@ function TVTiersPayantExplication() {
   )
 }
 
+// ── TV : Page verre unifocal (Types de verres) ───────────────────
+function TVTypesVerresUnifocal({ pageIndex, total }) {
+  const [entered, setEntered] = useState(false)
+  useEffect(() => {
+    setEntered(false)
+    const t = setTimeout(() => setEntered(true), 100)
+    return () => clearTimeout(t)
+  }, [])
+
+  const COLOR = '#00abe9'
+
+  const blocks = [
+    {
+      label: 'Ce que c\'est',
+      text: 'Une correction identique sur toute la surface du verre. Pas de zone de flou, vision nette partout.',
+    },
+    {
+      label: 'Pour qui',
+      text: 'Clients non presbytes (un seul defaut a corriger, quelle que soit la distance). Egalement pour les clients presbytes qui souhaitent une paire dediee a une seule distance — vision de loin ou vision de pres.',
+    },
+    {
+      label: 'Fabrication',
+      text: '10 minutes en stock, de -8 a +7,25 avec un maximum de 3 de cylindre. Disponible dans tous les traitements en 10 min (sauf polarise).',
+    },
+  ]
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      {/* Topbar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '20px 40px', flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Le verre unifocal</span>
+        </div>
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{
+              height: 5, borderRadius: 3, transition: 'all .3s',
+              width: i === pageIndex ? 22 : 5,
+              background: i === pageIndex ? COLOR : 'rgba(255,255,255,0.2)',
+            }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Contenu */}
+      <div style={{
+        flex: 1, display: 'grid', gridTemplateColumns: '1fr 1.4fr',
+        gap: 64, padding: '16px 72px 40px', alignItems: 'center',
+      }}>
+        {/* Verre unifocal */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          opacity: entered ? 1 : 0, transform: entered ? 'scale(1)' : 'scale(0.9)',
+          transition: 'all .8s ease',
+        }}>
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              position: 'absolute', inset: -50, borderRadius: '50%',
+              background: `radial-gradient(circle, ${COLOR}22 0%, transparent 68%)`,
+              pointerEvents: 'none',
+            }} />
+            <Image
+              src="/assets/verre-unifocal-2.png"
+              alt="Verre unifocal"
+              width={300}
+              height={300}
+              style={{ objectFit: 'contain', display: 'block', position: 'relative', zIndex: 1 }}
+              priority
+            />
+          </div>
+        </div>
+
+        {/* Blocs info */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+          <h1 style={{
+            fontSize: 44, fontWeight: 800, color: '#fff', lineHeight: 1.1,
+            opacity: entered ? 1 : 0, transform: entered ? 'translateY(0)' : 'translateY(-16px)',
+            transition: 'all .6s ease',
+          }}>
+            Le verre <span style={{ color: COLOR }}>unifocal</span>
+          </h1>
+
+          {blocks.map((b, i) => (
+            <div key={i} style={{
+              display: 'flex', gap: 18, alignItems: 'flex-start',
+              opacity: entered ? 1 : 0,
+              transform: entered ? 'translateX(0)' : 'translateX(32px)',
+              transition: `all .55s ease ${0.1 + i * 0.12}s`,
+            }}>
+              <div style={{ width: 3, borderRadius: 2, background: COLOR, flexShrink: 0, alignSelf: 'stretch', minHeight: 40 }} />
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>{b.label}</div>
+                <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>{b.text}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── TV : Page verre progressif (Types de verres) ─────────────────
 const TV_TYPES_VERRES_ZONES = [
   { color: '#a78bfa', label: 'Vision de loin',       sub: 'Myopie · Hypermétropie · Astigmatisme' },
@@ -4057,7 +4168,8 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'prog-retour')     return <TVProgressifRetourTerrain  page={page} pageIndex={pageIndex} total={total} progRetourResponses={progRetourResponses} />
   if (page.type === 'prog-objections') return <TVProgressifJeuObjections  page={page} pageIndex={pageIndex} total={total} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} progBestAnswer={progBestAnswer} />
 
-  // Types de verres — page progressif
+  // Types de verres
+  if (page.type === 'unifocal')  return <TVTypesVerresUnifocal  pageIndex={pageIndex} total={total} />
   if (page.type === 'progressif') return <TVTypesVerresProgressif pageIndex={pageIndex} total={total} />
 
   return (
