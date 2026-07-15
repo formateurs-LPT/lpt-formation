@@ -4010,14 +4010,27 @@ function TVTypesVerresUnifocal({ pageIndex, total }) {
 
 // ── TV : Page verre progressif (Types de verres) ─────────────────
 const TV_TYPES_VERRES_ZONES = [
-  { color: '#a78bfa', label: 'Vision de loin',       sub: 'Myopie · Hypermétropie · Astigmatisme' },
-  { color: '#4ade80', label: 'Vision intermédiaire', sub: 'De 40 cm à 1,5 m'                      },
-  { color: '#fbbf24', label: 'Vision de près',        sub: 'Presbytie — moins de 40 cm'            },
+  { color: '#a78bfa', label: 'Vision de loin',       sub: 'Au loin — rue, voiture, television'  },
+  { color: '#4ade80', label: 'Vision intermediaire', sub: 'Ecran, tableau — de 40 cm a 1,5 m'   },
+  { color: '#fbbf24', label: 'Vision de pres',        sub: 'Telephone, lecture — moins de 40 cm' },
 ]
 
+// Lens image is 1536x1024 (ratio 1.5). Displayed at 600x400 → fills perfectly.
+// Oval bounds estimated from the image: cx=300 cy=200 rx=201 ry=151
+const _PROG_OV = { cx: 300, cy: 200, rx: 201, ry: 151, top: 49, bot: 351 }
+const _PROG_GEO = [0.22, 0.52, 0.80].map(f => {
+  const y  = Math.round(_PROG_OV.top + (_PROG_OV.bot - _PROG_OV.top) * f)
+  const dy = y - _PROG_OV.cy
+  const s  = Math.sqrt(Math.max(0, 1 - (dy / _PROG_OV.ry) ** 2))
+  return { y, rx: Math.round(_PROG_OV.cx + _PROG_OV.rx * s), lx: Math.round(_PROG_OV.cx - _PROG_OV.rx * s) }
+})
+// Approx results: loin {y:115,rx:466,lx:134} milieu {y:206,rx:501,lx:99} pres {y:291,rx:460,lx:140}
+
 function TVTypesVerresProgressif({ pageIndex, total }) {
-  const [entered, setEntered] = useState(false)
-  const [revealed, setRevealed] = useState(0)
+  const [entered,     setEntered]     = useState(false)
+  const [revealed,    setRevealed]    = useState(0)
+  const [eyePhase,    setEyePhase]    = useState(0)
+  const [beamVisible, setBeamVisible] = useState(true)
 
   useEffect(() => {
     setEntered(false)
@@ -4035,6 +4048,25 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
     return () => clearInterval(t)
   }, [])
 
+  // Cycle eye through 3 zones with a brief fade between transitions
+  useEffect(() => {
+    const t = setInterval(() => {
+      setBeamVisible(false)
+      setTimeout(() => { setEyePhase(p => (p + 1) % 3); setBeamVisible(true) }, 380)
+    }, 3200)
+    return () => clearInterval(t)
+  }, [])
+
+  const LW = 600, LH = 400
+  // Eye center in lens-SVG coords: eye SVG 60px wide, flex gap 60px → center at -(60+30)=-90
+  const EYE_X = -90, EYE_Y = 200   // lens oval center Y
+  const PUPIL_DY = [-14, 0, 14]     // per phase (up=loin, center=milieu, down=pres)
+  const LABEL_GAP = 60              // flex gap between lens and labels
+
+  const geo = _PROG_GEO
+  const cur = geo[eyePhase]
+  const curColor = TV_TYPES_VERRES_ZONES[eyePhase].color
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -4044,7 +4076,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
       {/* Topbar */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '20px 40px', flexShrink: 0,
+        padding: '18px 40px', flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
@@ -4065,64 +4097,116 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
         </div>
       </div>
 
-      {/* Phrase cle presbytie */}
-      <div style={{
-        padding: '0 40px', flexShrink: 0,
-        opacity: entered ? 1 : 0, transform: entered ? 'translateY(0)' : 'translateY(-10px)',
-        transition: 'all .6s ease .1s',
-      }}>
+      {/* Phrase */}
+      <div style={{ padding: '0 40px 8px', flexShrink: 0, opacity: entered ? 1 : 0, transition: 'opacity .6s ease .1s' }}>
         <div style={{
           display: 'inline-block',
           background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.3)',
-          borderRadius: 10, padding: '10px 20px',
+          borderRadius: 10, padding: '9px 18px',
         }}>
-          <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', fontWeight: 500, lineHeight: 1.5 }}>
-            Concu pour les presbytes — une seule paire qui fonctionne du matin au soir, sans jongler entre deux paires de lunettes.
+          <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
+            Pense pour les presbytes — une seule paire pour voir a toutes les distances.
           </span>
         </div>
       </div>
 
-      {/* Verre + zones */}
+      {/* Main content: oeil | verre | labels */}
       <div style={{
-        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        gap: 72, padding: '16px 80px 32px',
+        flex: 1, display: 'flex', alignItems: 'center',
+        padding: '8px 50px 20px', gap: LABEL_GAP,
+        opacity: entered ? 1 : 0, transition: 'opacity .7s ease .15s',
       }}>
-        {/* Verre */}
-        <div style={{
-          position: 'relative', flexShrink: 0,
-          opacity: entered ? 1 : 0, transform: entered ? 'scale(1)' : 'scale(0.9)',
-          transition: 'all .8s ease',
-        }}>
-          <div style={{
-            position: 'absolute', inset: -60, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 68%)',
-            pointerEvents: 'none',
-          }} />
+
+        {/* Oeil anime */}
+        <svg width={60} height={100} viewBox="-30 -50 60 100" style={{ flexShrink: 0 }}>
+          {/* Globe oculaire */}
+          <ellipse cx={0} cy={0} rx={26} ry={18} fill="rgba(240,248,255,0.07)" stroke="rgba(255,255,255,0.2)" strokeWidth={1.5} />
+          {/* Paupieres */}
+          <path d="M-26,0 Q0,-24 26,0" fill="rgba(3,17,42,0.85)" />
+          <path d="M-26,0 Q0,-24 26,0" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth={1.5} />
+          <path d="M-26,0 Q0,14 26,0"  fill="rgba(3,17,42,0.85)" />
+          <path d="M-26,0 Q0,14 26,0"  fill="none" stroke="rgba(255,255,255,0.2)"  strokeWidth={1} />
+          {/* Iris + pupille animes */}
+          <g style={{ transition: 'transform 0.55s ease' }} transform={`translate(0,${PUPIL_DY[eyePhase]})`}>
+            <circle cx={0} cy={0} r={12} fill="#1a0840" />
+            <circle cx={0} cy={0} r={8}  fill="#7c3aed" opacity={0.9} />
+            <circle cx={0} cy={0} r={5}  fill="#08030f" />
+            <circle cx={3} cy={-3} r={2.5} fill="rgba(255,255,255,0.65)" />
+          </g>
+        </svg>
+
+        {/* Verre avec SVG overlay */}
+        <div style={{ position: 'relative', width: LW, flexShrink: 0 }}>
           <Image
             src="/assets/verre-prog.png"
             alt="Verre progressif"
-            width={300}
-            height={386}
-            style={{ objectFit: 'contain', display: 'block', position: 'relative', zIndex: 1 }}
+            width={LW}
+            height={LH}
+            style={{ objectFit: 'contain', display: 'block' }}
             priority
           />
+
+          {/* SVG overlay — overflow:visible pour atteindre les labels a droite */}
+          <svg
+            style={{ position: 'absolute', top: 0, left: 0, overflow: 'visible', pointerEvents: 'none' }}
+            width={LW} height={LH}
+          >
+            {/* Faisceau : oeil → bord gauche du verre */}
+            <line
+              x1={EYE_X} y1={EYE_Y + PUPIL_DY[eyePhase]}
+              x2={cur.lx} y2={cur.y}
+              stroke={curColor} strokeWidth={2} strokeDasharray="6 5"
+              opacity={beamVisible ? 0.85 : 0}
+              style={{ transition: 'opacity 0.38s ease' }}
+            />
+            {/* Faisceau a travers le verre */}
+            <line
+              x1={cur.lx} y1={cur.y} x2={cur.rx} y2={cur.y}
+              stroke={curColor} strokeWidth={2.5}
+              opacity={beamVisible ? 0.45 : 0}
+              style={{ transition: 'opacity 0.38s ease' }}
+            />
+            {/* Point de sortie du faisceau (bord droit) */}
+            <circle cx={cur.rx} cy={cur.y} r={5} fill={curColor}
+              opacity={beamVisible ? 0.9 : 0}
+              style={{ transition: 'opacity 0.38s ease' }}
+            />
+
+            {/* Points de zone reveles un par un */}
+            {TV_TYPES_VERRES_ZONES.map((z, i) => (
+              <circle key={i} cx={geo[i].rx} cy={geo[i].y} r={7}
+                fill={z.color} stroke="rgba(255,255,255,0.25)" strokeWidth={1.5}
+                opacity={revealed > i ? 1 : 0}
+                style={{ transition: 'opacity 0.4s ease' }}
+              />
+            ))}
+
+            {/* Connecteurs vers les labels */}
+            {TV_TYPES_VERRES_ZONES.map((z, i) => (
+              <line key={i}
+                x1={geo[i].rx + 9} y1={geo[i].y}
+                x2={LW + LABEL_GAP - 12} y2={geo[i].y}
+                stroke={z.color} strokeWidth={1.5} strokeDasharray="5 4"
+                opacity={revealed > i ? 0.7 : 0}
+                style={{ transition: 'opacity 0.5s ease' }}
+              />
+            ))}
+          </svg>
         </div>
 
-        {/* Labels apparaissant un par un */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+        {/* Labels positionnes aux Y exacts des zones */}
+        <div style={{ flex: 1, position: 'relative', height: LH, alignSelf: 'center' }}>
           {TV_TYPES_VERRES_ZONES.map((z, i) => (
             <div key={i} style={{
+              position: 'absolute',
+              top: geo[i].y,
+              left: 0,
+              transform: `translateY(-50%) translateX(${revealed > i ? 0 : 32}px)`,
               opacity: revealed > i ? 1 : 0,
-              transform: revealed > i ? 'translateX(0)' : 'translateX(48px)',
-              transition: 'opacity .5s ease, transform .5s ease',
+              transition: 'opacity 0.5s ease, transform 0.5s ease',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-                <div style={{ width: 4, height: 52, borderRadius: 2, background: z.color, flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>{z.label}</div>
-                  <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{z.sub}</div>
-                </div>
-              </div>
+              <div style={{ fontSize: 30, fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>{z.label}</div>
+              <div style={{ fontSize: 14, color: z.color, fontWeight: 600, marginTop: 5 }}>{z.sub}</div>
             </div>
           ))}
         </div>
