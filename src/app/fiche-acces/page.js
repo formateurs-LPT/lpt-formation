@@ -137,9 +137,11 @@ function QrModal({ url, onClose }) {
 export default function FicheAcces() {
   const [showQr, setShowQr] = useState(false)
   const [ficheUrl, setFicheUrl] = useState('')
+  const [isTrainer, setIsTrainer] = useState(false)
 
   useEffect(() => {
     setFicheUrl(window.location.origin + '/fiche-acces')
+    setIsTrainer(!!localStorage.getItem('trainer_name'))
   }, [])
 
   const handlePrint = () => window.print()
@@ -175,19 +177,21 @@ export default function FicheAcces() {
             </div>
           </div>
           <div className="no-print" style={{ display: 'flex', gap: 10 }}>
-            <button
-              onClick={() => setShowQr(true)}
-              style={{
-                background: `${GOLD}18`, border: `1px solid ${GOLD}60`,
-                color: GOLD, fontSize: 13, fontWeight: 700,
-                padding: '10px 20px', borderRadius: 12,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}35` }}
-              onMouseLeave={e => { e.currentTarget.style.background = `${GOLD}18` }}
-            >
-              ⬜ QR Code
-            </button>
+            {isTrainer && (
+              <button
+                onClick={() => setShowQr(true)}
+                style={{
+                  background: `${GOLD}18`, border: `1px solid ${GOLD}60`,
+                  color: GOLD, fontSize: 13, fontWeight: 700,
+                  padding: '10px 20px', borderRadius: 12,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}35` }}
+                onMouseLeave={e => { e.currentTarget.style.background = `${GOLD}18` }}
+              >
+                ⬜ QR Code
+              </button>
+            )}
             <button
               onClick={handlePrint}
               style={{
@@ -199,7 +203,7 @@ export default function FicheAcces() {
               onMouseEnter={e => { e.currentTarget.style.background = `${BLUE}35` }}
               onMouseLeave={e => { e.currentTarget.style.background = `${BLUE}18` }}
             >
-              ⬇ Exporter en PDF
+              ⬇ Télécharger en PDF
             </button>
           </div>
         </div>
