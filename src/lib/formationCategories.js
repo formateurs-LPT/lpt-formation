@@ -67,9 +67,8 @@ export function resolveCategoryFromEntree(entree) {
   // _forceCat est positionné par le toggle présentiel/visio dans EntreesView
   // Valeurs possibles : ‘paris’ | ‘province’ | ‘belgique’
   const forceCat = entree?._forceCat
-  if (forceCat && forceCat in MAGASIN_ZONE_DEFAULT_CATEGORY) {
-    return MAGASIN_ZONE_DEFAULT_CATEGORY[forceCat]
-  }
+  const forcedCategory = forceCat && MAGASIN_ZONE_DEFAULT_CATEGORY[forceCat]
+  if (forcedCategory) return forcedCategory
 
   const zone = classifyMagasin(entree?.magasin)
   return MAGASIN_ZONE_DEFAULT_CATEGORY[zone] || null
