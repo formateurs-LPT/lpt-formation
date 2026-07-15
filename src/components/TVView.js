@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbSelect, SESSION_CODE, fetchOpenAnswers } from '@/lib/supabase'
+import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState } from '@/lib/supabase'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
 
@@ -3899,147 +3899,101 @@ function TVTiersPayantExplication() {
 
 // ── TV : Page verre progressif (Types de verres) ─────────────────
 const TV_TYPES_VERRES_ZONES = [
-  { id: 'haut',   top: '22%', color: '#a78bfa', label: 'Vision de loin',       detail: 'Myopie, hypermétropie, astigmatisme.' },
-  { id: 'milieu', top: '52%', color: '#4ade80', label: 'Vision intermédiaire', detail: 'De 40 à 150 cm'                        },
-  { id: 'bas',    top: '80%', color: '#fbbf24', label: 'Vision de près',        detail: 'presbytie : - de 40 cm'               },
+  { color: '#a78bfa', label: 'Vision de loin',       sub: 'Myopie · Hypermétropie · Astigmatisme' },
+  { color: '#4ade80', label: 'Vision intermédiaire', sub: 'De 40 cm à 1,5 m'                      },
+  { color: '#fbbf24', label: 'Vision de près',        sub: 'Presbytie — moins de 40 cm'            },
 ]
 
 function TVTypesVerresProgressif({ pageIndex, total }) {
   const [entered, setEntered] = useState(false)
+  const [revealed, setRevealed] = useState(0)
+
   useEffect(() => {
     setEntered(false)
-    const t = setTimeout(() => setEntered(true), 80)
+    const t = setTimeout(() => setEntered(true), 100)
     return () => clearTimeout(t)
+  }, [])
+
+  useEffect(() => {
+    const poll = async () => {
+      const s = await getSharedState()
+      setRevealed(Number(s?.typesVerresZone) || 0)
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
   }, [])
 
   return (
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-      display: 'flex', flexDirection: 'column', position: 'relative',
+      display: 'flex', flexDirection: 'column',
     }}>
-      {/* Particules */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        {[...Array(10)].map((_, i) => (
-          <div key={i} style={{
-            position: 'absolute', width: 4, height: 4, borderRadius: '50%',
-            background: '#7c3aed', opacity: 0.2 + (i % 3) * 0.1,
-            left: `${5 + i * 9}%`, top: `${20 + (i % 4) * 20}%`,
-            animation: `particleFloat ${3 + i * 0.5}s ease-in-out ${i * 0.25}s infinite alternate`,
-          }} />
-        ))}
-      </div>
-
       {/* Topbar */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '22px 40px', position: 'relative', zIndex: 10, flexShrink: 0,
+        padding: '20px 40px', flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={110} height={42} style={{ objectFit: 'contain' }} />
-          <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Types de verres</span>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Les verres progressifs</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {Array(total).fill(0).map((_, i) => (
-              <div key={i} style={{
-                height: 6, borderRadius: 3, transition: 'all .3s',
-                width: i === pageIndex ? 26 : 6,
-                background: i === pageIndex ? '#7c3aed' : 'rgba(255,255,255,0.2)',
-              }} />
-            ))}
-          </div>
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{
+              height: 5, borderRadius: 3, transition: 'all .3s',
+              width: i === pageIndex ? 22 : 5,
+              background: i === pageIndex ? '#7c3aed' : 'rgba(255,255,255,0.2)',
+            }} />
+          ))}
         </div>
       </div>
 
-      {/* Zone principale */}
+      {/* Verre + zones */}
       <div style={{
-        flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr',
-        gap: 48, padding: '12px 60px 28px', alignItems: 'center', position: 'relative', zIndex: 5,
+        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        gap: 72, padding: '20px 80px 40px',
       }}>
-        {/* Gauche : verre annoté */}
+        {/* Verre */}
         <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative', flexShrink: 0,
           opacity: entered ? 1 : 0, transform: entered ? 'scale(1)' : 'scale(0.9)',
-          transition: 'all .7s ease .1s',
+          transition: 'all .8s ease',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-            {/* Verre progressif PNG */}
-            <div style={{ position: 'relative', flexShrink: 0 }}>
-              <Image
-                src="/assets/verre-prog.png"
-                alt="Verre progressif"
-                width={220}
-                height={284}
-                style={{ objectFit: 'contain', display: 'block' }}
-                priority
-              />
-            </div>
-            {/* Labels de zones */}
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: 284 }}>
-              {TV_TYPES_VERRES_ZONES.map(z => (
-                <div key={z.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 24, height: 1.5, background: z.color, opacity: 0.75, flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: z.color, lineHeight: 1.2 }}>{z.label}</div>
-                    <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', fontStyle: 'italic', marginTop: 2 }}>( {z.detail} )</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <div style={{
+            position: 'absolute', inset: -60, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 68%)',
+            pointerEvents: 'none',
+          }} />
+          <Image
+            src="/assets/verre-prog.png"
+            alt="Verre progressif"
+            width={340}
+            height={438}
+            style={{ objectFit: 'contain', display: 'block', position: 'relative', zIndex: 1 }}
+            priority
+          />
         </div>
 
-        {/* Droite : texte */}
-        <div style={{
-          opacity: entered ? 1 : 0, transform: entered ? 'translateX(0)' : 'translateX(32px)',
-          transition: 'all .6s ease .15s',
-        }}>
-          <div style={{
-            fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.4)',
-            textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12,
-          }}>Les différents types de verres</div>
-
-          <h1 style={{ fontSize: 52, fontWeight: 800, lineHeight: 1.1, marginBottom: 18 }}>
-            <span style={{ color: '#fff' }}>Les verres </span>
-            <span style={{ color: '#a78bfa' }}>progressifs</span>
-            <br />
-            <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 32, fontWeight: 500 }}>( Pulsar Next )</span>
-          </h1>
-
-          <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.65)', lineHeight: 1.75, marginBottom: 24 }}>
-            Les verres progressifs comportent différentes corrections et ils sont destinés aux personnes qui sont presbytes. Ce verre leur permet de corriger les différents troubles visuels avec une seule et même paire de lunettes.
-          </p>
-
-          {/* Fabrication */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#a78bfa', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
-              Fabrication :
-            </div>
-            <div style={{
-              display: 'flex', gap: 12, alignItems: 'flex-start',
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 14, padding: '14px 18px',
+        {/* Labels apparaissant un par un */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
+          {TV_TYPES_VERRES_ZONES.map((z, i) => (
+            <div key={i} style={{
+              opacity: revealed > i ? 1 : 0,
+              transform: revealed > i ? 'translateX(0)' : 'translateX(48px)',
+              transition: 'opacity .5s ease, transform .5s ease',
             }}>
-              <span style={{ color: '#a78bfa', fontSize: 20, lineHeight: 1, marginTop: 2 }}>—</span>
-              <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
-                9 jours, Verres allemands, fournisseurs : <strong style={{ color: '#fff' }}>Rodenstock</strong>.
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+                <div style={{ width: 4, height: 56, borderRadius: 2, background: z.color, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 30, fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>{z.label}</div>
+                  <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', marginTop: 5 }}>{z.sub}</div>
+                </div>
+              </div>
             </div>
-          </div>
-
-          {/* Note encadrée rouge */}
-          <div style={{
-            border: '2.5px solid rgba(239,68,68,0.65)',
-            borderRadius: 16, padding: '18px 22px',
-            background: 'rgba(239,68,68,0.07)',
-          }}>
-            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.9)', lineHeight: 1.7, margin: 0, fontWeight: 600 }}>
-              Nos verres progressifs sont des verres de dernière génération, la zone d&apos;aberration ( zone de flou ) est réduite au maximum pour un meilleur confort et une adaptation simplifiée.
-            </p>
-          </div>
+          ))}
         </div>
       </div>
     </div>

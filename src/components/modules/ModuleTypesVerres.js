@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbSelect, getActiveSessionCode } from '@/lib/supabase'
+import { sbUpdate, sbSelect, getActiveSessionCode, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import TrainerAvatar from '@/components/TrainerAvatar'
@@ -120,20 +120,19 @@ function AvatarBubble({ script, pName }) {
 
 // ── Lens progressif annotée (PNG + labels) ───────────────────────
 const PROG_ZONES_TRAINER = [
-  { id: 'haut',   top: '22%', color: '#a78bfa', label: 'Vision de loin',       detail: 'Myopie, hypermétropie, astigmatisme.' },
-  { id: 'milieu', top: '52%', color: '#4ade80', label: 'Vision intermédiaire', detail: 'De 40 à 150 cm'                        },
-  { id: 'bas',    top: '80%', color: '#fbbf24', label: 'Vision de près',        detail: 'presbytie : - de 40 cm'               },
+  { color: '#a78bfa', label: 'Vision de loin',       sub: 'Myopie · Hypermétropie · Astigmatisme' },
+  { color: '#4ade80', label: 'Vision intermédiaire', sub: 'De 40 cm a 1,5 m'                      },
+  { color: '#fbbf24', label: 'Vision de pres',        sub: 'Presbytie - moins de 40 cm'            },
 ]
 
-function ProgressifAnnotatedLens({ entered }) {
+function ProgressifAnnotatedLens({ entered, revealed = 0 }) {
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 16,
+      display: 'flex', alignItems: 'center', gap: 20,
       opacity: entered ? 1 : 0,
       transform: entered ? 'scale(1)' : 'scale(0.9)',
       transition: 'all .65s ease .1s',
     }}>
-      {/* Verre progressif PNG */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <Image
           src="/assets/verre-prog.png"
@@ -143,26 +142,29 @@ function ProgressifAnnotatedLens({ entered }) {
           style={{ objectFit: 'contain', display: 'block' }}
           priority
         />
-        {/* Connecteurs pointillés vers les labels */}
-        {PROG_ZONES_TRAINER.map(z => (
-          <div key={z.id} style={{
-            position: 'absolute', right: -10, top: z.top,
+        {/* Dots sur le bord droit du verre, un par zone revelee */}
+        {PROG_ZONES_TRAINER.map((z, i) => (
+          <div key={i} style={{
+            position: 'absolute', right: -6,
+            top: `${22 + i * 29}%`,
             transform: 'translateY(-50%)',
-            width: 10, height: 1,
-            background: z.color, opacity: 0.7,
+            width: 8, height: 8, borderRadius: '50%',
+            background: z.color,
+            opacity: revealed > i ? 1 : 0,
+            transition: 'opacity .4s ease',
           }} />
         ))}
       </div>
 
-      {/* Labels */}
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: 206 }}>
-        {PROG_ZONES_TRAINER.map(z => (
-          <div key={z.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 18, height: 1, background: z.color, opacity: 0.7, flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: z.color, lineHeight: 1.2 }}>{z.label}</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', marginTop: 1 }}>( {z.detail} )</div>
-            </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+        {PROG_ZONES_TRAINER.map((z, i) => (
+          <div key={i} style={{
+            opacity: revealed > i ? 1 : 0,
+            transform: revealed > i ? 'translateX(0)' : 'translateX(20px)',
+            transition: 'opacity .4s ease, transform .4s ease',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: z.color }}>{z.label}</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{z.sub}</div>
           </div>
         ))}
       </div>
@@ -173,42 +175,42 @@ function ProgressifAnnotatedLens({ entered }) {
 // ── Page verre progressif ─────────────────────────────────────────
 function ContentPageProgressif({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextPage, onTerminate }) {
   const [entered, setEntered] = useState(false)
+  const [revealed, setRevealed] = useState(0)
+
   useEffect(() => {
     setEntered(false)
+    setRevealed(0)
+    setSharedState({ typesVerresZone: 0 })
     const t = setTimeout(() => setEntered(true), 60)
     return () => clearTimeout(t)
   }, [page.id])
+
+  const reveal = () => {
+    if (revealed >= PROG_ZONES_TRAINER.length) return
+    const next = revealed + 1
+    setRevealed(next)
+    setSharedState({ typesVerresZone: next })
+  }
+
+  const allRevealed = revealed >= PROG_ZONES_TRAINER.length
 
   return (
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-      display: 'flex', flexDirection: 'column', position: 'relative',
+      display: 'flex', flexDirection: 'column',
     }}>
-      {/* Particules */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        {[...Array(10)].map((_, i) => (
-          <div key={i} style={{
-            position: 'absolute', width: 3, height: 3, borderRadius: '50%',
-            background: page.color, opacity: 0.25 + (i % 3) * 0.1,
-            left: `${5 + i * 9}%`, top: `${20 + (i % 4) * 20}%`,
-            animation: `particleFloat ${3 + i * 0.5}s ease-in-out ${i * 0.25}s infinite alternate`,
-          }} />
-        ))}
-      </div>
-
       {/* Topbar */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '18px 32px', position: 'relative', zIndex: 10, flexShrink: 0,
+        padding: '18px 32px', flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Types de verres</span>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Types de verres</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ display: 'flex', gap: 5 }}>
             {Array(total).fill(0).map((_, i) => (
               <div key={i} style={{
@@ -220,79 +222,91 @@ function ContentPageProgressif({ page, pName, onPrev, onNext, onBack, isFirst, i
           </div>
           <button onClick={onBack} style={{
             background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-            color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10,
+            color: 'rgba(255,255,255,0.55)', padding: '6px 14px', borderRadius: 8,
             fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            transition: 'all .2s', letterSpacing: .3,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b'; e.currentTarget.style.borderColor = 'rgba(255,80,80,0.35)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)' }}
-          >✕ Quitter</button>
+          }}>Quitter</button>
         </div>
       </div>
 
-      {/* Zone principale — lens gauche, texte droite */}
+      {/* Zone principale — verre gauche, controles droite */}
       <div style={{
         flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr',
-        gap: 40, padding: '8px 48px 16px', alignItems: 'center', position: 'relative', zIndex: 5,
+        gap: 40, padding: '8px 48px 16px', alignItems: 'center',
       }}>
-        {/* Gauche : verre annoté */}
+        {/* Gauche : verre avec zones qui apparaissent */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <ProgressifAnnotatedLens entered={entered} />
+          <ProgressifAnnotatedLens entered={entered} revealed={revealed} />
         </div>
 
-        {/* Droite : contenu */}
+        {/* Droite : controles formateur */}
         <div style={{
           opacity: entered ? 1 : 0, transform: entered ? 'translateX(0)' : 'translateX(28px)',
           transition: 'all .55s ease',
+          display: 'flex', flexDirection: 'column', gap: 20,
         }}>
-          <div style={{
-            fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)',
-            textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10,
-          }}>Les différents types de verres</div>
-
-          <h1 style={{ fontSize: 36, fontWeight: 800, lineHeight: 1.15, marginBottom: 14 }}>
-            <span style={{ color: '#fff' }}>Les verres </span>
-            <span style={{ color: page.color }}>progressifs</span>
-            <br />
-            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 24, fontWeight: 500 }}>( Pulsar Next )</span>
-          </h1>
-
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.7, marginBottom: 18 }}>
-            Les verres progressifs comportent différentes corrections et ils sont destinés aux personnes qui sont presbytes. Ce verre leur permet de corriger les différents troubles visuels avec une seule et même paire de lunettes.
-          </p>
-
-          {/* Fabrication */}
-          <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: page.color, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
-              Fabrication :
-            </div>
-            <div style={{
-              display: 'flex', gap: 10, alignItems: 'flex-start',
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 10, padding: '10px 14px',
-            }}>
-              <span style={{ color: page.color, fontSize: 16, lineHeight: 1, marginTop: 1 }}>—</span>
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
-                9 jours, Verres allemands, fournisseurs : <strong style={{ color: '#fff' }}>Rodenstock</strong>.
-              </span>
-            </div>
+          <div>
+            <h2 style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 4 }}>
+              Verre <span style={{ color: page.color }}>progressif</span>
+            </h2>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Pulsar Next — Rodenstock · 9 jours</div>
           </div>
 
-          {/* Note encadrée rouge */}
+          {/* Checklist zones */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {PROG_ZONES_TRAINER.map((z, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                opacity: revealed > i ? 1 : 0.25,
+                transition: 'opacity .4s ease',
+              }}>
+                <div style={{
+                  width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                  background: revealed > i ? z.color : 'rgba(255,255,255,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 700, color: '#000',
+                  transition: 'background .4s ease',
+                }}>{revealed > i ? '✓' : i + 1}</div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: revealed > i ? z.color : 'rgba(255,255,255,0.4)' }}>{z.label}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{z.sub}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Bouton Révéler */}
+          {!allRevealed ? (
+            <button onClick={reveal} style={{
+              background: `linear-gradient(135deg, ${page.color}, #9f67fa)`,
+              border: 'none', color: '#fff',
+              padding: '13px 28px', borderRadius: 12, fontSize: 15, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 6px 24px rgba(124,58,237,0.45)',
+              alignSelf: 'flex-start',
+            }}>
+              Révéler → ({revealed}/{PROG_ZONES_TRAINER.length})
+            </button>
+          ) : (
+            <div style={{ fontSize: 13, color: '#4ade80', fontWeight: 700 }}>
+              Toutes les zones révélées
+            </div>
+          )}
+
+          {/* Note compacte */}
           <div style={{
-            border: '2px solid rgba(239,68,68,0.65)',
-            borderRadius: 12, padding: '14px 16px',
-            background: 'rgba(239,68,68,0.07)',
+            border: '1.5px solid rgba(239,68,68,0.5)',
+            borderRadius: 10, padding: '11px 14px',
+            background: 'rgba(239,68,68,0.06)',
           }}>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', lineHeight: 1.65, margin: 0, fontWeight: 600 }}>
-              Nos verres progressifs sont des verres de dernière génération, la zone d&apos;aberration ( zone de flou ) est réduite au maximum pour un meilleur confort et une adaptation simplifiée.
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, margin: 0 }}>
+              Verre derniere generation — zone de flou reduite au maximum.
             </p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <div style={{ padding: '0 340px 0 48px', position: 'relative', zIndex: 20, flexShrink: 0 }}>
+      <div style={{ padding: '0 340px 0 48px', flexShrink: 0 }}>
         <NextPagePreview nextPage={nextPage} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 28 }}>
           <button onClick={onPrev} disabled={isFirst} style={{
@@ -301,18 +315,18 @@ function ContentPageProgressif({ page, pName, onPrev, onNext, onBack, isFirst, i
             color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff',
             padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600,
             cursor: isFirst ? 'default' : 'pointer', fontFamily: 'inherit',
-          }}>← Précédent</button>
+          }}>Precedent</button>
 
           {isLast ? (
             quizLaunched ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <span style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>✓ Quiz envoyé</span>
+                <span style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>Quiz envoye</span>
                 <button onClick={onTerminate} style={{
                   background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none',
                   color: '#fff', padding: '12px 24px', borderRadius: 12,
                   fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
                   boxShadow: '0 4px 16px rgba(34,197,94,0.4)',
-                }}>✓ Terminer le module</button>
+                }}>Terminer le module</button>
               </div>
             ) : (
               <button onClick={onLaunchQuiz} style={{
@@ -321,7 +335,7 @@ function ContentPageProgressif({ page, pName, onPrev, onNext, onBack, isFirst, i
                 padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
                 cursor: 'pointer', boxShadow: '0 6px 24px rgba(124,58,237,0.5)',
                 fontFamily: 'inherit',
-              }}>🧠 Lancer le quiz →</button>
+              }}>Lancer le quiz</button>
             )
           ) : (
             <button onClick={onNext} style={{
@@ -330,7 +344,7 @@ function ContentPageProgressif({ page, pName, onPrev, onNext, onBack, isFirst, i
               padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
               cursor: 'pointer', boxShadow: '0 6px 24px rgba(0,171,233,0.5)',
               fontFamily: 'inherit',
-            }}>Suivant →</button>
+            }}>Suivant</button>
           )}
         </div>
       </div>
