@@ -5,7 +5,6 @@ import { sbUpdate, sbSelect, getActiveSessionCode } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import TrainerAvatar from '@/components/TrainerAvatar'
-import VerreProgressifSVG from './VerreProgressifSVG'
 import { TYPES_VERRES_PAGES as PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -119,66 +118,54 @@ function AvatarBubble({ script, pName }) {
   )
 }
 
-// ── Lens progressif annotée (SVG + lignes + labels) ──────────────
-const ZONE_COLS = {
-  haut:   { main: 'rgba(167,139,250,1)', dash: '#a78bfa' },
-  milieu: { main: 'rgba(74,222,128,1)',  dash: '#4ade80' },
-  bas:    { main: 'rgba(245,158,11,1)',  dash: '#fbbf24' },
-}
+// ── Lens progressif annotée (PNG + labels) ───────────────────────
+const PROG_ZONES_TRAINER = [
+  { id: 'haut',   top: '22%', color: '#a78bfa', label: 'Vision de loin',       detail: 'Myopie, hypermétropie, astigmatisme.' },
+  { id: 'milieu', top: '52%', color: '#4ade80', label: 'Vision intermédiaire', detail: 'De 40 à 150 cm'                        },
+  { id: 'bas',    top: '80%', color: '#fbbf24', label: 'Vision de près',        detail: 'presbytie : - de 40 cm'               },
+]
 
 function ProgressifAnnotatedLens({ entered }) {
-  const SVG_W = 200
-  const SVG_H = 258
-  // SVG viewBox 300×385 → scale 0.667×0.670
-  // Zone centers in rendered coords:
-  //  loin:  y 16→152 in vb → center 84 → 84*0.670 = 56
-  //  inter: y 160→244 in vb → center 202 → 202*0.670 = 135
-  //  près:  y 244→368 in vb → center 306 → 306*0.670 = 205
-  // Right edge approx at those y (vb x ≈ 275,278,200) → scaled
-  const zones = [
-    { id: 'haut',   dotX: 174, dotY: 60,  lineEndY: 58,  label: 'Vision de loin',       detail: 'Myopie, hypermétropie, astigmatisme.' },
-    { id: 'milieu', dotX: 179, dotY: 135, lineEndY: 133, label: 'Vision intermédiaire', detail: 'De 40 à 150 cm'                        },
-    { id: 'bas',    dotX: 150, dotY: 205, lineEndY: 203, label: 'Vision de près',        detail: 'presbytie : - de 40 cm'               },
-  ]
-  const LABEL_X = SVG_W + 20
-
   return (
     <div style={{
-      position: 'relative',
-      width: SVG_W + 210,
-      height: SVG_H,
+      display: 'flex', alignItems: 'center', gap: 16,
       opacity: entered ? 1 : 0,
       transform: entered ? 'scale(1)' : 'scale(0.9)',
       transition: 'all .65s ease .1s',
-      margin: '0 auto',
     }}>
-      <VerreProgressifSVG width={SVG_W} height={SVG_H} id="mod-pv" />
+      {/* Verre progressif PNG */}
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <Image
+          src="/assets/verre-prog.png"
+          alt="Verre progressif"
+          width={160}
+          height={206}
+          style={{ objectFit: 'contain', display: 'block' }}
+          priority
+        />
+        {/* Connecteurs pointillés vers les labels */}
+        {PROG_ZONES_TRAINER.map(z => (
+          <div key={z.id} style={{
+            position: 'absolute', right: -10, top: z.top,
+            transform: 'translateY(-50%)',
+            width: 10, height: 1,
+            background: z.color, opacity: 0.7,
+          }} />
+        ))}
+      </div>
 
-      <svg
-        style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', overflow: 'visible' }}
-        width={SVG_W + 210} height={SVG_H}
-      >
-        {zones.map(z => {
-          const c = ZONE_COLS[z.id]
-          return (
-            <g key={z.id}>
-              <circle cx={z.dotX} cy={z.dotY} r={3.5} fill={c.main} />
-              <line x1={z.dotX + 4} y1={z.dotY} x2={LABEL_X - 4} y2={z.lineEndY}
-                stroke={c.dash} strokeWidth="1" opacity="0.55" strokeDasharray="4,3" />
-            </g>
-          )
-        })}
-      </svg>
-
-      {zones.map(z => {
-        const c = ZONE_COLS[z.id]
-        return (
-          <div key={z.id} style={{ position: 'absolute', left: LABEL_X, top: z.lineEndY - 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: c.main, lineHeight: 1.2 }}>{z.label}</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', marginTop: 1 }}>( {z.detail} )</div>
+      {/* Labels */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: 206 }}>
+        {PROG_ZONES_TRAINER.map(z => (
+          <div key={z.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 18, height: 1, background: z.color, opacity: 0.7, flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: z.color, lineHeight: 1.2 }}>{z.label}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', marginTop: 1 }}>( {z.detail} )</div>
+            </div>
           </div>
-        )
-      })}
+        ))}
+      </div>
     </div>
   )
 }

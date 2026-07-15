@@ -7,7 +7,6 @@ import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE, fetchOpenAnswers } from '@/lib/supabase'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
-import VerreProgressifSVG from '@/components/modules/VerreProgressifSVG'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -3899,11 +3898,11 @@ function TVTiersPayantExplication() {
 }
 
 // ── TV : Page verre progressif (Types de verres) ─────────────────
-const TV_ZONE_COLS = {
-  haut:   { main: 'rgba(167,139,250,1)', dash: '#a78bfa' },
-  milieu: { main: 'rgba(74,222,128,1)',  dash: '#4ade80' },
-  bas:    { main: 'rgba(245,158,11,1)',  dash: '#fbbf24' },
-}
+const TV_TYPES_VERRES_ZONES = [
+  { id: 'haut',   top: '22%', color: '#a78bfa', label: 'Vision de loin',       detail: 'Myopie, hypermétropie, astigmatisme.' },
+  { id: 'milieu', top: '52%', color: '#4ade80', label: 'Vision intermédiaire', detail: 'De 40 à 150 cm'                        },
+  { id: 'bas',    top: '80%', color: '#fbbf24', label: 'Vision de près',        detail: 'presbytie : - de 40 cm'               },
+]
 
 function TVTypesVerresProgressif({ pageIndex, total }) {
   const [entered, setEntered] = useState(false)
@@ -3912,15 +3911,6 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
     const t = setTimeout(() => setEntered(true), 80)
     return () => clearTimeout(t)
   }, [])
-
-  const SVG_W = 280
-  const SVG_H = 362
-  const zones = [
-    { id: 'haut',   dotX: 244, dotY: 82,  lineEndY: 80,  label: 'Vision de loin',       detail: 'Myopie, hypermétropie, astigmatisme.' },
-    { id: 'milieu', dotX: 250, dotY: 190, lineEndY: 188, label: 'Vision intermédiaire', detail: 'De 40 à 150 cm'                        },
-    { id: 'bas',    dotX: 210, dotY: 290, lineEndY: 288, label: 'Vision de près',        detail: 'presbytie : - de 40 cm'               },
-  ]
-  const LABEL_X = SVG_W + 24
 
   return (
     <div style={{
@@ -3975,34 +3965,30 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
           opacity: entered ? 1 : 0, transform: entered ? 'scale(1)' : 'scale(0.9)',
           transition: 'all .7s ease .1s',
         }}>
-          <div style={{ position: 'relative', width: SVG_W + 320, height: SVG_H }}>
-            <VerreProgressifSVG width={SVG_W} height={SVG_H} id="tv-pv" />
-
-            <svg
-              style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', overflow: 'visible' }}
-              width={SVG_W + 320} height={SVG_H}
-            >
-              {zones.map(z => {
-                const c = TV_ZONE_COLS[z.id]
-                return (
-                  <g key={z.id}>
-                    <circle cx={z.dotX} cy={z.dotY} r={5} fill={c.main} />
-                    <line x1={z.dotX + 5} y1={z.dotY} x2={LABEL_X - 4} y2={z.lineEndY}
-                      stroke={c.dash} strokeWidth="1.5" opacity="0.6" strokeDasharray="5,4" />
-                  </g>
-                )
-              })}
-            </svg>
-
-            {zones.map(z => {
-              const c = TV_ZONE_COLS[z.id]
-              return (
-                <div key={z.id} style={{ position: 'absolute', left: LABEL_X, top: z.lineEndY - 18 }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: c.main, lineHeight: 1.2 }}>{z.label}</div>
-                  <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', fontStyle: 'italic', marginTop: 2 }}>( {z.detail} )</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            {/* Verre progressif PNG */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <Image
+                src="/assets/verre-prog.png"
+                alt="Verre progressif"
+                width={220}
+                height={284}
+                style={{ objectFit: 'contain', display: 'block' }}
+                priority
+              />
+            </div>
+            {/* Labels de zones */}
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: 284 }}>
+              {TV_TYPES_VERRES_ZONES.map(z => (
+                <div key={z.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 24, height: 1.5, background: z.color, opacity: 0.75, flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: z.color, lineHeight: 1.2 }}>{z.label}</div>
+                    <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', fontStyle: 'italic', marginTop: 2 }}>( {z.detail} )</div>
+                  </div>
                 </div>
-              )
-            })}
+              ))}
+            </div>
           </div>
         </div>
 
