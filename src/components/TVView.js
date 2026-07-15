@@ -5285,7 +5285,7 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSele
       <div style={{
         height: '100vh',
         background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -5298,73 +5298,57 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSele
           </div>
         </div>
 
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '38% 62%', overflow: 'hidden' }}>
-          {/* Gauche — définition */}
+        {/* Contenu pleine largeur */}
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center',
+          padding: '28px 80px 80px', gap: 28,
+          background: `linear-gradient(160deg, ${sel.color}0a, transparent)`,
+        }}>
           <div style={{
-            display: 'flex', flexDirection: 'column', justifyContent: 'center',
-            padding: '28px 36px', gap: 20,
-            background: `linear-gradient(160deg, ${sel.color}0a, transparent)`,
-            borderRight: '1px solid rgba(255,255,255,0.06)',
+            background: `${sel.color}14`,
+            border: `2px solid ${sel.color}55`,
+            borderLeft: `6px solid ${sel.color}`,
+            borderRadius: 24, padding: '36px 44px', maxWidth: 900,
           }}>
-            <div style={{
-              background: `${sel.color}14`,
-              border: `2px solid ${sel.color}55`,
-              borderLeft: `6px solid ${sel.color}`,
-              borderRadius: 20, padding: '24px 28px',
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: sel.color, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
-                {sel.num} — Trouble visuel
-              </div>
-              <div style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1.05, marginBottom: 18 }}>
-                {sel.nom}
-              </div>
-              <div style={{ fontSize: 19, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6 }}>
-                {sel.def}
-              </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: sel.color, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 }}>
+              {sel.num} — Trouble visuel
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {page.troubles.map((t, i) => i !== troublesSelected && (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.22 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.color, flexShrink: 0 }} />
-                  <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{t.nom}</div>
-                </div>
-              ))}
+            <div style={{ fontSize: 64, fontWeight: 900, color: '#fff', lineHeight: 1.05, marginBottom: 20 }}>
+              {sel.nom}
+            </div>
+            <div style={{ fontSize: 24, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>
+              {sel.def}
             </div>
           </div>
 
-          {/* Droite — bulle opticien */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: `radial-gradient(ellipse at center, ${sel.color}12 0%, transparent 70%)`,
-            position: 'relative',
-          }}>
-            {/* Halo derrière la bulle */}
-            <div style={{
-              position: 'absolute',
-              width: 440, height: 440, borderRadius: '50%',
-              background: `radial-gradient(circle, ${sel.color}22 0%, transparent 70%)`,
-              filter: 'blur(32px)',
-            }} />
-            {/* Bulle vidéo */}
-            <div style={{
-              width: 400, height: 400, borderRadius: '50%',
-              overflow: 'hidden', flexShrink: 0,
-              border: `3px solid ${sel.color}80`,
-              boxShadow: `0 0 0 6px ${sel.color}18, 0 0 60px ${sel.color}40`,
-              position: 'relative', zIndex: 1,
-            }}>
-              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-              <video
-                ref={videoRef}
-                key={sel.video}
-                src={sel.video}
-                preload="auto"
-                playsInline
-                muted={!audioUnlocked}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 15%', display: 'block' }}
-              />
-            </div>
+          <div style={{ display: 'flex', gap: 28 }}>
+            {page.troubles.map((t, i) => i !== troublesSelected && (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.25 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.color, flexShrink: 0 }} />
+                <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{t.nom}</div>
+              </div>
+            ))}
           </div>
+        </div>
+
+        {/* Avatar — petit, bas à droite */}
+        <div style={{
+          position: 'absolute', bottom: 28, right: 36,
+          width: 150, height: 150, borderRadius: '50%',
+          overflow: 'hidden', flexShrink: 0,
+          border: `2px solid ${sel.color}70`,
+          boxShadow: `0 0 0 4px ${sel.color}18, 0 8px 32px rgba(0,0,0,0.5)`,
+        }}>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            ref={videoRef}
+            key={sel.video}
+            src={sel.video}
+            preload="auto"
+            playsInline
+            muted={!audioUnlocked}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 15%', display: 'block' }}
+          />
         </div>
       </div>
     )
