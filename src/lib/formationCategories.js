@@ -57,15 +57,15 @@ export function classifyMagasin(magasin) {
 }
 
 /**
- * Catégorie d’un collaborateur RH.
+ * Catégorie d'un collaborateur RH.
  * Priorité : formation_category explicite → _forceCat (toggle UI) → repli magasin.
  */
 export function resolveCategoryFromEntree(entree) {
-  const explicit = (entree?.formation_category || ‘’).trim()
+  const explicit = (entree?.formation_category || '').trim()
   if (isValidFormationCategorySlug(explicit)) return explicit
 
   // _forceCat est positionné par le toggle présentiel/visio dans EntreesView
-  // Valeurs possibles : ‘paris’ | ‘province’ | ‘belgique’
+  // Valeurs possibles : 'paris' | 'province' | 'belgique'
   const forceCat = entree?._forceCat
   const forcedCategory = forceCat && MAGASIN_ZONE_DEFAULT_CATEGORY[forceCat]
   if (forcedCategory) return forcedCategory
