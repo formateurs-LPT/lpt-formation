@@ -9,6 +9,11 @@ export const TYPES_VERRES_QUIZ = [
     options: ['9 jours', '10 minutes'],
     correct: 1,
   },
+  {
+    question: 'Quel est le fournisseur du verre progressif Pulsar Next ?',
+    options: ['Essilor (France)', 'Rodenstock (Allemagne)', 'Zeiss (Allemagne)'],
+    correct: 1,
+  },
 ]
 
 export const TYPES_VERRES_PAGES = [
@@ -24,6 +29,12 @@ export const TYPES_VERRES_PAGES = [
     ],
     avatarScript: "Le verre unifocal corrige un seul défaut visuel. Toute la surface est homogène : pas de zone de flou, une vision nette partout. C'est le verre le plus courant, idéal pour une première paire.",
     color: '#00abe9',
+  },
+  {
+    id: 'progressif',
+    type: 'progressif',
+    avatarScript: "Le Pulsar Next est notre verre progressif haut de gamme. Il corrige la vision de loin, intermédiaire et de près avec une seule paire de lunettes. Sa zone de flou est réduite au maximum — l'adaptation est plus rapide et le confort nettement supérieur aux progressifs classiques.",
+    color: '#7c3aed',
   },
 ]
 

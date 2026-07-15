@@ -5,6 +5,7 @@ import { sbUpdate, sbSelect, getActiveSessionCode } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import TrainerAvatar from '@/components/TrainerAvatar'
+import VerreProgressifSVG from './VerreProgressifSVG'
 import { TYPES_VERRES_PAGES as PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -114,6 +115,240 @@ function AvatarBubble({ script, pName }) {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Lens progressif annotée (SVG + lignes + labels) ──────────────
+const ZONE_COLS = {
+  haut:   { main: 'rgba(167,139,250,1)', dash: '#a78bfa' },
+  milieu: { main: 'rgba(74,222,128,1)',  dash: '#4ade80' },
+  bas:    { main: 'rgba(245,158,11,1)',  dash: '#fbbf24' },
+}
+
+function ProgressifAnnotatedLens({ entered }) {
+  const SVG_W = 200
+  const SVG_H = 258
+  // SVG viewBox 300×385 → scale 0.667×0.670
+  // Zone centers in rendered coords:
+  //  loin:  y 16→152 in vb → center 84 → 84*0.670 = 56
+  //  inter: y 160→244 in vb → center 202 → 202*0.670 = 135
+  //  près:  y 244→368 in vb → center 306 → 306*0.670 = 205
+  // Right edge approx at those y (vb x ≈ 275,278,200) → scaled
+  const zones = [
+    { id: 'haut',   dotX: 174, dotY: 60,  lineEndY: 58,  label: 'Vision de loin',       detail: 'Myopie, hypermétropie, astigmatisme.' },
+    { id: 'milieu', dotX: 179, dotY: 135, lineEndY: 133, label: 'Vision intermédiaire', detail: 'De 40 à 150 cm'                        },
+    { id: 'bas',    dotX: 150, dotY: 205, lineEndY: 203, label: 'Vision de près',        detail: 'presbytie : - de 40 cm'               },
+  ]
+  const LABEL_X = SVG_W + 20
+
+  return (
+    <div style={{
+      position: 'relative',
+      width: SVG_W + 210,
+      height: SVG_H,
+      opacity: entered ? 1 : 0,
+      transform: entered ? 'scale(1)' : 'scale(0.9)',
+      transition: 'all .65s ease .1s',
+      margin: '0 auto',
+    }}>
+      <VerreProgressifSVG width={SVG_W} height={SVG_H} id="mod-pv" />
+
+      <svg
+        style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', overflow: 'visible' }}
+        width={SVG_W + 210} height={SVG_H}
+      >
+        {zones.map(z => {
+          const c = ZONE_COLS[z.id]
+          return (
+            <g key={z.id}>
+              <circle cx={z.dotX} cy={z.dotY} r={3.5} fill={c.main} />
+              <line x1={z.dotX + 4} y1={z.dotY} x2={LABEL_X - 4} y2={z.lineEndY}
+                stroke={c.dash} strokeWidth="1" opacity="0.55" strokeDasharray="4,3" />
+            </g>
+          )
+        })}
+      </svg>
+
+      {zones.map(z => {
+        const c = ZONE_COLS[z.id]
+        return (
+          <div key={z.id} style={{ position: 'absolute', left: LABEL_X, top: z.lineEndY - 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: c.main, lineHeight: 1.2 }}>{z.label}</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', marginTop: 1 }}>( {z.detail} )</div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Page verre progressif ─────────────────────────────────────────
+function ContentPageProgressif({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextPage, onTerminate }) {
+  const [entered, setEntered] = useState(false)
+  useEffect(() => {
+    setEntered(false)
+    const t = setTimeout(() => setEntered(true), 60)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', position: 'relative',
+    }}>
+      {/* Particules */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+        {[...Array(10)].map((_, i) => (
+          <div key={i} style={{
+            position: 'absolute', width: 3, height: 3, borderRadius: '50%',
+            background: page.color, opacity: 0.25 + (i % 3) * 0.1,
+            left: `${5 + i * 9}%`, top: `${20 + (i % 4) * 20}%`,
+            animation: `particleFloat ${3 + i * 0.5}s ease-in-out ${i * 0.25}s infinite alternate`,
+          }} />
+        ))}
+      </div>
+
+      {/* Topbar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '18px 32px', position: 'relative', zIndex: 10, flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Types de verres</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {Array(total).fill(0).map((_, i) => (
+              <div key={i} style={{
+                height: 5, borderRadius: 3, transition: 'all .3s',
+                width: i === pageIndex ? 22 : 5,
+                background: i === pageIndex ? page.color : 'rgba(255,255,255,0.2)',
+              }} />
+            ))}
+          </div>
+          <button onClick={onBack} style={{
+            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+            color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10,
+            fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            transition: 'all .2s', letterSpacing: .3,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b'; e.currentTarget.style.borderColor = 'rgba(255,80,80,0.35)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)' }}
+          >✕ Quitter</button>
+        </div>
+      </div>
+
+      {/* Zone principale — lens gauche, texte droite */}
+      <div style={{
+        flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr',
+        gap: 40, padding: '8px 48px 16px', alignItems: 'center', position: 'relative', zIndex: 5,
+      }}>
+        {/* Gauche : verre annoté */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ProgressifAnnotatedLens entered={entered} />
+        </div>
+
+        {/* Droite : contenu */}
+        <div style={{
+          opacity: entered ? 1 : 0, transform: entered ? 'translateX(0)' : 'translateX(28px)',
+          transition: 'all .55s ease',
+        }}>
+          <div style={{
+            fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)',
+            textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10,
+          }}>Les différents types de verres</div>
+
+          <h1 style={{ fontSize: 36, fontWeight: 800, lineHeight: 1.15, marginBottom: 14 }}>
+            <span style={{ color: '#fff' }}>Les verres </span>
+            <span style={{ color: page.color }}>progressifs</span>
+            <br />
+            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 24, fontWeight: 500 }}>( Pulsar Next )</span>
+          </h1>
+
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.7, marginBottom: 18 }}>
+            Les verres progressifs comportent différentes corrections et ils sont destinés aux personnes qui sont presbytes. Ce verre leur permet de corriger les différents troubles visuels avec une seule et même paire de lunettes.
+          </p>
+
+          {/* Fabrication */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: page.color, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
+              Fabrication :
+            </div>
+            <div style={{
+              display: 'flex', gap: 10, alignItems: 'flex-start',
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 10, padding: '10px 14px',
+            }}>
+              <span style={{ color: page.color, fontSize: 16, lineHeight: 1, marginTop: 1 }}>—</span>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
+                9 jours, Verres allemands, fournisseurs : <strong style={{ color: '#fff' }}>Rodenstock</strong>.
+              </span>
+            </div>
+          </div>
+
+          {/* Note encadrée rouge */}
+          <div style={{
+            border: '2px solid rgba(239,68,68,0.65)',
+            borderRadius: 12, padding: '14px 16px',
+            background: 'rgba(239,68,68,0.07)',
+          }}>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', lineHeight: 1.65, margin: 0, fontWeight: 600 }}>
+              Nos verres progressifs sont des verres de dernière génération, la zone d&apos;aberration ( zone de flou ) est réduite au maximum pour un meilleur confort et une adaptation simplifiée.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div style={{ padding: '0 340px 0 48px', position: 'relative', zIndex: 20, flexShrink: 0 }}>
+        <NextPagePreview nextPage={nextPage} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 28 }}>
+          <button onClick={onPrev} disabled={isFirst} style={{
+            background: isFirst ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.1)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff',
+            padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600,
+            cursor: isFirst ? 'default' : 'pointer', fontFamily: 'inherit',
+          }}>← Précédent</button>
+
+          {isLast ? (
+            quizLaunched ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <span style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>✓ Quiz envoyé</span>
+                <button onClick={onTerminate} style={{
+                  background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none',
+                  color: '#fff', padding: '12px 24px', borderRadius: 12,
+                  fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                  boxShadow: '0 4px 16px rgba(34,197,94,0.4)',
+                }}>✓ Terminer le module</button>
+              </div>
+            ) : (
+              <button onClick={onLaunchQuiz} style={{
+                background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
+                border: 'none', color: '#fff',
+                padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
+                cursor: 'pointer', boxShadow: '0 6px 24px rgba(124,58,237,0.5)',
+                fontFamily: 'inherit',
+              }}>🧠 Lancer le quiz →</button>
+            )
+          ) : (
+            <button onClick={onNext} style={{
+              background: 'linear-gradient(135deg, #0089ba, #00abe9)',
+              border: 'none', color: '#fff',
+              padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
+              cursor: 'pointer', boxShadow: '0 6px 24px rgba(0,171,233,0.5)',
+              fontFamily: 'inherit',
+            }}>Suivant →</button>
+          )}
+        </div>
+      </div>
+
+      <AvatarBubble script={page.avatarScript} pName={pName} />
     </div>
   )
 }
@@ -645,11 +880,14 @@ export default function ModuleTypesVerres({ pName, onBack, onTerminate }) {
     )
   }
 
+  const currentPage = PAGES[pageIndex]
+  const PageComponent = currentPage?.type === 'progressif' ? ContentPageProgressif : ContentPage
+
   return (
     <>
       <style>{STYLES}</style>
-      <ContentPage
-        page={PAGES[pageIndex]}
+      <PageComponent
+        page={currentPage}
         pName={pName}
         pageIndex={pageIndex}
         total={PAGES.length}
