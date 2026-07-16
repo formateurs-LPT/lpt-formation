@@ -5989,6 +5989,19 @@ export default function TVView() {
     }
   }
 
+  // tv_screen=qr est prioritaire sur tout module en cours
+  if (!loading && tvScreen === 'qr') {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <FullscreenButton />
+        <div style={{ height: '100dvh', overflow: 'hidden', position: 'relative' }}>
+          <WaitingScreen roomCode={sessionCode} />
+        </div>
+      </>
+    )
+  }
+
   // Pas de module actif → écran selon tv_screen ou FAQ
   if (!loading && !activeModule && !isLobby) {
     return (
