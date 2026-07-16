@@ -42,7 +42,18 @@ function formatTime(iso) {
 export default function SonnettePanel({ visible, onClose, onPendingChange }) {
   const [arrivals, setArrivals] = useState([])
   const [ringing, setRinging] = useState(false)
+  const [muted, setMuted] = useState(() => {
+    try { return localStorage.getItem('sonnette_muted') === '1' } catch { return false }
+  })
   const seenIds = useRef(null)
+  const mutedRef = useRef(muted)
+
+  const toggleMute = () => {
+    const next = !muted
+    setMuted(next)
+    mutedRef.current = next
+    try { localStorage.setItem('sonnette_muted', next ? '1' : '0') } catch {}
+  }
 
   const load = async () => {
     const rows = await sbSelect('trainer_state')
@@ -56,7 +67,7 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
     } else {
       const newOnes = pending.filter(r => !seenIds.current.has(r._key))
       if (newOnes.length > 0) {
-        playDingDong()
+        if (!mutedRef.current) playDingDong()
         setRinging(true)
         setTimeout(() => setRinging(false), 2500)
         newOnes.forEach(r => seenIds.current.add(r._key))
@@ -140,6 +151,35 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
                 : 'Aucune arrivee pour le moment'}
             </div>
           </div>
+          <button
+            onClick={toggleMute}
+            title={muted ? 'Reactiver le son' : 'Mettre en sourdine'}
+            style={{
+              background: muted ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.06)',
+              border: muted ? '1px solid rgba(251,191,36,0.35)' : '1px solid rgba(255,255,255,0.1)',
+              color: muted ? '#fbbf24' : 'rgba(255,255,255,0.45)',
+              width: 32, height: 32, borderRadius: 8,
+              cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all .2s',
+            }}
+          >
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+              {muted ? (
+                <>
+                  <path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                  <line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+                  <line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+                </>
+              ) : (
+                <>
+                  <path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+                </>
+              )}
+            </svg>
+          </button>
           <button
             onClick={onClose}
             style={{
