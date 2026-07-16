@@ -3842,8 +3842,8 @@ function TVTiersPayantExplication() {
               <marker id="tp-aw-p-green" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
                 <polygon points="0 0, 9 3.5, 0 7" fill="#4ade80" opacity="0.65" />
               </marker>
-              {/* 1. Vitale droite (146,57) → LPT gauche (210,130) */}
-              <path id="tp-pvp" d="M 146 57 C 190 57 205 110 210 130" />
+              {/* 1. Vitale droite (146,84) → LPT gauche (210,130) */}
+              <path id="tp-pvp" d="M 142 84 C 188 84 205 118 210 130" />
               {/* 2. Client droite (96,260) → LPT bas-gauche (222,155) */}
               <path id="tp-pcp" d="M 96 258 C 162 258 198 150 210 140" />
               {/* 3. Client droite (96,272) → Mutuelle gauche (356,242) */}
@@ -3856,8 +3856,8 @@ function TVTiersPayantExplication() {
             <circle cx="24" cy="24" r="8" fill="#f59e0b" />
             <text x="40" y="30" fontSize="16" fontWeight="800" fill="#f59e0b">Tiers payant partiel</text>
 
-            {/* Carte Vitale — translate(12,18) */}
-            <g transform="translate(12,18)">
+            {/* Carte Vitale — translate(12,46) — sous le titre */}
+            <g transform="translate(12,46)">
               <rect width="134" height="78" rx="9" fill="url(#tp-vg-p)" />
               {tpChip()}
               <text x="10" y="48" fontSize="8" fill="rgba(255,255,255,0.55)" fontWeight="700" letterSpacing="1.2">CARTE VITALE</text>
