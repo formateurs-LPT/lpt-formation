@@ -5989,8 +5989,8 @@ export default function TVView() {
     }
   }
 
-  // tv_screen=qr est prioritaire sur tout module en cours
-  if (!loading && tvScreen === 'qr') {
+  // tv_screen=qr — prioritaire uniquement quand aucun module n'est actif
+  if (!loading && tvScreen === 'qr' && !activeModule) {
     return (
       <>
         <style>{STYLES}</style>

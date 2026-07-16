@@ -313,8 +313,13 @@ export default function Page() {
     try {
       if (isDynamicRoomCode(code)) {
         await setRoomSharedState({ tv_screen: 'qr' }, code)
+        // Vide active_module pour ne pas bloquer l'affichage QR
+        await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + code)
       } else {
         await setSharedState({ tv_screen: 'qr' })
+        if (SESSION_CODE) {
+          await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + SESSION_CODE)
+        }
       }
     } catch (e) {
       console.warn('tv_screen qr', e)
