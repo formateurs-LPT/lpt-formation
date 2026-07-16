@@ -352,15 +352,44 @@ export default function Page() {
     if (code) setDisplaySessionCode(code)
     setView('onboarding-modules')
   }
-  const handleLaunchModule = (moduleId, returnTo = 'onboarding-modules', journeeId = null) => {
+  const handleLaunchModule = async (moduleId, returnTo = 'onboarding-modules', journeeId = null) => {
     setReturnJournee(null)
     setModuleReturnTo(returnTo)
     setReturnJourneeBelgique(returnTo === 'onboarding-modules-belgique' ? journeeId : null)
     setView('module-' + moduleId)
+    // Affiche le lobby du module sur le diffuseur immediatement
+    try {
+      const code = getActiveSessionCode()
+      if (isDynamicRoomCode(code)) {
+        await sbUpdate('sessions', { active_module: moduleId, module_page: -1 }, 'code=eq.' + code)
+        await setRoomSharedState({ tv_screen: null }, code)
+      } else if (SESSION_CODE) {
+        await sbUpdate('sessions', { active_module: moduleId, module_page: -1 }, 'code=eq.' + SESSION_CODE)
+        await setSharedState({ tv_screen: null })
+      }
+    } catch (e) {
+      console.warn('handleLaunchModule tv sync', e)
+    }
   }
-  const handleBackToDashboard = () => setView('dashboard')
-  const handleBackToModules = () => setView(moduleReturnTo)
-  const handleTerminateToJournee1 = () => { setReturnJournee('journee1'); setView('onboarding-modules') }
+
+  const tvBackToQr = async () => {
+    try {
+      const code = getActiveSessionCode()
+      if (isDynamicRoomCode(code)) {
+        await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + code)
+        await setRoomSharedState({ tv_screen: 'qr' }, code)
+      } else if (SESSION_CODE) {
+        await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + SESSION_CODE)
+        await setSharedState({ tv_screen: 'qr' })
+      }
+    } catch (e) {
+      console.warn('tvBackToQr', e)
+    }
+  }
+
+  const handleBackToDashboard = () => { setView('dashboard'); tvBackToQr() }
+  const handleBackToModules = () => { setView(moduleReturnTo); tvBackToQr() }
+  const handleTerminateToJournee1 = () => { setReturnJournee('journee1'); setView('onboarding-modules'); tvBackToQr() }
   const handleOpenPlanning = () => setView('planning')
 
   if (!appReady) {
