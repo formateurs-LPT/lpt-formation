@@ -14,9 +14,10 @@ import { setSharedState } from '@/lib/supabase'
 import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { isDynamicRoomCode } from '@/lib/sessionCode'
 import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees } from '@/components/IdeesButton'
+import SonnettePanel from './SonnettePanel'
 
 
-function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoom }) {
+function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoom, onSonnetteClick, sonnettePending }) {
   const rawKey = (pName || '').toLowerCase().split(' ')[0]
   const key = TRAINER_CANONICAL[rawKey] || rawKey
   const avatarSrc = TRAINER_AVATARS[key] || TRAINER_AVATARS.kevin
@@ -123,6 +124,39 @@ function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoo
           >
             <span style={{ fontSize: 14 }}>⚡</span>
             <span>{APP_UPDATES.length}</span>
+          </button>
+        )}
+
+        {onSonnetteClick && (
+          <button
+            onClick={onSonnetteClick}
+            title="Sonnette d'accueil"
+            style={{
+              position: 'relative',
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: sonnettePending > 0 ? 'rgba(251,191,36,0.18)' : 'rgba(255,255,255,0.07)',
+              border: sonnettePending > 0 ? '1px solid rgba(251,191,36,0.45)' : '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 20, padding: '6px 12px',
+              cursor: 'pointer', fontFamily: 'inherit',
+              color: sonnettePending > 0 ? '#fbbf24' : 'rgba(255,255,255,0.6)',
+              fontSize: 12, fontWeight: 700, transition: 'all .18s',
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = sonnettePending > 0 ? 'rgba(251,191,36,0.28)' : 'rgba(255,255,255,0.12)' }}
+            onMouseOut={e => { e.currentTarget.style.background = sonnettePending > 0 ? 'rgba(251,191,36,0.18)' : 'rgba(255,255,255,0.07)' }}
+          >
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>Sonnette</span>
+            {sonnettePending > 0 && (
+              <span style={{
+                background: '#fbbf24', color: '#1a1000', borderRadius: 10,
+                padding: '1px 6px', fontSize: 11, fontWeight: 800, lineHeight: 1.4,
+              }}>
+                {sonnettePending}
+              </span>
+            )}
           </button>
         )}
       </div>
@@ -960,6 +994,8 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
   const [obDay, setObDay] = useState('1')
   const [ideeCount, setIdeeCount] = useState(0)
+  const [showSonnette, setShowSonnette] = useState(false)
+  const [sonnettePending, setSonnettePending] = useState(0)
 
   useEffect(() => {
     loadIdeesFromSupabase().then(list => setIdeeCount(list.length)).catch(() => {})
@@ -1303,6 +1339,13 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           activeRoomCode={activeRoomCode}
           onOpenTv={onOpenTv}
           onOpenRoom={handleOpenRoomClick}
+          onSonnetteClick={() => setShowSonnette(true)}
+          sonnettePending={sonnettePending}
+        />
+        <SonnettePanel
+          visible={showSonnette}
+          onClose={() => setShowSonnette(false)}
+          onPendingChange={setSonnettePending}
         />
         {selectedUpdate && <AppUpdateModal update={selectedUpdate} onClose={() => setSelectedUpdate(null)} />}
 
