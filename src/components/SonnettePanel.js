@@ -44,22 +44,6 @@ function formatDateLabel(iso) {
   return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
-function waitMinutes(created_at, dismissed_at) {
-  if (!created_at || !dismissed_at) return 0
-  return Math.round((new Date(dismissed_at) - new Date(created_at)) / 60000)
-}
-
-function waitColor(mins) {
-  if (mins <= 3) return '#4ade80'
-  if (mins <= 10) return '#f59e0b'
-  return '#f87171'
-}
-
-function waitLabel(mins) {
-  if (mins < 1) return 'Recupere immediatement'
-  if (mins === 1) return 'Attente : 1 min'
-  return `Attente : ${mins} min`
-}
 
 function groupByDate(items) {
   const groups = []
@@ -375,43 +359,22 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
                       {group.label}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {group.items.map(h => {
-                        const mins = waitMinutes(h.created_at, h.dismissed_at)
-                        const color = waitColor(mins)
-                        return (
+                      {group.items.map(h => (
                           <div key={h._key} style={{
                             display: 'flex', alignItems: 'center', gap: 12,
                             background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
                             borderRadius: 12, padding: '12px 14px',
                           }}>
-                            {/* Indicateur couleur */}
-                            <div style={{
-                              width: 4, height: 36, borderRadius: 2,
-                              background: color, flexShrink: 0, opacity: 0.8,
-                            }} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
                                 {h.prenom} {h.nom}
                               </div>
                               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
                                 Arrive a {formatTime(h.created_at)}
-                                {h.dismissed_at && (
-                                  <> &middot; Recupere a {formatTime(h.dismissed_at)}</>
-                                )}
                               </div>
                             </div>
-                            {/* Badge temps d'attente */}
-                            <div style={{
-                              background: `${color}18`,
-                              border: `1px solid ${color}40`,
-                              color, borderRadius: 8, padding: '4px 10px',
-                              fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0,
-                            }}>
-                              {waitLabel(mins)}
-                            </div>
                           </div>
-                        )
-                      })}
+                      ))}
                     </div>
                   </div>
                 ))}
