@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { sbSelect, sbUpdate } from '@/lib/supabase'
+import { sbSelect, sbUpsert } from '@/lib/supabase'
 
 function playDingDong() {
   try {
@@ -45,18 +45,21 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
   const seenIds = useRef(null)
 
   const load = async () => {
-    const rows = await sbSelect('sonnette_arrivals', 'dismissed_at=is.null&order=created_at.desc')
-    const pending = (rows || []).filter(r => !r.dismissed_at)
+    const rows = await sbSelect('trainer_state')
+    const pending = (rows || [])
+      .filter(r => r.trainer?.startsWith('sonnette-') && !r.state?.dismissed_at)
+      .map(r => ({ ...r.state, _key: r.trainer }))
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
 
     if (seenIds.current === null) {
-      seenIds.current = new Set(pending.map(r => r.id))
+      seenIds.current = new Set(pending.map(r => r._key))
     } else {
-      const newOnes = pending.filter(r => !seenIds.current.has(r.id))
+      const newOnes = pending.filter(r => !seenIds.current.has(r._key))
       if (newOnes.length > 0) {
         playDingDong()
         setRinging(true)
         setTimeout(() => setRinging(false), 2500)
-        newOnes.forEach(r => seenIds.current.add(r.id))
+        newOnes.forEach(r => seenIds.current.add(r._key))
       }
     }
 
@@ -70,14 +73,20 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
     return () => clearInterval(t)
   }, [])
 
-  const dismiss = async (id) => {
-    await sbUpdate('sonnette_arrivals', { dismissed_at: new Date().toISOString() }, 'id=eq.' + id)
-    setArrivals(a => {
-      const next = a.filter(x => x.id !== id)
+  const dismiss = async (key) => {
+    const a = arrivals.find(x => x._key === key)
+    if (!a) return
+    await sbUpsert('trainer_state', {
+      trainer: key,
+      state: { prenom: a.prenom, nom: a.nom, created_at: a.created_at, dismissed_at: new Date().toISOString() },
+      updated_at: new Date().toISOString(),
+    }, 'trainer')
+    setArrivals(prev => {
+      const next = prev.filter(x => x._key !== key)
       onPendingChange?.(next.length)
       return next
     })
-    seenIds.current?.delete(id)
+    seenIds.current?.delete(key)
   }
 
   const sonnetteUrl = typeof window !== 'undefined'
@@ -185,7 +194,7 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {arrivals.map(a => (
-                <div key={a.id} style={{
+                <div key={a._key} style={{
                   display: 'flex', alignItems: 'center', gap: 14,
                   background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                   borderRadius: 14, padding: '14px 16px',
@@ -207,7 +216,7 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
                     </div>
                   </div>
                   <button
-                    onClick={() => dismiss(a.id)}
+                    onClick={() => dismiss(a._key)}
                     style={{
                       background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)',
                       color: '#4ade80', padding: '8px 14px', borderRadius: 10,

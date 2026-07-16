@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Image from 'next/image'
-import { sbInsert } from '@/lib/supabase'
+import { sbUpsert } from '@/lib/supabase'
 
 export default function SonnettePage() {
   const [prenom, setPrenom] = useState('')
@@ -15,11 +15,15 @@ export default function SonnettePage() {
     if (!prenom.trim() || !nom.trim()) return
     setLoading(true)
     setError('')
-    const ok = await sbInsert('sonnette_arrivals', {
-      prenom: prenom.trim(),
-      nom: nom.trim(),
-    })
-    if (ok) {
+    const uid = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : Date.now() + '-' + Math.random().toString(36).slice(2, 8)
+    const result = await sbUpsert('trainer_state', {
+      trainer: 'sonnette-' + uid,
+      state: { prenom: prenom.trim(), nom: nom.trim(), created_at: new Date().toISOString() },
+      updated_at: new Date().toISOString(),
+    }, 'trainer')
+    if (result != null) {
       setSent(true)
     } else {
       setError('Une erreur est survenue, reessayez.')
