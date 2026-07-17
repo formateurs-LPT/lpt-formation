@@ -219,13 +219,19 @@ export function PDMAnimationSVG({ animStep }) {
           fontFamily="system-ui,sans-serif" fontWeight="700">
           Ecart pupillaire
         </text>
-        {/* Hauteur */}
-        <line x1={566} y1={EYE_L.y} x2={566} y2={EYE_L.y + FRAME_RY} stroke="#22c55e" strokeWidth="2"/>
-        <line x1={559} y1={EYE_L.y} x2={573} y2={EYE_L.y} stroke="#22c55e" strokeWidth="2"/>
-        <line x1={559} y1={EYE_L.y + FRAME_RY} x2={573} y2={EYE_L.y + FRAME_RY} stroke="#22c55e" strokeWidth="2"/>
-        <text x={550} y={EYE_L.y + 9} textAnchor="middle" fontSize={11} fill="#22c55e"
+        {/* Hauteur — ligne a gauche du visage, connecteurs pointilles vers l'ovale */}
+        <line x1={EYE_L.x - FRAME_RX} y1={EYE_L.y}
+              x2={534} y2={EYE_L.y}
+              stroke="#22c55e" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6"/>
+        <line x1={EYE_L.x - FRAME_RX} y1={EYE_L.y + FRAME_RY}
+              x2={534} y2={EYE_L.y + FRAME_RY}
+              stroke="#22c55e" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6"/>
+        <line x1={534} y1={EYE_L.y} x2={534} y2={EYE_L.y + FRAME_RY} stroke="#22c55e" strokeWidth="2"/>
+        <polygon points={`530,${EYE_L.y} 538,${EYE_L.y} 534,${EYE_L.y + 8}`} fill="#22c55e"/>
+        <polygon points={`530,${EYE_L.y + FRAME_RY} 538,${EYE_L.y + FRAME_RY} 534,${EYE_L.y + FRAME_RY - 8}`} fill="#22c55e"/>
+        <text x={520} y={EYE_L.y + FRAME_RY / 2 + 4} textAnchor="middle" fontSize={11} fill="#22c55e"
           fontFamily="system-ui,sans-serif" fontWeight="700"
-          transform={`rotate(-90 550 ${EYE_L.y + 9})`}>
+          transform={`rotate(-90 520 ${EYE_L.y + FRAME_RY / 2 + 4})`}>
           Hauteur
         </text>
       </g>
