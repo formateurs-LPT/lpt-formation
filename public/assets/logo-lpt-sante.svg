@@ -1,19 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
-  <!-- Green circle -->
-  <circle cx="100" cy="100" r="96" fill="#4db85c"/>
-  <!-- White geometric snowflake pattern -->
-  <!-- 4 rounded rectangles at 0, 90, 180, 270 deg -->
-  <g fill="white" transform="translate(100,100)">
-    <!-- horizontal bar -->
-    <rect x="-38" y="-16" width="76" height="32" rx="8"/>
-    <!-- vertical bar -->
-    <rect x="-16" y="-38" width="32" height="76" rx="8"/>
-    <!-- diagonal 1 -->
-    <rect x="-38" y="-16" width="76" height="32" rx="8" transform="rotate(45)"/>
-    <!-- diagonal 2 -->
-    <rect x="-38" y="-16" width="76" height="32" rx="8" transform="rotate(-45)"/>
-    <!-- center overlap cover to create the cutout look -->
-    <rect x="-14" y="-14" width="28" height="28" rx="4" fill="#4db85c"/>
-    <rect x="-14" y="-14" width="28" height="28" rx="4" fill="#4db85c" transform="rotate(45)"/>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="65%">
+      <stop offset="0%" stop-color="#5cc85e"/>
+      <stop offset="55%" stop-color="#4db85a"/>
+      <stop offset="100%" stop-color="#389c38"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Cercle vert avec dégradé -->
+  <circle cx="100" cy="100" r="96" fill="url(#bg)"/>
+
+  <g fill="white">
+    <!-- 4 carrés centraux (grille 2x2, écart de 4px) -->
+    <rect x="82" y="82" width="16" height="16"/>
+    <rect x="102" y="82" width="16" height="16"/>
+    <rect x="82" y="102" width="16" height="16"/>
+    <rect x="102" y="102" width="16" height="16"/>
+
+    <!-- Aile HAUT : pièce gauche + pièce droite -->
+    <polygon points="62,48 90,48 98,56 98,82 82,82 58,56"/>
+    <polygon points="110,48 138,48 142,56 118,82 102,82 102,56"/>
+
+    <!-- Aile DROITE : pièce haute + pièce basse -->
+    <polygon points="152,62 152,90 144,98 118,98 118,82 144,58"/>
+    <polygon points="152,110 152,138 144,142 118,118 118,102 144,102"/>
+
+    <!-- Aile BAS : pièce droite + pièce gauche -->
+    <polygon points="138,152 110,152 102,144 102,118 118,118 142,144"/>
+    <polygon points="90,152 62,152 58,144 82,118 98,118 98,144"/>
+
+    <!-- Aile GAUCHE : pièce basse + pièce haute -->
+    <polygon points="48,138 48,110 56,102 82,102 82,118 56,142"/>
+    <polygon points="48,90 48,62 56,58 82,82 82,98 56,98"/>
   </g>
 </svg>
