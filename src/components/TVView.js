@@ -3334,6 +3334,237 @@ function TVParcoursOffres({ parcoursRevealed }) {
   )
 }
 
+// ── TV : Démarche remboursement ───────────────────────────────────
+function TVRembFrDemarche({ stepA, stepB }) {
+  const STEPS_A = [
+    "Prendre l'ordonnance, la carte Vitale et la mutuelle du client.",
+    null, // amelipro
+    "Faire le Test Supreme si mutuelle autre que CSS — sinon 1=1 directement.",
+    "Retourner voir le client et adapter le discours.",
+  ]
+  const STEPS_B = [
+    "Prendre la carte Vitale et verifier la mutuelle.",
+    null, // amelipro
+    "Si AMELIPRO ok → inscrire en examen de vue et obtenir ordonnance via LYLEOO.",
+    "Faire le Test Supreme avec l'ordonnance obtenue — sauf si CSS → 1=1.",
+  ]
+
+  const AmeliTV = () => (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      background: 'rgba(0,83,179,0.2)', border: '1px solid rgba(0,83,179,0.45)',
+      borderRadius: 6, padding: '2px 8px', fontSize: 13, fontWeight: 800, color: '#93c5fd',
+    }}>
+      💻 AMELIPRO
+    </span>
+  )
+  const SupremeTV = () => (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      background: 'rgba(0,137,186,0.2)', border: '1px solid rgba(0,137,186,0.45)',
+      borderRadius: 6, padding: '2px 8px', fontSize: 13, fontWeight: 800, color: '#67e8f9',
+    }}>
+      🏥 Test Supreme
+    </span>
+  )
+
+  const renderStep = (txt, index, revealed, isB) => {
+    const isAmeliPro = txt === null
+    const isSupreme = !isB
+      ? index === 2
+      : index === 3
+    const label = index + 1
+    const vis = index < revealed
+
+    return (
+      <div key={index} style={{
+        display: 'flex', alignItems: 'flex-start', gap: 14,
+        opacity: vis ? 1 : 0, transform: vis ? 'translateY(0)' : 'translateY(12px)',
+        transition: `opacity .4s ${index * 0.1}s, transform .4s ${index * 0.1}s`,
+        background: vis ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+        border: vis ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.04)',
+        borderRadius: 12, padding: '12px 16px',
+      }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: vis ? 'rgba(0,171,233,0.2)' : 'rgba(255,255,255,0.06)',
+          fontSize: 13, fontWeight: 900, color: vis ? '#00abe9' : 'rgba(255,255,255,0.2)',
+        }}>{label}</div>
+        <div style={{ fontSize: 14, color: vis ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)', lineHeight: 1.5, transition: 'all .3s' }}>
+          {isAmeliPro ? (
+            <span>Aller a l&apos;ordinateur sur <AmeliTV /> pour verifier le dernier remboursement.</span>
+          ) : isSupreme ? (
+            <span>{txt} <SupremeTV /></span>
+          ) : txt}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', padding: '40px 56px', fontFamily: 'inherit',
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+          Remboursement optique · France
+        </div>
+        <h1 style={{ fontSize: 30, fontWeight: 900, color: '#fff', margin: 0 }}>
+          Quand un client souhaite se faire rembourser je dois donc :
+        </h1>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, flex: 1 }}>
+        {/* Scenario A */}
+        <div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
+            padding: '10px 16px', background: 'rgba(0,137,186,0.1)', border: '1px solid rgba(0,137,186,0.25)', borderRadius: 10,
+          }}>
+            <span style={{ fontSize: 18 }}>📋</span>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1 }}>Scenario A</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>Avec ordonnance valide</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {STEPS_A.map((txt, i) => renderStep(txt, i, stepA, false))}
+          </div>
+        </div>
+
+        {/* Scenario B */}
+        <div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
+            padding: '10px 16px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 10,
+          }}>
+            <span style={{ fontSize: 18 }}>🚫</span>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1 }}>Scenario B</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>Sans ordonnance valide</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {STEPS_B.map((txt, i) => renderStep(txt, i, stepB, true))}
+          </div>
+        </div>
+      </div>
+
+      {/* Note bas */}
+      <div style={{
+        marginTop: 28, padding: '14px 20px',
+        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 12, fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, textAlign: 'center',
+      }}>
+        <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Si apres verification le client n&apos;a pas droit au remboursement :</strong>
+        {' '}proposer l&apos;offre <strong style={{ color: '#fff' }}>1=1</strong> ou <strong style={{ color: '#fff' }}>Classique</strong> sans remboursement, a ses frais.
+      </div>
+    </div>
+  )
+}
+
+// ── TV : Test Supreme ─────────────────────────────────────────────
+function TVRembFrSupreme({ supremeStep }) {
+  return (
+    <div style={{
+      minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', padding: '48px 72px', fontFamily: 'inherit',
+      alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: 48 }}>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          background: 'rgba(0,137,186,0.15)', border: '1px solid rgba(0,137,186,0.35)',
+          borderRadius: 12, padding: '6px 16px', fontSize: 13, fontWeight: 800, color: '#00abe9',
+          letterSpacing: 1, marginBottom: 20,
+        }}>
+          <span>🏥</span> LPT Sante · Test Supreme
+        </div>
+        <h1 style={{ fontSize: 40, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: -1 }}>Test Supreme</h1>
+      </div>
+
+      <div style={{ display: 'flex', gap: 32, width: '100%', maxWidth: 900 }}>
+        {/* Accepte */}
+        <div style={{
+          flex: 1,
+          opacity: supremeStep >= 1 ? 1 : 0.18,
+          transform: supremeStep >= 1 ? 'scale(1)' : 'scale(0.97)',
+          transition: 'all .5s',
+          background: supremeStep >= 1 ? 'rgba(74,222,128,0.07)' : 'rgba(255,255,255,0.03)',
+          border: supremeStep >= 1 ? '1.5px solid rgba(74,222,128,0.3)' : '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 20, padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 16,
+        }}>
+          <div style={{
+            display: 'inline-flex', alignSelf: 'flex-start',
+            padding: '5px 18px', borderRadius: 20,
+            background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)',
+            fontSize: 14, fontWeight: 900, color: '#4ade80', letterSpacing: 1,
+          }}>ACCEPTE ✓</div>
+          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>
+            Le vendeur propose un <strong style={{ color: '#4ade80' }}>Parcours Supreme</strong> au client.
+          </div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px',
+            background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 14,
+          }}>
+            <span style={{ fontSize: 28 }}>🎉</span>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#4ade80' }}>2 paires · 0 €</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>reste a charge client</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Refused */}
+        <div style={{
+          flex: 1,
+          opacity: supremeStep >= 2 ? 1 : 0.18,
+          transform: supremeStep >= 2 ? 'scale(1)' : 'scale(0.97)',
+          transition: 'all .5s .15s',
+          background: supremeStep >= 2 ? 'rgba(239,68,68,0.07)' : 'rgba(255,255,255,0.03)',
+          border: supremeStep >= 2 ? '1.5px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 20, padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 16,
+        }}>
+          <div style={{
+            display: 'inline-flex', alignSelf: 'flex-start',
+            padding: '5px 18px', borderRadius: 20,
+            background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)',
+            fontSize: 14, fontWeight: 900, color: '#f87171', letterSpacing: 1,
+          }}>REFUSE ✗</div>
+          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>
+            Le vendeur propose un <strong style={{ color: '#f87171' }}>Parcours 1=1</strong> au client.
+          </div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px',
+            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 14,
+          }}>
+            <span style={{ fontSize: 28 }}>🎉</span>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#f87171' }}>2 paires · 0 €</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>reste a charge client</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Note Slack */}
+      <div style={{
+        marginTop: 36, padding: '14px 22px',
+        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 14, fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7,
+        maxWidth: 780, textAlign: 'center',
+      }}>
+        <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Message d&apos;erreur incomprehensible ?</strong>
+        {' '}Demandez aux collegues — si personne n&apos;a la solution, envoyez une photo sur le canal{' '}
+        <strong style={{ color: '#fff' }}>#tiers-payant</strong> Slack en identifiant{' '}
+        <strong style={{ color: '#fff' }}>@NathanVision</strong>. Le BOT repond en quelques secondes.
+      </div>
+    </div>
+  )
+}
+
 function TVRembFrConditions({ rembfrRevealed }) {
   const revealed = rembfrRevealed || []
   const ordoRevealed = revealed.includes('ordonnance')
@@ -4281,7 +4512,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, parcoursRevealed, tiersPayantRevealed, sessionCode }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, sessionCode }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -4294,6 +4525,8 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'inami-info')         return <TVInamiInfo inamiRevealed={inamiRevealed} />
   if (page.type === 'partena-offre')      return <TVPartenaOffre partenaRevealed={partenaRevealed} />
   if (page.type === 'rembfr-conditions')  return <TVRembFrConditions rembfrRevealed={rembfrRevealed} />
+  if (page.type === 'rembfr-demarche')    return <TVRembFrDemarche stepA={rembfrDemarcheA} stepB={rembfrDemarcheB} />
+  if (page.type === 'rembfr-supreme')     return <TVRembFrSupreme supremeStep={rembfrSupreme} />
   if (page.type === 'parcours-rembourses-offres') return <TVParcoursOffres parcoursRevealed={parcoursRevealed} />
   if (page.type === 'parcours-tiers-payant')      return <TVTiersPayant tiersPayantRevealed={tiersPayantRevealed} sessionCode={sessionCode} pageId={page.id} />
   if (page.type === 'tiers-payant-explication')   return <TVTiersPayantExplication />
@@ -5872,6 +6105,9 @@ export default function TVView() {
   const [inamiRevealed, setInamiRevealed]                 = useState(false)
   const [partenaRevealed, setPartenaRevealed]             = useState(false)
   const [rembfrRevealed, setRembfrRevealed]               = useState([])
+  const [rembfrDemarcheA, setRembfrDemarcheA]             = useState(0)
+  const [rembfrDemarcheB, setRembfrDemarcheB]             = useState(0)
+  const [rembfrSupreme, setRembfrSupreme]                 = useState(0)
   const [parcoursRevealed, setParcoursRevealed]           = useState([])
   const [tiersPayantRevealed, setTiersPayantRevealed]     = useState(false)
 
@@ -5915,6 +6151,9 @@ export default function TVView() {
     setInamiRevealed(!!sharedState.inami_revealed)
     setPartenaRevealed(!!sharedState.partena_revealed)
     setRembfrRevealed(sharedState.rembfr_revealed || [])
+    setRembfrDemarcheA(sharedState.rembfr_demarche_a ?? 0)
+    setRembfrDemarcheB(sharedState.rembfr_demarche_b ?? 0)
+    setRembfrSupreme(sharedState.rembfr_supreme ?? 0)
     setParcoursRevealed(sharedState.parcours_revealed || [])
     setTiersPayantRevealed(!!sharedState.tiers_payant_revealed)
   }, [sharedState])
@@ -6112,6 +6351,9 @@ export default function TVView() {
             inamiRevealed={inamiRevealed}
             partenaRevealed={partenaRevealed}
             rembfrRevealed={rembfrRevealed}
+            rembfrDemarcheA={rembfrDemarcheA}
+            rembfrDemarcheB={rembfrDemarcheB}
+            rembfrSupreme={rembfrSupreme}
             parcoursRevealed={parcoursRevealed}
             tiersPayantRevealed={tiersPayantRevealed}
             sessionCode={sessionCode}

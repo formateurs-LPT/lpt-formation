@@ -1,12 +1,93 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 
 const MODULE_ID = 'remboursement-france'
 const PAGES = MODULE_DATA[MODULE_ID]?.pages || []
+
+const BUBBLE_COLORS = ['#00abe9', '#4ade80', '#f59e0b', '#a78bfa', '#f472b6', '#34d399']
+
+// ── Badge logos texte ─────────────────────────────────────────────
+function AmeliproBadge() {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 6,
+      background: 'rgba(0,83,179,0.15)', border: '1px solid rgba(0,83,179,0.4)',
+      borderRadius: 8, padding: '3px 10px', fontSize: 12, fontWeight: 800,
+      color: '#60a5fa', letterSpacing: 0.5, verticalAlign: 'middle',
+    }}>
+      <span style={{ fontSize: 14 }}>💻</span> AMELIPRO
+    </span>
+  )
+}
+
+function LptSanteBadge() {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 6,
+      background: 'rgba(0,137,186,0.15)', border: '1px solid rgba(0,137,186,0.35)',
+      borderRadius: 8, padding: '3px 10px', fontSize: 12, fontWeight: 800,
+      color: '#00abe9', letterSpacing: 0.5, verticalAlign: 'middle',
+    }}>
+      <span style={{ fontSize: 14 }}>🏥</span> LPT Sante
+    </span>
+  )
+}
+
+// ── Vue formateur page 1 : Réponses en direct ────────────────────
+function PageQ1Formateur({ page }) {
+  const [answers, setAnswers] = useState([])
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const rows = await fetchOpenAnswers(getActiveSessionCode(), page.id)
+        if (Array.isArray(rows)) setAnswers(rows)
+      } catch { /* ignore */ }
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [page.id])
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 }}>
+        Question ouverte · Reponses en direct
+      </div>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 24 }}>{page.titre}</h2>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto', flex: 1, paddingRight: 4 }}>
+        {answers.length === 0 ? (
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, fontStyle: 'italic', padding: '12px 0' }}>
+            En attente des reponses des participants…
+          </div>
+        ) : answers.map((row, i) => (
+          <div key={row.id || i} style={{
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            borderLeft: `3px solid ${BUBBLE_COLORS[i % BUBBLE_COLORS.length]}`,
+            borderRadius: 12, padding: '12px 18px',
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 700, minWidth: 90, paddingTop: 2, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length], flexShrink: 0 }}>
+              {row.participant_name}
+            </span>
+            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{row.answer}</span>
+          </div>
+        ))}
+      </div>
+
+      {answers.length > 0 && (
+        <div style={{ marginTop: 12, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
+          {answers.length} reponse{answers.length > 1 ? 's' : ''} recue{answers.length > 1 ? 's' : ''}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ── Vue formateur page 2 : Conditions ────────────────────────────
 function PageConditionsFormateur({ rembfrRevealed, revealing, toggleCondition, pageIndex }) {
@@ -147,12 +228,242 @@ function PageConditionsFormateur({ rembfrRevealed, revealing, toggleCondition, p
   )
 }
 
+// ── Vue formateur page 3 : Démarche ──────────────────────────────
+const DEMARCHE_STEPS_A = [
+  { id: 'a1', label: '1', text: "Prendre l'ordonnance du client, sa carte Vitale et sa mutuelle." },
+  { id: 'a2', label: '2', text: null, hasAmeliPro: true },
+  { id: 'a3', label: '3', text: "Faire un test supreme si mon client possede une mutuelle autre que la CSS.", hasSante: true, note: 'Si CSS → passer directement en 1=1.' },
+  { id: 'a4', label: '4', text: "Retourner voir mon client et adapter mon discours aux reponses obtenues." },
+]
+
+const DEMARCHE_STEPS_B = [
+  { id: 'b1', label: '1', text: "Prendre la carte Vitale et verifier si le client a bien une mutuelle." },
+  { id: 'b2', label: '2', text: null, hasAmeliPro: true },
+  { id: 'b3', label: '3', text: "Si AMELIPRO ok → inscrire le client en examen de vue et obtenir une ordonnance via LYLEOO." },
+  { id: 'b4', label: '4', text: "Une fois l'ordonnance obtenue, retourner a l'ordinateur pour faire le test supreme.", hasSante: true, note: 'Sauf si CSS → 1=1 directement.' },
+]
+
+function PageDemarcheFormateur({ stepA, stepB, onRevealA, onRevealB }) {
+  const RevBtn = ({ onClick, label, active }) => (
+    <button onClick={onClick} style={{
+      background: active ? 'rgba(74,222,128,0.12)' : 'rgba(0,137,186,0.12)',
+      border: active ? '1px solid rgba(74,222,128,0.35)' : '1px solid rgba(0,137,186,0.35)',
+      color: active ? '#4ade80' : '#00abe9',
+      padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+      cursor: 'pointer', fontFamily: 'inherit', transition: 'all .2s',
+    }}>{active ? '✓ Cache' : `+ Etape ${label}`}</button>
+  )
+
+  const StepRow = ({ step, revealed, onToggle }) => (
+    <div style={{
+      display: 'flex', alignItems: 'flex-start', gap: 12,
+      background: revealed ? 'rgba(74,222,128,0.05)' : 'rgba(255,255,255,0.03)',
+      border: revealed ? '1px solid rgba(74,222,128,0.2)' : '1px solid rgba(255,255,255,0.07)',
+      borderRadius: 12, padding: '12px 16px', transition: 'all .2s',
+    }}>
+      <div style={{
+        width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: revealed ? 'rgba(74,222,128,0.15)' : 'rgba(0,137,186,0.15)',
+        fontSize: 12, fontWeight: 900,
+        color: revealed ? '#4ade80' : '#00abe9',
+      }}>{step.label}</div>
+      <div style={{ flex: 1, fontSize: 13, color: revealed ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.3)', lineHeight: 1.5, transition: 'all .2s' }}>
+        {step.hasAmeliPro ? (
+          <span>Aller a l&apos;ordinateur et me rendre sur <AmeliproBadge /> pour voir de quand date le dernier remboursement.</span>
+        ) : step.hasSante ? (
+          <span>{step.text} <LptSanteBadge /></span>
+        ) : step.text}
+        {step.note && revealed && (
+          <div style={{ marginTop: 6, fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>{step.note}</div>
+        )}
+      </div>
+      <button onClick={onToggle} style={{
+        flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer',
+        fontSize: 14, color: revealed ? '#4ade80' : 'rgba(255,255,255,0.2)',
+        padding: '2px 6px',
+      }}>{revealed ? '✓' : '👁'}</button>
+    </div>
+  )
+
+  return (
+    <div style={{ display: 'flex', gap: 24, height: '100%' }}>
+      {/* Scenario A */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8,
+          padding: '10px 14px', background: 'rgba(0,137,186,0.1)', border: '1px solid rgba(0,137,186,0.25)', borderRadius: 10,
+        }}>
+          <span style={{ fontSize: 16 }}>📋</span>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1 }}>Scenario A</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Client avec ordonnance valide</div>
+          </div>
+        </div>
+        {DEMARCHE_STEPS_A.map((step, i) => (
+          <StepRow
+            key={step.id}
+            step={step}
+            revealed={i < stepA}
+            onToggle={() => onRevealA(i < stepA ? i : i + 1)}
+          />
+        ))}
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          {stepA < DEMARCHE_STEPS_A.length && (
+            <RevBtn onClick={() => onRevealA(stepA + 1)} label={stepA + 1} active={false} />
+          )}
+          {stepA > 0 && (
+            <RevBtn onClick={() => onRevealA(stepA - 1)} label={stepA} active={true} />
+          )}
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div style={{ width: 1, background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
+
+      {/* Scenario B */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8,
+          padding: '10px 14px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 10,
+        }}>
+          <span style={{ fontSize: 16 }}>🚫</span>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1 }}>Scenario B</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Client sans ordonnance valide</div>
+          </div>
+        </div>
+        {DEMARCHE_STEPS_B.map((step, i) => (
+          <StepRow
+            key={step.id}
+            step={step}
+            revealed={i < stepB}
+            onToggle={() => onRevealB(i < stepB ? i : i + 1)}
+          />
+        ))}
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          {stepB < DEMARCHE_STEPS_B.length && (
+            <RevBtn onClick={() => onRevealB(stepB + 1)} label={stepB + 1} active={false} />
+          )}
+          {stepB > 0 && (
+            <RevBtn onClick={() => onRevealB(stepB - 1)} label={stepB} active={true} />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Vue formateur page 4 : Test Supreme ──────────────────────────
+function PageSupremeFormateur({ supremeStep, onReveal }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 700 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>
+        Test Supreme · <LptSanteBadge />
+      </div>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', margin: 0 }}>Test Supreme</h2>
+
+      {/* Accepté */}
+      <div style={{
+        background: supremeStep >= 1 ? 'rgba(74,222,128,0.06)' : 'rgba(255,255,255,0.03)',
+        border: supremeStep >= 1 ? '1px solid rgba(74,222,128,0.25)' : '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 14, padding: '18px 20px', transition: 'all .3s',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: supremeStep >= 1 ? 12 : 0 }}>
+          <div style={{
+            padding: '4px 14px', borderRadius: 20, fontSize: 12, fontWeight: 800,
+            background: supremeStep >= 1 ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.07)',
+            color: supremeStep >= 1 ? '#4ade80' : 'rgba(255,255,255,0.25)',
+          }}>ACCEPTE</div>
+          {supremeStep < 1 && (
+            <button onClick={() => onReveal(1)} style={{
+              background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)',
+              color: '#4ade80', padding: '4px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}>Reveler le message accepte</button>
+          )}
+        </div>
+        {supremeStep >= 1 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
+              Le vendeur fait un <strong style={{ color: '#4ade80' }}>parcours Supreme</strong> au client.
+            </div>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
+              background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 10,
+            }}>
+              <span style={{ fontSize: 20 }}>🎉</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#4ade80' }}>Le client repart avec 2 paires pour 0 €</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Refusé */}
+      <div style={{
+        background: supremeStep >= 2 ? 'rgba(239,68,68,0.06)' : 'rgba(255,255,255,0.03)',
+        border: supremeStep >= 2 ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 14, padding: '18px 20px', transition: 'all .3s',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: supremeStep >= 2 ? 12 : 0 }}>
+          <div style={{
+            padding: '4px 14px', borderRadius: 20, fontSize: 12, fontWeight: 800,
+            background: supremeStep >= 2 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.07)',
+            color: supremeStep >= 2 ? '#f87171' : 'rgba(255,255,255,0.25)',
+          }}>REFUSE</div>
+          {supremeStep === 1 && (
+            <button onClick={() => onReveal(2)} style={{
+              background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+              color: '#f87171', padding: '4px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}>Reveler le message refuse</button>
+          )}
+        </div>
+        {supremeStep >= 2 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
+              Le vendeur fait un <strong style={{ color: '#f87171' }}>parcours 1=1</strong> au client.
+            </div>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10,
+            }}>
+              <span style={{ fontSize: 20 }}>🎉</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#f87171' }}>Le client repart avec 2 paires pour 0 €</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Note Slack */}
+      <div style={{
+        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 12, padding: '14px 18px', fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6,
+      }}>
+        <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Message d&apos;erreur incomprehensible ?</strong> Demandez d&apos;abord aux collegues. Si personne ne sait : envoyer une photo sur le canal <strong style={{ color: '#fff' }}>#tiers-payant</strong> sur Slack en identifiant <strong style={{ color: '#fff' }}>@NathanVision</strong>. Le BOT repond en quelques secondes.
+      </div>
+
+      {supremeStep > 0 && (
+        <button onClick={() => onReveal(supremeStep - 1)} style={{
+          alignSelf: 'flex-start',
+          background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+          color: 'rgba(255,255,255,0.4)', padding: '6px 14px', borderRadius: 8, fontSize: 11, fontWeight: 600,
+          cursor: 'pointer', fontFamily: 'inherit',
+        }}>← Masquer</button>
+      )}
+    </div>
+  )
+}
+
 export default function ModuleRemboursementFrance({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
   const syncedRef = useRef(false)
   const [rembfrRevealed, setRembfrRevealed] = useState([])
   const [revealing, setRevealing] = useState(false)
+  const [demarcheA, setDemarcheA] = useState(0)
+  const [demarcheB, setDemarcheB] = useState(0)
+  const [supremeStep, setSupremeStep] = useState(0)
 
   const toggleCondition = async (id) => {
     setRevealing(true)
@@ -167,6 +478,21 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
     }
   }
 
+  const handleDemarcheA = async (val) => {
+    setDemarcheA(val)
+    await setSharedState({ rembfr_demarche_a: val })
+  }
+
+  const handleDemarcheB = async (val) => {
+    setDemarcheB(val)
+    await setSharedState({ rembfr_demarche_b: val })
+  }
+
+  const handleSupreme = async (val) => {
+    setSupremeStep(val)
+    await setSharedState({ rembfr_supreme: val })
+  }
+
   const syncAndWrite = async (data) => {
     if (!syncedRef.current) {
       await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName), pName)
@@ -177,7 +503,7 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
 
   useEffect(() => {
     if (!started) return
-    setSharedState({ rembfr_revealed: [] })
+    setSharedState({ rembfr_revealed: [], rembfr_demarche_a: 0, rembfr_demarche_b: 0, rembfr_supreme: 0 })
     syncAndWrite({ active_module: MODULE_ID, module_page: 0 })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started])
@@ -189,10 +515,12 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex])
 
+  const resetShared = () => setSharedState({ rembfr_revealed: [], rembfr_demarche_a: 0, rembfr_demarche_b: 0, rembfr_supreme: 0 })
+
   const handleBack = async () => {
     await Promise.all([
       sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
-      setSharedState({ rembfr_revealed: [] }),
+      resetShared(),
     ])
     onBack()
   }
@@ -200,7 +528,7 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
   const handleTerminate = async () => {
     await Promise.all([
       sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
-      setSharedState({ rembfr_revealed: [] }),
+      resetShared(),
     ])
     onBack()
   }
@@ -280,21 +608,21 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
             toggleCondition={toggleCondition}
             pageIndex={pageIndex}
           />
+        ) : page?.type === 'rembfr-demarche' ? (
+          <PageDemarcheFormateur
+            stepA={demarcheA}
+            stepB={demarcheB}
+            onRevealA={handleDemarcheA}
+            onRevealB={handleDemarcheB}
+          />
+        ) : page?.type === 'rembfr-supreme' ? (
+          <PageSupremeFormateur
+            supremeStep={supremeStep}
+            onReveal={handleSupreme}
+          />
         ) : (
-          /* Page pause par défaut */
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', textAlign: 'center' }}>
-            <div style={{ maxWidth: 560 }}>
-              {page?.icon && <div style={{ fontSize: 56, marginBottom: 24 }}>{page.icon}</div>}
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 14 }}>
-                Discussion ouverte · Page {pageIndex + 1}
-              </div>
-              <h2 style={{ fontSize: 24, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 12 }}>{page?.titre}</h2>
-              {page?.sousTitre && <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', marginBottom: 32 }}>{page.sousTitre}</p>}
-              <div style={{ background: 'rgba(0,137,186,0.08)', border: '1px solid rgba(0,137,186,0.2)', borderRadius: 14, padding: '14px 18px', fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>
-                💡 Cette question est projetée sur l'écran diffuseur. Laissez les formés répondre à l'oral avant de passer à la suite.
-              </div>
-            </div>
-          </div>
+          /* Page pause : reponses en direct */
+          <PageQ1Formateur page={page} />
         )}
       </div>
 

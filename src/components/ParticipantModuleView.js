@@ -3071,12 +3071,126 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
   if (page.type === 'tiers-payant-explication') return (
     <div style={{ minHeight: '100vh', background: '#03112a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', textAlign: 'center' }}>
       <div style={{ fontSize: 52, marginBottom: 20 }}>📺</div>
-      <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Regardez le grand écran</h2>
+      <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Regardez le grand ecran</h2>
       <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 280 }}>
-        L'animation explique comment fonctionne le tiers payant complet et partiel.
+        L&apos;animation explique comment fonctionne le tiers payant complet et partiel.
       </p>
       <div style={{ marginTop: 28, background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 16, padding: '12px 24px' }}>
-        <span style={{ fontSize: 14, fontWeight: 700, color: '#4ade80' }}>Dans les deux cas : 0 € reste à charge 🎉</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: '#4ade80' }}>Dans les deux cas : 0 € reste a charge 🎉</span>
+      </div>
+    </div>
+  )
+
+  if (page.type === 'rembfr-demarche') return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', padding: '28px 20px 40px',
+      fontFamily: 'inherit',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>Remboursement</div>
+      </div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>Ma demarche</div>
+      <h2 style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 20 }}>
+        Quand un client souhaite se faire rembourser je dois :
+      </h2>
+
+      {/* Scenario A */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
+          padding: '7px 12px', background: 'rgba(0,137,186,0.1)', border: '1px solid rgba(0,137,186,0.25)', borderRadius: 8,
+        }}>
+          <span style={{ fontSize: 13 }}>📋</span>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1 }}>Scenario A</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>Avec ordonnance valide</div>
+          </div>
+        </div>
+        {[
+          "Prendre l'ordonnance, la carte Vitale et la mutuelle.",
+          "Aller sur AMELIPRO pour verifier le dernier remboursement.",
+          "Faire le Test Supreme (sauf CSS → 1=1 directement).",
+          "Retourner voir le client et adapter le discours.",
+        ].map((txt, i) => (
+          <div key={i} style={{
+            display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 8,
+            padding: '10px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10,
+          }}>
+            <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,171,233,0.15)', fontSize: 11, fontWeight: 900, color: '#00abe9' }}>{i + 1}</div>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.45 }}>{txt}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Scenario B */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
+          padding: '7px 12px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 8,
+        }}>
+          <span style={{ fontSize: 13 }}>🚫</span>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1 }}>Scenario B</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>Sans ordonnance valide</div>
+          </div>
+        </div>
+        {[
+          "Prendre la carte Vitale et verifier la mutuelle.",
+          "Aller sur AMELIPRO pour verifier le dernier remboursement.",
+          "Si ok → inscrire en examen de vue et obtenir ordonnance via LYLEOO.",
+          "Faire le Test Supreme avec l'ordonnance (sauf CSS → 1=1).",
+        ].map((txt, i) => (
+          <div key={i} style={{
+            display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 8,
+            padding: '10px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10,
+          }}>
+            <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(245,158,11,0.15)', fontSize: 11, fontWeight: 900, color: '#f59e0b' }}>{i + 1}</div>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.45 }}>{txt}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Note bas */}
+      <div style={{
+        padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 10, fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6,
+      }}>
+        <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Si le client n&apos;a pas droit au remboursement :</strong> proposer l&apos;offre <strong style={{ color: '#fff' }}>1=1</strong> ou <strong style={{ color: '#fff' }}>Classique</strong> a ses frais.
+      </div>
+    </div>
+  )
+
+  if (page.type === 'rembfr-supreme') return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '40px 20px', textAlign: 'center',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={88} height={34} style={{ objectFit: 'contain', marginBottom: 32, opacity: 0.7 }} />
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        background: 'rgba(0,137,186,0.15)', border: '1px solid rgba(0,137,186,0.35)',
+        borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#00abe9',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20,
+      }}>
+        🏥 LPT Sante · Test Supreme
+      </div>
+      <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Test Supreme</div>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 260 }}>
+        Le formateur revele les resultats.<br />Regardez l&apos;ecran de diffusion.
+      </p>
+      <div style={{ marginTop: 28, display: 'flex', gap: 12 }}>
+        <div style={{ padding: '10px 20px', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.25)', borderRadius: 12, fontSize: 13, fontWeight: 700, color: '#4ade80' }}>
+          Accepte → Parcours Supreme
+        </div>
+        <div style={{ padding: '10px 20px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12, fontSize: 13, fontWeight: 700, color: '#f87171' }}>
+          Refuse → Parcours 1=1
+        </div>
+      </div>
+      <div style={{ marginTop: 16, fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>
+        Dans les deux cas : 2 paires pour 0 € 🎉
       </div>
     </div>
   )

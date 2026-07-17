@@ -565,6 +565,8 @@ export const MODULE_DATA = {
   'remboursement-france': { pages: [
     { id: 'rembfr-q1', type: 'pause', icon: '🇫🇷', titre: 'Quelles sont les conditions pour avoir droit au remboursement optique en France ?', sousTitre: 'Partagez ce que vous savez déjà' },
     { id: 'rembfr-conditions', type: 'rembfr-conditions', titre: 'Les conditions de remboursement' },
+    { id: 'rembfr-demarche', type: 'rembfr-demarche', titre: 'Quand un client souhaite se faire rembourser je dois donc :' },
+    { id: 'rembfr-supreme', type: 'rembfr-supreme', titre: 'Test Supreme' },
   ], quiz: [], label: 'Remboursement optique en France', sub: 'SS · Mutuelle · 100% Santé · Conditions' },
   'parcours-rembourses': { pages: [
     { id: 'parcours-offres', type: 'parcours-rembourses-offres', titre: 'Les offres remboursées' },
