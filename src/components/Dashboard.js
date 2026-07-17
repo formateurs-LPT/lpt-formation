@@ -938,7 +938,6 @@ function IdeesView({ onBack, pName }) {
 const FICHES = [
   { label: 'Fiche pratique', href: '/fiche-pratique', icon: '📄', color: '#c9a227', sub: 'Synthèse de la formation' },
   { label: 'Fiche accès LPT', href: '/fiche-acces', icon: '🔑', color: '#0089ba', sub: 'Gmail · Slack · LPTBot' },
-  { label: 'Fiche récap', href: '/fiche-recap.pdf', icon: '📋', color: '#4ade80', sub: 'Document récapitulatif' },
 ]
 
 function FichesAnnexesWidget() {
