@@ -24,7 +24,7 @@ function LptSanteBadge({ size = 36 }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/assets/logo-lpt-sante.svg" alt="LPT Santé" width={size} height={size} style={{ objectFit: 'contain' }} />
+      <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={size} height={size} style={{ objectFit: 'contain' }} />
     </span>
   )
 }
@@ -39,7 +39,7 @@ function SupremeAcceptePopup() {
     }}>
       <div style={{ position: 'relative', display: 'inline-block', marginBottom: 18 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/assets/logo-lpt-sante.svg" alt="LPT Santé" width={72} height={72} style={{ objectFit: 'contain', display: 'block' }} />
+        <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={72} height={72} style={{ objectFit: 'contain', display: 'block' }} />
         <div style={{ position: 'absolute', top: -8, left: -4, display: 'flex', gap: 2 }}>
           <span style={{ background: '#aaa', color: '#fff', fontSize: 10, fontWeight: 700, borderRadius: 4, padding: '1px 5px' }}>1.01</span>
           <span style={{ background: '#e6a817', color: '#fff', fontSize: 10, fontWeight: 700, borderRadius: 4, padding: '1px 5px' }}>91</span>
@@ -75,7 +75,7 @@ function SupremeRefusePopup() {
         <div style={{ marginTop: 10, marginLeft: 10 }}>
           <div style={{ position: 'relative', display: 'inline-block' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/logo-lpt-sante.svg" alt="LPT Santé" width={60} height={60} style={{ objectFit: 'contain', display: 'block' }} />
+            <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={60} height={60} style={{ objectFit: 'contain', display: 'block' }} />
             <div style={{ position: 'absolute', top: -8, left: -4, display: 'flex', gap: 2 }}>
               <span style={{ background: '#aaa', color: '#fff', fontSize: 10, fontWeight: 700, borderRadius: 4, padding: '1px 5px' }}>1.01</span>
               <span style={{ background: '#e6a817', color: '#fff', fontSize: 10, fontWeight: 700, borderRadius: 4, padding: '1px 5px' }}>95</span>

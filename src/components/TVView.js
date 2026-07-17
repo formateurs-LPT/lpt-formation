@@ -3357,7 +3357,7 @@ function TVRembFrDemarche({ stepA, stepB }) {
   )
   const SupremeTV = () => (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, verticalAlign: 'middle' }}>
-      <img src="/assets/logo-lpt-sante.svg" alt="LPT Santé" width={28} height={28} style={{ objectFit: 'contain' }} />
+      <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={28} height={28} style={{ objectFit: 'contain' }} />
       <span style={{ fontSize: 13, fontWeight: 800, color: '#4ade80' }}>Test Supreme</span>
     </span>
   )
@@ -3472,7 +3472,7 @@ function TVRembFrSupreme({ supremeStep }) {
     }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 36 }}>
-        <img src="/assets/logo-lpt-sante.svg" alt="LPT Santé" width={64} height={64} style={{ objectFit: 'contain', flexShrink: 0 }} />
+        <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={64} height={64} style={{ objectFit: 'contain', flexShrink: 0 }} />
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
             LPT Santé
@@ -3505,7 +3505,7 @@ function TVRembFrSupreme({ supremeStep }) {
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
           }}>
             <div style={{ position: 'relative', display: 'inline-block', marginBottom: 14 }}>
-              <img src="/assets/logo-lpt-sante.svg" alt="" width={60} height={60} style={{ objectFit: 'contain', display: 'block' }} />
+              <img src="/assets/logo-lpt-sante.png" alt="" width={60} height={60} style={{ objectFit: 'contain', display: 'block' }} />
               <div style={{ position: 'absolute', top: -8, left: -4, display: 'flex', gap: 2 }}>
                 <span style={{ background: '#aaa', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 3, padding: '1px 4px' }}>1.01</span>
                 <span style={{ background: '#e6a817', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 3, padding: '1px 4px' }}>91</span>
@@ -3560,7 +3560,7 @@ function TVRembFrSupreme({ supremeStep }) {
               </svg>
               <div style={{ marginLeft: 8 }}>
                 <div style={{ position: 'relative', display: 'inline-block' }}>
-                  <img src="/assets/logo-lpt-sante.svg" alt="" width={50} height={50} style={{ objectFit: 'contain', display: 'block' }} />
+                  <img src="/assets/logo-lpt-sante.png" alt="" width={50} height={50} style={{ objectFit: 'contain', display: 'block' }} />
                   <div style={{ position: 'absolute', top: -8, left: -4, display: 'flex', gap: 2 }}>
                     <span style={{ background: '#aaa', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 3, padding: '1px 4px' }}>1.01</span>
                     <span style={{ background: '#e6a817', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 3, padding: '1px 4px' }}>95</span>
@@ -4196,7 +4196,7 @@ function TVTiersPayantExplication() {
       {/* Note LPT Santé */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 24px', background: 'rgba(77,184,92,0.07)', border: '1px solid rgba(77,184,92,0.22)', borderRadius: 16, marginTop: 4 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/assets/logo-lpt-sante.svg" alt="LPT Santé" width={48} height={48} style={{ objectFit: 'contain', flexShrink: 0 }} />
+        <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={48} height={48} style={{ objectFit: 'contain', flexShrink: 0 }} />
         <div>
           <div style={{ fontSize: 14, fontWeight: 800, color: '#4db85c', marginBottom: 4 }}>LPT Santé — logiciel de tiers payant</div>
           <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>
