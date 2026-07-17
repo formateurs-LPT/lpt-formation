@@ -10,30 +10,97 @@ const PAGES = MODULE_DATA[MODULE_ID]?.pages || []
 
 const BUBBLE_COLORS = ['#00abe9', '#4ade80', '#f59e0b', '#a78bfa', '#f472b6', '#34d399']
 
-// ── Badge logos texte ─────────────────────────────────────────────
+// ── Logos ─────────────────────────────────────────────────────────
 function AmeliproBadge() {
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 6,
-      background: 'rgba(0,83,179,0.15)', border: '1px solid rgba(0,83,179,0.4)',
-      borderRadius: 8, padding: '3px 10px', fontSize: 12, fontWeight: 800,
-      color: '#60a5fa', letterSpacing: 0.5, verticalAlign: 'middle',
-    }}>
-      <span style={{ fontSize: 14 }}>💻</span> AMELIPRO
+    <span style={{ display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/assets/logo-amelipro.svg" alt="AMELIPRO" width={48} height={48} style={{ objectFit: 'contain' }} />
     </span>
   )
 }
 
-function LptSanteBadge() {
+function LptSanteBadge({ size = 36 }) {
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 6,
-      background: 'rgba(0,137,186,0.15)', border: '1px solid rgba(0,137,186,0.35)',
-      borderRadius: 8, padding: '3px 10px', fontSize: 12, fontWeight: 800,
-      color: '#00abe9', letterSpacing: 0.5, verticalAlign: 'middle',
-    }}>
-      <span style={{ fontSize: 14 }}>🏥</span> LPT Sante
+    <span style={{ display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/assets/logo-lpt-sante.svg" alt="LPT Sante" width={size} height={size} style={{ objectFit: 'contain' }} />
     </span>
+  )
+}
+
+// ── Popup LPT Sante (mockups fideaux aux screenshots) ────────────
+function SupremeAcceptePopup() {
+  return (
+    <div style={{
+      background: '#fff', borderRadius: 18, padding: '28px 28px 20px',
+      maxWidth: 320, textAlign: 'center', boxShadow: '0 8px 40px rgba(0,0,0,0.35)',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    }}>
+      <div style={{ position: 'relative', display: 'inline-block', marginBottom: 18 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-sante.svg" alt="LPT Sante" width={72} height={72} style={{ objectFit: 'contain', display: 'block' }} />
+        <div style={{ position: 'absolute', top: -8, left: -4, display: 'flex', gap: 2 }}>
+          <span style={{ background: '#aaa', color: '#fff', fontSize: 10, fontWeight: 700, borderRadius: 4, padding: '1px 5px' }}>1.01</span>
+          <span style={{ background: '#e6a817', color: '#fff', fontSize: 10, fontWeight: 700, borderRadius: 4, padding: '1px 5px' }}>91</span>
+        </div>
+      </div>
+      <div style={{ fontSize: 19, fontWeight: 800, color: '#111', marginBottom: 10, lineHeight: 1.2 }}>
+        Remboursements enregistres
+      </div>
+      <div style={{ fontSize: 15, color: '#444', lineHeight: 1.5, marginBottom: 22 }}>
+        Vous pouvez maintenant creer une commande Supreme.
+      </div>
+      <div style={{
+        background: '#2a5080', borderRadius: 12, padding: '14px 0',
+        fontSize: 17, fontWeight: 600, color: '#fff', letterSpacing: 0.3,
+      }}>OK</div>
+    </div>
+  )
+}
+
+function SupremeRefusePopup() {
+  return (
+    <div style={{
+      background: '#fff', borderRadius: 18, padding: '28px 28px 20px',
+      maxWidth: 340, textAlign: 'center', boxShadow: '0 8px 40px rgba(0,0,0,0.35)',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    }}>
+      <div style={{ position: 'relative', display: 'inline-block', marginBottom: 18 }}>
+        {/* Warning triangle */}
+        <svg width={72} height={72} viewBox="0 0 72 72" style={{ position: 'absolute', top: -20, left: -20 }}>
+          <polygon points="36,4 68,64 4,64" fill="#f5c842" stroke="white" strokeWidth="3" strokeLinejoin="round"/>
+          <text x="36" y="54" textAnchor="middle" fontSize="30" fontWeight="900" fill="white">!</text>
+        </svg>
+        <div style={{ marginTop: 10, marginLeft: 10 }}>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/assets/logo-lpt-sante.svg" alt="LPT Sante" width={60} height={60} style={{ objectFit: 'contain', display: 'block' }} />
+            <div style={{ position: 'absolute', top: -8, left: -4, display: 'flex', gap: 2 }}>
+              <span style={{ background: '#aaa', color: '#fff', fontSize: 10, fontWeight: 700, borderRadius: 4, padding: '1px 5px' }}>1.01</span>
+              <span style={{ background: '#e6a817', color: '#fff', fontSize: 10, fontWeight: 700, borderRadius: 4, padding: '1px 5px' }}>95</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style={{ fontSize: 18, fontWeight: 800, color: '#111', marginBottom: 10, lineHeight: 1.2 }}>
+        L&apos;envoi de devis OptoAMC a echoue
+      </div>
+      <div style={{ fontSize: 14, color: '#444', lineHeight: 1.5, marginBottom: 22 }}>
+        Erreur OptoAMC. Le remboursement est trop faible pour realiser cette commande Supreme
+      </div>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{
+          flex: 1, borderRadius: 12, padding: '13px 0',
+          fontSize: 15, fontWeight: 600, color: '#2a5080',
+          border: '1px solid #e0e0e0', background: '#f5f5f5',
+        }}>Annuler</div>
+        <div style={{
+          flex: 1.5, background: '#2a5080', borderRadius: 12, padding: '13px 0',
+          fontSize: 15, fontWeight: 700, color: '#fff',
+        }}>Envoyer une PEC</div>
+      </div>
+    </div>
   )
 }
 
@@ -357,95 +424,110 @@ function PageDemarcheFormateur({ stepA, stepB, onRevealA, onRevealB }) {
 // ── Vue formateur page 4 : Test Supreme ──────────────────────────
 function PageSupremeFormateur({ supremeStep, onReveal }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 700 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>
-        Test Supreme · <LptSanteBadge />
-      </div>
-      <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', margin: 0 }}>Test Supreme</h2>
-
-      {/* Accepté */}
-      <div style={{
-        background: supremeStep >= 1 ? 'rgba(74,222,128,0.06)' : 'rgba(255,255,255,0.03)',
-        border: supremeStep >= 1 ? '1px solid rgba(74,222,128,0.25)' : '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 14, padding: '18px 20px', transition: 'all .3s',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: supremeStep >= 1 ? 12 : 0 }}>
-          <div style={{
-            padding: '4px 14px', borderRadius: 20, fontSize: 12, fontWeight: 800,
-            background: supremeStep >= 1 ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.07)',
-            color: supremeStep >= 1 ? '#4ade80' : 'rgba(255,255,255,0.25)',
-          }}>ACCEPTE</div>
-          {supremeStep < 1 && (
-            <button onClick={() => onReveal(1)} style={{
-              background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)',
-              color: '#4ade80', padding: '4px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
-              cursor: 'pointer', fontFamily: 'inherit',
-            }}>Reveler le message accepte</button>
-          )}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, height: '100%' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        <LptSanteBadge size={44} />
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>Test Supreme</div>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0 }}>Resultats possibles</h2>
         </div>
-        {supremeStep >= 1 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
-              Le vendeur fait un <strong style={{ color: '#4ade80' }}>parcours Supreme</strong> au client.
-            </div>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
-              background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 10,
-            }}>
-              <span style={{ fontSize: 20 }}>🎉</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#4ade80' }}>Le client repart avec 2 paires pour 0 €</span>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Refusé */}
-      <div style={{
-        background: supremeStep >= 2 ? 'rgba(239,68,68,0.06)' : 'rgba(255,255,255,0.03)',
-        border: supremeStep >= 2 ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 14, padding: '18px 20px', transition: 'all .3s',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: supremeStep >= 2 ? 12 : 0 }}>
-          <div style={{
-            padding: '4px 14px', borderRadius: 20, fontSize: 12, fontWeight: 800,
-            background: supremeStep >= 2 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.07)',
-            color: supremeStep >= 2 ? '#f87171' : 'rgba(255,255,255,0.25)',
-          }}>REFUSE</div>
-          {supremeStep === 1 && (
-            <button onClick={() => onReveal(2)} style={{
-              background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
-              color: '#f87171', padding: '4px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
-              cursor: 'pointer', fontFamily: 'inherit',
-            }}>Reveler le message refuse</button>
+      {/* Deux colonnes */}
+      <div style={{ display: 'flex', gap: 24, flex: 1, minHeight: 0 }}>
+
+        {/* Accepté */}
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column', gap: 14,
+          background: supremeStep >= 1 ? 'rgba(74,222,128,0.05)' : 'rgba(255,255,255,0.03)',
+          border: supremeStep >= 1 ? '1px solid rgba(74,222,128,0.25)' : '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 16, padding: '20px', transition: 'all .35s',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{
+              padding: '4px 14px', borderRadius: 20, fontSize: 12, fontWeight: 800,
+              background: supremeStep >= 1 ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.07)',
+              color: supremeStep >= 1 ? '#4ade80' : 'rgba(255,255,255,0.25)',
+            }}>ACCEPTE ✓</div>
+            {supremeStep < 1 && (
+              <button onClick={() => onReveal(1)} style={{
+                background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)',
+                color: '#4ade80', padding: '5px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}>Reveler</button>
+            )}
+          </div>
+          {supremeStep >= 1 && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <SupremeAcceptePopup />
+              </div>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
+                background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 10,
+              }}>
+                <span style={{ fontSize: 18 }}>🎉</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#4ade80' }}>Parcours Supreme → 2 paires 0 €</div>
+                </div>
+              </div>
+            </>
           )}
         </div>
-        {supremeStep >= 2 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
-              Le vendeur fait un <strong style={{ color: '#f87171' }}>parcours 1=1</strong> au client.
-            </div>
+
+        {/* Refusé */}
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column', gap: 14,
+          background: supremeStep >= 2 ? 'rgba(239,68,68,0.05)' : 'rgba(255,255,255,0.03)',
+          border: supremeStep >= 2 ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 16, padding: '20px', transition: 'all .35s',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
-              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10,
-            }}>
-              <span style={{ fontSize: 20 }}>🎉</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#f87171' }}>Le client repart avec 2 paires pour 0 €</span>
-            </div>
+              padding: '4px 14px', borderRadius: 20, fontSize: 12, fontWeight: 800,
+              background: supremeStep >= 2 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.07)',
+              color: supremeStep >= 2 ? '#f87171' : 'rgba(255,255,255,0.25)',
+            }}>REFUSE ✗</div>
+            {supremeStep === 1 && (
+              <button onClick={() => onReveal(2)} style={{
+                background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+                color: '#f87171', padding: '5px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}>Reveler</button>
+            )}
           </div>
-        )}
+          {supremeStep >= 2 && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <SupremeRefusePopup />
+              </div>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
+                background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10,
+              }}>
+                <span style={{ fontSize: 18 }}>🎉</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#f87171' }}>Parcours 1=1 → 2 paires 0 €</div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Note Slack */}
       <div style={{
+        flexShrink: 0,
         background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 12, padding: '14px 18px', fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6,
+        borderRadius: 12, padding: '12px 16px', fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6,
       }}>
-        <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Message d&apos;erreur incomprehensible ?</strong> Demandez d&apos;abord aux collegues. Si personne ne sait : envoyer une photo sur le canal <strong style={{ color: '#fff' }}>#tiers-payant</strong> sur Slack en identifiant <strong style={{ color: '#fff' }}>@NathanVision</strong>. Le BOT repond en quelques secondes.
+        <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Message d&apos;erreur incomprehensible ?</strong> Demandez aux collegues. Si personne ne sait : photo sur le canal <strong style={{ color: '#fff' }}>#tiers-payant</strong> Slack + <strong style={{ color: '#fff' }}>@NathanVision</strong> → reponse en quelques secondes.
       </div>
 
       {supremeStep > 0 && (
         <button onClick={() => onReveal(supremeStep - 1)} style={{
-          alignSelf: 'flex-start',
+          alignSelf: 'flex-start', flexShrink: 0,
           background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
           color: 'rgba(255,255,255,0.4)', padding: '6px 14px', borderRadius: 8, fontSize: 11, fontWeight: 600,
           cursor: 'pointer', fontFamily: 'inherit',

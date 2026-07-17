@@ -3350,21 +3350,14 @@ function TVRembFrDemarche({ stepA, stepB }) {
   ]
 
   const AmeliTV = () => (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      background: 'rgba(0,83,179,0.2)', border: '1px solid rgba(0,83,179,0.45)',
-      borderRadius: 6, padding: '2px 8px', fontSize: 13, fontWeight: 800, color: '#93c5fd',
-    }}>
-      💻 AMELIPRO
+    <span style={{ display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
+      <img src="/assets/logo-amelipro.svg" alt="AMELIPRO" width={46} height={46} style={{ objectFit: 'contain' }} />
     </span>
   )
   const SupremeTV = () => (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      background: 'rgba(0,137,186,0.2)', border: '1px solid rgba(0,137,186,0.45)',
-      borderRadius: 6, padding: '2px 8px', fontSize: 13, fontWeight: 800, color: '#67e8f9',
-    }}>
-      🏥 Test Supreme
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, verticalAlign: 'middle' }}>
+      <img src="/assets/logo-lpt-sante.svg" alt="LPT Sante" width={28} height={28} style={{ objectFit: 'contain' }} />
+      <span style={{ fontSize: 13, fontWeight: 800, color: '#4ade80' }}>Test Supreme</span>
     </span>
   )
 
@@ -3473,77 +3466,123 @@ function TVRembFrSupreme({ supremeStep }) {
       display: 'flex', flexDirection: 'column', padding: '48px 72px', fontFamily: 'inherit',
       alignItems: 'center', justifyContent: 'center',
     }}>
-      <div style={{ textAlign: 'center', marginBottom: 48 }}>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: 'rgba(0,137,186,0.15)', border: '1px solid rgba(0,137,186,0.35)',
-          borderRadius: 12, padding: '6px 16px', fontSize: 13, fontWeight: 800, color: '#00abe9',
-          letterSpacing: 1, marginBottom: 20,
-        }}>
-          <span>🏥</span> LPT Sante · Test Supreme
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 36 }}>
+        <img src="/assets/logo-lpt-sante.svg" alt="LPT Sante" width={64} height={64} style={{ objectFit: 'contain', flexShrink: 0 }} />
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
+            LPT Sante
+          </div>
+          <h1 style={{ fontSize: 36, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: -0.5 }}>Test Supreme</h1>
         </div>
-        <h1 style={{ fontSize: 40, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: -1 }}>Test Supreme</h1>
       </div>
 
-      <div style={{ display: 'flex', gap: 32, width: '100%', maxWidth: 900 }}>
+      <div style={{ display: 'flex', gap: 28, width: '100%', maxWidth: 1000 }}>
         {/* Accepte */}
         <div style={{
           flex: 1,
-          opacity: supremeStep >= 1 ? 1 : 0.18,
-          transform: supremeStep >= 1 ? 'scale(1)' : 'scale(0.97)',
+          opacity: supremeStep >= 1 ? 1 : 0.15,
+          transform: supremeStep >= 1 ? 'scale(1)' : 'scale(0.96)',
           transition: 'all .5s',
-          background: supremeStep >= 1 ? 'rgba(74,222,128,0.07)' : 'rgba(255,255,255,0.03)',
-          border: supremeStep >= 1 ? '1.5px solid rgba(74,222,128,0.3)' : '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 20, padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 16,
+          background: supremeStep >= 1 ? 'rgba(74,222,128,0.06)' : 'rgba(255,255,255,0.03)',
+          border: supremeStep >= 1 ? '1.5px solid rgba(74,222,128,0.28)' : '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 20, padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center',
         }}>
           <div style={{
-            display: 'inline-flex', alignSelf: 'flex-start',
-            padding: '5px 18px', borderRadius: 20,
+            alignSelf: 'flex-start', padding: '5px 18px', borderRadius: 20,
             background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)',
             fontSize: 14, fontWeight: 900, color: '#4ade80', letterSpacing: 1,
           }}>ACCEPTE ✓</div>
-          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>
-            Le vendeur propose un <strong style={{ color: '#4ade80' }}>Parcours Supreme</strong> au client.
+          {/* Popup mockup */}
+          <div style={{
+            background: '#fff', borderRadius: 16, padding: '22px 22px 16px',
+            width: '100%', maxWidth: 290, textAlign: 'center',
+            boxShadow: '0 6px 32px rgba(0,0,0,0.4)',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          }}>
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: 14 }}>
+              <img src="/assets/logo-lpt-sante.svg" alt="" width={60} height={60} style={{ objectFit: 'contain', display: 'block' }} />
+              <div style={{ position: 'absolute', top: -8, left: -4, display: 'flex', gap: 2 }}>
+                <span style={{ background: '#aaa', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 3, padding: '1px 4px' }}>1.01</span>
+                <span style={{ background: '#e6a817', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 3, padding: '1px 4px' }}>91</span>
+              </div>
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#111', marginBottom: 8, lineHeight: 1.2 }}>
+              Remboursements enregistres
+            </div>
+            <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5, marginBottom: 16 }}>
+              Vous pouvez maintenant creer une commande Supreme.
+            </div>
+            <div style={{ background: '#2a5080', borderRadius: 10, padding: '10px 0', fontSize: 14, fontWeight: 600, color: '#fff' }}>OK</div>
           </div>
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px',
-            background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 14,
+            display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
+            background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 12, width: '100%',
           }}>
-            <span style={{ fontSize: 28 }}>🎉</span>
+            <span style={{ fontSize: 22 }}>🎉</span>
             <div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: '#4ade80' }}>2 paires · 0 €</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>reste a charge client</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#4ade80' }}>Parcours Supreme</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>Client repart avec 2 paires pour 0 €</div>
             </div>
           </div>
         </div>
 
-        {/* Refused */}
+        {/* Refuse */}
         <div style={{
           flex: 1,
-          opacity: supremeStep >= 2 ? 1 : 0.18,
-          transform: supremeStep >= 2 ? 'scale(1)' : 'scale(0.97)',
-          transition: 'all .5s .15s',
-          background: supremeStep >= 2 ? 'rgba(239,68,68,0.07)' : 'rgba(255,255,255,0.03)',
-          border: supremeStep >= 2 ? '1.5px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 20, padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 16,
+          opacity: supremeStep >= 2 ? 1 : 0.15,
+          transform: supremeStep >= 2 ? 'scale(1)' : 'scale(0.96)',
+          transition: 'all .5s .12s',
+          background: supremeStep >= 2 ? 'rgba(239,68,68,0.06)' : 'rgba(255,255,255,0.03)',
+          border: supremeStep >= 2 ? '1.5px solid rgba(239,68,68,0.28)' : '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 20, padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center',
         }}>
           <div style={{
-            display: 'inline-flex', alignSelf: 'flex-start',
-            padding: '5px 18px', borderRadius: 20,
+            alignSelf: 'flex-start', padding: '5px 18px', borderRadius: 20,
             background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)',
             fontSize: 14, fontWeight: 900, color: '#f87171', letterSpacing: 1,
           }}>REFUSE ✗</div>
-          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>
-            Le vendeur propose un <strong style={{ color: '#f87171' }}>Parcours 1=1</strong> au client.
+          {/* Popup mockup */}
+          <div style={{
+            background: '#fff', borderRadius: 16, padding: '22px 22px 16px',
+            width: '100%', maxWidth: 290, textAlign: 'center',
+            boxShadow: '0 6px 32px rgba(0,0,0,0.4)',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          }}>
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: 14, marginTop: 8 }}>
+              <svg width={48} height={48} viewBox="0 0 48 48" style={{ position: 'absolute', top: -18, left: -16 }}>
+                <polygon points="24,2 46,44 2,44" fill="#f5c842" strokeLinejoin="round"/>
+                <text x="24" y="38" textAnchor="middle" fontSize="22" fontWeight="900" fill="white">!</text>
+              </svg>
+              <div style={{ marginLeft: 8 }}>
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img src="/assets/logo-lpt-sante.svg" alt="" width={50} height={50} style={{ objectFit: 'contain', display: 'block' }} />
+                  <div style={{ position: 'absolute', top: -8, left: -4, display: 'flex', gap: 2 }}>
+                    <span style={{ background: '#aaa', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 3, padding: '1px 4px' }}>1.01</span>
+                    <span style={{ background: '#e6a817', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 3, padding: '1px 4px' }}>95</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#111', marginBottom: 8, lineHeight: 1.2 }}>
+              L&apos;envoi de devis OptoAMC a echoue
+            </div>
+            <div style={{ fontSize: 12, color: '#555', lineHeight: 1.5, marginBottom: 14 }}>
+              Erreur OptoAMC. Le remboursement est trop faible pour realiser cette commande Supreme
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1, borderRadius: 10, padding: '9px 0', fontSize: 13, fontWeight: 600, color: '#2a5080', background: '#f0f0f0' }}>Annuler</div>
+              <div style={{ flex: 1.4, background: '#2a5080', borderRadius: 10, padding: '9px 0', fontSize: 13, fontWeight: 700, color: '#fff' }}>Envoyer une PEC</div>
+            </div>
           </div>
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px',
-            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 14,
+            display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
+            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, width: '100%',
           }}>
-            <span style={{ fontSize: 28 }}>🎉</span>
+            <span style={{ fontSize: 22 }}>🎉</span>
             <div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: '#f87171' }}>2 paires · 0 €</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>reste a charge client</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#f87171' }}>Parcours 1=1</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>Client repart avec 2 paires pour 0 €</div>
             </div>
           </div>
         </div>
@@ -3551,13 +3590,13 @@ function TVRembFrSupreme({ supremeStep }) {
 
       {/* Note Slack */}
       <div style={{
-        marginTop: 36, padding: '14px 22px',
+        marginTop: 28, padding: '14px 22px',
         background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 14, fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7,
-        maxWidth: 780, textAlign: 'center',
+        maxWidth: 820, textAlign: 'center',
       }}>
         <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Message d&apos;erreur incomprehensible ?</strong>
-        {' '}Demandez aux collegues — si personne n&apos;a la solution, envoyez une photo sur le canal{' '}
+        {' '}Demandez aux collegues — sinon, photo sur{' '}
         <strong style={{ color: '#fff' }}>#tiers-payant</strong> Slack en identifiant{' '}
         <strong style={{ color: '#fff' }}>@NathanVision</strong>. Le BOT repond en quelques secondes.
       </div>
