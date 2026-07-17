@@ -611,7 +611,7 @@ function Lobby({ onStart, onBack }) {
         </div>
         <h1 style={{ fontSize: 34, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Prises de mesures · LPTVISION</h1>
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 36, lineHeight: 1.6 }}>
-          4 étapes · ~6 minutes
+          5 étapes · ~8 minutes
         </p>
         <button onClick={onStart} style={{
           background: 'linear-gradient(135deg, #d97706, #f59e0b)',
@@ -619,7 +619,7 @@ function Lobby({ onStart, onBack }) {
           borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer',
           boxShadow: '0 8px 32px rgba(245,158,11,0.45)', fontFamily: 'inherit',
         }}>▶ Lancer le module</button>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>4 pages · ~6 minutes</p>
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>5 pages · ~8 minutes</p>
       </div>
     </div>
   )
