@@ -1136,11 +1136,13 @@ function PauseMobile({ page, pageIndex, total, pName }) {
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [sendError, setSendError] = useState(false)
 
   useEffect(() => {
     setVisible(false)
     setText('')
     setSent(false)
+    setSendError(false)
     const t = setTimeout(() => setVisible(true), 100)
     return () => clearTimeout(t)
   }, [page.id])
@@ -1148,16 +1150,22 @@ function PauseMobile({ page, pageIndex, total, pName }) {
   const handleSend = async () => {
     if (!text.trim() || sending) return
     setSending(true)
+    setSendError(false)
     try {
-      await insertOpenAnswer({
+      const ok = await insertOpenAnswer({
         sessionCode: getParticipantSessionCode(),
         pageId: page.id,
         participantName: pName || 'Anonyme',
         answer: text.trim(),
       })
-      setText('')
-      setSent(true)
-      setTimeout(() => setSent(false), 2500)
+      if (ok) {
+        setText('')
+        setSent(true)
+        setTimeout(() => setSent(false), 2500)
+      } else {
+        setSendError(true)
+        setTimeout(() => setSendError(false), 4000)
+      }
     } finally {
       setSending(false)
     }
@@ -1240,15 +1248,17 @@ function PauseMobile({ page, pageIndex, total, pName }) {
               transition: 'all .2s',
               background: sent
                 ? 'rgba(74,222,128,0.15)'
-                : (!text.trim() || sending)
-                  ? 'rgba(255,255,255,0.07)'
-                  : 'linear-gradient(135deg, #0070a0, #0089ba)',
-              border: sent ? '1px solid rgba(74,222,128,0.4)' : 'none',
-              color: sent ? '#4ade80' : (!text.trim() || sending) ? 'rgba(255,255,255,0.3)' : '#fff',
-              boxShadow: (!text.trim() || sending || sent) ? 'none' : '0 4px 16px rgba(0,137,186,0.35)',
+                : sendError
+                  ? 'rgba(239,68,68,0.15)'
+                  : (!text.trim() || sending)
+                    ? 'rgba(255,255,255,0.07)'
+                    : 'linear-gradient(135deg, #0070a0, #0089ba)',
+              border: sent ? '1px solid rgba(74,222,128,0.4)' : sendError ? '1px solid rgba(239,68,68,0.4)' : 'none',
+              color: sent ? '#4ade80' : sendError ? '#f87171' : (!text.trim() || sending) ? 'rgba(255,255,255,0.3)' : '#fff',
+              boxShadow: (!text.trim() || sending || sent || sendError) ? 'none' : '0 4px 16px rgba(0,137,186,0.35)',
             }}
           >
-            {sent ? '✓ Envoyée !' : sending ? '…' : 'Envoyer'}
+            {sent ? '✓ Envoyée !' : sendError ? '✗ Erreur — réessayez' : sending ? '…' : 'Envoyer'}
           </button>
         </div>
       </div>

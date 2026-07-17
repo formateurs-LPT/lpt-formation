@@ -7,6 +7,7 @@ import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState } from '@/lib/supabase'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
+import { PDMAnimationSVG } from '@/lib/pdmAnimationSvg'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -2313,6 +2314,42 @@ function TVPdmPourquoi({ pageIndex, total }) {
         </div>
       </div>
 
+    </div>
+  )
+}
+
+// ── TV PDM : Animation ──────────────────────────────────────────
+function TVPdmAnimation({ step }) {
+  return (
+    <div style={{
+      height: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', position: 'relative',
+    }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 14, padding: '24px 44px', flexShrink: 0,
+      }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-blanc.png" alt="LPT" style={{ height: 30, objectFit: 'contain' }} />
+        <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', fontWeight: 500 }}>Prises de mesures · LPTVISION</span>
+        <div style={{ flex: 1 }} />
+        {/* Progression */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {Array(9).fill(0).map((_, i) => (
+            <div key={i} style={{
+              width: i === step ? 22 : 6, height: 6, borderRadius: 3,
+              background: i <= step ? '#f59e0b' : 'rgba(255,255,255,0.15)',
+              transition: 'all 0.4s',
+            }} />
+          ))}
+        </div>
+      </div>
+      {/* SVG Animation */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 60px 60px' }}>
+        <PDMAnimationSVG animStep={step} />
+      </div>
     </div>
   )
 }
@@ -6215,9 +6252,11 @@ export default function TVView() {
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
-  const isLobby   = !!moduleData && modulePage === -1
-  const isResults = !!moduleData && modulePage === 200
-  const isQuiz    = !!moduleData && modulePage >= 100 && modulePage < 200
+  const isLobby        = !!moduleData && modulePage === -1
+  const isResults      = !!moduleData && modulePage === 200
+  const isQuiz         = !!moduleData && modulePage >= 100 && modulePage < 200
+  const isPdmAnimation = activeModule === 'pdm' && modulePage >= 1000 && modulePage < 2000
+  const pdmAnimStep    = isPdmAnimation ? modulePage - 1000 : 0
 
   // Podium interstitiel piloté par quiz_interstitial_q dans sharedState
   useEffect(() => {
@@ -6374,6 +6413,8 @@ export default function TVView() {
                   moduleLabel={moduleData?.label || ''}
                   sessionCode={sessionCode}
                 />
+        ) : isPdmAnimation ? (
+          <TVPdmAnimation step={pdmAnimStep} />
         ) : page ? (
           <TVContentPage
             page={page}

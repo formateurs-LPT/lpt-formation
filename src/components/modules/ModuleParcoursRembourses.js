@@ -8,6 +8,12 @@ import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessi
 const MODULE_ID = 'parcours-rembourses'
 const PAGES = MODULE_DATA[MODULE_ID]?.pages || []
 
+const PAGE_TYPE_LABELS = {
+  'parcours-rembourses-offres': { icon: '🏷️', label: 'Les offres' },
+  'parcours-tiers-payant':      { icon: '🙋', label: 'Question ouverte' },
+  'tiers-payant-explication':   { icon: '💡', label: 'Explication' },
+}
+
 const OFFRES = [
   {
     id: 'supreme',
@@ -202,6 +208,7 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
 
   const page = PAGES[pageIndex]
   const isLast = pageIndex === PAGES.length - 1
+  const nextPage = PAGES[pageIndex + 1] ?? null
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column' }}>
@@ -338,36 +345,53 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
       </div>
 
       {/* Navigation */}
-      <div style={{
-        padding: '20px 32px', borderTop: '1px solid rgba(255,255,255,0.07)',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0,
-      }}>
-        <button
-          onClick={() => setPageIndex(i => Math.max(0, i - 1))}
-          disabled={pageIndex === 0}
-          style={{
-            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-            color: pageIndex === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.6)',
-            padding: '12px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600,
-            cursor: pageIndex === 0 ? 'default' : 'pointer', fontFamily: 'inherit',
-          }}
-        >← Précédent</button>
+      <div style={{ padding: '12px 32px 20px', borderTop: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
+        {nextPage && (() => {
+          const info = PAGE_TYPE_LABELS[nextPage.type] ?? { icon: '📄', label: nextPage.type }
+          return (
+            <div style={{
+              marginBottom: 12, background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(0,137,186,0.25)', borderLeft: '3px solid #0089ba',
+              borderRadius: 10, padding: '8px 14px',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <span style={{ fontSize: 16, flexShrink: 0 }}>{nextPage.icon || info.icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nextPage.titre}</div>
+                <div style={{ fontSize: 10, color: '#00abe9', marginTop: 1 }}>{info.label}</div>
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>suivant →</div>
+            </div>
+          )
+        })()}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button
+            onClick={() => setPageIndex(i => Math.max(0, i - 1))}
+            disabled={pageIndex === 0}
+            style={{
+              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+              color: pageIndex === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.6)',
+              padding: '12px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600,
+              cursor: pageIndex === 0 ? 'default' : 'pointer', fontFamily: 'inherit',
+            }}
+          >← Précédent</button>
 
-        {isLast ? (
-          <button onClick={handleTerminate} style={{
-            background: 'linear-gradient(135deg, #0070a0, #0089ba)',
-            border: 'none', color: '#fff', padding: '12px 32px',
-            borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            boxShadow: '0 4px 16px rgba(0,137,186,0.35)',
-          }}>Terminer le module ✓</button>
-        ) : (
-          <button onClick={() => setPageIndex(i => Math.min(PAGES.length - 1, i + 1))} style={{
-            background: 'linear-gradient(135deg, #0070a0, #0089ba)',
-            border: 'none', color: '#fff', padding: '12px 32px',
-            borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            boxShadow: '0 4px 16px rgba(0,137,186,0.35)',
-          }}>Suivant →</button>
-        )}
+          {isLast ? (
+            <button onClick={handleTerminate} style={{
+              background: 'linear-gradient(135deg, #0070a0, #0089ba)',
+              border: 'none', color: '#fff', padding: '12px 32px',
+              borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 4px 16px rgba(0,137,186,0.35)',
+            }}>Terminer le module ✓</button>
+          ) : (
+            <button onClick={() => setPageIndex(i => Math.min(PAGES.length - 1, i + 1))} style={{
+              background: 'linear-gradient(135deg, #0070a0, #0089ba)',
+              border: 'none', color: '#fff', padding: '12px 32px',
+              borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 4px 16px rgba(0,137,186,0.35)',
+            }}>Suivant →</button>
+          )}
+        </div>
       </div>
     </div>
   )

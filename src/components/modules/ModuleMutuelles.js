@@ -8,6 +8,13 @@ import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessi
 const MODULE_ID = 'mutuelles-inami'
 const PAGES = MODULE_DATA[MODULE_ID]?.pages || []
 
+const PAGE_TYPE_LABELS = {
+  'pause':           { icon: '🙋', label: 'Question ouverte' },
+  'mutuelles-reveal':{ icon: '🛡️', label: 'Les assureurs' },
+  'inami-info':      { icon: '🏥', label: 'INAMI' },
+  'partena-offre':   { icon: '⭐', label: 'Partenaire' },
+}
+
 export default function ModuleMutuelles({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
@@ -126,6 +133,7 @@ export default function ModuleMutuelles({ pName, onBack }) {
   const page = PAGES[pageIndex]
   const isFirst = pageIndex === 0
   const isLast = pageIndex === PAGES.length - 1
+  const nextPage = PAGES[pageIndex + 1] ?? null
 
   return (
     <div style={{
@@ -434,39 +442,56 @@ export default function ModuleMutuelles({ pName, onBack }) {
       )}
 
       {/* Navigation */}
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '20px 48px 32px',
-      }}>
-        <button
-          onClick={() => setPageIndex(i => Math.max(0, i - 1))}
-          disabled={isFirst}
-          style={{
-            background: isFirst ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.1)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff',
-            padding: '12px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600,
-            cursor: isFirst ? 'default' : 'pointer', fontFamily: 'inherit',
-          }}
-        >← Précédent</button>
+      <div style={{ padding: '12px 48px 28px', borderTop: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
+        {nextPage && (() => {
+          const info = PAGE_TYPE_LABELS[nextPage.type] ?? { icon: '📄', label: nextPage.type }
+          return (
+            <div style={{
+              marginBottom: 12, background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(201,162,39,0.25)', borderLeft: '3px solid #c9a227',
+              borderRadius: 10, padding: '8px 14px',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <span style={{ fontSize: 16, flexShrink: 0 }}>{nextPage.icon || info.icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nextPage.titre}</div>
+                <div style={{ fontSize: 10, color: '#c9a227', marginTop: 1 }}>{info.label}</div>
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>suivant →</div>
+            </div>
+          )
+        })()}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button
+            onClick={() => setPageIndex(i => Math.max(0, i - 1))}
+            disabled={isFirst}
+            style={{
+              background: isFirst ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff',
+              padding: '12px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600,
+              cursor: isFirst ? 'default' : 'pointer', fontFamily: 'inherit',
+            }}
+          >← Précédent</button>
 
-        {isLast ? (
-          <button onClick={handleTerminate} style={{
-            background: 'linear-gradient(135deg, #a07818, #c9a227)',
-            border: 'none', color: '#fff',
-            padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
-            cursor: 'pointer', boxShadow: '0 6px 24px rgba(201,162,39,0.4)',
-            fontFamily: 'inherit',
-          }}>Terminer le module →</button>
-        ) : (
-          <button onClick={() => setPageIndex(i => i + 1)} style={{
-            background: 'linear-gradient(135deg, #a07818, #c9a227)',
-            border: 'none', color: '#fff',
-            padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
-            cursor: 'pointer', boxShadow: '0 6px 24px rgba(201,162,39,0.4)',
-            fontFamily: 'inherit',
-          }}>Suivant →</button>
-        )}
+          {isLast ? (
+            <button onClick={handleTerminate} style={{
+              background: 'linear-gradient(135deg, #a07818, #c9a227)',
+              border: 'none', color: '#fff',
+              padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
+              cursor: 'pointer', boxShadow: '0 6px 24px rgba(201,162,39,0.4)',
+              fontFamily: 'inherit',
+            }}>Terminer le module →</button>
+          ) : (
+            <button onClick={() => setPageIndex(i => i + 1)} style={{
+              background: 'linear-gradient(135deg, #a07818, #c9a227)',
+              border: 'none', color: '#fff',
+              padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
+              cursor: 'pointer', boxShadow: '0 6px 24px rgba(201,162,39,0.4)',
+              fontFamily: 'inherit',
+            }}>Suivant →</button>
+          )}
+        </div>
       </div>
     </div>
   )

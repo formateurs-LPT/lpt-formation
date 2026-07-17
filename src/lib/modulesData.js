@@ -48,6 +48,13 @@ export const PDM_PAGES = [
     color: '#f59e0b',
   },
   {
+    id: 'pdm-animation',
+    type: 'pdm-animation',
+    titre: 'Du verre brut a la paire parfaite',
+    sousTitre: 'Animation pas a pas',
+    color: '#f59e0b',
+  },
+  {
     id: 'outil',
     titre: 'LPTVISION',
     sousTitre: "L'outil intégré LPT — rapide, précis, obligatoire sur chaque vente",
