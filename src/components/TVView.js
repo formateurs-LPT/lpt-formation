@@ -3387,7 +3387,10 @@ function TVRembFrDemarche({ stepA, stepB }) {
         }}>{label}</div>
         <div style={{ fontSize: 14, color: vis ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)', lineHeight: 1.5, transition: 'all .3s' }}>
           {isAmeliPro ? (
-            <span>Aller a l&apos;ordinateur sur <AmeliTV /> pour verifier le dernier remboursement.</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <span>Aller a l&apos;ordinateur sur <strong>AMELIPRO</strong> pour verifier la date du dernier remboursement.</span>
+              <div><AmeliTV /></div>
+            </div>
           ) : isSupreme ? (
             <span>{txt} <SupremeTV /></span>
           ) : txt}

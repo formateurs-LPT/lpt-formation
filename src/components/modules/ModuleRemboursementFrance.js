@@ -337,7 +337,10 @@ function PageDemarcheFormateur({ stepA, stepB, onRevealA, onRevealB }) {
       }}>{step.label}</div>
       <div style={{ flex: 1, fontSize: 13, color: revealed ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.3)', lineHeight: 1.5, transition: 'all .2s' }}>
         {step.hasAmeliPro ? (
-          <span>Aller a l&apos;ordinateur et me rendre sur <AmeliproBadge /> pour voir de quand date le dernier remboursement.</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span>Aller a l&apos;ordinateur et me rendre sur <strong>AMELIPRO</strong> pour voir de quand date le dernier remboursement.</span>
+            <div><AmeliproBadge /></div>
+          </div>
         ) : step.hasSante ? (
           <span>{step.text} <LptSanteBadge /></span>
         ) : step.text}
