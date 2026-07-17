@@ -137,10 +137,12 @@ export default function FichePratique() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'DM Sans', sans-serif; background: ${BG}; color: ${TEXT}; }
         @media print {
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           .no-print { display: none !important; }
-          body { background: #fff !important; color: #111 !important; }
-          .print-page { background: #fff !important; }
-          .print-section { break-inside: avoid; }
+          body { background: ${BG} !important; color: ${TEXT} !important; margin: 0; }
+          .print-page { background: ${BG} !important; padding: 20px 16px !important; }
+          .print-section { break-inside: avoid; page-break-inside: avoid; }
+          @page { margin: 10mm; background: ${BG}; }
         }
       `}</style>
 
