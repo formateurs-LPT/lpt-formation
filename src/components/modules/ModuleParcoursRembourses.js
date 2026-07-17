@@ -12,22 +12,23 @@ const OFFRES = [
   {
     id: 'supreme',
     nom: 'Suprême',
-    color: '#b03050',
-    colorBg: 'rgba(139,28,46,0.1)',
-    colorBorder: 'rgba(139,28,46,0.3)',
+    color: '#8B7186',
+    colorBg: 'rgba(139,113,134,0.1)',
+    colorBorder: 'rgba(139,113,134,0.35)',
     points: [
       '1 paire achetée, une paire offerte',
       'Choix sur tout le magasin (montures et verres)',
       'Verres Origine France Garantie',
       'Uniquement avec tiers payant complet',
+      'Non compatible avec la CSS',
     ],
   },
   {
     id: '1=1',
-    nom: '1=1',
-    color: '#4ade80',
-    colorBg: 'rgba(74,222,128,0.08)',
-    colorBorder: 'rgba(74,222,128,0.25)',
+    nom: '1=1 100% Santé',
+    color: '#6aad54',
+    colorBg: 'rgba(106,173,84,0.08)',
+    colorBorder: 'rgba(106,173,84,0.28)',
     points: [
       '1 paire achetée, une paire offerte',
       'Sur tout le magasin (montures et verres au choix)',
@@ -311,6 +312,18 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
             </div>
             <div style={{ marginTop: 14, padding: '12px 16px', background: 'rgba(0,137,186,0.07)', border: '1px solid rgba(0,137,186,0.18)', borderRadius: 10, fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>
               💡 L'animation est diffusée en direct sur le grand écran.
+            </div>
+            <div style={{ marginTop: 12, padding: '14px 18px', background: 'rgba(77,184,92,0.08)', border: '1px solid rgba(77,184,92,0.25)', borderRadius: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/assets/logo-lpt-sante.svg" alt="LPT Sante" width={36} height={36} style={{ objectFit: 'contain', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#4db85c', marginBottom: 3 }}>LPT Sante — logiciel de tiers payant</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', lineHeight: 1.55 }}>
+                    Pour realiser le tiers payant a nos clients, nous utilisons <strong style={{ color: '#fff' }}>LPT Sante</strong>. Ce logiciel est disponible sur <strong style={{ color: '#fff' }}>tous les ordinateurs de vente</strong>.
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         ) : (

@@ -98,16 +98,16 @@ const JOURNEES = (onLaunchModule) => [
         onClick: () => onLaunchModule('pdm'),
       },
       {
+        visual: 'badge2p',
+        label: 'Les parcours remboursés',
+        sub: 'Le Suprême · Le 1=1 · 100% Santé',
+        onClick: () => onLaunchModule('parcours-rembourses'),
+      },
+      {
         visual: 'emoji', icon: '🇫🇷',
         label: 'Remboursement optique en France',
         sub: 'SS · Mutuelle · 100% Santé · Conditions',
         onClick: () => onLaunchModule('remboursement-france'),
-      },
-      {
-        visual: 'emoji', icon: '💳',
-        label: 'Les parcours remboursés',
-        sub: 'Le Suprême · Le 1=1 · 100% Santé',
-        onClick: () => onLaunchModule('parcours-rembourses'),
       },
     ],
   },
@@ -330,6 +330,12 @@ function JourneeModules({ journee, onBack, onLaunchModule }) {
               )}
               {mod.visual === 'emoji' && (
                 <div className="dash-tile-icon">{mod.icon}</div>
+              )}
+              {mod.visual === 'badge2p' && (
+                <div className="dash-tile-icon" style={{ flexDirection: 'column', gap: 1, lineHeight: 1.1 }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: '#4ade80' }}>2 paires</span>
+                  <span style={{ fontSize: 14, fontWeight: 900, color: '#fff' }}>0 €</span>
+                </div>
               )}
               {mod.visual === 'image' && (
                 <Image src={mod.src} alt="" width={38} height={38} style={{ objectFit: 'contain', flexShrink: 0 }} />

@@ -3260,22 +3260,23 @@ function TVParcoursOffres({ parcoursRevealed }) {
     {
       id: 'supreme',
       nom: 'Suprême',
-      color: '#b03050',
-      colorBg: 'rgba(139,28,46,0.1)',
-      colorBorder: 'rgba(139,28,46,0.35)',
+      color: '#8B7186',
+      colorBg: 'rgba(139,113,134,0.1)',
+      colorBorder: 'rgba(139,113,134,0.35)',
       points: [
         '1 paire achetée, une paire offerte',
         'Choix sur tout le magasin (montures et verres)',
         'Verres Origine France Garantie',
         'Uniquement avec tiers payant complet',
+        'Non compatible avec la CSS',
       ],
     },
     {
       id: '1=1',
-      nom: '1=1',
-      color: '#4ade80',
-      colorBg: 'rgba(74,222,128,0.07)',
-      colorBorder: 'rgba(74,222,128,0.3)',
+      nom: '1=1 100% Santé',
+      color: '#6aad54',
+      colorBg: 'rgba(106,173,84,0.07)',
+      colorBorder: 'rgba(106,173,84,0.3)',
       points: [
         '1 paire achetée, une paire offerte',
         'Sur tout le magasin (montures et verres au choix)',
@@ -4188,6 +4189,19 @@ function TVTiersPayantExplication() {
         </div>
 
       </div>
+
+      {/* Note LPT Santé */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 24px', background: 'rgba(77,184,92,0.07)', border: '1px solid rgba(77,184,92,0.22)', borderRadius: 16, marginTop: 4 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-sante.svg" alt="LPT Sante" width={48} height={48} style={{ objectFit: 'contain', flexShrink: 0 }} />
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#4db85c', marginBottom: 4 }}>LPT Sante — logiciel de tiers payant</div>
+          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>
+            Pour realiser le tiers payant, nous utilisons <strong style={{ color: '#fff' }}>LPT Sante</strong>. Ce logiciel est disponible sur <strong style={{ color: '#fff' }}>tous les ordinateurs de vente</strong>.
+          </div>
+        </div>
+      </div>
+
     </div>
   )
 }
