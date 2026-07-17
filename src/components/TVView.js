@@ -3357,7 +3357,7 @@ function TVRembFrDemarche({ stepA, stepB }) {
   )
   const SupremeTV = () => (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, verticalAlign: 'middle' }}>
-      <img src="/assets/logo-lpt-sante.svg" alt="LPT Sante" width={28} height={28} style={{ objectFit: 'contain' }} />
+      <img src="/assets/logo-lpt-sante.svg" alt="LPT Santé" width={28} height={28} style={{ objectFit: 'contain' }} />
       <span style={{ fontSize: 13, fontWeight: 800, color: '#4ade80' }}>Test Supreme</span>
     </span>
   )
@@ -3472,10 +3472,10 @@ function TVRembFrSupreme({ supremeStep }) {
     }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 36 }}>
-        <img src="/assets/logo-lpt-sante.svg" alt="LPT Sante" width={64} height={64} style={{ objectFit: 'contain', flexShrink: 0 }} />
+        <img src="/assets/logo-lpt-sante.svg" alt="LPT Santé" width={64} height={64} style={{ objectFit: 'contain', flexShrink: 0 }} />
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
-            LPT Sante
+            LPT Santé
           </div>
           <h1 style={{ fontSize: 36, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: -0.5 }}>Test Supreme</h1>
         </div>
@@ -4196,11 +4196,11 @@ function TVTiersPayantExplication() {
       {/* Note LPT Santé */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 24px', background: 'rgba(77,184,92,0.07)', border: '1px solid rgba(77,184,92,0.22)', borderRadius: 16, marginTop: 4 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/assets/logo-lpt-sante.svg" alt="LPT Sante" width={48} height={48} style={{ objectFit: 'contain', flexShrink: 0 }} />
+        <img src="/assets/logo-lpt-sante.svg" alt="LPT Santé" width={48} height={48} style={{ objectFit: 'contain', flexShrink: 0 }} />
         <div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: '#4db85c', marginBottom: 4 }}>LPT Sante — logiciel de tiers payant</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#4db85c', marginBottom: 4 }}>LPT Santé — logiciel de tiers payant</div>
           <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>
-            Pour realiser le tiers payant, nous utilisons <strong style={{ color: '#fff' }}>LPT Sante</strong>. Ce logiciel est disponible sur <strong style={{ color: '#fff' }}>tous les ordinateurs de vente</strong>.
+            Pour réaliser le tiers payant, nous utilisons <strong style={{ color: '#fff' }}>LPT Santé</strong>. Ce logiciel est disponible sur <strong style={{ color: '#fff' }}>tous les ordinateurs de vente</strong>.
           </div>
         </div>
       </div>

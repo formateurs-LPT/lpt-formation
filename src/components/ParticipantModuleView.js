@@ -3175,7 +3175,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
         borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#00abe9',
         textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20,
       }}>
-        🏥 LPT Sante · Test Supreme
+        🏥 LPT Santé · Test Suprême
       </div>
       <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Test Supreme</div>
       <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 260 }}>

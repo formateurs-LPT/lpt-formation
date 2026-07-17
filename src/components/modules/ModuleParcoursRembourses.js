@@ -316,11 +316,11 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
             <div style={{ marginTop: 12, padding: '14px 18px', background: 'rgba(77,184,92,0.08)', border: '1px solid rgba(77,184,92,0.25)', borderRadius: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/assets/logo-lpt-sante.svg" alt="LPT Sante" width={36} height={36} style={{ objectFit: 'contain', flexShrink: 0 }} />
+                <img src="/assets/logo-lpt-sante.svg" alt="LPT Santé" width={36} height={36} style={{ objectFit: 'contain', flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#4db85c', marginBottom: 3 }}>LPT Sante — logiciel de tiers payant</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#4db85c', marginBottom: 3 }}>LPT Santé — logiciel de tiers payant</div>
                   <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', lineHeight: 1.55 }}>
-                    Pour realiser le tiers payant a nos clients, nous utilisons <strong style={{ color: '#fff' }}>LPT Sante</strong>. Ce logiciel est disponible sur <strong style={{ color: '#fff' }}>tous les ordinateurs de vente</strong>.
+                    Pour réaliser le tiers payant à nos clients, nous utilisons <strong style={{ color: '#fff' }}>LPT Santé</strong>. Ce logiciel est disponible sur <strong style={{ color: '#fff' }}>tous les ordinateurs de vente</strong>.
                   </div>
                 </div>
               </div>
