@@ -118,8 +118,18 @@ function PageQ1Formateur({ page }) {
   useEffect(() => {
     const poll = async () => {
       try {
-        const rows = await fetchOpenAnswers(getActiveSessionCode(), page.id)
-        if (Array.isArray(rows)) setAnswers(rows)
+        const state = await getSharedState()
+        const prefix = `oa__${page.id}__`
+        const rows = Object.entries(state || {})
+          .filter(([k, v]) => k.startsWith(prefix) && v?.answer)
+          .map(([k, v]) => ({
+            id: k,
+            participant_name: v.name || k.slice(prefix.length).replace(/_/g, ' '),
+            answer: v.answer,
+            ts: v.ts || 0,
+          }))
+          .sort((a, b) => a.ts - b.ts)
+        setAnswers(rows)
       } catch { /* ignore */ }
     }
     poll()

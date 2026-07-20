@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, setSharedState, setRoomSharedState } from '@/lib/supabase'
+import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, getRoomSharedState, setSharedState, setRoomSharedState } from '@/lib/supabase'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
 import { PDMAnimationSVG } from '@/lib/pdmAnimationSvg'
@@ -884,18 +884,23 @@ function OpenAnswersFeed({ sessionCode, pageId }) {
     if (!sessionCode || !pageId) return
     const poll = async () => {
       try {
-        const rows = await sbSelect(
-          'open_answers',
-          `session_code=eq.${encodeURIComponent(sessionCode)}&page_id=eq.${encodeURIComponent(pageId)}&order=created_at.asc&limit=20`
-        )
-        if (rows) {
-          setAnswers(rows.slice(-8))
-          setKnownIds(prev => {
-            const next = new Set(prev)
-            rows.forEach(r => next.add(r.id))
-            return next
-          })
-        }
+        const state = await getRoomSharedState(sessionCode)
+        const prefix = `oa__${pageId}__`
+        const rows = Object.entries(state || {})
+          .filter(([k, v]) => k.startsWith(prefix) && v?.answer)
+          .map(([k, v]) => ({
+            id: k,
+            participant_name: v.name || k.slice(prefix.length).replace(/_/g, ' '),
+            answer: v.answer,
+            ts: v.ts || 0,
+          }))
+          .sort((a, b) => a.ts - b.ts)
+        setAnswers(rows.slice(-8))
+        setKnownIds(prev => {
+          const next = new Set(prev)
+          rows.forEach(r => next.add(r.id))
+          return next
+        })
       } catch {}
     }
     poll()

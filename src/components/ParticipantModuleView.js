@@ -6,7 +6,7 @@ import QuestionBubble from '@/components/QuestionBubble'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, setSharedState, insertOpenAnswer, setParticipantPage } from '@/lib/supabase'
+import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, setSharedState, setRoomSharedState, insertOpenAnswer, setParticipantPage } from '@/lib/supabase'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
@@ -1154,13 +1154,13 @@ function PauseMobile({ page, pageIndex, total, pName }) {
     setSending(true)
     setSendError(false)
     try {
-      const ok = await insertOpenAnswer({
-        sessionCode: getParticipantSessionCode(),
-        pageId: page.id,
-        participantName: pName || 'Anonyme',
-        answer: text.trim(),
-      })
-      if (ok) {
+      const safeName = (pName || 'Anonyme').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_À-ɏ-]/g, '') || 'Anonyme'
+      const key = `oa__${page.id}__${safeName}`
+      const result = await setRoomSharedState(
+        { [key]: { name: pName || 'Anonyme', answer: text.trim(), ts: Date.now() } },
+        getParticipantSessionCode()
+      )
+      if (result != null) {
         setText('')
         setSent(true)
         setTimeout(() => setSent(false), 2500)
