@@ -11,7 +11,9 @@ export default function TrainerQuestionsPanel({ moduleId }) {
     if (!moduleId) return
     try {
       const code = getActiveSessionCode()
+      console.log('[TrainerQuestionsPanel] lecture → sessionCode:', code, 'pageId:', 'mq_' + moduleId)
       const rows = await fetchOpenAnswers(code, 'mq_' + moduleId)
+      console.log('[TrainerQuestionsPanel] rows:', rows)
       setQuestions(rows || [])
     } catch (e) {
       console.error('[TrainerQuestionsPanel] load error:', e)

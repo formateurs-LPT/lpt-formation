@@ -15,7 +15,9 @@ export default function QuestionBubble({ moduleId, pName }) {
     setError(false)
     try {
       const code = getRuntimeSessionCode()
+      console.log('[QuestionBubble] envoi → sessionCode:', code, 'pageId:', 'mq_' + moduleId)
       await insertOpenAnswer({ sessionCode: code, pageId: 'mq_' + moduleId, participantName: pName || 'Anonyme', answer: text.trim() })
+      console.log('[QuestionBubble] insert OK')
       setText('')
       setSent(true)
       setTimeout(() => { setSent(false); setSOpen(false) }, 1600)
