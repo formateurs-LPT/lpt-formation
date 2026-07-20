@@ -3206,6 +3206,109 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
       </div>
     </div>
   )
+  if (page.type === 'rembfr-conditions') return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column', padding: '28px 20px 40px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>Remboursement</div>
+      </div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>Les 3 conditions</div>
+      <h2 style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 20 }}>Pour être remboursé, le client doit :</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Condition 1 */}
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '16px 18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 16 }}>🏥</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#0089ba' }}>01</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Couverture SS + mutuelle / CSS</span>
+          </div>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.5 }}>Être couvert par la Sécurité Sociale et une mutuelle complémentaire ou la Complémentaire Santé Solidaire.</p>
+        </div>
+        {/* Condition 2 */}
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '16px 18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 16 }}>📋</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#0089ba' }}>02</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Ordonnance en cours de validité</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+            {[{ label: 'Moins de 16 ans', duree: '1 an', color: '#f59e0b' }, { label: 'De 16 à 42 ans', duree: '5 ans', color: '#00abe9' }, { label: '43 ans et plus', duree: '3 ans', color: '#a78bfa' }].map(r => (
+              <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{r.label}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: r.color }}>{r.duree}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding: '8px 10px', background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)', borderRadius: 8 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: '#c9a227', marginBottom: 3 }}>💡 Pas d'ordonnance valable ? → LYLEOO</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>Disponible en magasin pour les +18 ans. À utiliser uniquement pour débloquer un remboursement.</div>
+          </div>
+        </div>
+        {/* Condition 3 */}
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '16px 18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 16 }}>📅</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#0089ba' }}>03</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Délais de renouvellement</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ padding: '8px 10px', background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', marginBottom: 3 }}>Moins de 16 ans</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>Tous les ans · <strong style={{ color: '#fff' }}>Sans délai</strong> si changement ≥ 0,50</div>
+            </div>
+            <div style={{ padding: '8px 10px', background: 'rgba(0,171,233,0.07)', border: '1px solid rgba(0,171,233,0.18)', borderRadius: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', marginBottom: 3 }}>16 ans et plus</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>Tous les <strong style={{ color: '#fff' }}>2 ans</strong> · Anticipé à partir de <strong style={{ color: '#fff' }}>1 an et 1 jour</strong> si changement ≥ 0,50</div>
+            </div>
+            <div style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>
+              💻 Vérifiable sur <strong style={{ color: '#00abe9' }}>AMELIPRO</strong> avec le numéro de sécu du patient
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  if (page.type === 'parcours-rembourses-offres') return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column', padding: '28px 20px 40px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>Parcours remboursés</div>
+      </div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>Les offres</div>
+      <h2 style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 20 }}>Les offres remboursées LPT</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Suprême */}
+        <div style={{ background: 'rgba(139,113,134,0.1)', border: '1px solid rgba(139,113,134,0.35)', borderRadius: 14, padding: '18px' }}>
+          <div style={{ fontSize: 18, fontWeight: 900, color: '#8B7186', marginBottom: 12 }}>Suprême</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {['1 paire achetée, une paire offerte', 'Choix sur tout le magasin (montures et verres)', 'Verres Origine France Garantie', 'Uniquement avec tiers payant complet', 'Non compatible avec la CSS'].map((p, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#8B7186', marginTop: 6, flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{p}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* 1=1 */}
+        <div style={{ background: 'rgba(106,173,84,0.08)', border: '1px solid rgba(106,173,84,0.28)', borderRadius: 14, padding: '18px' }}>
+          <div style={{ fontSize: 18, fontWeight: 900, color: '#6aad54', marginBottom: 12 }}>1=1 100% Santé</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+            {['1 paire achetée, une paire offerte', 'Sur tout le magasin (montures et verres au choix)', 'Tarifs 100% Santé : 0 € de reste à charge quelle que soit la mutuelle'].map((p, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#6aad54', marginTop: 6, flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{p}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderLeft: '2px solid #6aad54', borderRadius: '0 8px 8px 0' }}>
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontStyle: 'italic', lineHeight: 1.6 }}>Le 100% Santé est un dispositif légal qui garantit des lunettes entièrement remboursées par la Sécu et la mutuelle — sans aucun reste à charge pour le client.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
   if (page.type === 'saisie-interactive') return <SaisieInteractiveMobile page={page} pageIndex={pageIndex} total={total} />
 
   // Freins à l'achat — saisie libre
