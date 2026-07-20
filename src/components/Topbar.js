@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { getTrainerAvatarSrc } from '@/lib/constants'
 import { fetchOnlineParticipantsList, markParticipantLeft } from '@/lib/participantPresence'
 import { setRoomSharedState, getRoomSharedState } from '@/lib/supabase'
+import { useIsMobile } from '@/lib/useIsMobile'
 
 const KICK_EXPIRY_MS = 30 * 60 * 1000
 
@@ -41,17 +42,14 @@ function ParticipantsPanel({ sessionCode, onClose }) {
 
   const handleKick = async (name) => {
     setKicking(k => ({ ...k, [name]: true }))
-    // Retrait immédiat de la liste (optimiste)
     setParticipants(prev => prev.filter(p => p.name !== name))
     await markParticipantLeft(sessionCode, name).catch(() => {})
-    // Timestamp : le signal expire au bout de 30 min (assez pour toute la session)
     await setRoomSharedState({ forced_disconnects: { [name]: Date.now() } }, sessionCode).catch(() => {})
     setKicking(k => ({ ...k, [name]: false }))
   }
 
   return (
     <>
-      {/* Backdrop */}
       <div
         onClick={onClose}
         style={{
@@ -60,7 +58,6 @@ function ParticipantsPanel({ sessionCode, onClose }) {
           backdropFilter: 'blur(2px)',
         }}
       />
-      {/* Panel */}
       <div style={{
         position: 'fixed', top: 56, right: 16, zIndex: 1000,
         background: '#0d1f3c',
@@ -70,7 +67,6 @@ function ParticipantsPanel({ sessionCode, onClose }) {
         boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
         overflow: 'hidden',
       }}>
-        {/* Header */}
         <div style={{
           padding: '14px 18px',
           borderBottom: '1px solid rgba(255,255,255,0.07)',
@@ -90,8 +86,6 @@ function ParticipantsPanel({ sessionCode, onClose }) {
             }}
           >✕</button>
         </div>
-
-        {/* List */}
         <div style={{ maxHeight: 360, overflowY: 'auto', padding: '8px 0' }}>
           {loading ? (
             <div style={{ padding: '20px 18px', color: 'rgba(255,255,255,0.3)', fontSize: 13, textAlign: 'center' }}>
@@ -123,8 +117,6 @@ function ParticipantsPanel({ sessionCode, onClose }) {
                   fontFamily: 'inherit', transition: 'all .15s',
                   opacity: kicking[p.name] ? 0.5 : 1,
                 }}
-                onMouseEnter={e => { if (!kicking[p.name]) e.currentTarget.style.background = 'rgba(239,68,68,0.22)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = kicking[p.name] ? 'rgba(239,68,68,0.05)' : 'rgba(239,68,68,0.1)' }}
               >
                 {kicking[p.name] ? '…' : 'Déconnecter'}
               </button>
@@ -136,11 +128,154 @@ function ParticipantsPanel({ sessionCode, onClose }) {
   )
 }
 
+/* Menu hamburger mobile — panneau qui descend depuis le haut */
+function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onStartSession, onTVMode, onLogout, onClose, onShowParticipants }) {
+  const code = (sessionCode || '').trim()
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 998, background: 'rgba(0,0,0,0.3)' }} />
+      <div style={{
+        position: 'fixed', top: 58, left: 0, right: 0, zIndex: 999,
+        background: '#fff',
+        borderBottom: '1px solid #ebebeb',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+        padding: '12px 16px',
+        display: 'flex', flexDirection: 'column', gap: 10,
+      }}>
+        {/* Code salle */}
+        {isRoomSession ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(0,137,186,0.06)', borderRadius: 10, border: '1px solid rgba(0,137,186,0.2)' }}>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: '#0089ba' }}>Salle active</span>
+            <span style={{ color: '#0089ba', fontWeight: 800, fontFamily: 'monospace', letterSpacing: 2, fontSize: 14 }}>{code}</span>
+          </div>
+        ) : (
+          <div style={{ padding: '8px 12px', background: '#f5f5f5', borderRadius: 10, fontSize: 13, color: '#888' }}>
+            Legacy · {code || '—'}
+          </div>
+        )}
+
+        {/* Formés connectés */}
+        {isTrainer && (
+          <button
+            onClick={() => { onClose(); onShowParticipants() }}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 14px', borderRadius: 10,
+              background: '#f8f9fa', border: '1px solid #e5e7eb',
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{onlineCount} formé(s) connecté(s)</span>
+            </div>
+            <span style={{ fontSize: 12, color: '#0089ba', fontWeight: 600 }}>Voir →</span>
+          </button>
+        )}
+
+        {/* Boutons d'action */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {isTrainer && onStartSession && (
+            <button onClick={() => { onClose(); onStartSession() }} style={{
+              width: '100%', padding: '13px 16px', borderRadius: 10,
+              background: '#0089ba', border: 'none', color: '#fff',
+              fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}>
+              ▶ Démarrer la session
+            </button>
+          )}
+          {isTrainer && onTVMode && (
+            <button onClick={() => { onClose(); onTVMode() }} style={{
+              width: '100%', padding: '13px 16px', borderRadius: 10,
+              background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.3)',
+              color: '#0089ba', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}>
+              📺 Mode Diffusion
+            </button>
+          )}
+          <button onClick={() => { onClose(); onLogout() }} style={{
+            width: '100%', padding: '13px 16px', borderRadius: 10,
+            background: 'transparent', border: '1px solid #d1d5db',
+            color: '#6b7280', fontSize: 15, cursor: 'pointer', fontFamily: 'inherit',
+          }}>
+            Déconnexion
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onLogout, onTVMode, onStartSession }) {
   const [showPanel, setShowPanel] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+  const isMobile = useIsMobile(640)
   const code = (sessionCode || '').trim()
   const avatarSrc = isTrainer ? getTrainerAvatarSrc(pName) : '/assets/logo-lpt-blanc.png'
 
+  if (isMobile) {
+    return (
+      <>
+        <div className="topbar" style={{ justifyContent: 'space-between' }}>
+          {/* Gauche : logo */}
+          <div className="tlogo">
+            <Image src={avatarSrc} alt={pName || 'LPT'} width={28} height={28} style={{ borderRadius: '50%', objectFit: 'cover' }} />
+            <span style={{ fontSize: 14, fontWeight: 700 }}>LPT</span>
+          </div>
+
+          {/* Centre : formés connectés */}
+          <div
+            onClick={isTrainer ? () => setShowPanel(v => !v) : undefined}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: isTrainer ? 'pointer' : 'default' }}
+          >
+            <div className="odot" />
+            <span style={{ fontSize: 12, color: '#555', fontWeight: 500 }}>{onlineCount}</span>
+            {isTrainer && <span style={{ fontSize: 10, color: 'rgba(0,0,0,0.3)' }}>▾</span>}
+          </div>
+
+          {/* Droite : hamburger */}
+          <button
+            onClick={() => setShowMenu(v => !v)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '6px 8px', borderRadius: 8,
+              display: 'flex', flexDirection: 'column', gap: 4,
+            }}
+          >
+            <span style={{ display: 'block', width: 20, height: 2, background: '#333', borderRadius: 2 }} />
+            <span style={{ display: 'block', width: 20, height: 2, background: '#333', borderRadius: 2 }} />
+            <span style={{ display: 'block', width: 20, height: 2, background: '#333', borderRadius: 2 }} />
+          </button>
+        </div>
+
+        {showMenu && (
+          <MobileMenu
+            pName={pName}
+            isTrainer={isTrainer}
+            onlineCount={onlineCount}
+            sessionCode={code}
+            isRoomSession={isRoomSession}
+            onStartSession={onStartSession}
+            onTVMode={onTVMode}
+            onLogout={onLogout}
+            onClose={() => setShowMenu(false)}
+            onShowParticipants={() => setShowPanel(true)}
+          />
+        )}
+
+        {showPanel && isTrainer && (
+          <ParticipantsPanel
+            sessionCode={code}
+            onClose={() => setShowPanel(false)}
+          />
+        )}
+      </>
+    )
+  }
+
+  /* Layout desktop — inchangé */
   return (
     <div className="topbar">
       <div className="tlogo">
@@ -183,15 +318,9 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
         </div>
         {isTrainer && onStartSession && (
           <button onClick={onStartSession} style={{
-            background: '#0089ba',
-            border: 'none',
-            color: '#fff',
-            fontSize: 12, fontWeight: 700,
-            padding: '6px 14px',
-            borderRadius: 20,
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 5,
-            transition: 'all .2s',
+            background: '#0089ba', border: 'none', color: '#fff',
+            fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 20,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, transition: 'all .2s',
           }}
           onMouseEnter={e => e.currentTarget.style.background = '#00abe9'}
           onMouseLeave={e => e.currentTarget.style.background = '#0089ba'}
@@ -201,15 +330,9 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
         )}
         {isTrainer && onTVMode && (
           <button onClick={onTVMode} style={{
-            background: 'rgba(0,171,233,0.08)',
-            border: '1px solid rgba(0,171,233,0.3)',
-            color: '#0089ba',
-            fontSize: 12, fontWeight: 600,
-            padding: '5px 12px',
-            borderRadius: 20,
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 5,
-            transition: 'all .2s',
+            background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.3)',
+            color: '#0089ba', fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: 20,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, transition: 'all .2s',
           }}
           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.18)'; e.currentTarget.style.borderColor = '#00abe9' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,171,233,0.3)' }}
@@ -219,13 +342,8 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
         )}
         {isTrainer && (
           <button onClick={onLogout} style={{
-            background: 'transparent',
-            border: '1px solid #d1d5db',
-            color: '#6b7280',
-            fontSize: 12,
-            padding: '5px 12px',
-            borderRadius: 20,
-            cursor: 'pointer'
+            background: 'transparent', border: '1px solid #d1d5db',
+            color: '#6b7280', fontSize: 12, padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
           }}>
             Déconnexion
           </button>

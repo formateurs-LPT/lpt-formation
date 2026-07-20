@@ -266,9 +266,39 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   .sidebar{display:none}
   .lcard-head{padding:28px 24px 20px}
   .lcard-body{padding:20px 24px 28px}
+
+  /* Contenu principal formateur */
+  .tmain{padding:16px 14px}
+  .tcard{padding:14px 16px}
+  .tnavbar{flex-wrap:wrap;gap:8px;padding:10px 12px}
+  .btnrow{flex-wrap:wrap;gap:6px}
+  .btn1,.btn2{font-size:13px;padding:9px 14px}
+
+  /* Dashboard */
+  .dash-wrap{padding:16px 14px}
+  .dash-hero{padding:20px 18px;flex-direction:column;gap:12px;align-items:flex-start}
+  .dash-hero-title{font-size:22px}
+  .dash-header{flex-direction:column;gap:6px}
+
+  /* Onboarding */
+  .ob-banner{padding:16px 18px}
+  .ob-banner-title{font-size:18px}
+  .ob-banner-body{padding:0 12px}
+  .ob-group-grid{grid-template-columns:1fr}
+  .ob-collab-row{flex-direction:column;gap:10px;align-items:flex-start}
+  .ob-collab-checks{flex-wrap:wrap;gap:14px}
+
+  /* Compare scores */
+  .compare-scores{grid-template-columns:1fr}
+
+  /* Boutons flottants : ajuster pour ne pas masquer le contenu bas d'écran */
+  .toast{bottom:12px;right:12px;left:12px;right:12px}
 }
+
 @media(max-width:480px){
+  .dash-tiles{grid-template-columns:1fr}
   .tlogo img{display:none}
   .online span{display:none}
   .trainer-head-avatar-wrap{width:60px!important;height:60px!important}
+  .ob-banner-icon{display:none}
 }
