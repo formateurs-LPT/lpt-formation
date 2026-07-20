@@ -19,8 +19,7 @@ function TVModuleQuestionsView({ sessionCode, moduleId, moduleLabel }) {
     if (!sessionCode || !moduleId) return
     const load = async () => {
       try {
-        const rows = await sbSelect('open_answers',
-          `session_code=eq.${sessionCode}&question_key=eq.mq_${moduleId}&order=created_at.asc`)
+        const rows = await fetchOpenAnswers(sessionCode, 'mq_' + moduleId)
         setQuestions(rows || [])
       } catch {}
     }
@@ -82,7 +81,7 @@ function TVModuleQuestionsView({ sessionCode, moduleId, moduleLabel }) {
                 Question {i + 1}
               </div>
               <div style={{ fontSize: questions.length <= 4 ? 20 : 16, color: '#fff', lineHeight: 1.55, fontWeight: 500 }}>
-                {q.answer_text}
+                {q.answer}
               </div>
             </div>
           ))}

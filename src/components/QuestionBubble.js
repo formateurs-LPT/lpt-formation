@@ -13,7 +13,7 @@ export default function QuestionBubble({ moduleId, pName }) {
     setSaving(true)
     try {
       const code = getParticipantSessionCode()
-      await insertOpenAnswer(code, 'mq_' + moduleId, pName || 'Anonyme', text.trim())
+      await insertOpenAnswer({ sessionCode: code, pageId: 'mq_' + moduleId, participantName: pName || 'Anonyme', answer: text.trim() })
       setText('')
       setSent(true)
       setTimeout(() => { setSent(false); setSOpen(false) }, 1600)

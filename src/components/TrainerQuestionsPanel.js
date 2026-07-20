@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { sbSelect, getActiveSessionCode, setSharedState } from '@/lib/supabase'
+import { fetchOpenAnswers, getActiveSessionCode, setSharedState } from '@/lib/supabase'
 
 export default function TrainerQuestionsPanel({ moduleId }) {
   const [open, setOpen]         = useState(false)
@@ -11,8 +11,7 @@ export default function TrainerQuestionsPanel({ moduleId }) {
     if (!moduleId) return
     try {
       const code = getActiveSessionCode()
-      const rows = await sbSelect('open_answers',
-        `session_code=eq.${code}&question_key=eq.mq_${moduleId}&order=created_at.asc`)
+      const rows = await fetchOpenAnswers(code, 'mq_' + moduleId)
       setQuestions(rows || [])
     } catch {}
   }, [moduleId])
@@ -148,7 +147,7 @@ export default function TrainerQuestionsPanel({ moduleId }) {
                     </span>
                   </div>
                   <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55 }}>
-                    {q.answer_text}
+                    {q.answer}
                   </div>
                 </div>
               ))}
