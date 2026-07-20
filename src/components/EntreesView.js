@@ -117,7 +117,7 @@ function parseRHTable(rawText) {
 const CAT_META = {
   paris:    { label: 'Présentiel',     icon: '🏢', color: '#0089ba', bg: '#f0f9ff', border: '#bae6fd' },
   province: { label: 'Visio Province', icon: '💻', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-  belgique: { label: 'Visio Belgique', icon: '💻', color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
+  belgique: { label: 'Présentiel Belgique', icon: '🇧🇪', color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
 }
 
 function effectiveCat(c) {
@@ -230,7 +230,7 @@ function QuickAddModal({ onClose, onAdd }) {
   const [saving, setSaving] = useState(false)
 
   const zone = classifyMagasin(magasin)
-  const zoneLabel = zone === 'paris' ? '🏢 Présentiel Paris' : zone === 'belgique' ? '💻 Visio Belgique' : '💻 Visio Province'
+  const zoneLabel = zone === 'paris' ? '🏢 Présentiel Paris' : zone === 'belgique' ? '🇧🇪 Présentiel Belgique' : '💻 Visio Province'
   const zoneColor = zone === 'paris' ? '#0089ba' : zone === 'belgique' ? '#db2777' : '#7c3aed'
   const hasInput = magasin.trim().length > 0
 
@@ -374,7 +374,7 @@ export default function EntreesView({ onBack, onToast, pName }) {
     setEntrees(next)
     const synced = await persistEntreesList(next)
     onToast(synced
-      ? `✓ ${newEntry.nom} ${newEntry.prenom} ajouté — ${classifyMagasin(newEntry.magasin) === 'paris' ? 'Présentiel Paris' : classifyMagasin(newEntry.magasin) === 'belgique' ? 'Visio Belgique' : 'Visio Province'}`
+      ? `✓ ${newEntry.nom} ${newEntry.prenom} ajouté — ${classifyMagasin(newEntry.magasin) === 'paris' ? 'Présentiel Paris' : classifyMagasin(newEntry.magasin) === 'belgique' ? 'Présentiel Belgique' : 'Visio Province'}`
       : `${newEntry.nom} ${newEntry.prenom} ajouté localement (sync échouée)`
     )
     if (!showResults) setShowResults(true)
@@ -622,7 +622,7 @@ export default function EntreesView({ onBack, onToast, pName }) {
       <div className="dash-header">
         <div>
           <h2>Entrées de la semaine</h2>
-          <p>Dispatch automatique : Présentiel Paris · Visio Province · Visio Belgique</p>
+          <p>Dispatch automatique : Présentiel Paris · Visio Province · Présentiel Belgique</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {showResults && (
@@ -681,7 +681,7 @@ export default function EntreesView({ onBack, onToast, pName }) {
             {[
               { label: 'Présentiel Paris', count: paris.length, color: '#0089ba' },
               { label: 'Visio Province', count: province.length, color: '#7c3aed' },
-              { label: 'Visio Belgique', count: belgique.length, color: '#db2777' },
+              { label: 'Présentiel Belgique', count: belgique.length, color: '#db2777' },
             ].map(s => (
               <div key={s.label} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', textAlign: 'center' }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.count}</div>
@@ -692,7 +692,7 @@ export default function EntreesView({ onBack, onToast, pName }) {
 
           <GroupSection title="Présentiel Paris" items={paris} {...groupProps} />
           <GroupSection title="Visio Province" items={province} {...groupProps} />
-          <GroupSection title="Visio Belgique" items={belgique} {...groupProps} />
+          <GroupSection title="Présentiel Belgique" items={belgique} {...groupProps} />
         </>
       )}
 
