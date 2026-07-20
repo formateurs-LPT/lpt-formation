@@ -1311,483 +1311,322 @@ function TVLptSantePec() {
 }
 
 const LPTS_ANIM_STYLES = `
-  @keyframes lpts-pec-in-1 {
-    0%   { transform: translate(0,0) scale(0.7); opacity:0; }
-    12%  { opacity:1; }
-    80%  { opacity:1; transform: translate(var(--dx1,260px), var(--dy1,-30px)) scale(1); }
-    100% { opacity:0; transform: translate(var(--dx1,260px), var(--dy1,-30px)) scale(0.8); }
+  @keyframes lpts-v-walk {
+    0%   { transform: translateX(-50vw); opacity:0; }
+    7%   { opacity:1; }
+    42%  { transform: translateX(0); opacity:1; }
+    65%  { transform: translateX(0); opacity:1; }
+    78%  { transform: translateX(8px); opacity:0; }
+    100% { transform: translateX(8px); opacity:0; }
   }
-  @keyframes lpts-pec-in-2 {
-    0%   { transform: translate(0,0) scale(0.7); opacity:0; }
-    12%  { opacity:1; }
-    80%  { opacity:1; transform: translate(var(--dx2,240px), var(--dy2,0px)) scale(1); }
-    100% { opacity:0; transform: translate(var(--dx2,240px), var(--dy2,0px)) scale(0.8); }
-  }
-  @keyframes lpts-pec-in-3 {
-    0%   { transform: translate(0,0) scale(0.7); opacity:0; }
-    12%  { opacity:1; }
-    80%  { opacity:1; transform: translate(var(--dx3,250px), var(--dy3,30px)) scale(1); }
-    100% { opacity:0; transform: translate(var(--dx3,250px), var(--dy3,30px)) scale(0.8); }
+  @keyframes lpts-v-pec {
+    0%   { transform: translateX(0) scale(0.6); opacity:0; }
+    45%  { transform: translateX(0) scale(0.6); opacity:0; }
+    54%  { transform: translateX(0) scale(1);   opacity:1; }
+    82%  { transform: translateX(18vw) scale(0.9); opacity:1; }
+    92%  { transform: translateX(18vw) scale(0.8); opacity:0; }
+    100% { transform: translateX(18vw) scale(0.8); opacity:0; }
   }
   @keyframes lpts-pec-out {
     0%   { transform: translate(0,0) scale(1); opacity:0; }
-    10%  { opacity:1; }
-    80%  { opacity:1; transform: translate(var(--odx,200px), var(--ody,0px)) scale(1); }
-    100% { opacity:0; transform: translate(var(--odx,200px), var(--ody,0px)) scale(0.8); }
+    8%   { opacity:1; }
+    80%  { opacity:1; transform: translate(var(--tx,200px),var(--ty,0)) scale(1); }
+    100% { opacity:0; transform: translate(var(--tx,200px),var(--ty,0)) scale(0.8); }
   }
   @keyframes lpts-eur {
     0%   { transform: translate(0,0) scale(0.8); opacity:0; }
-    10%  { opacity:1; }
-    80%  { opacity:1; transform: translate(var(--edx,-280px), var(--edy,0px)) scale(1); }
-    100% { opacity:0; transform: translate(var(--edx,-280px), var(--edy,0px)) scale(0.8); }
-  }
-  @keyframes lpts-client-in {
-    0%   { transform: translateX(-40px); opacity:0; }
-    20%  { opacity:1; transform: translateX(0); }
-    80%  { opacity:1; transform: translateX(30px); }
-    100% { opacity:0; transform: translateX(32px); }
+    8%   { opacity:1; }
+    80%  { opacity:1; transform: translate(var(--ex,0),var(--ey,0)) scale(1); }
+    100% { opacity:0; transform: translate(var(--ex,0),var(--ey,0)) scale(0.8); }
   }
   @keyframes lpts-float {
     0%,100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
-  }
-  @keyframes lpts-pulse-green {
-    0%,100% { box-shadow: 0 0 0 0 rgba(77,184,92,0); }
-    50% { box-shadow: 0 0 0 16px rgba(77,184,92,0.15); }
+    50% { transform: translateY(-5px); }
   }
   @keyframes lpts-badge-pop {
     0%  { transform: scale(1); }
-    30% { transform: scale(1.35); }
-    60% { transform: scale(0.9); }
+    30% { transform: scale(1.32); }
+    60% { transform: scale(0.92); }
     100%{ transform: scale(1); }
   }
-  @keyframes lpts-night-fade {
-    0%   { opacity:0; }
-    100% { opacity:1; }
-  }
-  @keyframes lpts-transmit-flash {
-    0%,100% { opacity:0.7; }
-    50% { opacity:1; }
+  @keyframes lpts-night-fade { 0%{opacity:0} 100%{opacity:1} }
+  @keyframes lpts-transmit-flash { 0%,100%{opacity:0.7} 50%{opacity:1} }
+  @keyframes lpts-imac-glow {
+    0%,100%{ box-shadow:0 0 22px rgba(0,100,255,0.32),0 8px 32px rgba(0,0,0,0.4); }
+    50%    { box-shadow:0 0 48px rgba(0,130,255,0.62),0 8px 32px rgba(0,0,0,0.4); }
   }
 `
 
-function PecChip({ label = 'PEC', style = {}, animName, duration = '2.4s', delay = '0s', active = true }) {
-  if (!active) return null
-  return (
-    <div style={{
-      position: 'absolute',
-      background: 'linear-gradient(135deg, #2d7a3a, #4db85c)',
-      borderRadius: 8, padding: '5px 10px',
-      fontSize: 11, fontWeight: 800, color: '#fff',
-      letterSpacing: 1, whiteSpace: 'nowrap',
-      boxShadow: '0 3px 12px rgba(77,184,92,0.45)',
-      animation: `${animName} ${duration} ${delay} forwards`,
-      zIndex: 10,
-      pointerEvents: 'none',
-      ...style,
-    }}>
-      {label}
-    </div>
-  )
-}
-
-function EurChip({ style = {}, delay = '0s', active = true }) {
-  if (!active) return null
-  return (
-    <div style={{
-      position: 'absolute',
-      background: 'linear-gradient(135deg, #b7860b, #f5c842)',
-      borderRadius: 8, padding: '5px 10px',
-      fontSize: 13, fontWeight: 900, color: '#fff',
-      boxShadow: '0 3px 12px rgba(245,200,66,0.5)',
-      animation: `lpts-eur 2.2s ${delay} forwards`,
-      zIndex: 10,
-      pointerEvents: 'none',
-      ...style,
-    }}>€€</div>
-  )
-}
+const LPTS_VENDORS = [
+  { emoji: '👔',   clients: ['🧑','👱','🧔'], delay: '0s',     top: '16%' },
+  { emoji: '👩‍💼', clients: ['👧','🧑','👨'], delay: '-1.73s', top: '47%' },
+  { emoji: '👔',   clients: ['🧔','👱','🧑'], delay: '-3.47s', top: '76%' },
+]
+const LPTS_CYCLE = '5.2s'
 
 function TVLptSanteExplication() {
-  const [phase, setPhase] = useState(0) // 0=day, 1=transmit, 2=pay
+  const [phase, setPhase] = useState(0)
   const [pecCount, setPecCount] = useState(0)
   const [loopKey, setLoopKey] = useState(0)
 
   useEffect(() => {
     let count = 0
-    const DAY_DURATION = 14000
-    const TRANSMIT_DURATION = 5000
-    const PAY_DURATION = 5000
-
-    const countInterval = setInterval(() => {
-      count++
-      setPecCount(count)
-    }, 1100)
-
-    const t1 = setTimeout(() => {
-      clearInterval(countInterval)
-      setPhase(1)
-    }, DAY_DURATION)
-    const t2 = setTimeout(() => setPhase(2), DAY_DURATION + TRANSMIT_DURATION)
-    const t3 = setTimeout(() => {
-      setPhase(0)
-      setPecCount(0)
-      setLoopKey(k => k + 1)
-    }, DAY_DURATION + TRANSMIT_DURATION + PAY_DURATION)
-
-    return () => {
-      clearInterval(countInterval)
-      clearTimeout(t1)
-      clearTimeout(t2)
-      clearTimeout(t3)
-    }
+    const DAY = 15000, TRANSMIT = 5000, PAY = 5000
+    const iv = setInterval(() => { count++; setPecCount(count) }, 1100)
+    const t1 = setTimeout(() => { clearInterval(iv); setPhase(1) }, DAY)
+    const t2 = setTimeout(() => setPhase(2), DAY + TRANSMIT)
+    const t3 = setTimeout(() => { setPhase(0); setPecCount(0); setLoopKey(k => k + 1) }, DAY + TRANSMIT + PAY)
+    return () => { clearInterval(iv); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
   }, [loopKey])
 
-  const isDay = phase === 0
-  const isTransmit = phase === 1
-  const isPay = phase === 2
+  const isDay = phase === 0, isTransmit = phase === 1, isPay = phase === 2
 
-  // PEC chips entrant (day phase) — 3 vendeurs × 4 vagues
-  const dayPecs = isDay ? [
-    // vendeur haut
-    { anim: 'lpts-pec-in-1', delay: '0s',   top: '30%', left: '22%', dx: '290px', dy: '-40px' },
-    { anim: 'lpts-pec-in-1', delay: '3.2s', top: '32%', left: '19%', dx: '295px', dy: '-35px' },
-    { anim: 'lpts-pec-in-1', delay: '6.5s', top: '28%', left: '21%', dx: '292px', dy: '-42px' },
-    { anim: 'lpts-pec-in-1', delay: '9.8s', top: '31%', left: '20%', dx: '290px', dy: '-38px' },
-    // vendeur milieu
-    { anim: 'lpts-pec-in-2', delay: '1.1s', top: '52%', left: '20%', dx: '275px', dy: '-15px' },
-    { anim: 'lpts-pec-in-2', delay: '4.3s', top: '50%', left: '22%', dx: '270px', dy: '-10px' },
-    { anim: 'lpts-pec-in-2', delay: '7.6s', top: '53%', left: '21%', dx: '272px', dy: '-12px' },
-    { anim: 'lpts-pec-in-2', delay: '10.9s',top: '51%', left: '20%', dx: '278px', dy: '-14px' },
-    // vendeur bas
-    { anim: 'lpts-pec-in-3', delay: '2.2s', top: '68%', left: '21%', dx: '262px', dy: '10px' },
-    { anim: 'lpts-pec-in-3', delay: '5.5s', top: '70%', left: '19%', dx: '265px', dy: '15px' },
-    { anim: 'lpts-pec-in-3', delay: '8.8s', top: '67%', left: '22%', dx: '260px', dy: '12px' },
-    { anim: 'lpts-pec-in-3', delay: '12.0s',top: '69%', left: '20%', dx: '263px', dy: '11px' },
+  // Transmit: PECs from iMac (≈left:47%, top:50%) to SS (top:27%, left:83%) and Mutuelle (top:68%, left:83%)
+  const transmitPecs = isTransmit ? [
+    { delay:'0.0s', top:'46%', left:'46%', tx:'26vw', ty:'-16vh' },
+    { delay:'0.4s', top:'48%', left:'46%', tx:'26vw', ty:'-13vh' },
+    { delay:'0.8s', top:'47%', left:'46%', tx:'26vw', ty:'-15vh' },
+    { delay:'1.2s', top:'50%', left:'46%', tx:'26vw', ty:'-11vh' },
+    { delay:'1.6s', top:'49%', left:'46%', tx:'26vw', ty:'-14vh' },
+    { delay:'0.2s', top:'54%', left:'46%', tx:'26vw', ty:'13vh'  },
+    { delay:'0.6s', top:'52%', left:'46%', tx:'26vw', ty:'15vh'  },
+    { delay:'1.0s', top:'55%', left:'46%', tx:'26vw', ty:'12vh'  },
+    { delay:'1.4s', top:'51%', left:'46%', tx:'26vw', ty:'14vh'  },
+    { delay:'1.8s', top:'53%', left:'46%', tx:'26vw', ty:'11vh'  },
   ] : []
 
-  // PEC chips sortant vers SS (transmit phase)
-  const outPecsToSS = isTransmit ? [
-    { delay: '0.1s', top: '42%', odx: '285px', ody: '-60px' },
-    { delay: '0.5s', top: '48%', odx: '275px', ody: '-50px' },
-    { delay: '0.9s', top: '44%', odx: '280px', ody: '-55px' },
-    { delay: '1.3s', top: '50%', odx: '272px', ody: '-45px' },
-    { delay: '1.7s', top: '46%', odx: '278px', ody: '-58px' },
-  ] : []
-
-  // PEC chips sortant vers Mutuelle (transmit phase)
-  const outPecsToMut = isTransmit ? [
-    { delay: '0.3s', top: '54%', odx: '285px', ody: '55px' },
-    { delay: '0.7s', top: '58%', odx: '275px', ody: '65px' },
-    { delay: '1.1s', top: '56%', odx: '280px', ody: '60px' },
-    { delay: '1.5s', top: '52%', odx: '272px', ody: '70px' },
-    { delay: '1.9s', top: '60%', odx: '278px', ody: '58px' },
-  ] : []
-
-  // € retour
+  // Pay: € from SS (top:27%, left:83%) and Mutuelle (top:68%, left:83%) back to iMac
   const eurChips = isPay ? [
-    { delay: '0.2s', top: '35%', edx: '-275px', edy: '50px' },
-    { delay: '0.6s', top: '38%', edx: '-265px', edy: '48px' },
-    { delay: '1.0s', top: '65%', edx: '-280px', edy: '-45px' },
-    { delay: '1.4s', top: '62%', edx: '-270px', edy: '-50px' },
-    { delay: '0.8s', top: '50%', edx: '-260px', edy: '0px'  },
-    { delay: '1.2s', top: '47%', edx: '-270px', edy: '5px'  },
+    { delay:'0.1s', top:'26%', left:'82%', ex:'-26vw', ey:'16vh'  },
+    { delay:'0.5s', top:'29%', left:'82%', ex:'-26vw', ey:'13vh'  },
+    { delay:'0.9s', top:'67%', left:'82%', ex:'-26vw', ey:'-14vh' },
+    { delay:'1.3s', top:'70%', left:'82%', ex:'-26vw', ey:'-11vh' },
+    { delay:'0.3s', top:'47%', left:'84%', ex:'-27vw', ey:'2vh'   },
+    { delay:'0.7s', top:'52%', left:'84%', ex:'-27vw', ey:'-2vh'  },
   ] : []
 
   return (
     <div style={{
-      position: 'relative', minHeight: '100vh', overflow: 'hidden',
-      background: isDay
-        ? 'linear-gradient(160deg, #03112a 0%, #061e10 100%)'
-        : isTransmit
-          ? 'linear-gradient(160deg, #010a1a 0%, #030f06 100%)'
-          : 'linear-gradient(160deg, #030d1f 0%, #061508 100%)',
-      transition: 'background 1.5s ease',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
+      position:'relative', minHeight:'100vh', overflow:'hidden',
+      background: isDay   ? 'linear-gradient(160deg,#03112a 0%,#061e10 100%)'
+                : isTransmit ? 'linear-gradient(160deg,#010a1a 0%,#030f06 100%)'
+                :              'linear-gradient(160deg,#030d1f 0%,#061508 100%)',
+      transition:'background 1.5s ease',
+      fontFamily:'system-ui,-apple-system,sans-serif',
     }}>
       <style>{LPTS_ANIM_STYLES}</style>
 
-      {/* ── Topbar ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', position: 'relative', zIndex: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
-          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+      {/* Topbar */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 32px', position:'relative', zIndex:20 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit:'contain' }} />
+          <div style={{ width:1, height:20, background:'rgba(255,255,255,0.15)' }} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={24} height={24} style={{ objectFit: 'contain' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>LPT Santé · Comment ça marche ?</span>
+          <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={22} height={22} style={{ objectFit:'contain' }} />
+          <span style={{ fontSize:12, color:'rgba(255,255,255,0.4)' }}>LPT Santé · Comment ça marche ?</span>
         </div>
-        {/* Phase badge */}
         <div style={{
-          padding: '5px 16px', borderRadius: 20, fontSize: 12, fontWeight: 800,
-          background: isDay ? 'rgba(77,184,92,0.15)' : isTransmit ? 'rgba(0,171,233,0.15)' : 'rgba(245,200,66,0.15)',
-          border: `1px solid ${isDay ? 'rgba(77,184,92,0.4)' : isTransmit ? 'rgba(0,171,233,0.4)' : 'rgba(245,200,66,0.4)'}`,
-          color: isDay ? '#4db85c' : isTransmit ? '#00abe9' : '#f5c842',
-          transition: 'all 0.8s',
-          animation: isTransmit ? 'lpts-transmit-flash 1s ease infinite' : 'none',
+          padding:'5px 16px', borderRadius:20, fontSize:12, fontWeight:800,
+          background: isDay?'rgba(77,184,92,0.15)':isTransmit?'rgba(0,171,233,0.15)':'rgba(245,200,66,0.15)',
+          border:`1px solid ${isDay?'rgba(77,184,92,0.4)':isTransmit?'rgba(0,171,233,0.4)':'rgba(245,200,66,0.4)'}`,
+          color: isDay?'#4db85c':isTransmit?'#00abe9':'#f5c842',
+          transition:'all 0.8s',
+          animation: isTransmit?'lpts-transmit-flash 1s ease infinite':'none',
         }}>
-          {isDay ? '☀️ Journée en cours' : isTransmit ? '📡 Télétransmission' : '💰 Remboursement'}
+          {isDay?'☀️ Journée en cours':isTransmit?'📡 Télétransmission':'💰 Remboursement'}
         </div>
       </div>
 
-      {/* ── Scène principale — 3 colonnes ── */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
-        height: 'calc(100vh - 64px)', position: 'relative',
-      }}>
+      {/* Flying PEC chips (transmit, absolute on root) */}
+      {transmitPecs.map((p,i) => (
+        <div key={`tx-${loopKey}-${i}`} style={{
+          position:'absolute', top:p.top, left:p.left, zIndex:30, pointerEvents:'none',
+          background:'linear-gradient(135deg,#2d7a3a,#4db85c)', borderRadius:6, padding:'4px 8px',
+          fontSize:10, fontWeight:800, color:'#fff', boxShadow:'0 2px 8px rgba(77,184,92,0.45)',
+          animation:`lpts-pec-out 2.2s ${p.delay} forwards`,
+          '--tx':p.tx, '--ty':p.ty,
+        }}>PEC</div>
+      ))}
 
-        {/* ── GAUCHE : Magasin LPT ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 20px', position: 'relative' }}>
-          {/* Bâtiment */}
-          <div style={{
-            width: '85%', background: 'rgba(255,255,255,0.06)',
-            border: '2px solid rgba(0,171,233,0.3)', borderRadius: 16,
-            overflow: 'hidden', position: 'relative',
-          }}>
-            {/* Enseigne */}
-            <div style={{
-              background: 'linear-gradient(135deg, #0070a0, #00abe9)',
-              padding: '10px 16px', textAlign: 'center',
-            }}>
-              <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={110} height={40} style={{ objectFit: 'contain' }} />
-            </div>
+      {/* Flying € chips (pay, absolute on root) */}
+      {eurChips.map((e,i) => (
+        <div key={`eur-${loopKey}-${i}`} style={{
+          position:'absolute', top:e.top, left:e.left, zIndex:30, pointerEvents:'none',
+          background:'linear-gradient(135deg,#b7860b,#f5c842)', borderRadius:6, padding:'4px 8px',
+          fontSize:12, fontWeight:900, color:'#fff', boxShadow:'0 2px 8px rgba(245,200,66,0.5)',
+          animation:`lpts-eur 2.2s ${e.delay} forwards`,
+          '--ex':e.ex, '--ey':e.ey,
+        }}>€€</div>
+      ))}
 
-            {/* Vitrine */}
-            <div style={{ padding: '16px 16px 0', display: 'flex', justifyContent: 'space-around' }}>
-              {[0, 1, 2].map(i => (
-                <div key={i} style={{
-                  width: 36, height: 28, borderRadius: 4,
-                  background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 14,
-                }}>🕶️</div>
-              ))}
-            </div>
+      {/* 3-column scene */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', height:'calc(100vh - 62px)' }}>
 
-            {/* Vendeurs */}
-            <div style={{ padding: '12px 8px', display: 'flex', justifyContent: 'space-around', alignItems: 'flex-end' }}>
-              {['👔', '👩‍💼', '👔'].map((em, i) => (
-                <div key={i} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 28, animation: 'lpts-float 2.4s ease-in-out infinite', animationDelay: `${i * 0.6}s` }}>{em}</div>
-                  <div style={{ fontSize: 9, color: '#4db85c', fontWeight: 700, marginTop: 3 }}>Vendeur {i + 1}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Entrée magasin + clients animés */}
-            <div style={{
-              borderTop: '1px solid rgba(255,255,255,0.08)',
-              padding: '10px 12px',
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: 'rgba(0,0,0,0.15)',
-            }}>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', flexShrink: 0 }}>🚪 Entrée</div>
-              {/* Clients qui entrent en animation */}
-              {[0, 1, 2].map(i => (
-                <div key={i} style={{
-                  fontSize: 18,
-                  animation: `lpts-client-in 3s ${i * 1.1}s ease-in-out infinite`,
-                  opacity: 0,
-                }}>🧑</div>
-              ))}
-            </div>
+        {/* ── LEFT: Clients → Vendors ── */}
+        <div style={{ position:'relative' }}>
+          <div style={{ position:'absolute', top:'5%', left:0, right:0, textAlign:'center',
+            fontSize:10, color:'rgba(255,255,255,0.25)', fontWeight:700, textTransform:'uppercase', letterSpacing:1.5 }}>
+            🏪 Magasin Lunettes Pour Tous
           </div>
 
-          {/* Stat */}
-          <div style={{ marginTop: 14, fontSize: 11, color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>
-            <div style={{ color: '#4db85c', fontWeight: 800, fontSize: 15 }}>⚡ 5 min</div>
-            <div>par prise en charge</div>
-            <div style={{ marginTop: 2, color: 'rgba(255,255,255,0.2)', fontSize: 9 }}>vs 30+ min chez les concurrents</div>
+          {LPTS_VENDORS.map((v,i) => (
+            <div key={i} style={{ position:'absolute', top:v.top, left:0, right:0, height:64 }}>
+              {/* Client walking in */}
+              {isDay && (
+                <div style={{
+                  position:'absolute', right:'26%', top:6,
+                  fontSize:24, userSelect:'none', lineHeight:1,
+                  animation:`lpts-v-walk ${LPTS_CYCLE} ${v.delay} linear infinite`,
+                }}>{v.clients[i]}</div>
+              )}
+              {/* Vendor */}
+              <div style={{ position:'absolute', right:'8%', top:0, textAlign:'center' }}>
+                <div style={{ fontSize:28, animation:`lpts-float 2.5s ${i*0.5}s ease-in-out infinite` }}>{v.emoji}</div>
+                <div style={{ fontSize:8, color:'#4db85c', fontWeight:700, marginTop:2 }}>Vendeur {i+1}</div>
+              </div>
+              {/* PEC chip flying to iMac */}
+              {isDay && (
+                <div style={{
+                  position:'absolute', right:'5%', top:18,
+                  background:'linear-gradient(135deg,#2d7a3a,#4db85c)',
+                  borderRadius:5, padding:'3px 7px', fontSize:9, fontWeight:800, color:'#fff',
+                  boxShadow:'0 2px 8px rgba(77,184,92,0.4)', pointerEvents:'none', zIndex:5,
+                  animation:`lpts-v-pec ${LPTS_CYCLE} ${v.delay} linear infinite`,
+                }}>PEC</div>
+              )}
+            </div>
+          ))}
+
+          {/* Bottom stat */}
+          <div style={{ position:'absolute', bottom:'6%', left:0, right:0, textAlign:'center' }}>
+            <div style={{ fontSize:14, fontWeight:800, color:'#4db85c' }}>⚡ 5 min</div>
+            <div style={{ fontSize:10, color:'rgba(255,255,255,0.3)' }}>par prise en charge</div>
+            <div style={{ fontSize:9, color:'rgba(255,255,255,0.14)', marginTop:2 }}>vs 30+ min partout ailleurs</div>
           </div>
         </div>
 
-        {/* ── CENTRE : LPT Santé ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, position: 'relative' }}>
+        {/* ── CENTER: iMac LPT Santé ── */}
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:10 }}>
 
-          {/* PEC chips entrant (day phase) */}
-          {dayPecs.map((p, i) => (
-            <PecChip
-              key={`in-${loopKey}-${i}`}
-              label="PEC"
-              active={isDay}
-              animName={p.anim}
-              duration="2.6s"
-              delay={p.delay}
-              style={{
-                top: p.top, left: p.left,
-                '--dx1': p.dx, '--dy1': p.dy,
-                '--dx2': p.dx, '--dy2': p.dy,
-                '--dx3': p.dx, '--dy3': p.dy,
-              }}
-            />
-          ))}
-
-          {/* PEC chips sortant vers SS */}
-          {outPecsToSS.map((p, i) => (
-            <PecChip
-              key={`out-ss-${loopKey}-${i}`}
-              label="PEC"
-              active={isTransmit}
-              animName="lpts-pec-out"
-              duration="2.4s"
-              delay={p.delay}
-              style={{ top: p.top, left: '46%', '--odx': p.odx, '--ody': p.ody }}
-            />
-          ))}
-
-          {/* PEC chips sortant vers Mutuelle */}
-          {outPecsToMut.map((p, i) => (
-            <PecChip
-              key={`out-mut-${loopKey}-${i}`}
-              label="PEC"
-              active={isTransmit}
-              animName="lpts-pec-out"
-              duration="2.4s"
-              delay={p.delay}
-              style={{ top: p.top, left: '46%', '--odx': p.odx, '--ody': p.ody }}
-            />
-          ))}
-
-          {/* Logo LPT Santé */}
-          <div style={{
-            position: 'relative',
-            animation: 'lpts-float 3s ease-in-out infinite',
-          }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/assets/logo-lpt-sante.png"
-              alt="LPT Santé"
-              width={120}
-              height={120}
-              style={{
-                objectFit: 'contain',
-                filter: `drop-shadow(0 0 ${isDay ? '30px rgba(77,184,92,0.6)' : isTransmit ? '40px rgba(0,171,233,0.8)' : '30px rgba(245,200,66,0.6)'})`,
-                transition: 'filter 1s',
-                animation: isDay ? 'lpts-pulse-green 2.5s ease-in-out infinite' : 'none',
-              }}
-            />
-            {/* Badge compteur PEC */}
-            {(isDay || isTransmit) && (
-              <div style={{
-                position: 'absolute', top: -8, right: -8,
-                background: isDay ? 'linear-gradient(135deg,#2d7a3a,#4db85c)' : '#00abe9',
-                borderRadius: 20, minWidth: 32, height: 32,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 13, fontWeight: 900, color: '#fff',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                padding: '0 8px',
-                animation: 'lpts-badge-pop 0.3s ease',
-                transition: 'background 0.5s',
-              }}>
-                {isTransmit ? '0' : pecCount}
-              </div>
-            )}
-          </div>
-
-          {/* Label central */}
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginBottom: 4 }}>LPT Santé</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
-              {isDay ? 'Collecte les PEC toute la journée' : isTransmit ? 'Envoi des PEC en cours…' : 'Paiement reçu ✓'}
-            </div>
-          </div>
-
-          {/* Barre de stockage PEC */}
-          {isDay && (
+          {/* iMac */}
+          <div style={{ animation:'lpts-float 3s ease-in-out infinite', display:'flex', flexDirection:'column', alignItems:'center' }}>
+            {/* Screen */}
             <div style={{
-              width: 160, background: 'rgba(255,255,255,0.06)', borderRadius: 10,
-              border: '1px solid rgba(77,184,92,0.2)', padding: '8px 12px',
+              width:220, height:162,
+              background: isDay?'#080f1a':isTransmit?'#050e1c':'#080f18',
+              border:`8px solid ${isDay?'#0055cc':isTransmit?'#00abe9':'#0055cc'}`,
+              borderRadius:'14px 14px 4px 4px',
+              display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+              position:'relative',
+              animation: isDay?'lpts-imac-glow 2.5s ease-in-out infinite':isTransmit?'lpts-transmit-flash 1s ease infinite':'none',
+              transition:'border-color 0.8s, background 0.8s',
             }}>
-              <div style={{ fontSize: 9, color: '#4db85c', fontWeight: 700, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 1 }}>PEC stockées</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                {Array(Math.min(pecCount, 16)).fill(0).map((_, i) => (
-                  <div key={i} style={{
-                    width: 14, height: 14, borderRadius: 3,
-                    background: 'linear-gradient(135deg,#2d7a3a,#4db85c)',
-                    animation: 'lpts-badge-pop 0.2s ease',
-                  }} />
-                ))}
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/assets/logo-lpt-sante.png" width={72} height={72} style={{
+                objectFit:'contain',
+                filter:`drop-shadow(0 0 16px ${isDay?'rgba(77,184,92,0.5)':isTransmit?'rgba(0,171,233,0.8)':'rgba(245,200,66,0.5)'})`,
+                transition:'filter 0.8s',
+              }} />
+              <div style={{ fontSize:10, color:'rgba(255,255,255,0.5)', marginTop:5, fontWeight:700 }}>LPT Santé</div>
+              {/* PEC counter badge */}
+              {(isDay||isTransmit) && (
+                <div style={{
+                  position:'absolute', top:-12, right:-12,
+                  background: isDay?'linear-gradient(135deg,#2d7a3a,#4db85c)':'#00abe9',
+                  borderRadius:18, minWidth:30, height:30, padding:'0 6px',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:13, fontWeight:900, color:'#fff',
+                  boxShadow:'0 3px 10px rgba(0,0,0,0.4)',
+                  animation:'lpts-badge-pop 0.3s ease',
+                  transition:'background 0.5s',
+                }}>{isTransmit?'0':pecCount}</div>
+              )}
+            </div>
+            {/* Chin */}
+            <div style={{
+              width:220, height:24, borderRadius:'0 0 8px 8px',
+              background: isDay?'#0044bb':'#00359e',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              transition:'background 0.8s',
+            }}>
+              <div style={{ width:44, height:3, borderRadius:2, background:'rgba(0,0,0,0.28)' }} />
+            </div>
+            {/* Neck */}
+            <div style={{ width:20, height:46, background:'#00359e', transition:'background 0.8s' }} />
+            {/* Base */}
+            <div style={{ width:96, height:7, background:'#002e88', borderRadius:4, transition:'background 0.8s' }} />
+          </div>
+
+          {/* PEC storage grid */}
+          {isDay && pecCount > 0 && (
+            <div style={{
+              background:'rgba(255,255,255,0.04)', border:'1px solid rgba(77,184,92,0.15)',
+              borderRadius:8, padding:'6px 10px', display:'flex', flexWrap:'wrap', gap:3, width:132,
+            }}>
+              {Array(Math.min(pecCount,15)).fill(0).map((_,i) => (
+                <div key={i} style={{
+                  width:13, height:13, borderRadius:3,
+                  background:'linear-gradient(135deg,#2d7a3a,#4db85c)',
+                  animation:'lpts-badge-pop 0.2s ease',
+                }} />
+              ))}
             </div>
           )}
 
-          {/* Message télétransmission */}
+          <div style={{ textAlign:'center', fontSize:11, color:'rgba(255,255,255,0.32)' }}>
+            {isDay?'Collecte les PEC toute la journée':isTransmit?'📡 Envoi en cours…':'💰 Paiement reçu ✓'}
+          </div>
+
           {isTransmit && (
             <div style={{
-              background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.35)',
-              borderRadius: 12, padding: '10px 18px', textAlign: 'center',
-              animation: 'lpts-night-fade 0.5s ease',
+              background:'rgba(0,171,233,0.1)', border:'1px solid rgba(0,171,233,0.3)',
+              borderRadius:10, padding:'8px 14px', textAlign:'center', animation:'lpts-night-fade 0.5s ease',
             }}>
-              <div style={{ fontSize: 22, marginBottom: 6 }}>📡</div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: '#00abe9' }}>Télétransmission</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>Chaque soir</div>
+              <div style={{ fontSize:20, marginBottom:4 }}>📡</div>
+              <div style={{ fontSize:11, fontWeight:800, color:'#00abe9' }}>Télétransmission</div>
+              <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', marginTop:2 }}>Chaque soir</div>
             </div>
           )}
 
-          {/* Message paiement */}
           {isPay && (
             <div style={{
-              background: 'rgba(245,200,66,0.1)', border: '1px solid rgba(245,200,66,0.35)',
-              borderRadius: 12, padding: '10px 18px', textAlign: 'center',
-              animation: 'lpts-night-fade 0.5s ease',
+              background:'rgba(245,200,66,0.1)', border:'1px solid rgba(245,200,66,0.3)',
+              borderRadius:10, padding:'8px 14px', textAlign:'center', animation:'lpts-night-fade 0.5s ease',
             }}>
-              <div style={{ fontSize: 22, marginBottom: 6 }}>💰</div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: '#f5c842' }}>LPT est payé</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>SS + Mutuelle règlent</div>
+              <div style={{ fontSize:20, marginBottom:4 }}>💰</div>
+              <div style={{ fontSize:11, fontWeight:800, color:'#f5c842' }}>LPT est payé ✓</div>
+              <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)', marginTop:2 }}>SS + Mutuelle règlent</div>
             </div>
           )}
         </div>
 
-        {/* ── DROITE : SS + Mutuelle ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24, padding: '0 20px', position: 'relative' }}>
-
-          {/* € retour */}
-          {eurChips.map((e, i) => (
-            <EurChip
-              key={`eur-${loopKey}-${i}`}
-              active={isPay}
-              delay={e.delay}
-              style={{ top: e.top, right: '12%', '--edx': e.edx, '--edy': e.edy }}
-            />
-          ))}
-
-          {/* Sécurité Sociale */}
+        {/* ── RIGHT: SS + Mutuelle ── */}
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:24, padding:'0 20px' }}>
+          {/* SS */}
           <div style={{
-            width: '80%', background: 'rgba(239,68,68,0.07)',
-            border: `1px solid ${isPay ? 'rgba(245,200,66,0.5)' : 'rgba(239,68,68,0.3)'}`,
-            borderRadius: 16, padding: '20px 16px', textAlign: 'center',
-            transition: 'border-color 0.5s',
+            width:'80%', background:'rgba(239,68,68,0.07)',
+            border:`1px solid ${isPay?'rgba(245,200,66,0.5)':'rgba(239,68,68,0.3)'}`,
+            borderRadius:16, padding:'20px 16px', textAlign:'center', transition:'border-color 0.5s',
           }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>🏥</div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', marginBottom: 4 }}>Sécurité Sociale</div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>
-              {isTransmit ? 'Réception des PEC…' : isPay ? '✅ Paiement envoyé' : 'En attente'}
+            <div style={{ fontSize:40, marginBottom:8 }}>🏥</div>
+            <div style={{ fontSize:13, fontWeight:800, color:'#fff', marginBottom:4 }}>Sécurité Sociale</div>
+            <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)' }}>
+              {isTransmit?'Réception des PEC…':isPay?'✅ Paiement envoyé':'En attente'}
             </div>
-            {isPay && (
-              <div style={{
-                marginTop: 8, fontSize: 18, fontWeight: 900, color: '#f5c842',
-                animation: 'lpts-badge-pop 0.4s ease',
-              }}>€€€</div>
-            )}
+            {isPay && <div style={{ marginTop:8, fontSize:18, fontWeight:900, color:'#f5c842', animation:'lpts-badge-pop 0.4s ease' }}>€€€</div>}
           </div>
-
           {/* Mutuelle */}
           <div style={{
-            width: '80%', background: 'rgba(0,171,233,0.07)',
-            border: `1px solid ${isPay ? 'rgba(245,200,66,0.5)' : 'rgba(0,171,233,0.3)'}`,
-            borderRadius: 16, padding: '20px 16px', textAlign: 'center',
-            transition: 'border-color 0.5s',
+            width:'80%', background:'rgba(0,171,233,0.07)',
+            border:`1px solid ${isPay?'rgba(245,200,66,0.5)':'rgba(0,171,233,0.3)'}`,
+            borderRadius:16, padding:'20px 16px', textAlign:'center', transition:'border-color 0.5s',
           }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>🛡️</div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', marginBottom: 4 }}>Mutuelle</div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>
-              {isTransmit ? 'Réception des PEC…' : isPay ? '✅ Paiement envoyé' : 'En attente'}
+            <div style={{ fontSize:40, marginBottom:8 }}>🛡️</div>
+            <div style={{ fontSize:13, fontWeight:800, color:'#fff', marginBottom:4 }}>Mutuelle</div>
+            <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)' }}>
+              {isTransmit?'Réception des PEC…':isPay?'✅ Paiement envoyé':'En attente'}
             </div>
-            {isPay && (
-              <div style={{
-                marginTop: 8, fontSize: 18, fontWeight: 900, color: '#f5c842',
-                animation: 'lpts-badge-pop 0.4s ease 0.3s both',
-              }}>€€€</div>
-            )}
+            {isPay && <div style={{ marginTop:8, fontSize:18, fontWeight:900, color:'#f5c842', animation:'lpts-badge-pop 0.4s ease 0.3s both' }}>€€€</div>}
           </div>
         </div>
       </div>
