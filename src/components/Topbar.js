@@ -6,6 +6,69 @@ import { fetchOnlineParticipantsList, markParticipantLeft } from '@/lib/particip
 import { setRoomSharedState, getRoomSharedState } from '@/lib/supabase'
 import { useIsMobile } from '@/lib/useIsMobile'
 
+function useFullscreen() {
+  const [isFS, setIsFS] = useState(false)
+  useEffect(() => {
+    const handler = () => setIsFS(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', handler)
+    document.addEventListener('webkitfullscreenchange', handler)
+    return () => {
+      document.removeEventListener('fullscreenchange', handler)
+      document.removeEventListener('webkitfullscreenchange', handler)
+    }
+  }, [])
+  const toggle = () => {
+    if (!document.fullscreenElement) {
+      const el = document.documentElement
+      if (el.requestFullscreen) el.requestFullscreen()
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen()
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen()
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen()
+    }
+  }
+  return { isFS, toggle }
+}
+
+function FullscreenButton({ style }) {
+  const [showGuide, setShowGuide] = useState(false)
+  const { isFS, toggle } = useFullscreen()
+  const isIOS = typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
+  const isStandalone = typeof window !== 'undefined' && (window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches)
+
+  const handleClick = () => {
+    if (isIOS) { if (!isStandalone) setShowGuide(v => !v); return }
+    toggle()
+  }
+
+  return (
+    <>
+      <button
+        onClick={handleClick}
+        title={isFS ? 'Quitter le plein écran' : 'Plein écran'}
+        style={{
+          background: 'rgba(0,137,186,0.08)', border: '1px solid rgba(0,137,186,0.3)',
+          borderRadius: 10, padding: '11px 14px',
+          color: '#0089ba', fontSize: 18, cursor: 'pointer', fontFamily: 'inherit',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          width: '100%',
+          ...style,
+        }}
+      >
+        {isIOS ? (isStandalone ? '✓ Plein écran actif' : '⛶ Plein écran') : (isFS ? '⊠ Quitter plein écran' : '⛶ Plein écran')}
+      </button>
+      {showGuide && (
+        <div style={{
+          background: '#fff8e7', border: '1px solid #f59e0b',
+          borderRadius: 10, padding: '12px 14px', fontSize: 13, color: '#92400e', lineHeight: 1.5,
+        }}>
+          Sur iPhone/iPad, appuie sur le bouton <strong>Partager</strong> (⬆️) puis <strong>« Sur l'écran d'accueil »</strong> pour utiliser l'app en plein écran.
+        </div>
+      )}
+    </>
+  )
+}
+
 const KICK_EXPIRY_MS = 30 * 60 * 1000
 
 function filterKicked(list, fd) {
@@ -238,6 +301,7 @@ function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession,
               📺 Mode Diffusion
             </button>
           )}
+          <FullscreenButton />
           <button onClick={() => { onClose(); onLogout() }} style={{
             width: '100%', padding: '13px 16px', borderRadius: 10,
             background: 'transparent', border: '1px solid #d1d5db',

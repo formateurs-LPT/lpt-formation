@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode } from '@/lib/supabase'
 import { NextPagePreview } from '@/lib/trainerPreview'
+import { useIsMobile } from '@/lib/useIsMobile'
 
 // ─── Données par matériau ─────────────────────────────────────
 
@@ -68,6 +69,7 @@ const TOTAL_PAGES = PAGES_META.length
 
 // ─── Composant page générique (formateur) ────────────────────
 function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage, onTerminate }) {
+  const isMobile = useIsMobile()
   const [step, setStep] = useState(0)
   const [notesOpen, setNotesOpen] = useState(true)
   const { title, subtitle, color, frames, infos, notes } = meta
@@ -96,10 +98,10 @@ function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex,
       </div>
 
       {/* Contenu */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', overflow: 'hidden' }}>
 
-        {/* Gauche : montures */}
-        <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        {/* Gauche/haut : montures */}
+        <div style={{ flex: isMobile ? '0 0 auto' : '3', padding: isMobile ? '12px 14px' : '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? 10 : 16, borderRight: isMobile ? 'none' : '1px solid rgba(255,255,255,0.07)', borderBottom: isMobile ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
           {frames.map((f, i) => (
             <div key={i} style={{
               flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
@@ -108,15 +110,15 @@ function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex,
               transition: 'all 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)',
             }}>
               <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '16px 12px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={f.src} alt={f.ref} style={{ width: '100%', height: 'auto', objectFit: 'contain', maxHeight: 140 }} />
+                <img src={f.src} alt={f.ref} style={{ width: '100%', height: 'auto', objectFit: 'contain', maxHeight: isMobile ? 80 : 140 }} />
               </div>
               <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, letterSpacing: 0.5 }}>{f.ref}</span>
             </div>
           ))}
         </div>
 
-        {/* Droite : titre + infos + notes */}
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        {/* Droite/bas : titre + infos + notes */}
+        <div style={{ flex: isMobile ? '1 1 auto' : '2', padding: isMobile ? '14px 16px' : '20px 24px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
 
           {/* Titre */}
           <div style={{ marginBottom: 18 }}>

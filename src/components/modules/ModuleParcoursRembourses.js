@@ -298,7 +298,7 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
               Vue formateur · Page {pageIndex + 1}
             </div>
             <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 20 }}>Comment fonctionne le tiers payant ?</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 14 }}>
               <div style={{ background: 'rgba(74,222,128,0.07)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 14, padding: '18px 20px' }}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: '#4ade80', marginBottom: 10 }}>✅ Tiers payant complet</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.55 }}>

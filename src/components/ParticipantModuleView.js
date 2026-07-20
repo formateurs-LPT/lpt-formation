@@ -3640,9 +3640,42 @@ function ParticipantPlanningScreen({ planningDay }) {
   )
 }
 
+function useParticipantFullscreen() {
+  const [isFS, setIsFS] = useState(false)
+  useEffect(() => {
+    const handler = () => setIsFS(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', handler)
+    document.addEventListener('webkitfullscreenchange', handler)
+    return () => {
+      document.removeEventListener('fullscreenchange', handler)
+      document.removeEventListener('webkitfullscreenchange', handler)
+    }
+  }, [])
+  const toggle = () => {
+    if (!document.fullscreenElement) {
+      const el = document.documentElement
+      if (el.requestFullscreen) el.requestFullscreen()
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen()
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen()
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen()
+    }
+  }
+  return { isFS, toggle }
+}
+
 function DisconnectChip({ pName, onDisconnect }) {
   const [open, setOpen] = useState(false)
+  const [showIOSGuide, setShowIOSGuide] = useState(false)
   const prenom = (pName || '').split(' ').pop()
+  const { isFS, toggle: toggleFS } = useParticipantFullscreen()
+  const isIOS = typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
+  const isStandalone = typeof window !== 'undefined' && (window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches)
+
+  const handleFullscreen = () => {
+    if (isIOS) { setShowIOSGuide(v => !v); return }
+    toggleFS()
+  }
 
   const handleDisconnect = () => {
     localStorage.removeItem('participant_name')
@@ -3671,19 +3704,44 @@ function DisconnectChip({ pName, onDisconnect }) {
         {prenom}
       </button>
       {open && (
-        <button
-          onClick={handleDisconnect}
-          style={{
-            background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
-            borderRadius: 12, padding: '8px 16px',
-            color: '#f87171', fontSize: 13, fontWeight: 700,
-            cursor: 'pointer', fontFamily: 'inherit',
-            backdropFilter: 'blur(8px)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Se déconnecter
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+          <button
+            onClick={handleFullscreen}
+            style={{
+              background: 'rgba(0,137,186,0.2)', border: '1px solid rgba(0,171,233,0.4)',
+              borderRadius: 12, padding: '8px 16px',
+              color: '#7dd3fc', fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit',
+              backdropFilter: 'blur(8px)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {isIOS ? (isStandalone ? '✓ Plein écran' : '⛶ Plein écran') : (isFS ? '⊠ Quitter' : '⛶ Plein écran')}
+          </button>
+          {showIOSGuide && (
+            <div style={{
+              background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 10, padding: '10px 12px',
+              fontSize: 12, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, maxWidth: 220,
+              backdropFilter: 'blur(8px)',
+            }}>
+              Appuie sur <strong>Partager ⬆️</strong> puis <strong>« Sur l'écran d'accueil »</strong>
+            </div>
+          )}
+          <button
+            onClick={handleDisconnect}
+            style={{
+              background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
+              borderRadius: 12, padding: '8px 16px',
+              color: '#f87171', fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit',
+              backdropFilter: 'blur(8px)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Se déconnecter
+          </button>
+        </div>
       )}
     </div>
   )

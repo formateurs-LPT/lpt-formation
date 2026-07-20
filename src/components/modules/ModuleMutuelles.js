@@ -184,7 +184,7 @@ export default function ModuleMutuelles({ pName, onBack }) {
             </div>
 
             {/* Offre toujours visible côté formateur */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 12, marginBottom: 16 }}>
               {[
                 { montant: '50 €', label: 'Verres unifocaux', icon: '👓' },
                 { montant: '100 €', label: 'Verres progressifs', icon: '🔭' },
@@ -256,7 +256,7 @@ export default function ModuleMutuelles({ pName, onBack }) {
             </div>
 
             {/* Conditions (toujours visibles côté formateur) */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 28 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 14, marginBottom: 28 }}>
               {[
                 {
                   titre: '👁️ Seuils de correction',
@@ -323,7 +323,7 @@ export default function ModuleMutuelles({ pName, onBack }) {
           </div>
 
           {/* Cartes individuelles — avec optique */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 12, marginBottom: 12 }}>
             {MUTUELLES_BELGIQUE.filter(m => m.complementaire).map((m) => {
               const isRevealed = revealedIds.includes(m.id)
               return (

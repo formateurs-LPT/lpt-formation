@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState } from '@/lib/supabase'
+import { useIsMobile } from '@/lib/useIsMobile'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { OFFRES_QUIZ } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
@@ -58,6 +59,7 @@ const ITEMS_CLASSIQUE = [
 // ── Page Classique (formateur) ───────────────────────────────────
 function CoursClassique({ onNext, onPrev, onBack }) {
   const COLOR = '#00abe9'
+  const isMobile = useIsMobile()
   const [step, setStep] = useState(0)
 
   useEffect(() => {
@@ -82,7 +84,7 @@ function CoursClassique({ onNext, onPrev, onBack }) {
   const allRevealed = step >= ITEMS_CLASSIQUE.length
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'flex', flexDirection: 'column', padding: isMobile ? '16px 14px 14px' : '24px 40px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -98,7 +100,7 @@ function CoursClassique({ onNext, onPrev, onBack }) {
       </div>
 
       {/* Contenu — même grille 2 colonnes que 1=1 */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 20 : 40, alignItems: 'center' }}>
         {/* Gauche */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
@@ -190,10 +192,11 @@ const ITEMS_UNIFOCAL_11 = [
 
 function CoursUnifocal11({ onPrev, onNext, onBack }) {
   const COLOR = '#c9a227'
+  const isMobile = useIsMobile()
   return (
     <>
       <style>{STYLES}</style>
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'flex', flexDirection: 'column', padding: isMobile ? '16px 14px 14px' : '24px 40px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
@@ -206,7 +209,7 @@ function CoursUnifocal11({ onPrev, onNext, onBack }) {
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
           >✕ Quitter</button>
         </div>
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }}>
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 20 : 40, alignItems: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <VerreAnime color={COLOR} size={360} />
           </div>
@@ -267,10 +270,11 @@ function VerreProgAnime({ color, size = 360 }) {
 
 function CoursProgressif11({ onPrev, onNext, onBack }) {
   const COLOR = '#c9a227'
+  const isMobile = useIsMobile()
   return (
     <>
       <style>{STYLES}</style>
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'flex', flexDirection: 'column', padding: isMobile ? '16px 14px 14px' : '24px 40px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
@@ -283,7 +287,7 @@ function CoursProgressif11({ onPrev, onNext, onBack }) {
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
           >✕ Quitter</button>
         </div>
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }}>
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 20 : 40, alignItems: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <VerreProgAnime color={COLOR} size={360} />
           </div>
@@ -316,6 +320,7 @@ function CoursProgressif11({ onPrev, onNext, onBack }) {
 
 function Cours11({ onPrev, onNext, onBack }) {
   const COLOR = '#c9a227'
+  const isMobile = useIsMobile()
   const [step, setStep] = useState(0)
 
   const reveal = async () => {
@@ -335,7 +340,7 @@ function Cours11({ onPrev, onNext, onBack }) {
   const allRevealed = step >= ITEMS_11.length
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'flex', flexDirection: 'column', padding: isMobile ? '16px 14px 14px' : '24px 40px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -351,7 +356,7 @@ function Cours11({ onPrev, onNext, onBack }) {
       </div>
 
       {/* Contenu */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 20 : 40, alignItems: 'center' }}>
         {/* Gauche */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
