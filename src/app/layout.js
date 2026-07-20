@@ -1,8 +1,17 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'LPT Formation — Le Verre Progressif',
-  description: 'Lunettes Pour Tous — Formation Verre Progressif'
+  title: 'LPT Formation',
+  description: 'Lunettes Pour Tous — Formation',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    title: 'LPT',
+    statusBarStyle: 'black-translucent',
+  },
+  icons: {
+    apple: '/icons/apple-touch-icon.png',
+  },
 }
 
 export const viewport = {
