@@ -954,6 +954,66 @@ function OpenAnswersFeed({ sessionCode, pageId }) {
   )
 }
 
+function TVLptSanteIntro({ page, sessionCode }) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    setVisible(false)
+    const t = setTimeout(() => setVisible(true), 100)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a1a 55%, #0d3b1a 100%)',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      {/* Topbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={28} height={28} style={{ objectFit: 'contain' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>LPT Santé</span>
+        </div>
+      </div>
+
+      {/* Corps : logo + question | réponses */}
+      <div style={{
+        flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr',
+        opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)',
+        transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}>
+        {/* Gauche : logo + question */}
+        <div style={{
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 32, padding: '40px 56px',
+          borderRight: '1px solid rgba(255,255,255,0.07)',
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={140} height={140} style={{ objectFit: 'contain', filter: 'drop-shadow(0 0 40px rgba(77,184,92,0.4))' }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 14 }}>LPT Santé</div>
+            <h1 style={{ fontSize: 52, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>
+              {page.titre}
+            </h1>
+            <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.4)', marginTop: 12 }}>
+              Répondez sur votre téléphone
+            </p>
+          </div>
+        </div>
+
+        {/* Droite : réponses anonymes */}
+        <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column' }}>
+          <OpenAnswersFeed sessionCode={sessionCode} pageId={page.id} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function TVPause({ page, pageIndex, total, moduleLabel, sessionCode }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
@@ -4730,6 +4790,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'parcours-rembourses-offres') return <TVParcoursOffres parcoursRevealed={parcoursRevealed} />
   if (page.type === 'parcours-tiers-payant')      return <TVTiersPayant tiersPayantRevealed={tiersPayantRevealed} sessionCode={sessionCode} pageId={page.id} />
   if (page.type === 'tiers-payant-explication')   return <TVTiersPayantExplication />
+  if (page.type === 'lpt-sante-intro')   return <TVLptSanteIntro      page={page} sessionCode={sessionCode} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />

@@ -1133,6 +1133,108 @@ function OrdonnanceMobile({ page, pageIndex, total }) {
 }
 
 // ── Pause atelier — vue téléphone ────────────────────────────────
+function LptSanteIntroMobile({ page, pName }) {
+  const [text, setText] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [sendError, setSendError] = useState(false)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    setVisible(false)
+    const t = setTimeout(() => setVisible(true), 100)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return
+    setSending(true)
+    setSendError(false)
+    try {
+      const safeName = (pName || 'Anonyme').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_À-ɏ-]/g, '') || 'Anonyme'
+      const key = `oa__${page.id}__${safeName}`
+      const result = await setRoomSharedState(
+        { [key]: { name: pName || 'Anonyme', answer: text.trim(), ts: Date.now() } },
+        getParticipantSessionCode()
+      )
+      if (result != null) { setText(''); setSent(true) }
+      else { setSendError(true); setTimeout(() => setSendError(false), 4000) }
+    } finally { setSending(false) }
+  }
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a1a 65%, #0d3b1a 100%)',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 1.5 }}>LPT Santé</div>
+      </div>
+
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: 24, padding: '24px 24px 32px',
+        opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)',
+        transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={90} height={90} style={{ objectFit: 'contain', filter: 'drop-shadow(0 0 24px rgba(77,184,92,0.4))' }} />
+
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', lineHeight: 1.2, marginBottom: 6 }}>{page.titre}</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>LPT Santé · Qu'est-ce que c'est pour vous ?</div>
+        </div>
+
+        {sent ? (
+          <div style={{
+            width: '100%', maxWidth: 420, padding: '20px 24px', borderRadius: 16,
+            background: 'rgba(77,184,92,0.12)', border: '1px solid rgba(77,184,92,0.35)',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>✅</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#4db85c' }}>Réponse envoyée !</div>
+          </div>
+        ) : (
+          <div style={{ width: '100%', maxWidth: 420 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+              Votre réponse
+            </div>
+            <textarea
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder="Écrivez votre réponse…"
+              rows={3}
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                background: 'rgba(255,255,255,0.07)', border: sendError ? '1.5px solid #ef4444' : '1.5px solid rgba(255,255,255,0.12)',
+                borderRadius: 14, padding: '14px 16px', resize: 'none',
+                color: '#fff', fontSize: 15, fontFamily: 'inherit', lineHeight: 1.5,
+                outline: 'none', marginBottom: 12,
+              }}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!text.trim() || sending}
+              style={{
+                width: '100%', padding: '16px 0', borderRadius: 14,
+                background: (text.trim() && !sending) ? 'linear-gradient(135deg, #2d7a3a, #4db85c)' : 'rgba(255,255,255,0.07)',
+                border: 'none',
+                color: (text.trim() && !sending) ? '#fff' : 'rgba(255,255,255,0.25)',
+                fontSize: 15, fontWeight: 700, cursor: (text.trim() && !sending) ? 'pointer' : 'default',
+                fontFamily: 'inherit',
+                boxShadow: (text.trim() && !sending) ? '0 4px 20px rgba(77,184,92,0.3)' : 'none',
+                transition: 'all .2s',
+              }}
+            >{sending ? '…' : sendError ? 'Erreur — réessayer' : 'Envoyer ma réponse'}</button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function PauseMobile({ page, pageIndex, total, pName }) {
   const [visible, setVisible] = useState(false)
   const [text, setText] = useState('')
@@ -3206,6 +3308,8 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
       </div>
     </div>
   )
+  if (page.type === 'lpt-sante-intro') return <LptSanteIntroMobile page={page} pName={pName} />
+
   if (page.type === 'rembfr-conditions') return (
     <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column', padding: '28px 20px 40px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>

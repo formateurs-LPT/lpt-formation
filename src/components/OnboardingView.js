@@ -109,6 +109,12 @@ const JOURNEES = (onLaunchModule) => [
         sub: 'SS · Mutuelle · 100% Santé · Conditions',
         onClick: () => onLaunchModule('remboursement-france'),
       },
+      {
+        visual: 'image', src: '/assets/logo-lpt-sante.png',
+        label: 'LPT Santé',
+        sub: 'Tiers payant · Remboursements',
+        onClick: () => onLaunchModule('lpt-sante'),
+      },
     ],
   },
 ]

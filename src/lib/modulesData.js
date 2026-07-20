@@ -580,6 +580,9 @@ export const MODULE_DATA = {
     { id: 'parcours-tiers-payant', type: 'parcours-tiers-payant', titre: 'C\'est quoi le tiers payant pour vous ?' },
     { id: 'tiers-payant-explication', type: 'tiers-payant-explication', titre: 'Comment fonctionne le tiers payant ?' },
   ], quiz: [], label: 'Les parcours remboursés', sub: 'Le Suprême · Le 1=1 · 100% Santé' },
+  'lpt-sante': { pages: [
+    { id: 'lpts-q1', type: 'lpt-sante-intro', titre: 'À quoi ça sert ?' },
+  ], quiz: [], label: 'LPT Santé', sub: 'Tiers payant · Remboursements' },
 }
 
 export const MUTUELLES_BELGIQUE = [

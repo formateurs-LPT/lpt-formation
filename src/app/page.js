@@ -32,6 +32,7 @@ import ModuleQuizJ1 from '@/components/modules/ModuleQuizJ1'
 import ModuleMutuelles from '@/components/modules/ModuleMutuelles'
 import ModuleRemboursementFrance from '@/components/modules/ModuleRemboursementFrance'
 import ModuleParcoursRembourses from '@/components/modules/ModuleParcoursRembourses'
+import ModuleLptSante from '@/components/modules/ModuleLptSante'
 import ModuleAtelierPEC from '@/components/modules/ModuleAtelierPEC'
 import IdeesButton from '@/components/IdeesButton'
 import TrainerQuestionsPanel from '@/components/TrainerQuestionsPanel'
@@ -571,6 +572,12 @@ export default function Page() {
       )}
       {view === 'module-parcours-rembourses' && (
         <ModuleParcoursRembourses
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-lpt-sante' && (
+        <ModuleLptSante
           pName={pName}
           onBack={handleBackToModules}
         />
