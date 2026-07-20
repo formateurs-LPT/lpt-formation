@@ -21,7 +21,7 @@ export const PDM_ANIM_STEP_LABELS = [
   'Les mesures',
   'Positionnement du verre',
   'Trace du contour',
-  'Taillage progressif',
+  'Taillage du verre',
   'Verre taille en place',
 ]
 
