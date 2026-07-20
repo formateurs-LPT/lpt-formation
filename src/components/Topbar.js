@@ -159,7 +159,7 @@ function ParticipantsPanel({ sessionCode, onClose }) {
         }}
       />
       <div style={{
-        position: 'fixed', top: 56, right: 16, zIndex: 1000,
+        position: 'fixed', top: 'calc(56px + env(safe-area-inset-top, 0px))', right: 16, zIndex: 1000,
         background: '#0d1f3c',
         border: '1px solid rgba(255,255,255,0.1)',
         borderRadius: 16,
@@ -333,7 +333,7 @@ function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession,
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 998, background: 'rgba(0,0,0,0.3)' }} />
       <div style={{
-        position: 'fixed', top: 58, left: 0, right: 0, zIndex: 999,
+        position: 'fixed', top: 'calc(58px + env(safe-area-inset-top, 0px))', left: 0, right: 0, zIndex: 999,
         background: '#fff',
         borderBottom: '1px solid #ebebeb',
         boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
