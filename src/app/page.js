@@ -31,6 +31,7 @@ import ModuleQuizJ1 from '@/components/modules/ModuleQuizJ1'
 import ModuleMutuelles from '@/components/modules/ModuleMutuelles'
 import ModuleRemboursementFrance from '@/components/modules/ModuleRemboursementFrance'
 import ModuleParcoursRembourses from '@/components/modules/ModuleParcoursRembourses'
+import ModuleAtelierPEC from '@/components/modules/ModuleAtelierPEC'
 import IdeesButton from '@/components/IdeesButton'
 import PlanningPage from '@/components/PlanningPage'
 import OnboardingView from '@/components/OnboardingView'
@@ -566,6 +567,12 @@ export default function Page() {
       )}
       {view === 'module-parcours-rembourses' && (
         <ModuleParcoursRembourses
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-atelier-pec' && (
+        <ModuleAtelierPEC
           pName={pName}
           onBack={handleBackToModules}
         />

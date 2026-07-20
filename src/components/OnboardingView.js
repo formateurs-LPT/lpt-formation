@@ -537,6 +537,27 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
           <div className="dash-tile-sub">Toute la formation en un quiz</div>
           <div style={{ fontSize: 11, color: '#c9a227', marginTop: 8, fontWeight: 600 }}>Lancer le quiz →</div>
         </div>
+
+        {/* ── Nouveau module — Atelier prise en charge (test) ── */}
+        <div
+          className="dash-tile"
+          onClick={() => { setSharedState({ tv_screen: null }).catch(() => {}); onLaunchModule('atelier-pec') }}
+          style={{ cursor: 'pointer', borderColor: 'rgba(249,115,22,0.35)', gridColumn: '1 / -1' }}
+        >
+          <div className="dash-tile-top">
+            <div style={{
+              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+              background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+            }}>📋</div>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#f97316', background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 20, padding: '2px 8px', letterSpacing: 0.5 }}>
+              Nouveau · Test
+            </span>
+          </div>
+          <div className="dash-tile-label" style={{ marginTop: 12 }}>Atelier prise en charge</div>
+          <div className="dash-tile-sub">Nouveau module — non encore intégré au programme</div>
+          <div style={{ fontSize: 11, color: '#f97316', marginTop: 8, fontWeight: 600 }}>Tester le module →</div>
+        </div>
       </div>
 
       {endConfirmOpen && (
