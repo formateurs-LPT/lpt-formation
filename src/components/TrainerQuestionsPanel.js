@@ -1,11 +1,13 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { fetchOpenAnswers, getActiveSessionCode, setSharedState } from '@/lib/supabase'
+import { useIsMobile } from '@/lib/useIsMobile'
 
 export default function TrainerQuestionsPanel({ moduleId }) {
   const [open, setOpen]         = useState(false)
   const [questions, setQuestions] = useState([])
   const [tvOn, setTvOn]         = useState(false)
+  const isMobile = useIsMobile()
 
   const load = useCallback(async () => {
     if (!moduleId) return
@@ -46,8 +48,12 @@ export default function TrainerQuestionsPanel({ moduleId }) {
         onClick={() => { setOpen(true); load() }}
         title="Questions des formés"
         style={{
-          position: 'fixed', bottom: 88, right: 28, zIndex: 899,
-          width: 52, height: 52, borderRadius: '50%',
+          position: 'fixed',
+          bottom: isMobile ? 148 : 88,
+          right: isMobile ? undefined : 28,
+          left: isMobile ? 14 : undefined,
+          zIndex: 899,
+          width: isMobile ? 48 : 52, height: isMobile ? 48 : 52, borderRadius: '50%',
           background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
           border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',

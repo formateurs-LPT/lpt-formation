@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { sbSelect, getActiveSessionCode, getWeeklySharedState, setWeeklySharedState } from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
+import { useIsMobile } from '@/lib/useIsMobile'
 
 // ── Lecture / écriture Supabase ───────────────────────────────────
 
@@ -49,6 +50,7 @@ export async function clearAllIdees() {
 
 // ── Composant bouton flottant ─────────────────────────────────────
 export default function IdeesButton({ moduleId, pName }) {
+  const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
   const [saving, setSaving] = useState(false)
@@ -100,8 +102,12 @@ export default function IdeesButton({ moduleId, pName }) {
         onClick={() => setOpen(true)}
         title="Noter une idée"
         style={{
-          position: 'fixed', bottom: 28, right: 28, zIndex: 900,
-          width: 52, height: 52, borderRadius: '50%',
+          position: 'fixed',
+          bottom: isMobile ? 90 : 28,
+          right: isMobile ? undefined : 28,
+          left: isMobile ? 14 : undefined,
+          zIndex: 900,
+          width: isMobile ? 48 : 52, height: isMobile ? 48 : 52, borderRadius: '50%',
           background: 'linear-gradient(135deg, #d97706, #f59e0b)',
           border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
