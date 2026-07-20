@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { getTrainerAvatarSrc } from '@/lib/constants'
 import { fetchOnlineParticipantsList, markParticipantLeft } from '@/lib/participantPresence'
-import { setRoomSharedState, getRoomSharedState } from '@/lib/supabase'
+import { setRoomSharedState, getRoomSharedState, sbSelect } from '@/lib/supabase'
 import { useIsMobile } from '@/lib/useIsMobile'
 
 function useFullscreen() {
@@ -91,18 +91,35 @@ function ParticipantsPanel({ sessionCode, onClose }) {
   const [trainerPage, setTrainerPage] = useState(null)
   const [loading, setLoading] = useState(true)
   const [kicking, setKicking] = useState({})
+  const [sending, setSending] = useState({})
+  const [alertHistory, setAlertHistory] = useState([])
+  const [showHistory, setShowHistory] = useState(false)
   const intervalRef = useRef(null)
 
   const refresh = async () => {
-    const [list, roomState] = await Promise.all([
+    const [list, roomState, sessionRows] = await Promise.all([
       fetchOnlineParticipantsList(sessionCode).catch(() => []),
       getRoomSharedState(sessionCode).catch(() => ({})),
+      sbSelect('sessions', `code=eq.${encodeURIComponent(sessionCode)}`).catch(() => []),
     ])
+    const session = sessionRows?.[0]
     setParticipants(filterKicked(list, roomState?.forced_disconnects))
     setParticipantPages(roomState?.participant_pages || {})
-    setTrainerModule(roomState?.activeModule || null)
-    setTrainerPage(roomState?.modulePage ?? null)
+    setTrainerModule(session?.active_module || null)
+    setTrainerPage(session?.module_page ?? null)
     setLoading(false)
+  }
+
+  const handleSendAlert = async (participantName) => {
+    setSending(s => ({ ...s, [participantName]: true }))
+    const safeName = participantName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_À-ɏ]/g, '')
+    const ts = Date.now()
+    await setRoomSharedState(
+      { [`alert__${safeName}`]: { message: 'Pas de Instagram ou TikTok pendant la formation 😠', ts } },
+      sessionCode
+    ).catch(() => {})
+    setAlertHistory(h => [{ target: participantName, ts }, ...h])
+    setTimeout(() => setSending(s => ({ ...s, [participantName]: false })), 800)
   }
 
   useEffect(() => {
@@ -217,25 +234,74 @@ function ParticipantsPanel({ sessionCode, onClose }) {
                     </span>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleKick(p.name)}
-                  disabled={kicking[p.name]}
-                  style={{
-                    background: kicking[p.name] ? 'rgba(239,68,68,0.05)' : 'rgba(239,68,68,0.1)',
-                    border: '1px solid rgba(239,68,68,0.3)',
-                    borderRadius: 8, padding: '5px 10px',
-                    color: '#f87171', fontSize: 11, fontWeight: 700,
-                    cursor: kicking[p.name] ? 'not-allowed' : 'pointer',
-                    fontFamily: 'inherit', transition: 'all .15s',
-                    opacity: kicking[p.name] ? 0.5 : 1, flexShrink: 0,
-                  }}
-                >
-                  {kicking[p.name] ? '…' : 'Déco'}
-                </button>
+                <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+                  {!onPage && fresh && (
+                    <button
+                      onClick={() => handleSendAlert(p.name)}
+                      disabled={sending[p.name]}
+                      title="Envoyer une alerte"
+                      style={{
+                        background: sending[p.name] ? 'rgba(251,191,36,0.3)' : 'rgba(251,191,36,0.12)',
+                        border: '1px solid rgba(251,191,36,0.4)',
+                        borderRadius: 8, padding: '5px 8px',
+                        color: '#fbbf24', fontSize: 14,
+                        cursor: sending[p.name] ? 'not-allowed' : 'pointer',
+                        fontFamily: 'inherit', transition: 'all .15s',
+                        opacity: sending[p.name] ? 0.5 : 1,
+                      }}
+                    >
+                      {sending[p.name] ? '✓' : '😠'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleKick(p.name)}
+                    disabled={kicking[p.name]}
+                    style={{
+                      background: kicking[p.name] ? 'rgba(239,68,68,0.05)' : 'rgba(239,68,68,0.1)',
+                      border: '1px solid rgba(239,68,68,0.3)',
+                      borderRadius: 8, padding: '5px 10px',
+                      color: '#f87171', fontSize: 11, fontWeight: 700,
+                      cursor: kicking[p.name] ? 'not-allowed' : 'pointer',
+                      fontFamily: 'inherit', transition: 'all .15s',
+                      opacity: kicking[p.name] ? 0.5 : 1,
+                    }}
+                  >
+                    {kicking[p.name] ? '…' : 'Déco'}
+                  </button>
+                </div>
               </div>
             )
           })}
         </div>
+
+        {/* Historique alertes */}
+        {alertHistory.length > 0 && (
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', padding: '8px 0 4px' }}>
+            <button
+              onClick={() => setShowHistory(h => !h)}
+              style={{
+                background: 'none', border: 'none', width: '100%',
+                padding: '6px 18px', textAlign: 'left', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, fontFamily: 'inherit',
+              }}
+            >
+              <span>😠 Alertes envoyées ({alertHistory.length})</span>
+              <span>{showHistory ? '▲' : '▼'}</span>
+            </button>
+            {showHistory && alertHistory.map((a, i) => (
+              <div key={i} style={{
+                padding: '5px 18px',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{ fontSize: 11, color: '#fbbf24', fontWeight: 600 }}>{a.target}</span>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>
+                  {new Date(a.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </>
   )

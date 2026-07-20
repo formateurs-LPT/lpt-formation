@@ -6,7 +6,7 @@ import QuestionBubble from '@/components/QuestionBubble'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, setSharedState, setRoomSharedState, insertOpenAnswer, setParticipantPage } from '@/lib/supabase'
+import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, getRoomSharedState, setSharedState, setRoomSharedState, insertOpenAnswer, setParticipantPage } from '@/lib/supabase'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
@@ -3747,9 +3747,61 @@ function DisconnectChip({ pName, onDisconnect }) {
   )
 }
 
+function AlertPopup({ message, onDismiss }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 99999,
+      background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: 32, fontFamily: 'system-ui, sans-serif',
+    }}>
+      <div style={{
+        background: 'linear-gradient(160deg, #1a0a00 0%, #2d1200 100%)',
+        border: '2px solid rgba(251,191,36,0.4)',
+        borderRadius: 24, padding: '32px 28px', maxWidth: 340, width: '100%',
+        textAlign: 'center', boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+      }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>😠</div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: '#fff', lineHeight: 1.5, marginBottom: 24 }}>
+          {message}
+        </div>
+        <button
+          onClick={onDismiss}
+          style={{
+            background: '#fbbf24', border: 'none', borderRadius: 14,
+            padding: '14px 28px', fontSize: 15, fontWeight: 700,
+            color: '#1a0a00', cursor: 'pointer', fontFamily: 'inherit', width: '100%',
+          }}
+        >
+          J'y retourne ! 🫡
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp, onDisconnect }) {
   const sessionCode = getParticipantSessionCode()
   const [sessionEnded, setSessionEnded] = useState(false)
+  const [alertMessage, setAlertMessage] = useState(null)
+  const alertTsRef = useRef(0)
+
+  useEffect(() => {
+    if (!pName || !sessionCode) return
+    const safeName = (pName || '').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_À-ɏ]/g, '')
+    const key = `alert__${safeName}`
+    const check = async () => {
+      const state = await getRoomSharedState(sessionCode).catch(() => ({}))
+      const alert = state?.[key]
+      if (alert?.ts && alert.ts > alertTsRef.current) {
+        alertTsRef.current = alert.ts
+        setAlertMessage(alert.message)
+      }
+    }
+    check()
+    const interval = setInterval(check, 5000)
+    return () => clearInterval(interval)
+  }, [pName, sessionCode])
 
   useParticipantPresence({
     sessionCode,
@@ -3858,6 +3910,9 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   return (
     <>
       <style>{STYLES}</style>
+      {alertMessage && (
+        <AlertPopup message={alertMessage} onDismiss={() => setAlertMessage(null)} />
+      )}
       <DisconnectChip pName={pName} onDisconnect={onDisconnect} />
       {/* Bulle question — discrète, visible sur toutes les pages de module */}
       {activeModule && !isLobby && !isResults && !sessionEnded && (
