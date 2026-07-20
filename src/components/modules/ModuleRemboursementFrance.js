@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 
@@ -547,6 +547,8 @@ function PageSupremeFormateur({ supremeStep, onReveal }) {
   )
 }
 
+const AMELIPRO_URL = 'https://authps-espacepro.ameli.fr/oauth2/authorize?response_type=code&scope=openid%20profile%20infosps%20email&client_id=csm-cen-prod_ameliprotransverse-connexionadmin_1_amtrx_i1_csm-cen-prod%2Fameliprotransverse-connexionadmin_1%2Famtrx_i1&state=AjMjWnxZwchYEjmuwYdOF2ogOMc&redirect_uri=https%3A%2F%2Fespacepro.ameli.fr%2Fpage-accueil-ihm%2Fredirect_uri&nonce=lbfIe0l3pfPl3Jg_NqJOPNZ_8ZLrL1VJFulngzVD6gY'
+
 export default function ModuleRemboursementFrance({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
@@ -556,6 +558,7 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
   const [demarcheA, setDemarcheA] = useState(0)
   const [demarcheB, setDemarcheB] = useState(0)
   const [supremeStep, setSupremeStep] = useState(0)
+  const [ameliproClicked, setAmeliproClicked] = useState(false)
 
   const toggleCondition = async (id) => {
     setRevealing(true)
@@ -607,7 +610,22 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex])
 
-  const resetShared = () => setSharedState({ rembfr_revealed: [], rembfr_demarche_a: 0, rembfr_demarche_b: 0, rembfr_supreme: 0 })
+  const resetShared = () => setSharedState({ rembfr_revealed: [], rembfr_demarche_a: 0, rembfr_demarche_b: 0, rembfr_supreme: 0, rembfr_amelipro_clicked: false })
+
+  // Polling du flag amelipro (toutes les 3s quand etape A2 est revelée)
+  useEffect(() => {
+    const isDemarchePage = PAGES[pageIndex]?.type === 'rembfr-demarche'
+    if (!started || !isDemarchePage || demarcheA < 2 || ameliproClicked) return
+    const poll = async () => {
+      try {
+        const state = await getSharedState(getActiveSessionCode())
+        if (state?.rembfr_amelipro_clicked === true) setAmeliproClicked(true)
+      } catch {}
+    }
+    poll()
+    const id = setInterval(poll, 3000)
+    return () => clearInterval(id)
+  }, [started, pageIndex, demarcheA, ameliproClicked])
 
   const handleBack = async () => {
     await Promise.all([
@@ -720,54 +738,88 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
       </div>
 
       {/* Navigation */}
-      <div style={{ padding: '12px 32px 20px', borderTop: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
-        {nextPage && (() => {
-          const info = PAGE_TYPE_LABELS[nextPage.type] ?? { icon: '📄', label: nextPage.type }
-          return (
-            <div style={{
-              marginBottom: 12, background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(0,137,186,0.25)', borderLeft: '3px solid #0089ba',
-              borderRadius: 10, padding: '8px 14px',
-              display: 'flex', alignItems: 'center', gap: 10,
-            }}>
-              <span style={{ fontSize: 16, flexShrink: 0 }}>{nextPage.icon || info.icon}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nextPage.titre}</div>
-                <div style={{ fontSize: 10, color: '#00abe9', marginTop: 1 }}>{info.label}</div>
+      {(() => {
+        const isDemarchePage = page?.type === 'rembfr-demarche'
+        const ameliproBlocked = isDemarchePage && demarcheA >= 2 && !ameliproClicked
+        return (
+          <div style={{ padding: '12px 32px 20px', borderTop: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
+            {/* Message bloquant AmeliPro */}
+            {ameliproBlocked && (
+              <div style={{
+                marginBottom: 14, padding: '14px 18px',
+                background: 'rgba(245,158,11,0.10)', border: '2px solid rgba(245,158,11,0.5)',
+                borderRadius: 14, display: 'flex', alignItems: 'flex-start', gap: 12,
+              }}>
+                <span style={{ fontSize: 22, flexShrink: 0 }}>⚠️</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#f59e0b', marginBottom: 4 }}>
+                    Action requise avant de continuer
+                  </div>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
+                    Tu dois cliquer sur le logo <strong style={{ color: '#fff' }}>AMELIPRO</strong> qui est sur l&apos;écran diffuseur et leur montrer le site pour pouvoir passer à la suite.
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>suivant →</div>
-            </div>
-          )
-        })()}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <button
-            onClick={() => setPageIndex(i => Math.max(0, i - 1))}
-            disabled={pageIndex === 0}
-            style={{
-              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-              color: pageIndex === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.6)',
-              padding: '12px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600,
-              cursor: pageIndex === 0 ? 'default' : 'pointer', fontFamily: 'inherit',
-            }}
-          >← Précédent</button>
+            )}
+            {!ameliproBlocked && nextPage && (() => {
+              const info = PAGE_TYPE_LABELS[nextPage.type] ?? { icon: '📄', label: nextPage.type }
+              return (
+                <div style={{
+                  marginBottom: 12, background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(0,137,186,0.25)', borderLeft: '3px solid #0089ba',
+                  borderRadius: 10, padding: '8px 14px',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <span style={{ fontSize: 16, flexShrink: 0 }}>{nextPage.icon || info.icon}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nextPage.titre}</div>
+                    <div style={{ fontSize: 10, color: '#00abe9', marginTop: 1 }}>{info.label}</div>
+                  </div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>suivant →</div>
+                </div>
+              )
+            })()}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button
+                onClick={() => setPageIndex(i => Math.max(0, i - 1))}
+                disabled={pageIndex === 0}
+                style={{
+                  background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+                  color: pageIndex === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.6)',
+                  padding: '12px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600,
+                  cursor: pageIndex === 0 ? 'default' : 'pointer', fontFamily: 'inherit',
+                }}
+              >← Précédent</button>
 
-          {isLast ? (
-            <button onClick={handleTerminate} style={{
-              background: 'linear-gradient(135deg, #0070a0, #0089ba)',
-              border: 'none', color: '#fff', padding: '12px 32px',
-              borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              boxShadow: '0 4px 16px rgba(0,137,186,0.35)',
-            }}>Terminer le module ✓</button>
-          ) : (
-            <button onClick={() => setPageIndex(i => Math.min(PAGES.length - 1, i + 1))} style={{
-              background: 'linear-gradient(135deg, #0070a0, #0089ba)',
-              border: 'none', color: '#fff', padding: '12px 32px',
-              borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              boxShadow: '0 4px 16px rgba(0,137,186,0.35)',
-            }}>Suivant →</button>
-          )}
-        </div>
-      </div>
+              {isLast ? (
+                <button onClick={handleTerminate} style={{
+                  background: 'linear-gradient(135deg, #0070a0, #0089ba)',
+                  border: 'none', color: '#fff', padding: '12px 32px',
+                  borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                  boxShadow: '0 4px 16px rgba(0,137,186,0.35)',
+                }}>Terminer le module ✓</button>
+              ) : (
+                <button
+                  onClick={ameliproBlocked ? undefined : () => setPageIndex(i => Math.min(PAGES.length - 1, i + 1))}
+                  disabled={ameliproBlocked}
+                  style={{
+                    background: ameliproBlocked
+                      ? 'rgba(255,255,255,0.06)'
+                      : 'linear-gradient(135deg, #0070a0, #0089ba)',
+                    border: ameliproBlocked ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                    color: ameliproBlocked ? 'rgba(255,255,255,0.25)' : '#fff',
+                    padding: '12px 32px', borderRadius: 12, fontSize: 14, fontWeight: 700,
+                    cursor: ameliproBlocked ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit',
+                    boxShadow: ameliproBlocked ? 'none' : '0 4px 16px rgba(0,137,186,0.35)',
+                    transition: 'all .2s',
+                  }}
+                >{ameliproBlocked ? '🔒 Suivant' : 'Suivant →'}</button>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

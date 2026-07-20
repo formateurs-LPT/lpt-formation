@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState } from '@/lib/supabase'
+import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, setSharedState } from '@/lib/supabase'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
 import { PDMAnimationSVG } from '@/lib/pdmAnimationSvg'
@@ -3453,7 +3453,9 @@ function TVParcoursOffres({ parcoursRevealed }) {
 }
 
 // ── TV : Démarche remboursement ───────────────────────────────────
-function TVRembFrDemarche({ stepA, stepB }) {
+const AMELIPRO_URL = 'https://authps-espacepro.ameli.fr/oauth2/authorize?response_type=code&scope=openid%20profile%20infosps%20email&client_id=csm-cen-prod_ameliprotransverse-connexionadmin_1_amtrx_i1_csm-cen-prod%2Fameliprotransverse-connexionadmin_1%2Famtrx_i1&state=AjMjWnxZwchYEjmuwYdOF2ogOMc&redirect_uri=https%3A%2F%2Fespacepro.ameli.fr%2Fpage-accueil-ihm%2Fredirect_uri&nonce=lbfIe0l3pfPl3Jg_NqJOPNZ_8ZLrL1VJFulngzVD6gY'
+
+function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
   const STEPS_A = [
     "Prendre l'ordonnance, la carte Vitale et la mutuelle du client.",
     null, // amelipro
@@ -3467,13 +3469,35 @@ function TVRembFrDemarche({ stepA, stepB }) {
     "Faire le Test Supreme avec l'ordonnance obtenue — sauf si CSS → 1=1.",
   ]
 
-  const AmeliTV = () => (
-    <span style={{ display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
-      <img src="/assets/logo-amelipro.svg" alt="AMELIPRO" width={46} height={46} style={{ objectFit: 'contain' }} />
-    </span>
+  const AmeliTV = ({ isVisible }) => (
+    <a
+      href={AMELIPRO_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={isVisible ? onAmeliProClick : undefined}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 10, verticalAlign: 'middle',
+        padding: '10px 18px', borderRadius: 14,
+        background: isVisible ? 'rgba(0,137,186,0.15)' : 'rgba(255,255,255,0.04)',
+        border: isVisible ? '2px solid rgba(0,137,186,0.6)' : '1px solid rgba(255,255,255,0.08)',
+        textDecoration: 'none',
+        cursor: isVisible ? 'pointer' : 'default',
+        transition: 'all .2s',
+        pointerEvents: isVisible ? 'auto' : 'none',
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/assets/logo-amelipro.svg" alt="AMELIPRO" width={52} height={52} style={{ objectFit: 'contain' }} />
+      {isVisible && (
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#00abe9' }}>
+          Cliquer pour ouvrir →
+        </span>
+      )}
+    </a>
   )
   const SupremeTV = () => (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, verticalAlign: 'middle' }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={28} height={28} style={{ objectFit: 'contain' }} />
       <span style={{ fontSize: 13, fontWeight: 800, color: '#4ade80' }}>Test Supreme</span>
     </span>
@@ -3504,9 +3528,9 @@ function TVRembFrDemarche({ stepA, stepB }) {
         }}>{label}</div>
         <div style={{ fontSize: 14, color: vis ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)', lineHeight: 1.5, transition: 'all .3s' }}>
           {isAmeliPro ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <span>Aller a l&apos;ordinateur sur <strong>AMELIPRO</strong> pour verifier la date du dernier remboursement.</span>
-              <div><AmeliTV /></div>
+              <div><AmeliTV isVisible={vis} /></div>
             </div>
           ) : isSupreme ? (
             <span>{txt} <SupremeTV /></span>
@@ -4685,7 +4709,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, sessionCode }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, sessionCode, onAmeliProClick }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -4698,7 +4722,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'inami-info')         return <TVInamiInfo inamiRevealed={inamiRevealed} />
   if (page.type === 'partena-offre')      return <TVPartenaOffre partenaRevealed={partenaRevealed} />
   if (page.type === 'rembfr-conditions')  return <TVRembFrConditions rembfrRevealed={rembfrRevealed} />
-  if (page.type === 'rembfr-demarche')    return <TVRembFrDemarche stepA={rembfrDemarcheA} stepB={rembfrDemarcheB} />
+  if (page.type === 'rembfr-demarche')    return <TVRembFrDemarche stepA={rembfrDemarcheA} stepB={rembfrDemarcheB} onAmeliProClick={onAmeliProClick} />
   if (page.type === 'rembfr-supreme')     return <TVRembFrSupreme supremeStep={rembfrSupreme} />
   if (page.type === 'parcours-rembourses-offres') return <TVParcoursOffres parcoursRevealed={parcoursRevealed} />
   if (page.type === 'parcours-tiers-payant')      return <TVTiersPayant tiersPayantRevealed={tiersPayantRevealed} sessionCode={sessionCode} pageId={page.id} />
@@ -6284,6 +6308,10 @@ export default function TVView() {
   const [parcoursRevealed, setParcoursRevealed]           = useState([])
   const [tiersPayantRevealed, setTiersPayantRevealed]     = useState(false)
 
+  const handleAmeliProClick = async () => {
+    try { await setSharedState({ rembfr_amelipro_clicked: true }) } catch {}
+  }
+
   // Quiz podium
   const [quizInterstitialPhase, setQuizInterstitialPhase] = useState(false)
   const [finalPodiumPhase, setFinalPodiumPhase]           = useState(false)
@@ -6549,6 +6577,7 @@ export default function TVView() {
             parcoursRevealed={parcoursRevealed}
             tiersPayantRevealed={tiersPayantRevealed}
             sessionCode={sessionCode}
+            onAmeliProClick={handleAmeliProClick}
           />
         ) : (
           <WelcomeScreen />
