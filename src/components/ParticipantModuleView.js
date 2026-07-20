@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import LPTSaleApp from '@/components/LPTSaleApp'
+import QuestionBubble from '@/components/QuestionBubble'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
@@ -3775,6 +3776,10 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     <>
       <style>{STYLES}</style>
       <DisconnectChip pName={pName} onDisconnect={onDisconnect} />
+      {/* Bulle question — discrète, visible sur toutes les pages de module */}
+      {activeModule && !isLobby && !isResults && !sessionEnded && (
+        <QuestionBubble moduleId={activeModule} pName={pName} />
+      )}
       {/* Planning prioritaire : écrase tout si le formateur diffuse le planning */}
       {tvScreen === 'planning' && planningDay
         ? <ParticipantPlanningScreen planningDay={planningDay} />

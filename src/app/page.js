@@ -33,6 +33,7 @@ import ModuleRemboursementFrance from '@/components/modules/ModuleRemboursementF
 import ModuleParcoursRembourses from '@/components/modules/ModuleParcoursRembourses'
 import ModuleAtelierPEC from '@/components/modules/ModuleAtelierPEC'
 import IdeesButton from '@/components/IdeesButton'
+import TrainerQuestionsPanel from '@/components/TrainerQuestionsPanel'
 import PlanningPage from '@/components/PlanningPage'
 import OnboardingView from '@/components/OnboardingView'
 import OnboardingViewBelgique from '@/components/OnboardingViewBelgique'
@@ -585,6 +586,9 @@ export default function Page() {
       )}
       {view.startsWith('module-') && (
         <IdeesButton moduleId={view.slice(7)} pName={pName} />
+      )}
+      {view.startsWith('module-') && (
+        <TrainerQuestionsPanel moduleId={view.slice(7)} />
       )}
       <Toast message={message} />
     </div>

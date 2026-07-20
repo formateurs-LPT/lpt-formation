@@ -11,6 +11,87 @@ import { PDMAnimationSVG } from '@/lib/pdmAnimationSvg'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
+// ── Affichage anonyme des questions formés (TV) ───────────────────
+function TVModuleQuestionsView({ sessionCode, moduleId, moduleLabel }) {
+  const [questions, setQuestions] = useState([])
+
+  useEffect(() => {
+    if (!sessionCode || !moduleId) return
+    const load = async () => {
+      try {
+        const rows = await sbSelect('open_answers',
+          `session_code=eq.${sessionCode}&question_key=eq.mq_${moduleId}&order=created_at.asc`)
+        setQuestions(rows || [])
+      } catch {}
+    }
+    load()
+    const id = setInterval(load, 6000)
+    return () => clearInterval(id)
+  }, [sessionCode, moduleId])
+
+  return (
+    <div style={{
+      height: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #071832 100%)',
+      display: 'flex', flexDirection: 'column', padding: '48px 60px',
+      fontFamily: 'system-ui, sans-serif', boxSizing: 'border-box',
+      color: '#fff', overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 36 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>
+            {moduleLabel || 'Module en cours'}
+          </div>
+          <h2 style={{ fontSize: 36, fontWeight: 900, margin: 0, letterSpacing: -0.5 }}>
+            Vos questions
+          </h2>
+        </div>
+        <div style={{
+          background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)',
+          borderRadius: 20, padding: '8px 20px',
+          fontSize: 14, fontWeight: 700, color: '#00abe9',
+        }}>
+          {questions.length} question{questions.length !== 1 ? 's' : ''}
+        </div>
+      </div>
+
+      {/* Grille de questions */}
+      {questions.length === 0 ? (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+          <div style={{ fontSize: 52 }}>❓</div>
+          <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.3)' }}>En attente de questions…</div>
+        </div>
+      ) : (
+        <div style={{
+          flex: 1, display: 'grid', overflow: 'hidden',
+          gridTemplateColumns: questions.length <= 3 ? '1fr' : 'repeat(2, 1fr)',
+          gap: 16, alignContent: 'start',
+          overflowY: questions.length > 6 ? 'auto' : 'hidden',
+        }}>
+          {questions.map((q, i) => (
+            <div key={q.id || i} style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.09)',
+              borderLeft: '4px solid #00abe9',
+              borderRadius: 14, padding: '20px 24px',
+            }}>
+              <div style={{
+                fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)',
+                textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10,
+              }}>
+                Question {i + 1}
+              </div>
+              <div style={{ fontSize: questions.length <= 4 ? 20 : 16, color: '#fff', lineHeight: 1.55, fontWeight: 500 }}>
+                {q.answer_text}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Keyframes ─────────────────────────────────────────────────────
 const STYLES = `
   html, body { overflow: hidden !important; height: 100% !important; margin: 0; }
@@ -6321,6 +6402,21 @@ export default function TVView() {
         </>
       )
     }
+  }
+
+  // tv_screen=module_questions — affichage anonyme des questions formés
+  if (!loading && tvScreen === 'module_questions') {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <FullscreenButton />
+        <TVModuleQuestionsView
+          sessionCode={sessionCode}
+          moduleId={sharedState?.mq_module || activeModule || ''}
+          moduleLabel={moduleData?.label || ''}
+        />
+      </>
+    )
   }
 
   // tv_screen=qr — prioritaire uniquement quand aucun module n'est actif
