@@ -1,4 +1,5 @@
 import './globals.css'
+import FullscreenHint from '@/components/FullscreenHint'
 
 export const metadata = {
   title: 'LPT Formation',
@@ -26,7 +27,10 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="theme-color" content="#03112a" />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <FullscreenHint />
+      </body>
     </html>
   )
 }
