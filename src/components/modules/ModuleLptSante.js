@@ -77,6 +77,47 @@ function PageIntroFormateur({ page }) {
   )
 }
 
+function PageExplicationFormateur() {
+  const points = [
+    { icon: '⚡', title: '5 min vs 30 min', desc: 'LPT Santé traite une PEC en 5 minutes là où la concurrence en prend 30+.' },
+    { icon: '🏪', title: 'Des dizaines de PEC/jour par magasin', desc: 'Chaque vendeur crée des prises en charge tout au long de la journée, toutes centralisées par LPT Santé.' },
+    { icon: '📡', title: 'Télétransmission chaque soir', desc: 'Chaque soir, LPT Santé envoie automatiquement toutes les PEC à la Sécurité Sociale et aux mutuelles.' },
+    { icon: '💰', title: 'Remboursement rapide', desc: 'SS et mutuelles remboursent Lunettes Pour Tous directement — le client repart avec ses lunettes sans avancer d\'argent.' },
+  ]
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={56} height={56} style={{ objectFit: 'contain', flexShrink: 0 }} />
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 1.5 }}>LPT Santé · Fonctionnement</div>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.3, margin: 0 }}>Comment ça marche ?</h2>
+        </div>
+      </div>
+
+      <div style={{ background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.2)', borderRadius: 14, padding: '12px 18px', marginBottom: 24, fontSize: 13, color: '#00abe9', fontWeight: 600 }}>
+        📺 L'animation sur le diffuseur illustre le cycle complet — laissez-la tourner pendant vos explications
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', flex: 1 }}>
+        {points.map((p, i) => (
+          <div key={i} style={{
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(77,184,92,0.15)',
+            borderLeft: '3px solid #4db85c', borderRadius: 12, padding: '14px 18px',
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+          }}>
+            <span style={{ fontSize: 22, flexShrink: 0 }}>{p.icon}</span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{p.title}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.55 }}>{p.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function ModuleLptSante({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
@@ -182,7 +223,8 @@ export default function ModuleLptSante({ pName, onBack }) {
 
       {/* Contenu */}
       <div style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
-        {page?.type === 'lpt-sante-intro' && <PageIntroFormateur page={page} />}
+        {page?.type === 'lpt-sante-intro'        && <PageIntroFormateur page={page} />}
+        {page?.type === 'lpt-sante-explication' && <PageExplicationFormateur />}
       </div>
 
       {/* Navigation */}

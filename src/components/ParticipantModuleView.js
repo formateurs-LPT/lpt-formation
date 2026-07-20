@@ -1235,6 +1235,68 @@ function LptSanteIntroMobile({ page, pName }) {
   )
 }
 
+function LptSanteExplicationMobile() {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => { const t = setTimeout(() => setVisible(true), 100); return () => clearTimeout(t) }, [])
+
+  const steps = [
+    { icon: '🏪', color: '#00abe9', title: 'Le magasin crée des PEC', desc: 'Chaque vendeur enregistre les prises en charge dans LPT Santé tout au long de la journée.' },
+    { icon: '⚡', color: '#4db85c', title: '5 min par prise en charge', desc: 'LPT Santé traite une PEC en 5 min. Chez les autres opticiens, il faut 30 min ou plus.' },
+    { icon: '📡', color: '#a78bfa', title: 'Télétransmission chaque soir', desc: 'Chaque soir, LPT Santé envoie toutes les PEC à la Sécurité Sociale et aux mutuelles.' },
+    { icon: '💰', color: '#f5c842', title: 'On est remboursés', desc: 'SS et mutuelles paient directement Lunettes Pour Tous — le client ne paie que son reste à charge.' },
+  ]
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a1a 65%, #0d3b1a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '20px 20px 36px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexShrink: 0 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={36} height={36} style={{ objectFit: 'contain' }} />
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 1.5 }}>LPT Santé</div>
+      </div>
+
+      <div style={{
+        opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)',
+        transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+        display: 'flex', flexDirection: 'column', gap: 14,
+      }}>
+        <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', lineHeight: 1.25, marginBottom: 6 }}>Comment ça marche ?</div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 8, lineHeight: 1.6 }}>
+          LPT Santé est notre logiciel de tiers payant. Il nous permet de faire des lunettes <em style={{ color: 'rgba(255,255,255,0.65)' }}>plus vite que tout le monde</em>.
+        </div>
+
+        {steps.map((s, i) => (
+          <div key={i} style={{
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            borderLeft: `3px solid ${s.color}`, borderRadius: 14, padding: '14px 16px',
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateY(0)' : 'translateY(12px)',
+            transition: `all 0.5s cubic-bezier(0.22, 1, 0.36, 1) ${0.1 + i * 0.1}s`,
+          }}>
+            <span style={{ fontSize: 24, flexShrink: 0 }}>{s.icon}</span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: s.color, marginBottom: 4 }}>{s.title}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.55 }}>{s.desc}</div>
+            </div>
+          </div>
+        ))}
+
+        <div style={{
+          marginTop: 8, background: 'rgba(77,184,92,0.08)', border: '1px solid rgba(77,184,92,0.2)',
+          borderRadius: 12, padding: '12px 16px', textAlign: 'center',
+          fontSize: 12, color: '#4db85c', fontWeight: 600,
+        }}>
+          Regardez l'animation sur le grand écran 📺
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function PauseMobile({ page, pageIndex, total, pName }) {
   const [visible, setVisible] = useState(false)
   const [text, setText] = useState('')
@@ -3308,7 +3370,8 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
       </div>
     </div>
   )
-  if (page.type === 'lpt-sante-intro') return <LptSanteIntroMobile page={page} pName={pName} />
+  if (page.type === 'lpt-sante-intro')        return <LptSanteIntroMobile       page={page} pName={pName} />
+  if (page.type === 'lpt-sante-explication') return <LptSanteExplicationMobile />
 
   if (page.type === 'rembfr-conditions') return (
     <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column', padding: '28px 20px 40px' }}>
