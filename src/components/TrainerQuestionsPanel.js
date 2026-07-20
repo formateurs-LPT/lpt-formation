@@ -13,7 +13,9 @@ export default function TrainerQuestionsPanel({ moduleId }) {
       const code = getActiveSessionCode()
       const rows = await fetchOpenAnswers(code, 'mq_' + moduleId)
       setQuestions(rows || [])
-    } catch {}
+    } catch (e) {
+      console.error('[TrainerQuestionsPanel] load error:', e)
+    }
   }, [moduleId])
 
   useEffect(() => {

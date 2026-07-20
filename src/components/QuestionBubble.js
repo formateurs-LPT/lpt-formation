@@ -1,24 +1,27 @@
 'use client'
 import { useState } from 'react'
-import { insertOpenAnswer, getParticipantSessionCode } from '@/lib/supabase'
+import { insertOpenAnswer, getRuntimeSessionCode } from '@/lib/supabase'
 
 export default function QuestionBubble({ moduleId, pName }) {
   const [open, setSOpen]  = useState(false)
   const [text, setText]   = useState('')
   const [saving, setSaving] = useState(false)
   const [sent, setSent]   = useState(false)
+  const [error, setError] = useState(false)
 
   const handleSend = async () => {
     if (!text.trim() || saving) return
     setSaving(true)
+    setError(false)
     try {
-      const code = getParticipantSessionCode()
+      const code = getRuntimeSessionCode()
       await insertOpenAnswer({ sessionCode: code, pageId: 'mq_' + moduleId, participantName: pName || 'Anonyme', answer: text.trim() })
       setText('')
       setSent(true)
       setTimeout(() => { setSent(false); setSOpen(false) }, 1600)
     } catch (e) {
       console.warn('[QuestionBubble]', e)
+      setError(true)
     } finally {
       setSaving(false)
     }
@@ -75,8 +78,8 @@ export default function QuestionBubble({ moduleId, pName }) {
             <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', margin: '0 auto 16px' }}/>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: sent ? '#22c55e' : '#fff' }}>
-                {sent ? '✓ Question envoyée !' : '❓ Poser une question'}
+              <div style={{ fontSize: 15, fontWeight: 700, color: sent ? '#22c55e' : error ? '#ef4444' : '#fff' }}>
+                {sent ? '✓ Question envoyée !' : error ? '✗ Erreur — réessaie' : '❓ Poser une question'}
               </div>
               <button
                 onClick={() => setSOpen(false)}
