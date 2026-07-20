@@ -78,39 +78,65 @@ function PageIntroFormateur({ page }) {
 }
 
 function PagePecFormateur() {
-  const sections = [
+  const [activeScenario, setActiveScenario] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  const scenarios = [
     {
-      title: 'Test Suprême', color: '#00abe9', emoji: '🔍',
+      id: 'test', label: 'Test Suprême', color: '#00abe9', emoji: '🔍',
       steps: [
-        'Charger l\'AMO (Sécurité Sociale) dans LPT Santé',
-        'Charger l\'AMC (Mutuelle) dans LPT Santé',
-        'Ajouter l\'ordonnance du client',
+        "Charger l'AMO (Sécurité Sociale) dans LPT Santé",
+        "Charger l'AMC (Mutuelle) dans LPT Santé",
+        "Ajouter l'ordonnance du client",
         'Générer le devis — LPT Santé calcule la PEC',
         'Envoyer → réponse immédiate ✅ Accepté ou ❌ Refusé',
       ],
     },
     {
-      title: 'Facturation (1=1 ou Suprême)', color: '#4db85c', emoji: '🧾',
+      id: 'fact', label: 'Facturation', color: '#4db85c', emoji: '🧾',
+      sub: '1=1 ou Suprême',
       steps: [
         'Charger AMO + AMC client',
         'Aller dans la section Facturation',
         'Saisir le n° de commande (visible sur le téléphone de vente)',
         'LPT Santé envoie la PEC automatiquement',
-        'Valider la commande sur le téléphone de vente',
+        'Valider un paiement tiers payant sur le téléphone de vente',
       ],
     },
     {
-      title: 'Tiers Payant Partiel', color: '#f59e0b', emoji: '⚡',
-      note: 'Pas besoin de charger l\'AMC',
+      id: 'partial', label: 'TP Partiel', color: '#f59e0b', emoji: '⚡',
+      sub: 'Sans AMC',
       steps: [
-        'Charger l\'AMO uniquement (pas d\'AMC)',
+        "Charger l'AMO uniquement (pas d'AMC)",
         'Saisir le n° de commande',
         'LPT Santé envoie à la Sécurité Sociale uniquement',
-        'Le client avance la part AMC (CB ou espèces)',
+        'Faire avancer la part AMC au client (CB ou espèces)',
         'Valider la commande sur le téléphone de vente',
       ],
     },
   ]
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const state = await getSharedState()
+        setActiveScenario(state?.lpts_pec_scenario ?? null)
+      } catch { /* ignore */ }
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [])
+
+  const select = async (id) => {
+    setLoading(true)
+    try {
+      await setSharedState({ lpts_pec_scenario: id })
+      setActiveScenario(id)
+    } catch { /* ignore */ }
+    setLoading(false)
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
@@ -118,24 +144,44 @@ function PagePecFormateur() {
         <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={48} height={48} style={{ objectFit: 'contain', flexShrink: 0 }} />
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 1.5 }}>LPT Santé · Manipulation</div>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', lineHeight: 1.3, margin: 0 }}>La prise en charge</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', lineHeight: 1.3, margin: 0 }}>La prise en charge — choisir le scénario</h2>
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, flex: 1, overflowY: 'auto' }}>
-        {sections.map((sec, i) => (
-          <div key={i} style={{
-            background: 'rgba(255,255,255,0.03)', border: `1px solid ${sec.color}30`,
-            borderTop: `3px solid ${sec.color}`, borderRadius: 12, padding: '14px 16px',
-          }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: sec.color, marginBottom: 4 }}>{sec.emoji} {sec.title}</div>
-            {sec.note && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginBottom: 10, fontStyle: 'italic' }}>{sec.note}</div>}
-            <ol style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 7 }}>
-              {sec.steps.map((st, j) => (
-                <li key={j} style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>{st}</li>
-              ))}
-            </ol>
-          </div>
-        ))}
+        {scenarios.map((sc) => {
+          const isActive = activeScenario === sc.id
+          return (
+            <button key={sc.id} onClick={() => select(sc.id)} disabled={loading} style={{
+              background: isActive ? `${sc.color}12` : 'rgba(255,255,255,0.03)',
+              border: `2px solid ${isActive ? sc.color : sc.color + '30'}`,
+              borderTop: `4px solid ${sc.color}`,
+              borderRadius: 12, padding: '16px', cursor: loading ? 'wait' : 'pointer',
+              textAlign: 'left', transition: 'all 0.25s',
+              transform: isActive ? 'scale(1.02)' : 'scale(1)',
+              boxShadow: isActive ? `0 0 28px ${sc.color}25` : 'none',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: sc.color }}>{sc.emoji} {sc.label}</div>
+                {isActive && (
+                  <div style={{
+                    fontSize: 10, fontWeight: 800, color: sc.color,
+                    background: `${sc.color}18`, border: `1px solid ${sc.color}55`,
+                    borderRadius: 8, padding: '2px 8px', letterSpacing: 0.5,
+                  }}>● EN COURS</div>
+                )}
+              </div>
+              {sc.sub && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginBottom: 10, fontStyle: 'italic' }}>{sc.sub}</div>}
+              <ol style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {sc.steps.map((st, j) => (
+                  <li key={j} style={{ fontSize: 11, color: isActive ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{st}</li>
+                ))}
+              </ol>
+            </button>
+          )
+        })}
+      </div>
+      <div style={{ marginTop: 14, fontSize: 12, color: 'rgba(255,255,255,0.3)', textAlign: 'center' }}>
+        Cliquer sur un scénario pour lancer l&apos;animation sur le diffuseur
       </div>
     </div>
   )

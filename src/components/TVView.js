@@ -965,6 +965,7 @@ const LPTS_PEC_STYLES = `
 
 const LPTS_PEC_PHASES = [
   {
+    id: 'test',
     label: 'Test Suprême', color: '#00abe9', emoji: '🔍',
     steps: [
       { label: 'Charger AMO (Sécurité Sociale)', duration: 2400 },
@@ -976,6 +977,7 @@ const LPTS_PEC_PHASES = [
     ],
   },
   {
+    id: 'fact',
     label: 'Facturation', color: '#4db85c', emoji: '🧾',
     sub: '1=1 ou Suprême',
     steps: [
@@ -983,18 +985,19 @@ const LPTS_PEC_PHASES = [
       { label: 'Ouvrir section Facturation', duration: 1800 },
       { label: 'Saisir le n° de commande', duration: 2600 },
       { label: 'LPT Santé envoie la PEC', duration: 2400 },
-      { label: 'Valider sur le téléphone de vente', duration: 2800 },
+      { label: 'Valider un paiement tiers payant sur le téléphone de vente', duration: 2800 },
     ],
   },
   {
+    id: 'partial',
     label: 'Tiers Payant Partiel', color: '#f59e0b', emoji: '⚡',
     sub: 'Sans AMC',
     steps: [
-      { label: 'Charger AMO uniquement (pas d\'AMC)', duration: 2400 },
+      { label: "Charger AMO uniquement (pas d'AMC)", duration: 2400 },
       { label: 'Saisir le n° de commande', duration: 2600 },
       { label: 'LPT Santé envoie à la Sécurité Sociale', duration: 2400 },
-      { label: 'Le client avance la part AMC', duration: 2800 },
-      { label: 'Valider sur le téléphone de vente', duration: 2400 },
+      { label: 'Faire avancer la part AMC au client', duration: 2800 },
+      { label: 'Valider la commande sur le téléphone de vente', duration: 2400 },
     ],
   },
 ]
@@ -1063,6 +1066,7 @@ function LptpMockScreen({ phaseIdx, stepIdx, resultOk }) {
       width: '100%', maxWidth: 480, background: '#0b1a0d',
       border: '1px solid rgba(77,184,92,0.18)', borderRadius: 14,
       overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.55)',
+      position: 'relative',
     }}>
       {/* Window chrome */}
       <div style={{ background: 'linear-gradient(135deg,#142418,#0c1a10)', padding: '10px 14px',
@@ -1098,7 +1102,7 @@ function LptpMockScreen({ phaseIdx, stepIdx, resultOk }) {
 
         {/* AMC */}
         {amc !== 'hidden' && (
-          <LptpFieldRow label="AMC · Mutuelle" icon="🛡️" state={amc} value="Harmonie Mutuelle" color={color} isNA={amc === 'na'} />
+          <LptpFieldRow label="AMC · Mutuelle" icon="🛡️" state={amc} value="Almerys · 98532001" color={color} isNA={amc === 'na'} />
         )}
 
         {/* Ordonnance (test only) */}
@@ -1108,7 +1112,7 @@ function LptpMockScreen({ phaseIdx, stepIdx, resultOk }) {
 
         {/* N° Commande */}
         {cmd !== 'hidden' && (
-          <LptpFieldRow label="N° de commande" icon="⌨️" state={cmd} value="FR-2025-04892" color={color} isTyping />
+          <LptpFieldRow label="N° de commande" icon="⌨️" state={cmd} value="8126722" color={color} isTyping />
         )}
 
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1170,22 +1174,61 @@ function LptpMockScreen({ phaseIdx, stepIdx, resultOk }) {
             </div>
           )}
 
-          {/* Test Suprême result */}
+          {/* Test Suprême result — popup overlay */}
           {result === 'active' && (
             <div style={{
-              padding: '12px 16px', borderRadius: 10, textAlign: 'center',
-              background: resultOk ? 'rgba(74,222,128,0.07)' : 'rgba(239,68,68,0.07)',
-              border: `1.5px solid ${resultOk ? 'rgba(74,222,128,0.4)' : 'rgba(239,68,68,0.4)'}`,
-              transition: 'all 0.5s ease',
-              animation: 'lptp-appear 0.35s ease',
+              position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 14, animation: 'lptp-appear 0.35s ease', zIndex: 10,
             }}>
-              <div style={{ fontSize: 20, marginBottom: 4 }}>{resultOk ? '✅' : '❌'}</div>
-              <div style={{ fontSize: 12, fontWeight: 900, color: resultOk ? '#4ade80' : '#f87171', letterSpacing: 0.5 }}>
-                TEST SUPRÊME {resultOk ? 'ACCEPTÉ' : 'REFUSÉ'}
-              </div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.38)', marginTop: 3 }}>
-                {resultOk ? 'Suprême pris en charge ✓' : '→ Proposer parcours 1=1'}
-              </div>
+              {resultOk ? (
+                <div style={{
+                  background: '#fff', borderRadius: 16, padding: '20px 22px 16px',
+                  maxWidth: 270, textAlign: 'center', boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                }}>
+                  <div style={{ position: 'relative', display: 'inline-block', marginBottom: 14 }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/assets/logo-lpt-sante.png" width={60} height={60} style={{ objectFit: 'contain', display: 'block' }} />
+                    <div style={{ position: 'absolute', top: -8, left: -4, display: 'flex', gap: 2 }}>
+                      <span style={{ background: '#aaa', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 4, padding: '1px 4px' }}>1.01</span>
+                      <span style={{ background: '#e6a817', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 4, padding: '1px 4px' }}>91</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#111', marginBottom: 8, lineHeight: 1.2 }}>Remboursements enregistrés</div>
+                  <div style={{ fontSize: 12, color: '#444', lineHeight: 1.5, marginBottom: 14 }}>Vous pouvez maintenant créer une commande Suprême.</div>
+                  <div style={{ background: '#2a5080', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 600, color: '#fff' }}>OK</div>
+                </div>
+              ) : (
+                <div style={{
+                  background: '#fff', borderRadius: 16, padding: '20px 22px 16px',
+                  maxWidth: 280, textAlign: 'center', boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                }}>
+                  <div style={{ position: 'relative', display: 'inline-block', marginBottom: 14 }}>
+                    <svg width={60} height={60} viewBox="0 0 72 72" style={{ position: 'absolute', top: -16, left: -16 }}>
+                      <polygon points="36,4 68,64 4,64" fill="#f5c842" stroke="white" strokeWidth="3" strokeLinejoin="round"/>
+                      <text x="36" y="54" textAnchor="middle" fontSize="30" fontWeight="900" fill="white">!</text>
+                    </svg>
+                    <div style={{ marginTop: 8, marginLeft: 8 }}>
+                      <div style={{ position: 'relative', display: 'inline-block' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/assets/logo-lpt-sante.png" width={50} height={50} style={{ objectFit: 'contain', display: 'block' }} />
+                        <div style={{ position: 'absolute', top: -8, left: -4, display: 'flex', gap: 2 }}>
+                          <span style={{ background: '#aaa', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 4, padding: '1px 4px' }}>1.01</span>
+                          <span style={{ background: '#e6a817', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 4, padding: '1px 4px' }}>95</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#111', marginBottom: 8, lineHeight: 1.2 }}>L&apos;envoi de devis OptoAMC a échoué</div>
+                  <div style={{ fontSize: 11, color: '#444', lineHeight: 1.5, marginBottom: 14 }}>Erreur OptoAMC. Le remboursement est trop faible pour réaliser cette commande Suprême</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ flex: 1, borderRadius: 10, padding: '10px 0', fontSize: 12, fontWeight: 600, color: '#2a5080', border: '1px solid #e0e0e0', background: '#f5f5f5' }}>Annuler</div>
+                    <div style={{ flex: 1.5, background: '#2a5080', borderRadius: 10, padding: '10px 0', fontSize: 12, fontWeight: 700, color: '#fff' }}>Envoyer une PEC</div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1194,13 +1237,20 @@ function LptpMockScreen({ phaseIdx, stepIdx, resultOk }) {
   )
 }
 
-function TVLptSantePec() {
-  const [phaseIdx, setPhaseIdx] = useState(0)
+function TVLptSantePec({ scenario }) {
+  const phaseIdx = scenario === 'test' ? 0 : scenario === 'fact' ? 1 : scenario === 'partial' ? 2 : null
   const [stepIdx, setStepIdx] = useState(0)
   const [resultOk, setResultOk] = useState(true)
   const [loopKey, setLoopKey] = useState(0)
 
   useEffect(() => {
+    setStepIdx(0)
+    setResultOk(true)
+    setLoopKey(k => k + 1)
+  }, [scenario])
+
+  useEffect(() => {
+    if (phaseIdx === null) return
     const phase = LPTS_PEC_PHASES[phaseIdx]
     const step = phase.steps[stepIdx]
     let altTimer
@@ -1213,16 +1263,42 @@ function TVLptSantePec() {
       if (stepIdx < phase.steps.length - 1) {
         setStepIdx(s => s + 1)
       } else {
-        const next = (phaseIdx + 1) % LPTS_PEC_PHASES.length
-        setPhaseIdx(next)
         setStepIdx(0)
         setResultOk(true)
-        if (next === 0) setLoopKey(k => k + 1)
+        setLoopKey(k => k + 1)
       }
     }, step.duration)
 
     return () => { clearTimeout(t); if (altTimer) clearInterval(altTimer) }
   }, [phaseIdx, stepIdx, loopKey])
+
+  if (phaseIdx === null) {
+    return (
+      <div style={{
+        minHeight: '100vh', overflow: 'hidden',
+        background: 'linear-gradient(160deg, #020d1a 0%, #010e05 100%)',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20,
+      }}>
+        <style>{LPTS_PEC_STYLES}</style>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-sante.png" width={64} height={64} style={{ objectFit: 'contain', opacity: 0.35 }} />
+        <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.28)', fontWeight: 600, textAlign: 'center' }}>
+          Le formateur va sélectionner un scénario
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+          {LPTS_PEC_PHASES.map((p) => (
+            <div key={p.id} style={{
+              padding: '6px 16px', borderRadius: 16, fontSize: 12, fontWeight: 700,
+              background: `${p.color}08`, border: `1px solid ${p.color}20`, color: `${p.color}50`,
+            }}>
+              {p.emoji} {p.label}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   const phase = LPTS_PEC_PHASES[phaseIdx]
 
@@ -1242,19 +1318,11 @@ function TVLptSantePec() {
           <img src="/assets/logo-lpt-sante.png" width={26} height={26} style={{ objectFit: 'contain' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>LPT Santé · Prise en charge</span>
         </div>
-        {/* Phase indicator */}
-        <div style={{ display: 'flex', gap: 6 }}>
-          {LPTS_PEC_PHASES.map((p, i) => (
-            <div key={i} style={{
-              padding: '4px 14px', borderRadius: 16, fontSize: 11, fontWeight: 800,
-              background: i === phaseIdx ? `${p.color}18` : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${i === phaseIdx ? p.color + '55' : 'rgba(255,255,255,0.07)'}`,
-              color: i === phaseIdx ? p.color : 'rgba(255,255,255,0.25)',
-              transition: 'all 0.5s',
-            }}>
-              {p.emoji} {p.label}
-            </div>
-          ))}
+        <div style={{
+          padding: '6px 18px', borderRadius: 16, fontSize: 12, fontWeight: 800,
+          background: `${phase.color}18`, border: `1px solid ${phase.color}55`, color: phase.color,
+        }}>
+          {phase.emoji} {phase.label}
         </div>
       </div>
 
@@ -1267,7 +1335,6 @@ function TVLptSantePec() {
 
         {/* Right: Steps */}
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px 32px 24px 12px', gap: 8 }}>
-          {/* Phase subtitle */}
           {phase.sub && (
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 6, fontWeight: 600 }}>
               {phase.sub}
@@ -5472,7 +5539,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'tiers-payant-explication')   return <TVTiersPayantExplication />
   if (page.type === 'lpt-sante-intro')        return <TVLptSanteIntro        page={page} sessionCode={sessionCode} />
   if (page.type === 'lpt-sante-explication') return <TVLptSanteExplication />
-  if (page.type === 'lpt-sante-pec')         return <TVLptSantePec />
+  if (page.type === 'lpt-sante-pec')         return <TVLptSantePec scenario={lptsPecScenario} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />
@@ -7051,6 +7118,7 @@ export default function TVView() {
   const [rembfrDemarcheA, setRembfrDemarcheA]             = useState(0)
   const [rembfrDemarcheB, setRembfrDemarcheB]             = useState(0)
   const [rembfrSupreme, setRembfrSupreme]                 = useState(0)
+  const [lptsPecScenario, setLptsPecScenario]             = useState(null)
   const [parcoursRevealed, setParcoursRevealed]           = useState([])
   const [tiersPayantRevealed, setTiersPayantRevealed]     = useState(false)
 
@@ -7101,6 +7169,7 @@ export default function TVView() {
     setRembfrDemarcheA(sharedState.rembfr_demarche_a ?? 0)
     setRembfrDemarcheB(sharedState.rembfr_demarche_b ?? 0)
     setRembfrSupreme(sharedState.rembfr_supreme ?? 0)
+    setLptsPecScenario(sharedState.lpts_pec_scenario ?? null)
     setParcoursRevealed(sharedState.parcours_revealed || [])
     setTiersPayantRevealed(!!sharedState.tiers_payant_revealed)
   }, [sharedState])
