@@ -954,6 +954,362 @@ function OpenAnswersFeed({ sessionCode, pageId }) {
   )
 }
 
+// ─── LPT Santé · Prise en charge (page 3) ────────────────────────────────────
+const LPTS_PEC_STYLES = `
+  @keyframes lptp-appear { from{opacity:0;transform:scale(0.9)} to{opacity:1;transform:scale(1)} }
+  @keyframes lptp-slide  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes lptp-pulse  { 0%,100%{box-shadow:0 0 0 0 rgba(77,184,92,0)} 50%{box-shadow:0 0 0 10px rgba(77,184,92,0)} }
+  @keyframes lptp-cursor { 0%,100%{opacity:1} 50%{opacity:0} }
+  @keyframes lptp-send   { 0%{transform:translate(0,0);opacity:1} 70%{transform:translate(28px,-16px);opacity:1} 100%{transform:translate(56px,-32px);opacity:0} }
+`
+
+const LPTS_PEC_PHASES = [
+  {
+    label: 'Test Suprême', color: '#00abe9', emoji: '🔍',
+    steps: [
+      { label: 'Charger AMO (Sécurité Sociale)', duration: 2400 },
+      { label: 'Charger AMC (Mutuelle)', duration: 2400 },
+      { label: "Ajouter l'ordonnance client", duration: 2400 },
+      { label: 'LPT Santé génère le devis', duration: 2600 },
+      { label: 'Envoyer la demande', duration: 2000 },
+      { label: 'Réponse immédiate ✅ ou ❌', duration: 4800 },
+    ],
+  },
+  {
+    label: 'Facturation', color: '#4db85c', emoji: '🧾',
+    sub: '1=1 ou Suprême',
+    steps: [
+      { label: 'Charger AMO + AMC client', duration: 2400 },
+      { label: 'Ouvrir section Facturation', duration: 1800 },
+      { label: 'Saisir le n° de commande', duration: 2600 },
+      { label: 'LPT Santé envoie la PEC', duration: 2400 },
+      { label: 'Valider sur le téléphone de vente', duration: 2800 },
+    ],
+  },
+  {
+    label: 'Tiers Payant Partiel', color: '#f59e0b', emoji: '⚡',
+    sub: 'Sans AMC',
+    steps: [
+      { label: 'Charger AMO uniquement (pas d\'AMC)', duration: 2400 },
+      { label: 'Saisir le n° de commande', duration: 2600 },
+      { label: 'LPT Santé envoie à la Sécurité Sociale', duration: 2400 },
+      { label: 'Le client avance la part AMC', duration: 2800 },
+      { label: 'Valider sur le téléphone de vente', duration: 2400 },
+    ],
+  },
+]
+
+function LptpFieldRow({ label, icon, state, value, color, isTyping = false, isNA = false }) {
+  const isEmpty = state === 'empty' || state === 'hidden'
+  const isActive = state === 'active'
+  const isDone = state === 'done'
+  return (
+    <div style={{
+      borderRadius: 10,
+      background: isDone ? 'rgba(77,184,92,0.07)' : isActive ? `${color}10` : 'rgba(255,255,255,0.03)',
+      border: `1px solid ${isDone ? 'rgba(77,184,92,0.25)' : isActive ? color + '45' : 'rgba(255,255,255,0.07)'}`,
+      padding: '9px 14px', transition: 'all 0.45s',
+      animation: isActive ? 'lptp-appear 0.35s ease' : 'none',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+        <span style={{ fontSize: 12 }}>{icon}</span>
+        <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.2,
+          color: isDone ? '#4db85c' : isActive ? color : 'rgba(255,255,255,0.28)' }}>
+          {label}
+        </span>
+        {isDone && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#4db85c' }}>✓</span>}
+        {isNA && <span style={{ marginLeft: 'auto', fontSize: 9, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>non requis</span>}
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 600, fontFamily: 'monospace',
+        color: isEmpty || isNA ? 'rgba(255,255,255,0.12)' : '#fff',
+        borderBottom: isActive ? `1px solid ${color}` : '1px solid transparent',
+        paddingBottom: 1,
+      }}>
+        {isEmpty ? '──────────────' : isNA ? 'N/A (tiers payant partiel)' : isActive && isTyping
+          ? <span>{value}<span style={{ animation: 'lptp-cursor 0.8s step-end infinite' }}>│</span></span>
+          : value}
+      </div>
+    </div>
+  )
+}
+
+function LptpMockScreen({ phaseIdx, stepIdx, resultOk }) {
+  const isTest = phaseIdx === 0
+  const isFact = phaseIdx === 1
+  const isPartial = phaseIdx === 2
+  const s = stepIdx
+  const color = LPTS_PEC_PHASES[phaseIdx].color
+
+  // Field states
+  const amo    = s>0 ? 'done' : s===0 ? 'active' : 'empty'
+  const amc    = isTest    ? (s>1?'done':s===1?'active':'empty')
+               : isFact    ? (s>0?'done':s===0?'active':'empty')
+               :              'na'
+  const ordo   = isTest    ? (s>2?'done':s===2?'active':'empty') : 'hidden'
+  const devis  = isTest    ? (s>3?'done':s===3?'active':'empty') : 'hidden'
+  const cmd    = isTest    ? 'hidden'
+               : isFact    ? (s>=1?(s===2?'active':s>2?'done':'empty'):'hidden')
+               :              (s===1?'active':s>1?'done':'empty')
+  const send   = isTest    ? (s===4?'active':s>4?'done':'empty')
+               : isFact    ? (s===3?'active':s>3?'done':'empty')
+               :              (s===2?'active':s>2?'done':'empty')
+  const avance = isPartial ? (s===3?'active':s>3?'done':'hidden') : 'hidden'
+  const valid  = (!isTest) ? (s===4?'active':s>4?'done':'hidden') : 'hidden'
+  const result = isTest && s===5 ? 'active' : 'hidden'
+  const factTabActive = isFact && s >= 1
+
+  return (
+    <div style={{
+      width: '100%', maxWidth: 480, background: '#0b1a0d',
+      border: '1px solid rgba(77,184,92,0.18)', borderRadius: 14,
+      overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.55)',
+    }}>
+      {/* Window chrome */}
+      <div style={{ background: 'linear-gradient(135deg,#142418,#0c1a10)', padding: '10px 14px',
+        borderBottom: '1px solid rgba(77,184,92,0.12)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 5 }}>
+          {['#ff5f57','#febc2e','#28c840'].map(c => (
+            <div key={c} style={{ width: 9, height: 9, borderRadius: '50%', background: c }} />
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 2, flex: 1, marginLeft: 8 }}>
+          {[{ label: 'Test Suprême', active: isTest }, { label: 'Facturation', active: isFact || isPartial }].map((t, i) => (
+            <div key={i} style={{
+              padding: '3px 12px', borderRadius: '5px 5px 0 0', fontSize: 10, fontWeight: 700,
+              background: t.active ? 'rgba(77,184,92,0.12)' : 'transparent',
+              color: t.active ? '#4db85c' : 'rgba(255,255,255,0.22)',
+              transition: 'all 0.4s',
+            }}>{t.label}</div>
+          ))}
+          {isPartial && (
+            <div style={{ padding: '3px 10px', borderRadius: '5px 5px 0 0', fontSize: 10, fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.1)' }}>
+              ⚡ TP Partiel
+            </div>
+          )}
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-sante.png" width={18} height={18} style={{ objectFit: 'contain', opacity: 0.6 }} />
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* AMO */}
+        <LptpFieldRow label="AMO · Sécurité Sociale" icon="🏥" state={amo} value="1 77 04 94 123 456 78" color={color} />
+
+        {/* AMC */}
+        {amc !== 'hidden' && (
+          <LptpFieldRow label="AMC · Mutuelle" icon="🛡️" state={amc} value="Harmonie Mutuelle" color={color} isNA={amc === 'na'} />
+        )}
+
+        {/* Ordonnance (test only) */}
+        {ordo !== 'hidden' && (
+          <LptpFieldRow label="Ordonnance" icon="📋" state={ordo} value="OD -1.75 sph / OG -2.00 sph" color={color} />
+        )}
+
+        {/* N° Commande */}
+        {cmd !== 'hidden' && (
+          <LptpFieldRow label="N° de commande" icon="⌨️" state={cmd} value="FR-2025-04892" color={color} isTyping />
+        )}
+
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* Action buttons */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            {devis !== 'hidden' && (
+              <div style={{
+                flex: 1, padding: '9px 0', borderRadius: 8, fontSize: 11, fontWeight: 700, textAlign: 'center',
+                background: devis === 'active' ? 'rgba(0,171,233,0.15)' : devis === 'done' ? 'rgba(77,184,92,0.08)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${devis === 'active' ? '#00abe980' : devis === 'done' ? 'rgba(77,184,92,0.25)' : 'rgba(255,255,255,0.07)'}`,
+                color: devis === 'active' ? '#00abe9' : devis === 'done' ? '#4db85c' : 'rgba(255,255,255,0.25)',
+                transition: 'all 0.4s',
+              }}>
+                {devis === 'active' ? '⚙️ Génération devis…' : devis === 'done' ? '✓ Devis prêt' : '⚙️ Générer devis'}
+              </div>
+            )}
+            <div style={{
+              flex: 1, padding: '9px 0', borderRadius: 8, fontSize: 11, fontWeight: 700, textAlign: 'center',
+              background: send === 'active' ? `${color}20` : send === 'done' ? 'rgba(77,184,92,0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${send === 'active' ? color + '70' : send === 'done' ? 'rgba(77,184,92,0.25)' : 'rgba(255,255,255,0.07)'}`,
+              color: send === 'active' ? color : send === 'done' ? '#4db85c' : 'rgba(255,255,255,0.25)',
+              transition: 'all 0.4s',
+              animation: send === 'active' ? 'lptp-pulse 1.2s ease-in-out infinite' : 'none',
+            }}>
+              {send === 'active' ? '📤 Envoi en cours…' : send === 'done' ? '✓ Envoyé' : '📤 Envoyer'}
+            </div>
+          </div>
+
+          {/* Facturation tab indicator */}
+          {isFact && s >= 1 && s < 3 && (
+            <div style={{ fontSize: 10, color: '#4db85c', fontWeight: 700, textAlign: 'center', padding: '4px 0', animation: 'lptp-slide 0.3s ease' }}>
+              📂 Section Facturation active
+            </div>
+          )}
+
+          {/* Avance AMC */}
+          {avance !== 'hidden' && avance !== 'empty' && (
+            <div style={{
+              padding: '9px 12px', borderRadius: 9,
+              background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
+              fontSize: 11, fontWeight: 600, color: '#f59e0b',
+              animation: 'lptp-slide 0.35s ease',
+            }}>
+              💳 Le client règle la part AMC en CB / espèces
+            </div>
+          )}
+
+          {/* Validation téléphone */}
+          {valid !== 'hidden' && (
+            <div style={{
+              padding: '9px 12px', borderRadius: 9, textAlign: 'center',
+              background: valid === 'done' ? 'rgba(77,184,92,0.1)' : 'rgba(0,171,233,0.08)',
+              border: `1px solid ${valid === 'done' ? 'rgba(77,184,92,0.3)' : 'rgba(0,171,233,0.25)'}`,
+              fontSize: 11, fontWeight: 700,
+              color: valid === 'done' ? '#4db85c' : '#00abe9',
+              animation: valid === 'active' ? 'lptp-appear 0.35s ease' : 'none',
+            }}>
+              {valid === 'done' ? '✅ Commande validée !' : '📱 En attente — valider sur le téléphone de vente'}
+            </div>
+          )}
+
+          {/* Test Suprême result */}
+          {result === 'active' && (
+            <div style={{
+              padding: '12px 16px', borderRadius: 10, textAlign: 'center',
+              background: resultOk ? 'rgba(74,222,128,0.07)' : 'rgba(239,68,68,0.07)',
+              border: `1.5px solid ${resultOk ? 'rgba(74,222,128,0.4)' : 'rgba(239,68,68,0.4)'}`,
+              transition: 'all 0.5s ease',
+              animation: 'lptp-appear 0.35s ease',
+            }}>
+              <div style={{ fontSize: 20, marginBottom: 4 }}>{resultOk ? '✅' : '❌'}</div>
+              <div style={{ fontSize: 12, fontWeight: 900, color: resultOk ? '#4ade80' : '#f87171', letterSpacing: 0.5 }}>
+                TEST SUPRÊME {resultOk ? 'ACCEPTÉ' : 'REFUSÉ'}
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.38)', marginTop: 3 }}>
+                {resultOk ? 'Suprême pris en charge ✓' : '→ Proposer parcours 1=1'}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TVLptSantePec() {
+  const [phaseIdx, setPhaseIdx] = useState(0)
+  const [stepIdx, setStepIdx] = useState(0)
+  const [resultOk, setResultOk] = useState(true)
+  const [loopKey, setLoopKey] = useState(0)
+
+  useEffect(() => {
+    const phase = LPTS_PEC_PHASES[phaseIdx]
+    const step = phase.steps[stepIdx]
+    let altTimer
+
+    if (phaseIdx === 0 && stepIdx === 5) {
+      altTimer = setInterval(() => setResultOk(v => !v), 2200)
+    }
+
+    const t = setTimeout(() => {
+      if (stepIdx < phase.steps.length - 1) {
+        setStepIdx(s => s + 1)
+      } else {
+        const next = (phaseIdx + 1) % LPTS_PEC_PHASES.length
+        setPhaseIdx(next)
+        setStepIdx(0)
+        setResultOk(true)
+        if (next === 0) setLoopKey(k => k + 1)
+      }
+    }, step.duration)
+
+    return () => { clearTimeout(t); if (altTimer) clearInterval(altTimer) }
+  }, [phaseIdx, stepIdx, loopKey])
+
+  const phase = LPTS_PEC_PHASES[phaseIdx]
+
+  return (
+    <div style={{
+      minHeight: '100vh', overflow: 'hidden',
+      background: 'linear-gradient(160deg, #020d1a 0%, #010e05 100%)',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <style>{LPTS_PEC_STYLES}</style>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/assets/logo-lpt-sante.png" width={26} height={26} style={{ objectFit: 'contain' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>LPT Santé · Prise en charge</span>
+        </div>
+        {/* Phase indicator */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          {LPTS_PEC_PHASES.map((p, i) => (
+            <div key={i} style={{
+              padding: '4px 14px', borderRadius: 16, fontSize: 11, fontWeight: 800,
+              background: i === phaseIdx ? `${p.color}18` : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${i === phaseIdx ? p.color + '55' : 'rgba(255,255,255,0.07)'}`,
+              color: i === phaseIdx ? p.color : 'rgba(255,255,255,0.25)',
+              transition: 'all 0.5s',
+            }}>
+              {p.emoji} {p.label}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Main: mock screen left, steps right */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', flex: 1, minHeight: 0 }}>
+        {/* Left: Mock LPT Santé */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 20px 24px 32px' }}>
+          <LptpMockScreen phaseIdx={phaseIdx} stepIdx={stepIdx} resultOk={resultOk} />
+        </div>
+
+        {/* Right: Steps */}
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px 32px 24px 12px', gap: 8 }}>
+          {/* Phase subtitle */}
+          {phase.sub && (
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 6, fontWeight: 600 }}>
+              {phase.sub}
+            </div>
+          )}
+
+          {phase.steps.map((step, i) => (
+            <div key={`${phaseIdx}-${i}-${loopKey}`} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 12,
+              padding: '10px 14px', borderRadius: 12,
+              background: i === stepIdx ? `${phase.color}10` : i < stepIdx ? 'rgba(255,255,255,0.025)' : 'transparent',
+              border: `1px solid ${i === stepIdx ? phase.color + '38' : i < stepIdx ? 'rgba(255,255,255,0.05)' : 'transparent'}`,
+              opacity: i > stepIdx ? 0.38 : 1,
+              transition: 'all 0.4s',
+            }}>
+              <div style={{
+                width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, fontWeight: 800,
+                background: i < stepIdx ? '#4db85c' : i === stepIdx ? phase.color : 'rgba(255,255,255,0.07)',
+                color: '#fff', transition: 'all 0.3s',
+                animation: i === stepIdx ? 'lptp-pulse 1.6s ease-in-out infinite' : 'none',
+              }}>
+                {i < stepIdx ? '✓' : i + 1}
+              </div>
+              <div style={{ paddingTop: 4 }}>
+                <div style={{
+                  fontSize: 13, lineHeight: 1.45,
+                  fontWeight: i === stepIdx ? 700 : 400,
+                  color: i < stepIdx ? 'rgba(255,255,255,0.4)' : '#fff',
+                }}>
+                  {step.label}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const LPTS_ANIM_STYLES = `
   @keyframes lpts-pec-in-1 {
     0%   { transform: translate(0,0) scale(0.7); opacity:0; }
@@ -5277,6 +5633,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'tiers-payant-explication')   return <TVTiersPayantExplication />
   if (page.type === 'lpt-sante-intro')        return <TVLptSanteIntro        page={page} sessionCode={sessionCode} />
   if (page.type === 'lpt-sante-explication') return <TVLptSanteExplication />
+  if (page.type === 'lpt-sante-pec')         return <TVLptSantePec />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />

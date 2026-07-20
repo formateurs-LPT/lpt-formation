@@ -583,6 +583,7 @@ export const MODULE_DATA = {
   'lpt-sante': { pages: [
     { id: 'lpts-q1', type: 'lpt-sante-intro', titre: 'À quoi ça sert ?' },
     { id: 'lpts-explication', type: 'lpt-sante-explication', titre: 'Comment ça marche ?' },
+    { id: 'lpts-pec', type: 'lpt-sante-pec', titre: 'La prise en charge' },
   ], quiz: [], label: 'LPT Santé', sub: 'Tiers payant · Remboursements' },
 }
 

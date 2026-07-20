@@ -1235,6 +1235,116 @@ function LptSanteIntroMobile({ page, pName }) {
   )
 }
 
+function LptSantePecMobile() {
+  const [visible, setVisible] = useState(false)
+  const [tab, setTab] = useState(0)
+  useEffect(() => { const t = setTimeout(() => setVisible(true), 100); return () => clearTimeout(t) }, [])
+
+  const tabs = [
+    {
+      label: '🔍 Test Suprême', color: '#00abe9',
+      steps: [
+        { icon: '🏥', text: 'Charger l\'AMO (Sécu)' },
+        { icon: '🛡️', text: 'Charger l\'AMC (Mutuelle)' },
+        { icon: '📋', text: 'Ajouter l\'ordonnance' },
+        { icon: '⚙️', text: 'Générer le devis' },
+        { icon: '📤', text: 'Envoyer → réponse immédiate ✅ ou ❌' },
+      ],
+    },
+    {
+      label: '🧾 Facturation', color: '#4db85c', sub: '1=1 ou Suprême',
+      steps: [
+        { icon: '🏥', text: 'Charger AMO + AMC' },
+        { icon: '📂', text: 'Ouvrir Facturation' },
+        { icon: '⌨️', text: 'Saisir le n° de commande (visible sur le tél. de vente)' },
+        { icon: '📡', text: 'LPT Santé envoie la PEC' },
+        { icon: '📱', text: 'Valider sur le téléphone de vente' },
+      ],
+    },
+    {
+      label: '⚡ TP Partiel', color: '#f59e0b', sub: 'Sans AMC',
+      steps: [
+        { icon: '🏥', text: 'Charger AMO uniquement (pas d\'AMC)' },
+        { icon: '⌨️', text: 'Saisir le n° de commande' },
+        { icon: '📡', text: 'LPT Santé envoie à la Sécu' },
+        { icon: '💳', text: 'Le client avance la part AMC' },
+        { icon: '📱', text: 'Valider sur le téléphone de vente' },
+      ],
+    },
+  ]
+  const active = tabs[tab]
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a1a 65%, #0d3b1a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '20px 20px 36px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexShrink: 0 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={32} height={32} style={{ objectFit: 'contain' }} />
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 1.5 }}>Prise en charge</div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexShrink: 0 }}>
+        {tabs.map((t, i) => (
+          <button key={i} onClick={() => setTab(i)} style={{
+            flex: 1, padding: '7px 4px', borderRadius: 10, fontSize: 10, fontWeight: 800,
+            background: i === tab ? `${t.color}20` : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${i === tab ? t.color + '60' : 'rgba(255,255,255,0.08)'}`,
+            color: i === tab ? t.color : 'rgba(255,255,255,0.3)',
+            cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.3s',
+          }}>{t.label}</button>
+        ))}
+      </div>
+
+      {/* Steps */}
+      <div style={{
+        flex: 1, opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(16px)',
+        transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+        display: 'flex', flexDirection: 'column', gap: 10,
+      }}>
+        {active.sub && (
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 4, fontStyle: 'italic' }}>{active.sub}</div>
+        )}
+        {active.steps.map((s, i) => (
+          <div key={`${tab}-${i}`} style={{
+            display: 'flex', alignItems: 'flex-start', gap: 12,
+            background: 'rgba(255,255,255,0.04)', border: `1px solid ${active.color}20`,
+            borderLeft: `3px solid ${active.color}`,
+            borderRadius: 12, padding: '12px 14px',
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateY(0)' : 'translateY(10px)',
+            transition: `all 0.45s cubic-bezier(0.22, 1, 0.36, 1) ${0.05 + i * 0.08}s`,
+          }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+              background: `${active.color}20`, border: `1px solid ${active.color}40`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+            }}>{s.icon}</div>
+            <div style={{ paddingTop: 4 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: active.color, marginBottom: 2 }}>Étape {i + 1}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{s.text}</div>
+            </div>
+          </div>
+        ))}
+
+        {tab === 2 && (
+          <div style={{
+            marginTop: 4, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+            borderRadius: 10, padding: '10px 14px',
+            fontSize: 11, color: '#f59e0b', fontWeight: 600, lineHeight: 1.6,
+          }}>
+            💡 Même manipulation que la facturation, mais sans charger la mutuelle. LPT Santé gère uniquement la part Sécurité Sociale.
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function LptSanteExplicationMobile() {
   const [visible, setVisible] = useState(false)
   useEffect(() => { const t = setTimeout(() => setVisible(true), 100); return () => clearTimeout(t) }, [])
@@ -3372,6 +3482,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
   )
   if (page.type === 'lpt-sante-intro')        return <LptSanteIntroMobile       page={page} pName={pName} />
   if (page.type === 'lpt-sante-explication') return <LptSanteExplicationMobile />
+  if (page.type === 'lpt-sante-pec')         return <LptSantePecMobile />
 
   if (page.type === 'rembfr-conditions') return (
     <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column', padding: '28px 20px 40px' }}>
