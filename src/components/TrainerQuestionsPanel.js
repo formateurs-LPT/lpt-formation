@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { fetchOpenAnswers, getActiveSessionCode, setSharedState } from '@/lib/supabase'
+import { getSharedState, setSharedState } from '@/lib/supabase'
 import { useIsMobile } from '@/lib/useIsMobile'
 
 export default function TrainerQuestionsPanel({ moduleId }) {
@@ -12,11 +12,18 @@ export default function TrainerQuestionsPanel({ moduleId }) {
   const load = useCallback(async () => {
     if (!moduleId) return
     try {
-      const code = getActiveSessionCode()
-      console.log('[TrainerQuestionsPanel] lecture → sessionCode:', code, 'pageId:', 'mq_' + moduleId)
-      const rows = await fetchOpenAnswers(code, 'mq_' + moduleId)
-      console.log('[TrainerQuestionsPanel] rows:', rows)
-      setQuestions(rows || [])
+      const state = await getSharedState()
+      const prefix = `mq__${moduleId}__`
+      const rows = Object.entries(state || {})
+        .filter(([k, v]) => k.startsWith(prefix) && v?.answer)
+        .map(([k, v]) => ({
+          id: k,
+          participant_name: v.name || k.split('__')[2]?.replace(/_/g, ' ') || 'Anonyme',
+          answer: v.answer,
+          created_at: new Date(v.ts || 0).toISOString(),
+        }))
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      setQuestions(rows)
     } catch (e) {
       console.error('[TrainerQuestionsPanel] load error:', e)
     }

@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { insertOpenAnswer, getRuntimeSessionCode } from '@/lib/supabase'
+import { setRoomSharedState, getRuntimeSessionCode } from '@/lib/supabase'
 
 export default function QuestionBubble({ moduleId, pName }) {
   const [open, setSOpen]  = useState(false)
@@ -15,12 +15,20 @@ export default function QuestionBubble({ moduleId, pName }) {
     setError(false)
     try {
       const code = getRuntimeSessionCode()
-      console.log('[QuestionBubble] envoi → sessionCode:', code, 'pageId:', 'mq_' + moduleId)
-      await insertOpenAnswer({ sessionCode: code, pageId: 'mq_' + moduleId, participantName: pName || 'Anonyme', answer: text.trim() })
-      console.log('[QuestionBubble] insert OK')
-      setText('')
-      setSent(true)
-      setTimeout(() => { setSent(false); setSOpen(false) }, 1600)
+      const safeName = (pName || 'Anonyme').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_À-ɏ]/g, '') || 'Anonyme'
+      const ts = Date.now()
+      const key = `mq__${moduleId}__${safeName}__${ts}`
+      const ok = await setRoomSharedState(
+        { [key]: { name: pName || 'Anonyme', answer: text.trim(), ts } },
+        code
+      )
+      if (ok != null) {
+        setText('')
+        setSent(true)
+        setTimeout(() => { setSent(false); setSOpen(false) }, 1600)
+      } else {
+        setError(true)
+      }
     } catch (e) {
       console.warn('[QuestionBubble]', e)
       setError(true)
