@@ -19,8 +19,13 @@ function filterKicked(list, fd) {
   })
 }
 
+const PAGE_STALE_MS = 5 * 60 * 1000 // données de page périmées après 5 min
+
 function ParticipantsPanel({ sessionCode, onClose }) {
   const [participants, setParticipants] = useState([])
+  const [participantPages, setParticipantPages] = useState({})
+  const [trainerModule, setTrainerModule] = useState(null)
+  const [trainerPage, setTrainerPage] = useState(null)
   const [loading, setLoading] = useState(true)
   const [kicking, setKicking] = useState({})
   const intervalRef = useRef(null)
@@ -31,6 +36,9 @@ function ParticipantsPanel({ sessionCode, onClose }) {
       getRoomSharedState(sessionCode).catch(() => ({})),
     ])
     setParticipants(filterKicked(list, roomState?.forced_disconnects))
+    setParticipantPages(roomState?.participant_pages || {})
+    setTrainerModule(roomState?.activeModule || null)
+    setTrainerPage(roomState?.modulePage ?? null)
     setLoading(false)
   }
 
@@ -72,11 +80,27 @@ function ParticipantsPanel({ sessionCode, onClose }) {
           borderBottom: '1px solid rgba(255,255,255,0.07)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
-              {loading ? '…' : participants.length} formé{participants.length > 1 ? 's' : ''} connecté{participants.length > 1 ? 's' : ''}
-            </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
+                {loading ? '…' : participants.length} formé{participants.length > 1 ? 's' : ''} connecté{participants.length > 1 ? 's' : ''}
+              </span>
+            </div>
+            {trainerModule && !loading && (() => {
+              const onPageCount = participants.filter(p => {
+                const pp = participantPages[p.name]
+                return pp && (Date.now() - (pp.ts || 0)) < PAGE_STALE_MS && pp.moduleId === trainerModule && pp.pageIndex === trainerPage
+              }).length
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: onPageCount === participants.length && participants.length > 0 ? '#22c55e' : '#f59e0b' }} />
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
+                    {onPageCount}/{participants.length} sur votre page
+                  </span>
+                </div>
+              )
+            })()}
           </div>
           <button
             onClick={onClose}
@@ -95,33 +119,52 @@ function ParticipantsPanel({ sessionCode, onClose }) {
             <div style={{ padding: '20px 18px', color: 'rgba(255,255,255,0.3)', fontSize: 13, textAlign: 'center' }}>
               Aucun formé connecté
             </div>
-          ) : participants.map((p) => (
-            <div key={p.name} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 18px',
-              borderBottom: '1px solid rgba(255,255,255,0.04)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{p.name}</span>
+          ) : participants.map((p) => {
+            const pp = participantPages[p.name]
+            const fresh = pp && (Date.now() - (pp.ts || 0)) < PAGE_STALE_MS
+            const onPage = fresh && trainerModule && pp.moduleId === trainerModule && pp.pageIndex === trainerPage
+            const dotColor = !fresh ? 'rgba(255,255,255,0.2)' : onPage ? '#22c55e' : '#f59e0b'
+            const pageLabel = !fresh
+              ? 'Page non détectée'
+              : onPage
+                ? 'Sur votre page ✓'
+                : 'Pas sur votre page'
+            return (
+              <div key={p.name} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 18px',
+                borderBottom: '1px solid rgba(255,255,255,0.04)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                  <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} title="Connecté" />
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor, transition: 'background .3s' }} title={pageLabel} />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'block' }}>{p.name}</span>
+                    <span style={{ fontSize: 10, color: onPage ? '#4ade80' : !fresh ? 'rgba(255,255,255,0.3)' : '#fbbf24', fontWeight: 500 }}>
+                      {pageLabel}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleKick(p.name)}
+                  disabled={kicking[p.name]}
+                  style={{
+                    background: kicking[p.name] ? 'rgba(239,68,68,0.05)' : 'rgba(239,68,68,0.1)',
+                    border: '1px solid rgba(239,68,68,0.3)',
+                    borderRadius: 8, padding: '5px 10px',
+                    color: '#f87171', fontSize: 11, fontWeight: 700,
+                    cursor: kicking[p.name] ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit', transition: 'all .15s',
+                    opacity: kicking[p.name] ? 0.5 : 1, flexShrink: 0,
+                  }}
+                >
+                  {kicking[p.name] ? '…' : 'Déco'}
+                </button>
               </div>
-              <button
-                onClick={() => handleKick(p.name)}
-                disabled={kicking[p.name]}
-                style={{
-                  background: kicking[p.name] ? 'rgba(239,68,68,0.05)' : 'rgba(239,68,68,0.1)',
-                  border: '1px solid rgba(239,68,68,0.3)',
-                  borderRadius: 8, padding: '5px 10px',
-                  color: '#f87171', fontSize: 11, fontWeight: 700,
-                  cursor: kicking[p.name] ? 'not-allowed' : 'pointer',
-                  fontFamily: 'inherit', transition: 'all .15s',
-                  opacity: kicking[p.name] ? 0.5 : 1,
-                }}
-              >
-                {kicking[p.name] ? '…' : 'Déconnecter'}
-              </button>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </>

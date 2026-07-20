@@ -14,6 +14,7 @@ import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
 import { captureParticipantRoomFromUrl, captureTvRoomFromUrl, buildTvUrl, isDynamicRoomCode, setParticipantSessionCode, readParticipantSessionCode, getLegacySessionCode } from '@/lib/sessionCode'
 import { touchParticipantPresence } from '@/lib/participantPresence'
+import { useIsMobile } from '@/lib/useIsMobile'
 import { endActiveRoom, getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { useOnlineCount } from '@/lib/useOnlineCount'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
@@ -41,6 +42,7 @@ import TVView from '@/components/TVView'
 import ParticipantModuleView from '@/components/ParticipantModuleView'
 
 export default function Page() {
+  const isMobile = useIsMobile(640)
   const [view, setView] = useState('landing') // landing | dashboard | trainer-session | participant | module-types-verres
   const [pName, setPName] = useState('')
   const [pPrenom, setPPrenom] = useState('')
@@ -413,7 +415,7 @@ export default function Page() {
   }
 
   return (
-    <div style={{ minHeight: '100vh' }}>
+    <div style={isMobile ? { height: '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column' } : { minHeight: '100vh' }}>
       <Topbar
         pName={pName}
         isTrainer={isTrainer}
@@ -424,6 +426,7 @@ export default function Page() {
         onTVMode={handleOpenTv}
         onStartSession={handleLaunchSession}
       />
+      <div style={isMobile ? { flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', position: 'relative' } : {}}>
       {view === 'dashboard' && (
         <Dashboard
           pName={pName}
@@ -591,6 +594,7 @@ export default function Page() {
         <TrainerQuestionsPanel moduleId={view.slice(7)} />
       )}
       <Toast message={message} />
+      </div>
     </div>
   )
 }

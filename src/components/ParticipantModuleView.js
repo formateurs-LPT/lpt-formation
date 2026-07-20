@@ -6,7 +6,7 @@ import QuestionBubble from '@/components/QuestionBubble'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, setSharedState, insertOpenAnswer } from '@/lib/supabase'
+import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, setSharedState, insertOpenAnswer, setParticipantPage } from '@/lib/supabase'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
@@ -155,7 +155,7 @@ function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       background: 'linear-gradient(135deg, #020d1f 0%, #071832 50%, #0a2040 100%)',
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       padding: '40px 24px', color: '#fff',
@@ -3081,7 +3081,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
   if (page.type === 'pause')             return <PauseMobile              page={page} pageIndex={pageIndex} total={total} pName={pName} />
   if (page.type === 'parcours-tiers-payant') return <PauseMobile          page={page} pageIndex={pageIndex} total={total} pName={pName} />
   if (page.type === 'tiers-payant-explication') return (
-    <div style={{ minHeight: '100vh', background: '#03112a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', textAlign: 'center' }}>
+    <div style={{ minHeight: '100dvh', background: '#03112a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', textAlign: 'center' }}>
       <div style={{ fontSize: 52, marginBottom: 20 }}>📺</div>
       <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Regardez le grand ecran</h2>
       <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 280 }}>
@@ -3755,6 +3755,12 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     }
   }, [sharedState])
 
+  // Signale au formateur que ce formé a bien chargé la page en cours
+  useEffect(() => {
+    if (!activeModule || modulePage == null || modulePage < 0 || !pName || !sessionCode) return
+    setParticipantPage(sessionCode, pName, { moduleId: activeModule, pageIndex: modulePage, ts: Date.now() }).catch(() => {})
+  }, [activeModule, modulePage, pName, sessionCode])
+
   const moduleData = MODULE_DATA[activeModule] || null
   const pages = moduleData?.pages || []
   const quiz = moduleData?.quiz || []
@@ -3790,7 +3796,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
             : isQuiz && quizPodiumActive
               ? (
                 <div style={{
-                  minHeight: '100vh',
+                  minHeight: '100dvh',
                   background: 'linear-gradient(135deg, #020d1f 0%, #071832 50%, #0a2040 100%)',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                   padding: '32px 24px', textAlign: 'center',

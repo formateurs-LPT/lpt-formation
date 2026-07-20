@@ -380,3 +380,16 @@ export async function setSharedState(patch) {
   }
   return lastResult
 }
+
+/** Écrit la page courante d'un formé sans écraser celles des autres. */
+export async function setParticipantPage(sessionCode, participantName, pageData) {
+  const code = (sessionCode || resolveRoomStateCode()).trim()
+  if (!code || !participantName) return
+  const current = await fetchTrainerStateByKey(code)
+  const pages = { ...(current?.participant_pages || {}), [participantName]: pageData }
+  return sbUpsert(
+    'trainer_state',
+    { trainer: code, state: { ...current, participant_pages: pages }, updated_at: new Date().toISOString() },
+    'trainer'
+  )
+}
