@@ -110,15 +110,27 @@ function ParticipantsPanel({ sessionCode, onClose }) {
     setLoading(false)
   }
 
+  const ALERT_MESSAGES = [
+    'Ah te voilà ! 👀 Tu étais passé où ?',
+    'Je te vois… 👁️👁️',
+    'Hop hop hop ! Reste concentré jusqu\'à 18h, après promis tu pourras aller sur les réseaux 😄',
+    'Pas de Instagram ou TikTok pendant la formation ! Les réseaux peuvent attendre 😅',
+    'On t\'a retrouvé ! 🕵️ Reviens parmi nous !',
+    'Psst… la formation c\'est par ici ! 👇',
+    'Tu manques quelque chose d\'important là ! 🎯',
+    'Les likes peuvent attendre, la formation non ! 😜',
+  ]
+
   const handleSendAlert = async (participantName) => {
     setSending(s => ({ ...s, [participantName]: true }))
     const safeName = participantName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_À-ɏ]/g, '')
     const ts = Date.now()
+    const message = ALERT_MESSAGES[Math.floor(Math.random() * ALERT_MESSAGES.length)]
     await setRoomSharedState(
-      { [`alert__${safeName}`]: { message: 'Pas de Instagram ou TikTok pendant la formation 😠', ts } },
+      { [`alert__${safeName}`]: { message, ts } },
       sessionCode
     ).catch(() => {})
-    setAlertHistory(h => [{ target: participantName, ts }, ...h])
+    setAlertHistory(h => [{ target: participantName, message, ts }, ...h])
     setTimeout(() => setSending(s => ({ ...s, [participantName]: false })), 800)
   }
 
@@ -291,13 +303,20 @@ function ParticipantsPanel({ sessionCode, onClose }) {
             </button>
             {showHistory && alertHistory.map((a, i) => (
               <div key={i} style={{
-                padding: '5px 18px',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '5px 18px 7px',
+                borderBottom: '1px solid rgba(255,255,255,0.04)',
               }}>
-                <span style={{ fontSize: 11, color: '#fbbf24', fontWeight: 600 }}>{a.target}</span>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>
-                  {new Date(a.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                  <span style={{ fontSize: 11, color: '#fbbf24', fontWeight: 600 }}>{a.target}</span>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>
+                    {new Date(a.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                {a.message && (
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', lineHeight: 1.4, fontStyle: 'italic' }}>
+                    "{a.message}"
+                  </div>
+                )}
               </div>
             ))}
           </div>
