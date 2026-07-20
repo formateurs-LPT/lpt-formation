@@ -748,17 +748,37 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
               <div style={{
                 marginBottom: 14, padding: '14px 18px',
                 background: 'rgba(245,158,11,0.10)', border: '2px solid rgba(245,158,11,0.5)',
-                borderRadius: 14, display: 'flex', alignItems: 'flex-start', gap: 12,
+                borderRadius: 14, display: 'flex', flexDirection: 'column', gap: 10,
               }}>
-                <span style={{ fontSize: 22, flexShrink: 0 }}>⚠️</span>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#f59e0b', marginBottom: 4 }}>
-                    Action requise avant de continuer
-                  </div>
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
-                    Tu dois cliquer sur le logo <strong style={{ color: '#fff' }}>AMELIPRO</strong> qui est sur l&apos;écran diffuseur et leur montrer le site pour pouvoir passer à la suite.
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <span style={{ fontSize: 22, flexShrink: 0 }}>⚠️</span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: '#f59e0b', marginBottom: 4 }}>
+                      Action requise avant de continuer
+                    </div>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
+                      Clique sur le logo <strong style={{ color: '#fff' }}>AMELIPRO</strong> sur le diffuseur pour vérifier le dernier remboursement, ou utilise le bouton ci-dessous.
+                    </div>
                   </div>
                 </div>
+                <a
+                  href={AMELIPRO_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    setAmeliproClicked(true)
+                    setSharedState({ rembfr_amelipro_clicked: true }).catch(() => {})
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    background: 'rgba(0,137,186,0.15)', border: '2px solid rgba(0,137,186,0.6)',
+                    borderRadius: 12, padding: '10px 16px', textDecoration: 'none', cursor: 'pointer',
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/assets/logo-amelipro.svg" alt="AMELIPRO" width={36} height={36} style={{ objectFit: 'contain' }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#00abe9' }}>Ouvrir AMELIPRO →</span>
+                </a>
               </div>
             )}
             {!ameliproBlocked && nextPage && (() => {

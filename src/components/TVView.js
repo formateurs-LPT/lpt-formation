@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, setSharedState } from '@/lib/supabase'
+import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, setSharedState, setRoomSharedState } from '@/lib/supabase'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
 import { PDMAnimationSVG } from '@/lib/pdmAnimationSvg'
@@ -3474,25 +3474,23 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
       href={AMELIPRO_URL}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={isVisible ? onAmeliProClick : undefined}
+      onClick={onAmeliProClick}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 10, verticalAlign: 'middle',
         padding: '10px 18px', borderRadius: 14,
-        background: isVisible ? 'rgba(0,137,186,0.15)' : 'rgba(255,255,255,0.04)',
-        border: isVisible ? '2px solid rgba(0,137,186,0.6)' : '1px solid rgba(255,255,255,0.08)',
+        background: 'rgba(0,137,186,0.15)',
+        border: '2px solid rgba(0,137,186,0.6)',
         textDecoration: 'none',
-        cursor: isVisible ? 'pointer' : 'default',
+        cursor: 'pointer',
         transition: 'all .2s',
-        pointerEvents: isVisible ? 'auto' : 'none',
+        pointerEvents: 'auto',
       }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/assets/logo-amelipro.svg" alt="AMELIPRO" width={52} height={52} style={{ objectFit: 'contain' }} />
-      {isVisible && (
-        <span style={{ fontSize: 13, fontWeight: 700, color: '#00abe9' }}>
-          Cliquer pour ouvrir →
-        </span>
-      )}
+      <span style={{ fontSize: 13, fontWeight: 700, color: '#00abe9' }}>
+        Cliquer pour ouvrir →
+      </span>
     </a>
   )
   const SupremeTV = () => (
@@ -6309,7 +6307,7 @@ export default function TVView() {
   const [tiersPayantRevealed, setTiersPayantRevealed]     = useState(false)
 
   const handleAmeliProClick = async () => {
-    try { await setSharedState({ rembfr_amelipro_clicked: true }) } catch {}
+    try { await setRoomSharedState({ rembfr_amelipro_clicked: true }, sessionCode) } catch {}
   }
 
   // Quiz podium
