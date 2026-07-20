@@ -3813,10 +3813,29 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     }
   }, [sharedState])
 
-  // Signale au formateur que ce formé a bien chargé la page en cours
+  // Heartbeat de présence : signale la page courante + visibilité de l'onglet
   useEffect(() => {
     if (!activeModule || modulePage == null || modulePage < 0 || !pName || !sessionCode) return
-    setParticipantPage(sessionCode, pName, { moduleId: activeModule, pageIndex: modulePage, ts: Date.now() }).catch(() => {})
+
+    const write = () => {
+      setParticipantPage(sessionCode, pName, {
+        moduleId: activeModule,
+        pageIndex: modulePage,
+        ts: Date.now(),
+        visible: document.visibilityState === 'visible',
+      }).catch(() => {})
+    }
+
+    write()
+    const interval = setInterval(write, 45000)
+
+    const onVisibility = () => write()
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [activeModule, modulePage, pName, sessionCode])
 
   const moduleData = MODULE_DATA[activeModule] || null

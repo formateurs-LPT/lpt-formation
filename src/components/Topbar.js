@@ -82,7 +82,7 @@ function filterKicked(list, fd) {
   })
 }
 
-const PAGE_STALE_MS = 5 * 60 * 1000 // données de page périmées après 5 min
+const PAGE_STALE_MS = 2 * 60 * 1000 // données périmées si pas de heartbeat depuis 2 min (heartbeat toutes les 45s)
 
 function ParticipantsPanel({ sessionCode, onClose }) {
   const [participants, setParticipants] = useState([])
@@ -153,7 +153,10 @@ function ParticipantsPanel({ sessionCode, onClose }) {
             {trainerModule && !loading && (() => {
               const onPageCount = participants.filter(p => {
                 const pp = participantPages[p.name]
-                return pp && (Date.now() - (pp.ts || 0)) < PAGE_STALE_MS && pp.moduleId === trainerModule && pp.pageIndex === trainerPage
+                return pp && (Date.now() - (pp.ts || 0)) < PAGE_STALE_MS
+                  && pp.visible !== false
+                  && pp.moduleId === trainerModule
+                  && pp.pageIndex === trainerPage
               }).length
               return (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -185,13 +188,17 @@ function ParticipantsPanel({ sessionCode, onClose }) {
           ) : participants.map((p) => {
             const pp = participantPages[p.name]
             const fresh = pp && (Date.now() - (pp.ts || 0)) < PAGE_STALE_MS
-            const onPage = fresh && trainerModule && pp.moduleId === trainerModule && pp.pageIndex === trainerPage
+            const tabVisible = fresh && pp.visible !== false
+            const sameModule = fresh && trainerModule && pp.moduleId === trainerModule && pp.pageIndex === trainerPage
+            const onPage = sameModule && tabVisible
             const dotColor = !fresh ? 'rgba(255,255,255,0.2)' : onPage ? '#22c55e' : '#f59e0b'
             const pageLabel = !fresh
               ? 'Page non détectée'
-              : onPage
-                ? 'Sur votre page ✓'
-                : 'Pas sur votre page'
+              : !tabVisible
+                ? 'Hors de la formation'
+                : sameModule
+                  ? 'Sur votre page ✓'
+                  : 'Pas sur votre page'
             return (
               <div key={p.name} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -205,7 +212,7 @@ function ParticipantsPanel({ sessionCode, onClose }) {
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'block' }}>{p.name}</span>
-                    <span style={{ fontSize: 10, color: onPage ? '#4ade80' : !fresh ? 'rgba(255,255,255,0.3)' : '#fbbf24', fontWeight: 500 }}>
+                    <span style={{ fontSize: 10, color: onPage ? '#4ade80' : !fresh ? 'rgba(255,255,255,0.3)' : '#fbbf24', fontWeight: 500, fontStyle: !tabVisible && fresh ? 'italic' : 'normal' }}>
                       {pageLabel}
                     </span>
                   </div>
