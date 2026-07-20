@@ -554,8 +554,8 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
               Nouveau · Test
             </span>
           </div>
-          <div className="dash-tile-label" style={{ marginTop: 12 }}>Atelier prise en charge</div>
-          <div className="dash-tile-sub">Nouveau module — non encore intégré au programme</div>
+          <div className="dash-tile-label" style={{ marginTop: 12 }}>L&#39;app de vente LPTSale</div>
+          <div className="dash-tile-sub">Simulation de l&#39;application magasin sur mobile</div>
           <div style={{ fontSize: 11, color: '#f97316', marginTop: 8, fontWeight: 600 }}>Tester le module →</div>
         </div>
       </div>

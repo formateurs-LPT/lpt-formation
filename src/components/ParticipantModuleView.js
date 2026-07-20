@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import LPTSaleApp from '@/components/LPTSaleApp'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
@@ -3766,6 +3767,9 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const quizShowCorrection  = !!sharedState?.quiz_show_correction
 
   if (sessionEnded) return <SessionEndedScreen />
+
+  // ── LPTSale simulator — participants travaillent en autonomie ──
+  if (activeModule === 'atelier-pec') return <LPTSaleApp pName={pName} />
 
   return (
     <>
