@@ -127,7 +127,7 @@ function ParticipantsPanel({ sessionCode, onClose }) {
     const ts = Date.now()
     const message = ALERT_MESSAGES[Math.floor(Math.random() * ALERT_MESSAGES.length)]
     await setRoomSharedState(
-      { [`alert__${safeName}`]: { message, ts } },
+      { [`alert__${safeName}__${ts}`]: { message, ts } },
       sessionCode
     ).catch(() => {})
     setAlertHistory(h => [{ target: participantName, message, ts }, ...h])

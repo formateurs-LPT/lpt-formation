@@ -3784,19 +3784,31 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const sessionCode = getParticipantSessionCode()
   const [sessionEnded, setSessionEnded] = useState(false)
   const [alertMessage, setAlertMessage] = useState(null)
-  const alertTsRef = useRef(Date.now())
+  const seenAlertsRef = useRef(new Set())
+  const alertQueueRef = useRef([])
 
   useEffect(() => {
     if (!pName || !sessionCode) return
+    const pageLoadTs = Date.now()
     const safeName = (pName || '').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_À-ɏ]/g, '')
-    const key = `alert__${safeName}`
+    const prefix = `alert__${safeName}__`
+
+    const showNext = () => {
+      if (alertQueueRef.current.length > 0) {
+        setAlertMessage(alertQueueRef.current.shift())
+      }
+    }
+
     const check = async () => {
       const state = await getRoomSharedState(sessionCode).catch(() => ({}))
-      const alert = state?.[key]
-      if (alert?.ts && alert.ts > alertTsRef.current) {
-        alertTsRef.current = alert.ts
-        setAlertMessage(alert.message)
+      const newAlerts = Object.entries(state || {})
+        .filter(([k, v]) => k.startsWith(prefix) && v?.ts && v.ts > pageLoadTs && !seenAlertsRef.current.has(k))
+        .sort(([, a], [, b]) => a.ts - b.ts)
+      for (const [k, v] of newAlerts) {
+        seenAlertsRef.current.add(k)
+        alertQueueRef.current.push(v.message)
       }
+      if (newAlerts.length > 0 && !alertMessage) showNext()
     }
     check()
     const interval = setInterval(check, 5000)
@@ -3911,7 +3923,9 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     <>
       <style>{STYLES}</style>
       {alertMessage && (
-        <AlertPopup message={alertMessage} onDismiss={() => setAlertMessage(null)} />
+        <AlertPopup message={alertMessage} onDismiss={() => {
+          setAlertMessage(alertQueueRef.current.length > 0 ? alertQueueRef.current.shift() : null)
+        }} />
       )}
       <DisconnectChip pName={pName} onDisconnect={onDisconnect} />
       {/* Bulle question — discrète, visible sur toutes les pages de module */}
