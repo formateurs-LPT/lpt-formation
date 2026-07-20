@@ -3784,7 +3784,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const sessionCode = getParticipantSessionCode()
   const [sessionEnded, setSessionEnded] = useState(false)
   const [alertMessage, setAlertMessage] = useState(null)
-  const alertTsRef = useRef(0)
+  const alertTsRef = useRef(Date.now())
 
   useEffect(() => {
     if (!pName || !sessionCode) return
