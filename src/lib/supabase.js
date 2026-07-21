@@ -331,19 +331,52 @@ export async function setRoomSharedState(patch, roomCode) {
 }
 
 // ── Réponses libres aux questions ouvertes ────────────────────────
-export async function insertOpenAnswer({ sessionCode, pageId, participantName, answer }) {
+export async function insertOpenAnswer({
+  sessionCode,
+  pageId,
+  participantName,
+  answer,
+  moduleId = null,
+  questionIdx = null,
+  questionPrompt = null,
+}) {
   return sbInsert('open_answers', {
     session_code: sessionCode,
     page_id: pageId,
     participant_name: participantName || 'Anonyme',
     answer: answer.trim(),
+    module_id: moduleId,
+    question_idx: questionIdx,
+    question_prompt: questionPrompt,
   })
 }
 
 export async function fetchOpenAnswers(sessionCode, pageId) {
   return sbSelect(
     'open_answers',
-    `session_code=eq.${encodeURIComponent(sessionCode)}&page_id=eq.${encodeURIComponent(pageId)}&order=created_at.asc&limit=20`
+    `session_code=eq.${encodeURIComponent(sessionCode)}&page_id=eq.${encodeURIComponent(pageId)}&order=created_at.asc&limit=50`
+  )
+}
+
+export async function fetchOpenAnswersForSession(sessionCode) {
+  return sbSelect(
+    'open_answers',
+    `session_code=eq.${encodeURIComponent(sessionCode)}&order=created_at.asc`
+  )
+}
+
+/** Notation formateur : juste / faux (+ commentaire optionnel) */
+export async function gradeOpenAnswer(id, { isCorrect, gradedBy, trainerComment = null }) {
+  if (!id) return null
+  return sbUpdate(
+    'open_answers',
+    {
+      is_correct: !!isCorrect,
+      graded_by: gradedBy || null,
+      graded_at: new Date().toISOString(),
+      trainer_comment: trainerComment,
+    },
+    `id=eq.${id}`
   )
 }
 
@@ -352,6 +385,42 @@ export async function clearOpenAnswers(sessionCode, pageId) {
     'open_answers',
     `session_code=eq.${encodeURIComponent(sessionCode)}&page_id=eq.${encodeURIComponent(pageId)}`
   )
+}
+
+// ── Stats collab + fiches fin de formation ────────────────────────
+export async function upsertCollaboratorStats(row) {
+  if (!row?.collaborateur || !row?.week_date) return null
+  return sbUpsert(
+    'collaborator_stats',
+    { ...row, updated_at: new Date().toISOString() },
+    'collaborateur,week_date'
+  )
+}
+
+export async function fetchCollaboratorStats(collaborateur, weekDate) {
+  const name = encodeURIComponent(collaborateur)
+  const week = encodeURIComponent(weekDate)
+  const rows = await sbSelect(
+    'collaborator_stats',
+    `collaborateur=eq.${name}&week_date=eq.${week}&limit=1`
+  )
+  return rows?.[0] || null
+}
+
+export async function upsertFormationReport(row) {
+  if (!row?.collaborateur || !row?.week_date || !row?.trainer_name) return null
+  return sbUpsert(
+    'formation_reports',
+    { ...row, updated_at: new Date().toISOString() },
+    'collaborateur,week_date,trainer_name'
+  )
+}
+
+export async function fetchFormationReport(collaborateur, weekDate, trainerName) {
+  let filter = `collaborateur=eq.${encodeURIComponent(collaborateur)}&week_date=eq.${encodeURIComponent(weekDate)}`
+  if (trainerName) filter += `&trainer_name=eq.${encodeURIComponent(trainerName)}`
+  const rows = await sbSelect('formation_reports', `${filter}&limit=1`)
+  return rows?.[0] || null
 }
 
 export async function deleteTrainerStateByKey(trainerKey) {

@@ -176,6 +176,87 @@ create table if not exists public.onboarding_sessions (
 );
 
 -- -----------------------------------------------------------------------------
+-- 4b. RÉPONSES LIBRES + FICHES FIN DE FORMATION
+-- -----------------------------------------------------------------------------
+
+create table if not exists public.open_answers (
+  id               bigserial primary key,
+  session_code     text not null,
+  page_id          text not null,
+  participant_name text not null default 'Anonyme',
+  answer           text not null,
+  module_id        text,
+  question_idx     int,
+  question_prompt  text,
+  is_correct       boolean,
+  graded_by        text,
+  graded_at        timestamptz,
+  trainer_comment  text,
+  created_at       timestamptz default now()
+);
+
+create index if not exists idx_open_answers_session_page
+  on public.open_answers (session_code, page_id);
+
+create table if not exists public.free_quiz_questions (
+  id            uuid primary key default gen_random_uuid(),
+  module_id     text,
+  page_id       text not null,
+  prompt        text not null,
+  expected_hint text,
+  sort_order    int not null default 0,
+  active        boolean not null default true,
+  created_by    text,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz
+);
+
+create table if not exists public.collaborator_stats (
+  id               uuid primary key default gen_random_uuid(),
+  collaborateur    text not null,
+  week_date        date not null,
+  session_code     text,
+  room_type        text,
+  trainer_name     text,
+  quiz_correct     int not null default 0,
+  quiz_total       int not null default 0,
+  open_correct     int not null default 0,
+  open_total       int not null default 0,
+  modules_done     int not null default 0,
+  modules_detail   jsonb not null default '[]'::jsonb,
+  presence_days    int not null default 0,
+  presence_detail  jsonb not null default '{}'::jsonb,
+  quiz_breakdown   jsonb not null default '[]'::jsonb,
+  open_breakdown   jsonb not null default '[]'::jsonb,
+  updated_at       timestamptz not null default now(),
+  unique (collaborateur, week_date)
+);
+
+create table if not exists public.formation_reports (
+  id                 uuid primary key default gen_random_uuid(),
+  collaborateur      text not null,
+  week_date          date not null,
+  session_code       text,
+  room_type          text,
+  trainer_name       text not null,
+  stats_snapshot     jsonb not null default '{}'::jsonb,
+  summary            text,
+  strengths          text,
+  improvements       text,
+  overall_rating     smallint check (overall_rating is null or overall_rating between 1 and 5),
+  recommend_followup boolean default false,
+  status             text not null default 'draft'
+                       check (status in ('draft', 'published', 'archived')),
+  published_at       timestamptz,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now(),
+  unique (collaborateur, week_date, trainer_name)
+);
+
+comment on column public.sessions.room_type is
+  'Slug catégorie : presentiel | visio | belgique (voir formationCategories.js)';
+
+-- -----------------------------------------------------------------------------
 -- 5. SEED formateurs (PIN = 3442 pour kevin — à changer en prod)
 --    Hash : crypt(pin, gen_salt('bf'))
 -- -----------------------------------------------------------------------------
@@ -183,7 +264,8 @@ insert into public.trainers (login, display_name, pin_hash, avatar_key)
 values
   ('kevin', 'Kevin', crypt('3442', gen_salt('bf')), 'kevin'),
   ('quentin', 'Quentin', crypt('3930', gen_salt('bf')), 'quentin'),
-  ('nadege', 'Nadège', crypt('8281', gen_salt('bf')), 'nadege')
+  ('nadege', 'Nadège', crypt('8281', gen_salt('bf')), 'nadege'),
+  ('thomas', 'Thomas', crypt('0000', gen_salt('bf')), 'thomas')
 on conflict (login) do nothing;
 
 -- Session de transition (optionnel) : garde LPT2026 tant que l’app n’est pas migrée

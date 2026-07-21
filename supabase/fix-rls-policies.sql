@@ -20,7 +20,11 @@ declare
     'module_results',
     'trainer_notes',
     'trainer_weather',
-    'trainers'
+    'trainers',
+    'open_answers',
+    'free_quiz_questions',
+    'collaborator_stats',
+    'formation_reports'
   ];
 begin
   foreach t in array tables loop
@@ -69,6 +73,7 @@ where n.nspname = 'public'
     'sessions', 'participants', 'quiz_results', 'scenario_responses',
     'session_history', 'onboarding_sessions',
     'trainer_state', 'quiz_answers', 'module_results',
-    'trainer_notes', 'trainer_weather', 'trainers'
+    'trainer_notes', 'trainer_weather', 'trainers',
+    'open_answers', 'free_quiz_questions', 'collaborator_stats', 'formation_reports'
   )
 order by c.relname;

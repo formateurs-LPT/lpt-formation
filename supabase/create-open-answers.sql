@@ -1,21 +1,38 @@
 -- =============================================================================
--- Table open_answers — réponses libres des participants aux questions ouvertes
+-- Table open_answers — réponses libres + correction formateur
 -- Supabase → SQL Editor → Run
 -- =============================================================================
 
 create table if not exists public.open_answers (
-  id        bigserial primary key,
-  session_code      text not null,
-  page_id           text not null,
-  participant_name  text not null default 'Anonyme',
-  answer            text not null,
-  created_at        timestamptz default now()
+  id               bigserial primary key,
+  session_code     text not null,
+  page_id          text not null,
+  participant_name text not null default 'Anonyme',
+  answer           text not null,
+  module_id        text,
+  question_idx     int,
+  question_prompt  text,
+  is_correct       boolean,          -- null = pas encore noté
+  graded_by        text,
+  graded_at        timestamptz,
+  trainer_comment  text,
+  created_at       timestamptz default now()
 );
+
+alter table public.open_answers add column if not exists module_id text;
+alter table public.open_answers add column if not exists question_idx int;
+alter table public.open_answers add column if not exists question_prompt text;
+alter table public.open_answers add column if not exists is_correct boolean;
+alter table public.open_answers add column if not exists graded_by text;
+alter table public.open_answers add column if not exists graded_at timestamptz;
+alter table public.open_answers add column if not exists trainer_comment text;
 
 create index if not exists idx_open_answers_session_page
   on public.open_answers (session_code, page_id);
 
--- RLS allow all (même pattern que les autres tables)
+create index if not exists idx_open_answers_session_module
+  on public.open_answers (session_code, module_id);
+
 alter table public.open_answers enable row level security;
 
 do $$

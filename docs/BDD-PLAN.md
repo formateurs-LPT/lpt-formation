@@ -228,18 +228,17 @@ Au clic **« Ouvrir ma salle »** (juste avant l’affichage TV / QR), pas au lo
 
 ### Filtre par catégorie — extensible
 
-**Principe** : une **catégorie** est un **slug** partagé entre la fiche RH du collaborateur et la salle (`sessions.room_type`). Aujourd’hui : `presentiel`, `visio`. Demain : `hybride`, `belgique_presentiel`, etc. **sans changer le modèle BDD**.
+**Principe** : une **catégorie** est un **slug** partagé entre la fiche RH du collaborateur et la salle (`sessions.room_type`). Aujourd’hui : `presentiel`, `visio`, `belgique`.
 
 #### Registre central (app)
 
-Fichier prévu : `src/lib/formationCategories.js`
+Fichier : `src/lib/formationCategories.js`
 
 ```js
-// Exemple — source de vérité des catégories connues
 export const FORMATION_CATEGORIES = {
-  presentiel: { label: 'Présentiel · Paris', order: 1 },
-  visio:      { label: 'Visio · Province & Belgique', order: 2 },
-  // hybride: { label: 'Hybride', order: 3 },  // futur
+  presentiel: { label: 'Présentiel · Île de France', order: 1 },
+  visio:      { label: 'Visio · Province', order: 2 },
+  belgique:   { label: 'Présentiel · Belgique', order: 3 },
 }
 ```
 
@@ -254,12 +253,13 @@ Chaque collaborateur aura un champ optionnel **`formation_category`** (slug).
 | 1 | `entree.formation_category` si renseigné (explicite, import RH ou édition manuelle) |
 | 2 | **Règle de repli** : magasin → catégorie (comportement actuel onboarding) |
 
-Repli v1 (inchangé fonctionnellement) :
+Repli v1 :
 
 | Magasin (`classifyMagasin`) | Catégorie par défaut |
 |----------------------------|----------------------|
 | `paris` | `presentiel` |
-| `province`, `belgique` | `visio` |
+| `province` | `visio` |
+| `belgique` | `belgique` |
 
 #### Salle (`sessions.room_type`)
 
