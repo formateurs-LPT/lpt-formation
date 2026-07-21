@@ -5252,7 +5252,7 @@ function TVTypesVerresUnifocal({ pageIndex, total }) {
 // ── TV : Page verre progressif (Types de verres) ─────────────────
 const TV_TYPES_VERRES_ZONES = [
   { color: '#a78bfa', label: 'Vision de loin',       sub: 'Au loin — rue, voiture, horizon',    icon: 'loin'   },
-  { color: '#4ade80', label: 'Vision intermediaire', sub: 'Ecran, tableau — 40 cm a 1,5 m',     icon: 'milieu' },
+  { color: '#4ade80', label: 'Vision intermediaire', sub: "Ecran d'ordinateur — 40 cm a 1,5 m",  icon: 'milieu' },
   { color: '#fbbf24', label: 'Vision de pres',        sub: 'Telephone, lecture — moins de 40 cm', icon: 'pres'  },
 ]
 
@@ -5296,10 +5296,8 @@ function ProgZoneIcon({ type, color, active }) {
 }
 
 function TVTypesVerresProgressif({ pageIndex, total }) {
-  const [entered,   setEntered]   = useState(false)
-  const [revealed,  setRevealed]  = useState(0)
-  const [phase,     setPhase]     = useState(0)
-  const [beamAlpha, setBeamAlpha] = useState(1)
+  const [entered,  setEntered]  = useState(false)
+  const [revealed, setRevealed] = useState(0)
 
   useEffect(() => {
     setEntered(false)
@@ -5317,28 +5315,11 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
     return () => clearInterval(t)
   }, [])
 
-  useEffect(() => {
-    const t = setInterval(() => {
-      setBeamAlpha(0)
-      setTimeout(() => { setPhase(p => (p + 1) % 3); setBeamAlpha(1) }, 460)
-    }, 3600)
-    return () => clearInterval(t)
-  }, [])
-
   const LW = 650, LH = 433
-  // Eye center in lens-SVG coords: eye div 100px, flex gap 50px → -(50+50)=-100
-  const EYE_X = -100, EYE_Y = _PG_CY
-  const PUPIL_DY = [-13, 0, 13]
   const GAP = 50
 
   const geo = _PG_GEO
   const zs  = TV_TYPES_VERRES_ZONES
-  const cur = geo[phase]
-  const col = zs[phase].color
-  const py  = EYE_Y + PUPIL_DY[phase]
-
-  // Cubic bezier: pupil → lens entry
-  const beam = `M ${EYE_X},${py} C ${EYE_X + 70},${py} ${cur.lx - 60},${cur.y} ${cur.lx},${cur.y}`
   const CARD_X = LW + GAP
 
   return (
@@ -5391,26 +5372,6 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
         opacity: entered ? 1 : 0, transition: 'opacity .8s ease .2s',
       }}>
 
-        {/* Oeil — div 100px, SVG 58x94 centre dedans */}
-        <div style={{ width: 100, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg width={58} height={94} viewBox="-29 -47 58 94">
-            <path d="M -29,0 C -17,-27 17,-27 29,0 C 17,21 -17,21 -29,0 Z"
-              fill="rgba(235,245,255,0.05)" stroke="rgba(255,255,255,0.18)" strokeWidth={1.5} />
-            <path d="M -29,0 C -17,-27 17,-27 29,0" fill="rgba(3,17,42,0.92)" />
-            <path d="M -29,0 C -17,-27 17,-27 29,0" fill="none" stroke="rgba(255,255,255,0.52)" strokeWidth={1.8} />
-            <path d="M -29,0 C -17,21 17,21 29,0"  fill="rgba(3,17,42,0.68)" />
-            <path d="M -29,0 C -17,21 17,21 29,0"  fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
-            <g style={{ transition: 'transform 0.65s cubic-bezier(0.4,0,0.2,1)' }}
-               transform={`translate(0,${PUPIL_DY[phase]})`}>
-              <circle r={18} fill={col} opacity={0.12} />
-              <circle r={13} fill={col} opacity={0.22} />
-              <circle r={10} fill={col} opacity={0.92} />
-              <circle r={6}  fill="#06020d" />
-              <circle cx={3.5} cy={-3.5} r={2.5} fill="rgba(255,255,255,0.82)" />
-            </g>
-          </svg>
-        </div>
-
         {/* Verre progressif */}
         <div style={{ position: 'relative', width: LW, flexShrink: 0 }}>
           <Image src="/assets/verre-prog.png" alt="Verre progressif"
@@ -5418,34 +5379,8 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
             style={{ objectFit: 'contain', display: 'block' }}
             priority
           />
-          {/* Halo de zone active */}
-          <div style={{
-            position: 'absolute',
-            left: cur.lx, top: cur.y - 44,
-            width: cur.rx - cur.lx, height: 88,
-            background: `radial-gradient(ellipse, ${col}28 0%, transparent 70%)`,
-            borderRadius: '50%', pointerEvents: 'none',
-            opacity: beamAlpha, transition: 'opacity 0.3s ease',
-          }} />
-
           <svg style={{ position: 'absolute', top: 0, left: 0, overflow: 'visible', pointerEvents: 'none' }}
                width={LW} height={LH}>
-            {/* Bezier oeil → entree verre */}
-            <path d={beam} fill="none"
-              stroke={col} strokeWidth={2.5} strokeDasharray="9 7" strokeLinecap="round"
-              opacity={beamAlpha * 0.85} style={{ transition: 'opacity 0.3s ease' }}
-            />
-            {/* Trajet dans le verre */}
-            <line x1={cur.lx} y1={cur.y} x2={cur.rx} y2={cur.y}
-              stroke={col} strokeWidth={2.5}
-              opacity={beamAlpha * 0.5} style={{ transition: 'opacity 0.3s ease' }}
-            />
-            {/* Point lumineux de sortie */}
-            <circle cx={cur.rx} cy={cur.y} r={13} fill={col}
-              opacity={beamAlpha * 0.12} style={{ transition: 'opacity 0.3s ease' }} />
-            <circle cx={cur.rx} cy={cur.y} r={5} fill={col}
-              opacity={beamAlpha * 0.95} style={{ transition: 'opacity 0.3s ease' }} />
-
             {/* Marqueurs zones (reveles par formateur) */}
             {zs.map((z, i) => (
               <g key={i} opacity={revealed > i ? 1 : 0} style={{ transition: 'opacity 0.5s ease' }}>
@@ -5461,8 +5396,8 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
         {/* Cartes scenario, alignees sur les Y des zones */}
         <div style={{ flex: 1, position: 'relative', height: LH, alignSelf: 'center' }}>
           {zs.map((z, i) => {
-            const active = phase === i
             const isRevealed = revealed > i
+            const active = i === revealed - 1
             return (
               <div key={i} style={{
                 position: 'absolute', top: geo[i].y, left: 0, right: 0,
@@ -6182,7 +6117,7 @@ function LPTTrophy({ size = 160 }) {
 }
 
 // ── TV Quiz Correction (débrief après chaque question) ───────────
-function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode }) {
+function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, showOrdo }) {
   const [answers, setAnswers] = useState([])
 
   useEffect(() => {
@@ -6243,8 +6178,13 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode }) {
       {/* Question */}
       <div style={{
         fontSize: 22, fontWeight: 800, color: '#fff', textAlign: 'center',
-        marginBottom: 24, lineHeight: 1.35, maxWidth: 860, alignSelf: 'center',
+        marginBottom: 16, lineHeight: 1.35, maxWidth: 860, alignSelf: 'center',
       }}>{question.question}</div>
+
+      {/* Ordonnance — ré-affichée si le formateur le demande */}
+      {showOrdo && question.ordonnance && (
+        <TVOrdonnanceDisplay ordonnance={question.ordonnance} />
+      )}
 
       {/* Options */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 800, alignSelf: 'center', width: '100%' }}>
@@ -7331,6 +7271,7 @@ export default function TVView() {
                   total={moduleData.quiz.length}
                   moduleLabel={moduleData?.label || ''}
                   sessionCode={sessionCode}
+                  showOrdo={!!sharedState?.quiz_ordo_show}
                 />
               : <TVQuizQuestion
                   question={quizQuestion}

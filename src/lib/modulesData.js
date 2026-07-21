@@ -202,7 +202,12 @@ export const OPTIQUE_QUIZ = [
     correct: 0,
   },
   {
-    question: "Sur une ordonnance, vous voyez : -2,25 (-0,50) 10°. Quelle est la bonne combinaison d'amétropie ?",
+    question: 'Quels sont les problèmes de vue de ce client ?',
+    type: 'qcm-ordonnance',
+    ordonnance: {
+      od: { sph: '-2,25', cyl: '-0,50', axe: '10°' },
+      og: { sph: '-1,75', cyl: '-0,75', axe: '15°' },
+    },
     options: ['Hypermétrope & Astigmate', 'Astigmate & Presbyte', 'Myope & Presbyte', 'Myope & Astigmate'],
     correct: 3,
   },
@@ -212,7 +217,12 @@ export const OPTIQUE_QUIZ = [
     correct: 1,
   },
   {
-    question: "Sur une ordonnance, vous voyez : +2 (-1) 145°. Quelle est la bonne combinaison d'amétropie ?",
+    question: 'Quels sont les problèmes de vue de ce client ?',
+    type: 'qcm-ordonnance',
+    ordonnance: {
+      od: { sph: '+2,00', cyl: '-1,00', axe: '145°' },
+      og: { sph: '+1,75', cyl: '-0,75', axe: '150°' },
+    },
     options: ['Myope & Astigmate', 'Myope & Presbyte', 'Hypermétrope & Astigmate', 'Hypermétrope & Myope'],
     correct: 2,
   },
@@ -227,7 +237,12 @@ export const OPTIQUE_QUIZ = [
     correct: 1,
   },
   {
-    question: "Sur une ordonnance, vous voyez : -3 (-1,50) 23° ADD : +2. Quelle est la bonne combinaison d'amétropie ?",
+    question: 'Quels sont les problèmes de vue de ce client ?',
+    type: 'qcm-ordonnance',
+    ordonnance: {
+      od: { sph: '-3,00', cyl: '-1,50', axe: '23°', add: '+2,00' },
+      og: { sph: '-2,75', cyl: '-1,25', axe: '30°', add: '+2,00' },
+    },
     options: ['Myope, Astigmate & Hypermétrope', 'Hypermétrope, Astigmate & Presbyte', 'Myope, Astigmate & Presbyte', 'Myope, Hypermétrope & Presbyte'],
     correct: 2,
   },
