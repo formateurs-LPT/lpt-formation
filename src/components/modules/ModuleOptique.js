@@ -1043,7 +1043,10 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
 
   const handleNextQ = async () => {
     await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false }).catch(() => {})
+    // Vider liveAnswers dans le même batch que correctionPhase=false pour éviter que
+    // l'auto-trigger voie les anciennes réponses et re-déclenche quiz_show_correction:true
     setCorrectionPhase(false)
+    setLiveAnswers([])
     setOrdoShown(false)
     onNext()
   }
