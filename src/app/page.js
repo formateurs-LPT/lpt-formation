@@ -14,6 +14,7 @@ import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
 import { captureParticipantRoomFromUrl, captureTvRoomFromUrl, buildTvUrl, isDynamicRoomCode, setParticipantSessionCode, readParticipantSessionCode, getLegacySessionCode } from '@/lib/sessionCode'
 import { touchParticipantPresence } from '@/lib/participantPresence'
+import { useIsMobile } from '@/lib/useIsMobile'
 import { endActiveRoom, getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { useOnlineCount } from '@/lib/useOnlineCount'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
@@ -27,12 +28,22 @@ import ModuleReveilAcquis from '@/components/modules/ModuleReveilAcquis'
 import ModuleMontures from '@/components/modules/ModuleMontures'
 import ModuleMiniJeux from '@/components/modules/ModuleMiniJeux'
 import ModuleQuizFinal from '@/components/modules/ModuleQuizFinal'
+import ModuleQuizJ1 from '@/components/modules/ModuleQuizJ1'
+import ModuleMutuelles from '@/components/modules/ModuleMutuelles'
+import ModuleRemboursementFrance from '@/components/modules/ModuleRemboursementFrance'
+import ModuleParcoursRembourses from '@/components/modules/ModuleParcoursRembourses'
+import ModuleLptSante from '@/components/modules/ModuleLptSante'
+import ModuleAtelierPEC from '@/components/modules/ModuleAtelierPEC'
+import IdeesButton from '@/components/IdeesButton'
+import TrainerQuestionsPanel from '@/components/TrainerQuestionsPanel'
 import PlanningPage from '@/components/PlanningPage'
 import OnboardingView from '@/components/OnboardingView'
+import OnboardingViewBelgique from '@/components/OnboardingViewBelgique'
 import TVView from '@/components/TVView'
 import ParticipantModuleView from '@/components/ParticipantModuleView'
 
 export default function Page() {
+  const isMobile = useIsMobile(640)
   const [view, setView] = useState('landing') // landing | dashboard | trainer-session | participant | module-types-verres
   const [pName, setPName] = useState('')
   const [pPrenom, setPPrenom] = useState('')
@@ -42,6 +53,8 @@ export default function Page() {
   const [appReady, setAppReady] = useState(false)
   const [displaySessionCode, setDisplaySessionCode] = useState('')
   const [returnJournee, setReturnJournee] = useState(null)
+  const [moduleReturnTo, setModuleReturnTo] = useState('onboarding-modules')
+  const [returnJourneeBelgique, setReturnJourneeBelgique] = useState(null)
   const { message, toast } = useToast()
 
   useOnlineCount({
@@ -294,20 +307,27 @@ export default function Page() {
 
   const handleOpenTv = async () => {
     const code = getActiveSessionCode()
-    try {
-      if (isDynamicRoomCode(code)) {
-        await setRoomSharedState({ tv_screen: 'qr' }, code)
-      } else {
-        await setSharedState({ tv_screen: 'qr' })
-      }
-    } catch (e) {
-      console.warn('tv_screen qr', e)
-    }
+    // Ouvrir la fenêtre en premier (geste utilisateur direct, avant tout await)
     const path = isDynamicRoomCode(code) ? buildTvUrl(code) : '/?mode=tv'
     const url = `${window.location.origin}${path}`
     const opened = window.open(url, 'lpt-tv-diffusion', 'noopener,noreferrer')
     if (!opened) {
       toast('Autorisez les pop-ups pour ouvrir l\'écran Diffusion')
+    }
+    // Puis on met à jour l'état Supabase
+    try {
+      if (isDynamicRoomCode(code)) {
+        await setRoomSharedState({ tv_screen: 'qr' }, code)
+        // Vide active_module pour ne pas bloquer l'affichage QR
+        await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + code)
+      } else {
+        await setSharedState({ tv_screen: 'qr' })
+        if (SESSION_CODE) {
+          await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + SESSION_CODE)
+        }
+      }
+    } catch (e) {
+      console.warn('tv_screen qr', e)
     }
   }
 
@@ -337,10 +357,48 @@ export default function Page() {
     if (code) setDisplaySessionCode(code)
     setView('onboarding-modules')
   }
-  const handleLaunchModule = (moduleId) => { setReturnJournee(null); setView('module-' + moduleId) }
-  const handleBackToDashboard = () => setView('dashboard')
-  const handleBackToModules = () => setView('onboarding-modules')
-  const handleTerminateToJournee1 = () => { setReturnJournee('journee1'); setView('onboarding-modules') }
+  const handleLaunchModule = async (moduleId, returnTo = 'onboarding-modules', journeeId = null) => {
+    setReturnJournee(null)
+    setModuleReturnTo(returnTo)
+    setReturnJourneeBelgique(returnTo === 'onboarding-modules-belgique' ? journeeId : null)
+    setView('module-' + moduleId)
+    // Le réveil des acquis n'est pas un vrai module (pas dans MODULE_DATA) — il est piloté
+    // uniquement via faq_journee dans sharedState. Ne jamais écrire active_module=reveil-acquis
+    // en base, sinon la TV retourne null (page blanche) car elle ne reconnaît pas ce module.
+    if (moduleId === 'reveil-acquis') return
+    // Affiche le lobby du module sur le diffuseur immediatement
+    try {
+      const code = getActiveSessionCode()
+      if (isDynamicRoomCode(code)) {
+        await sbUpdate('sessions', { active_module: moduleId, module_page: -1 }, 'code=eq.' + code)
+        await setRoomSharedState({ tv_screen: null }, code)
+      } else if (SESSION_CODE) {
+        await sbUpdate('sessions', { active_module: moduleId, module_page: -1 }, 'code=eq.' + SESSION_CODE)
+        await setSharedState({ tv_screen: null })
+      }
+    } catch (e) {
+      console.warn('handleLaunchModule tv sync', e)
+    }
+  }
+
+  const tvBackToQr = async () => {
+    try {
+      const code = getActiveSessionCode()
+      if (isDynamicRoomCode(code)) {
+        await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + code)
+        await setRoomSharedState({ tv_screen: 'qr' }, code)
+      } else if (SESSION_CODE) {
+        await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + SESSION_CODE)
+        await setSharedState({ tv_screen: 'qr' })
+      }
+    } catch (e) {
+      console.warn('tvBackToQr', e)
+    }
+  }
+
+  const handleBackToDashboard = () => { setView('dashboard'); tvBackToQr() }
+  const handleBackToModules = () => { setView(moduleReturnTo); tvBackToQr() }
+  const handleTerminateToJournee1 = () => { setReturnJournee('journee1'); setView('onboarding-modules'); tvBackToQr() }
   const handleOpenPlanning = () => setView('planning')
 
   if (!appReady) {
@@ -362,7 +420,7 @@ export default function Page() {
   }
 
   return (
-    <div style={{ minHeight: '100vh' }}>
+    <div style={isMobile ? { height: '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column' } : { minHeight: '100vh' }}>
       <Topbar
         pName={pName}
         isTrainer={isTrainer}
@@ -371,7 +429,9 @@ export default function Page() {
         isRoomSession={isDynamicRoomCode(displaySessionCode || getRuntimeSessionCode('trainer') || SESSION_CODE)}
         onLogout={handleLogout}
         onTVMode={handleOpenTv}
+        onStartSession={handleLaunchSession}
       />
+      <div style={isMobile ? { flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', position: 'relative' } : {}}>
       {view === 'dashboard' && (
         <Dashboard
           pName={pName}
@@ -411,6 +471,18 @@ export default function Page() {
             onEndRoom={handleEndRoom}
             initialStep="modules"
             initialJournee={returnJournee}
+          />
+        </div>
+      )}
+      {view === 'onboarding-modules-belgique' && (
+        <div id="dashboard">
+          <OnboardingViewBelgique
+            pName={pName}
+            onBack={handleBackToDashboard}
+            onLaunchFormation={handleLaunchSession}
+            onLaunchModule={(moduleId, journeeId) => handleLaunchModule(moduleId, 'onboarding-modules-belgique', journeeId)}
+            initialStep="modules"
+            initialJournee={returnJourneeBelgique}
           />
         </div>
       )}
@@ -484,13 +556,56 @@ export default function Page() {
           onBack={handleBackToModules}
         />
       )}
+      {view === 'module-quiz-j1' && (
+        <ModuleQuizJ1
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-mutuelles-inami' && (
+        <ModuleMutuelles
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-remboursement-france' && (
+        <ModuleRemboursementFrance
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-parcours-rembourses' && (
+        <ModuleParcoursRembourses
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-lpt-sante' && (
+        <ModuleLptSante
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-atelier-pec' && (
+        <ModuleAtelierPEC
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
       {view === 'planning' && (
         <PlanningPage
           pName={pName}
           onBack={handleBackToDashboard}
         />
       )}
+      {view.startsWith('module-') && (
+        <IdeesButton moduleId={view.slice(7)} pName={pName} />
+      )}
+      {view.startsWith('module-') && (
+        <TrainerQuestionsPanel moduleId={view.slice(7)} />
+      )}
       <Toast message={message} />
+      </div>
     </div>
   )
 }

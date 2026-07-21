@@ -523,7 +523,7 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
             animation: 'waitDotP 1.4s ease-in-out infinite',
           }} />
           <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>
-            La formation va bientôt commencer…
+            En attente du formateur…
           </span>
         </div>
       </div>
@@ -600,12 +600,7 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
     <div id="pv">
       {disconnectChip}
       <div className="pshell">
-        {curStep < 0 && <WaitScreen />}
-        {curStep === 0 && <QuizView pName={pName} mode="initial" sessionCode={getParticipantSessionCode()} />}
-        {curStep === 1 && <P1Slides trainerName={trainerName} slideNum={curSlide} />}
-        {curStep === 2 && <P2Arguments />}
-        {curStep === 3 && <P3Ordonnances pName={pName} sessionCode={getParticipantSessionCode()} />}
-        {curStep === 4 && <QuizView pName={pName} mode="final" sessionCode={getParticipantSessionCode()} />}
+        <WaitScreen />
       </div>
     </div>
   )

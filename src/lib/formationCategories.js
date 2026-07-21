@@ -20,18 +20,25 @@ const BELGIQUE_MAGASINS = ['namur', 'liege', 'liège', 'fripier', 'ixelles', 'ch
 /** @type {Record<string, { label: string, shortLabel: string, subLabel?: string, order: number, emoji: string }>} */
 export const FORMATION_CATEGORIES = {
   presentiel: {
-    label: 'Présentiel · Paris',
+    label: 'Présentiel · Île de France',
     shortLabel: 'Présentiel',
-    subLabel: 'Paris',
+    subLabel: 'Île de France',
     order: 1,
     emoji: '🏢',
   },
   visio: {
-    label: 'Visio · Province & Belgique',
+    label: 'Visio · Province',
     shortLabel: 'Visio',
-    subLabel: 'Province · Belgique',
+    subLabel: 'Province',
     order: 2,
     emoji: '💻',
+  },
+  belgique: {
+    label: 'Présentiel · Belgique',
+    shortLabel: 'Belgique',
+    subLabel: 'Présentiel',
+    order: 3,
+    emoji: '🇧🇪',
   },
 }
 
@@ -39,7 +46,7 @@ export const FORMATION_CATEGORIES = {
 const MAGASIN_ZONE_DEFAULT_CATEGORY = {
   paris: 'presentiel',
   province: 'visio',
-  belgique: 'visio',
+  belgique: 'belgique',
 }
 
 const SLUG_RE = /^[a-z][a-z0-9_]{0,31}$/
@@ -57,12 +64,18 @@ export function classifyMagasin(magasin) {
 }
 
 /**
- * Catégorie d’un collaborateur RH.
- * Priorité : formation_category explicite → repli magasin.
+ * Catégorie d'un collaborateur RH.
+ * Priorité : formation_category explicite → _forceCat (toggle UI) → repli magasin.
  */
 export function resolveCategoryFromEntree(entree) {
   const explicit = (entree?.formation_category || '').trim()
   if (isValidFormationCategorySlug(explicit)) return explicit
+
+  // _forceCat est positionné par le toggle présentiel/visio dans EntreesView
+  // Valeurs possibles : 'paris' | 'province' | 'belgique'
+  const forceCat = entree?._forceCat
+  const forcedCategory = forceCat && MAGASIN_ZONE_DEFAULT_CATEGORY[forceCat]
+  if (forcedCategory) return forcedCategory
 
   const zone = classifyMagasin(entree?.magasin)
   return MAGASIN_ZONE_DEFAULT_CATEGORY[zone] || null

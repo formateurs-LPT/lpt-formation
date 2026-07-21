@@ -1,5 +1,7 @@
 import { QUIZ_FINAL_QUESTIONS } from '@/lib/quizFinalData'
 export { QUIZ_FINAL_QUESTIONS }
+import { QUIZ_J1 } from '@/lib/quizJ1Data'
+export { QUIZ_J1 }
 
 export const TYPES_VERRES_QUIZ = [
   {
@@ -7,21 +9,26 @@ export const TYPES_VERRES_QUIZ = [
     options: ['9 jours', '10 minutes'],
     correct: 1,
   },
+  {
+    question: 'Quel est le fournisseur du verre progressif Pulsar Next ?',
+    options: ['Essilor (France)', 'Rodenstock (Allemagne)', 'Zeiss (Allemagne)'],
+    correct: 1,
+  },
 ]
 
 export const TYPES_VERRES_PAGES = [
   {
     id: 'unifocal',
+    type: 'unifocal',
     titre: 'Le Verre Unifocal',
-    sousTitre: 'La correction simple, efficace, accessible',
-    points: [
-      { emoji: '🎯', titre: 'Une seule correction', texte: 'Corrige un seul défaut visuel : myopie, hypermétropie ou astigmatisme.' },
-      { emoji: '👁️', titre: 'Pour qui ?', texte: 'Clients non presbytes, ou presbytes souhaitant des verres dédiés à une seule distance (lecture ou écran).' },
-      { emoji: '💡', titre: 'Avantage clé', texte: 'Vision nette sur toute la surface du verre — sans zone de flou.' },
-      { emoji: '💰', titre: 'Dans notre offre', texte: 'Proposé en 100% Santé (0€) ou en offre 1=1. Idéal pour une première paire.' },
-    ],
-    avatarScript: "Le verre unifocal corrige un seul défaut visuel. Toute la surface est homogène : pas de zone de flou, une vision nette partout. C'est le verre le plus courant, idéal pour une première paire.",
+    avatarScript: "Le verre unifocal, c'est la correction la plus simple : une seule correction sur toute la surface. Pas de zone de flou. Il est destine aux clients qui n'ont qu'un seul probleme a corriger, mais aussi aux presbytes qui veulent une paire dediee a une distance precise.",
     color: '#00abe9',
+  },
+  {
+    id: 'progressif',
+    type: 'progressif',
+    avatarScript: "Le Pulsar Next est notre verre progressif haut de gamme. Il corrige la vision de loin, intermédiaire et de près avec une seule paire de lunettes. Sa zone de flou est réduite au maximum — l'adaptation est plus rapide et le confort nettement supérieur aux progressifs classiques.",
+    color: '#7c3aed',
   },
 ]
 
@@ -38,6 +45,13 @@ export const PDM_PAGES = [
       { emoji: '✅', titre: 'Satisfaction garantie', texte: "Une bonne mesure = un client satisfait dès le premier port de ses lunettes." },
     ],
     avatarScript: "Avant de fabriquer les verres, on doit mesurer précisément où se trouvent les yeux du client. Un verre mal centré, même avec la bonne correction, peut provoquer de la fatigue ou du flou. C'est le point de départ de chaque vente réussie.",
+    color: '#f59e0b',
+  },
+  {
+    id: 'pdm-animation',
+    type: 'pdm-animation',
+    titre: 'Du verre brut a la paire parfaite',
+    sousTitre: 'Animation pas a pas',
     color: '#f59e0b',
   },
   {
@@ -188,7 +202,12 @@ export const OPTIQUE_QUIZ = [
     correct: 0,
   },
   {
-    question: "Sur une ordonnance, vous voyez : -2,25 (-0,50) 10°. Quelle est la bonne combinaison d'amétropie ?",
+    question: 'Quels sont les problèmes de vue de ce client ?',
+    type: 'qcm-ordonnance',
+    ordonnance: {
+      od: { sph: '-2,25', cyl: '-0,50', axe: '10°' },
+      og: { sph: '-1,75', cyl: '-0,75', axe: '15°' },
+    },
     options: ['Hypermétrope & Astigmate', 'Astigmate & Presbyte', 'Myope & Presbyte', 'Myope & Astigmate'],
     correct: 3,
   },
@@ -198,7 +217,12 @@ export const OPTIQUE_QUIZ = [
     correct: 1,
   },
   {
-    question: "Sur une ordonnance, vous voyez : +2 (-1) 145°. Quelle est la bonne combinaison d'amétropie ?",
+    question: 'Quels sont les problèmes de vue de ce client ?',
+    type: 'qcm-ordonnance',
+    ordonnance: {
+      od: { sph: '+2,00', cyl: '-1,00', axe: '145°' },
+      og: { sph: '+1,75', cyl: '-0,75', axe: '150°' },
+    },
     options: ['Myope & Astigmate', 'Myope & Presbyte', 'Hypermétrope & Astigmate', 'Hypermétrope & Myope'],
     correct: 2,
   },
@@ -213,7 +237,12 @@ export const OPTIQUE_QUIZ = [
     correct: 1,
   },
   {
-    question: "Sur une ordonnance, vous voyez : -3 (-1,50) 23° ADD : +2. Quelle est la bonne combinaison d'amétropie ?",
+    question: 'Quels sont les problèmes de vue de ce client ?',
+    type: 'qcm-ordonnance',
+    ordonnance: {
+      od: { sph: '-3,00', cyl: '-1,50', axe: '23°', add: '+2,00' },
+      og: { sph: '-2,75', cyl: '-1,25', axe: '30°', add: '+2,00' },
+    },
     options: ['Myope, Astigmate & Hypermétrope', 'Hypermétrope, Astigmate & Presbyte', 'Myope, Astigmate & Presbyte', 'Myope, Hypermétrope & Presbyte'],
     correct: 2,
   },
@@ -548,4 +577,84 @@ export const MODULE_DATA = {
   'trame-accueil':    { pages: TRAME_ACCUEIL_PAGES,      quiz: [],                 label: "Trame d'accueil",              sub: 'Bonjour · Concept · Examen de vue' },
   'montures':         { pages: [{ id: 'acetate', type: 'montures-acetate' }, { id: 'metal', type: 'montures-metal' }, { id: 'injecte', type: 'montures-injecte' }], quiz: [], label: 'Connaissances Montures', sub: 'Acétate · Métal · Injecté' },
   'quiz-final':       { pages: [], quiz: QUIZ_FINAL_QUESTIONS, label: 'Quiz de fin de formation', sub: 'Trame · Optique · Offres · Remboursement' },
+  'quiz-j1':          { pages: [], quiz: QUIZ_J1, label: 'Quiz Jour 1', sub: 'Entreprise · Optique · Ordonnances · Montures' },
+  'mutuelles-inami':  { pages: [
+    { id: 'mutuelles-q1', type: 'pause', icon: '🛡️', titre: 'Que savez-vous des mutuelles ?', sousTitre: 'Partagez ce que vous savez déjà' },
+    { id: 'mutuelles-reveal', type: 'mutuelles-reveal', titre: 'Les organismes assureurs en Belgique' },
+    { id: 'inami-info', type: 'inami-info', titre: 'INAMI' },
+    { id: 'partena-offre', type: 'partena-offre', titre: 'PARTENA' },
+  ], quiz: [], label: 'Mutuelles et INAMI', sub: 'Remboursements · INAMI · Mutuelles belges' },
+  'remboursement-france': { pages: [
+    { id: 'rembfr-q1', type: 'pause', icon: '🇫🇷', titre: 'Quelles sont les conditions pour avoir droit au remboursement optique en France ?', sousTitre: 'Partagez ce que vous savez déjà' },
+    { id: 'rembfr-conditions', type: 'rembfr-conditions', titre: 'Les conditions de remboursement' },
+    { id: 'rembfr-demarche', type: 'rembfr-demarche', titre: 'Quand un client souhaite se faire rembourser je dois donc :' },
+    { id: 'rembfr-supreme', type: 'rembfr-supreme', titre: 'Test Supreme' },
+  ], quiz: [], label: 'Remboursement optique en France', sub: 'SS · Mutuelle · 100% Santé · Conditions' },
+  'parcours-rembourses': { pages: [
+    { id: 'parcours-offres', type: 'parcours-rembourses-offres', titre: 'Les offres remboursées' },
+    { id: 'parcours-tiers-payant', type: 'parcours-tiers-payant', titre: 'C\'est quoi le tiers payant pour vous ?' },
+    { id: 'tiers-payant-explication', type: 'tiers-payant-explication', titre: 'Comment fonctionne le tiers payant ?' },
+  ], quiz: [], label: 'Les parcours remboursés', sub: 'Le Suprême · Le 1=1 · 100% Santé' },
+  'lpt-sante': { pages: [
+    { id: 'lpts-q1', type: 'lpt-sante-intro', titre: 'À quoi ça sert ?' },
+    { id: 'lpts-explication', type: 'lpt-sante-explication', titre: 'Comment ça marche ?' },
+    { id: 'lpts-pec', type: 'lpt-sante-pec', titre: 'La prise en charge' },
+  ], quiz: [], label: 'LPT Santé', sub: 'Tiers payant · Remboursements' },
 }
+
+export const MUTUELLES_BELGIQUE = [
+  {
+    id: 'mc',
+    nom: 'Mutualité chrétienne (MC)',
+    type: 'Mutuelle',
+    complementaire: true,
+    montant: "Jusqu'à 120 €",
+    frequence: 'Tous les 3 ans (ou 1×/an si Δ dioptrie ≥ 0,5)',
+    particularites: "Sans prescription, tout âge, toute dioptrie. Sur base de la facture d'achat. Sous présentation d'une facture uniquement.",
+  },
+  {
+    id: 'solidaris',
+    nom: 'Solidaris (socialiste)',
+    type: 'Mutuelle',
+    complementaire: false,
+    montant: '0 €',
+    frequence: '/',
+    particularites: 'Ne participe que pour son magasin participant (Point De Mire)',
+  },
+  {
+    id: 'partena',
+    nom: 'Mutualité Partena',
+    type: 'Mutuelle',
+    complementaire: true,
+    montant: "Jusqu'à 75 €",
+    frequence: 'Tous les 2 ans',
+    particularites: "Achat chez opticien physique dans l'UE. Prescription non obligatoire si la facture mentionne la dioptrie.",
+  },
+  {
+    id: 'neutre',
+    nom: 'Mutualité neutre',
+    type: 'Mutuelle',
+    complementaire: true,
+    montant: "24 à 120 € selon l'âge",
+    frequence: 'Tous les 3 ans',
+    particularites: "Sous présentation d'une prescription ophtalmologue.",
+  },
+  {
+    id: 'liberale',
+    nom: 'Mutualité libérale',
+    type: 'Mutuelle',
+    complementaire: false,
+    montant: null,
+    frequence: null,
+    particularites: null,
+  },
+  {
+    id: 'caami',
+    nom: 'CAAMI',
+    type: 'Organisme public',
+    complementaire: false,
+    montant: 'Aucun',
+    frequence: '/',
+    particularites: '/',
+  },
+]

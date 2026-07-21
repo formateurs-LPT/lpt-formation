@@ -1,10 +1,12 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import LPTSaleApp from '@/components/LPTSaleApp'
+import QuestionBubble from '@/components/QuestionBubble'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, setSharedState } from '@/lib/supabase'
+import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, getRoomSharedState, setSharedState, setRoomSharedState, insertOpenAnswer, setParticipantPage } from '@/lib/supabase'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
@@ -153,7 +155,7 @@ function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       background: 'linear-gradient(135deg, #020d1f 0%, #071832 50%, #0a2040 100%)',
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       padding: '40px 24px', color: '#fff',
@@ -218,10 +220,438 @@ function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
   )
 }
 
+// ── Réponse résultat partagé ──────────────────────────────────────
+function QuizResultScreen({ isCorrect }) {
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: isCorrect
+        ? 'linear-gradient(160deg, #03112a 0%, #052a14 100%)'
+        : 'linear-gradient(160deg, #03112a 0%, #2a0505 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px', textAlign: 'center',
+    }}>
+      <div style={{ fontSize: 64, marginBottom: 20 }}>{isCorrect ? '✅' : '❌'}</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
+        {isCorrect ? 'Bonne réponse !' : 'Mauvaise réponse'}
+      </div>
+      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>En attente de la prochaine question…</div>
+    </div>
+  )
+}
+
+// ── Quiz texte libre ──────────────────────────────────────────────
+function QuizTextOpen({ pName, q, qIdx, moduleId }) {
+  const [text, setText] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [validated, setValidated] = useState(null) // null | true | false
+
+  useEffect(() => {
+    if (!submitted) return
+    const poll = async () => {
+      const rows = await sbSelect(
+        'quiz_answers',
+        `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${encodeURIComponent(moduleId)}&question_idx=eq.${qIdx}&collaborateur=eq.${encodeURIComponent(pName.trim())}`
+      )
+      if (rows && rows.length > 0) setValidated(rows[0].is_correct)
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [submitted, qIdx, moduleId, pName])
+
+  const handleSubmit = async () => {
+    if (!text.trim() || saving) return
+    setSaving(true)
+    await insertOpenAnswer({
+      sessionCode: getParticipantSessionCode(),
+      pageId: `quiz-j1:${qIdx}`,
+      participantName: pName.trim(),
+      answer: text.trim(),
+    })
+    setSaving(false)
+    setSubmitted(true)
+  }
+
+  if (validated !== null) return <QuizResultScreen isCorrect={validated} />
+
+  if (submitted) {
+    return (
+      <div style={{
+        minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: '40px 24px', textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>✍️</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Réponse envoyée !</div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>En attente de la validation du formateur…</div>
+        <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
+        <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+    }}>
+      <div style={{
+        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
+      }}>Question {qIdx + 1}</div>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 32, textAlign: 'center' }}>
+        Regardez la question sur l&apos;écran<br />et tapez votre réponse
+      </div>
+      <textarea
+        value={text}
+        onChange={e => setText(e.target.value)}
+        placeholder="Votre réponse…"
+        rows={4}
+        style={{
+          width: '100%', maxWidth: 400, padding: '16px', borderRadius: 16,
+          background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+          color: '#fff', fontSize: 16, fontFamily: 'inherit', resize: 'none',
+          outline: 'none', marginBottom: 20,
+        }}
+      />
+      <button onClick={handleSubmit} disabled={!text.trim() || saving} style={{
+        background: text.trim() ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
+        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
+        fontSize: 16, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default',
+        fontFamily: 'inherit', width: '100%', maxWidth: 400,
+      }}>
+        {saving ? 'Envoi…' : '✓ Envoyer'}
+      </button>
+    </div>
+  )
+}
+
+// ── Quiz multi-sélection ──────────────────────────────────────────
+function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
+  const [selected, setSelected] = useState([])
+  const [answered, setAnswered] = useState(false)
+  const [isCorrect, setIsCorrect] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  const toggle = (i) => {
+    if (answered) return
+    setSelected(s => s.includes(i) ? s.filter(x => x !== i) : [...s, i])
+  }
+
+  const handleSubmit = async () => {
+    if (selected.length === 0 || saving || answered) return
+    setSaving(true)
+    const correctArr = [...q.correct].sort()
+    const selectedSorted = [...selected].sort()
+    const ok = JSON.stringify(correctArr) === JSON.stringify(selectedSorted)
+    const answerIdx = selectedSorted[0] ?? 0
+    await saveModuleQuizAnswer({
+      sessionCode: getParticipantSessionCode(),
+      moduleId, questionIdx: qIdx,
+      collaborateur: pName.trim(),
+      answerIdx, isCorrect: ok,
+    })
+    setIsCorrect(ok)
+    setAnswered(true)
+    setSaving(false)
+  }
+
+  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
+
+  return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+    }}>
+      <div style={{
+        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16,
+      }}>Question {qIdx + 1}</div>
+      {q.instruction && (
+        <div style={{ fontSize: 13, color: '#f59e0b', fontWeight: 600, marginBottom: 24, textAlign: 'center' }}>{q.instruction}</div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 400, marginBottom: 24 }}>
+        {q.options.map((opt, i) => {
+          const sel = selected.includes(i)
+          return (
+            <button key={i} onClick={() => toggle(i)} style={{
+              background: sel ? `${OPTION_COLORS[i]}cc` : 'rgba(255,255,255,0.06)',
+              border: `2px solid ${sel ? OPTION_COLORS[i] : 'rgba(255,255,255,0.12)'}`,
+              borderRadius: 16, padding: '18px 20px',
+              display: 'flex', alignItems: 'center', gap: 14,
+              cursor: 'pointer', fontFamily: 'inherit', width: '100%',
+              transition: 'all .15s',
+            }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+                background: sel ? 'rgba(0,0,0,0.25)' : OPTION_COLORS[i],
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 800, color: '#fff',
+              }}>{sel ? '✓' : 'ABCD'[i]}</div>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', textAlign: 'left' }}>{opt}</span>
+            </button>
+          )
+        })}
+      </div>
+      <button onClick={handleSubmit} disabled={selected.length === 0 || saving} style={{
+        background: selected.length > 0 ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
+        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
+        fontSize: 16, fontWeight: 700, cursor: selected.length > 0 ? 'pointer' : 'default',
+        fontFamily: 'inherit', width: '100%', maxWidth: 400,
+      }}>
+        {saving ? 'Envoi…' : '✓ Valider ma sélection'}
+      </button>
+    </div>
+  )
+}
+
+// ── Quiz remplir ordonnance ──────────────────────────────────────
+function genSphOpts() {
+  const opts = []
+  for (let v = -800; v <= 725; v += 25) {
+    if (v === 0) { opts.push('Plan'); continue }
+    opts.push(`${v > 0 ? '+' : ''}${(v / 100).toFixed(2).replace('.', ',')}`)
+  }
+  return opts
+}
+function genCylOpts() {
+  const opts = []
+  for (let v = -400; v <= 400; v += 25) {
+    if (v === 0) { opts.push('Plan'); continue }
+    opts.push(`${v > 0 ? '+' : ''}${(v / 100).toFixed(2).replace('.', ',')}`)
+  }
+  return opts
+}
+function genAxeOpts() {
+  const opts = []
+  for (let v = 5; v <= 180; v += 5) opts.push(`${v}`)
+  return opts
+}
+function genAddOpts() {
+  const opts = []
+  for (let v = 50; v <= 350; v += 25) opts.push(`+${(v / 100).toFixed(2).replace('.', ',')}`)
+  return opts
+}
+const SPH_OPTS = genSphOpts()
+const CYL_OPTS = genCylOpts()
+const AXE_OPTS = genAxeOpts()
+const ADD_OPTS = genAddOpts()
+
+function OrdoSelect({ value, onChange, options, placeholder }) {
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)} style={{
+      flex: 1, padding: '10px 8px', borderRadius: 10,
+      background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.2)',
+      color: value ? '#fff' : 'rgba(255,255,255,0.35)', fontSize: 15, fontWeight: 600,
+      fontFamily: 'inherit', outline: 'none', appearance: 'none', textAlign: 'center',
+    }}>
+      <option value="">{placeholder}</option>
+      {options.map(o => <option key={o} value={o} style={{ background: '#0d1f3c', color: '#fff' }}>{o}</option>)}
+    </select>
+  )
+}
+
+function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
+  const hasCyl = !!(q.ordonnance.od.cyl || q.ordonnance.og.cyl)
+  const hasAdd = !!(q.ordonnance.od.add || q.ordonnance.og.add)
+
+  const [vals, setVals] = useState({
+    od_sph: '', od_cyl: '', od_axe: '', od_add: '',
+    og_sph: '', og_cyl: '', og_axe: '', og_add: '',
+  })
+  const [answered, setAnswered] = useState(false)
+  const [isCorrect, setIsCorrect] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  const set = (k, v) => setVals(prev => ({ ...prev, [k]: v }))
+
+  const allFilled = () => {
+    if (!vals.od_sph || !vals.og_sph) return false
+    if (hasCyl && (!vals.od_cyl || !vals.od_axe || !vals.og_cyl || !vals.og_axe)) return false
+    if (hasAdd && (!vals.od_add || !vals.og_add)) return false
+    return true
+  }
+
+  const checkCorrect = () => {
+    const { od, og } = q.ordonnance
+    const match = (entered, expected) => {
+      if (!expected) return true
+      return entered.trim().replace('.', ',') === expected.trim().replace('.', ',')
+    }
+    return (
+      match(vals.od_sph, od.sph) &&
+      match(vals.og_sph, og.sph) &&
+      (!hasCyl || (match(vals.od_cyl, od.cyl) && match(vals.od_axe, od.axe) && match(vals.og_cyl, og.cyl) && match(vals.og_axe, og.axe))) &&
+      (!hasAdd || (match(vals.od_add, od.add) && match(vals.og_add, og.add)))
+    )
+  }
+
+  const handleSubmit = async () => {
+    if (!allFilled() || saving) return
+    setSaving(true)
+    const ok = checkCorrect()
+    await saveModuleQuizAnswer({
+      sessionCode: getParticipantSessionCode(),
+      moduleId, questionIdx: qIdx,
+      collaborateur: pName.trim(),
+      answerIdx: 0, isCorrect: ok,
+    })
+    setIsCorrect(ok)
+    setAnswered(true)
+    setSaving(false)
+  }
+
+  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
+
+  const rowStyle = { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }
+  const labelStyle = { fontSize: 13, fontWeight: 800, color: '#a78bfa', width: 28, flexShrink: 0 }
+
+  return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+    }}>
+      <div style={{
+        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20,
+      }}>Question {qIdx + 1}</div>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 8, textAlign: 'center' }}>
+        Regardez l&apos;ordonnance sur l&apos;écran
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 24, textAlign: 'center' }}>
+        {q.question}
+      </div>
+
+      {/* Colonnes */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8, width: '100%', maxWidth: 400, paddingLeft: 36 }}>
+        <div style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Sph</div>
+        {hasCyl && <div style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Cyl</div>}
+        {hasCyl && <div style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Axe</div>}
+        {hasAdd && <div style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Add</div>}
+      </div>
+
+      <div style={{ width: '100%', maxWidth: 400 }}>
+        {[{ key: 'od', label: 'OD' }, { key: 'og', label: 'OG' }].map(({ key, label }) => (
+          <div key={key} style={rowStyle}>
+            <div style={labelStyle}>{label}</div>
+            <OrdoSelect value={vals[`${key}_sph`]} onChange={v => set(`${key}_sph`, v)} options={SPH_OPTS} placeholder="—" />
+            {hasCyl && <OrdoSelect value={vals[`${key}_cyl`]} onChange={v => set(`${key}_cyl`, v)} options={CYL_OPTS} placeholder="—" />}
+            {hasCyl && <OrdoSelect value={vals[`${key}_axe`]} onChange={v => set(`${key}_axe`, v)} options={AXE_OPTS} placeholder="—" />}
+            {hasAdd && <OrdoSelect value={vals[`${key}_add`]} onChange={v => set(`${key}_add`, v)} options={ADD_OPTS} placeholder="—" />}
+          </div>
+        ))}
+      </div>
+
+      <button onClick={handleSubmit} disabled={!allFilled() || saving} style={{
+        background: allFilled() ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
+        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
+        fontSize: 16, fontWeight: 700, cursor: allFilled() ? 'pointer' : 'default',
+        fontFamily: 'inherit', width: '100%', maxWidth: 400, marginTop: 16,
+      }}>
+        {saving ? 'Envoi…' : '✓ Valider'}
+      </button>
+    </div>
+  )
+}
+
+// ── Quiz sélecteur de puissances ─────────────────────────────────
+function genPosOpts() {
+  const opts = []
+  for (let v = 25; v <= 725; v += 25) opts.push(`+${(v / 100).toFixed(2).replace('.', ',')}`)
+  return opts
+}
+function genNegOpts() {
+  const opts = []
+  for (let v = 25; v <= 800; v += 25) opts.push(`-${(v / 100).toFixed(2).replace('.', ',')}`)
+  return opts
+}
+const POS_OPTS = genPosOpts()
+const NEG_OPTS = genNegOpts()
+
+function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
+  const [posVal, setPosVal] = useState('')
+  const [negVal, setNegVal] = useState('')
+  const [answered, setAnswered] = useState(false)
+  const [isCorrect, setIsCorrect] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!posVal || !negVal || saving) return
+    setSaving(true)
+    const ok = posVal === q.correctPos && negVal === q.correctNeg
+    await saveModuleQuizAnswer({
+      sessionCode: getParticipantSessionCode(),
+      moduleId, questionIdx: qIdx,
+      collaborateur: pName.trim(),
+      answerIdx: 0, isCorrect: ok,
+    })
+    setIsCorrect(ok)
+    setAnswered(true)
+    setSaving(false)
+  }
+
+  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
+
+  const selectStyle = {
+    flex: 1, padding: '14px 10px', borderRadius: 14,
+    background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.2)',
+    color: '#fff', fontSize: 20, fontWeight: 800,
+    fontFamily: 'inherit', outline: 'none', appearance: 'none', textAlign: 'center',
+  }
+
+  return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+    }}>
+      <div style={{
+        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
+      }}>Question {qIdx + 1}</div>
+      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 32, textAlign: 'center' }}>
+        Regardez la question sur l&apos;écran<br />et choisissez les valeurs
+      </div>
+
+      <div style={{ display: 'flex', gap: 16, width: '100%', maxWidth: 360, marginBottom: 12 }}>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Positif max</div>
+          <select value={posVal} onChange={e => setPosVal(e.target.value)} style={selectStyle}>
+            <option value="">— +</option>
+            {POS_OPTS.map(o => <option key={o} value={o} style={{ background: '#0d1f3c' }}>{o}</option>)}
+          </select>
+        </div>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Négatif max</div>
+          <select value={negVal} onChange={e => setNegVal(e.target.value)} style={selectStyle}>
+            <option value="">— -</option>
+            {NEG_OPTS.map(o => <option key={o} value={o} style={{ background: '#0d1f3c' }}>{o}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <button onClick={handleSubmit} disabled={!posVal || !negVal || saving} style={{
+        background: (posVal && negVal) ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
+        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
+        fontSize: 16, fontWeight: 700, cursor: (posVal && negVal) ? 'pointer' : 'default',
+        fontFamily: 'inherit', width: '100%', maxWidth: 360, marginTop: 16,
+      }}>
+        {saving ? 'Envoi…' : '✓ Valider'}
+      </button>
+    </div>
+  )
+}
+
 // Écran réponse pour UNE question — s'affiche sur le téléphone
 // La question est sur la TV, le participant répond ici
-function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
-  const q = quiz[qIdx]
+// QCM standard (ordonnance sur TV comptent aussi comme qcm-ordonnance)
+function QuizQCMAnswer({ pName, q, qIdx, quiz, moduleId }) {
   const [answered, setAnswered] = useState(false)
   const [chosenIdx, setChosenIdx] = useState(null)
   const [lastIsCorrect, setLastIsCorrect] = useState(null)
@@ -230,76 +660,41 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
 
   const handleAnswer = async (optIdx) => {
     if (answered || saving) return
-    if (!pName?.trim()) {
-      setSaveError(true)
-      return
-    }
+    if (!pName?.trim()) { setSaveError(true); return }
     setSaving(true)
     setSaveError(false)
     const isCorrect = optIdx === q.correct
     try {
       const saved = await saveModuleQuizAnswer({
         sessionCode: getParticipantSessionCode(),
-        moduleId,
-        questionIdx: qIdx,
+        moduleId, questionIdx: qIdx,
         collaborateur: pName.trim(),
-        answerIdx: optIdx,
-        isCorrect,
+        answerIdx: optIdx, isCorrect,
       })
-      if (!saved) {
-        setSaveError(true)
-        setSaving(false)
-        return
-      }
+      if (!saved) { setSaveError(true); setSaving(false); return }
       setLastIsCorrect(isCorrect)
       setAnswered(true)
       setChosenIdx(optIdx)
-    } catch (e) {
-      console.error(e)
-      setSaveError(true)
-    }
+    } catch (e) { console.error(e); setSaveError(true) }
     setSaving(false)
   }
 
-  if (answered) {
-    return (
-      <div style={{
-        minHeight: '100dvh',
-        background: lastIsCorrect
-          ? 'linear-gradient(160deg, #03112a 0%, #052a14 100%)'
-          : 'linear-gradient(160deg, #03112a 0%, #2a0505 100%)',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        padding: '40px 24px', textAlign: 'center',
-      }}>
-        <div style={{ fontSize: 64, marginBottom: 20 }}>{lastIsCorrect ? '✅' : '❌'}</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
-          {lastIsCorrect ? 'Bonne réponse !' : 'Mauvaise réponse'}
-        </div>
-        <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>En attente de la prochaine question…</div>
-      </div>
-    )
-  }
+  if (answered) return <QuizResultScreen isCorrect={lastIsCorrect} />
 
   return (
     <div style={{
-      minHeight: '100dvh',
-      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      padding: '48px 20px 40px',
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
     }}>
-      {/* Badge */}
       <div style={{
         background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
         borderRadius: 20, padding: '6px 20px',
         fontSize: 11, fontWeight: 700, color: '#a78bfa',
         textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
       }}>Question {qIdx + 1} / {quiz.length}</div>
-
       <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 40, textAlign: 'center' }}>
-        Regardez la question sur l'écran<br />et choisissez votre réponse
+        Regardez la question sur l&apos;écran<br />et choisissez votre réponse
       </div>
-
       {saveError && (
         <div style={{
           background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
@@ -309,19 +704,13 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
           Enregistrement impossible. Rechargez la page ou prévenez le formateur.
         </div>
       )}
-
-      {/* Boutons réponse — gros et tactiles */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 400 }}>
         {q.options.map((opt, i) => (
           <button key={i} onClick={() => handleAnswer(i)} style={{
-            background: OPTION_COLORS[i],
-            border: 'none', borderRadius: 18,
-            padding: '22px 24px',
-            display: 'flex', alignItems: 'center', gap: 16,
+            background: OPTION_COLORS[i], border: 'none', borderRadius: 18,
+            padding: '22px 24px', display: 'flex', alignItems: 'center', gap: 16,
             cursor: 'pointer', fontFamily: 'inherit', width: '100%',
             boxShadow: `0 6px 24px ${OPTION_COLORS[i]}55`,
-            transition: 'transform .1s, opacity .1s',
-            active: { transform: 'scale(0.97)' },
           }}>
             <div style={{
               width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
@@ -335,6 +724,16 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
       </div>
     </div>
   )
+}
+
+function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
+  const q = quiz[qIdx]
+  const type = q?.type || 'qcm'
+  if (type === 'text-open') return <QuizTextOpen pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
+  if (type === 'qcm-multi') return <QuizMultiSelect pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
+  if (type === 'ordonnance-fill') return <QuizOrdonnanceFill pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
+  if (type === 'power-selector') return <QuizPowerSelector pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
+  return <QuizQCMAnswer pName={pName} q={q} qIdx={qIdx} quiz={quiz} moduleId={moduleId} />
 }
 
 function PersonalResultsScreen({ pName, quiz, moduleId }) {
@@ -734,13 +1133,319 @@ function OrdonnanceMobile({ page, pageIndex, total }) {
 }
 
 // ── Pause atelier — vue téléphone ────────────────────────────────
-function PauseMobile({ page, pageIndex, total }) {
+function LptSanteIntroMobile({ page, pName }) {
+  const [text, setText] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [sendError, setSendError] = useState(false)
   const [visible, setVisible] = useState(false)
+
   useEffect(() => {
     setVisible(false)
     const t = setTimeout(() => setVisible(true), 100)
     return () => clearTimeout(t)
   }, [page.id])
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return
+    setSending(true)
+    setSendError(false)
+    try {
+      const safeName = (pName || 'Anonyme').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_À-ɏ-]/g, '') || 'Anonyme'
+      const key = `oa__${page.id}__${safeName}`
+      const result = await setRoomSharedState(
+        { [key]: { name: pName || 'Anonyme', answer: text.trim(), ts: Date.now() } },
+        getParticipantSessionCode()
+      )
+      if (result != null) { setText(''); setSent(true) }
+      else { setSendError(true); setTimeout(() => setSendError(false), 4000) }
+    } finally { setSending(false) }
+  }
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a1a 65%, #0d3b1a 100%)',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 1.5 }}>LPT Santé</div>
+      </div>
+
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: 24, padding: '24px 24px 32px',
+        opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)',
+        transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={90} height={90} style={{ objectFit: 'contain', filter: 'drop-shadow(0 0 24px rgba(77,184,92,0.4))' }} />
+
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', lineHeight: 1.2, marginBottom: 6 }}>{page.titre}</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>LPT Santé · Qu'est-ce que c'est pour vous ?</div>
+        </div>
+
+        {sent ? (
+          <div style={{
+            width: '100%', maxWidth: 420, padding: '20px 24px', borderRadius: 16,
+            background: 'rgba(77,184,92,0.12)', border: '1px solid rgba(77,184,92,0.35)',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>✅</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#4db85c' }}>Réponse envoyée !</div>
+          </div>
+        ) : (
+          <div style={{ width: '100%', maxWidth: 420 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+              Votre réponse
+            </div>
+            <textarea
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder="Écrivez votre réponse…"
+              rows={3}
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                background: 'rgba(255,255,255,0.07)', border: sendError ? '1.5px solid #ef4444' : '1.5px solid rgba(255,255,255,0.12)',
+                borderRadius: 14, padding: '14px 16px', resize: 'none',
+                color: '#fff', fontSize: 15, fontFamily: 'inherit', lineHeight: 1.5,
+                outline: 'none', marginBottom: 12,
+              }}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!text.trim() || sending}
+              style={{
+                width: '100%', padding: '16px 0', borderRadius: 14,
+                background: (text.trim() && !sending) ? 'linear-gradient(135deg, #2d7a3a, #4db85c)' : 'rgba(255,255,255,0.07)',
+                border: 'none',
+                color: (text.trim() && !sending) ? '#fff' : 'rgba(255,255,255,0.25)',
+                fontSize: 15, fontWeight: 700, cursor: (text.trim() && !sending) ? 'pointer' : 'default',
+                fontFamily: 'inherit',
+                boxShadow: (text.trim() && !sending) ? '0 4px 20px rgba(77,184,92,0.3)' : 'none',
+                transition: 'all .2s',
+              }}
+            >{sending ? '…' : sendError ? 'Erreur — réessayer' : 'Envoyer ma réponse'}</button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function LptSantePecMobile() {
+  const [visible, setVisible] = useState(false)
+  const [tab, setTab] = useState(0)
+  useEffect(() => { const t = setTimeout(() => setVisible(true), 100); return () => clearTimeout(t) }, [])
+
+  const tabs = [
+    {
+      label: '🔍 Test Suprême', color: '#00abe9',
+      steps: [
+        { icon: '🏥', text: 'Charger l\'AMO (Sécu)' },
+        { icon: '🛡️', text: 'Charger l\'AMC (Mutuelle)' },
+        { icon: '📋', text: 'Ajouter l\'ordonnance' },
+        { icon: '⚙️', text: 'Générer le devis' },
+        { icon: '📤', text: 'Envoyer → réponse immédiate ✅ ou ❌' },
+      ],
+    },
+    {
+      label: '🧾 Facturation', color: '#4db85c', sub: '1=1 ou Suprême',
+      steps: [
+        { icon: '🏥', text: 'Charger AMO + AMC' },
+        { icon: '📂', text: 'Ouvrir Facturation' },
+        { icon: '⌨️', text: 'Saisir le n° de commande (visible sur le tél. de vente)' },
+        { icon: '📡', text: 'LPT Santé envoie la PEC' },
+        { icon: '📱', text: 'Valider sur le téléphone de vente' },
+      ],
+    },
+    {
+      label: '⚡ TP Partiel', color: '#f59e0b', sub: 'Sans AMC',
+      steps: [
+        { icon: '🏥', text: 'Charger AMO uniquement (pas d\'AMC)' },
+        { icon: '⌨️', text: 'Saisir le n° de commande' },
+        { icon: '📡', text: 'LPT Santé envoie à la Sécu' },
+        { icon: '💳', text: 'Le client avance la part AMC' },
+        { icon: '📱', text: 'Valider sur le téléphone de vente' },
+      ],
+    },
+  ]
+  const active = tabs[tab]
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a1a 65%, #0d3b1a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '20px 20px 36px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexShrink: 0 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={32} height={32} style={{ objectFit: 'contain' }} />
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 1.5 }}>Prise en charge</div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexShrink: 0 }}>
+        {tabs.map((t, i) => (
+          <button key={i} onClick={() => setTab(i)} style={{
+            flex: 1, padding: '7px 4px', borderRadius: 10, fontSize: 10, fontWeight: 800,
+            background: i === tab ? `${t.color}20` : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${i === tab ? t.color + '60' : 'rgba(255,255,255,0.08)'}`,
+            color: i === tab ? t.color : 'rgba(255,255,255,0.3)',
+            cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.3s',
+          }}>{t.label}</button>
+        ))}
+      </div>
+
+      {/* Steps */}
+      <div style={{
+        flex: 1, opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(16px)',
+        transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+        display: 'flex', flexDirection: 'column', gap: 10,
+      }}>
+        {active.sub && (
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 4, fontStyle: 'italic' }}>{active.sub}</div>
+        )}
+        {active.steps.map((s, i) => (
+          <div key={`${tab}-${i}`} style={{
+            display: 'flex', alignItems: 'flex-start', gap: 12,
+            background: 'rgba(255,255,255,0.04)', border: `1px solid ${active.color}20`,
+            borderLeft: `3px solid ${active.color}`,
+            borderRadius: 12, padding: '12px 14px',
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateY(0)' : 'translateY(10px)',
+            transition: `all 0.45s cubic-bezier(0.22, 1, 0.36, 1) ${0.05 + i * 0.08}s`,
+          }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+              background: `${active.color}20`, border: `1px solid ${active.color}40`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+            }}>{s.icon}</div>
+            <div style={{ paddingTop: 4 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: active.color, marginBottom: 2 }}>Étape {i + 1}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{s.text}</div>
+            </div>
+          </div>
+        ))}
+
+        {tab === 2 && (
+          <div style={{
+            marginTop: 4, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+            borderRadius: 10, padding: '10px 14px',
+            fontSize: 11, color: '#f59e0b', fontWeight: 600, lineHeight: 1.6,
+          }}>
+            💡 Même manipulation que la facturation, mais sans charger la mutuelle. LPT Santé gère uniquement la part Sécurité Sociale.
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function LptSanteExplicationMobile() {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => { const t = setTimeout(() => setVisible(true), 100); return () => clearTimeout(t) }, [])
+
+  const steps = [
+    { icon: '🏪', color: '#00abe9', title: 'Le magasin crée des PEC', desc: 'Chaque vendeur enregistre les prises en charge dans LPT Santé tout au long de la journée.' },
+    { icon: '⚡', color: '#4db85c', title: '5 min par prise en charge', desc: 'LPT Santé traite une PEC en 5 min. Chez les autres opticiens, il faut 30 min ou plus.' },
+    { icon: '📡', color: '#a78bfa', title: 'Télétransmission chaque soir', desc: 'Chaque soir, LPT Santé envoie toutes les PEC à la Sécurité Sociale et aux mutuelles.' },
+    { icon: '💰', color: '#f5c842', title: 'On est remboursés', desc: 'SS et mutuelles paient directement Lunettes Pour Tous — le client ne paie que son reste à charge.' },
+  ]
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a1a 65%, #0d3b1a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '20px 20px 36px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexShrink: 0 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={36} height={36} style={{ objectFit: 'contain' }} />
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 1.5 }}>LPT Santé</div>
+      </div>
+
+      <div style={{
+        opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)',
+        transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+        display: 'flex', flexDirection: 'column', gap: 14,
+      }}>
+        <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', lineHeight: 1.25, marginBottom: 6 }}>Comment ça marche ?</div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 8, lineHeight: 1.6 }}>
+          LPT Santé est notre logiciel de tiers payant. Il nous permet de faire des lunettes <em style={{ color: 'rgba(255,255,255,0.65)' }}>plus vite que tout le monde</em>.
+        </div>
+
+        {steps.map((s, i) => (
+          <div key={i} style={{
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            borderLeft: `3px solid ${s.color}`, borderRadius: 14, padding: '14px 16px',
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateY(0)' : 'translateY(12px)',
+            transition: `all 0.5s cubic-bezier(0.22, 1, 0.36, 1) ${0.1 + i * 0.1}s`,
+          }}>
+            <span style={{ fontSize: 24, flexShrink: 0 }}>{s.icon}</span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: s.color, marginBottom: 4 }}>{s.title}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.55 }}>{s.desc}</div>
+            </div>
+          </div>
+        ))}
+
+        <div style={{
+          marginTop: 8, background: 'rgba(77,184,92,0.08)', border: '1px solid rgba(77,184,92,0.2)',
+          borderRadius: 12, padding: '12px 16px', textAlign: 'center',
+          fontSize: 12, color: '#4db85c', fontWeight: 600,
+        }}>
+          Regardez l'animation sur le grand écran 📺
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PauseMobile({ page, pageIndex, total, pName }) {
+  const [visible, setVisible] = useState(false)
+  const [text, setText] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [sendError, setSendError] = useState(false)
+
+  useEffect(() => {
+    setVisible(false)
+    setText('')
+    setSent(false)
+    setSendError(false)
+    const t = setTimeout(() => setVisible(true), 100)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return
+    setSending(true)
+    setSendError(false)
+    try {
+      const safeName = (pName || 'Anonyme').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_À-ɏ-]/g, '') || 'Anonyme'
+      const key = `oa__${page.id}__${safeName}`
+      const result = await setRoomSharedState(
+        { [key]: { name: pName || 'Anonyme', answer: text.trim(), ts: Date.now() } },
+        getParticipantSessionCode()
+      )
+      if (result != null) {
+        setText('')
+        setSent(true)
+        setTimeout(() => setSent(false), 2500)
+      } else {
+        setSendError(true)
+        setTimeout(() => setSendError(false), 4000)
+      }
+    } finally {
+      setSending(false)
+    }
+  }
 
   return (
     <div style={{
@@ -762,35 +1467,75 @@ function PauseMobile({ page, pageIndex, total }) {
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        gap: 24, padding: '40px 24px',
+        gap: 24, padding: '32px 24px 24px',
         opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)',
         transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
       }}>
-        <div style={{
-          width: 96, height: 96, borderRadius: '50%',
-          background: 'rgba(0,171,233,0.1)', border: '2px solid rgba(0,171,233,0.25)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 0 40px rgba(0,171,233,0.15)',
-        }}>
-          <span style={{ fontSize: 44, lineHeight: 1 }}>{page.icon}</span>
-        </div>
+        {page.icon && (
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            background: 'rgba(0,171,233,0.1)', border: '2px solid rgba(0,171,233,0.25)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 40px rgba(0,171,233,0.15)',
+          }}>
+            <span style={{ fontSize: 38, lineHeight: 1 }}>{page.icon}</span>
+          </div>
+        )}
 
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', lineHeight: 1.2, marginBottom: 12 }}>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', lineHeight: 1.25, marginBottom: 8 }}>
             {page.titre}
           </div>
-          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', fontWeight: 400, lineHeight: 1.5 }}>
-            {page.sousTitre}
-          </div>
+          {page.sousTitre && (
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: 400, lineHeight: 1.5 }}>
+              {page.sousTitre}
+            </div>
+          )}
         </div>
 
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)',
-          borderRadius: 30, padding: '10px 20px',
-        }}>
-          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#00abe9', animation: 'waitDot 1.5s ease-in-out infinite' }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>En cours avec le formateur…</span>
+        {/* Zone de réponse */}
+        <div style={{ width: '100%', maxWidth: 420 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+            Votre réponse
+          </div>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Écrivez votre réponse…"
+            rows={3}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 14, padding: '14px 16px',
+              color: '#fff', fontSize: 15, fontFamily: 'inherit', lineHeight: 1.5,
+              resize: 'none', outline: 'none',
+            }}
+            onFocus={e => { e.target.style.borderColor = 'rgba(0,171,233,0.5)' }}
+            onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.15)' }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!text.trim() || sending}
+            style={{
+              marginTop: 10, width: '100%',
+              padding: '14px 20px', borderRadius: 14,
+              fontFamily: 'inherit', fontSize: 15, fontWeight: 700,
+              cursor: (!text.trim() || sending) ? 'default' : 'pointer',
+              transition: 'all .2s',
+              background: sent
+                ? 'rgba(74,222,128,0.15)'
+                : sendError
+                  ? 'rgba(239,68,68,0.15)'
+                  : (!text.trim() || sending)
+                    ? 'rgba(255,255,255,0.07)'
+                    : 'linear-gradient(135deg, #0070a0, #0089ba)',
+              border: sent ? '1px solid rgba(74,222,128,0.4)' : sendError ? '1px solid rgba(239,68,68,0.4)' : 'none',
+              color: sent ? '#4ade80' : sendError ? '#f87171' : (!text.trim() || sending) ? 'rgba(255,255,255,0.3)' : '#fff',
+              boxShadow: (!text.trim() || sending || sent || sendError) ? 'none' : '0 4px 16px rgba(0,137,186,0.35)',
+            }}
+          >
+            {sent ? '✓ Envoyée !' : sendError ? '✗ Erreur — réessayez' : sending ? '…' : 'Envoyer'}
+          </button>
         </div>
       </div>
     </div>
@@ -1626,7 +2371,7 @@ function EntreprisePageMobile({ page, pageIndex, total }) {
   )
 }
 
-// ── FAQ Réveil des acquis — saisie anonyme participant ───────────
+// ── FAQ Réveil des acquis — saisie participant ───────────────────
 const FAQ_JOURNEE_LABELS = { j1: 'Journée 1', j2: 'Journée 2', j3: 'Journée 3' }
 
 export function FAQInputMobile({ journeeId }) {
@@ -1645,7 +2390,10 @@ export function FAQInputMobile({ journeeId }) {
       const key = `faq_${journeeId}_q`
       const state = await getSharedState()
       const current = state?.[key] || []
-      const newQ = { id: Date.now().toString(), text: trimmed, highlighted: false }
+      const nom    = typeof window !== 'undefined' ? (localStorage.getItem('participant_name') || '') : ''
+      const prenom = typeof window !== 'undefined' ? (localStorage.getItem('participant_prenom') || '') : ''
+      const author = [prenom, nom].filter(Boolean).join(' ') || 'Anonyme'
+      const newQ = { id: Date.now().toString(), text: trimmed, highlighted: false, author }
       await setSharedState({ [key]: [...current, newQ] })
       setText('')
       setCount(c => c + 1)
@@ -2604,7 +3352,241 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
   if (page.type === 'troubles-list')    return <TroublesListMobile       page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'correction-scale') return <CorrectionScaleMobile    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <OrdonnanceMobile         page={page} pageIndex={pageIndex} total={total} />
-  if (page.type === 'pause')             return <PauseMobile              page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'pause')             return <PauseMobile              page={page} pageIndex={pageIndex} total={total} pName={pName} />
+  if (page.type === 'parcours-tiers-payant') return <PauseMobile          page={page} pageIndex={pageIndex} total={total} pName={pName} />
+  if (page.type === 'tiers-payant-explication') return (
+    <div style={{ minHeight: '100dvh', background: '#03112a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 52, marginBottom: 20 }}>📺</div>
+      <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Regardez le grand ecran</h2>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 280 }}>
+        L&apos;animation explique comment fonctionne le tiers payant complet et partiel.
+      </p>
+      <div style={{ marginTop: 28, background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 16, padding: '12px 24px' }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: '#4ade80' }}>Dans les deux cas : 0 € reste a charge 🎉</span>
+      </div>
+    </div>
+  )
+
+  if (page.type === 'rembfr-demarche') return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', padding: '28px 20px 40px',
+      fontFamily: 'inherit',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>Remboursement</div>
+      </div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>Ma demarche</div>
+      <h2 style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 20 }}>
+        Quand un client souhaite se faire rembourser je dois :
+      </h2>
+
+      {/* Scenario A */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
+          padding: '7px 12px', background: 'rgba(0,137,186,0.1)', border: '1px solid rgba(0,137,186,0.25)', borderRadius: 8,
+        }}>
+          <span style={{ fontSize: 13 }}>📋</span>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1 }}>Scenario A</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>Avec ordonnance valide</div>
+          </div>
+        </div>
+        {[
+          "Prendre l'ordonnance, la carte Vitale et la mutuelle.",
+          "Aller sur AMELIPRO pour verifier le dernier remboursement.",
+          "Faire le Test Supreme (sauf CSS → 1=1 directement).",
+          "Retourner voir le client et adapter le discours.",
+        ].map((txt, i) => (
+          <div key={i} style={{
+            display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 8,
+            padding: '10px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10,
+          }}>
+            <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,171,233,0.15)', fontSize: 11, fontWeight: 900, color: '#00abe9' }}>{i + 1}</div>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.45 }}>{txt}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Scenario B */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
+          padding: '7px 12px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 8,
+        }}>
+          <span style={{ fontSize: 13 }}>🚫</span>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1 }}>Scenario B</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>Sans ordonnance valide</div>
+          </div>
+        </div>
+        {[
+          "Prendre la carte Vitale et verifier la mutuelle.",
+          "Aller sur AMELIPRO pour verifier le dernier remboursement.",
+          "Si ok → inscrire en examen de vue et obtenir ordonnance via LYLEOO.",
+          "Faire le Test Supreme avec l'ordonnance (sauf CSS → 1=1).",
+        ].map((txt, i) => (
+          <div key={i} style={{
+            display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 8,
+            padding: '10px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10,
+          }}>
+            <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(245,158,11,0.15)', fontSize: 11, fontWeight: 900, color: '#f59e0b' }}>{i + 1}</div>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.45 }}>{txt}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Note bas */}
+      <div style={{
+        padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 10, fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6,
+      }}>
+        <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Si le client n&apos;a pas droit au remboursement :</strong> proposer l&apos;offre <strong style={{ color: '#fff' }}>1=1</strong> ou <strong style={{ color: '#fff' }}>Classique</strong> a ses frais.
+      </div>
+    </div>
+  )
+
+  if (page.type === 'rembfr-supreme') return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '40px 20px', textAlign: 'center',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={88} height={34} style={{ objectFit: 'contain', marginBottom: 32, opacity: 0.7 }} />
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        background: 'rgba(0,137,186,0.15)', border: '1px solid rgba(0,137,186,0.35)',
+        borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#00abe9',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20,
+      }}>
+        🏥 LPT Santé · Test Suprême
+      </div>
+      <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Test Supreme</div>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 260 }}>
+        Le formateur revele les resultats.<br />Regardez l&apos;ecran de diffusion.
+      </p>
+      <div style={{ marginTop: 28, display: 'flex', gap: 12 }}>
+        <div style={{ padding: '10px 20px', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.25)', borderRadius: 12, fontSize: 13, fontWeight: 700, color: '#4ade80' }}>
+          Accepte → Parcours Supreme
+        </div>
+        <div style={{ padding: '10px 20px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12, fontSize: 13, fontWeight: 700, color: '#f87171' }}>
+          Refuse → Parcours 1=1
+        </div>
+      </div>
+      <div style={{ marginTop: 16, fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>
+        Dans les deux cas : 2 paires pour 0 € 🎉
+      </div>
+    </div>
+  )
+  if (page.type === 'lpt-sante-intro')        return <LptSanteIntroMobile       page={page} pName={pName} />
+  if (page.type === 'lpt-sante-explication') return <LptSanteExplicationMobile />
+  if (page.type === 'lpt-sante-pec')         return <LptSantePecMobile />
+
+  if (page.type === 'rembfr-conditions') return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column', padding: '28px 20px 40px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>Remboursement</div>
+      </div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>Les 3 conditions</div>
+      <h2 style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 20 }}>Pour être remboursé, le client doit :</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Condition 1 */}
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '16px 18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 16 }}>🏥</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#0089ba' }}>01</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Couverture SS + mutuelle / CSS</span>
+          </div>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.5 }}>Être couvert par la Sécurité Sociale et une mutuelle complémentaire ou la Complémentaire Santé Solidaire.</p>
+        </div>
+        {/* Condition 2 */}
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '16px 18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 16 }}>📋</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#0089ba' }}>02</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Ordonnance en cours de validité</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+            {[{ label: 'Moins de 16 ans', duree: '1 an', color: '#f59e0b' }, { label: 'De 16 à 42 ans', duree: '5 ans', color: '#00abe9' }, { label: '43 ans et plus', duree: '3 ans', color: '#a78bfa' }].map(r => (
+              <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{r.label}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: r.color }}>{r.duree}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding: '8px 10px', background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)', borderRadius: 8 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: '#c9a227', marginBottom: 3 }}>💡 Pas d'ordonnance valable ? → LYLEOO</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>Disponible en magasin pour les +18 ans. À utiliser uniquement pour débloquer un remboursement.</div>
+          </div>
+        </div>
+        {/* Condition 3 */}
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '16px 18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 16 }}>📅</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#0089ba' }}>03</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Délais de renouvellement</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ padding: '8px 10px', background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', marginBottom: 3 }}>Moins de 16 ans</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>Tous les ans · <strong style={{ color: '#fff' }}>Sans délai</strong> si changement ≥ 0,50</div>
+            </div>
+            <div style={{ padding: '8px 10px', background: 'rgba(0,171,233,0.07)', border: '1px solid rgba(0,171,233,0.18)', borderRadius: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', marginBottom: 3 }}>16 ans et plus</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>Tous les <strong style={{ color: '#fff' }}>2 ans</strong> · Anticipé à partir de <strong style={{ color: '#fff' }}>1 an et 1 jour</strong> si changement ≥ 0,50</div>
+            </div>
+            <div style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>
+              💻 Vérifiable sur <strong style={{ color: '#00abe9' }}>AMELIPRO</strong> avec le numéro de sécu du patient
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  if (page.type === 'parcours-rembourses-offres') return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column', padding: '28px 20px 40px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28} style={{ objectFit: 'contain', opacity: 0.7 }} />
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>Parcours remboursés</div>
+      </div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>Les offres</div>
+      <h2 style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 20 }}>Les offres remboursées LPT</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Suprême */}
+        <div style={{ background: 'rgba(139,113,134,0.1)', border: '1px solid rgba(139,113,134,0.35)', borderRadius: 14, padding: '18px' }}>
+          <div style={{ fontSize: 18, fontWeight: 900, color: '#8B7186', marginBottom: 12 }}>Suprême</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {['1 paire achetée, une paire offerte', 'Choix sur tout le magasin (montures et verres)', 'Verres Origine France Garantie', 'Uniquement avec tiers payant complet', 'Non compatible avec la CSS'].map((p, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#8B7186', marginTop: 6, flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{p}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* 1=1 */}
+        <div style={{ background: 'rgba(106,173,84,0.08)', border: '1px solid rgba(106,173,84,0.28)', borderRadius: 14, padding: '18px' }}>
+          <div style={{ fontSize: 18, fontWeight: 900, color: '#6aad54', marginBottom: 12 }}>1=1 100% Santé</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+            {['1 paire achetée, une paire offerte', 'Sur tout le magasin (montures et verres au choix)', 'Tarifs 100% Santé : 0 € de reste à charge quelle que soit la mutuelle'].map((p, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#6aad54', marginTop: 6, flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{p}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderLeft: '2px solid #6aad54', borderRadius: '0 8px 8px 0' }}>
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontStyle: 'italic', lineHeight: 1.6 }}>Le 100% Santé est un dispositif légal qui garantit des lunettes entièrement remboursées par la Sécu et la mutuelle — sans aucun reste à charge pour le client.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
   if (page.type === 'saisie-interactive') return <SaisieInteractiveMobile page={page} pageIndex={pageIndex} total={total} />
 
   // Freins à l'achat — saisie libre
@@ -3039,9 +4021,42 @@ function ParticipantPlanningScreen({ planningDay }) {
   )
 }
 
+function useParticipantFullscreen() {
+  const [isFS, setIsFS] = useState(false)
+  useEffect(() => {
+    const handler = () => setIsFS(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', handler)
+    document.addEventListener('webkitfullscreenchange', handler)
+    return () => {
+      document.removeEventListener('fullscreenchange', handler)
+      document.removeEventListener('webkitfullscreenchange', handler)
+    }
+  }, [])
+  const toggle = () => {
+    if (!document.fullscreenElement) {
+      const el = document.documentElement
+      if (el.requestFullscreen) el.requestFullscreen()
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen()
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen()
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen()
+    }
+  }
+  return { isFS, toggle }
+}
+
 function DisconnectChip({ pName, onDisconnect }) {
   const [open, setOpen] = useState(false)
+  const [showIOSGuide, setShowIOSGuide] = useState(false)
   const prenom = (pName || '').split(' ').pop()
+  const { isFS, toggle: toggleFS } = useParticipantFullscreen()
+  const isIOS = typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
+  const isStandalone = typeof window !== 'undefined' && (window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches)
+
+  const handleFullscreen = () => {
+    if (isIOS) { setShowIOSGuide(v => !v); return }
+    toggleFS()
+  }
 
   const handleDisconnect = () => {
     localStorage.removeItem('participant_name')
@@ -3070,20 +4085,78 @@ function DisconnectChip({ pName, onDisconnect }) {
         {prenom}
       </button>
       {open && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+          <button
+            onClick={handleFullscreen}
+            style={{
+              background: 'rgba(0,137,186,0.2)', border: '1px solid rgba(0,171,233,0.4)',
+              borderRadius: 12, padding: '8px 16px',
+              color: '#7dd3fc', fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit',
+              backdropFilter: 'blur(8px)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {isIOS ? (isStandalone ? '✓ Plein écran' : '⛶ Plein écran') : (isFS ? '⊠ Quitter' : '⛶ Plein écran')}
+          </button>
+          {showIOSGuide && (
+            <div style={{
+              background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 10, padding: '10px 12px',
+              fontSize: 12, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, maxWidth: 220,
+              backdropFilter: 'blur(8px)',
+            }}>
+              Appuie sur <strong>Partager ⬆️</strong> puis <strong>« Sur l'écran d'accueil »</strong>
+            </div>
+          )}
+          <button
+            onClick={handleDisconnect}
+            style={{
+              background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
+              borderRadius: 12, padding: '8px 16px',
+              color: '#f87171', fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit',
+              backdropFilter: 'blur(8px)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Se déconnecter
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AlertPopup({ message, onDismiss }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 99999,
+      background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: 32, fontFamily: 'system-ui, sans-serif',
+    }}>
+      <div style={{
+        background: 'linear-gradient(160deg, #1a0a00 0%, #2d1200 100%)',
+        border: '2px solid rgba(251,191,36,0.4)',
+        borderRadius: 24, padding: '32px 28px', maxWidth: 340, width: '100%',
+        textAlign: 'center', boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+      }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>😠</div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: '#fff', lineHeight: 1.5, marginBottom: 24 }}>
+          {message}
+        </div>
         <button
-          onClick={handleDisconnect}
+          onClick={onDismiss}
           style={{
-            background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
-            borderRadius: 12, padding: '8px 16px',
-            color: '#f87171', fontSize: 13, fontWeight: 700,
-            cursor: 'pointer', fontFamily: 'inherit',
-            backdropFilter: 'blur(8px)',
-            whiteSpace: 'nowrap',
+            background: '#fbbf24', border: 'none', borderRadius: 14,
+            padding: '14px 28px', fontSize: 15, fontWeight: 700,
+            color: '#1a0a00', cursor: 'pointer', fontFamily: 'inherit', width: '100%',
           }}
         >
-          Se déconnecter
+          J'y retourne ! 🫡
         </button>
-      )}
+      </div>
     </div>
   )
 }
@@ -3091,6 +4164,37 @@ function DisconnectChip({ pName, onDisconnect }) {
 function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp, onDisconnect }) {
   const sessionCode = getParticipantSessionCode()
   const [sessionEnded, setSessionEnded] = useState(false)
+  const [alertMessage, setAlertMessage] = useState(null)
+  const seenAlertsRef = useRef(new Set())
+  const alertQueueRef = useRef([])
+
+  useEffect(() => {
+    if (!pName || !sessionCode) return
+    const pageLoadTs = Date.now()
+    const safeName = (pName || '').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_À-ɏ]/g, '')
+    const prefix = `alert__${safeName}__`
+
+    const showNext = () => {
+      if (alertQueueRef.current.length > 0) {
+        setAlertMessage(alertQueueRef.current.shift())
+      }
+    }
+
+    const check = async () => {
+      const state = await getRoomSharedState(sessionCode).catch(() => ({}))
+      const newAlerts = Object.entries(state || {})
+        .filter(([k, v]) => k.startsWith(prefix) && v?.ts && v.ts > pageLoadTs && !seenAlertsRef.current.has(k))
+        .sort(([, a], [, b]) => a.ts - b.ts)
+      for (const [k, v] of newAlerts) {
+        seenAlertsRef.current.add(k)
+        alertQueueRef.current.push(v.message)
+      }
+      if (newAlerts.length > 0 && !alertMessage) showNext()
+    }
+    check()
+    const interval = setInterval(check, 5000)
+    return () => clearInterval(interval)
+  }, [pName, sessionCode])
 
   useParticipantPresence({
     sessionCode,
@@ -3154,6 +4258,31 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     }
   }, [sharedState])
 
+  // Heartbeat de présence : signale la page courante + visibilité de l'onglet
+  useEffect(() => {
+    if (!activeModule || modulePage == null || modulePage < 0 || !pName || !sessionCode) return
+
+    const write = () => {
+      setParticipantPage(sessionCode, pName, {
+        moduleId: activeModule,
+        pageIndex: modulePage,
+        ts: Date.now(),
+        visible: document.visibilityState === 'visible',
+      }).catch(() => {})
+    }
+
+    write()
+    const interval = setInterval(write, 45000)
+
+    const onVisibility = () => write()
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [activeModule, modulePage, pName, sessionCode])
+
   const moduleData = MODULE_DATA[activeModule] || null
   const pages = moduleData?.pages || []
   const quiz = moduleData?.quiz || []
@@ -3168,10 +4297,22 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
 
   if (sessionEnded) return <SessionEndedScreen />
 
+  // ── LPTSale simulator — participants travaillent en autonomie ──
+  if (activeModule === 'atelier-pec') return <LPTSaleApp pName={pName} />
+
   return (
     <>
       <style>{STYLES}</style>
+      {alertMessage && (
+        <AlertPopup message={alertMessage} onDismiss={() => {
+          setAlertMessage(alertQueueRef.current.length > 0 ? alertQueueRef.current.shift() : null)
+        }} />
+      )}
       <DisconnectChip pName={pName} onDisconnect={onDisconnect} />
+      {/* Bulle question — discrète, visible sur toutes les pages de module */}
+      {activeModule && !isLobby && !isResults && !sessionEnded && (
+        <QuestionBubble moduleId={activeModule} pName={pName} />
+      )}
       {/* Planning prioritaire : écrase tout si le formateur diffuse le planning */}
       {tvScreen === 'planning' && planningDay
         ? <ParticipantPlanningScreen planningDay={planningDay} />
@@ -3182,7 +4323,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
             : isQuiz && quizPodiumActive
               ? (
                 <div style={{
-                  minHeight: '100vh',
+                  minHeight: '100dvh',
                   background: 'linear-gradient(135deg, #020d1f 0%, #071832 50%, #0a2040 100%)',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                   padding: '32px 24px', textAlign: 'center',

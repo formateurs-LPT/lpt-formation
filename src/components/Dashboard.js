@@ -13,50 +13,21 @@ import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
 import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { isDynamicRoomCode } from '@/lib/sessionCode'
+import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees } from '@/components/IdeesButton'
+import SonnettePanel from './SonnettePanel'
 
-const NEWS_ITEMS = [
-  '📚 Formation Verre Progressif — Module complet',
-  '🎯 Objectif : maîtriser les arguments de vente',
-  '💡 3 zones : Vision de loin · Vision intermédiaire · Vision de près',
-  '🔬 Zones d\'aberrations réduites = Vision extra-large à 180°',
-  '💊 Garantie Adaptation 100 jours — satisfait ou échangé',
-  '🏆 Offre 100% Santé : 2 paires à 0€',
-  '⭐ Offre 1=1 : 2 paires pour ~260€',
-  '📋 Quiz initial → Formation → Quiz final',
-]
 
-function NewsTicker() {
-  const doubled = [...NEWS_ITEMS, ...NEWS_ITEMS]
-  return (
-    <div className="news-ticker">
-      <div className="news-ticker-track running">
-        {doubled.map((item, i) => (
-          <span key={i} className="news-item">
-            <span className="news-item-dot"></span>
-            {item}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function DashHeader({ pName, onUpdatesClick }) {
+function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoom, onSonnetteClick, sonnettePending }) {
   const rawKey = (pName || '').toLowerCase().split(' ')[0]
   const key = TRAINER_CANONICAL[rawKey] || rawKey
   const avatarSrc = TRAINER_AVATARS[key] || TRAINER_AVATARS.kevin
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
+  const hasRoom = isDynamicRoomCode(activeRoomCode)
 
   return (
     <div className="dash-hero" style={{ display: 'flex', alignItems: 'center' }}>
-      <Image
-        src={avatarSrc}
-        alt={pName}
-        width={90}
-        height={90}
-        className="dash-hero-avatar"
-      />
+      <Image src={avatarSrc} alt={pName} width={90} height={90} className="dash-hero-avatar" />
       <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
         <div className="dash-hero-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           Formation · Lunettes Pour Tous
@@ -71,27 +42,124 @@ function DashHeader({ pName, onUpdatesClick }) {
         <h2 className="dash-hero-title">Bonjour, {cap(pName)} 👋</h2>
         <p className="dash-hero-date">{cap(today)}</p>
       </div>
-      {onUpdatesClick && (
-        <button
-          onClick={onUpdatesClick}
-          title="Mises à jour de l'app"
-          style={{
-            flexShrink: 0, marginLeft: 12, zIndex: 1,
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'rgba(167,139,250,0.15)',
-            border: '1px solid rgba(167,139,250,0.35)',
-            borderRadius: 20, padding: '6px 12px 6px 10px',
-            cursor: 'pointer', fontFamily: 'inherit',
-            color: '#c4b5fd', fontSize: 12, fontWeight: 700,
-            transition: 'all .18s',
-          }}
-          onMouseOver={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.25)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.5)' }}
-          onMouseOut={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.15)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.35)' }}
-        >
-          <span style={{ fontSize: 14 }}>⚡</span>
-          <span>{APP_UPDATES.length}</span>
-        </button>
-      )}
+
+      {/* Zone salle active */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, zIndex: 1 }}>
+        {hasRoom ? (
+          <>
+            <div
+              onClick={onOpenRoom}
+              title="Gérer la salle"
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginRight: 4,
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(0,171,233,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>Salle active</span>
+              <span style={{ fontSize: 16, fontWeight: 900, color: '#00abe9', fontFamily: 'monospace', letterSpacing: 3, lineHeight: 1.2 }}>{activeRoomCode}</span>
+            </div>
+            {onOpenTv && (
+              <button
+                onClick={onOpenTv}
+                title="Afficher le QR code sur le diffuseur"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.35)',
+                  borderRadius: 20, padding: '6px 12px',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  color: '#00abe9', fontSize: 12, fontWeight: 700, transition: 'all .18s',
+                }}
+                onMouseOver={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.25)' }}
+                onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.15)' }}
+              >
+                📺 QR
+              </button>
+            )}
+            <button
+              onClick={onOpenRoom}
+              title="Reprendre la salle"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)',
+                borderRadius: 20, padding: '6px 12px',
+                cursor: 'pointer', fontFamily: 'inherit',
+                color: '#00abe9', fontSize: 12, fontWeight: 700, transition: 'all .18s',
+              }}
+              onMouseOver={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.2)' }}
+              onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.1)' }}
+            >
+              Reprendre →
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={onOpenRoom}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)',
+              borderRadius: 20, padding: '6px 14px',
+              cursor: 'pointer', fontFamily: 'inherit',
+              color: '#00abe9', fontSize: 12, fontWeight: 700, transition: 'all .18s',
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.22)' }}
+            onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.12)' }}
+          >
+            🚪 Créer une salle
+          </button>
+        )}
+
+        {onUpdatesClick && (
+          <button
+            onClick={onUpdatesClick}
+            title="Mises à jour de l'app"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.35)',
+              borderRadius: 20, padding: '6px 12px 6px 10px',
+              cursor: 'pointer', fontFamily: 'inherit',
+              color: '#c4b5fd', fontSize: 12, fontWeight: 700, transition: 'all .18s',
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.25)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.5)' }}
+            onMouseOut={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.15)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.35)' }}
+          >
+            <span style={{ fontSize: 14 }}>⚡</span>
+            <span>{APP_UPDATES.length}</span>
+          </button>
+        )}
+
+        {onSonnetteClick && (
+          <button
+            onClick={onSonnetteClick}
+            title="Sonnette d'accueil"
+            style={{
+              position: 'relative',
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: sonnettePending > 0 ? 'rgba(251,191,36,0.18)' : 'rgba(255,255,255,0.07)',
+              border: sonnettePending > 0 ? '1px solid rgba(251,191,36,0.45)' : '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 20, padding: '6px 12px',
+              cursor: 'pointer', fontFamily: 'inherit',
+              color: sonnettePending > 0 ? '#fbbf24' : 'rgba(255,255,255,0.6)',
+              fontSize: 12, fontWeight: 700, transition: 'all .18s',
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = sonnettePending > 0 ? 'rgba(251,191,36,0.28)' : 'rgba(255,255,255,0.12)' }}
+            onMouseOut={e => { e.currentTarget.style.background = sonnettePending > 0 ? 'rgba(251,191,36,0.18)' : 'rgba(255,255,255,0.07)' }}
+          >
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>Sonnette</span>
+            {sonnettePending > 0 && (
+              <span style={{
+                background: '#fbbf24', color: '#1a1000', borderRadius: 10,
+                padding: '1px 6px', fontSize: 11, fontWeight: 800, lineHeight: 1.4,
+              }}>
+                {sonnettePending}
+              </span>
+            )}
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -592,6 +660,327 @@ function AppUpdatesWidget() {
   )
 }
 
+// ── Vue Idées ─────────────────────────────────────────────────────
+function IdeesView({ onBack, pName }) {
+  const [idees, setIdees] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [subTab, setSubTab] = useState('pending') // 'pending' | 'validated'
+
+  const refresh = async () => {
+    const data = await loadIdeesFromSupabase()
+    setIdees(data)
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    refresh()
+    const interval = setInterval(refresh, 10000)
+    return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleVote = async (id, vote) => { await voteIdee(id, pName || 'Formateur', vote); refresh() }
+  const handleValidate = async (id) => { await updateIdee(id, { status: 'validated' }); refresh() }
+  const handleReject = async (id) => { await deleteIdee(id); refresh() }
+  const handleDone = async (id) => { await deleteIdee(id); refresh() }
+
+  const pending = idees.filter(i => !i.status || i.status === 'pending')
+  const validated = idees.filter(i => i.status === 'validated')
+
+  const formatDate = (ts) => {
+    try {
+      const d = new Date(ts)
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+        + ' · ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    } catch { return '' }
+  }
+
+  const groupByModule = (list) => list.reduce((acc, idee) => {
+    const mKey = idee.moduleLabel || idee.moduleId || 'Module inconnu'
+    if (!acc[mKey]) acc[mKey] = {}
+    const pKey = idee.pageLabel || 'Page inconnue'
+    if (!acc[mKey][pKey]) acc[mKey][pKey] = []
+    acc[mKey][pKey].push(idee)
+    return acc
+  }, {})
+
+  const pendingGrouped = groupByModule(pending)
+  const validatedGrouped = groupByModule(validated)
+
+  const VoteBtn = ({ idee, side }) => {
+    const votes = idee.votes || { ok: [], pas_ok: [] }
+    const list = votes[side] || []
+    const mine = list.includes(pName || 'Formateur')
+    const isOk = side === 'ok'
+    return (
+      <button
+        onClick={() => handleVote(idee.id, side)}
+        title={isOk ? 'Je suis OK' : 'Je ne suis pas OK'}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+          cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+          background: mine
+            ? (isOk ? 'rgba(74,222,128,0.18)' : 'rgba(239,68,68,0.18)')
+            : 'rgba(255,255,255,0.06)',
+          border: mine
+            ? (isOk ? '1px solid rgba(74,222,128,0.45)' : '1px solid rgba(239,68,68,0.45)')
+            : '1px solid rgba(255,255,255,0.12)',
+          color: mine ? (isOk ? '#4ade80' : '#f87171') : 'var(--text-s)',
+        }}
+      >
+        {isOk ? '👍' : '👎'} {list.length > 0 ? list.length : ''}
+        {list.length > 0 && (
+          <span style={{ fontSize: 10, opacity: 0.7 }}>({list.join(', ')})</span>
+        )}
+      </button>
+    )
+  }
+
+  const IdeeCard = ({ idee, validated: isValidated }) => (
+    <div style={{
+      background: 'var(--bg)', borderRadius: 12,
+      border: `1px solid ${isValidated ? 'rgba(74,222,128,0.2)' : 'var(--border)'}`,
+      borderLeft: `3px solid ${isValidated ? '#4ade80' : 'rgba(245,158,11,0.5)'}`,
+      padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10,
+    }}>
+      {/* Texte + meta */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, marginBottom: 6 }}>
+            {idee.text}
+          </div>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+            {idee.auteur && (
+              <span style={{ fontSize: 11, color: 'var(--text-s)' }}>👤 {idee.auteur}</span>
+            )}
+            <span style={{ fontSize: 11, color: 'var(--text-s)' }}>🕐 {formatDate(idee.timestamp)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Row boutons vote + actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        {!isValidated && (
+          <>
+            <VoteBtn idee={idee} side="ok" />
+            <VoteBtn idee={idee} side="pas_ok" />
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={() => handleValidate(idee.id)}
+              style={{
+                padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'inherit',
+                background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.35)',
+                color: '#4ade80',
+              }}
+            >✅ On le fait</button>
+            <button
+              onClick={() => handleReject(idee.id)}
+              style={{
+                padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'inherit',
+                background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.28)',
+                color: '#f87171',
+              }}
+            >❌ On fait pas</button>
+          </>
+        )}
+        {isValidated && (
+          <>
+            <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 600 }}>✓ Validée</span>
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={() => handleDone(idee.id)}
+              style={{
+                padding: '5px 16px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'inherit',
+                background: 'rgba(0,137,186,0.14)', border: '1px solid rgba(0,137,186,0.4)',
+                color: '#00abe9',
+              }}
+            >✓ C'est fait !</button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+
+  const renderGrouped = (grouped, isValidated) => {
+    const entries = Object.entries(grouped)
+    if (entries.length === 0) return (
+      <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--text-s)' }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>{isValidated ? '🎯' : '💡'}</div>
+        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
+          {isValidated ? 'Aucune idée validée pour l\'instant' : 'Aucune idée en attente'}
+        </div>
+        <div style={{ fontSize: 13 }}>
+          {isValidated
+            ? 'Validez des idées depuis l\'onglet "En attente de vote"'
+            : 'Utilisez le bouton 💡 durant les modules pour noter des idées'}
+        </div>
+      </div>
+    )
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {entries.map(([moduleLabel, pages]) => (
+          <div key={moduleLabel} style={{
+            background: 'var(--card)', border: '1px solid var(--border)',
+            borderRadius: 'var(--r)', overflow: 'hidden',
+          }}>
+            <div style={{
+              padding: '12px 18px',
+              background: isValidated ? 'rgba(74,222,128,0.04)' : 'rgba(245,158,11,0.06)',
+              borderBottom: isValidated ? '1px solid rgba(74,222,128,0.12)' : '1px solid rgba(245,158,11,0.15)',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{moduleLabel}</span>
+              <span style={{
+                marginLeft: 'auto', fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '2px 10px',
+                background: isValidated ? 'rgba(74,222,128,0.1)' : 'rgba(245,158,11,0.12)',
+                border: isValidated ? '1px solid rgba(74,222,128,0.25)' : '1px solid rgba(245,158,11,0.25)',
+                color: isValidated ? '#4ade80' : '#d97706',
+              }}>
+                {Object.values(pages).flat().length} idée{Object.values(pages).flat().length > 1 ? 's' : ''}
+              </span>
+            </div>
+            <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {Object.entries(pages).map(([pageLabel, pageIdees]) => (
+                <div key={pageLabel}>
+                  <div style={{
+                    fontSize: 11, fontWeight: 700, color: 'var(--text-s)',
+                    textTransform: 'uppercase', letterSpacing: 0.8,
+                    marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8,
+                  }}>
+                    <div style={{ height: 1, flex: 1, background: 'var(--border)' }} />
+                    {pageLabel}
+                    <div style={{ height: 1, flex: 1, background: 'var(--border)' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {pageIdees.sort((a, b) => a.timestamp > b.timestamp ? 1 : -1).map(idee => (
+                      <IdeeCard key={idee.id} idee={idee} validated={isValidated} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (loading) return (
+    <div className="dash-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
+      <div style={{ color: 'var(--text-s)', fontSize: 14 }}>Chargement des idées…</div>
+    </div>
+  )
+
+  return (
+    <div className="dash-wrap">
+      <button className="detail-back" onClick={onBack}>← Retour au tableau de bord</button>
+
+      <div className="dash-header" style={{ marginBottom: 24 }}>
+        <div>
+          <h2 style={{ marginBottom: 4 }}>💡 Idées</h2>
+          <p style={{ color: 'var(--text-s)', fontSize: 14 }}>
+            {pending.length} en attente · {validated.length} validée{validated.length > 1 ? 's' : ''} · <span style={{ opacity: 0.5 }}>sync toutes les 10s</span>
+          </p>
+        </div>
+        {idees.length > 0 && (
+          <button
+            onClick={async () => { if (window.confirm('Supprimer toutes les idées ?')) { await clearAllIdees(); setIdees([]) } }}
+            style={{
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+              color: '#ef4444', borderRadius: 10, padding: '8px 16px',
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >Tout effacer</button>
+        )}
+      </div>
+
+      {/* Sous-onglets */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: 'var(--card)', borderRadius: 12, padding: 4, width: 'fit-content', border: '1px solid var(--border)' }}>
+        {[
+          { key: 'pending', label: `💡 En attente de vote`, count: pending.length },
+          { key: 'validated', label: `🎯 Validées à réaliser`, count: validated.length },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setSubTab(tab.key)}
+            style={{
+              padding: '8px 18px', borderRadius: 9, fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+              background: subTab === tab.key ? (tab.key === 'validated' ? 'rgba(74,222,128,0.15)' : 'rgba(245,158,11,0.15)') : 'transparent',
+              border: subTab === tab.key ? (tab.key === 'validated' ? '1px solid rgba(74,222,128,0.35)' : '1px solid rgba(245,158,11,0.35)') : '1px solid transparent',
+              color: subTab === tab.key ? (tab.key === 'validated' ? '#4ade80' : '#f59e0b') : 'var(--text-s)',
+            }}
+          >
+            {tab.label}
+            {tab.count > 0 && (
+              <span style={{
+                marginLeft: 8, fontSize: 11, fontWeight: 800,
+                background: subTab === tab.key
+                  ? (tab.key === 'validated' ? 'rgba(74,222,128,0.2)' : 'rgba(245,158,11,0.2)')
+                  : 'rgba(255,255,255,0.08)',
+                borderRadius: 10, padding: '1px 7px',
+              }}>{tab.count}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {subTab === 'pending' && renderGrouped(pendingGrouped, false)}
+      {subTab === 'validated' && renderGrouped(validatedGrouped, true)}
+    </div>
+  )
+}
+
+const FICHES = [
+  { label: 'Fiche pratique', href: '/fiche-pratique', icon: '📄', color: '#c9a227', sub: 'Synthèse de la formation' },
+  { label: 'Fiche accès LPT', href: '/fiche-acces', icon: '🔑', color: '#0089ba', sub: 'Gmail · Slack · LPTBot' },
+]
+
+function FichesAnnexesWidget() {
+  return (
+    <div className="dash-tile" style={{ cursor: 'default' }}>
+      <div className="dash-tile-top">
+        <div className="dash-tile-icon">📎</div>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,.4)', letterSpacing: '.4px' }}>Fiches annexes</span>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+        {FICHES.map(f => (
+          <button
+            key={f.label}
+            onClick={() => window.open(f.href, '_blank', 'noopener,noreferrer')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.07)',
+              borderRadius: 10, padding: '9px 12px', cursor: 'pointer',
+              transition: 'all .18s', width: '100%', textAlign: 'left',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,.10)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,.15)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,.07)' }}
+          >
+            <div style={{
+              width: 32, height: 32, borderRadius: 7, flexShrink: 0,
+              background: `rgba(${f.color === '#c9a227' ? '201,162,39' : f.color === '#0089ba' ? '0,137,186' : '74,222,128'},0.15)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+            }}>
+              {f.icon}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.label}</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', marginTop: 1 }}>{f.sub}</div>
+            </div>
+            <span style={{ fontSize: 11, color: f.color, flexShrink: 0 }}>↗</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onOpenTv, onToast, onOnlineCount, onOpenPlanning }) {
   const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning
   const [entreeCount, setEntreeCount] = useState(null)
@@ -603,6 +992,13 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   const [activeRoomCode, setActiveRoomCode] = useState('')
 
   const [obDay, setObDay] = useState('1')
+  const [ideeCount, setIdeeCount] = useState(0)
+  const [showSonnette, setShowSonnette] = useState(false)
+  const [sonnettePending, setSonnettePending] = useState(0)
+
+  useEffect(() => {
+    loadIdeesFromSupabase().then(list => setIdeeCount(list.length)).catch(() => {})
+  }, [])
 
   useEffect(() => {
     loadTileStats()
@@ -704,12 +1100,80 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     )
   }
 
+  if (activeView === 'idees') {
+    return <IdeesView onBack={() => setActiveView('home')} pName={pName} />
+  }
+
+  if (activeView === 'onboarding-choix') {
+    return (
+      <div id="dashboard">
+        <div className="dash-wrap">
+          <button className="detail-back" onClick={() => setActiveView('home')}>← Retour au tableau de bord</button>
+          <div className="dash-hero" style={{ marginBottom: 32 }}>
+            <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+              <div className="dash-hero-label">Formation · Suivi collaborateurs</div>
+              <h2 className="dash-hero-title">ONBOARDING</h2>
+              <p className="dash-hero-date">Choisissez le programme de formation</p>
+            </div>
+            <div style={{ width: 56, height: 56, background: 'rgba(255,255,255,.08)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, position: 'relative', zIndex: 1 }}>🚀</div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {/* France */}
+            <div
+              onClick={() => setActiveView('onboarding')}
+              style={{
+                background: 'linear-gradient(135deg, #03112a 0%, #0a2040 100%)',
+                border: '1px solid rgba(0,137,186,0.3)',
+                borderRadius: 18, padding: '32px 28px', cursor: 'pointer',
+                transition: 'all .2s', display: 'flex', flexDirection: 'column', gap: 16,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,137,186,0.7)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,137,186,0.3)'; e.currentTarget.style.transform = 'translateY(0)' }}
+            >
+              <div style={{ fontSize: 48 }}>🇫🇷</div>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Onboarding France</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>
+                  Optique · Offres · Prise de mesures · Remboursements
+                </div>
+              </div>
+              <div style={{ marginTop: 'auto', fontSize: 13, fontWeight: 700, color: '#00abe9' }}>Accéder →</div>
+            </div>
+
+            {/* Belgique */}
+            <div
+              onClick={() => setActiveView('onboarding-belgique')}
+              style={{
+                background: 'linear-gradient(135deg, #1a1200 0%, #3a2800 100%)',
+                border: '1px solid rgba(201,162,39,0.3)',
+                borderRadius: 18, padding: '32px 28px', cursor: 'pointer',
+                transition: 'all .2s', display: 'flex', flexDirection: 'column', gap: 16,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(201,162,39,0.7)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(201,162,39,0.3)'; e.currentTarget.style.transform = 'translateY(0)' }}
+            >
+              <div style={{ fontSize: 48 }}>🇧🇪</div>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Onboarding Belgique</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>
+                  Mutuelles · INAMI · PARTENA · Spécificités belges
+                </div>
+              </div>
+              <div style={{ marginTop: 'auto', fontSize: 13, fontWeight: 700, color: '#c9a227' }}>Accéder →</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (activeView === 'onboarding') {
     return (
       <div id="dashboard">
         <OnboardingView
           pName={pName}
-          onBack={() => { setActiveView('home'); loadTileStats(); refreshActiveRoom() }}
+          onBack={() => setActiveView('onboarding-choix')}
           onLaunchFormation={onLaunchSession}
           onLaunchModule={onLaunchModule}
         />
@@ -722,9 +1186,9 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
       <div id="dashboard">
         <OnboardingViewBelgique
           pName={pName}
-          onBack={() => { setActiveView('home'); loadTileStats(); refreshActiveRoom() }}
+          onBack={() => setActiveView('onboarding-choix')}
           onLaunchFormation={onLaunchSession}
-          onLaunchModule={onLaunchModule}
+          onLaunchModule={(moduleId, journeeId) => onLaunchModule(moduleId, 'onboarding-modules-belgique', journeeId)}
         />
       </div>
     )
@@ -868,85 +1332,29 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   return (
     <div id="dashboard">
       <div className="dash-wrap">
-        <DashHeader pName={pName} onUpdatesClick={() => setSelectedUpdate(APP_UPDATES[0])} />
+        <DashHeader
+          pName={pName}
+          onUpdatesClick={() => setSelectedUpdate(APP_UPDATES[0])}
+          activeRoomCode={activeRoomCode}
+          onOpenTv={onOpenTv}
+          onOpenRoom={handleOpenRoomClick}
+          onSonnetteClick={() => setShowSonnette(true)}
+          sonnettePending={sonnettePending}
+        />
+        <SonnettePanel
+          visible={showSonnette}
+          onClose={() => setShowSonnette(false)}
+          onPendingChange={setSonnettePending}
+        />
         {selectedUpdate && <AppUpdateModal update={selectedUpdate} onClose={() => setSelectedUpdate(null)} />}
-        <NewsTicker />
 
-        {isDynamicRoomCode(activeRoomCode) ? (
-          <div style={{
-            marginBottom: 16, padding: '14px 18px', borderRadius: 14,
-            background: 'linear-gradient(135deg, rgba(0,137,186,0.12), rgba(0,171,233,0.06))',
-            border: '1px solid rgba(0,137,186,0.35)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
-          }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 0.8 }}>
-                Salle dédiée ouverte
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#0089ba', fontFamily: 'monospace', letterSpacing: 4, marginTop: 4 }}>
-                {activeRoomCode}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 4, lineHeight: 1.5 }}>
-                Données isolées de LPT2026 — participants et diffusion via ce code uniquement.
-                <br />
-                Le <strong>QR code</strong> s&apos;affiche sur l&apos;écran <strong>Diffusion 📺</strong> (pas sur ce tableau de bord).
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
-              {onOpenTv && (
-                <button
-                  type="button"
-                  onClick={onOpenTv}
-                  style={{
-                    padding: '10px 18px', borderRadius: 10, border: 'none',
-                    background: '#00abe9', color: '#fff', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                  }}
-                >
-                  Afficher le QR 📺
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={handleOpenRoomClick}
-                style={{
-                  padding: '10px 18px', borderRadius: 10,
-                  border: '1px solid rgba(0,137,186,0.45)',
-                  background: 'transparent', color: '#0089ba', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
-                Reprendre la salle →
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div style={{
-            marginBottom: 16, padding: '12px 16px', borderRadius: 12,
-            background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
-            fontSize: 13, color: '#b45309',
-          }}>
-            Mode <strong>legacy</strong> (LPT2026) — cliquez <strong>Ma salle</strong> pour créer une salle séparée avec son propre QR.
-          </div>
-        )}
-
-        {/* OB Banner — France */}
-        <div className="ob-banner" onClick={() => setActiveView('onboarding')}>
+        {/* OB Banner */}
+        <div className="ob-banner" onClick={() => setActiveView('onboarding-choix')}>
           <div className="ob-banner-icon">🚀</div>
           <div className="ob-banner-body">
             <div className="ob-banner-label">Formation · Suivi collaborateurs</div>
             <div className="ob-banner-title">Onboarding LPT</div>
-            <div className="ob-banner-sub">Gérez la présence et le suivi de vos collaborateurs</div>
-            <div className="ob-day-badge">Jour {obDay}</div>
-          </div>
-          <div className="ob-banner-arrow">→</div>
-        </div>
-
-        {/* OB Banner — Belgique */}
-        <div className="ob-banner" onClick={() => setActiveView('onboarding-belgique')} style={{ background: 'linear-gradient(135deg, #1a1200 0%, #3a2800 50%, #5a3e00 100%)' }}>
-          <div className="ob-banner-icon">🇧🇪</div>
-          <div className="ob-banner-body">
-            <div className="ob-banner-label">Formation · Suivi collaborateurs</div>
-            <div className="ob-banner-title">Onboarding LPT Belgique</div>
-            <div className="ob-banner-sub">Gérez la présence et le suivi de vos collaborateurs</div>
+            <div className="ob-banner-sub">France · Belgique — gérez la présence et le suivi de vos collaborateurs</div>
             <div className="ob-day-badge">Jour {obDay}</div>
           </div>
           <div className="ob-banner-arrow">→</div>
@@ -980,57 +1388,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           <div style={{ fontSize: 13, fontWeight: 600, color: '#00abe9' }}>Voir →</div>
         </div>
 
-        {/* Fiche pratique */}
-        <div
-          onClick={() => window.open('/fiche-pratique', '_blank')}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#fff', border: '1px solid var(--border)',
-            borderLeft: '4px solid #c9a227',
-            borderRadius: 'var(--r)', padding: '18px 24px',
-            cursor: 'pointer', marginBottom: 16, transition: 'all .2s',
-          }}
-          onMouseOver={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(201,162,39,.12)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-          onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(201,162,39,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>
-              📄
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>Formateur uniquement</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Fiche pratique</div>
-              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 1 }}>Synthèse de la formation — exportable en PDF</div>
-            </div>
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#c9a227' }}>Ouvrir ↗</div>
-        </div>
-
-        {/* Fiche accès */}
-        <div
-          onClick={() => window.open('/fiche-acces', '_blank')}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#fff', border: '1px solid var(--border)',
-            borderLeft: '4px solid #0089ba',
-            borderRadius: 'var(--r)', padding: '18px 24px',
-            cursor: 'pointer', marginBottom: 16, transition: 'all .2s',
-          }}
-          onMouseOver={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,137,186,.12)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-          onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,137,186,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>
-              🔑
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>À partager aux formés</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Fiche accès LPT</div>
-              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 1 }}>Gmail · Slack · LPTBot — exportable en PDF</div>
-            </div>
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#0089ba' }}>Ouvrir ↗</div>
-        </div>
 
         {/* Main tiles */}
         <div className="dash-tiles">
@@ -1054,25 +1411,22 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-sub">{sessionLast}</div>
           </div>
 
-          <div className="dash-tile dash-tile-cta" onClick={handleOpenRoomClick}>
-            <div className="dash-tile-cta-icon">🚪</div>
-            <div className="dash-tile-label">Ma salle</div>
-            <div className="dash-tile-sub">
-              {activeRoomCode ? `Code ${activeRoomCode} — reprendre` : 'Créer ou ouvrir ma salle'}
+          <div className="dash-tile" onClick={() => setActiveView('idees')}>
+            <div className="dash-tile-top">
+              <div className="dash-tile-icon">💡</div>
+              <span className="dash-tile-link">Voir tout →</span>
             </div>
-          </div>
-
-          <div className="dash-tile dash-tile-cta" onClick={() => setActiveView('modules')}>
-            <div className="dash-tile-cta-icon">▶</div>
-            <div className="dash-tile-label">Démarrer une session</div>
-            <div className="dash-tile-sub">Lancer une nouvelle formation</div>
+            <div className="dash-tile-count">{ideeCount}</div>
+            <div className="dash-tile-label">Idées notées</div>
+            <div className="dash-tile-sub">Idées notées durant les formations</div>
           </div>
         </div>
 
-        {/* Planning + Shortcuts */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+        {/* Planning + Shortcuts + Fiches */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
           <PlanningWidget onOpen={() => onOpenPlanning()} />
           <ShortcutsWidget />
+          <FichesAnnexesWidget />
         </div>
 
       </div>

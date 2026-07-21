@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" width="220" height="220">
+  <!-- Background -->
+  <rect x="3" y="3" width="214" height="214" rx="22" ry="22" fill="white" stroke="#6cc9f0" stroke-width="5"/>
+  <!-- ameli text -->
+  <text x="108" y="95" font-family="'Arial Black',Arial,sans-serif" font-size="58" font-weight="900" fill="#1a3a8c" text-anchor="middle" letter-spacing="-1">ameli</text>
+  <!-- pro text -->
+  <text x="82" y="148" font-family="'Arial Black',Arial,sans-serif" font-size="58" font-weight="900" fill="#5bb8e8" text-anchor="middle" letter-spacing="-1">pro</text>
+  <!-- Bottom-right dark blue quarter circle -->
+  <clipPath id="sq">
+    <rect x="3" y="3" width="214" height="214" rx="22" ry="22"/>
+  </clipPath>
+  <path d="M 120 217 Q 217 217 217 120 L 217 217 Z" fill="#1a3a8c" clip-path="url(#sq)"/>
+  <!-- Power button icon (white) -->
+  <circle cx="178" cy="180" r="18" fill="none" stroke="white" stroke-width="4.5"/>
+  <line x1="178" y1="164" x2="178" y2="177" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+</svg>

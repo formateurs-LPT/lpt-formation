@@ -137,9 +137,11 @@ function QrModal({ url, onClose }) {
 export default function FicheAcces() {
   const [showQr, setShowQr] = useState(false)
   const [ficheUrl, setFicheUrl] = useState('')
+  const [isTrainer, setIsTrainer] = useState(false)
 
   useEffect(() => {
     setFicheUrl(window.location.origin + '/fiche-acces')
+    setIsTrainer(!!localStorage.getItem('trainer_name'))
   }, [])
 
   const handlePrint = () => window.print()
@@ -152,10 +154,12 @@ export default function FicheAcces() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'DM Sans', sans-serif; background: ${BG}; color: ${TEXT}; }
         @media print {
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           .no-print { display: none !important; }
-          body { background: #fff !important; color: #111 !important; }
-          .print-page { background: #fff !important; }
-          .print-section { break-inside: avoid; }
+          body { background: ${BG} !important; color: ${TEXT} !important; margin: 0; }
+          .print-page { background: ${BG} !important; padding: 20px 16px !important; }
+          .print-section { break-inside: avoid; page-break-inside: avoid; }
+          @page { margin: 10mm; background: ${BG}; }
         }
       `}</style>
 
@@ -175,19 +179,21 @@ export default function FicheAcces() {
             </div>
           </div>
           <div className="no-print" style={{ display: 'flex', gap: 10 }}>
-            <button
-              onClick={() => setShowQr(true)}
-              style={{
-                background: `${GOLD}18`, border: `1px solid ${GOLD}60`,
-                color: GOLD, fontSize: 13, fontWeight: 700,
-                padding: '10px 20px', borderRadius: 12,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}35` }}
-              onMouseLeave={e => { e.currentTarget.style.background = `${GOLD}18` }}
-            >
-              ⬜ QR Code
-            </button>
+            {isTrainer && (
+              <button
+                onClick={() => setShowQr(true)}
+                style={{
+                  background: `${GOLD}18`, border: `1px solid ${GOLD}60`,
+                  color: GOLD, fontSize: 13, fontWeight: 700,
+                  padding: '10px 20px', borderRadius: 12,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}35` }}
+                onMouseLeave={e => { e.currentTarget.style.background = `${GOLD}18` }}
+              >
+                ⬜ QR Code
+              </button>
+            )}
             <button
               onClick={handlePrint}
               style={{
@@ -199,7 +205,7 @@ export default function FicheAcces() {
               onMouseEnter={e => { e.currentTarget.style.background = `${BLUE}35` }}
               onMouseLeave={e => { e.currentTarget.style.background = `${BLUE}18` }}
             >
-              ⬇ Exporter en PDF
+              ⬇ Télécharger en PDF
             </button>
           </div>
         </div>

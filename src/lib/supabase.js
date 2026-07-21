@@ -11,7 +11,7 @@ export const SESSION_CODE = process.env.NEXT_PUBLIC_SESSION_CODE ?? ''
 export const TRAINER_STATE_WEEKLY_KEY = '__weekly__'
 
 /** Champs stockés sur __weekly__ (pas par salle) */
-const WEEKLY_STATE_KEYS = new Set(['entrees_data', 'ob_data', 'ob_date', 'ob_day'])
+const WEEKLY_STATE_KEYS = new Set(['entrees_data', 'ob_data', 'ob_date', 'ob_day', 'lpt_idees'])
 
 /** Filtre PostgREST pour valeurs avec espaces / accents */
 export function pgEq(column, value) {
@@ -330,6 +330,30 @@ export async function setRoomSharedState(patch, roomCode) {
   return result
 }
 
+// ── Réponses libres aux questions ouvertes ────────────────────────
+export async function insertOpenAnswer({ sessionCode, pageId, participantName, answer }) {
+  return sbInsert('open_answers', {
+    session_code: sessionCode,
+    page_id: pageId,
+    participant_name: participantName || 'Anonyme',
+    answer: answer.trim(),
+  })
+}
+
+export async function fetchOpenAnswers(sessionCode, pageId) {
+  return sbSelect(
+    'open_answers',
+    `session_code=eq.${encodeURIComponent(sessionCode)}&page_id=eq.${encodeURIComponent(pageId)}&order=created_at.asc&limit=20`
+  )
+}
+
+export async function clearOpenAnswers(sessionCode, pageId) {
+  await sbDelete(
+    'open_answers',
+    `session_code=eq.${encodeURIComponent(sessionCode)}&page_id=eq.${encodeURIComponent(pageId)}`
+  )
+}
+
 export async function deleteTrainerStateByKey(trainerKey) {
   const key = (trainerKey || '').trim()
   if (!key) return false
@@ -355,4 +379,17 @@ export async function setSharedState(patch) {
     lastResult = await setRoomSharedState(roomPatch)
   }
   return lastResult
+}
+
+/** Écrit la page courante d'un formé sans écraser celles des autres. */
+export async function setParticipantPage(sessionCode, participantName, pageData) {
+  const code = (sessionCode || resolveRoomStateCode()).trim()
+  if (!code || !participantName) return
+  const current = await fetchTrainerStateByKey(code)
+  const pages = { ...(current?.participant_pages || {}), [participantName]: pageData }
+  return sbUpsert(
+    'trainer_state',
+    { trainer: code, state: { ...current, participant_pages: pages }, updated_at: new Date().toISOString() },
+    'trainer'
+  )
 }

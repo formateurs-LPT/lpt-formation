@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState } from '@/lib/supabase'
+import { useIsMobile } from '@/lib/useIsMobile'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { ENTREPRISE_PAGES as PAGES, ENTREPRISE_QUIZ } from '@/lib/modulesData'
 import ZeroInterChain from '@/components/ZeroInterChain'
@@ -181,7 +182,7 @@ function FreinsPage({ page, navProps }) {
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-      padding: '24px 48px 100px', position: 'relative',
+      padding: '24px clamp(14px, 4vw, 48px) 100px', position: 'relative',
     }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
@@ -286,7 +287,7 @@ function PrixPage({ page, navProps }) {
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-      padding: '24px 48px 100px', position: 'relative',
+      padding: '24px clamp(14px, 4vw, 48px) 100px', position: 'relative',
     }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
@@ -415,7 +416,7 @@ function VentesOpticienPage({ page, navProps }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px', position: 'relative' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
@@ -504,7 +505,7 @@ function PromessePage({ page, navProps }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px', position: 'relative' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
@@ -554,7 +555,7 @@ function ForceLPTTrainer({ page, navProps }) {
   const isZeroInter = selected === 4
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
         <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
@@ -661,7 +662,7 @@ function EntreprisePage({ page, navProps }) {
   // ── CHIFFRES CLÉS ──────────────────────────────────────────────
 
   if (page.type === 'chiffres') return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
         <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
@@ -692,7 +693,7 @@ function EntreprisePage({ page, navProps }) {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '24px 48px 100px', position: 'relative',
+      padding: '24px clamp(14px, 4vw, 48px) 100px', position: 'relative',
     }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{
@@ -711,7 +712,7 @@ function EntreprisePage({ page, navProps }) {
 
   // ── NAISSANCE ──────────────────────────────────────────────────
   if (page.type === 'naissance') return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
@@ -768,7 +769,7 @@ function EntreprisePage({ page, navProps }) {
   // ── IMPACT ─────────────────────────────────────────────────────
   if (page.type === 'impact') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px' }}>
         <PageHeader />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
           <div style={{ textAlign: 'center', maxWidth: 760 }}>
@@ -799,7 +800,7 @@ function EntreprisePage({ page, navProps }) {
   // ── PROBLÈME ────────────────────────────────────────────────────
   if (page.type === 'probleme') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a0505 55%, #2d0808 100%)', padding: '24px 48px 100px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a0505 55%, #2d0808 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px' }}>
         <PageHeader />
         <PageTitle />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 900, margin: '0 auto' }}>
@@ -829,7 +830,7 @@ function EntreprisePage({ page, navProps }) {
   // ── TIMELINE ────────────────────────────────────────────────────
   if (page.type === 'timeline') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px' }}>
         <PageHeader />
         <PageTitle />
         <div style={{ maxWidth: 800, margin: '0 auto', position: 'relative' }}>
@@ -865,7 +866,7 @@ function EntreprisePage({ page, navProps }) {
   // ── PILIERS ─────────────────────────────────────────────────────
   if (page.type === 'piliers') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #021a0c 55%, #042a14 100%)', padding: '24px 48px 100px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #021a0c 55%, #042a14 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px' }}>
         <PageHeader />
         <PageTitle />
         <div style={{ display: 'flex', gap: 20, maxWidth: 960, margin: '0 auto' }}>
@@ -889,7 +890,7 @@ function EntreprisePage({ page, navProps }) {
   // ── ÉTAPES FABRICATION ──────────────────────────────────────────
   if (page.type === 'steps') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a0f02 55%, #2a1a04 100%)', padding: '24px 48px 100px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a0f02 55%, #2a1a04 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px' }}>
         <PageHeader />
         <PageTitle />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, maxWidth: 960, margin: '0 auto' }}>
@@ -920,7 +921,7 @@ function EntreprisePage({ page, navProps }) {
   // ── MACHINES ────────────────────────────────────────────────────
   if (page.type === 'machines') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0d0520 55%, #150a2e 100%)', padding: '24px 48px 100px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0d0520 55%, #150a2e 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px' }}>
         <PageHeader />
         <PageTitle />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 800, margin: '0 auto' }}>
@@ -949,7 +950,7 @@ function EntreprisePage({ page, navProps }) {
   // ── CAS CLIENTS ─────────────────────────────────────────────────
   if (page.type === 'cases') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a0510 55%, #2d0820 100%)', padding: '24px 48px 100px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a0510 55%, #2d0820 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px' }}>
         <PageHeader />
         <PageTitle />
         <div style={{ display: 'flex', gap: 18, maxWidth: 1000, margin: '0 auto' }}>
@@ -988,7 +989,7 @@ function EntreprisePage({ page, navProps }) {
   // ── VISAGES LPT ─────────────────────────────────────────────────
   if (page.type === 'visages') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #031a20 55%, #052a30 100%)', padding: '24px 48px 100px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #031a20 55%, #052a30 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px' }}>
         <PageHeader />
         <PageTitle />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 880, margin: '0 auto' }}>
@@ -1025,7 +1026,7 @@ function EntreprisePage({ page, navProps }) {
   // ── CROISSANCE ──────────────────────────────────────────────────
   if (page.type === 'croissance') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #021a0c 55%, #042a14 100%)', padding: '24px 48px 100px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #021a0c 55%, #042a14 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px' }}>
         <PageHeader />
         <PageTitle />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, maxWidth: 900, margin: '0 auto 40px' }}>
@@ -1062,7 +1063,7 @@ function EntreprisePage({ page, navProps }) {
   // ── MISSION FINALE ──────────────────────────────────────────────
   if (page.type === 'mission') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px' }}>
         <PageHeader />
         <div style={{ textAlign: 'center', maxWidth: 800, margin: '40px auto' }}>
           <h1 style={{ fontSize: 38, fontWeight: 900, color: '#fff', marginBottom: 12 }}>{page.titre}</h1>
@@ -1094,7 +1095,7 @@ function EntreprisePage({ page, navProps }) {
 
   // ── FALLBACK ────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px 48px 100px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px' }}>
       <PageHeader />
       <PageTitle />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 760, margin: '0 auto' }}>

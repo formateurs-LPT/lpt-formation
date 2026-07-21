@@ -6,6 +6,7 @@ import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import TrainerAvatar from '@/components/TrainerAvatar'
 import { PROGRESSIF_PAGES, PROGRESSIF_QUIZ } from '@/lib/modulesData'
+import { useIsMobile } from '@/lib/useIsMobile'
 const ACCENT = '#7c3aed'
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -154,6 +155,7 @@ function PageShell({ children, pageIndex, total, onBack }) {
 
 // ── Page cours (4 points + verre schéma) ──────────────────────────
 function CoursPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextPage }) {
+  const isMobile = useIsMobile()
   const [entered, setEntered] = useState(false)
   useEffect(() => { setEntered(false); const t = setTimeout(() => setEntered(true), 60); return () => clearTimeout(t) }, [page.id])
   return (
@@ -184,16 +186,16 @@ function CoursPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pageI
           </div>
         </div>
       </div>
-      <div style={{ padding: '0 340px 0 48px', position: 'relative', zIndex: 20, flexShrink: 0 }}>
-        <NextPagePreview nextPage={nextPage} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 28 }}>
-          <button onClick={onPrev} disabled={isFirst} style={{ background: isFirst ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: isFirst ? 'default' : 'pointer', fontFamily: 'inherit' }}>← Précédent</button>
+      <div style={{ padding: isMobile ? '0 14px calc(env(safe-area-inset-bottom,0px) + 20px)' : '0 340px 0 48px', position: 'relative', zIndex: 20, flexShrink: 0 }}>
+        {!isMobile && <NextPagePreview nextPage={nextPage} />}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: isMobile ? 0 : 28, gap: isMobile ? 10 : 0 }}>
+          <button onClick={onPrev} disabled={isFirst} style={{ background: isFirst ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff', padding: isMobile ? '16px 0' : '12px 24px', borderRadius: 12, fontSize: isMobile ? 16 : 14, fontWeight: 600, cursor: isFirst ? 'default' : 'pointer', fontFamily: 'inherit', flex: isMobile ? 1 : undefined }}>← Précédent</button>
           {isLast ? (
             quizLaunched
-              ? <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}><span style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>✓ Quiz envoyé</span><button onClick={onBack} style={{ background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)', color: '#ff6b6b', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Terminer →</button></div>
-              : <button onClick={onLaunchQuiz} style={{ background: `linear-gradient(135deg, ${ACCENT}, #9f67fa)`, border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: `0 6px 24px ${ACCENT}50`, fontFamily: 'inherit' }}>🏆 Lancer le quiz final →</button>
+              ? <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: isMobile ? 2 : undefined }}><span style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>✓ Quiz envoyé</span><button onClick={onBack} style={{ background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)', color: '#ff6b6b', padding: isMobile ? '16px 0' : '12px 24px', borderRadius: 12, fontSize: isMobile ? 16 : 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', flex: isMobile ? 1 : undefined }}>Terminer →</button></div>
+              : <button onClick={onLaunchQuiz} style={{ background: `linear-gradient(135deg, ${ACCENT}, #9f67fa)`, border: 'none', color: '#fff', padding: isMobile ? '16px 0' : '12px 32px', borderRadius: 12, fontSize: isMobile ? 16 : 15, fontWeight: 700, cursor: 'pointer', boxShadow: `0 6px 24px ${ACCENT}50`, fontFamily: 'inherit', flex: isMobile ? 2 : undefined, textAlign: 'center' }}>🏆 Quiz final →</button>
           ) : (
-            <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${ACCENT}, #9f67fa)`, border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: `0 6px 24px ${ACCENT}50`, fontFamily: 'inherit' }}>Suivant →</button>
+            <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${ACCENT}, #9f67fa)`, border: 'none', color: '#fff', padding: isMobile ? '16px 0' : '12px 32px', borderRadius: 12, fontSize: isMobile ? 16 : 15, fontWeight: 700, cursor: 'pointer', boxShadow: `0 6px 24px ${ACCENT}50`, fontFamily: 'inherit', flex: isMobile ? 2 : undefined, textAlign: 'center' }}>Suivant →</button>
           )}
         </div>
       </div>

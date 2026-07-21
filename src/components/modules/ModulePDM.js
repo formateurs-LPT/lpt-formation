@@ -4,8 +4,10 @@ import Image from 'next/image'
 import { sbUpdate, sbSelect, getActiveSessionCode } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { NextPagePreview } from '@/lib/trainerPreview'
+import { PDMAnimationSVG, PDM_ANIM_STEP_LABELS } from '@/lib/pdmAnimationSvg'
 import TrainerAvatar from '@/components/TrainerAvatar'
 import { PDM_PAGES as PAGES, PDM_QUIZ } from '@/lib/modulesData'
+import { useIsMobile } from '@/lib/useIsMobile'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -147,6 +149,7 @@ function AvatarBubble({ script, pName }) {
 // ── Page de contenu ───────────────────────────────────────────────
 function ContentPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextPage }) {
   const [entered, setEntered] = useState(false)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     setEntered(false)
@@ -269,50 +272,54 @@ function ContentPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pag
       </div>
 
       {/* Boutons navigation */}
-      <div style={{ padding: '0 340px 0 48px', position: 'relative', zIndex: 20, flexShrink: 0 }}>
-        <NextPagePreview nextPage={nextPage} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 28 }}>
+      <div style={{ padding: isMobile ? '0 14px calc(env(safe-area-inset-bottom,0px) + 20px)' : '0 340px 0 48px', position: 'relative', zIndex: 20, flexShrink: 0 }}>
+        {!isMobile && <NextPagePreview nextPage={nextPage} />}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: isMobile ? 0 : 28, gap: isMobile ? 10 : 0 }}>
         <button
           onClick={onPrev}
           style={{
             background: isFirst ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.1)',
             border: '1px solid rgba(255,255,255,0.15)',
             color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff',
-            padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600,
+            padding: isMobile ? '16px 0' : '12px 24px',
+            borderRadius: 12, fontSize: isMobile ? 16 : 14, fontWeight: 600,
             cursor: isFirst ? 'default' : 'pointer', transition: 'all .2s',
-            fontFamily: 'inherit',
+            fontFamily: 'inherit', flex: isMobile ? 1 : undefined,
           }}
           disabled={isFirst}
         >← Précédent</button>
 
         {isLast ? (
           quizLaunched ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: isMobile ? 2 : undefined }}>
               <span style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>✓ Quiz envoyé</span>
               <button onClick={onBack} style={{
                 background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)',
-                color: '#ff6b6b', padding: '12px 24px', borderRadius: 12,
-                fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              }}>Terminer le module →</button>
+                color: '#ff6b6b', padding: isMobile ? '16px 0' : '12px 24px', borderRadius: 12,
+                fontSize: isMobile ? 16 : 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                flex: isMobile ? 1 : undefined,
+              }}>Terminer →</button>
             </div>
           ) : (
             <button onClick={onLaunchQuiz} style={{
               background: 'linear-gradient(135deg, #d97706, #f59e0b)',
               border: 'none', color: '#fff',
-              padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
+              padding: isMobile ? '16px 0' : '12px 32px',
+              borderRadius: 12, fontSize: isMobile ? 16 : 15, fontWeight: 700,
               cursor: 'pointer', transition: 'all .2s',
               boxShadow: '0 6px 24px rgba(245,158,11,0.5)',
-              fontFamily: 'inherit',
+              fontFamily: 'inherit', flex: isMobile ? 2 : undefined, textAlign: 'center',
             }}>🧠 Lancer le quiz →</button>
           )
         ) : (
           <button onClick={onNext} style={{
             background: 'linear-gradient(135deg, #d97706, #f59e0b)',
             border: 'none', color: '#fff',
-            padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
+            padding: isMobile ? '16px 0' : '12px 32px',
+            borderRadius: 12, fontSize: isMobile ? 16 : 15, fontWeight: 700,
             cursor: 'pointer', transition: 'all .2s',
             boxShadow: '0 6px 24px rgba(245,158,11,0.5)',
-            fontFamily: 'inherit',
+            fontFamily: 'inherit', flex: isMobile ? 2 : undefined, textAlign: 'center',
           }}>Suivant →</button>
         )}
         </div>
@@ -446,6 +453,150 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   )
 }
 
+// ── Page animation PDM (formateur) ───────────────────────────────
+const PDM_ANIM_SCRIPTS = [
+  "Voila un verre brut, avant taillage. Il est grand et rond.",
+  "Ce point est le centre optique du verre — l'endroit ou la qualite est maximale.",
+  "Le but des PDM : aligner ce point avec la pupille du client une fois le verre taille.",
+  "Notre client porte la monture. Regardez la position de ses pupilles.",
+  "On mesure l'ecart pupillaire et la hauteur de montage — deux valeurs essentielles.",
+  "Le verre se positionne devant l'oeil. Le point central doit s'aligner avec la pupille.",
+  "On trace le contour interieur de la monture sur le verre — c'est le guide de taillage.",
+  "Le verre retourne en taillage. Il est decoupe pour ne garder que la forme utile.",
+  "Le verre taille s'insere parfaitement. Centre optique face a la pupille.",
+]
+
+function PDMAnimationTrainer({ page, pName, pageIndex, total, onPrev, onNext, onBack, nextPage }) {
+  const [animStep, setAnimStep] = useState(0)
+  const MAX_STEP = 8
+  const isMobile = useIsMobile()
+
+  useEffect(() => {
+    sbUpdate('sessions', { module_page: 1000 + animStep }, 'code=eq.' + getActiveSessionCode())
+  }, [animStep])
+
+  const handleNext = () => {
+    if (animStep < MAX_STEP) setAnimStep(s => s + 1)
+    else onNext()
+  }
+
+  const handlePrev = () => {
+    if (animStep > 0) setAnimStep(s => s - 1)
+    else onPrev()
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', position: 'relative',
+    }}>
+      {/* Particules deco */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+        {[...Array(10)].map((_, i) => (
+          <div key={i} style={{
+            position: 'absolute', width: 3, height: 3, borderRadius: '50%',
+            background: page.color, opacity: 0.15 + (i % 3) * 0.08,
+            left: `${5 + i * 9}%`, top: `${20 + (i % 4) * 20}%`,
+            animation: `pdmParticleFloat ${3 + i * 0.5}s ease-in-out ${i * 0.25}s infinite alternate`,
+          }} />
+        ))}
+      </div>
+
+      {/* Topbar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '18px 32px', position: 'relative', zIndex: 10, flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Prises de mesures</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {Array(total).fill(0).map((_, i) => (
+              <div key={i} style={{
+                height: 5, borderRadius: 3, transition: 'all .3s',
+                width: i === pageIndex ? 22 : 5,
+                background: i === pageIndex ? page.color : 'rgba(255,255,255,0.2)',
+              }} />
+            ))}
+          </div>
+          <button onClick={onBack} style={{
+            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+            color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10,
+            fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}>&#x2715; Quitter</button>
+        </div>
+      </div>
+
+      {/* Titre de la page */}
+      <div style={{ padding: '0 48px 4px', position: 'relative', zIndex: 5, flexShrink: 0 }}>
+        <div style={{
+          display: 'inline-block', background: `${page.color}20`,
+          border: `1px solid ${page.color}45`, borderRadius: 20,
+          padding: '3px 12px', fontSize: 11, fontWeight: 700,
+          color: page.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4,
+        }}>Animation</div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', margin: '4px 0 0', lineHeight: 1.2 }}>
+          {page.titre}
+        </h2>
+      </div>
+
+      {/* Zone SVG */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 40px 0', position: 'relative', zIndex: 5 }}>
+        <PDMAnimationSVG animStep={animStep} />
+      </div>
+
+      {/* Progression etapes */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 7, padding: '6px 0 2px', position: 'relative', zIndex: 10 }}>
+        {Array(MAX_STEP + 1).fill(0).map((_, i) => (
+          <div key={i} style={{
+            width: i === animStep ? 20 : 6, height: 6, borderRadius: 3,
+            background: i <= animStep ? page.color : 'rgba(255,255,255,0.15)',
+            transition: 'all 0.3s',
+          }} />
+        ))}
+      </div>
+      <div style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.3)', paddingBottom: 4, position: 'relative', zIndex: 10 }}>
+        {PDM_ANIM_STEP_LABELS[animStep]} &nbsp;·&nbsp; etape {animStep + 1} / {MAX_STEP + 1}
+      </div>
+
+      {/* Navigation */}
+      <div style={{ padding: isMobile ? '0 14px calc(env(safe-area-inset-bottom,0px) + 20px)' : '4px 340px 0 48px', position: 'relative', zIndex: 20, flexShrink: 0 }}>
+        {!isMobile && animStep === MAX_STEP && <NextPagePreview nextPage={nextPage} />}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: isMobile ? 0 : 28, gap: isMobile ? 10 : 0 }}>
+          <button onClick={handlePrev} style={{
+            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+            color: animStep === 0 ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.7)',
+            padding: isMobile ? '16px 0' : '11px 22px', borderRadius: 12,
+            fontSize: isMobile ? 16 : 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            flex: isMobile ? 1 : undefined,
+          }}>
+            {animStep === 0 ? '← Precedent' : '← Etape prec.'}
+          </button>
+          <button onClick={handleNext} style={{
+            background: `linear-gradient(135deg, #d97706, ${page.color})`,
+            border: 'none', color: '#fff',
+            padding: isMobile ? '16px 0' : '11px 30px', borderRadius: 12,
+            fontSize: isMobile ? 16 : 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: `0 6px 24px ${page.color}40`,
+            flex: isMobile ? 2 : undefined, textAlign: 'center',
+          }}>
+            {animStep < MAX_STEP
+              ? isMobile ? `Suivant (${animStep + 1}/${MAX_STEP})` : `Suivant → (${animStep + 1}/${MAX_STEP})`
+              : 'Page suivante →'}
+          </button>
+        </div>
+      </div>
+
+      <AvatarBubble script={PDM_ANIM_SCRIPTS[animStep] || ''} pName={pName} />
+    </div>
+  )
+}
+
 // ── Lobby ─────────────────────────────────────────────────────────
 function Lobby({ onStart, onBack }) {
   return (
@@ -470,7 +621,7 @@ function Lobby({ onStart, onBack }) {
         </div>
         <h1 style={{ fontSize: 34, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Prises de mesures · LPTVISION</h1>
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 36, lineHeight: 1.6 }}>
-          4 étapes · ~6 minutes
+          5 étapes · ~8 minutes
         </p>
         <button onClick={onStart} style={{
           background: 'linear-gradient(135deg, #d97706, #f59e0b)',
@@ -478,7 +629,7 @@ function Lobby({ onStart, onBack }) {
           borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer',
           boxShadow: '0 8px 32px rgba(245,158,11,0.45)', fontFamily: 'inherit',
         }}>▶ Lancer le module</button>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>4 pages · ~6 minutes</p>
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>5 pages · ~8 minutes</p>
       </div>
     </div>
   )
@@ -646,10 +797,12 @@ export default function ModulePDM({ pName, onBack }) {
     }
   }, [started])
 
-  // Write to Supabase when page changes
+  // Write to Supabase when page changes (animation page uses 1000+ range)
   useEffect(() => {
     if (started) {
-      sbUpdate('sessions', { module_page: pageIndex }, 'code=eq.' + getActiveSessionCode())
+      const p = PAGES[pageIndex]
+      const mpValue = p?.type === 'pdm-animation' ? 1000 : pageIndex
+      sbUpdate('sessions', { module_page: mpValue }, 'code=eq.' + getActiveSessionCode())
     }
   }, [pageIndex, started])
 
@@ -683,22 +836,33 @@ export default function ModulePDM({ pName, onBack }) {
     )
   }
 
+  const currentPage = PAGES[pageIndex]
+  const nextPage    = PAGES[pageIndex + 1] ?? null
+  const navProps = {
+    page: currentPage, pName, pageIndex, total: PAGES.length,
+    onPrev: () => setPageIndex(i => Math.max(0, i - 1)),
+    onNext: () => setPageIndex(i => i + 1),
+    onBack: handleBack, nextPage,
+  }
+
+  if (currentPage?.type === 'pdm-animation') {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <PDMAnimationTrainer {...navProps} />
+      </>
+    )
+  }
+
   return (
     <>
       <style>{STYLES}</style>
       <ContentPage
-        page={PAGES[pageIndex]}
-        pName={pName}
-        pageIndex={pageIndex}
-        total={PAGES.length}
+        {...navProps}
         isFirst={pageIndex === 0}
         isLast={pageIndex === PAGES.length - 1}
-        onPrev={() => setPageIndex(i => Math.max(0, i - 1))}
-        onNext={() => setPageIndex(i => i + 1)}
-        onBack={handleBack}
         quizLaunched={quizLaunched}
         onLaunchQuiz={handleLaunchQuiz}
-        nextPage={PAGES[pageIndex + 1] ?? null}
       />
     </>
   )

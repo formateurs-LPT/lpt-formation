@@ -13,6 +13,7 @@ export const NEXT_PAGE_LABELS = {
   'prog-retour':       { label: 'Retour terrain',      icon: '💬' },
   'prog-objections':   { label: 'Objections clients', icon: '🤔' },
   'pdm-pourquoi':      { label: 'Prise de mesures',   icon: '📐' },
+  'pdm-animation':     { label: 'Animation PDM',      icon: '🎬' },
   'freins':            { label: 'Question ouverte',   icon: '🙋' },
   'prix':              { label: 'Question ouverte',   icon: '🙋' },
   'ventes-opticien':   { label: 'Question ouverte',   icon: '🙋' },

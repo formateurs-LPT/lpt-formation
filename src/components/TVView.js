@@ -2,13 +2,94 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS } from '@/lib/modulesData'
+import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbSelect, SESSION_CODE } from '@/lib/supabase'
+import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, getRoomSharedState, setSharedState, setRoomSharedState } from '@/lib/supabase'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
+import { PDMAnimationSVG } from '@/lib/pdmAnimationSvg'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
+
+// ── Affichage anonyme des questions formés (TV) ───────────────────
+function TVModuleQuestionsView({ sessionCode, moduleId, moduleLabel }) {
+  const [questions, setQuestions] = useState([])
+
+  useEffect(() => {
+    if (!sessionCode || !moduleId) return
+    const load = async () => {
+      try {
+        const rows = await fetchOpenAnswers(sessionCode, 'mq_' + moduleId)
+        setQuestions(rows || [])
+      } catch {}
+    }
+    load()
+    const id = setInterval(load, 6000)
+    return () => clearInterval(id)
+  }, [sessionCode, moduleId])
+
+  return (
+    <div style={{
+      height: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #071832 100%)',
+      display: 'flex', flexDirection: 'column', padding: '48px 60px',
+      fontFamily: 'system-ui, sans-serif', boxSizing: 'border-box',
+      color: '#fff', overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 36 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>
+            {moduleLabel || 'Module en cours'}
+          </div>
+          <h2 style={{ fontSize: 36, fontWeight: 900, margin: 0, letterSpacing: -0.5 }}>
+            Vos questions
+          </h2>
+        </div>
+        <div style={{
+          background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)',
+          borderRadius: 20, padding: '8px 20px',
+          fontSize: 14, fontWeight: 700, color: '#00abe9',
+        }}>
+          {questions.length} question{questions.length !== 1 ? 's' : ''}
+        </div>
+      </div>
+
+      {/* Grille de questions */}
+      {questions.length === 0 ? (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+          <div style={{ fontSize: 52 }}>❓</div>
+          <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.3)' }}>En attente de questions…</div>
+        </div>
+      ) : (
+        <div style={{
+          flex: 1, display: 'grid', overflow: 'hidden',
+          gridTemplateColumns: questions.length <= 3 ? '1fr' : 'repeat(2, 1fr)',
+          gap: 16, alignContent: 'start',
+          overflowY: questions.length > 6 ? 'auto' : 'hidden',
+        }}>
+          {questions.map((q, i) => (
+            <div key={q.id || i} style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.09)',
+              borderLeft: '4px solid #00abe9',
+              borderRadius: 14, padding: '20px 24px',
+            }}>
+              <div style={{
+                fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)',
+                textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10,
+              }}>
+                Question {i + 1}
+              </div>
+              <div style={{ fontSize: questions.length <= 4 ? 20 : 16, color: '#fff', lineHeight: 1.55, fontWeight: 500 }}>
+                {q.answer}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ── Keyframes ─────────────────────────────────────────────────────
 const STYLES = `
@@ -85,6 +166,10 @@ const STYLES = `
     from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
   @keyframes mjPulse {
     0%, 100% { opacity: 1; }
     50%       { opacity: 0.45; }
@@ -109,8 +194,288 @@ function VerreAnime({ color }) {
   )
 }
 
+// ── TV Quiz — helpers ────────────────────────────────────────────────
+function TVQuizHeader({ qIdx, total, moduleLabel }) {
+  return (
+    <>
+      <div style={{ position: 'absolute', top: 24, left: 32, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+        <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Quiz · {moduleLabel}</span>
+      </div>
+      <div style={{
+        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '8px 28px', marginBottom: 36,
+        fontSize: 14, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2,
+      }}>Question {qIdx + 1} / {total}</div>
+    </>
+  )
+}
+
+function TVQuizFooter() {
+  return (
+    <div style={{
+      position: 'absolute', bottom: 32,
+      display: 'flex', alignItems: 'center', gap: 10,
+      background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.2)',
+      borderRadius: 20, padding: '10px 24px',
+    }}>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'waitingPulse 1.4s ease-in-out infinite' }} />
+      <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>Répondez depuis votre téléphone</span>
+    </div>
+  )
+}
+
+function TVOrdonnanceDisplay({ ordonnance }) {
+  const { od, og } = ordonnance
+  const hasCyl = od.cyl || og.cyl
+  const hasAdd = od.add || og.add
+  const cellStyle = { padding: '8px 16px', textAlign: 'center', fontSize: 22, fontWeight: 700, color: '#fff' }
+  const headerStyle = { padding: '6px 16px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1 }
+  const labelStyle = { padding: '8px 20px', textAlign: 'right', fontSize: 16, fontWeight: 800, color: '#a78bfa' }
+  return (
+    <div style={{
+      background: 'rgba(124,58,237,0.08)', border: '2px solid rgba(124,58,237,0.3)',
+      borderRadius: 20, padding: '16px 0', marginBottom: 36, alignSelf: 'stretch', maxWidth: 720,
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', letterSpacing: 2, textTransform: 'uppercase', textAlign: 'center', marginBottom: 12 }}>ORDONNANCE</div>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr>
+            <th style={{ width: 80 }}></th>
+            <th style={headerStyle}>Sphère</th>
+            {hasCyl && <th style={headerStyle}>Cylindre</th>}
+            {hasCyl && <th style={headerStyle}>Axe</th>}
+            {hasAdd && <th style={headerStyle}>Addition</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {[{ label: 'OD', data: od }, { label: 'OG', data: og }].map(({ label, data }) => (
+            <tr key={label} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <td style={labelStyle}>{label}</td>
+              <td style={cellStyle}>{data.sph || '—'}</td>
+              {hasCyl && <td style={cellStyle}>{data.cyl || 'Plan'}</td>}
+              {hasCyl && <td style={cellStyle}>{data.axe || '—'}</td>}
+              {hasAdd && <td style={cellStyle}>{data.add || '—'}</td>}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// ── TV texte libre ──────────────────────────────────────────────────
+function TVQuizTextOpen({ question, qIdx, total, moduleLabel, sessionCode }) {
+  const [answers, setAnswers] = useState([])
+  useEffect(() => {
+    if (!sessionCode) return
+    const poll = async () => {
+      const rows = await fetchOpenAnswers(sessionCode, `quiz-j1:${qIdx}`)
+      setAnswers(rows || [])
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [sessionCode, qIdx])
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '60px 80px', position: 'relative',
+    }}>
+      <TVQuizHeader qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+      <h1 style={{ fontSize: 52, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 40, maxWidth: 1000 }}>
+        {question.question}
+      </h1>
+      <div style={{
+        background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.2)',
+        borderRadius: 16, padding: '14px 32px', marginBottom: answers.length ? 32 : 0,
+        fontSize: 18, color: 'rgba(255,255,255,0.6)', fontWeight: 500,
+      }}>
+        ✍️ Saisissez votre réponse depuis votre téléphone
+      </div>
+      {answers.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, maxWidth: 1000, justifyContent: 'center' }}>
+          {answers.slice(0, 10).map(a => (
+            <div key={a.participant_name} style={{
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 12, padding: '10px 20px',
+              fontSize: 16, color: 'rgba(255,255,255,0.8)',
+            }}>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 2 }}>{a.participant_name}</span>
+              {a.answer}
+            </div>
+          ))}
+        </div>
+      )}
+      <TVQuizFooter />
+    </div>
+  )
+}
+
+// ── TV remplir ordonnance ────────────────────────────────────────────
+function TVQuizOrdonnanceFill({ question, qIdx, total, moduleLabel }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '60px 80px', position: 'relative',
+    }}>
+      <TVQuizHeader qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+      <h1 style={{ fontSize: 46, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 40, maxWidth: 900 }}>
+        {question.question}
+      </h1>
+      <TVOrdonnanceDisplay ordonnance={question.ordonnance} />
+      <div style={{
+        background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.2)',
+        borderRadius: 16, padding: '12px 28px',
+        fontSize: 16, color: 'rgba(255,255,255,0.6)', fontWeight: 500,
+      }}>
+        📱 Saisissez les valeurs sur votre téléphone
+      </div>
+      <TVQuizFooter />
+    </div>
+  )
+}
+
+// ── TV QCM avec ordonnance ───────────────────────────────────────────
+function TVQuizOrdonnanceQCM({ question, qIdx, total, moduleLabel }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '40px 80px', position: 'relative',
+    }}>
+      <TVQuizHeader qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+      <h1 style={{ fontSize: 38, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 28, maxWidth: 900 }}>
+        {question.question}
+      </h1>
+      <TVOrdonnanceDisplay ordonnance={question.ordonnance} />
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: question.options.length === 2 ? '1fr 1fr' : 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: 18, width: '100%', maxWidth: 900,
+      }}>
+        {question.options.map((opt, i) => (
+          <div key={i} style={{
+            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 20, padding: '20px 24px',
+            display: 'flex', alignItems: 'center', gap: 16,
+          }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
+              background: OPTION_COLORS[i],
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 20, fontWeight: 800, color: '#fff',
+            }}>{'ABCD'[i]}</div>
+            <span style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>{opt}</span>
+          </div>
+        ))}
+      </div>
+      <TVQuizFooter />
+    </div>
+  )
+}
+
+// ── TV sélecteur puissances ──────────────────────────────────────────
+function TVQuizPowerSel({ question, qIdx, total, moduleLabel }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '60px 80px', position: 'relative',
+    }}>
+      <TVQuizHeader qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+      <h1 style={{ fontSize: 48, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 48, maxWidth: 900 }}>
+        {question.question}
+      </h1>
+      <div style={{ display: 'flex', gap: 40, marginBottom: 40 }}>
+        {[{ label: 'Positif max', color: '#4ade80' }, { label: 'Négatif max', color: '#60a5fa' }].map(({ label, color }) => (
+          <div key={label} style={{
+            background: 'rgba(255,255,255,0.06)', border: `2px solid ${color}40`,
+            borderRadius: 20, padding: '24px 40px', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>{label}</div>
+            <div style={{
+              width: 120, height: 56, background: 'rgba(255,255,255,0.08)', borderRadius: 12,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, color: 'rgba(255,255,255,0.3)',
+            }}>▾ Sélectionnez</div>
+          </div>
+        ))}
+      </div>
+      <TVQuizFooter />
+    </div>
+  )
+}
+
+// ── TV QCM multi-sélection ───────────────────────────────────────────
+function TVQuizMultiQuestion({ question, qIdx, total, moduleLabel }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '40px 80px', position: 'relative',
+    }}>
+      <TVQuizHeader qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+      <h1 style={{ fontSize: 50, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 16, maxWidth: 1000 }}>
+        {question.question}
+      </h1>
+      {question.instruction && (
+        <div style={{ fontSize: 18, color: '#f59e0b', fontWeight: 600, marginBottom: 40 }}>{question.instruction}</div>
+      )}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gap: 24, width: '100%', maxWidth: 1000,
+      }}>
+        {question.options.map((opt, i) => (
+          <div key={i} style={{
+            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 24, padding: '28px 32px',
+            display: 'flex', alignItems: 'center', gap: 20,
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+              background: OPTION_COLORS[i],
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, fontWeight: 800, color: '#fff',
+            }}>{'ABCD'[i]}</div>
+            <span style={{ fontSize: 26, fontWeight: 700, color: '#fff' }}>{opt}</span>
+          </div>
+        ))}
+      </div>
+      <TVQuizFooter />
+    </div>
+  )
+}
+
 // ── TV Quiz Question ──────────────────────────────────────────────
-function TVQuizQuestion({ question, qIdx, total, moduleLabel }) {
+function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode }) {
+  const type = question.type || 'qcm'
+
+  if (type === 'text-open') {
+    return <TVQuizTextOpen question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} />
+  }
+  if (type === 'ordonnance-fill') {
+    return <TVQuizOrdonnanceFill question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+  }
+  if (type === 'qcm-ordonnance') {
+    return <TVQuizOrdonnanceQCM question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+  }
+  if (type === 'power-selector') {
+    return <TVQuizPowerSel question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+  }
+  if (type === 'qcm-multi') {
+    return <TVQuizMultiQuestion question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+  }
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -511,7 +876,870 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
 }
 
 // ── TV Pause (type = pause) ───────────────────────────────────────
-function TVPause({ page, pageIndex, total, moduleLabel }) {
+function OpenAnswersFeed({ sessionCode, pageId }) {
+  const [answers, setAnswers] = useState([])
+  const [knownIds, setKnownIds] = useState(new Set())
+
+  useEffect(() => {
+    if (!sessionCode || !pageId) return
+    const poll = async () => {
+      try {
+        const state = await getRoomSharedState(sessionCode)
+        const prefix = `oa__${pageId}__`
+        const rows = Object.entries(state || {})
+          .filter(([k, v]) => k.startsWith(prefix) && v?.answer)
+          .map(([k, v]) => ({
+            id: k,
+            participant_name: v.name || k.slice(prefix.length).replace(/_/g, ' '),
+            answer: v.answer,
+            ts: v.ts || 0,
+          }))
+          .sort((a, b) => a.ts - b.ts)
+        setAnswers(rows.slice(-8))
+        setKnownIds(prev => {
+          const next = new Set(prev)
+          rows.forEach(r => next.add(r.id))
+          return next
+        })
+      } catch {}
+    }
+    poll()
+    const t = setInterval(poll, 3000)
+    return () => clearInterval(t)
+  }, [sessionCode, pageId])
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'waitingPulse 1.5s ease-in-out infinite' }} />
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+          Réponses en direct
+        </span>
+        {answers.length > 0 && (
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginLeft: 4 }}>({answers.length})</span>
+        )}
+      </div>
+
+      {answers.length === 0 ? (
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: 10,
+          color: 'rgba(255,255,255,0.2)', textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 32 }}>💬</div>
+          <div style={{ fontSize: 14, fontWeight: 500 }}>En attente de réponses…</div>
+          <div style={{ fontSize: 11 }}>Les réponses apparaîtront ici</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, overflow: 'hidden' }}>
+          {answers.map((a, i) => (
+            <div key={a.id} style={{
+              background: 'rgba(0,137,186,0.08)',
+              border: '1px solid rgba(0,137,186,0.2)',
+              borderRadius: 14, padding: '12px 16px',
+              animation: 'fadeSlideUp .4s ease both',
+              animationDelay: `${i * 0.05}s`,
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', marginBottom: 4 }}>
+                {a.participant_name}
+              </div>
+              <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)', lineHeight: 1.45 }}>
+                {a.answer}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── LPT Santé · Prise en charge (page 3) ────────────────────────────────────
+const LPTS_PEC_STYLES = `
+  @keyframes lptp-appear { from{opacity:0;transform:scale(0.9)} to{opacity:1;transform:scale(1)} }
+  @keyframes lptp-slide  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes lptp-pulse  { 0%,100%{box-shadow:0 0 0 0 rgba(77,184,92,0)} 50%{box-shadow:0 0 0 10px rgba(77,184,92,0)} }
+  @keyframes lptp-cursor { 0%,100%{opacity:1} 50%{opacity:0} }
+  @keyframes lptp-send   { 0%{transform:translate(0,0);opacity:1} 70%{transform:translate(28px,-16px);opacity:1} 100%{transform:translate(56px,-32px);opacity:0} }
+`
+
+const LPTS_PEC_PHASES = [
+  {
+    id: 'test',
+    label: 'Test Suprême', color: '#00abe9', emoji: '🔍',
+    steps: [
+      { label: 'Charger AMO (Sécurité Sociale)', duration: 2400 },
+      { label: 'Charger AMC (Mutuelle)', duration: 2400 },
+      { label: "Ajouter l'ordonnance client", duration: 2400 },
+      { label: 'LPT Santé génère le devis', duration: 2600 },
+      { label: 'Envoyer la demande', duration: 2000 },
+      { label: 'Réponse immédiate ✅ ou ❌', duration: 4800 },
+    ],
+  },
+  {
+    id: 'fact',
+    label: 'Facturation', color: '#4db85c', emoji: '🧾',
+    sub: '1=1 ou Suprême',
+    steps: [
+      { label: 'Charger AMO + AMC client', duration: 2400 },
+      { label: 'Ouvrir section Facturation', duration: 1800 },
+      { label: 'Saisir le n° de commande', duration: 2600 },
+      { label: 'LPT Santé envoie la PEC', duration: 2400 },
+      { label: 'Valider un paiement tiers payant sur le téléphone de vente', duration: 2800 },
+    ],
+  },
+  {
+    id: 'partial',
+    label: 'Tiers Payant Partiel', color: '#f59e0b', emoji: '⚡',
+    sub: 'Sans AMC',
+    steps: [
+      { label: "Charger AMO uniquement (pas d'AMC)", duration: 2400 },
+      { label: 'Saisir le n° de commande', duration: 2600 },
+      { label: 'LPT Santé envoie à la Sécurité Sociale', duration: 2400 },
+      { label: 'Faire avancer la part AMC au client', duration: 2800 },
+      { label: 'Valider la commande sur le téléphone de vente', duration: 2400 },
+    ],
+  },
+]
+
+function LptpFieldRow({ label, icon, state, value, color, isTyping = false, isNA = false }) {
+  const isEmpty = state === 'empty' || state === 'hidden'
+  const isActive = state === 'active'
+  const isDone = state === 'done'
+  return (
+    <div style={{
+      borderRadius: 10,
+      background: isDone ? 'rgba(77,184,92,0.07)' : isActive ? `${color}10` : 'rgba(255,255,255,0.03)',
+      border: `1px solid ${isDone ? 'rgba(77,184,92,0.25)' : isActive ? color + '45' : 'rgba(255,255,255,0.07)'}`,
+      padding: '9px 14px', transition: 'all 0.45s',
+      animation: isActive ? 'lptp-appear 0.35s ease' : 'none',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+        <span style={{ fontSize: 12 }}>{icon}</span>
+        <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.2,
+          color: isDone ? '#4db85c' : isActive ? color : 'rgba(255,255,255,0.28)' }}>
+          {label}
+        </span>
+        {isDone && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#4db85c' }}>✓</span>}
+        {isNA && <span style={{ marginLeft: 'auto', fontSize: 9, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>non requis</span>}
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 600, fontFamily: 'monospace',
+        color: isEmpty || isNA ? 'rgba(255,255,255,0.12)' : '#fff',
+        borderBottom: isActive ? `1px solid ${color}` : '1px solid transparent',
+        paddingBottom: 1,
+      }}>
+        {isEmpty ? '──────────────' : isNA ? 'N/A (tiers payant partiel)' : isActive && isTyping
+          ? <span>{value}<span style={{ animation: 'lptp-cursor 0.8s step-end infinite' }}>│</span></span>
+          : value}
+      </div>
+    </div>
+  )
+}
+
+function LptpMockScreen({ phaseIdx, stepIdx, resultOk }) {
+  const isTest = phaseIdx === 0
+  const isFact = phaseIdx === 1
+  const isPartial = phaseIdx === 2
+  const s = stepIdx
+  const color = LPTS_PEC_PHASES[phaseIdx].color
+
+  // Field states
+  const amo    = s>0 ? 'done' : s===0 ? 'active' : 'empty'
+  const amc    = isTest    ? (s>1?'done':s===1?'active':'empty')
+               : isFact    ? (s>0?'done':s===0?'active':'empty')
+               :              'na'
+  const ordo   = isTest    ? (s>2?'done':s===2?'active':'empty') : 'hidden'
+  const devis  = isTest    ? (s>3?'done':s===3?'active':'empty') : 'hidden'
+  const cmd    = isTest    ? 'hidden'
+               : isFact    ? (s>=1?(s===2?'active':s>2?'done':'empty'):'hidden')
+               :              (s===1?'active':s>1?'done':'empty')
+  const send   = isTest    ? (s===4?'active':s>4?'done':'empty')
+               : isFact    ? (s===3?'active':s>3?'done':'empty')
+               :              (s===2?'active':s>2?'done':'empty')
+  const avance = isPartial ? (s===3?'active':s>3?'done':'hidden') : 'hidden'
+  const valid  = (!isTest) ? (s===4?'active':s>4?'done':'hidden') : 'hidden'
+  const result = isTest && s===5 ? 'active' : 'hidden'
+  const factTabActive = isFact && s >= 1
+
+  return (
+    <div style={{
+      width: '100%', maxWidth: 480, background: '#0b1a0d',
+      border: '1px solid rgba(77,184,92,0.18)', borderRadius: 14,
+      overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.55)',
+      position: 'relative',
+    }}>
+      {/* Window chrome */}
+      <div style={{ background: 'linear-gradient(135deg,#142418,#0c1a10)', padding: '10px 14px',
+        borderBottom: '1px solid rgba(77,184,92,0.12)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 5 }}>
+          {['#ff5f57','#febc2e','#28c840'].map(c => (
+            <div key={c} style={{ width: 9, height: 9, borderRadius: '50%', background: c }} />
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 2, flex: 1, marginLeft: 8 }}>
+          {[{ label: 'Test Suprême', active: isTest }, { label: 'Facturation', active: isFact || isPartial }].map((t, i) => (
+            <div key={i} style={{
+              padding: '3px 12px', borderRadius: '5px 5px 0 0', fontSize: 10, fontWeight: 700,
+              background: t.active ? 'rgba(77,184,92,0.12)' : 'transparent',
+              color: t.active ? '#4db85c' : 'rgba(255,255,255,0.22)',
+              transition: 'all 0.4s',
+            }}>{t.label}</div>
+          ))}
+          {isPartial && (
+            <div style={{ padding: '3px 10px', borderRadius: '5px 5px 0 0', fontSize: 10, fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.1)' }}>
+              ⚡ TP Partiel
+            </div>
+          )}
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-sante.png" width={18} height={18} style={{ objectFit: 'contain', opacity: 0.6 }} />
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* AMO */}
+        <LptpFieldRow label="AMO · Sécurité Sociale" icon="🏥" state={amo} value="1 77 04 94 123 456 78" color={color} />
+
+        {/* AMC */}
+        {amc !== 'hidden' && (
+          <LptpFieldRow label="AMC · Mutuelle" icon="🛡️" state={amc} value="Almerys · 98532001" color={color} isNA={amc === 'na'} />
+        )}
+
+        {/* Ordonnance (test only) */}
+        {ordo !== 'hidden' && (
+          <LptpFieldRow label="Ordonnance" icon="📋" state={ordo} value="OD -1.75 sph / OG -2.00 sph" color={color} />
+        )}
+
+        {/* N° Commande */}
+        {cmd !== 'hidden' && (
+          <LptpFieldRow label="N° de commande" icon="⌨️" state={cmd} value="8126722" color={color} isTyping />
+        )}
+
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* Action buttons */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            {devis !== 'hidden' && (
+              <div style={{
+                flex: 1, padding: '9px 0', borderRadius: 8, fontSize: 11, fontWeight: 700, textAlign: 'center',
+                background: devis === 'active' ? 'rgba(0,171,233,0.15)' : devis === 'done' ? 'rgba(77,184,92,0.08)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${devis === 'active' ? '#00abe980' : devis === 'done' ? 'rgba(77,184,92,0.25)' : 'rgba(255,255,255,0.07)'}`,
+                color: devis === 'active' ? '#00abe9' : devis === 'done' ? '#4db85c' : 'rgba(255,255,255,0.25)',
+                transition: 'all 0.4s',
+              }}>
+                {devis === 'active' ? '⚙️ Génération devis…' : devis === 'done' ? '✓ Devis prêt' : '⚙️ Générer devis'}
+              </div>
+            )}
+            <div style={{
+              flex: 1, padding: '9px 0', borderRadius: 8, fontSize: 11, fontWeight: 700, textAlign: 'center',
+              background: send === 'active' ? `${color}20` : send === 'done' ? 'rgba(77,184,92,0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${send === 'active' ? color + '70' : send === 'done' ? 'rgba(77,184,92,0.25)' : 'rgba(255,255,255,0.07)'}`,
+              color: send === 'active' ? color : send === 'done' ? '#4db85c' : 'rgba(255,255,255,0.25)',
+              transition: 'all 0.4s',
+              animation: send === 'active' ? 'lptp-pulse 1.2s ease-in-out infinite' : 'none',
+            }}>
+              {send === 'active' ? '📤 Envoi en cours…' : send === 'done' ? '✓ Envoyé' : '📤 Envoyer'}
+            </div>
+          </div>
+
+          {/* Facturation tab indicator */}
+          {isFact && s >= 1 && s < 3 && (
+            <div style={{ fontSize: 10, color: '#4db85c', fontWeight: 700, textAlign: 'center', padding: '4px 0', animation: 'lptp-slide 0.3s ease' }}>
+              📂 Section Facturation active
+            </div>
+          )}
+
+          {/* Avance AMC */}
+          {avance !== 'hidden' && avance !== 'empty' && (
+            <div style={{
+              padding: '9px 12px', borderRadius: 9,
+              background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
+              fontSize: 11, fontWeight: 600, color: '#f59e0b',
+              animation: 'lptp-slide 0.35s ease',
+            }}>
+              💳 Le client règle la part AMC en CB / espèces
+            </div>
+          )}
+
+          {/* Validation téléphone */}
+          {valid !== 'hidden' && (
+            <div style={{
+              padding: '9px 12px', borderRadius: 9, textAlign: 'center',
+              background: valid === 'done' ? 'rgba(77,184,92,0.1)' : 'rgba(0,171,233,0.08)',
+              border: `1px solid ${valid === 'done' ? 'rgba(77,184,92,0.3)' : 'rgba(0,171,233,0.25)'}`,
+              fontSize: 11, fontWeight: 700,
+              color: valid === 'done' ? '#4db85c' : '#00abe9',
+              animation: valid === 'active' ? 'lptp-appear 0.35s ease' : 'none',
+            }}>
+              {valid === 'done' ? '✅ Commande validée !' : '📱 En attente — valider sur le téléphone de vente'}
+            </div>
+          )}
+
+          {/* Test Suprême result — popup overlay */}
+          {result === 'active' && (
+            <div style={{
+              position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 14, animation: 'lptp-appear 0.35s ease', zIndex: 10,
+            }}>
+              {resultOk ? (
+                <div style={{
+                  background: '#fff', borderRadius: 16, padding: '20px 22px 16px',
+                  maxWidth: 270, textAlign: 'center', boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                }}>
+                  <div style={{ position: 'relative', display: 'inline-block', marginBottom: 14 }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/assets/logo-lpt-sante.png" width={60} height={60} style={{ objectFit: 'contain', display: 'block' }} />
+                    <div style={{ position: 'absolute', top: -8, left: -4, display: 'flex', gap: 2 }}>
+                      <span style={{ background: '#aaa', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 4, padding: '1px 4px' }}>1.01</span>
+                      <span style={{ background: '#e6a817', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 4, padding: '1px 4px' }}>91</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#111', marginBottom: 8, lineHeight: 1.2 }}>Remboursements enregistrés</div>
+                  <div style={{ fontSize: 12, color: '#444', lineHeight: 1.5, marginBottom: 14 }}>Vous pouvez maintenant créer une commande Suprême.</div>
+                  <div style={{ background: '#2a5080', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 600, color: '#fff' }}>OK</div>
+                </div>
+              ) : (
+                <div style={{
+                  background: '#fff', borderRadius: 16, padding: '20px 22px 16px',
+                  maxWidth: 280, textAlign: 'center', boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                }}>
+                  <div style={{ position: 'relative', display: 'inline-block', marginBottom: 14 }}>
+                    <svg width={60} height={60} viewBox="0 0 72 72" style={{ position: 'absolute', top: -16, left: -16 }}>
+                      <polygon points="36,4 68,64 4,64" fill="#f5c842" stroke="white" strokeWidth="3" strokeLinejoin="round"/>
+                      <text x="36" y="54" textAnchor="middle" fontSize="30" fontWeight="900" fill="white">!</text>
+                    </svg>
+                    <div style={{ marginTop: 8, marginLeft: 8 }}>
+                      <div style={{ position: 'relative', display: 'inline-block' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/assets/logo-lpt-sante.png" width={50} height={50} style={{ objectFit: 'contain', display: 'block' }} />
+                        <div style={{ position: 'absolute', top: -8, left: -4, display: 'flex', gap: 2 }}>
+                          <span style={{ background: '#aaa', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 4, padding: '1px 4px' }}>1.01</span>
+                          <span style={{ background: '#e6a817', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 4, padding: '1px 4px' }}>95</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#111', marginBottom: 8, lineHeight: 1.2 }}>L&apos;envoi de devis OptoAMC a échoué</div>
+                  <div style={{ fontSize: 11, color: '#444', lineHeight: 1.5, marginBottom: 14 }}>Erreur OptoAMC. Le remboursement est trop faible pour réaliser cette commande Suprême</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ flex: 1, borderRadius: 10, padding: '10px 0', fontSize: 12, fontWeight: 600, color: '#2a5080', border: '1px solid #e0e0e0', background: '#f5f5f5' }}>Annuler</div>
+                    <div style={{ flex: 1.5, background: '#2a5080', borderRadius: 10, padding: '10px 0', fontSize: 12, fontWeight: 700, color: '#fff' }}>Envoyer une PEC</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TVLptSantePec({ scenario }) {
+  const phaseIdx = scenario === 'test' ? 0 : scenario === 'fact' ? 1 : scenario === 'partial' ? 2 : null
+  const [stepIdx, setStepIdx] = useState(0)
+  const [resultOk, setResultOk] = useState(true)
+  const [loopKey, setLoopKey] = useState(0)
+
+  useEffect(() => {
+    setStepIdx(0)
+    setResultOk(true)
+    setLoopKey(k => k + 1)
+  }, [scenario])
+
+  useEffect(() => {
+    if (phaseIdx === null) return
+    const phase = LPTS_PEC_PHASES[phaseIdx]
+    const step = phase.steps[stepIdx]
+    let altTimer
+
+    if (phaseIdx === 0 && stepIdx === 5) {
+      altTimer = setInterval(() => setResultOk(v => !v), 2200)
+    }
+
+    const t = setTimeout(() => {
+      if (stepIdx < phase.steps.length - 1) {
+        setStepIdx(s => s + 1)
+      } else {
+        setStepIdx(0)
+        setResultOk(true)
+        setLoopKey(k => k + 1)
+      }
+    }, step.duration)
+
+    return () => { clearTimeout(t); if (altTimer) clearInterval(altTimer) }
+  }, [phaseIdx, stepIdx, loopKey])
+
+  if (phaseIdx === null) {
+    return (
+      <div style={{
+        minHeight: '100vh', overflow: 'hidden',
+        background: 'linear-gradient(160deg, #020d1a 0%, #010e05 100%)',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20,
+      }}>
+        <style>{LPTS_PEC_STYLES}</style>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-sante.png" width={64} height={64} style={{ objectFit: 'contain', opacity: 0.35 }} />
+        <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.28)', fontWeight: 600, textAlign: 'center' }}>
+          Le formateur va sélectionner un scénario
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+          {LPTS_PEC_PHASES.map((p) => (
+            <div key={p.id} style={{
+              padding: '6px 16px', borderRadius: 16, fontSize: 12, fontWeight: 700,
+              background: `${p.color}08`, border: `1px solid ${p.color}20`, color: `${p.color}50`,
+            }}>
+              {p.emoji} {p.label}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const phase = LPTS_PEC_PHASES[phaseIdx]
+
+  return (
+    <div style={{
+      minHeight: '100vh', overflow: 'hidden',
+      background: 'linear-gradient(160deg, #020d1a 0%, #010e05 100%)',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <style>{LPTS_PEC_STYLES}</style>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/assets/logo-lpt-sante.png" width={26} height={26} style={{ objectFit: 'contain' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>LPT Santé · Prise en charge</span>
+        </div>
+        <div style={{
+          padding: '6px 18px', borderRadius: 16, fontSize: 12, fontWeight: 800,
+          background: `${phase.color}18`, border: `1px solid ${phase.color}55`, color: phase.color,
+        }}>
+          {phase.emoji} {phase.label}
+        </div>
+      </div>
+
+      {/* Main: mock screen left, steps right */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', flex: 1, minHeight: 0 }}>
+        {/* Left: Mock LPT Santé */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 20px 24px 32px' }}>
+          <LptpMockScreen phaseIdx={phaseIdx} stepIdx={stepIdx} resultOk={resultOk} />
+        </div>
+
+        {/* Right: Steps */}
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px 32px 24px 12px', gap: 8 }}>
+          {phase.sub && (
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 6, fontWeight: 600 }}>
+              {phase.sub}
+            </div>
+          )}
+
+          {phase.steps.map((step, i) => (
+            <div key={`${phaseIdx}-${i}-${loopKey}`} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 12,
+              padding: '10px 14px', borderRadius: 12,
+              background: i === stepIdx ? `${phase.color}10` : i < stepIdx ? 'rgba(255,255,255,0.025)' : 'transparent',
+              border: `1px solid ${i === stepIdx ? phase.color + '38' : i < stepIdx ? 'rgba(255,255,255,0.05)' : 'transparent'}`,
+              opacity: i > stepIdx ? 0.38 : 1,
+              transition: 'all 0.4s',
+            }}>
+              <div style={{
+                width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, fontWeight: 800,
+                background: i < stepIdx ? '#4db85c' : i === stepIdx ? phase.color : 'rgba(255,255,255,0.07)',
+                color: '#fff', transition: 'all 0.3s',
+                animation: i === stepIdx ? 'lptp-pulse 1.6s ease-in-out infinite' : 'none',
+              }}>
+                {i < stepIdx ? '✓' : i + 1}
+              </div>
+              <div style={{ paddingTop: 4 }}>
+                <div style={{
+                  fontSize: 13, lineHeight: 1.45,
+                  fontWeight: i === stepIdx ? 700 : 400,
+                  color: i < stepIdx ? 'rgba(255,255,255,0.4)' : '#fff',
+                }}>
+                  {step.label}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const LPTS_ANIM_STYLES = `
+  @keyframes lpts-v-walk {
+    0%   { transform: translateX(-50vw); opacity:0; }
+    8%   { opacity:1; }
+    42%  { transform: translateX(0); opacity:1; }
+    65%  { transform: translateX(0); opacity:1; }
+    80%  { transform: translateX(8px); opacity:0; }
+    100% { transform: translateX(8px); opacity:0; }
+  }
+  @keyframes lpts-v-pec {
+    0%   { transform: translateX(0) scale(0.7); opacity:0; }
+    42%  { transform: translateX(0) scale(0.7); opacity:0; }
+    52%  { transform: translateX(0) scale(1);   opacity:1; }
+    80%  { transform: translateX(22vw) scale(0.95); opacity:1; }
+    90%  { transform: translateX(22vw) scale(0.8);  opacity:0; }
+    100% { transform: translateX(22vw) scale(0.8);  opacity:0; }
+  }
+  @keyframes lpts-relay {
+    0%   { transform: translate(0,0) scale(0.8); opacity:0; }
+    7%   { opacity:1; }
+    72%  { opacity:1; transform: translate(var(--rx),var(--ry)) scale(0.95); }
+    85%  { opacity:0; transform: translate(var(--rx),var(--ry)) scale(0.8); }
+    100% { opacity:0; transform: translate(var(--rx),var(--ry)) scale(0.8); }
+  }
+  @keyframes lpts-float {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  @keyframes lpts-badge-pop {
+    0%  { transform: scale(1); }
+    30% { transform: scale(1.35); }
+    60% { transform: scale(0.92); }
+    100%{ transform: scale(1); }
+  }
+  @keyframes lpts-pulse-blue { 0%,100%{opacity:0.7} 50%{opacity:1} }
+  @keyframes lpts-imac-glow {
+    0%,100%{ box-shadow:0 0 22px rgba(0,100,255,0.32),0 8px 32px rgba(0,0,0,0.4); }
+    50%    { box-shadow:0 0 48px rgba(0,130,255,0.62),0 8px 32px rgba(0,0,0,0.4); }
+  }
+`
+
+const VENDOR_CLIENTS = ['🧑','👱','🧔','👧','👨','🧓']
+const VENDOR_PEC_CYCLE = '7s'
+const RELAY_DUR = '3s'
+
+function TVLptSanteExplication() {
+  const [phase, setPhase] = useState(0) // 0=day, 1=circuit
+  const [pecCount, setPecCount] = useState(0)
+  const [loopKey, setLoopKey] = useState(0)
+
+  useEffect(() => {
+    let count = 0
+    const DAY = 12000, CIRCUIT = 9000
+    const iv = setInterval(() => { count++; setPecCount(count) }, 1100)
+    const t1 = setTimeout(() => { clearInterval(iv); setPhase(1) }, DAY)
+    const t2 = setTimeout(() => { setPhase(0); setPecCount(0); setLoopKey(k => k + 1) }, DAY + CIRCUIT)
+    return () => { clearInterval(iv); clearTimeout(t1); clearTimeout(t2) }
+  }, [loopKey])
+
+  const isDay = phase === 0
+  const isCircuit = phase === 1
+
+  // Circuit relay chips: LPT → SS → Mutuelle → € → LPT (triangular loop)
+  const relayChips = isCircuit ? [
+    // LPT Santé → SS (center → top-right)
+    { key:'a0', top:'46%', left:'49%', rx:'24vw', ry:'-16vh', type:'pec', delay:'0s'   },
+    { key:'a1', top:'48%', left:'49%', rx:'24vw', ry:'-14vh', type:'pec', delay:'0.7s' },
+    { key:'a2', top:'50%', left:'49%', rx:'24vw', ry:'-17vh', type:'pec', delay:'1.4s' },
+    // SS → Mutuelle (top-right → bottom-right)
+    { key:'b0', top:'32%', left:'79%', rx:'0',    ry:'24vh',  type:'pec', delay:'0.8s' },
+    { key:'b1', top:'30%', left:'81%', rx:'0',    ry:'26vh',  type:'pec', delay:'1.5s' },
+    { key:'b2', top:'34%', left:'80%', rx:'0',    ry:'23vh',  type:'pec', delay:'2.2s' },
+    // Mutuelle → LPT as € (bottom-right → center)
+    { key:'c0', top:'68%', left:'80%', rx:'-24vw',ry:'-16vh', type:'eur', delay:'1.6s' },
+    { key:'c1', top:'70%', left:'80%', rx:'-24vw',ry:'-14vh', type:'eur', delay:'2.3s' },
+    { key:'c2', top:'66%', left:'80%', rx:'-24vw',ry:'-17vh', type:'eur', delay:'3.0s' },
+  ] : []
+
+  return (
+    <div style={{
+      position:'relative', minHeight:'100vh', overflow:'hidden',
+      background: isDay
+        ? 'linear-gradient(160deg,#03112a 0%,#061e10 100%)'
+        : 'linear-gradient(160deg,#010a1a 0%,#030d05 100%)',
+      transition:'background 1.5s ease',
+      fontFamily:'system-ui,-apple-system,sans-serif',
+    }}>
+      <style>{LPTS_ANIM_STYLES}</style>
+
+      {/* Topbar */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 32px', position:'relative', zIndex:20 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit:'contain' }} />
+          <div style={{ width:1, height:20, background:'rgba(255,255,255,0.15)' }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={22} height={22} style={{ objectFit:'contain' }} />
+          <span style={{ fontSize:12, color:'rgba(255,255,255,0.4)' }}>LPT Santé · Comment ça marche ?</span>
+        </div>
+        <div style={{
+          padding:'5px 16px', borderRadius:20, fontSize:12, fontWeight:800,
+          background: isDay?'rgba(77,184,92,0.15)':'rgba(0,171,233,0.15)',
+          border:`1px solid ${isDay?'rgba(77,184,92,0.4)':'rgba(0,171,233,0.4)'}`,
+          color: isDay?'#4db85c':'#00abe9',
+          transition:'all 0.8s',
+          animation: isCircuit?'lpts-pulse-blue 1s ease infinite':'none',
+        }}>
+          {isDay?'☀️ Journée — collecte des PEC':'🔄 Circuit de remboursement'}
+        </div>
+      </div>
+
+      {/* Relay chips — circuit phase, absolute on root */}
+      {relayChips.map(c => (
+        <div key={`${c.key}-${loopKey}`} style={{
+          position:'absolute', top:c.top, left:c.left, zIndex:30, pointerEvents:'none',
+          background: c.type==='eur'
+            ? 'linear-gradient(135deg,#b7860b,#f5c842)'
+            : 'linear-gradient(135deg,#2d7a3a,#4db85c)',
+          borderRadius:6, padding:'4px 9px',
+          fontSize:c.type==='eur'?12:10, fontWeight:900, color:'#fff',
+          boxShadow: c.type==='eur'?'0 2px 8px rgba(245,200,66,0.55)':'0 2px 8px rgba(77,184,92,0.5)',
+          '--rx':c.rx, '--ry':c.ry,
+          animation:`lpts-relay ${RELAY_DUR} ${c.delay} linear infinite`,
+        }}>
+          {c.type==='eur'?'€€':'PEC'}
+        </div>
+      ))}
+
+      {/* 3-column scene */}
+      <div style={{ display:'grid', gridTemplateColumns:'28% 44% 28%', height:'calc(100vh - 62px)' }}>
+
+        {/* ── LEFT: Single big vendor ── */}
+        <div style={{ position:'relative', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ position:'absolute', top:'8%', left:0, right:0, textAlign:'center',
+            fontSize:10, color:'rgba(255,255,255,0.25)', fontWeight:700, textTransform:'uppercase', letterSpacing:1.5 }}>
+            🏪 Magasin LPT
+          </div>
+
+          {/* Walking clients (staggered into vendor) */}
+          {isDay && VENDOR_CLIENTS.slice(0,3).map((emoji, i) => (
+            <div key={i} style={{
+              position:'absolute', left:'8%', top:`${36+i*10}%`,
+              fontSize:22, userSelect:'none',
+              animation:`lpts-v-walk ${VENDOR_PEC_CYCLE} ${['0s','-2.33s','-4.66s'][i]} linear infinite`,
+            }}>{emoji}</div>
+          ))}
+
+          {/* Big vendor */}
+          <div style={{ textAlign:'center', position:'relative', zIndex:2 }}>
+            <div style={{ fontSize:58, animation:'lpts-float 3s ease-in-out infinite', userSelect:'none' }}>🧑‍💼</div>
+            <div style={{ fontSize:10, color:'#4db85c', fontWeight:800, marginTop:4, letterSpacing:1 }}>VENDEUR</div>
+          </div>
+
+          {/* PEC chips flying from vendor to center */}
+          {isDay && [0,1,2].map(i => (
+            <div key={`vpec-${i}-${loopKey}`} style={{
+              position:'absolute', right:'6%', top:`${44+i*5}%`,
+              background:'linear-gradient(135deg,#2d7a3a,#4db85c)',
+              borderRadius:5, padding:'3px 7px', fontSize:9, fontWeight:800, color:'#fff',
+              boxShadow:'0 2px 8px rgba(77,184,92,0.4)', pointerEvents:'none', zIndex:5,
+              animation:`lpts-v-pec ${VENDOR_PEC_CYCLE} ${['0s','-2.33s','-4.66s'][i]} linear infinite`,
+            }}>PEC</div>
+          ))}
+
+          {/* Bottom stat */}
+          <div style={{ position:'absolute', bottom:'7%', left:0, right:0, textAlign:'center' }}>
+            <div style={{ fontSize:15, fontWeight:800, color:'#4db85c' }}>⚡ 5 min</div>
+            <div style={{ fontSize:10, color:'rgba(255,255,255,0.3)' }}>par prise en charge</div>
+            <div style={{ fontSize:9, color:'rgba(255,255,255,0.15)', marginTop:2 }}>vs 30+ min ailleurs</div>
+          </div>
+        </div>
+
+        {/* ── CENTER: iMac LPT Santé ── */}
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:14 }}>
+
+          {/* iMac */}
+          <div style={{ animation:'lpts-float 3s ease-in-out infinite', display:'flex', flexDirection:'column', alignItems:'center' }}>
+            {/* Screen */}
+            <div style={{
+              width:250, height:186,
+              background: isDay?'#080f1a':'#050e1c',
+              border:`9px solid ${isDay?'#0055cc':'#00abe9'}`,
+              borderRadius:'16px 16px 4px 4px',
+              display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+              position:'relative',
+              animation: isDay?'lpts-imac-glow 2.5s ease-in-out infinite':'lpts-pulse-blue 1s ease infinite',
+              transition:'border-color 0.8s, background 0.8s',
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/assets/logo-lpt-sante.png" width={88} height={88} style={{
+                objectFit:'contain',
+                filter:`drop-shadow(0 0 22px ${isDay?'rgba(77,184,92,0.5)':'rgba(0,171,233,0.8)'})`,
+                transition:'filter 0.8s',
+              }} />
+              <div style={{ fontSize:12, color:'rgba(255,255,255,0.5)', marginTop:6, fontWeight:700 }}>LPT Santé</div>
+              {/* PEC counter badge */}
+              {isDay && pecCount > 0 && (
+                <div style={{
+                  position:'absolute', top:-13, right:-13,
+                  background:'linear-gradient(135deg,#2d7a3a,#4db85c)',
+                  borderRadius:20, minWidth:34, height:34, padding:'0 7px',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:15, fontWeight:900, color:'#fff',
+                  boxShadow:'0 3px 10px rgba(0,0,0,0.4)',
+                  animation:'lpts-badge-pop 0.25s ease',
+                }}>{pecCount}</div>
+              )}
+              {/* € badge during circuit */}
+              {isCircuit && (
+                <div style={{
+                  position:'absolute', top:-13, right:-13,
+                  background:'#f5c842', borderRadius:20, minWidth:34, height:34, padding:'0 7px',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:14, fontWeight:900, color:'#1a1000',
+                  boxShadow:'0 3px 10px rgba(245,200,66,0.4)',
+                  animation:'lpts-badge-pop 0.5s ease 2s both',
+                }}>€€</div>
+              )}
+            </div>
+            {/* Chin */}
+            <div style={{
+              width:250, height:28, borderRadius:'0 0 8px 8px',
+              background: isDay?'#0044bb':'#00359e',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              transition:'background 0.8s',
+            }}>
+              <div style={{ width:50, height:3, borderRadius:2, background:'rgba(0,0,0,0.28)' }} />
+            </div>
+            {/* Neck */}
+            <div style={{ width:24, height:52, background:'#00359e', transition:'background 0.8s' }} />
+            {/* Base */}
+            <div style={{ width:110, height:8, background:'#002e88', borderRadius:4, transition:'background 0.8s' }} />
+          </div>
+
+          {/* PEC storage grid (day only) */}
+          {isDay && pecCount > 0 && (
+            <div style={{
+              background:'rgba(255,255,255,0.04)', border:'1px solid rgba(77,184,92,0.15)',
+              borderRadius:8, padding:'6px 10px', display:'flex', flexWrap:'wrap', gap:3, width:144,
+            }}>
+              {Array(Math.min(pecCount,18)).fill(0).map((_,i) => (
+                <div key={i} style={{
+                  width:14, height:14, borderRadius:3,
+                  background:'linear-gradient(135deg,#2d7a3a,#4db85c)',
+                  animation:'lpts-badge-pop 0.2s ease',
+                }} />
+              ))}
+            </div>
+          )}
+
+          <div style={{ textAlign:'center', fontSize:11, color:'rgba(255,255,255,0.32)' }}>
+            {isDay?'Collecte les PEC toute la journée':'🔄 Remboursements en circuit…'}
+          </div>
+        </div>
+
+        {/* ── RIGHT: SS → Mutuelle (chain with arrow) ── */}
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, padding:'0 16px' }}>
+          {/* SS */}
+          <div style={{
+            width:'100%',
+            background: isCircuit?'rgba(0,171,233,0.08)':'rgba(239,68,68,0.07)',
+            border:`1px solid ${isCircuit?'rgba(0,171,233,0.45)':'rgba(239,68,68,0.3)'}`,
+            borderRadius:16, padding:'18px 14px', textAlign:'center', transition:'all 0.6s',
+          }}>
+            <div style={{ fontSize:38, marginBottom:6 }}>🏥</div>
+            <div style={{ fontSize:13, fontWeight:800, color:'#fff', marginBottom:3 }}>Sécurité Sociale</div>
+            <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)' }}>
+              {isCircuit?'Reçoit et transfère la PEC':'En attente des PEC'}
+            </div>
+          </div>
+
+          {/* Connector arrow SS → Mutuelle */}
+          <div style={{
+            display:'flex', flexDirection:'column', alignItems:'center', gap:2,
+            opacity: isCircuit?1:0.25, transition:'opacity 0.6s',
+          }}>
+            <div style={{ width:2, height:14, background:'rgba(0,171,233,0.5)', borderRadius:2 }} />
+            <div style={{ fontSize:16, color:'#00abe9', lineHeight:1, animation:isCircuit?'lpts-pulse-blue 1s ease infinite':'none' }}>▼</div>
+            <div style={{ width:2, height:14, background:'rgba(0,171,233,0.5)', borderRadius:2 }} />
+          </div>
+
+          {/* Mutuelle */}
+          <div style={{
+            width:'100%',
+            background: isCircuit?'rgba(245,200,66,0.08)':'rgba(0,171,233,0.07)',
+            border:`1px solid ${isCircuit?'rgba(245,200,66,0.5)':'rgba(0,171,233,0.3)'}`,
+            borderRadius:16, padding:'18px 14px', textAlign:'center', transition:'all 0.6s',
+          }}>
+            <div style={{ fontSize:38, marginBottom:6 }}>🛡️</div>
+            <div style={{ fontSize:13, fontWeight:800, color:'#fff', marginBottom:3 }}>Mutuelle</div>
+            <div style={{ fontSize:10, color:'rgba(255,255,255,0.35)' }}>
+              {isCircuit?'Rembourse LPT Santé en €':'En attente des PEC'}
+            </div>
+            {isCircuit && (
+              <div style={{ marginTop:8, fontSize:18, fontWeight:900, color:'#f5c842', animation:'lpts-badge-pop 0.5s ease' }}>€€€</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TVLptSanteIntro({ page, sessionCode }) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    setVisible(false)
+    const t = setTimeout(() => setVisible(true), 100)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a1a 55%, #0d3b1a 100%)',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      {/* Topbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={28} height={28} style={{ objectFit: 'contain' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>LPT Santé</span>
+        </div>
+      </div>
+
+      {/* Corps : logo + question | réponses */}
+      <div style={{
+        flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr',
+        opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)',
+        transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}>
+        {/* Gauche : logo + question */}
+        <div style={{
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 32, padding: '40px 56px',
+          borderRight: '1px solid rgba(255,255,255,0.07)',
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={140} height={140} style={{ objectFit: 'contain', filter: 'drop-shadow(0 0 40px rgba(77,184,92,0.4))' }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 14 }}>LPT Santé</div>
+            <h1 style={{ fontSize: 52, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>
+              {page.titre}
+            </h1>
+            <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.4)', marginTop: 12 }}>
+              Répondez sur votre téléphone
+            </p>
+          </div>
+        </div>
+
+        {/* Droite : réponses anonymes */}
+        <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column' }}>
+          <OpenAnswersFeed sessionCode={sessionCode} pageId={page.id} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TVPause({ page, pageIndex, total, moduleLabel, sessionCode }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     setVisible(false)
@@ -542,38 +1770,45 @@ function TVPause({ page, pageIndex, total, moduleLabel }) {
         </div>
       </div>
 
-      {/* Centre */}
+      {/* Corps : question + réponses */}
       <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', gap: 36,
+        flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr',
+        gap: 0, padding: '0 0 0 0',
         opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)',
         transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
       }}>
+        {/* Question */}
         <div style={{
-          width: 160, height: 160, borderRadius: '50%',
-          background: 'rgba(0,171,233,0.1)', border: '2px solid rgba(0,171,233,0.25)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 0 80px rgba(0,171,233,0.18)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 28, padding: '40px 48px',
+          borderRight: '1px solid rgba(255,255,255,0.07)',
         }}>
-          <span style={{ fontSize: 80, lineHeight: 1 }}>{page.icon}</span>
+          {page.icon && (
+            <div style={{
+              width: 120, height: 120, borderRadius: '50%',
+              background: 'rgba(0,171,233,0.1)', border: '2px solid rgba(0,171,233,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 60px rgba(0,171,233,0.18)',
+            }}>
+              <span style={{ fontSize: 60, lineHeight: 1 }}>{page.icon}</span>
+            </div>
+          )}
+          <div style={{ textAlign: 'center' }}>
+            <h1 style={{ fontSize: 44, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 14 }}>
+              {page.titre}
+            </h1>
+            {page.sousTitre && (
+              <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.5)', fontWeight: 400 }}>
+                {page.sousTitre}
+              </p>
+            )}
+          </div>
         </div>
 
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: 64, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 18 }}>
-            {page.titre}
-          </h1>
-          <p style={{ fontSize: 24, color: 'rgba(255,255,255,0.5)', fontWeight: 400 }}>
-            {page.sousTitre}
-          </p>
-        </div>
-
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 12,
-          background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)',
-          borderRadius: 40, padding: '16px 32px',
-        }}>
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#00abe9', animation: 'waitingPulse 1.5s ease-in-out infinite' }} />
-          <span style={{ fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>En cours avec le formateur…</span>
+        {/* Réponses */}
+        <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column' }}>
+          <OpenAnswersFeed sessionCode={sessionCode} pageId={page.id} />
         </div>
       </div>
     </div>
@@ -1953,6 +3188,42 @@ function TVPdmPourquoi({ pageIndex, total }) {
   )
 }
 
+// ── TV PDM : Animation ──────────────────────────────────────────
+function TVPdmAnimation({ step }) {
+  return (
+    <div style={{
+      height: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', position: 'relative',
+    }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 14, padding: '24px 44px', flexShrink: 0,
+      }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-blanc.png" alt="LPT" style={{ height: 30, objectFit: 'contain' }} />
+        <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', fontWeight: 500 }}>Prises de mesures · LPTVISION</span>
+        <div style={{ flex: 1 }} />
+        {/* Progression */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {Array(9).fill(0).map((_, i) => (
+            <div key={i} style={{
+              width: i === step ? 22 : 6, height: 6, borderRadius: 3,
+              background: i <= step ? '#f59e0b' : 'rgba(255,255,255,0.15)',
+              transition: 'all 0.4s',
+            }} />
+          ))}
+        </div>
+      </div>
+      {/* SVG Animation */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 60px 60px' }}>
+        <PDMAnimationSVG animStep={step} />
+      </div>
+    </div>
+  )
+}
+
 // ── TV Offres : Classique ─────────────────────────────────────────
 const TV_ITEMS_CLASSIQUE = [
   { label: '1 paire achetée', sub: null },
@@ -2612,7 +3883,1556 @@ function TVMontures({ type, pageIndex, total, moduleLabel }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes }) {
+// ── TV INAMI Info ─────────────────────────────────────────────────
+function TVInamiInfo({ inamiRevealed }) {
+  const CONDITIONS = [
+    {
+      titre: 'Seuils de correction',
+      icon: '👁️',
+      items: [
+        { label: 'Moins de 18 ans', detail: 'Intervention dès 0,25 dioptrie' },
+        { label: '18 à 64 ans', detail: 'Intervention à partir de ± 6,00 dioptries' },
+        { label: '65 ans et plus', detail: 'À partir de ± 4,25 dioptries pour les verres bifocaux ou progressifs' },
+      ],
+    },
+    {
+      titre: 'Fréquence de renouvellement',
+      icon: '🔄',
+      items: [
+        { label: 'Moins de 18 ans', detail: 'Un nouveau droit tous les 2 ans' },
+        { label: '18 ans et plus', detail: 'Un nouveau droit tous les 5 ans' },
+        { label: 'Exception', detail: 'Si la nouvelle prescription diffère d\'au moins 0,5 dioptrie par rapport à la précédente délivrance, un nouveau droit s\'ouvre immédiatement, sans attendre le délai standard' },
+      ],
+    },
+    {
+      titre: 'Documents requis',
+      icon: '📄',
+      items: [
+        { label: 'Attestation', detail: 'Une attestation de délivrance signée, établie par l\'opticien (le fameux document "Annexe 15")' },
+        { label: 'Prescription', detail: 'Une prescription d\'ophtalmologue valable, datée de moins de 6 mois' },
+      ],
+    },
+  ]
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', padding: '44px 64px',
+    }}>
+      {/* Header INAMI */}
+      <div style={{ marginBottom: inamiRevealed ? 28 : 0, flex: inamiRevealed ? 0 : 1, display: 'flex', flexDirection: 'column', justifyContent: inamiRevealed ? 'flex-start' : 'center' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <div style={{
+            background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.35)',
+            borderRadius: 20, padding: '5px 18px',
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              Mutuelles et INAMI · Belgique
+            </span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 24, marginBottom: 20 }}>
+          <div style={{ fontSize: inamiRevealed ? 64 : 96, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -2 }}>
+            INAMI
+          </div>
+          <div style={{ paddingBottom: inamiRevealed ? 8 : 14 }}>
+            <div style={{ fontSize: inamiRevealed ? 16 : 22, fontWeight: 300, color: 'rgba(255,255,255,0.5)', letterSpacing: 1 }}>
+              Institut National d&apos;Assurance
+            </div>
+            <div style={{ fontSize: inamiRevealed ? 16 : 22, fontWeight: 300, color: 'rgba(255,255,255,0.5)', letterSpacing: 1 }}>
+              Maladie-Invalidité
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          display: 'inline-flex', alignItems: 'flex-start', gap: 14,
+          background: 'rgba(0,137,186,0.1)', border: '1px solid rgba(0,137,186,0.25)',
+          borderRadius: 14, padding: '14px 20px', maxWidth: 720,
+        }}>
+          <span style={{ fontSize: 20, flexShrink: 0, marginTop: 2 }}>🏛️</span>
+          <p style={{ fontSize: inamiRevealed ? 14 : 18, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>
+            C&apos;est l&apos;organisme public qui gère l&apos;assurance obligatoire soins de santé en Belgique,
+            c&apos;est donc lui qui fixe les règles.
+          </p>
+        </div>
+      </div>
+
+      {/* Conditions révélées */}
+      {inamiRevealed && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, flex: 1 }}>
+          {CONDITIONS.map((section) => (
+            <div key={section.titre} style={{
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
+              borderTop: '2px solid rgba(201,162,39,0.6)',
+              borderRadius: 14, padding: '18px 20px',
+              display: 'flex', flexDirection: 'column', gap: 14,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 20 }}>{section.icon}</span>
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                  {section.titre}
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {section.items.map((item, i) => (
+                  <div key={i} style={{
+                    background: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: '10px 14px',
+                    borderLeft: '2px solid rgba(201,162,39,0.4)',
+                  }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 4 }}>
+                      {item.label}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.55 }}>
+                      {item.detail}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!inamiRevealed && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 32 }}>
+          <div style={{
+            width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.25)',
+            animation: 'waitingPulse 2s ease-in-out infinite',
+          }} />
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
+            Le formateur va vous présenter les conditions de remboursement…
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── TV Partena Offre ──────────────────────────────────────────────
+function TVPartenaOffre({ partenaRevealed }) {
+  const OFFRE = [
+    { montant: '50 €', label: 'Verres unifocaux', icon: '👓' },
+    { montant: '100 €', label: 'Verres progressifs', icon: '🔭' },
+  ]
+  const CONDITIONS = [
+    'Avantage disponible une fois tous les 2 ans',
+    "Non cumulable avec l'Avantage Partenamut classique (75 € tous les 2 ans sur montures, verres correcteurs ou lentilles de contact, chez l'opticien de son choix)",
+    "Pas besoin de prescription ophtalmologique",
+  ]
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', padding: '44px 64px',
+    }}>
+      {/* Header */}
+      <div style={{ marginBottom: partenaRevealed ? 32 : 0, flex: partenaRevealed ? 0 : 1, display: 'flex', flexDirection: 'column', justifyContent: partenaRevealed ? 'flex-start' : 'center' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <div style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.35)', borderRadius: 20, padding: '5px 18px' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              Partenariat · Lunettes Pour Tous Belgique
+            </span>
+          </div>
+        </div>
+
+        <div style={{ fontSize: partenaRevealed ? 64 : 96, fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: -2, marginBottom: 16 }}>
+          PARTENA
+        </div>
+
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 12,
+          background: 'rgba(0,137,186,0.1)', border: '1px solid rgba(0,137,186,0.25)',
+          borderRadius: 14, padding: '12px 20px', maxWidth: 600,
+        }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>🤝</span>
+          <p style={{ fontSize: partenaRevealed ? 14 : 18, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5, margin: 0, fontStyle: 'italic' }}>
+            Mutualité Partena — Offre partenaire Lunettes Pour Tous
+          </p>
+        </div>
+      </div>
+
+      {/* Offre révélée */}
+      {partenaRevealed && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1 }}>
+          {/* Montants */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {OFFRE.map((o) => (
+              <div key={o.label} style={{
+                background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.35)',
+                borderRadius: 16, padding: '24px 28px',
+                display: 'flex', alignItems: 'center', gap: 20,
+              }}>
+                <span style={{ fontSize: 36, flexShrink: 0 }}>{o.icon}</span>
+                <div>
+                  <div style={{ fontSize: 42, fontWeight: 900, color: '#c9a227', lineHeight: 1, letterSpacing: -1 }}>{o.montant}</div>
+                  <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.65)', marginTop: 6 }}>pour une paire à {o.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Conditions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {CONDITIONS.map((c, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 14,
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                borderLeft: '3px solid rgba(201,162,39,0.4)',
+                borderRadius: 12, padding: '12px 18px',
+              }}>
+                <span style={{ fontSize: 14, color: '#c9a227', flexShrink: 0, marginTop: 1 }}>●</span>
+                <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', lineHeight: 1.55 }}>{c}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!partenaRevealed && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 32 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', animation: 'waitingPulse 2s ease-in-out infinite' }} />
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
+            Le formateur va vous présenter l&apos;offre partenaire…
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── TV Remboursement France — Conditions ─────────────────────────
+function TVTiersPayant({ tiersPayantRevealed, sessionCode, pageId }) {
+  return (
+    <div style={{
+      minHeight: '100vh', background: '#03112a',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 2, padding: '28px 60px 0' }}>
+        Les parcours remboursés
+      </div>
+
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 0 }}>
+        {/* Question + définition */}
+        <div style={{
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          padding: '40px 56px', gap: 32,
+          borderRight: '1px solid rgba(255,255,255,0.07)',
+        }}>
+          <h1 style={{
+            fontSize: tiersPayantRevealed ? 34 : 48,
+            fontWeight: 900, color: '#fff', textAlign: 'center',
+            lineHeight: 1.2, transition: 'font-size .4s ease',
+          }}>
+            C'est quoi le tiers payant pour vous ?
+          </h1>
+
+          {tiersPayantRevealed && (
+            <div style={{
+              width: '100%',
+              background: 'rgba(0,137,186,0.08)', border: '1px solid rgba(0,137,186,0.25)',
+              borderRadius: 20, padding: '28px 36px',
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>
+                Définition
+              </div>
+              <p style={{ fontSize: 20, color: '#fff', fontWeight: 600, lineHeight: 1.55, margin: 0 }}>
+                Le tiers payant est un système qui permet au client de{' '}
+                <span style={{ color: '#00abe9' }}>ne pas avancer les frais</span>.
+              </p>
+              <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.65)', lineHeight: 1.6, marginTop: 14, marginBottom: 0 }}>
+                La Sécurité Sociale et la mutuelle règlent directement l'opticien.
+                Le client ne paie que son éventuel reste à charge —{' '}
+                <span style={{ color: '#4ade80', fontWeight: 700 }}>chez nous, ce reste à charge est de 0 €, donc le client ne paie rien.</span>
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Réponses */}
+        <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column' }}>
+          <OpenAnswersFeed sessionCode={sessionCode} pageId={pageId} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TVParcoursOffres({ parcoursRevealed }) {
+  const revealed = parcoursRevealed || []
+
+  const offres = [
+    {
+      id: 'supreme',
+      nom: 'Suprême',
+      color: '#8B7186',
+      colorBg: 'rgba(139,113,134,0.1)',
+      colorBorder: 'rgba(139,113,134,0.35)',
+      points: [
+        '1 paire achetée, une paire offerte',
+        'Choix sur tout le magasin (montures et verres)',
+        'Verres Origine France Garantie',
+        'Uniquement avec tiers payant complet',
+        'Non compatible avec la CSS',
+      ],
+    },
+    {
+      id: '1=1',
+      nom: '1=1 100% Santé',
+      color: '#6aad54',
+      colorBg: 'rgba(106,173,84,0.07)',
+      colorBorder: 'rgba(106,173,84,0.3)',
+      points: [
+        '1 paire achetée, une paire offerte',
+        'Sur tout le magasin (montures et verres au choix)',
+        'Tarifs 100% Santé : 0 € de reste à charge quelle que soit la mutuelle',
+      ],
+      note: '💡 Le 100% Santé est un dispositif légal qui garantit des lunettes entièrement remboursées par la Sécu et la mutuelle — sans aucun reste à charge pour le client.',
+    },
+  ]
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: '#03112a',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '48px 60px', boxSizing: 'border-box',
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 40 }}>
+        Les parcours remboursés
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, width: '100%', maxWidth: 1060 }}>
+        {offres.map(o => {
+          const isRevealed = revealed.includes(o.id)
+          return (
+            <div key={o.id} style={{
+              background: o.colorBg,
+              border: `2px solid ${o.colorBorder}`,
+              borderRadius: 28, padding: '44px 40px',
+              display: 'flex', flexDirection: 'column',
+              minHeight: 260,
+              transition: 'all .4s ease',
+            }}>
+              <div style={{ fontSize: 52, fontWeight: 900, color: o.color, letterSpacing: -1, marginBottom: isRevealed ? 28 : 0 }}>
+                {o.nom}
+              </div>
+              {isRevealed && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {o.points.map((p, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: o.color, marginTop: 8, flexShrink: 0 }} />
+                      <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{p}</span>
+                    </div>
+                  ))}
+                  {o.note && (
+                    <div style={{ marginTop: 6, padding: '12px 16px', background: 'rgba(255,255,255,0.04)', borderLeft: `3px solid ${o.color}`, borderRadius: '0 10px 10px 0' }}>
+                      <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', lineHeight: 1.55 }}>{o.note}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── TV : Démarche remboursement ───────────────────────────────────
+const AMELIPRO_URL = 'https://authps-espacepro.ameli.fr/oauth2/authorize?response_type=code&scope=openid%20profile%20infosps%20email&client_id=csm-cen-prod_ameliprotransverse-connexionadmin_1_amtrx_i1_csm-cen-prod%2Fameliprotransverse-connexionadmin_1%2Famtrx_i1&state=AjMjWnxZwchYEjmuwYdOF2ogOMc&redirect_uri=https%3A%2F%2Fespacepro.ameli.fr%2Fpage-accueil-ihm%2Fredirect_uri&nonce=lbfIe0l3pfPl3Jg_NqJOPNZ_8ZLrL1VJFulngzVD6gY'
+
+function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
+  const STEPS_A = [
+    "Prendre l'ordonnance, la carte Vitale et la mutuelle du client.",
+    null, // amelipro
+    "Faire le Test Supreme si mutuelle autre que CSS — sinon 1=1 directement.",
+    "Retourner voir le client et adapter le discours.",
+  ]
+  const STEPS_B = [
+    "Prendre la carte Vitale et verifier la mutuelle.",
+    null, // amelipro
+    "Si AMELIPRO ok → inscrire en examen de vue et obtenir ordonnance via LYLEOO.",
+    "Faire le Test Supreme avec l'ordonnance obtenue — sauf si CSS → 1=1.",
+  ]
+
+  const AmeliTV = ({ isVisible }) => (
+    <a
+      href={AMELIPRO_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onAmeliProClick}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 10, verticalAlign: 'middle',
+        padding: '10px 18px', borderRadius: 14,
+        background: 'rgba(0,137,186,0.15)',
+        border: '2px solid rgba(0,137,186,0.6)',
+        textDecoration: 'none',
+        cursor: 'pointer',
+        transition: 'all .2s',
+        pointerEvents: 'auto',
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/assets/logo-amelipro.svg" alt="AMELIPRO" width={52} height={52} style={{ objectFit: 'contain' }} />
+      <span style={{ fontSize: 13, fontWeight: 700, color: '#00abe9' }}>
+        Cliquer pour ouvrir →
+      </span>
+    </a>
+  )
+  const SupremeTV = () => (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, verticalAlign: 'middle' }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={28} height={28} style={{ objectFit: 'contain' }} />
+      <span style={{ fontSize: 13, fontWeight: 800, color: '#4ade80' }}>Test Supreme</span>
+    </span>
+  )
+
+  const renderStep = (txt, index, revealed, isB) => {
+    const isAmeliPro = txt === null
+    const isSupreme = !isB
+      ? index === 2
+      : index === 3
+    const label = index + 1
+    const vis = index < revealed
+
+    return (
+      <div key={index} style={{
+        display: 'flex', alignItems: 'flex-start', gap: 14,
+        opacity: vis ? 1 : 0, transform: vis ? 'translateY(0)' : 'translateY(12px)',
+        transition: `opacity .4s ${index * 0.1}s, transform .4s ${index * 0.1}s`,
+        background: vis ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+        border: vis ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.04)',
+        borderRadius: 12, padding: '12px 16px',
+      }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: vis ? 'rgba(0,171,233,0.2)' : 'rgba(255,255,255,0.06)',
+          fontSize: 13, fontWeight: 900, color: vis ? '#00abe9' : 'rgba(255,255,255,0.2)',
+        }}>{label}</div>
+        <div style={{ fontSize: 14, color: vis ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)', lineHeight: 1.5, transition: 'all .3s' }}>
+          {isAmeliPro ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <span>Aller a l&apos;ordinateur sur <strong>AMELIPRO</strong> pour verifier la date du dernier remboursement.</span>
+              <div><AmeliTV isVisible={vis} /></div>
+            </div>
+          ) : isSupreme ? (
+            <span>{txt} <SupremeTV /></span>
+          ) : txt}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', padding: '40px 56px', fontFamily: 'inherit',
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+          Remboursement optique · France
+        </div>
+        <h1 style={{ fontSize: 30, fontWeight: 900, color: '#fff', margin: 0 }}>
+          Quand un client souhaite se faire rembourser je dois donc :
+        </h1>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, flex: 1 }}>
+        {/* Scenario A */}
+        <div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
+            padding: '10px 16px', background: 'rgba(0,137,186,0.1)', border: '1px solid rgba(0,137,186,0.25)', borderRadius: 10,
+          }}>
+            <span style={{ fontSize: 18 }}>📋</span>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1 }}>Scenario A</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>Avec ordonnance valide</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {STEPS_A.map((txt, i) => renderStep(txt, i, stepA, false))}
+          </div>
+        </div>
+
+        {/* Scenario B */}
+        <div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
+            padding: '10px 16px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 10,
+          }}>
+            <span style={{ fontSize: 18 }}>🚫</span>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1 }}>Scenario B</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>Sans ordonnance valide</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {STEPS_B.map((txt, i) => renderStep(txt, i, stepB, true))}
+          </div>
+        </div>
+      </div>
+
+      {/* Note bas */}
+      <div style={{
+        marginTop: 28, padding: '14px 20px',
+        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 12, fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, textAlign: 'center',
+      }}>
+        <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Si apres verification le client n&apos;a pas droit au remboursement :</strong>
+        {' '}proposer l&apos;offre <strong style={{ color: '#fff' }}>1=1</strong> ou <strong style={{ color: '#fff' }}>Classique</strong> sans remboursement, a ses frais.
+      </div>
+    </div>
+  )
+}
+
+// ── TV : Test Supreme ─────────────────────────────────────────────
+function TVRembFrSupreme({ supremeStep }) {
+  return (
+    <div style={{
+      minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', padding: '48px 72px', fontFamily: 'inherit',
+      alignItems: 'center', justifyContent: 'center',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 36 }}>
+        <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={64} height={64} style={{ objectFit: 'contain', flexShrink: 0 }} />
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
+            LPT Santé
+          </div>
+          <h1 style={{ fontSize: 36, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: -0.5 }}>Test Supreme</h1>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 28, width: '100%', maxWidth: 1000 }}>
+        {/* Accepte */}
+        <div style={{
+          flex: 1,
+          opacity: supremeStep >= 1 ? 1 : 0.15,
+          transform: supremeStep >= 1 ? 'scale(1)' : 'scale(0.96)',
+          transition: 'all .5s',
+          background: supremeStep >= 1 ? 'rgba(74,222,128,0.06)' : 'rgba(255,255,255,0.03)',
+          border: supremeStep >= 1 ? '1.5px solid rgba(74,222,128,0.28)' : '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 20, padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center',
+        }}>
+          <div style={{
+            alignSelf: 'flex-start', padding: '5px 18px', borderRadius: 20,
+            background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)',
+            fontSize: 14, fontWeight: 900, color: '#4ade80', letterSpacing: 1,
+          }}>ACCEPTE ✓</div>
+          {/* Popup mockup */}
+          <div style={{
+            background: '#fff', borderRadius: 16, padding: '22px 22px 16px',
+            width: '100%', maxWidth: 290, textAlign: 'center',
+            boxShadow: '0 6px 32px rgba(0,0,0,0.4)',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          }}>
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: 14 }}>
+              <img src="/assets/logo-lpt-sante.png" alt="" width={60} height={60} style={{ objectFit: 'contain', display: 'block' }} />
+              <div style={{ position: 'absolute', top: -8, left: -4, display: 'flex', gap: 2 }}>
+                <span style={{ background: '#aaa', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 3, padding: '1px 4px' }}>1.01</span>
+                <span style={{ background: '#e6a817', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 3, padding: '1px 4px' }}>91</span>
+              </div>
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#111', marginBottom: 8, lineHeight: 1.2 }}>
+              Remboursements enregistres
+            </div>
+            <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5, marginBottom: 16 }}>
+              Vous pouvez maintenant creer une commande Supreme.
+            </div>
+            <div style={{ background: '#2a5080', borderRadius: 10, padding: '10px 0', fontSize: 14, fontWeight: 600, color: '#fff' }}>OK</div>
+          </div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
+            background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 12, width: '100%',
+          }}>
+            <span style={{ fontSize: 22 }}>🎉</span>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#4ade80' }}>Parcours Supreme</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>Client repart avec 2 paires pour 0 €</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Refuse */}
+        <div style={{
+          flex: 1,
+          opacity: supremeStep >= 2 ? 1 : 0.15,
+          transform: supremeStep >= 2 ? 'scale(1)' : 'scale(0.96)',
+          transition: 'all .5s .12s',
+          background: supremeStep >= 2 ? 'rgba(239,68,68,0.06)' : 'rgba(255,255,255,0.03)',
+          border: supremeStep >= 2 ? '1.5px solid rgba(239,68,68,0.28)' : '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 20, padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center',
+        }}>
+          <div style={{
+            alignSelf: 'flex-start', padding: '5px 18px', borderRadius: 20,
+            background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)',
+            fontSize: 14, fontWeight: 900, color: '#f87171', letterSpacing: 1,
+          }}>REFUSE ✗</div>
+          {/* Popup mockup */}
+          <div style={{
+            background: '#fff', borderRadius: 16, padding: '22px 22px 16px',
+            width: '100%', maxWidth: 290, textAlign: 'center',
+            boxShadow: '0 6px 32px rgba(0,0,0,0.4)',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          }}>
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: 14, marginTop: 8 }}>
+              <svg width={48} height={48} viewBox="0 0 48 48" style={{ position: 'absolute', top: -18, left: -16 }}>
+                <polygon points="24,2 46,44 2,44" fill="#f5c842" strokeLinejoin="round"/>
+                <text x="24" y="38" textAnchor="middle" fontSize="22" fontWeight="900" fill="white">!</text>
+              </svg>
+              <div style={{ marginLeft: 8 }}>
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img src="/assets/logo-lpt-sante.png" alt="" width={50} height={50} style={{ objectFit: 'contain', display: 'block' }} />
+                  <div style={{ position: 'absolute', top: -8, left: -4, display: 'flex', gap: 2 }}>
+                    <span style={{ background: '#aaa', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 3, padding: '1px 4px' }}>1.01</span>
+                    <span style={{ background: '#e6a817', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 3, padding: '1px 4px' }}>95</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#111', marginBottom: 8, lineHeight: 1.2 }}>
+              L&apos;envoi de devis OptoAMC a echoue
+            </div>
+            <div style={{ fontSize: 12, color: '#555', lineHeight: 1.5, marginBottom: 14 }}>
+              Erreur OptoAMC. Le remboursement est trop faible pour realiser cette commande Supreme
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1, borderRadius: 10, padding: '9px 0', fontSize: 13, fontWeight: 600, color: '#2a5080', background: '#f0f0f0' }}>Annuler</div>
+              <div style={{ flex: 1.4, background: '#2a5080', borderRadius: 10, padding: '9px 0', fontSize: 13, fontWeight: 700, color: '#fff' }}>Envoyer une PEC</div>
+            </div>
+          </div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
+            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, width: '100%',
+          }}>
+            <span style={{ fontSize: 22 }}>🎉</span>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#f87171' }}>Parcours 1=1</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>Client repart avec 2 paires pour 0 €</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Note Slack */}
+      <div style={{
+        marginTop: 28, padding: '14px 22px',
+        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 14, fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7,
+        maxWidth: 820, textAlign: 'center',
+      }}>
+        <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Message d&apos;erreur incomprehensible ?</strong>
+        {' '}Demandez aux collegues — sinon, photo sur{' '}
+        <strong style={{ color: '#fff' }}>#tiers-payant</strong> Slack en identifiant{' '}
+        <strong style={{ color: '#fff' }}>@NathanVision</strong>. Le BOT repond en quelques secondes.
+      </div>
+    </div>
+  )
+}
+
+function TVRembFrConditions({ rembfrRevealed }) {
+  const revealed = rembfrRevealed || []
+  const ordoRevealed = revealed.includes('ordonnance')
+  const delaisRevealed = revealed.includes('delais')
+
+  const BG = '#03112a'
+  const CARD = '#0d1f3c'
+  const BLUE = '#0089ba'
+  const BLUE_L = '#00abe9'
+
+  const LockDots = () => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 20 }}>
+      <div style={{ fontSize: 22, opacity: 0.3 }}>🔒</div>
+      {[1,2,3].map(i => (
+        <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', animation: `pulse ${0.9 + i * 0.2}s ease-in-out infinite alternate` }} />
+      ))}
+    </div>
+  )
+
+  const conditions = [
+    {
+      id: 'couverture',
+      num: '01',
+      titre: 'Être couvert par la Sécurité Sociale',
+      detail: 'et une mutuelle complémentaire ou la Complémentaire Santé Solidaire (CSS)',
+      alwaysVisible: true,
+      content: (
+        <div style={{ marginTop: 16, display: 'flex', gap: 10, flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(0,137,186,0.1)', borderRadius: 10, border: '1px solid rgba(0,137,186,0.2)' }}>
+            <span style={{ fontSize: 18 }}>🏥</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Sécurité Sociale</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Remboursement de base</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(0,137,186,0.1)', borderRadius: 10, border: '1px solid rgba(0,137,186,0.2)' }}>
+            <span style={{ fontSize: 18 }}>🤝</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Mutuelle / CSS</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Complète le remboursement SS</div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'ordonnance',
+      num: '02',
+      titre: 'Avoir une ordonnance en cours de validité',
+      detail: 'La durée de validité dépend de l\'âge du patient',
+      alwaysVisible: false,
+      content: ordoRevealed ? (
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {[
+            { label: 'Moins de 16 ans', duree: '1 an', color: '#f59e0b' },
+            { label: 'De 16 à 42 ans', duree: '5 ans', color: BLUE_L },
+            { label: '43 ans et plus', duree: '3 ans', color: '#a78bfa' },
+          ].map(row => (
+            <div key={row.label} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 14px', borderRadius: 10,
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            }}>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>{row.label}</span>
+              <span style={{ fontSize: 16, fontWeight: 900, color: row.color }}>{row.duree}</span>
+            </div>
+          ))}
+          {/* LYLEOO */}
+          <div style={{
+            marginTop: 4, padding: '11px 14px',
+            background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.25)',
+            borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: 10,
+          }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>💡</span>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#c9a227', marginBottom: 3 }}>
+                Pas d'ordonnance valable ? → LYLEOO
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
+                Pour les +18 ans uniquement · Uniquement pour débloquer un remboursement ·
+                Après vérification de tous les autres critères
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : <LockDots />,
+    },
+    {
+      id: 'delais',
+      num: '03',
+      titre: 'Respecter les délais de renouvellement',
+      detail: 'Des règles différentes selon l\'âge',
+      alwaysVisible: false,
+      content: delaisRevealed ? (
+        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Moins de 16 ans */}
+          <div style={{ padding: '12px 14px', background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>Moins de 16 ans</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
+              Renouvellement <strong style={{ color: '#fff' }}>tous les ans</strong> sans condition<br />
+              Renouvellement <strong style={{ color: '#fff' }}>sans délai</strong> si changement de correction ≥ 0,50
+            </div>
+          </div>
+          {/* Plus de 16 ans */}
+          <div style={{ padding: '12px 14px', background: `rgba(0,171,233,0.07)`, border: `1px solid rgba(0,171,233,0.2)`, borderRadius: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: BLUE_L, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>16 ans et plus</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
+              Renouvellement <strong style={{ color: '#fff' }}>tous les 2 ans</strong><br />
+              Anticipé après <strong style={{ color: '#fff' }}>1 an et 1 jour</strong> si changement ≥ 0,50
+            </div>
+          </div>
+          {/* AMELIPRO */}
+          <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>💻</span>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
+              Date du dernier remboursement vérifiable sur <strong style={{ color: BLUE_L }}>AMELIPRO</strong> via le numéro de sécurité sociale du patient
+            </div>
+          </div>
+        </div>
+      ) : <LockDots />,
+    },
+  ]
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: `linear-gradient(135deg, ${BG} 0%, #001a3d 100%)`,
+      display: 'flex', flexDirection: 'column',
+      padding: '40px 48px',
+      fontFamily: 'inherit',
+    }}>
+      {/* Header */}
+      <div style={{ marginBottom: 32, textAlign: 'center' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: BLUE, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+          Remboursement optique · France
+        </div>
+        <h1 style={{ fontSize: 32, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: -0.5 }}>
+          Les conditions de remboursement
+        </h1>
+      </div>
+
+      {/* 3 cartes */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, flex: 1 }}>
+        {conditions.map(c => (
+          <div key={c.id} style={{
+            background: CARD, border: `1px solid rgba(255,255,255,0.08)`,
+            borderRadius: 18, padding: '24px 22px',
+            display: 'flex', flexDirection: 'column',
+          }}>
+            {/* Numéro */}
+            <div style={{
+              fontSize: 11, fontWeight: 900, color: BLUE, letterSpacing: 2,
+              marginBottom: 12,
+            }}>{c.num}</div>
+            {/* Titre */}
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 6 }}>
+              {c.titre}
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, marginBottom: 4 }}>
+              {c.detail}
+            </div>
+            {/* Contenu */}
+            <div style={{ flex: 1 }}>{c.content}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── TV Mutuelles Reveal ───────────────────────────────────────────
+function TVMutuellesReveal({ mutuellesRevealed }) {
+  const revealed = mutuellesRevealed || []
+  const avecOptique = MUTUELLES_BELGIQUE.filter(m => m.complementaire)
+  const sansOptique = MUTUELLES_BELGIQUE.filter(m => !m.complementaire)
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', padding: '32px 52px', gap: 20,
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center',
+            background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)',
+            borderRadius: 20, padding: '4px 16px', marginBottom: 10,
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              Mutuelles et INAMI · Belgique
+            </span>
+          </div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>
+            Les organismes assureurs reconnus
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#4ade80' }}>{avecOptique.length}</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>avec optique</div>
+          </div>
+          <div style={{ width: 1, height: 36, background: 'rgba(255,255,255,0.1)' }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#f87171' }}>{sansOptique.length}</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>sans optique</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Cartes avec optique — 3 colonnes, pleine hauteur */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, flex: 1 }}>
+        {avecOptique.map((m) => {
+          const isRevealed = revealed.includes(m.id)
+          return (
+            <div key={m.id} style={{
+              background: isRevealed
+                ? 'linear-gradient(160deg, rgba(201,162,39,0.12) 0%, rgba(201,162,39,0.04) 100%)'
+                : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${isRevealed ? 'rgba(201,162,39,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: 18, overflow: 'hidden',
+              display: 'flex', flexDirection: 'column',
+              transition: 'all .4s ease',
+            }}>
+              {/* Barre top colorée */}
+              <div style={{
+                height: 5,
+                background: isRevealed
+                  ? 'linear-gradient(90deg, #a07818, #c9a227)'
+                  : 'rgba(255,255,255,0.07)',
+              }} />
+
+              <div style={{ padding: '22px 24px', flex: 1, display: 'flex', flexDirection: 'column', gap: 18 }}>
+                {/* Nom */}
+                <div>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.25, marginBottom: 4 }}>
+                    {m.nom}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                    {m.type}
+                  </div>
+                </div>
+
+                {/* Badge optique */}
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 7,
+                  background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)',
+                  borderRadius: 10, padding: '8px 14px', alignSelf: 'flex-start',
+                }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 6px #4ade80' }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>Assurance complémentaire optique</span>
+                </div>
+
+                {/* Séparateur */}
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.07)' }} />
+
+                {/* Zone détails / attente */}
+                {isRevealed && m.montant ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+                    {/* Montant mis en valeur */}
+                    <div style={{
+                      background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.3)',
+                      borderRadius: 12, padding: '14px 18px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 0.8 }}>Montant</span>
+                      <span style={{ fontSize: 26, fontWeight: 900, color: '#c9a227', letterSpacing: -0.5 }}>{m.montant}</span>
+                    </div>
+                    {/* Fréquence */}
+                    <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: '12px 14px' }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Fréquence</div>
+                      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.45 }}>{m.frequence}</div>
+                    </div>
+                    {/* Particularités */}
+                    {m.particularites && m.particularites !== '/' && (
+                      <div style={{ background: 'rgba(0,0,0,0.15)', borderRadius: 10, padding: '12px 14px', flex: 1 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Particularités</div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.55 }}>{m.particularites}</div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: '20px 0' }}>
+                    <div style={{
+                      width: 48, height: 48, borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 22,
+                    }}>🔒</div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic', marginBottom: 8 }}>
+                        En attente de révélation
+                      </div>
+                      <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
+                        {[0,1,2].map(i => (
+                          <div key={i} style={{
+                            width: 5, height: 5, borderRadius: '50%',
+                            background: 'rgba(255,255,255,0.15)',
+                            animation: `waitingPulse 1.4s ease-in-out ${i * 0.2}s infinite`,
+                          }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Section sans optique — 3 mini-cartes côte à côte */}
+      <div style={{
+        background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.18)',
+        borderRadius: 14, padding: '16px 20px',
+      }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#f87171', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 12 }}>
+          ✗ Sans assurance complémentaire optique
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          {sansOptique.map(m => (
+            <div key={m.id} style={{
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(239,68,68,0.15)',
+              borderRadius: 10, padding: '12px 16px',
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)', lineHeight: 1.3 }}>{m.nom}</div>
+              <div style={{ fontSize: 10, color: 'rgba(239,68,68,0.6)', marginTop: 2 }}>{m.type}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Helpers SVG réutilisables (tiers payant explication) ──────────────
+function tpChip() {
+  return (
+    <>
+      <rect x="10" y="10" width="28" height="20" rx="3" fill="#c9a227" />
+      <line x1="10" y1="20" x2="38" y2="20" stroke="rgba(0,0,0,0.25)" strokeWidth="0.8" />
+      <line x1="24" y1="10" x2="24" y2="30" stroke="rgba(0,0,0,0.25)" strokeWidth="0.8" />
+    </>
+  )
+}
+
+function tpCoins(pathId, color, dur, offsets) {
+  return offsets.map((d, i) => (
+    <g key={`${pathId}-${i}`}>
+      <circle r="11" fill={color} opacity="0.95">
+        <animateMotion dur={`${dur}s`} begin={`${d}s`} repeatCount="indefinite">
+          <mpath href={`#${pathId}`} />
+        </animateMotion>
+      </circle>
+      <text fontSize="11" textAnchor="middle" fill="#fff" fontWeight="900" dy="4">
+        {'€'}
+        <animateMotion dur={`${dur}s`} begin={`${d}s`} repeatCount="indefinite">
+          <mpath href={`#${pathId}`} />
+        </animateMotion>
+      </text>
+    </g>
+  ))
+}
+
+function tpFacture(pathId, color, dur, offsets) {
+  return offsets.map((d, i) => (
+    <g key={`${pathId}-f${i}`}>
+      <animateMotion dur={`${dur}s`} begin={`${d}s`} repeatCount="indefinite">
+        <mpath href={`#${pathId}`} />
+      </animateMotion>
+      <rect x="-9" y="-11" width="18" height="22" rx="2" fill={color} opacity="0.92" />
+      <line x1="-5" y1="-5" x2="5" y2="-5" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="-5" y1="0" x2="5" y2="0" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="-5" y1="5" x2="1" y2="5" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round" />
+    </g>
+  ))
+}
+
+function TVTiersPayantExplication() {
+  return (
+    <div style={{
+      background: '#03112a', minHeight: '100vh',
+      display: 'flex', flexDirection: 'column',
+      padding: '28px 40px', gap: 18,
+      fontFamily: 'inherit',
+    }}>
+      {/* Titre */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>
+          Parcours rembourses
+        </div>
+        <h2 style={{ fontSize: 30, fontWeight: 900, color: '#fff', margin: 0 }}>
+          Comment fonctionne le tiers payant ?
+        </h2>
+        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 6, marginBottom: 0 }}>
+          Dans les deux cas — reste a charge 0 pour le client
+        </p>
+      </div>
+
+      {/* Deux diagrammes cote a cote */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, flex: 1 }}>
+
+        {/* ═══ TIERS PAYANT COMPLET ═══ */}
+        <div style={{ background: 'rgba(74,222,128,0.04)', border: '1px solid rgba(74,222,128,0.18)', borderRadius: 20, overflow: 'hidden' }}>
+          <svg viewBox="0 0 540 340" style={{ width: '100%', height: '100%', display: 'block' }}>
+            <defs>
+              <linearGradient id="tp-vg-c" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#4a9e4a" /><stop offset="100%" stopColor="#2d6e2d" />
+              </linearGradient>
+              <linearGradient id="tp-mg-c" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#1565c0" /><stop offset="100%" stopColor="#0d47a1" />
+              </linearGradient>
+              <marker id="tp-aw-c" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+                <polygon points="0 0, 9 3.5, 0 7" fill="#c9a227" opacity="0.55" />
+              </marker>
+              {/* Vitale centre (146,96) → LPT gauche (228,158) */}
+              <path id="tp-pvc" d="M 146 96 C 196 96 222 145 228 158" />
+              {/* Mutuelle centre (146,256) → LPT gauche (228,158) */}
+              <path id="tp-pmc" d="M 146 256 C 196 256 222 170 228 158" />
+            </defs>
+
+            {/* Titre panneau */}
+            <circle cx="24" cy="24" r="8" fill="#4ade80" />
+            <text x="40" y="30" fontSize="16" fontWeight="800" fill="#4ade80">Tiers payant complet</text>
+
+            {/* Carte Vitale — translate(12,55) */}
+            <g transform="translate(12,55)">
+              <rect width="134" height="82" rx="9" fill="url(#tp-vg-c)" />
+              {tpChip()}
+              <text x="10" y="50" fontSize="8" fill="rgba(255,255,255,0.55)" fontWeight="700" letterSpacing="1.2">CARTE VITALE</text>
+              <text x="10" y="64" fontSize="12" fill="#fff" fontWeight="700">Securite Sociale</text>
+            </g>
+
+            {/* Carte Mutuelle — translate(12,215) */}
+            <g transform="translate(12,215)">
+              <rect width="134" height="82" rx="9" fill="url(#tp-mg-c)" />
+              {tpChip()}
+              <text x="10" y="50" fontSize="8" fill="rgba(255,255,255,0.55)" fontWeight="700" letterSpacing="1.2">MUTUELLE</text>
+              <text x="10" y="64" fontSize="12" fill="#fff" fontWeight="700">Complementaire</text>
+            </g>
+
+            {/* LPT — translate(228,110) → cercle cx=48 cy=48 r=50 → centre abs (276,158) */}
+            <g transform="translate(228,110)">
+              <circle cx="48" cy="48" r="50" fill="#0d1f3c" />
+              <circle cx="48" cy="48" r="50" fill="none" stroke="#0089ba" strokeWidth="3" />
+              <circle cx="48" cy="48" r="56" fill="none" stroke="#0089ba" strokeWidth="1.5" strokeOpacity="0.12">
+                <animate attributeName="r" values="52;58;52" dur="2.4s" repeatCount="indefinite" />
+                <animate attributeName="stroke-opacity" values="0.12;0;0.12" dur="2.4s" repeatCount="indefinite" />
+              </circle>
+              <text x="48" y="44" textAnchor="middle" fontSize="26">&#x1F453;</text>
+              <text x="48" y="62" textAnchor="middle" fontSize="11" fill="#00abe9" fontWeight="900" letterSpacing="2">LPT</text>
+            </g>
+
+            {/* Client = 0 — translate(406,210) — LPT droite bord : 276+50=326, gap 80px */}
+            <g transform="translate(406,210)">
+              <text x="40" y="32" textAnchor="middle" fontSize="40">&#x1F9D1;</text>
+              <text x="40" y="52" textAnchor="middle" fontSize="11" fill="rgba(255,255,255,0.5)">Client</text>
+              <rect x="2" y="57" width="76" height="27" rx="13" fill="rgba(74,222,128,0.18)" stroke="rgba(74,222,128,0.5)" strokeWidth="1.5" />
+              <text x="40" y="75" textAnchor="middle" fontSize="14" fill="#4ade80" fontWeight="900">0 &euro;</text>
+            </g>
+
+            {/* Legende */}
+            <text x="270" y="330" textAnchor="middle" fontSize="11" fill="rgba(255,255,255,0.28)" fontStyle="italic">
+              La Vitale et la mutuelle reglent directement LPT
+            </text>
+
+            {/* Fleches */}
+            <use href="#tp-pvc" fill="none" stroke="#c9a227" strokeWidth="2" strokeOpacity="0.18" markerEnd="url(#tp-aw-c)" />
+            <use href="#tp-pmc" fill="none" stroke="#c9a227" strokeWidth="2" strokeOpacity="0.18" markerEnd="url(#tp-aw-c)" />
+
+            {/* Pieces animees */}
+            {tpCoins('tp-pvc', '#c9a227', 1.8, [0, 0.6, 1.2])}
+            {tpCoins('tp-pmc', '#c9a227', 1.8, [0.3, 0.9, 1.5])}
+          </svg>
+        </div>
+
+        {/* ═══ TIERS PAYANT PARTIEL ═══ */}
+        <div style={{ background: 'rgba(245,158,11,0.04)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 20, overflow: 'hidden' }}>
+          {/*
+            Layout (viewBox 520x370) :
+              Vitale     (12,18)  → centre (79,57)
+              Client     (12,228) → centre (54,270) — UN SEUL client
+              LPT circle (210,84) → centre (256,130)
+              Mutuelle   (356,196) → centre (423,235)
+
+            Flux :
+              1. Vitale → LPT  (euros or)
+              2. Client → LPT  (euros or — avance les frais)
+              3. Client → Mutuelle (factures orange)
+              4. Mutuelle → Client (euros verts — remboursement)
+          */}
+          <svg viewBox="0 0 520 370" style={{ width: '100%', height: '100%', display: 'block' }}>
+            <defs>
+              <linearGradient id="tp-vg-p" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#4a9e4a" /><stop offset="100%" stopColor="#2d6e2d" />
+              </linearGradient>
+              <linearGradient id="tp-mg-p" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#1565c0" /><stop offset="100%" stopColor="#0d47a1" />
+              </linearGradient>
+              <marker id="tp-aw-p-gold" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+                <polygon points="0 0, 9 3.5, 0 7" fill="#c9a227" opacity="0.55" />
+              </marker>
+              <marker id="tp-aw-p-orange" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+                <polygon points="0 0, 9 3.5, 0 7" fill="#f59e0b" opacity="0.65" />
+              </marker>
+              <marker id="tp-aw-p-green" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+                <polygon points="0 0, 9 3.5, 0 7" fill="#4ade80" opacity="0.65" />
+              </marker>
+              {/* 1. Vitale droite (146,84) → LPT gauche (210,130) */}
+              <path id="tp-pvp" d="M 142 84 C 188 84 205 118 210 130" />
+              {/* 2. Client droite (96,260) → LPT bas-gauche (222,155) */}
+              <path id="tp-pcp" d="M 96 258 C 162 258 198 150 210 140" />
+              {/* 3. Client droite (96,272) → Mutuelle gauche (356,242) */}
+              <path id="tp-pfp" d="M 96 272 C 192 278 288 265 356 245" />
+              {/* 4. Mutuelle bas (423,278) → Client haut-droite (88,238) */}
+              <path id="tp-prp" d="M 420 278 C 420 338 130 342 84 248" />
+            </defs>
+
+            {/* Titre panneau */}
+            <circle cx="24" cy="24" r="8" fill="#f59e0b" />
+            <text x="40" y="30" fontSize="16" fontWeight="800" fill="#f59e0b">Tiers payant partiel</text>
+
+            {/* Carte Vitale — translate(12,46) — sous le titre */}
+            <g transform="translate(12,46)">
+              <rect width="134" height="78" rx="9" fill="url(#tp-vg-p)" />
+              {tpChip()}
+              <text x="10" y="48" fontSize="8" fill="rgba(255,255,255,0.55)" fontWeight="700" letterSpacing="1.2">CARTE VITALE</text>
+              <text x="10" y="62" fontSize="12" fill="#fff" fontWeight="700">Securite Sociale</text>
+            </g>
+
+            {/* Client UNIQUE — translate(12,228) */}
+            <g transform="translate(12,228)">
+              <rect width="84" height="92" rx="14" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <text x="42" y="42" textAnchor="middle" fontSize="30">&#x1F9D1;</text>
+              <text x="42" y="60" textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.55)" fontWeight="600">Client</text>
+              <text x="42" y="74" textAnchor="middle" fontSize="9" fill="#f59e0b" fontWeight="700">avance les frais</text>
+              <rect x="6" y="79" width="72" height="10" rx="4" fill="rgba(74,222,128,0.14)" />
+              <text x="42" y="88" textAnchor="middle" fontSize="8" fill="#4ade80" fontWeight="700">rembourse</text>
+            </g>
+
+            {/* LPT — translate(210,84) → cercle cx=46 cy=46 r=48 → centre abs (256,130) */}
+            <g transform="translate(210,84)">
+              <circle cx="46" cy="46" r="48" fill="#0d1f3c" />
+              <circle cx="46" cy="46" r="48" fill="none" stroke="#0089ba" strokeWidth="3" />
+              <circle cx="46" cy="46" r="54" fill="none" stroke="#0089ba" strokeWidth="1.5" strokeOpacity="0.12">
+                <animate attributeName="r" values="50;56;50" dur="2.4s" repeatCount="indefinite" />
+                <animate attributeName="stroke-opacity" values="0.12;0;0.12" dur="2.4s" repeatCount="indefinite" />
+              </circle>
+              <text x="46" y="42" textAnchor="middle" fontSize="24">&#x1F453;</text>
+              <text x="46" y="60" textAnchor="middle" fontSize="11" fill="#00abe9" fontWeight="900" letterSpacing="2">LPT</text>
+            </g>
+
+            {/* Mutuelle — translate(356,196) */}
+            <g transform="translate(356,196)">
+              <rect width="134" height="78" rx="9" fill="url(#tp-mg-p)" />
+              {tpChip()}
+              <text x="10" y="48" fontSize="8" fill="rgba(255,255,255,0.55)" fontWeight="700" letterSpacing="1.2">MUTUELLE</text>
+              <text x="10" y="62" fontSize="12" fill="#fff" fontWeight="700">Complementaire</text>
+            </g>
+
+            {/* Label "facture" au milieu du chemin 3 — approx (230,260) */}
+            <text x="228" y="256" textAnchor="middle" fontSize="10" fill="#f59e0b" opacity="0.8" fontWeight="700">facture</text>
+
+            {/* Label "remboursement" au milieu du chemin 4 — approx (262,335) */}
+            <text x="262" y="355" textAnchor="middle" fontSize="10" fill="#4ade80" opacity="0.8" fontWeight="700">remboursement</text>
+
+            {/* Fleches */}
+            <use href="#tp-pvp" fill="none" stroke="#c9a227" strokeWidth="2" strokeOpacity="0.18" markerEnd="url(#tp-aw-p-gold)" />
+            <use href="#tp-pcp" fill="none" stroke="#c9a227" strokeWidth="2" strokeOpacity="0.18" markerEnd="url(#tp-aw-p-gold)" />
+            <use href="#tp-pfp" fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeOpacity="0.22" strokeDasharray="7 4" markerEnd="url(#tp-aw-p-orange)" />
+            <use href="#tp-prp" fill="none" stroke="#4ade80" strokeWidth="2" strokeOpacity="0.22" markerEnd="url(#tp-aw-p-green)" />
+
+            {/* 1. Vitale → LPT : euros or */}
+            {tpCoins('tp-pvp', '#c9a227', 1.8, [0, 0.6, 1.2])}
+            {/* 2. Client → LPT : euros or */}
+            {tpCoins('tp-pcp', '#c9a227', 1.8, [0.3, 0.9, 1.5])}
+            {/* 3. Client → Mutuelle : factures orange */}
+            {tpFacture('tp-pfp', '#f59e0b', 2.6, [0, 1.3])}
+            {/* 4. Mutuelle → Client : euros verts */}
+            {tpCoins('tp-prp', '#4ade80', 2.2, [0, 1.1])}
+          </svg>
+        </div>
+
+      </div>
+
+      {/* Note LPT Santé */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 24px', background: 'rgba(77,184,92,0.07)', border: '1px solid rgba(77,184,92,0.22)', borderRadius: 16, marginTop: 4 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={48} height={48} style={{ objectFit: 'contain', flexShrink: 0 }} />
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#4db85c', marginBottom: 4 }}>LPT Santé — logiciel de tiers payant</div>
+          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>
+            Pour réaliser le tiers payant, nous utilisons <strong style={{ color: '#fff' }}>LPT Santé</strong>. Ce logiciel est disponible sur <strong style={{ color: '#fff' }}>tous les ordinateurs de vente</strong>.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  )
+}
+
+// ── TV : Page verre unifocal (Types de verres) ───────────────────
+function TVTypesVerresUnifocal({ pageIndex, total }) {
+  const [entered, setEntered] = useState(false)
+  useEffect(() => {
+    setEntered(false)
+    const t = setTimeout(() => setEntered(true), 100)
+    return () => clearTimeout(t)
+  }, [])
+
+  const COLOR = '#00abe9'
+
+  const blocks = [
+    {
+      label: 'Ce que c\'est',
+      text: 'Une correction identique sur toute la surface du verre. Pas de zone de flou, vision nette partout.',
+    },
+    {
+      label: 'Pour qui',
+      text: 'Clients non presbytes (un seul defaut a corriger, quelle que soit la distance). Egalement pour les clients presbytes qui souhaitent une paire dediee a une seule distance — vision de loin ou vision de pres.',
+    },
+    {
+      label: 'Fabrication',
+      text: '10 minutes en stock, de -8 a +7,25 avec un maximum de 3 de cylindre. Disponible dans tous les traitements en 10 min (sauf polarise).',
+    },
+  ]
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      {/* Topbar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '20px 40px', flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Le verre unifocal</span>
+        </div>
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{
+              height: 5, borderRadius: 3, transition: 'all .3s',
+              width: i === pageIndex ? 22 : 5,
+              background: i === pageIndex ? COLOR : 'rgba(255,255,255,0.2)',
+            }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Contenu */}
+      <div style={{
+        flex: 1, display: 'grid', gridTemplateColumns: '1fr 1.4fr',
+        gap: 64, padding: '16px 72px 40px', alignItems: 'center',
+      }}>
+        {/* Verre unifocal */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          opacity: entered ? 1 : 0, transform: entered ? 'scale(1)' : 'scale(0.9)',
+          transition: 'all .8s ease',
+        }}>
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              position: 'absolute', inset: -50, borderRadius: '50%',
+              background: `radial-gradient(circle, ${COLOR}22 0%, transparent 68%)`,
+              pointerEvents: 'none',
+            }} />
+            <Image
+              src="/assets/verre-unifocal-2.png"
+              alt="Verre unifocal"
+              width={300}
+              height={300}
+              style={{ objectFit: 'contain', display: 'block', position: 'relative', zIndex: 1 }}
+              priority
+            />
+          </div>
+        </div>
+
+        {/* Blocs info */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+          <h1 style={{
+            fontSize: 44, fontWeight: 800, color: '#fff', lineHeight: 1.1,
+            opacity: entered ? 1 : 0, transform: entered ? 'translateY(0)' : 'translateY(-16px)',
+            transition: 'all .6s ease',
+          }}>
+            Le verre <span style={{ color: COLOR }}>unifocal</span>
+          </h1>
+
+          {blocks.map((b, i) => (
+            <div key={i} style={{
+              display: 'flex', gap: 18, alignItems: 'flex-start',
+              opacity: entered ? 1 : 0,
+              transform: entered ? 'translateX(0)' : 'translateX(32px)',
+              transition: `all .55s ease ${0.1 + i * 0.12}s`,
+            }}>
+              <div style={{ width: 3, borderRadius: 2, background: COLOR, flexShrink: 0, alignSelf: 'stretch', minHeight: 40 }} />
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>{b.label}</div>
+                <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>{b.text}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── TV : Page verre progressif (Types de verres) ─────────────────
+const TV_TYPES_VERRES_ZONES = [
+  { color: '#a78bfa', label: 'Vision de loin',       sub: 'Au loin — rue, voiture, horizon',    icon: 'loin'   },
+  { color: '#4ade80', label: 'Vision intermediaire', sub: "Ecran d'ordinateur — 40 cm a 1,5 m",  icon: 'milieu' },
+  { color: '#fbbf24', label: 'Vision de pres',        sub: 'Telephone, lecture — moins de 40 cm', icon: 'pres'  },
+]
+
+// Lens 1536x1024 px source, displayed at 650x433 (exact 1.5 ratio, fills perfectly)
+// Oval: cx=325 cy=217 rx=218 ry=164  top=53 bot=381
+const _PG_CY = 217, _PG_RY = 164, _PG_TOP = 53, _PG_BOT = 381
+const _PG_GEO = [0.22, 0.52, 0.80].map(f => {
+  const y  = Math.round(_PG_TOP + (_PG_BOT - _PG_TOP) * f)
+  const dy = y - _PG_CY
+  const s  = Math.sqrt(Math.max(0, 1 - (dy / _PG_RY) ** 2))
+  return { y, rx: Math.round(325 + 218 * s), lx: Math.round(325 - 218 * s) }
+})
+// loin  : y=125 rx=506 lx=144
+// milieu: y=224 rx=543 lx=107
+// pres  : y=315 rx=500 lx=150
+
+function ProgZoneIcon({ type, color, active }) {
+  const c = active ? color : 'rgba(255,255,255,0.2)'
+  if (type === 'loin') return (
+    <svg width={46} height={46} viewBox="-23 -23 46 46">
+      <line x1={-17} y1={9} x2={17} y2={9} stroke={c} strokeWidth={1.5} opacity={0.7} />
+      <polyline points="-17,9 -6,-9 2,-1 9,-15 17,9" fill="none" stroke={c} strokeWidth={1.8} strokeLinejoin="round" />
+      <circle cx={13} cy={-17} r={2.8} fill={c} opacity={0.9} />
+    </svg>
+  )
+  if (type === 'milieu') return (
+    <svg width={46} height={46} viewBox="-23 -23 46 46">
+      <rect x={-18} y={-14} width={36} height={24} rx={3} fill="none" stroke={c} strokeWidth={1.8} />
+      <line x1={-11} y1={-7} x2={9} y2={-7} stroke={c} strokeWidth={1} opacity={0.45} />
+      <line x1={-11} y1={-1} x2={4} y2={-1} stroke={c} strokeWidth={1} opacity={0.3} />
+      <path d="M0,10 L0,18 M-7,18 L7,18" stroke={c} strokeWidth={2} strokeLinecap="round" fill="none" />
+    </svg>
+  )
+  return (
+    <svg width={46} height={46} viewBox="-12 -24 24 48">
+      <rect x={-9} y={-21} width={18} height={42} rx={3.5} fill="none" stroke={c} strokeWidth={1.8} />
+      <line x1={-3.5} y1={-18} x2={3.5} y2={-18} stroke={c} strokeWidth={1.5} strokeLinecap="round" opacity={0.5} />
+      <circle cx={0} cy={14} r={2.5} fill="none" stroke={c} strokeWidth={1.5} opacity={0.7} />
+    </svg>
+  )
+}
+
+function TVTypesVerresProgressif({ pageIndex, total }) {
+  const [entered,  setEntered]  = useState(false)
+  const [revealed, setRevealed] = useState(0)
+
+  useEffect(() => {
+    setEntered(false)
+    const t = setTimeout(() => setEntered(true), 100)
+    return () => clearTimeout(t)
+  }, [])
+
+  useEffect(() => {
+    const poll = async () => {
+      const s = await getSharedState()
+      setRevealed(Number(s?.typesVerresZone) || 0)
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [])
+
+  const LW = 650, LH = 433
+  const GAP = 50
+
+  const geo = _PG_GEO
+  const zs  = TV_TYPES_VERRES_ZONES
+  const CARD_X = LW + GAP
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      {/* Topbar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '18px 40px', flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>Verre progressif Pulsar Next</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>Rodenstock · Allemagne</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 5 }}>
+          {Array(total).fill(0).map((_, i) => (
+            <div key={i} style={{
+              height: 5, borderRadius: 3, transition: 'all .3s',
+              width: i === pageIndex ? 22 : 5,
+              background: i === pageIndex ? '#7c3aed' : 'rgba(255,255,255,0.2)',
+            }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Phrase */}
+      <div style={{ padding: '0 40px 8px', flexShrink: 0, opacity: entered ? 1 : 0, transition: 'opacity .6s ease .15s' }}>
+        <div style={{
+          display: 'inline-block',
+          background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.3)',
+          borderRadius: 10, padding: '9px 18px',
+        }}>
+          <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
+            Pense pour les presbytes — une seule paire pour voir a toutes les distances.
+          </span>
+        </div>
+      </div>
+
+      {/* Contenu principal : oeil · verre · scenarios */}
+      <div style={{
+        flex: 1, display: 'flex', alignItems: 'center',
+        padding: '8px 40px 20px', gap: GAP,
+        opacity: entered ? 1 : 0, transition: 'opacity .8s ease .2s',
+      }}>
+
+        {/* Verre progressif */}
+        <div style={{ position: 'relative', width: LW, flexShrink: 0 }}>
+          <Image src="/assets/verre-prog.png" alt="Verre progressif"
+            width={LW} height={LH}
+            style={{ objectFit: 'contain', display: 'block' }}
+            priority
+          />
+          <svg style={{ position: 'absolute', top: 0, left: 0, overflow: 'visible', pointerEvents: 'none' }}
+               width={LW} height={LH}>
+            {/* Marqueurs zones (reveles par formateur) */}
+            {zs.map((z, i) => (
+              <g key={i} opacity={revealed > i ? 1 : 0} style={{ transition: 'opacity 0.5s ease' }}>
+                <circle cx={geo[i].rx} cy={geo[i].y} r={12} fill={z.color} opacity={0.14} />
+                <circle cx={geo[i].rx} cy={geo[i].y} r={5.5} fill={z.color} />
+                <line x1={geo[i].rx + 12} y1={geo[i].y} x2={CARD_X - 14} y2={geo[i].y}
+                  stroke={z.color} strokeWidth={1.5} strokeDasharray="5 4" opacity={0.6} />
+              </g>
+            ))}
+          </svg>
+        </div>
+
+        {/* Cartes scenario, alignees sur les Y des zones */}
+        <div style={{ flex: 1, position: 'relative', height: LH, alignSelf: 'center' }}>
+          {zs.map((z, i) => {
+            const isRevealed = revealed > i
+            const active = i === revealed - 1
+            return (
+              <div key={i} style={{
+                position: 'absolute', top: geo[i].y, left: 0, right: 0,
+                transform: 'translateY(-50%)',
+                display: 'flex', alignItems: 'center', gap: 18,
+                padding: '16px 20px', borderRadius: 16,
+                background: active ? `${z.color}12` : 'rgba(255,255,255,0.02)',
+                boxShadow: active ? `inset 3px 0 0 ${z.color}` : 'none',
+                border: `1px solid ${active ? z.color + '38' : 'rgba(255,255,255,0.05)'}`,
+                opacity: isRevealed ? 1 : (active ? 0.6 : 0.18),
+                transition: 'all 0.5s cubic-bezier(0.4,0,0.2,1)',
+              }}>
+                <ProgZoneIcon type={z.icon} color={z.color} active={active} />
+                <div>
+                  <div style={{
+                    fontSize: 24, fontWeight: 800, lineHeight: 1.15,
+                    color: active ? '#fff' : 'rgba(255,255,255,0.38)',
+                    transition: 'color 0.5s ease',
+                  }}>{z.label}</div>
+                  <div style={{
+                    fontSize: 13, marginTop: 5, fontWeight: 500,
+                    color: active ? z.color : 'rgba(255,255,255,0.18)',
+                    transition: 'color 0.5s ease',
+                  }}>{z.sub}</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, sessionCode, onAmeliProClick }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -2621,6 +5441,19 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
     return () => clearTimeout(t)
   }, [page.id])
 
+  if (page.type === 'mutuelles-reveal')   return <TVMutuellesReveal mutuellesRevealed={mutuellesRevealed} />
+  if (page.type === 'inami-info')         return <TVInamiInfo inamiRevealed={inamiRevealed} />
+  if (page.type === 'partena-offre')      return <TVPartenaOffre partenaRevealed={partenaRevealed} />
+  if (page.type === 'rembfr-conditions')  return <TVRembFrConditions rembfrRevealed={rembfrRevealed} />
+  if (page.type === 'rembfr-demarche')    return <TVRembFrDemarche stepA={rembfrDemarcheA} stepB={rembfrDemarcheB} onAmeliProClick={onAmeliProClick} />
+  if (page.type === 'rembfr-supreme')     return <TVRembFrSupreme supremeStep={rembfrSupreme} />
+  if (page.type === 'parcours-rembourses-offres') return <TVParcoursOffres parcoursRevealed={parcoursRevealed} />
+  if (page.type === 'parcours-tiers-payant')      return <TVTiersPayant tiersPayantRevealed={tiersPayantRevealed} sessionCode={sessionCode} pageId={page.id} />
+  if (page.type === 'tiers-payant-explication')   return <TVTiersPayantExplication />
+  if (page.type === 'lpt-sante-intro')        return <TVLptSanteIntro        page={page} sessionCode={sessionCode} />
+  if (page.type === 'lpt-sante-explication') return <TVLptSanteExplication />
+  if (page.type === 'lpt-sante-pec')         return <TVLptSantePec scenario={lptsPecScenario} />
+  if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />
   if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />
@@ -2634,7 +5467,6 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'offres-progressif-11') return <TVOffresProgressif11 />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} ordoRevealStep={ordoRevealStep} audioUnlocked={audioUnlocked} />
-  if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
 
   // Entreprise module types — tous dispatchés pour éviter le VerreAnime
@@ -2661,6 +5493,10 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'zone-interactif') return <TVProgressifZoneInteractif page={page} pageIndex={pageIndex} total={total} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progZoneShowCorrect={progZoneShowCorrect} />
   if (page.type === 'prog-retour')     return <TVProgressifRetourTerrain  page={page} pageIndex={pageIndex} total={total} progRetourResponses={progRetourResponses} />
   if (page.type === 'prog-objections') return <TVProgressifJeuObjections  page={page} pageIndex={pageIndex} total={total} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} progBestAnswer={progBestAnswer} />
+
+  // Types de verres
+  if (page.type === 'unifocal')  return <TVTypesVerresUnifocal  pageIndex={pageIndex} total={total} />
+  if (page.type === 'progressif') return <TVTypesVerresProgressif pageIndex={pageIndex} total={total} />
 
   return (
     <div style={{
@@ -2729,7 +5565,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {page.points.map((pt, i) => (
+            {(page.points || []).map((pt, i) => (
               <div key={i} style={{
                 display: 'flex', gap: 12, alignItems: 'flex-start',
                 opacity: entered ? 1 : 0,
@@ -3281,7 +6117,7 @@ function LPTTrophy({ size = 160 }) {
 }
 
 // ── TV Quiz Correction (débrief après chaque question) ───────────
-function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode }) {
+function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, showOrdo }) {
   const [answers, setAnswers] = useState([])
 
   useEffect(() => {
@@ -3342,8 +6178,13 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode }) {
       {/* Question */}
       <div style={{
         fontSize: 22, fontWeight: 800, color: '#fff', textAlign: 'center',
-        marginBottom: 24, lineHeight: 1.35, maxWidth: 860, alignSelf: 'center',
+        marginBottom: 16, lineHeight: 1.35, maxWidth: 860, alignSelf: 'center',
       }}>{question.question}</div>
+
+      {/* Ordonnance — ré-affichée si le formateur le demande */}
+      {showOrdo && question.ordonnance && (
+        <TVOrdonnanceDisplay ordonnance={question.ordonnance} />
+      )}
 
       {/* Options */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 800, alignSelf: 'center', width: '100%' }}>
@@ -3993,7 +6834,7 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSele
       <div style={{
         height: '100vh',
         background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -4006,73 +6847,57 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSele
           </div>
         </div>
 
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '38% 62%', overflow: 'hidden' }}>
-          {/* Gauche — définition */}
+        {/* Contenu pleine largeur */}
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center',
+          padding: '28px 80px 80px', gap: 28,
+          background: `linear-gradient(160deg, ${sel.color}0a, transparent)`,
+        }}>
           <div style={{
-            display: 'flex', flexDirection: 'column', justifyContent: 'center',
-            padding: '28px 36px', gap: 20,
-            background: `linear-gradient(160deg, ${sel.color}0a, transparent)`,
-            borderRight: '1px solid rgba(255,255,255,0.06)',
+            background: `${sel.color}14`,
+            border: `2px solid ${sel.color}55`,
+            borderLeft: `6px solid ${sel.color}`,
+            borderRadius: 24, padding: '36px 44px', maxWidth: 900,
           }}>
-            <div style={{
-              background: `${sel.color}14`,
-              border: `2px solid ${sel.color}55`,
-              borderLeft: `6px solid ${sel.color}`,
-              borderRadius: 20, padding: '24px 28px',
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: sel.color, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
-                {sel.num} — Trouble visuel
-              </div>
-              <div style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1.05, marginBottom: 18 }}>
-                {sel.nom}
-              </div>
-              <div style={{ fontSize: 19, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6 }}>
-                {sel.def}
-              </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: sel.color, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 }}>
+              {sel.num} — Trouble visuel
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {page.troubles.map((t, i) => i !== troublesSelected && (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.22 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.color, flexShrink: 0 }} />
-                  <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{t.nom}</div>
-                </div>
-              ))}
+            <div style={{ fontSize: 64, fontWeight: 900, color: '#fff', lineHeight: 1.05, marginBottom: 20 }}>
+              {sel.nom}
+            </div>
+            <div style={{ fontSize: 24, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>
+              {sel.def}
             </div>
           </div>
 
-          {/* Droite — bulle opticien */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: `radial-gradient(ellipse at center, ${sel.color}12 0%, transparent 70%)`,
-            position: 'relative',
-          }}>
-            {/* Halo derrière la bulle */}
-            <div style={{
-              position: 'absolute',
-              width: 440, height: 440, borderRadius: '50%',
-              background: `radial-gradient(circle, ${sel.color}22 0%, transparent 70%)`,
-              filter: 'blur(32px)',
-            }} />
-            {/* Bulle vidéo */}
-            <div style={{
-              width: 400, height: 400, borderRadius: '50%',
-              overflow: 'hidden', flexShrink: 0,
-              border: `3px solid ${sel.color}80`,
-              boxShadow: `0 0 0 6px ${sel.color}18, 0 0 60px ${sel.color}40`,
-              position: 'relative', zIndex: 1,
-            }}>
-              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-              <video
-                ref={videoRef}
-                key={sel.video}
-                src={sel.video}
-                preload="auto"
-                playsInline
-                muted={!audioUnlocked}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 15%', display: 'block' }}
-              />
-            </div>
+          <div style={{ display: 'flex', gap: 28 }}>
+            {page.troubles.map((t, i) => i !== troublesSelected && (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.25 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.color, flexShrink: 0 }} />
+                <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{t.nom}</div>
+              </div>
+            ))}
           </div>
+        </div>
+
+        {/* Avatar — petit, bas à droite */}
+        <div style={{
+          position: 'absolute', bottom: 28, right: 36,
+          width: 150, height: 150, borderRadius: '50%',
+          overflow: 'hidden', flexShrink: 0,
+          border: `2px solid ${sel.color}70`,
+          boxShadow: `0 0 0 4px ${sel.color}18, 0 8px 32px rgba(0,0,0,0.5)`,
+        }}>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            ref={videoRef}
+            key={sel.video}
+            src={sel.video}
+            preload="auto"
+            playsInline
+            muted={!audioUnlocked}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 15%', display: 'block' }}
+          />
         </div>
       </div>
     )
@@ -4203,6 +7028,22 @@ export default function TVView() {
   const [progObjectionResponses, setProgObjectionResponses] = useState({})
   const [progBestAnswer, setProgBestAnswer]             = useState(null)
 
+  // Mutuelles Belgique
+  const [mutuellesRevealed, setMutuellesRevealed]         = useState([])
+  const [inamiRevealed, setInamiRevealed]                 = useState(false)
+  const [partenaRevealed, setPartenaRevealed]             = useState(false)
+  const [rembfrRevealed, setRembfrRevealed]               = useState([])
+  const [rembfrDemarcheA, setRembfrDemarcheA]             = useState(0)
+  const [rembfrDemarcheB, setRembfrDemarcheB]             = useState(0)
+  const [rembfrSupreme, setRembfrSupreme]                 = useState(0)
+  const [lptsPecScenario, setLptsPecScenario]             = useState(null)
+  const [parcoursRevealed, setParcoursRevealed]           = useState([])
+  const [tiersPayantRevealed, setTiersPayantRevealed]     = useState(false)
+
+  const handleAmeliProClick = async () => {
+    try { await setRoomSharedState({ rembfr_amelipro_clicked: true }, sessionCode) } catch {}
+  }
+
   // Quiz podium
   const [quizInterstitialPhase, setQuizInterstitialPhase] = useState(false)
   const [finalPodiumPhase, setFinalPodiumPhase]           = useState(false)
@@ -4239,12 +7080,24 @@ export default function TVView() {
     const fj = sharedState.faq_journee || null
     setFaqJournee(fj)
     setFaqQuestions(fj ? (sharedState[`faq_${fj}_q`] || []) : [])
+    setMutuellesRevealed(sharedState.mutuelles_revealed || [])
+    setInamiRevealed(!!sharedState.inami_revealed)
+    setPartenaRevealed(!!sharedState.partena_revealed)
+    setRembfrRevealed(sharedState.rembfr_revealed || [])
+    setRembfrDemarcheA(sharedState.rembfr_demarche_a ?? 0)
+    setRembfrDemarcheB(sharedState.rembfr_demarche_b ?? 0)
+    setRembfrSupreme(sharedState.rembfr_supreme ?? 0)
+    setLptsPecScenario(sharedState.lpts_pec_scenario ?? null)
+    setParcoursRevealed(sharedState.parcours_revealed || [])
+    setTiersPayantRevealed(!!sharedState.tiers_payant_revealed)
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
-  const isLobby   = !!moduleData && modulePage === -1
-  const isResults = !!moduleData && modulePage === 200
-  const isQuiz    = !!moduleData && modulePage >= 100 && modulePage < 200
+  const isLobby        = !!moduleData && modulePage === -1
+  const isResults      = !!moduleData && modulePage === 200
+  const isQuiz         = !!moduleData && modulePage >= 100 && modulePage < 200
+  const isPdmAnimation = activeModule === 'pdm' && modulePage >= 1000 && modulePage < 2000
+  const pdmAnimStep    = isPdmAnimation ? modulePage - 1000 : 0
 
   // Podium interstitiel piloté par quiz_interstitial_q dans sharedState
   useEffect(() => {
@@ -4269,6 +7122,28 @@ export default function TVView() {
     } else if (!isResults && !isLobby) {
       page = moduleData.pages[modulePage] ?? null
     }
+  }
+
+  // Module actif mais inconnu du JS courant → rechargement pour obtenir le dernier bundle
+  // 'reveil-acquis' n'est pas dans MODULE_DATA (géré via faq_journee) — ne jamais return null
+  if (!loading && activeModule && !moduleData && activeModule !== 'reveil-acquis') {
+    if (typeof window !== 'undefined') {
+      const key = `tv_reload_for_${activeModule}`
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1')
+        window.location.reload()
+      }
+    }
+    // Après le reload, si toujours inconnu : fallback propre plutôt que page blanche
+    return (
+      <>
+        <style>{STYLES}</style>
+        <FullscreenButton />
+        <div style={{ height: '100dvh', overflow: 'hidden', position: 'relative' }}>
+          <WelcomeScreen />
+        </div>
+      </>
+    )
   }
 
   // Mini jeu actif — seulement si aucun module n'est en cours
@@ -4299,8 +7174,36 @@ export default function TVView() {
     }
   }
 
-  // Pas de module actif → écran selon tv_screen ou FAQ
-  if (!loading && !activeModule && !isLobby) {
+  // tv_screen=module_questions — affichage anonyme des questions formés
+  if (!loading && tvScreen === 'module_questions') {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <FullscreenButton />
+        <TVModuleQuestionsView
+          sessionCode={sessionCode}
+          moduleId={sharedState?.mq_module || activeModule || ''}
+          moduleLabel={moduleData?.label || ''}
+        />
+      </>
+    )
+  }
+
+  // tv_screen=qr — prioritaire uniquement quand aucun module n'est actif
+  if (!loading && tvScreen === 'qr' && !activeModule) {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <FullscreenButton />
+        <div style={{ height: '100dvh', overflow: 'hidden', position: 'relative' }}>
+          <WaitingScreen roomCode={sessionCode} />
+        </div>
+      </>
+    )
+  }
+
+  // Pas de module actif (ou reveil-acquis qui n'est pas un vrai module) → FAQ ou écran d'attente
+  if (!loading && (!activeModule || activeModule === 'reveil-acquis') && !isLobby) {
     return (
       <>
         <style>{STYLES}</style>
@@ -4368,13 +7271,17 @@ export default function TVView() {
                   total={moduleData.quiz.length}
                   moduleLabel={moduleData?.label || ''}
                   sessionCode={sessionCode}
+                  showOrdo={!!sharedState?.quiz_ordo_show}
                 />
               : <TVQuizQuestion
                   question={quizQuestion}
                   qIdx={modulePage - 100}
                   total={moduleData.quiz.length}
                   moduleLabel={moduleData?.label || ''}
+                  sessionCode={sessionCode}
                 />
+        ) : isPdmAnimation ? (
+          <TVPdmAnimation step={pdmAnimStep} />
         ) : page ? (
           <TVContentPage
             page={page}
@@ -4404,6 +7311,17 @@ export default function TVView() {
             offres11Step={offres11Step}
             offresClassiqueStep={offresClassiqueStep}
             modelePoint={modelePoint}
+            mutuellesRevealed={mutuellesRevealed}
+            inamiRevealed={inamiRevealed}
+            partenaRevealed={partenaRevealed}
+            rembfrRevealed={rembfrRevealed}
+            rembfrDemarcheA={rembfrDemarcheA}
+            rembfrDemarcheB={rembfrDemarcheB}
+            rembfrSupreme={rembfrSupreme}
+            parcoursRevealed={parcoursRevealed}
+            tiersPayantRevealed={tiersPayantRevealed}
+            sessionCode={sessionCode}
+            onAmeliProClick={handleAmeliProClick}
           />
         ) : (
           <WelcomeScreen />
