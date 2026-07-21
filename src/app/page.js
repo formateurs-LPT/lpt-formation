@@ -362,6 +362,10 @@ export default function Page() {
     setModuleReturnTo(returnTo)
     setReturnJourneeBelgique(returnTo === 'onboarding-modules-belgique' ? journeeId : null)
     setView('module-' + moduleId)
+    // Le réveil des acquis n'est pas un vrai module (pas dans MODULE_DATA) — il est piloté
+    // uniquement via faq_journee dans sharedState. Ne jamais écrire active_module=reveil-acquis
+    // en base, sinon la TV retourne null (page blanche) car elle ne reconnaît pas ce module.
+    if (moduleId === 'reveil-acquis') return
     // Affiche le lobby du module sur le diffuseur immediatement
     try {
       const code = getActiveSessionCode()

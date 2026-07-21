@@ -7185,7 +7185,8 @@ export default function TVView() {
   }
 
   // Module actif mais inconnu du JS courant → rechargement pour obtenir le dernier bundle
-  if (!loading && activeModule && !moduleData) {
+  // 'reveil-acquis' n'est pas dans MODULE_DATA (géré via faq_journee) — ne jamais return null
+  if (!loading && activeModule && !moduleData && activeModule !== 'reveil-acquis') {
     if (typeof window !== 'undefined') {
       const key = `tv_reload_for_${activeModule}`
       if (!sessionStorage.getItem(key)) {
@@ -7193,7 +7194,16 @@ export default function TVView() {
         window.location.reload()
       }
     }
-    return null
+    // Après le reload, si toujours inconnu : fallback propre plutôt que page blanche
+    return (
+      <>
+        <style>{STYLES}</style>
+        <FullscreenButton />
+        <div style={{ height: '100dvh', overflow: 'hidden', position: 'relative' }}>
+          <WelcomeScreen />
+        </div>
+      </>
+    )
   }
 
   // Mini jeu actif — seulement si aucun module n'est en cours
@@ -7252,8 +7262,8 @@ export default function TVView() {
     )
   }
 
-  // Pas de module actif → écran selon tv_screen ou FAQ
-  if (!loading && !activeModule && !isLobby) {
+  // Pas de module actif (ou reveil-acquis qui n'est pas un vrai module) → FAQ ou écran d'attente
+  if (!loading && (!activeModule || activeModule === 'reveil-acquis') && !isLobby) {
     return (
       <>
         <style>{STYLES}</style>
