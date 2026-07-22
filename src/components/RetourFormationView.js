@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { sbSelect, sbUpsert, getSharedState } from '@/lib/supabase'
 import { classifyMagasin } from '@/lib/formationCategories'
 import { MODULE_DATA } from '@/lib/modulesData'
@@ -625,11 +625,63 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
 // ── Vue liste formés (catégorie choisie) ─────────────────────────
 
 function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
-  const [selected, setSelected] = useState(null)
+  const [selected, setSelected]       = useState(null)
+  const [showSendAll, setShowSendAll] = useState(false)
+  const [sentKeys, setSentKeys]       = useState(new Set())
   const weekDate = getWeekDate()
-  const catMeta = CATEGORY_META[categoryKey] || {}
+  const catMeta  = CATEGORY_META[categoryKey] || {}
 
   const filtered = entrees.filter(e => effectiveCat(e) === categoryKey)
+
+  // Regroupe les formés par manager (un même manager peut avoir plusieurs formés)
+  const sendAllGroups = useMemo(() => {
+    const byKey = {}
+    for (const entree of filtered) {
+      const mgrs = getManagers(entree.magasin)
+      if (!mgrs.length) continue
+      const emailKey = mgrs.map(m => m.email).sort().join(',')
+      if (!byKey[emailKey]) byKey[emailKey] = { managers: mgrs, entrees: [], emailKey }
+      byKey[emailKey].entrees.push(entree)
+    }
+    return Object.values(byKey)
+  }, [filtered])
+
+  const noManagerEntrees = useMemo(
+    () => filtered.filter(e => !getManagers(e.magasin).length),
+    [filtered]
+  )
+
+  const buildGroupMailto = (group) => {
+    const emails   = group.managers.map(m => m.email).join(',')
+    const getPrenom = e => e.prenom || (e.fullName || `${e.nom} ${e.prenom}`).trim().split(' ')[0]
+    const prenoms  = group.entrees.map(getPrenom)
+    const subject  = encodeURIComponent(`Retour formation ${prenoms.join(', ')}`)
+
+    const links = group.entrees.map(e => {
+      const name = e.fullName || `${e.nom} ${e.prenom}`.trim()
+      const url  = `${window.location.origin}/rapport/?c=${encodeURIComponent(name)}&w=${weekDate}&t=${encodeURIComponent(trainerName)}&cat=${categoryKey}`
+      return prenoms.length === 1 ? url : `${getPrenom(e)} : ${url}`
+    }).join('\n')
+
+    const plural = prenoms.length > 1
+    const body = encodeURIComponent(
+      `Hello,\n\n` +
+      (plural
+        ? `Voici les liens pour accéder aux comptes rendus de ${prenoms.join(' et ')} :\n\n`
+        : `Voici le lien pour accéder au compte rendu de ${prenoms[0]} :\n\n`) +
+      `${links}\n\n` +
+      `Si tu as des questions ou si tu veux qu'on échange à ${plural ? 'leur' : 'son'} sujet, je suis bien sûr disponible, n'hésite pas !\n\n` +
+      `Bonne journée à toi.\n\n` +
+      `${trainerName}\n` +
+      `Formateur — Lunettes Pour Tous`
+    )
+    return `mailto:${emails}?subject=${subject}&body=${body}`
+  }
+
+  const handleSendGroup = (group) => {
+    window.location.href = buildGroupMailto(group)
+    setSentKeys(prev => new Set([...prev, group.emailKey]))
+  }
 
   useEffect(() => {
     if (filtered.length > 0 && !selected) setSelected(0)
@@ -647,6 +699,128 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+
+      {/* Modale "Tout envoyer" */}
+      {showSendAll && (
+        <div
+          onClick={e => { if (e.target === e.currentTarget) setShowSendAll(false) }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '24px 16px',
+          }}
+        >
+          <div style={{
+            background: '#fff', borderRadius: 20, width: '100%', maxWidth: 480,
+            boxShadow: '0 24px 64px rgba(0,0,0,0.25)', overflow: 'hidden',
+          }}>
+            {/* Header modale */}
+            <div style={{
+              padding: '20px 24px 16px',
+              borderBottom: '1px solid #f1f5f9',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>
+                  ✉️ Envoyer tous les comptes rendus
+                </div>
+                <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                  Cliquez sur chaque bouton pour ouvrir le mail pré-rempli
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSendAll(false)}
+                style={{
+                  background: '#f1f5f9', border: 'none', borderRadius: 8,
+                  width: 32, height: 32, cursor: 'pointer', fontSize: 16,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >×</button>
+            </div>
+
+            {/* Liste des groupes */}
+            <div style={{ padding: '12px 16px', maxHeight: '60vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {sendAllGroups.length === 0 && (
+                <div style={{ padding: '20px 0', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                  Aucun manager renseigné pour les formés de cette session.
+                </div>
+              )}
+              {sendAllGroups.map(group => {
+                const sent = sentKeys.has(group.emailKey)
+                const getPrenom = e => e.prenom || (e.fullName || `${e.nom} ${e.prenom}`).trim().split(' ')[0]
+                const prenoms = group.entrees.map(getPrenom)
+                return (
+                  <div
+                    key={group.emailKey}
+                    style={{
+                      background: sent ? '#f0fdf4' : '#f8fafc',
+                      border: `1.5px solid ${sent ? '#bbf7d0' : '#e2e8f0'}`,
+                      borderRadius: 14, padding: '14px 16px',
+                      display: 'flex', alignItems: 'center', gap: 14,
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>
+                        {group.managers.map(m => m.name).join(' & ')}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#64748b' }}>
+                        {prenoms.join(', ')}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleSendGroup(group)}
+                      style={{
+                        flexShrink: 0, padding: '8px 16px', borderRadius: 10,
+                        border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                        fontFamily: 'inherit', transition: 'all .15s',
+                        background: sent ? '#16a34a' : '#0089ba',
+                        color: '#fff',
+                        boxShadow: sent
+                          ? '0 2px 8px rgba(22,163,74,0.3)'
+                          : '0 2px 8px rgba(0,137,186,0.3)',
+                      }}
+                    >
+                      {sent ? '✓ Ouvert' : '✉️ Envoyer'}
+                    </button>
+                  </div>
+                )
+              })}
+
+              {/* Formés sans manager connu */}
+              {noManagerEntrees.length > 0 && (
+                <div style={{
+                  background: '#fffbeb', border: '1.5px solid #fde68a',
+                  borderRadius: 14, padding: '12px 16px',
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', marginBottom: 4 }}>
+                    Manager non renseigné
+                  </div>
+                  <div style={{ fontSize: 12, color: '#78350f' }}>
+                    {noManagerEntrees.map(e => e.prenom || (e.fullName || `${e.nom} ${e.prenom}`).trim().split(' ')[0]).join(', ')}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '12px 16px 16px', borderTop: '1px solid #f1f5f9' }}>
+              <button
+                onClick={() => setShowSendAll(false)}
+                style={{
+                  width: '100%', padding: '12px', borderRadius: 12,
+                  background: '#f1f5f9', border: 'none', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600, color: '#475569', fontFamily: 'inherit',
+                }}
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
         <button className="detail-back" onClick={onBack}>← Retour</button>
@@ -657,12 +831,26 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
         }}>
           {catMeta.icon}
         </div>
-        <div>
+        <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 16 }}>{catMeta.label}</div>
           <div style={{ fontSize: 12, color: '#64748b' }}>
             {filtered.length} collaborateur{filtered.length > 1 ? 's' : ''} · Semaine du {weekDate}
           </div>
         </div>
+        {sendAllGroups.length > 0 && (
+          <button
+            onClick={() => { setSentKeys(new Set()); setShowSendAll(true) }}
+            style={{
+              flexShrink: 0, padding: '9px 16px', borderRadius: 12,
+              background: '#0089ba', color: '#fff', border: 'none',
+              fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', gap: 6,
+              boxShadow: '0 3px 10px rgba(0,137,186,0.25)',
+            }}
+          >
+            ✉️ Tout envoyer
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
