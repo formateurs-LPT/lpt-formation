@@ -49,10 +49,12 @@ export const MANAGERS = {
 
   // ── Province ──────────────────────────────────────────────────────
   'bayonne': [
-    { name: 'Maryline BABIN', email: 'mbabin@lunettespourtous.com' },
+    { name: 'Maryline BABIN',  email: 'mbabin@lunettespourtous.com' },
+    { name: 'Charlotte DENY',  email: 'cdeny@lunettespourtous.com'  },
   ],
   'anglet': [
-    { name: 'Maryline BABIN', email: 'mbabin@lunettespourtous.com' },
+    { name: 'Maryline BABIN',  email: 'mbabin@lunettespourtous.com' },
+    { name: 'Charlotte DENY',  email: 'cdeny@lunettespourtous.com'  },
   ],
   'bordeaux': [
     { name: 'Fanny MERLAUD',    email: 'fmerlaud@lunettespourtous.com' },

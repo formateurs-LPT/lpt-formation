@@ -30,6 +30,12 @@ const STATUS_OPTIONS = [
   { key: 'non-acquis', label: 'Non acquis', color: '#dc2626', bg: '#fee2e2', border: '#fecaca', icon: '✗' },
 ]
 
+/** Extrait le prénom depuis "Prénom NOM" (les mots tout-caps = nom de famille) */
+function extractPrenom(fullName) {
+  const parts = (fullName || '').split(' ').filter(w => w !== w.toUpperCase())
+  return parts.join(' ') || (fullName || '').split(' ')[0]
+}
+
 function effectiveCat(e) {
   return e._forceCat || classifyMagasin(e.magasin) || 'province'
 }
@@ -235,11 +241,14 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
 
   const sendToManager = () => {
     if (!managers.length || !reportUrl) return
-    const emails = managers.map(m => m.email).join(',')
-    const prenom = entree.prenom || name.split(' ')[0]
+    const emails  = managers.map(m => m.email).join(',')
+    const prenom  = entree.prenom || name.split(' ')[0]
+    const greeting = managers.length > 1
+      ? managers.map(m => extractPrenom(m.name)).join(' et ')
+      : extractPrenom(managers[0].name)
     const subject = encodeURIComponent(`Retour formation ${prenom}`)
     const body = encodeURIComponent(
-      `Hello,\n\n` +
+      `Hello ${greeting},\n\n` +
       `Voici le lien pour accéder au compte rendu de ${prenom} :\n\n` +
       `${reportUrl}\n\n` +
       `Si tu as des questions ou si tu veux qu'on échange à son sujet, je suis bien sûr disponible, n'hésite pas !\n\n` +
@@ -664,8 +673,11 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
     }).join('\n')
 
     const plural = prenoms.length > 1
+    const mgrGreeting = group.managers.length > 1
+      ? group.managers.map(m => extractPrenom(m.name)).join(' et ')
+      : extractPrenom(group.managers[0].name)
     const body = encodeURIComponent(
-      `Hello,\n\n` +
+      `Hello ${mgrGreeting},\n\n` +
       (plural
         ? `Voici les liens pour accéder aux comptes rendus de ${prenoms.join(' et ')} :\n\n`
         : `Voici le lien pour accéder au compte rendu de ${prenoms[0]} :\n\n`) +
