@@ -6992,6 +6992,139 @@ function FullscreenButton() {
   )
 }
 
+// ── Annotation canvas (stylo / gomme formateur) ───────────────────
+function TVAnnotationCanvas() {
+  const canvasRef = useRef(null)
+  const [mode, setMode] = useState('off') // 'off' | 'pen' | 'eraser'
+  const drawing = useRef(false)
+  const lastPos = useRef({ x: 0, y: 0 })
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const resize = () => {
+      const img = canvas.toDataURL()
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+      const image = new window.Image()
+      image.onload = () => canvas.getContext('2d')?.drawImage(image, 0, 0)
+      image.src = img
+    }
+    resize()
+    window.addEventListener('resize', resize)
+    return () => window.removeEventListener('resize', resize)
+  }, [])
+
+  const getPos = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect()
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+  }
+
+  const onPointerDown = (e) => {
+    if (mode === 'off') return
+    drawing.current = true
+    canvasRef.current.setPointerCapture(e.pointerId)
+    lastPos.current = getPos(e)
+    if (mode === 'pen') {
+      const ctx = canvasRef.current.getContext('2d')
+      ctx.beginPath()
+      ctx.arc(lastPos.current.x, lastPos.current.y, 2, 0, Math.PI * 2)
+      ctx.fillStyle = '#ef4444'
+      ctx.fill()
+    }
+  }
+
+  const onPointerMove = (e) => {
+    if (!drawing.current || mode === 'off') return
+    const ctx = canvasRef.current.getContext('2d')
+    const pos = getPos(e)
+    if (mode === 'pen') {
+      ctx.beginPath()
+      ctx.moveTo(lastPos.current.x, lastPos.current.y)
+      ctx.lineTo(pos.x, pos.y)
+      ctx.strokeStyle = '#ef4444'
+      ctx.lineWidth = 4
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
+      ctx.stroke()
+    } else if (mode === 'eraser') {
+      ctx.clearRect(pos.x - 24, pos.y - 24, 48, 48)
+    }
+    lastPos.current = pos
+  }
+
+  const onPointerUp = () => { drawing.current = false }
+
+  const clearAll = () => {
+    const c = canvasRef.current
+    c.getContext('2d').clearRect(0, 0, c.width, c.height)
+  }
+
+  const isPen = mode === 'pen'
+  const isEraser = mode === 'eraser'
+
+  return (
+    <>
+      <canvas
+        ref={canvasRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 9998,
+          pointerEvents: mode === 'off' ? 'none' : 'all',
+          cursor: mode === 'pen' ? 'crosshair' : mode === 'eraser' ? 'cell' : 'default',
+          touchAction: 'none',
+        }}
+      />
+      <div style={{
+        position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
+        display: 'flex', gap: 8,
+        background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255,255,255,0.15)',
+        borderRadius: 16, padding: '8px 12px',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.55)',
+      }}>
+        <button
+          onClick={() => setMode(m => m === 'pen' ? 'off' : 'pen')}
+          title={isPen ? 'Désactiver le stylo' : 'Stylo annotation'}
+          style={{
+            background: isPen ? '#ef4444' : 'rgba(255,255,255,0.12)',
+            border: `1px solid ${isPen ? 'rgba(239,68,68,0.6)' : 'rgba(255,255,255,0.1)'}`,
+            borderRadius: 10, width: 40, height: 40, cursor: 'pointer',
+            fontSize: 18, color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background .2s, border .2s',
+          }}
+        >✏️</button>
+        <button
+          onClick={() => setMode(m => m === 'eraser' ? 'off' : 'eraser')}
+          title={isEraser ? 'Désactiver la gomme' : 'Gomme'}
+          style={{
+            background: isEraser ? '#f59e0b' : 'rgba(255,255,255,0.12)',
+            border: `1px solid ${isEraser ? 'rgba(245,158,11,0.6)' : 'rgba(255,255,255,0.1)'}`,
+            borderRadius: 10, width: 40, height: 40, cursor: 'pointer',
+            fontSize: 18, color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background .2s, border .2s',
+          }}
+        >⬜</button>
+        <button
+          onClick={clearAll}
+          title="Tout effacer"
+          style={{
+            background: 'rgba(255,255,255,0.12)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 10, width: 40, height: 40, cursor: 'pointer',
+            fontSize: 18, color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >🗑️</button>
+      </div>
+    </>
+  )
+}
+
 // ── TV View ───────────────────────────────────────────────────────
 export default function TVView() {
   const { activeModule, modulePage, sharedState, loading, sessionCode } = useModuleSync()
@@ -7185,6 +7318,7 @@ export default function TVView() {
           moduleId={sharedState?.mq_module || activeModule || ''}
           moduleLabel={moduleData?.label || ''}
         />
+        <TVAnnotationCanvas />
       </>
     )
   }
@@ -7198,6 +7332,7 @@ export default function TVView() {
         <div style={{ height: '100dvh', overflow: 'hidden', position: 'relative' }}>
           <WaitingScreen roomCode={sessionCode} />
         </div>
+        <TVAnnotationCanvas />
       </>
     )
   }
@@ -7218,6 +7353,7 @@ export default function TVView() {
                 : <WelcomeScreen />
           }
         </div>
+        <TVAnnotationCanvas />
       </>
     )
   }
@@ -7327,6 +7463,8 @@ export default function TVView() {
           <WelcomeScreen />
         )}
       </div>
+
+      <TVAnnotationCanvas />
     </>
   )
 }
