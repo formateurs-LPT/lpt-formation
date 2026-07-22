@@ -14,7 +14,7 @@ import { getLegacySessionCode, isDynamicRoomCode } from '@/lib/sessionCode'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import ConfirmModal from '@/components/ConfirmModal'
 
-const JOURNEES = (onLaunchModule) => [
+const JOURNEES = (onLaunchModule, onLaunchPeerQuiz) => [
   {
     id: 'journee1',
     numero: 1,
@@ -65,6 +65,12 @@ const JOURNEES = (onLaunchModule) => [
     titre: 'Journée 2',
     sub: 'Les offres et la vente',
     modules: [
+      {
+        visual: 'emoji', icon: '🎯',
+        label: 'Jeu de questions',
+        sub: 'Les formés s\'interrogent entre eux — révision Jour 1',
+        onClick: () => onLaunchPeerQuiz?.(),
+      },
       {
         visual: 'emoji', icon: '🪟',
         label: 'Merch montures',
@@ -367,9 +373,9 @@ function JourneeModules({ journee, onBack, onLaunchModule }) {
 }
 
 // ── Step 3 : Sélection de la journée ─────────────────────────────
-function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, initialJournee = null }) {
+function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, onLaunchPeerQuiz, initialJournee = null }) {
   const [selectedJournee, setSelectedJournee] = useState(initialJournee)
-  const journees = JOURNEES(onLaunchModule)
+  const journees = JOURNEES(onLaunchModule, onLaunchPeerQuiz)
   const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
   const [roomCode, setRoomCode] = useState('')
@@ -582,7 +588,7 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
 }
 
 // ── Composant principal ───────────────────────────────────────────
-export default function OnboardingView({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, initialStep = 'select', initialJournee = null }) {
+export default function OnboardingView({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, onLaunchPeerQuiz, initialStep = 'select', initialJournee = null }) {
   const [step, setStep] = useState(initialStep) // select | list | modules
   const [group, setGroup] = useState(null)
 
@@ -593,6 +599,6 @@ export default function OnboardingView({ pName, onBack, onLaunchFormation, onLau
 
   if (step === 'select') return <GroupSelect onSelect={handleSelectGroup} onBack={onBack} />
   if (step === 'list') return <CollabList group={group} onNext={() => setStep('modules')} onBack={() => setStep('select')} />
-  if (step === 'modules') return <SessionModules pName={pName} onBack={() => setStep('list')} onLaunchFormation={onLaunchFormation} onLaunchModule={onLaunchModule} onEndRoom={onEndRoom} initialJournee={initialJournee} />
+  if (step === 'modules') return <SessionModules pName={pName} onBack={() => setStep('list')} onLaunchFormation={onLaunchFormation} onLaunchModule={onLaunchModule} onEndRoom={onEndRoom} onLaunchPeerQuiz={onLaunchPeerQuiz} initialJournee={initialJournee} />
   return null
 }

@@ -1196,6 +1196,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           onBack={() => setActiveView('onboarding-choix')}
           onLaunchFormation={onLaunchSession}
           onLaunchModule={onLaunchModule}
+          onLaunchPeerQuiz={() => setActiveView('peer-quiz')}
         />
       </div>
     )
