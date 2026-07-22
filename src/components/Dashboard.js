@@ -994,6 +994,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   const [activeRoomCode, setActiveRoomCode] = useState('')
 
   const [obDay, setObDay] = useState('1')
+  const [obReturnJournee, setObReturnJournee] = useState(null)
   const [ideeCount, setIdeeCount] = useState(0)
   const [showSonnette, setShowSonnette] = useState(false)
   const [sonnettePending, setSonnettePending] = useState(0)
@@ -1119,7 +1120,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     return (
       <PeerQuizTrainer
         sessionCode={activeRoomCode}
-        onBack={() => setActiveView('planning')}
+        onBack={() => setActiveView(obReturnJournee ? 'onboarding' : 'planning')}
       />
     )
   }
@@ -1189,14 +1190,17 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   }
 
   if (activeView === 'onboarding') {
+    const returnJournee = obReturnJournee
     return (
       <div id="dashboard">
         <OnboardingView
           pName={pName}
-          onBack={() => setActiveView('onboarding-choix')}
+          onBack={() => { setObReturnJournee(null); setActiveView('onboarding-choix') }}
           onLaunchFormation={onLaunchSession}
           onLaunchModule={onLaunchModule}
-          onLaunchPeerQuiz={() => setActiveView('peer-quiz')}
+          onLaunchPeerQuiz={() => { setObReturnJournee('journee2'); setActiveView('peer-quiz') }}
+          initialStep={returnJournee ? 'modules' : 'select'}
+          initialJournee={returnJournee}
         />
       </div>
     )
