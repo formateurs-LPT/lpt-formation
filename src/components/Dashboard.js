@@ -984,6 +984,30 @@ function FichesAnnexesWidget() {
   )
 }
 
+function QRFloatingBtn({ active, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      title={active ? 'Masquer le QR code du diffuseur' : 'Afficher le QR code sur le diffuseur'}
+      style={{
+        position: 'fixed', bottom: 28, right: 24, zIndex: 9000,
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '10px 20px', borderRadius: 40,
+        background: active ? '#0089ba' : '#0f172a',
+        color: '#fff', border: 'none', cursor: 'pointer',
+        fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
+        boxShadow: active
+          ? '0 4px 20px rgba(0,137,186,0.45)'
+          : '0 4px 16px rgba(0,0,0,0.35)',
+        transition: 'all .2s',
+      }}
+    >
+      <span style={{ fontSize: 16 }}>📱</span>
+      {active ? 'Masquer QR' : 'QR diffuseur'}
+    </button>
+  )
+}
+
 export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onOpenTv, onToast, onOnlineCount, onOpenPlanning }) {
   const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning | retour-formation | auto-eval
   const [entreeCount, setEntreeCount] = useState(null)
@@ -999,6 +1023,20 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   const [ideeCount, setIdeeCount] = useState(0)
   const [showSonnette, setShowSonnette] = useState(false)
   const [sonnettePending, setSonnettePending] = useState(0)
+  const [qrActive, setQrActive]         = useState(false)
+  const [prevTvScreen, setPrevTvScreen] = useState(null)
+
+  const toggleQR = async () => {
+    if (qrActive) {
+      await setSharedState({ tv_screen: prevTvScreen })
+      setQrActive(false)
+    } else {
+      const state = await getSharedState()
+      setPrevTvScreen(state?.tv_screen ?? null)
+      await setSharedState({ tv_screen: 'qr' })
+      setQrActive(true)
+    }
+  }
 
   useEffect(() => {
     loadIdeesFromSupabase().then(list => setIdeeCount(list.length)).catch(() => {})
@@ -1088,53 +1126,53 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     } catch {}
   }
 
+  const qrBtn = <QRFloatingBtn active={qrActive} onToggle={toggleQR} />
+
   if (activeView === 'sessions') {
     return (
-      <div id="dashboard">
+      <>{qrBtn}<div id="dashboard">
         <SessionsHistoryView onBack={() => { setActiveView('home'); loadTileStats() }} onToast={onToast} />
-      </div>
+      </div></>
     )
   }
 
   if (activeView === 'entrees') {
     return (
-      <div id="dashboard">
+      <>{qrBtn}<div id="dashboard">
         <EntreesView onBack={() => { setActiveView('home'); loadTileStats() }} onToast={onToast} pName={pName} />
-      </div>
+      </div></>
     )
   }
 
   if (activeView === 'idees') {
-    return <IdeesView onBack={() => setActiveView('home')} pName={pName} />
+    return <>{qrBtn}<IdeesView onBack={() => setActiveView('home')} pName={pName} /></>
   }
 
   if (activeView === 'retour-formation') {
     return (
-      <RetourFormationView
+      <>{qrBtn}<RetourFormationView
         onBack={() => setActiveView('home')}
         pName={pName}
-      />
+      /></>
     )
   }
 
   if (activeView === 'auto-eval') {
-    return (
-      <AutoEvalView onBack={() => setActiveView('home')} />
-    )
+    return <>{qrBtn}<AutoEvalView onBack={() => setActiveView('home')} /></>
   }
 
   if (activeView === 'peer-quiz') {
     return (
-      <PeerQuizTrainer
+      <>{qrBtn}<PeerQuizTrainer
         sessionCode={activeRoomCode}
         onBack={() => setActiveView(obReturnJournee ? 'onboarding' : 'planning')}
-      />
+      /></>
     )
   }
 
   if (activeView === 'onboarding-choix') {
     return (
-      <div id="dashboard">
+      <>{qrBtn}<div id="dashboard">
         <div className="dash-wrap">
           <button className="detail-back" onClick={() => setActiveView('home')}>← Retour au tableau de bord</button>
           <div className="dash-hero" style={{ marginBottom: 32 }}>
@@ -1192,14 +1230,14 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             </div>
           </div>
         </div>
-      </div>
+      </div></>
     )
   }
 
   if (activeView === 'onboarding') {
     const returnJournee = obReturnJournee
     return (
-      <div id="dashboard">
+      <>{qrBtn}<div id="dashboard">
         <OnboardingView
           pName={pName}
           onBack={() => { setObReturnJournee(null); setActiveView('onboarding-choix') }}
@@ -1209,26 +1247,26 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           initialStep={returnJournee ? 'modules' : 'select'}
           initialJournee={returnJournee}
         />
-      </div>
+      </div></>
     )
   }
 
   if (activeView === 'onboarding-belgique') {
     return (
-      <div id="dashboard">
+      <>{qrBtn}<div id="dashboard">
         <OnboardingViewBelgique
           pName={pName}
           onBack={() => setActiveView('onboarding-choix')}
           onLaunchFormation={onLaunchSession}
           onLaunchModule={(moduleId, journeeId) => onLaunchModule(moduleId, 'onboarding-modules-belgique', journeeId)}
         />
-      </div>
+      </div></>
     )
   }
 
   if (activeView === 'planning') {
     return (
-      <div id="dashboard">
+      <>{qrBtn}<div id="dashboard">
         <div className="dash-wrap">
           <button className="detail-back" onClick={() => setActiveView('home')}>← Retour au tableau de bord</button>
           <div className="dash-header" style={{ marginBottom: 28 }}>
@@ -1330,13 +1368,13 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             >Arrêter</button>
           </div>
         </div>
-      </div>
+      </div></>
     )
   }
 
   if (activeView === 'modules') {
     return (
-      <div id="dashboard">
+      <>{qrBtn}<div id="dashboard">
         <div className="dash-wrap">
           <button className="detail-back" onClick={() => setActiveView('home')}>← Retour au tableau de bord</button>
           <div className="dash-header">
@@ -1368,12 +1406,12 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div style={{ fontSize: 13, fontWeight: 500 }}>D'autres modules seront disponibles prochainement</div>
           </div>
         </div>
-      </div>
+      </div></>
     )
   }
 
   return (
-    <div id="dashboard">
+    <>{qrBtn}<div id="dashboard">
       <div className="dash-wrap">
         <DashHeader
           pName={pName}
@@ -1501,6 +1539,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           onConfirm={handleConfirmRoom}
         />
       )}
-    </div>
+    </div></>
   )
 }
