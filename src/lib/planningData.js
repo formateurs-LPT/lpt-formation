@@ -42,6 +42,14 @@ export const PLANNING_JOURS = [
     color: '#4ade80',
     blocs: [
       {
+        horaire: '9h – 10h',
+        titre: 'Jeu de questions',
+        items: [
+          'Les formés s\'interrogent entre eux',
+          'Révision des acquis du Jour 1',
+        ],
+      },
+      {
         horaire: '10h – 11h',
         titre: 'Réveil des acquis',
         items: [],
