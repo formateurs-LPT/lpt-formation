@@ -71,6 +71,7 @@ function RapportContent() {
           comprehensionStatus: snap.comprehension_status  || null,
           comprehensionNote:   snap.comprehension_note    || '',
           appreciation:        snap.appreciation          || null,
+          commentaireLibre:    snap.commentaire_libre     || '',
         })
       } catch (e) {
         console.error('[Rapport] load error', e)

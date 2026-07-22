@@ -4,6 +4,7 @@ import { sbSelect, sbUpsert, getSharedState } from '@/lib/supabase'
 import { classifyMagasin } from '@/lib/formationCategories'
 import { MODULE_DATA } from '@/lib/modulesData'
 import CompteRenduManager from './CompteRenduManager'
+import { getManager } from '@/lib/managersData'
 
 // ── Constantes ────────────────────────────────────────────────────
 
@@ -93,6 +94,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
   const [comprehensionStatus, setComprehensionStatus] = useState(null)
   const [comprehensionNote, setComprehensionNote]     = useState('')
   const [appreciation, setAppreciation]         = useState(null)
+  const [commentaireLibre, setCommentaireLibre] = useState('')
   const [saving, setSaving]                     = useState(false)
   const [loading, setLoading]                   = useState(true)
   const themes = CATEGORY_META[categoryKey]?.themes || THEMES_FRANCE
@@ -122,6 +124,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
       setComprehensionStatus(snap.comprehension_status || null)
       setComprehensionNote(snap.comprehension_note || '')
       setAppreciation(snap.appreciation || null)
+      setCommentaireLibre(snap.commentaire_libre || '')
     } catch (e) {
       console.error('[RetourFormation] loadData', e)
     } finally {
@@ -138,6 +141,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
     comprehension_status: comprehensionStatus,
     comprehension_note: comprehensionNote,
     appreciation,
+    commentaire_libre: commentaireLibre,
     ...overrides,
   })
 
@@ -215,6 +219,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
     comprehensionStatus,
     comprehensionNote,
     appreciation,
+    commentaireLibre,
   }
 
   const reportUrl = typeof window !== 'undefined'
@@ -224,6 +229,24 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
   const copyLink = () => {
     if (!reportUrl) return
     navigator.clipboard.writeText(reportUrl).catch(() => {})
+  }
+
+  const manager = getManager(entree.magasin)
+
+  const sendToManager = () => {
+    if (!manager?.email || !reportUrl) return
+    const prenom = name.split(' ')[0]
+    const subject = encodeURIComponent(`Compte rendu de formation — ${name}`)
+    const body = encodeURIComponent(
+      `Bonjour ${manager.name || 'Madame, Monsieur'},\n\n` +
+      `Veuillez trouver ci-dessous le compte rendu de formation de ${name}, ` +
+      `formé(e) lors de la semaine du ${weekDate}.\n\n` +
+      `👉 Accéder au compte rendu :\n${reportUrl}\n\n` +
+      `Ce document vous permettra de suivre les thèmes acquis, en cours d'acquisition ` +
+      `et ceux à renforcer, afin d'accompagner au mieux votre nouveau collaborateur.\n\n` +
+      `Cordialement,\n${trainerName}\nFormateur — Lunettes Pour Tous`
+    )
+    window.location.href = `mailto:${manager.email}?subject=${subject}&body=${body}`
   }
 
   if (loading) return (
@@ -523,20 +546,75 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
         </div>
       </section>
 
-      {/* Bouton aperçu compte rendu */}
-      <button
-        onClick={() => setShowReport(true)}
-        style={{
-          width: '100%', padding: '14px 20px', borderRadius: 14,
-          background: '#0f172a', color: '#fff', border: 'none',
-          fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          boxShadow: '0 4px 14px rgba(15,23,42,0.18)',
-        }}
-      >
-        <span style={{ fontSize: 16 }}>👁</span>
-        Prévisualiser le compte rendu manager
-      </button>
+      {/* Commentaire libre formateur */}
+      <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Mot du formateur
+          </span>
+          {saving && <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sauvegarde…</span>}
+        </div>
+        <div style={{ padding: '14px 18px' }}>
+          <textarea
+            value={commentaireLibre}
+            onChange={e => setCommentaireLibre(e.target.value)}
+            onBlur={async e => {
+              const val = e.target.value
+              setCommentaireLibre(val)
+              await saveSnapshot(buildSnap({ commentaire_libre: val }))
+            }}
+            placeholder="Ajoutez un mot personnalisé sur ce collaborateur — il apparaîtra dans le compte rendu envoyé au manager…"
+            rows={4}
+            style={{
+              width: '100%', padding: '10px 12px', borderRadius: 10,
+              border: '1.5px solid #e2e8f0', background: '#f8fafc',
+              fontSize: 13, color: '#1e293b', resize: 'vertical',
+              fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', lineHeight: 1.6,
+            }}
+            onFocus={e => { e.target.style.borderColor = '#94a3b8' }}
+            onBlurCapture={e => { e.target.style.borderColor = '#e2e8f0' }}
+          />
+        </div>
+      </section>
+
+      {/* Boutons actions */}
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button
+          onClick={() => setShowReport(true)}
+          style={{
+            flex: 1, padding: '14px 16px', borderRadius: 14,
+            background: '#0f172a', color: '#fff', border: 'none',
+            fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+        >
+          <span>👁</span> Aperçu compte rendu
+        </button>
+
+        {manager?.email ? (
+          <button
+            onClick={sendToManager}
+            style={{
+              flex: 1, padding: '14px 16px', borderRadius: 14,
+              background: '#0089ba', color: '#fff', border: 'none',
+              fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              boxShadow: '0 4px 14px rgba(0,137,186,0.25)',
+            }}
+          >
+            <span>✉️</span> Envoyer au manager
+          </button>
+        ) : (
+          <div style={{
+            flex: 1, padding: '14px 16px', borderRadius: 14,
+            background: '#f8fafc', border: '1.5px dashed #e2e8f0',
+            fontSize: 12, color: '#94a3b8', fontWeight: 500,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}>
+            ✉️ Manager non renseigné
+          </div>
+        )}
+      </div>
 
     </div>
     </>
