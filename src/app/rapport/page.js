@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { sbSelect } from '@/lib/supabase'
 import CompteRenduManager from '@/components/CompteRenduManager'
@@ -35,7 +35,7 @@ function ErrorScreen({ message }) {
   )
 }
 
-export default function RapportPage() {
+function RapportContent() {
   const params = useSearchParams()
   const collaborateur = params.get('c') || ''
   const weekDate      = params.get('w') || ''
@@ -125,5 +125,13 @@ export default function RapportPage() {
         }
       `}</style>
     </div>
+  )
+}
+
+export default function RapportPage() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <RapportContent />
+    </Suspense>
   )
 }
