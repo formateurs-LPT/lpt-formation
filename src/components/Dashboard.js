@@ -15,6 +15,7 @@ import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, tra
 import { isDynamicRoomCode } from '@/lib/sessionCode'
 import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees } from '@/components/IdeesButton'
 import SonnettePanel from './SonnettePanel'
+import RetourFormationView from './RetourFormationView'
 
 
 function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoom, onSonnetteClick, sonnettePending }) {
@@ -982,7 +983,7 @@ function FichesAnnexesWidget() {
 }
 
 export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onOpenTv, onToast, onOnlineCount, onOpenPlanning }) {
-  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning
+  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning | retour-formation
   const [entreeCount, setEntreeCount] = useState(null)
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
@@ -1102,6 +1103,15 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
   if (activeView === 'idees') {
     return <IdeesView onBack={() => setActiveView('home')} pName={pName} />
+  }
+
+  if (activeView === 'retour-formation') {
+    return (
+      <RetourFormationView
+        onBack={() => setActiveView('home')}
+        pName={pName}
+      />
+    )
   }
 
   if (activeView === 'onboarding-choix') {
@@ -1419,6 +1429,16 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-count">{ideeCount}</div>
             <div className="dash-tile-label">Idées notées</div>
             <div className="dash-tile-sub">Idées notées durant les formations</div>
+          </div>
+
+          <div className="dash-tile" onClick={() => setActiveView('retour-formation')} style={{ borderColor: 'rgba(99,102,241,0.35)' }}>
+            <div className="dash-tile-top">
+              <div className="dash-tile-icon">📝</div>
+              <span className="dash-tile-link" style={{ color: '#818cf8' }}>Accéder →</span>
+            </div>
+            <div className="dash-tile-count" style={{ color: '#818cf8' }}>{entreeCount ?? '—'}</div>
+            <div className="dash-tile-label">Retour de formation</div>
+            <div className="dash-tile-sub">Fiches de suivi par collaborateur</div>
           </div>
         </div>
 
