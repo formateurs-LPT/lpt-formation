@@ -7280,8 +7280,8 @@ export default function TVView() {
     )
   }
 
-  // Jeu de questions entre formés
-  if (!loading && !activeModule && sharedState?.pq_phase) {
+  // Jeu de questions entre formés — uniquement si le formateur l'a activé explicitement
+  if (!loading && !activeModule && sharedState?.tv_screen === 'peer-quiz') {
     return (
       <>
         <style>{STYLES}</style>

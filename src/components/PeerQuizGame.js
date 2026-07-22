@@ -530,7 +530,7 @@ export default function PeerQuizTrainer({ sessionCode, onBack }) {
   const playersWithQ = participants.filter(p => (allQuestions[p] || []).length > 0)
 
   const startCollecting = async () => {
-    await setSharedState({ pq_phase: 'collecting', pq_asker: null, pq_designated: null, pq_question_id: null, pq_question_text: null, pq_history: [], pq_answer_correct: null, pq_edit_request: null })
+    await setSharedState({ tv_screen: 'peer-quiz', pq_phase: 'collecting', pq_asker: null, pq_designated: null, pq_question_id: null, pq_question_text: null, pq_history: [], pq_answer_correct: null, pq_edit_request: null })
     setAnswerCorrect(null)
   }
 
@@ -592,7 +592,7 @@ export default function PeerQuizTrainer({ sessionCode, onBack }) {
   }
 
   const stopGame = async () => {
-    await setSharedState({ pq_phase: null, pq_asker: null, pq_designated: null, pq_question_id: null, pq_question_text: null, pq_history: [], pq_answer_correct: null, pq_edit_request: null })
+    await setSharedState({ tv_screen: null, pq_phase: null, pq_asker: null, pq_designated: null, pq_question_id: null, pq_question_text: null, pq_history: [], pq_answer_correct: null, pq_edit_request: null })
     setAnswerCorrect(null)
   }
 
