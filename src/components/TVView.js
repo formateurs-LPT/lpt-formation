@@ -8,6 +8,7 @@ import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, getRoomShared
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
 import { PDMAnimationSVG } from '@/lib/pdmAnimationSvg'
+import { TVPeerQuizScreen } from '@/components/PeerQuizGame'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -7275,6 +7276,18 @@ export default function TVView() {
         <div style={{ height: '100dvh', overflow: 'hidden', position: 'relative' }}>
           <WelcomeScreen />
         </div>
+      </>
+    )
+  }
+
+  // Jeu de questions entre formés
+  if (!loading && !activeModule && sharedState?.pq_phase) {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <FullscreenButton />
+        <TVPeerQuizScreen sharedState={sharedState} />
+        <TVAnnotationCanvas />
       </>
     )
   }

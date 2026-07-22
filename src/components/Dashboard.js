@@ -16,6 +16,7 @@ import { isDynamicRoomCode } from '@/lib/sessionCode'
 import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees } from '@/components/IdeesButton'
 import SonnettePanel from './SonnettePanel'
 import RetourFormationView from './RetourFormationView'
+import PeerQuizTrainer from './PeerQuizGame'
 
 
 function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoom, onSonnetteClick, sonnettePending }) {
@@ -1114,6 +1115,15 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     )
   }
 
+  if (activeView === 'peer-quiz') {
+    return (
+      <PeerQuizTrainer
+        sessionCode={activeRoomCode}
+        onBack={() => setActiveView('home')}
+      />
+    )
+  }
+
   if (activeView === 'onboarding-choix') {
     return (
       <div id="dashboard">
@@ -1429,6 +1439,16 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-count">{ideeCount}</div>
             <div className="dash-tile-label">Idées notées</div>
             <div className="dash-tile-sub">Idées notées durant les formations</div>
+          </div>
+
+          <div className="dash-tile" onClick={() => setActiveView('peer-quiz')} style={{ borderColor: 'rgba(245,158,11,0.35)' }}>
+            <div className="dash-tile-top">
+              <div className="dash-tile-icon">🎯</div>
+              <span className="dash-tile-link" style={{ color: '#f59e0b' }}>Jouer →</span>
+            </div>
+            <div className="dash-tile-count" style={{ color: '#f59e0b' }}>{activeRoomCode ? '✓' : '—'}</div>
+            <div className="dash-tile-label">Jeu de questions</div>
+            <div className="dash-tile-sub">Les formés s'interrogent entre eux</div>
           </div>
 
           <div className="dash-tile" onClick={() => setActiveView('retour-formation')} style={{ borderColor: 'rgba(99,102,241,0.35)' }}>

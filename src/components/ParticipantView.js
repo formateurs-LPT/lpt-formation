@@ -8,6 +8,7 @@ import { TRAINER_AVATARS } from '@/lib/constants'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import Image from 'next/image'
 import ParticipantModuleView, { FAQInputMobile } from '@/components/ParticipantModuleView'
+import { PeerQuizParticipant } from '@/components/PeerQuizGame'
 
 const QUIZ10 = [
   { q: 'Quel trouble visuel fait que les verres progressifs sont utiles au quotidien ?', opts: ['La myopie', 'La presbytie', "L'astigmatisme", "L'hypermétropie"], correct: 1, kind: 'standard' },
@@ -591,6 +592,11 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
       {disconnectChip}
       <ParticipantModuleView forcedModule={activeModule} forcedPage={modulePage} pName={pName} sharedState={sharedState} onDisconnect={onDisconnect} />
     </>
+  )
+
+  // Jeu de questions entre formés
+  if (sharedState?.pq_phase) return (
+    <PeerQuizParticipant sharedState={sharedState} pName={pName} sessionCode={sessionCode} />
   )
 
   // Si une FAQ est active (réveil des acquis)
