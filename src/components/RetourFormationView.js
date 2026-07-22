@@ -92,7 +92,7 @@ const COMMENTAIRE_OPTS = [
   { key: 'attention',     label: 'Attention',         color: '#dc2626', bg: '#fee2e2', border: '#fecaca' },
 ]
 
-function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
+function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf }) {
   const [quizData, setQuizData]                 = useState([])
   const [assessments, setAssessments]           = useState({})
   const [attitudeStatus, setAttitudeStatus]     = useState(null)
@@ -318,6 +318,24 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
     )}
 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 32 }}>
+
+      {/* Nom + classement */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9' }}>{name}</div>
+        {rank && rankOf && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: rank === 1 ? 'rgba(22,163,74,0.15)' : 'rgba(100,116,139,0.15)',
+            border: `1px solid ${rank === 1 ? 'rgba(22,163,74,0.3)' : '#334155'}`,
+            borderRadius: 20, padding: '4px 12px',
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: rank === 1 ? '#16a34a' : '#94a3b8' }}>
+              {rank}{ordFR(rank)}
+            </span>
+            <span style={{ fontSize: 11, color: '#64748b' }}>du groupe sur {rankOf}</span>
+          </div>
+        )}
+      </div>
 
       {/* Quiz results */}
       <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
@@ -634,14 +652,82 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
 
 // ── Vue liste formés (catégorie choisie) ─────────────────────────
 
+function ordFR(n) { return n === 1 ? 'er' : 'e' }
+
 function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
   const [selected, setSelected]       = useState(null)
   const [showSendAll, setShowSendAll] = useState(false)
   const [sentKeys, setSentKeys]       = useState(new Set())
+  const [ranks, setRanks]             = useState({}) // { name: rankNumber }
+  const [rankOf, setRankOf]           = useState(0)  // total de formés classés
   const weekDate = getWeekDate()
   const catMeta  = CATEGORY_META[categoryKey] || {}
 
   const filtered = entrees.filter(e => effectiveCat(e) === categoryKey)
+
+  useEffect(() => {
+    if (filtered.length === 0) return
+    const names = filtered.map(e => e.fullName || `${e.nom} ${e.prenom}`.trim())
+
+    const computeRanks = async () => {
+      const [reportsRows, ...quizArrays] = await Promise.all([
+        sbSelect('formation_reports', `week_date=eq.${weekDate}&trainer_name=eq.${encodeURIComponent(trainerName)}`),
+        ...names.map(n => sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(n)}`)),
+      ])
+
+      const reportMap = {}
+      for (const r of (reportsRows || [])) reportMap[r.collaborateur] = r.stats_snapshot || {}
+
+      const scores = names.map((name, i) => {
+        // Taux d'acquisition (évaluation formateur)
+        const snap = reportMap[name] || {}
+        const acqRate = computeRate(snap.theme_assessments)
+
+        // Score quiz (meilleur score par module)
+        const byModule = {}
+        for (const r of (quizArrays[i] || [])) {
+          const mid = r.module_id || r.module
+          if (!mid) continue
+          const sc = r.score ?? 0
+          const tot = r.score_total ?? r.total ?? 0
+          if (!byModule[mid] || sc > byModule[mid].score) byModule[mid] = { score: sc, total: tot }
+        }
+        const modules = Object.values(byModule).filter(m => m.total > 0)
+        const quizRate = modules.length > 0
+          ? Math.round(modules.reduce((s, m) => s + m.score, 0) / modules.reduce((s, m) => s + m.total, 0) * 100)
+          : null
+
+        // Score composite (60% acquis + 40% quiz — si les deux existent)
+        let composite = null
+        if (acqRate !== null && quizRate !== null) composite = Math.round(acqRate * 0.6 + quizRate * 0.4)
+        else if (acqRate !== null) composite = acqRate
+        else if (quizRate !== null) composite = quizRate
+
+        return { name, composite }
+      })
+
+      // Tri décroissant, nuls en dernier
+      const sorted = [...scores].sort((a, b) => {
+        if (a.composite === null && b.composite === null) return 0
+        if (a.composite === null) return 1
+        if (b.composite === null) return -1
+        return b.composite - a.composite
+      })
+
+      const rankMap = {}
+      let r = 1
+      for (let i = 0; i < sorted.length; i++) {
+        if (sorted[i].composite === null) break
+        if (i > 0 && sorted[i].composite !== sorted[i - 1].composite) r = i + 1
+        rankMap[sorted[i].name] = r
+      }
+
+      setRanks(rankMap)
+      setRankOf(Object.keys(rankMap).length)
+    }
+
+    computeRanks()
+  }, [filtered.length, weekDate, trainerName])
 
   // Regroupe les formés par manager (un même manager peut avoir plusieurs formés)
   const sendAllGroups = useMemo(() => {
@@ -874,21 +960,28 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
         {filtered.map((e, i) => {
           const nm = e.fullName || `${e.nom} ${e.prenom}`.trim()
           const active = i === selected
+          const rank = ranks[nm]
           return (
             <button
               key={i}
               onClick={() => setSelected(i)}
               style={{
-                flexShrink: 0, padding: '8px 18px', borderRadius: 99,
+                flexShrink: 0, padding: '7px 18px', borderRadius: 99,
                 border: active ? `2px solid ${catMeta.color}` : '1.5px solid #334155',
                 background: active ? catMeta.color : '#253247',
                 color: active ? '#fff' : '#64748b',
                 fontWeight: active ? 700 : 500,
                 fontSize: 13, cursor: 'pointer', transition: 'all .15s',
                 whiteSpace: 'nowrap', boxShadow: active ? `0 2px 8px rgba(${catMeta.rgb},0.25)` : 'none',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
               }}
             >
-              {nm}
+              <span>{nm}</span>
+              {rank && (
+                <span style={{ fontSize: 10, fontWeight: 600, opacity: active ? 0.85 : 0.6 }}>
+                  {rank}{ordFR(rank)}/{rankOf}
+                </span>
+              )}
             </button>
           )
         })}
@@ -903,6 +996,8 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
             categoryKey={categoryKey}
             trainerName={trainerName}
             weekDate={weekDate}
+            rank={ranks[selEntry.fullName || `${selEntry.nom} ${selEntry.prenom}`.trim()]}
+            rankOf={rankOf}
           />
         )}
       </div>

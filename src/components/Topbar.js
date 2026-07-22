@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { getTrainerAvatarSrc } from '@/lib/constants'
 import { fetchOnlineParticipantsList, markParticipantLeft } from '@/lib/participantPresence'
-import { setRoomSharedState, getRoomSharedState, sbSelect } from '@/lib/supabase'
+import { setRoomSharedState, getRoomSharedState, sbSelect, getSharedState, setSharedState } from '@/lib/supabase'
 import { useIsMobile } from '@/lib/useIsMobile'
 
 function useFullscreen() {
@@ -327,7 +327,7 @@ function ParticipantsPanel({ sessionCode, onClose }) {
 }
 
 /* Menu hamburger mobile — panneau qui descend depuis le haut */
-function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onStartSession, onTVMode, onLogout, onClose, onShowParticipants }) {
+function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onStartSession, onTVMode, onLogout, onClose, onShowParticipants, onQr, qrActive }) {
   const code = (sessionCode || '').trim()
   return (
     <>
@@ -393,6 +393,17 @@ function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession,
               📺 Mode Diffusion
             </button>
           )}
+          {isTrainer && onQr && (
+            <button onClick={() => { onClose(); onQr() }} style={{
+              width: '100%', padding: '13px 16px', borderRadius: 10,
+              background: qrActive ? 'rgba(0,137,186,0.18)' : 'rgba(0,137,186,0.08)',
+              border: qrActive ? '1px solid #0089ba' : '1px solid rgba(0,137,186,0.3)',
+              color: '#0089ba', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}>
+              📱 {qrActive ? 'Masquer QR diffuseur' : 'Afficher QR diffuseur'}
+            </button>
+          )}
           <FullscreenButton />
           <button onClick={() => { onClose(); onLogout() }} style={{
             width: '100%', padding: '13px 16px', borderRadius: 10,
@@ -410,9 +421,23 @@ function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession,
 export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onLogout, onTVMode, onStartSession }) {
   const [showPanel, setShowPanel] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
+  const [qrActive, setQrActive] = useState(false)
+  const [prevTvScreen, setPrevTvScreen] = useState(null)
   const isMobile = useIsMobile(640)
   const code = (sessionCode || '').trim()
   const avatarSrc = isTrainer ? getTrainerAvatarSrc(pName) : '/assets/logo-lpt-blanc.png'
+
+  const toggleQR = async () => {
+    if (qrActive) {
+      await setSharedState({ tv_screen: prevTvScreen })
+      setQrActive(false)
+    } else {
+      const state = await getSharedState()
+      setPrevTvScreen(state?.tv_screen ?? null)
+      await setSharedState({ tv_screen: 'qr' })
+      setQrActive(true)
+    }
+  }
 
   if (isMobile) {
     return (
@@ -461,6 +486,8 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
             onLogout={onLogout}
             onClose={() => setShowMenu(false)}
             onShowParticipants={() => setShowPanel(true)}
+            onQr={isTrainer ? toggleQR : undefined}
+            qrActive={qrActive}
           />
         )}
 
@@ -537,6 +564,20 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
           onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,171,233,0.3)' }}
           >
             📺 Diffusion
+          </button>
+        )}
+        {isTrainer && (
+          <button
+            onClick={toggleQR}
+            title={qrActive ? 'Masquer le QR code du diffuseur' : 'Afficher le QR code sur le diffuseur'}
+            style={{
+              background: qrActive ? 'rgba(0,137,186,0.18)' : 'rgba(0,137,186,0.08)',
+              border: qrActive ? '1px solid #0089ba' : '1px solid rgba(0,137,186,0.3)',
+              color: '#0089ba', fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 20,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, transition: 'all .2s',
+            }}
+          >
+            📱 {qrActive ? 'Masquer QR' : 'QR diffuseur'}
           </button>
         )}
         {isTrainer && (
