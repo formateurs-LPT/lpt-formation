@@ -4,7 +4,7 @@ import { sbSelect, sbUpsert, getSharedState } from '@/lib/supabase'
 import { classifyMagasin } from '@/lib/formationCategories'
 import { MODULE_DATA } from '@/lib/modulesData'
 import CompteRenduManager from './CompteRenduManager'
-import { getManager } from '@/lib/managersData'
+import { getManagers } from '@/lib/managersData'
 
 // ── Constantes ────────────────────────────────────────────────────
 
@@ -231,14 +231,17 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
     navigator.clipboard.writeText(reportUrl).catch(() => {})
   }
 
-  const manager = getManager(entree.magasin)
+  const managers = getManagers(entree.magasin)
 
   const sendToManager = () => {
-    if (!manager?.email || !reportUrl) return
-    const prenom = name.split(' ')[0]
+    if (!managers.length || !reportUrl) return
+    const emails = managers.map(m => m.email).join(',')
+    const greeting = managers.length > 1
+      ? managers.map(m => m.name).join(' et ')
+      : (managers[0].name || 'Madame, Monsieur')
     const subject = encodeURIComponent(`Compte rendu de formation — ${name}`)
     const body = encodeURIComponent(
-      `Bonjour ${manager.name || 'Madame, Monsieur'},\n\n` +
+      `Bonjour ${greeting},\n\n` +
       `Veuillez trouver ci-dessous le compte rendu de formation de ${name}, ` +
       `formé(e) lors de la semaine du ${weekDate}.\n\n` +
       `👉 Accéder au compte rendu :\n${reportUrl}\n\n` +
@@ -246,7 +249,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
       `et ceux à renforcer, afin d'accompagner au mieux votre nouveau collaborateur.\n\n` +
       `Cordialement,\n${trainerName}\nFormateur — Lunettes Pour Tous`
     )
-    window.location.href = `mailto:${manager.email}?subject=${subject}&body=${body}`
+    window.location.href = `mailto:${emails}?subject=${subject}&body=${body}`
   }
 
   if (loading) return (
@@ -591,7 +594,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
           <span>👁</span> Aperçu compte rendu
         </button>
 
-        {manager?.email ? (
+        {managers.length > 0 ? (
           <button
             onClick={sendToManager}
             style={{
@@ -602,7 +605,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
               boxShadow: '0 4px 14px rgba(0,137,186,0.25)',
             }}
           >
-            <span>✉️</span> Envoyer au manager
+            <span>✉️</span> {managers.length > 1 ? 'Envoyer aux managers' : 'Envoyer au manager'}
           </button>
         ) : (
           <div style={{
