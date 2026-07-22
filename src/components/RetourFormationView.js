@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { sbSelect, sbUpsert, getSharedState } from '@/lib/supabase'
 import { classifyMagasin } from '@/lib/formationCategories'
 import { MODULE_DATA } from '@/lib/modulesData'
+import CompteRenduManager from './CompteRenduManager'
 
 // ── Constantes ────────────────────────────────────────────────────
 
@@ -201,12 +202,88 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
   }
 
   const rate = computeRate(assessments)
+  const [showReport, setShowReport] = useState(false)
+
+  const reportData = {
+    collaborateur: name,
+    trainerName,
+    weekDate,
+    categoryKey,
+    assessments,
+    attitudeStatus,
+    attitudeNote,
+    comprehensionStatus,
+    comprehensionNote,
+    appreciation,
+  }
+
+  const reportUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/rapport/?c=${encodeURIComponent(name)}&w=${weekDate}&t=${encodeURIComponent(trainerName)}&cat=${categoryKey}`
+    : ''
+
+  const copyLink = () => {
+    if (!reportUrl) return
+    navigator.clipboard.writeText(reportUrl).catch(() => {})
+  }
 
   if (loading) return (
     <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>Chargement…</div>
   )
 
   return (
+    <>
+    {/* Modal compte rendu */}
+    {showReport && (
+      <div
+        onClick={e => { if (e.target === e.currentTarget) setShowReport(false) }}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+          overflowY: 'auto', padding: '24px 16px 48px',
+        }}
+      >
+        {/* Barre d'actions */}
+        <div style={{
+          maxWidth: 780, margin: '0 auto 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+        }}>
+          <button
+            onClick={() => setShowReport(false)}
+            style={{
+              padding: '8px 18px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.3)',
+              background: 'rgba(255,255,255,0.12)', color: '#fff',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            ← Fermer
+          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={copyLink}
+              style={{
+                padding: '8px 18px', borderRadius: 20, border: '1px solid rgba(0,171,233,0.5)',
+                background: 'rgba(0,171,233,0.15)', color: '#00abe9',
+                fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              🔗 Copier le lien manager
+            </button>
+            <button
+              onClick={() => window.print()}
+              style={{
+                padding: '8px 18px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.2)',
+                background: 'rgba(255,255,255,0.1)', color: '#fff',
+                fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              🖨️ Imprimer
+            </button>
+          </div>
+        </div>
+        <CompteRenduManager data={reportData} />
+      </div>
+    )}
+
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 32 }}>
 
       {/* Quiz results */}
@@ -445,7 +522,24 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
           })}
         </div>
       </section>
+
+      {/* Bouton aperçu compte rendu */}
+      <button
+        onClick={() => setShowReport(true)}
+        style={{
+          width: '100%', padding: '14px 20px', borderRadius: 14,
+          background: '#0f172a', color: '#fff', border: 'none',
+          fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          boxShadow: '0 4px 14px rgba(15,23,42,0.18)',
+        }}
+      >
+        <span style={{ fontSize: 16 }}>👁</span>
+        Prévisualiser le compte rendu manager
+      </button>
+
     </div>
+    </>
   )
 }
 
