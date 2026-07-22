@@ -1119,7 +1119,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     return (
       <PeerQuizTrainer
         sessionCode={activeRoomCode}
-        onBack={() => setActiveView('home')}
+        onBack={() => setActiveView('planning')}
       />
     )
   }
@@ -1258,12 +1258,23 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
                         <div style={{ flex: 1, height: 1, background: `${jour.color}40` }} />
                       </div>
                     )
+                    const isQuizBloc = bloc.titre === 'Jeu de questions'
                     return (
-                      <div key={i} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderLeft: `3px solid ${jour.color}`, borderRadius: 8, padding: '10px 14px' }}>
+                      <div key={i} style={{ background: isQuizBloc ? 'rgba(245,158,11,0.06)' : 'var(--bg)', border: `1px solid ${isQuizBloc ? 'rgba(245,158,11,0.3)' : 'var(--border)'}`, borderLeft: `3px solid ${isQuizBloc ? '#f59e0b' : jour.color}`, borderRadius: 8, padding: '10px 14px' }}>
                         {bloc.horaire && (
-                          <div style={{ fontSize: 10, fontWeight: 700, color: jour.color, marginBottom: 2, letterSpacing: 0.5 }}>{bloc.horaire}</div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: isQuizBloc ? '#f59e0b' : jour.color, marginBottom: 2, letterSpacing: 0.5 }}>{bloc.horaire}</div>
                         )}
-                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: bloc.items.length > 0 ? 6 : 0 }}>{bloc.titre}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: bloc.items.length > 0 ? 6 : 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{bloc.titre}</div>
+                          {isQuizBloc && (
+                            <button
+                              onClick={e => { e.stopPropagation(); setActiveView('peer-quiz') }}
+                              style={{ flexShrink: 0, background: '#f59e0b', border: 'none', borderRadius: 8, padding: '5px 12px', fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: 0.3 }}
+                            >
+                              🎯 Lancer
+                            </button>
+                          )}
+                        </div>
                         {bloc.items.length > 0 && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                             {bloc.items.map((item, j) => (
@@ -1439,16 +1450,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-count">{ideeCount}</div>
             <div className="dash-tile-label">Idées notées</div>
             <div className="dash-tile-sub">Idées notées durant les formations</div>
-          </div>
-
-          <div className="dash-tile" onClick={() => setActiveView('peer-quiz')} style={{ borderColor: 'rgba(245,158,11,0.35)' }}>
-            <div className="dash-tile-top">
-              <div className="dash-tile-icon">🎯</div>
-              <span className="dash-tile-link" style={{ color: '#f59e0b' }}>Jouer →</span>
-            </div>
-            <div className="dash-tile-count" style={{ color: '#f59e0b' }}>{activeRoomCode ? '✓' : '—'}</div>
-            <div className="dash-tile-label">Jeu de questions</div>
-            <div className="dash-tile-sub">Les formés s'interrogent entre eux</div>
           </div>
 
           <div className="dash-tile" onClick={() => setActiveView('retour-formation')} style={{ borderColor: 'rgba(99,102,241,0.35)' }}>
