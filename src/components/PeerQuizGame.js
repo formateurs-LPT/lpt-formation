@@ -191,7 +191,8 @@ export function PeerQuizParticipant({ sharedState, pName, sessionCode }) {
 
   const submitTurn = async () => {
     if (!selTarget || !selQId) return
-    const q = myQuestions.find(q => q.id === selQId)
+    const ownQs = sharedState?.[`pq_q_${pName}`] || []
+    const q = ownQs.find(q => q.id === selQId)
     if (!q) return
     setSaving(true)
     try {
@@ -361,11 +362,14 @@ export function PeerQuizParticipant({ sharedState, pName, sessionCode }) {
     )
 
     // C'est mon tour de poser une question
+    const myOwnQs = sharedState?.[`pq_q_${pName}`] || []
+    const unusedOwnQs = myOwnQs.filter(q => !q.used)
+
     if (isAsker && !designated) return (
       <div style={STYLE.wrapper}>
         <div style={{ fontSize: 20, fontWeight: 900, color: '#6366f1', marginBottom: 4 }}>🎯 C'est ton tour !</div>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 24 }}>
-          Choisis qui tu veux questionner, puis une de tes questions
+          Choisis qui tu veux questionner, puis l'une de <strong style={{ color: '#fff' }}>tes propres questions</strong>
         </div>
 
         {/* Select target */}
@@ -403,31 +407,38 @@ export function PeerQuizParticipant({ sharedState, pName, sessionCode }) {
           })}
         </div>
 
-        {/* Select question */}
+        {/* Select question — uniquement parmi ses propres questions */}
         <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
-          2 — Quelle question poses-tu ?
+          2 — Laquelle de tes questions poses-tu ?
         </div>
-        {unusedQs.length === 0 ? (
+        {myOwnQs.length === 0 ? (
           <div style={{ ...STYLE.card, color: 'rgba(255,255,255,0.4)', fontSize: 13, fontStyle: 'italic' }}>
-            Tu as utilisé toutes tes questions ce tour.
+            Tu n'as pas écrit de questions lors de la phase de collecte.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
-            {unusedQs.map(q => {
+            {myOwnQs.map(q => {
+              const used = q.used
               const sel = selQId === q.id
               return (
                 <button
                   key={q.id}
-                  onClick={() => setSelQId(sel ? null : q.id)}
+                  onClick={() => !used && setSelQId(sel ? null : q.id)}
+                  disabled={used}
                   style={{
-                    padding: '14px 16px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
-                    background: sel ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.05)',
-                    border: sel ? '1.5px solid #6366f1' : '1px solid rgba(255,255,255,0.1)',
-                    color: sel ? '#fff' : 'rgba(255,255,255,0.8)',
+                    padding: '14px 16px', borderRadius: 12, textAlign: 'left',
+                    cursor: used ? 'default' : 'pointer',
+                    background: sel ? 'rgba(99,102,241,0.18)' : used ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
+                    border: sel ? '1.5px solid #6366f1' : '1px solid rgba(255,255,255,0.08)',
+                    color: used ? 'rgba(255,255,255,0.25)' : sel ? '#fff' : 'rgba(255,255,255,0.8)',
                     fontSize: 14, lineHeight: 1.5, transition: 'all .15s', width: '100%',
+                    textDecoration: used ? 'line-through' : 'none',
+                    display: 'flex', alignItems: 'center', gap: 10,
                   }}
                 >
-                  {q.text}
+                  {used && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>✓ déjà posée</span>}
+                  <span>{q.text}</span>
+                  {sel && !used && <span style={{ color: '#6366f1', fontSize: 16, marginLeft: 'auto', flexShrink: 0 }}>✓</span>}
                 </button>
               )
             })}
@@ -436,7 +447,7 @@ export function PeerQuizParticipant({ sharedState, pName, sessionCode }) {
 
         <button
           onClick={submitTurn}
-          disabled={!selTarget || !selQId || saving}
+          disabled={!selTarget || !selQId || saving || unusedOwnQs.length === 0}
           style={{
             width: '100%', padding: '16px', borderRadius: 14,
             background: selTarget && selQId ? '#6366f1' : 'rgba(99,102,241,0.3)',
