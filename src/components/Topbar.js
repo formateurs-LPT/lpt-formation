@@ -459,19 +459,37 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
             {isTrainer && <span style={{ fontSize: 10, color: 'rgba(0,0,0,0.3)' }}>▾</span>}
           </div>
 
-          {/* Droite : hamburger */}
-          <button
-            onClick={() => setShowMenu(v => !v)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: '6px 8px', borderRadius: 8,
-              display: 'flex', flexDirection: 'column', gap: 4,
-            }}
-          >
-            <span style={{ display: 'block', width: 20, height: 2, background: '#333', borderRadius: 2 }} />
-            <span style={{ display: 'block', width: 20, height: 2, background: '#333', borderRadius: 2 }} />
-            <span style={{ display: 'block', width: 20, height: 2, background: '#333', borderRadius: 2 }} />
-          </button>
+          {/* Droite : QR rapide + hamburger */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {isTrainer && (
+              <button
+                onClick={toggleQR}
+                title={qrActive ? 'Masquer QR' : 'QR diffuseur'}
+                style={{
+                  background: qrActive ? '#0089ba' : 'rgba(0,137,186,0.1)',
+                  border: `1px solid ${qrActive ? '#0089ba' : 'rgba(0,137,186,0.3)'}`,
+                  borderRadius: 8, padding: '6px 9px', cursor: 'pointer',
+                  color: qrActive ? '#fff' : '#0089ba', fontSize: 16, lineHeight: 1,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all .2s',
+                }}
+              >
+                📱
+              </button>
+            )}
+            <button
+              onClick={() => setShowMenu(v => !v)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: '6px 8px', borderRadius: 8,
+                display: 'flex', flexDirection: 'column', gap: 4,
+              }}
+            >
+              <span style={{ display: 'block', width: 20, height: 2, background: '#333', borderRadius: 2 }} />
+              <span style={{ display: 'block', width: 20, height: 2, background: '#333', borderRadius: 2 }} />
+              <span style={{ display: 'block', width: 20, height: 2, background: '#333', borderRadius: 2 }} />
+            </button>
+          </div>
         </div>
 
         {showMenu && (
