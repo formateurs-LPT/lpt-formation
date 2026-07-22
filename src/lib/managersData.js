@@ -205,13 +205,29 @@ export const MANAGERS = {
   ],
 }
 
+/** Supprime accents + met en minuscules pour comparaisons robustes */
+function norm(s) {
+  return (s || '').toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
+
 /**
  * Retrouve la liste des managers d'un magasin.
+ * Stratégie : correspondance exacte normalisée, puis partielle (input contient la clé),
+ * en préférant la clé la plus longue (plus spécifique) en cas d'ambiguïté.
  * @param {string} magasin
  * @returns {{ name: string, email: string }[]}
  */
 export function getManagers(magasin) {
   if (!magasin) return []
-  const key = magasin.toLowerCase().trim()
-  return MANAGERS[key] || []
+  const n = norm(magasin)
+
+  // 1. Correspondance exacte (insensible aux accents et à la casse)
+  const exact = Object.entries(MANAGERS).find(([k]) => norm(k) === n)
+  if (exact) return exact[1]
+
+  // 2. Correspondance partielle : cherche la clé la plus longue contenue dans l'entrée
+  const partial = Object.entries(MANAGERS)
+    .filter(([k]) => n.includes(norm(k)))
+    .sort((a, b) => b[0].length - a[0].length)
+  return partial[0]?.[1] || []
 }
