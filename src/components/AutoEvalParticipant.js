@@ -1,0 +1,310 @@
+'use client'
+import { useState } from 'react'
+import { sbUpsert } from '@/lib/supabase'
+import { MODULE_DATA } from '@/lib/modulesData'
+import { classifyMagasin } from '@/lib/formationCategories'
+
+const THEMES_FRANCE   = ['entreprise','types-verres','pdm','optique','offres','verre-progressif','trame-accueil','montures','remboursement-france','parcours-rembourses','lpt-sante']
+const THEMES_BELGIQUE = ['entreprise','types-verres','pdm','optique','offres','verre-progressif','trame-accueil','montures','mutuelles-inami']
+
+const STATUS_OPTS = [
+  { key: 'acquis',     label: 'Acquis',     color: '#16a34a', bg: 'rgba(22,163,74,0.18)',   border: 'rgba(22,163,74,0.5)'  },
+  { key: 'en-cours',   label: 'En cours',   color: '#f59e0b', bg: 'rgba(245,158,11,0.18)',  border: 'rgba(245,158,11,0.5)' },
+  { key: 'non-acquis', label: 'Non acquis', color: '#f87171', bg: 'rgba(248,113,113,0.18)', border: 'rgba(248,113,113,0.5)' },
+]
+
+function getWeekDate() {
+  const d = new Date()
+  const day = d.getDay()
+  d.setDate(d.getDate() - day + (day === 0 ? -6 : 1))
+  return d.toISOString().slice(0, 10)
+}
+
+function Card({ children, style }) {
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+      borderRadius: 18, overflow: 'hidden', marginBottom: 20, ...style,
+    }}>
+      {children}
+    </div>
+  )
+}
+
+function CardHead({ children }) {
+  return (
+    <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.2)' }}>
+      <span style={{ fontSize: 11, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        {children}
+      </span>
+    </div>
+  )
+}
+
+function TextArea({ value, onChange, placeholder, rows = 3 }) {
+  return (
+    <textarea
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={rows}
+      style={{
+        width: '100%', padding: '12px 14px', borderRadius: 12,
+        border: '1.5px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)',
+        fontSize: 14, color: '#fff', resize: 'vertical',
+        fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+        lineHeight: 1.5,
+      }}
+      onFocus={e => { e.target.style.borderColor = 'rgba(0,171,233,0.6)' }}
+      onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.15)' }}
+    />
+  )
+}
+
+export default function AutoEvalParticipant({ pName, sharedState, sessionCode }) {
+  const [submitted, setSubmitted] = useState(false)
+  const [saving, setSaving]       = useState(false)
+  const [error, setError]         = useState(null)
+
+  const entrees  = sharedState?.entrees_data || []
+  const myEntry  = entrees.find(e => (e.fullName || `${e.nom} ${e.prenom}`.trim()) === pName)
+  const cat      = myEntry ? (classifyMagasin(myEntry.magasin) || 'province') : 'province'
+  const themes   = cat === 'belgique' ? THEMES_BELGIQUE : THEMES_FRANCE
+
+  const [themeStatus,    setThemeStatus]    = useState({})
+  const [progres,        setProgres]        = useState('')
+  const [appreciation,   setAppreciation]   = useState('')
+  const [accompagnement, setAccompagnement] = useState([])
+  const [suggestions,    setSuggestions]    = useState('')
+
+  const toggleStatus = (themeId, key) => {
+    setThemeStatus(prev => ({ ...prev, [themeId]: prev[themeId] === key ? null : key }))
+  }
+
+  const toggleAccomp = (key) => {
+    setAccompagnement(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
+  }
+
+  const handleSubmit = async () => {
+    setSaving(true)
+    setError(null)
+    try {
+      await sbUpsert('formation_reports', {
+        collaborateur: pName,
+        week_date: getWeekDate(),
+        session_code: sessionCode || '',
+        trainer_name: '__auto_eval__',
+        status: 'draft',
+        stats_snapshot: {
+          auto_eval: {
+            themes_list: themes,
+            theme_self_assessments: themeStatus,
+            progres,
+            appreciation_formation: appreciation,
+            accompagnement_themes: accompagnement,
+            suggestions,
+          },
+        },
+        updated_at: new Date().toISOString(),
+      }, 'collaborateur,week_date,trainer_name')
+      setSubmitted(true)
+    } catch (e) {
+      console.error('[AutoEval] submit error', e)
+      setError('Une erreur est survenue. Réessaie.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (submitted) return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: 40, textAlign: 'center',
+    }}>
+      <div style={{ fontSize: 64, marginBottom: 20 }}>✅</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Merci {pName?.split(' ')[0]} !</div>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7 }}>
+        Tes réponses ont bien été envoyées.<br />Tu peux fermer cet onglet ou attendre la suite.
+      </div>
+    </div>
+  )
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      overflowY: 'auto', padding: '28px 18px 100px',
+    }}>
+      <div style={{ maxWidth: 560, margin: '0 auto' }}>
+
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+            Auto-évaluation
+          </div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginBottom: 8 }}>Fin de formation</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
+            Réponds honnêtement — tes réponses ne sont visibles que par le formateur
+          </div>
+        </div>
+
+        {/* Section 1 — Thèmes */}
+        <Card>
+          <CardHead>Thèmes abordés — Ton niveau d'acquisition</CardHead>
+          <div style={{ padding: '14px 16px' }}>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginBottom: 16, lineHeight: 1.5 }}>
+              Pour chaque thème, indique ton ressenti sur ce que tu as retenu
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {themes.map((themeId, idx) => {
+                const meta = MODULE_DATA[themeId]
+                if (!meta) return null
+                const current = themeStatus[themeId] || null
+                return (
+                  <div key={themeId} style={{ paddingBottom: idx < themes.length - 1 ? 14 : 0, borderBottom: idx < themes.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 10 }}>{meta.label}</div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {STATUS_OPTS.map(opt => {
+                        const active = current === opt.key
+                        return (
+                          <button
+                            key={opt.key}
+                            onClick={() => toggleStatus(themeId, opt.key)}
+                            style={{
+                              flex: 1, padding: '10px 4px', borderRadius: 12, fontSize: 12, fontWeight: 700,
+                              border: `1.5px solid ${active ? opt.border : 'rgba(255,255,255,0.12)'}`,
+                              background: active ? opt.bg : 'rgba(255,255,255,0.04)',
+                              color: active ? opt.color : 'rgba(255,255,255,0.4)',
+                              cursor: 'pointer', transition: 'all .15s',
+                              WebkitTapHighlightColor: 'transparent',
+                            }}
+                          >
+                            {opt.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </Card>
+
+        {/* Section 2 — Progrès */}
+        <Card>
+          <CardHead>Tes progrès</CardHead>
+          <div style={{ padding: '14px 16px' }}>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10, lineHeight: 1.5 }}>
+              Penses-tu avoir fait des progrès durant la formation ?
+            </label>
+            <TextArea
+              value={progres}
+              onChange={setProgres}
+              placeholder="Décris ce que tu as appris, ce qui a changé pour toi…"
+              rows={4}
+            />
+          </div>
+        </Card>
+
+        {/* Section 3 — Appréciation */}
+        <Card>
+          <CardHead>Ton ressenti</CardHead>
+          <div style={{ padding: '14px 16px' }}>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10, lineHeight: 1.5 }}>
+              As-tu apprécié la formation ?
+            </label>
+            <TextArea
+              value={appreciation}
+              onChange={setAppreciation}
+              placeholder="Ce que tu as aimé, ce qui t'a plu ou déplu…"
+              rows={4}
+            />
+          </div>
+        </Card>
+
+        {/* Section 4 — Accompagnement (multi-select) */}
+        <Card>
+          <CardHead>Accompagnement souhaité</CardHead>
+          <div style={{ padding: '14px 16px' }}>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 12, lineHeight: 1.5 }}>
+              Sur quels thèmes penses-tu avoir besoin de plus d'accompagnement après la formation ?
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {themes.map(themeId => {
+                const meta = MODULE_DATA[themeId]
+                const active = accompagnement.includes(themeId)
+                return (
+                  <button
+                    key={themeId}
+                    onClick={() => toggleAccomp(themeId)}
+                    style={{
+                      padding: '9px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+                      border: `1.5px solid ${active ? '#00abe9' : 'rgba(255,255,255,0.18)'}`,
+                      background: active ? 'rgba(0,171,233,0.22)' : 'rgba(255,255,255,0.05)',
+                      color: active ? '#00abe9' : 'rgba(255,255,255,0.55)',
+                      cursor: 'pointer', transition: 'all .15s',
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    {meta?.label || themeId}
+                  </button>
+                )
+              })}
+            </div>
+            {accompagnement.length > 0 && (
+              <div style={{ marginTop: 10, fontSize: 12, color: '#00abe9', fontWeight: 600 }}>
+                {accompagnement.length} thème{accompagnement.length > 1 ? 's' : ''} sélectionné{accompagnement.length > 1 ? 's' : ''}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Section 5 — Suggestions */}
+        <Card>
+          <CardHead>Suggestions</CardHead>
+          <div style={{ padding: '14px 16px' }}>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10, lineHeight: 1.5 }}>
+              As-tu des suggestions pour améliorer la formation ?<br />
+              <span style={{ fontWeight: 400, fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+                (thèmes à approfondir, idées de mini-jeux, rythme, contenu…)
+              </span>
+            </label>
+            <TextArea
+              value={suggestions}
+              onChange={setSuggestions}
+              placeholder="Tes idées sont précieuses pour nous aider à améliorer les prochaines formations…"
+              rows={4}
+            />
+          </div>
+        </Card>
+
+        {/* Error */}
+        {error && (
+          <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', fontSize: 13, marginBottom: 16 }}>
+            {error}
+          </div>
+        )}
+
+        {/* Submit */}
+        <button
+          onClick={handleSubmit}
+          disabled={saving}
+          style={{
+            width: '100%', padding: '18px 24px', borderRadius: 18,
+            background: saving ? 'rgba(0,171,233,0.4)' : '#00abe9',
+            color: '#fff', fontWeight: 800, fontSize: 16,
+            border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
+            transition: 'background .2s', fontFamily: 'inherit',
+            boxShadow: saving ? 'none' : '0 4px 20px rgba(0,171,233,0.35)',
+          }}
+        >
+          {saving ? 'Envoi en cours…' : 'Envoyer mes réponses ✓'}
+        </button>
+
+      </div>
+    </div>
+  )
+}

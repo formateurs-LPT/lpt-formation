@@ -16,6 +16,7 @@ import { isDynamicRoomCode } from '@/lib/sessionCode'
 import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees } from '@/components/IdeesButton'
 import SonnettePanel from './SonnettePanel'
 import RetourFormationView from './RetourFormationView'
+import AutoEvalView from './AutoEvalView'
 import PeerQuizTrainer from './PeerQuizGame'
 
 
@@ -984,7 +985,7 @@ function FichesAnnexesWidget() {
 }
 
 export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onOpenTv, onToast, onOnlineCount, onOpenPlanning }) {
-  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning | retour-formation
+  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning | retour-formation | auto-eval
   const [entreeCount, setEntreeCount] = useState(null)
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
@@ -1113,6 +1114,12 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
         onBack={() => setActiveView('home')}
         pName={pName}
       />
+    )
+  }
+
+  if (activeView === 'auto-eval') {
+    return (
+      <AutoEvalView onBack={() => setActiveView('home')} />
     )
   }
 
@@ -1465,6 +1472,16 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-count" style={{ color: '#818cf8' }}>{entreeCount ?? '—'}</div>
             <div className="dash-tile-label">Retour de formation</div>
             <div className="dash-tile-sub">Fiches de suivi par collaborateur</div>
+          </div>
+
+          <div className="dash-tile" onClick={() => setActiveView('auto-eval')} style={{ borderColor: 'rgba(16,185,129,0.35)' }}>
+            <div className="dash-tile-top">
+              <div className="dash-tile-icon">📋</div>
+              <span className="dash-tile-link" style={{ color: '#10b981' }}>Lancer →</span>
+            </div>
+            <div className="dash-tile-count" style={{ color: '#10b981', fontSize: 22 }}>Auto-éval</div>
+            <div className="dash-tile-label">Auto-évaluation</div>
+            <div className="dash-tile-sub">Questionnaire fin de formation par le formé</div>
           </div>
         </div>
 

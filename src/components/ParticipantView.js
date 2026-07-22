@@ -9,6 +9,7 @@ import { PLANNING_JOURS } from '@/lib/planningData'
 import Image from 'next/image'
 import ParticipantModuleView, { FAQInputMobile } from '@/components/ParticipantModuleView'
 import { PeerQuizParticipant } from '@/components/PeerQuizGame'
+import AutoEvalParticipant from '@/components/AutoEvalParticipant'
 
 const QUIZ10 = [
   { q: 'Quel trouble visuel fait que les verres progressifs sont utiles au quotidien ?', opts: ['La myopie', 'La presbytie', "L'astigmatisme", "L'hypermétropie"], correct: 1, kind: 'standard' },
@@ -597,6 +598,11 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   // Jeu de questions entre formés — uniquement si le formateur l'a lancé explicitement
   if (sharedState?.tv_screen === 'peer-quiz' && sharedState?.pq_phase) return (
     <PeerQuizParticipant sharedState={sharedState} pName={pName} sessionCode={sessionCode} />
+  )
+
+  // Auto-évaluation fin de formation
+  if (sharedState?.tv_screen === 'auto-eval') return (
+    <AutoEvalParticipant pName={pName} sharedState={sharedState} sessionCode={sessionCode} />
   )
 
   // Si une FAQ est active (réveil des acquis)
