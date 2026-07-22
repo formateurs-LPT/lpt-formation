@@ -46,35 +46,25 @@ function computeRate(assessments) {
   return Math.round((score / vals.length) * 100)
 }
 
-function RateCircle({ rate }) {
+function RateBar({ rate }) {
   if (rate === null) return (
-    <div style={{ textAlign: 'center', padding: '20px 0' }}>
-      <div style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>
-        Remplissez les thèmes ci-dessus pour calculer le taux d'acquisition
-      </div>
+    <div style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>
+      Remplissez les thèmes ci-dessus pour calculer le taux d'acquisition
     </div>
   )
   const color = rate >= 75 ? '#16a34a' : rate >= 50 ? '#d97706' : '#dc2626'
-  const bgColor = rate >= 75 ? '#dcfce7' : rate >= 50 ? '#fef3c7' : '#fee2e2'
   const label = rate >= 75 ? 'Bonne acquisition' : rate >= 50 ? 'Acquisition partielle' : 'À renforcer'
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-      <div style={{
-        width: 80, height: 80, borderRadius: '50%',
-        background: bgColor, border: `3px solid ${color}`,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <span style={{ fontSize: 22, fontWeight: 800, color, lineHeight: 1 }}>{rate}%</span>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>Taux d'acquisition global</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <span style={{ fontSize: 28, fontWeight: 800, color }}>{rate}%</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color }}>{label}</span>
+        </div>
       </div>
-      <div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>
-          Taux d'acquisition global
-        </div>
-        <div style={{ fontSize: 13, color, fontWeight: 600 }}>{label}</div>
-        <div style={{ marginTop: 8, height: 6, width: 200, background: '#e2e8f0', borderRadius: 99, overflow: 'hidden' }}>
-          <div style={{ width: `${rate}%`, height: '100%', background: color, borderRadius: 99, transition: 'width .5s' }} />
-        </div>
+      <div style={{ height: 10, background: '#e2e8f0', borderRadius: 99, overflow: 'hidden' }}>
+        <div style={{ width: `${rate}%`, height: '100%', background: color, borderRadius: 99, transition: 'width .5s' }} />
       </div>
     </div>
   )
@@ -82,11 +72,20 @@ function RateCircle({ rate }) {
 
 // ── Fiche formé ───────────────────────────────────────────────────
 
+const APPRECIATIONS = [
+  { key: 'tres-bon',        label: 'Je pense que ça peut être un très bon élément',             color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0' },
+  { key: 'accompagnement',  label: 'Aura vraiment besoin d\'accompagnement mais ça ira !',       color: '#d97706', bg: '#fef3c7', border: '#fde68a' },
+  { key: 'complique',       label: 'Je pense que ça va être très compliqué',                    color: '#dc2626', bg: '#fee2e2', border: '#fecaca' },
+]
+
 function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
-  const [quizData, setQuizData]       = useState([])
-  const [assessments, setAssessments] = useState({})
-  const [saving, setSaving]           = useState(false)
-  const [loading, setLoading]         = useState(true)
+  const [quizData, setQuizData]           = useState([])
+  const [assessments, setAssessments]     = useState({})
+  const [attitude, setAttitude]           = useState('')
+  const [comprehension, setComprehension] = useState('')
+  const [appreciation, setAppreciation]   = useState(null)
+  const [saving, setSaving]               = useState(false)
+  const [loading, setLoading]             = useState(true)
   const themes = CATEGORY_META[categoryKey]?.themes || THEMES_FRANCE
   const name = entree.fullName || `${entree.nom} ${entree.prenom}`.trim()
 
@@ -109,6 +108,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
       setQuizData(Object.values(byModule))
       const snap = reportRow?.[0]?.stats_snapshot || {}
       setAssessments(snap.theme_assessments || {})
+      setAttitude(snap.commentaire_attitude || '')
+      setComprehension(snap.commentaire_comprehension || '')
+      setAppreciation(snap.appreciation || null)
     } catch (e) {
       console.error('[RetourFormation] loadData', e)
     } finally {
@@ -118,9 +120,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
 
   useEffect(() => { loadData() }, [loadData])
 
-  const setThemeStatus = async (moduleId, status) => {
-    const next = { ...assessments, [moduleId]: status === assessments[moduleId] ? null : status }
-    setAssessments(next)
+  const saveSnapshot = async (patch) => {
     setSaving(true)
     try {
       await sbUpsert(
@@ -130,7 +130,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
           week_date: weekDate,
           trainer_name: trainerName,
           status: 'draft',
-          stats_snapshot: { theme_assessments: next },
+          stats_snapshot: patch,
           updated_at: new Date().toISOString(),
         },
         'collaborateur,week_date,trainer_name'
@@ -140,6 +140,28 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
     } finally {
       setSaving(false)
     }
+  }
+
+  const setThemeStatus = async (moduleId, status) => {
+    const next = { ...assessments, [moduleId]: status === assessments[moduleId] ? null : status }
+    setAssessments(next)
+    await saveSnapshot({ theme_assessments: next, commentaire_attitude: attitude, commentaire_comprehension: comprehension, appreciation })
+  }
+
+  const saveAttitude = async (val) => {
+    setAttitude(val)
+    await saveSnapshot({ theme_assessments: assessments, commentaire_attitude: val, commentaire_comprehension: comprehension, appreciation })
+  }
+
+  const saveComprehension = async (val) => {
+    setComprehension(val)
+    await saveSnapshot({ theme_assessments: assessments, commentaire_attitude: attitude, commentaire_comprehension: val, appreciation })
+  }
+
+  const toggleAppreciation = async (key) => {
+    const next = appreciation === key ? null : key
+    setAppreciation(next)
+    await saveSnapshot({ theme_assessments: assessments, commentaire_attitude: attitude, commentaire_comprehension: comprehension, appreciation: next })
   }
 
   const rate = computeRate(assessments)
@@ -254,7 +276,99 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
 
       {/* Global rate */}
       <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '20px 22px' }}>
-        <RateCircle rate={rate} />
+        <RateBar rate={rate} />
+      </section>
+
+      {/* Commentaires */}
+      <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Commentaires du formateur
+          </span>
+          {saving && <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sauvegarde…</span>}
+        </div>
+        <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
+              Attitude générale
+            </label>
+            <textarea
+              value={attitude}
+              onChange={e => setAttitude(e.target.value)}
+              onBlur={e => saveAttitude(e.target.value)}
+              placeholder="Comportement, implication, dynamisme, participation…"
+              rows={3}
+              style={{
+                width: '100%', padding: '10px 12px', borderRadius: 10,
+                border: '1.5px solid #e2e8f0', background: '#f8fafc',
+                fontSize: 13, color: '#1e293b', resize: 'vertical',
+                fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+                transition: 'border-color .15s',
+              }}
+              onFocus={e => { e.target.style.borderColor = '#94a3b8' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
+              Compréhension des contenus
+            </label>
+            <textarea
+              value={comprehension}
+              onChange={e => setComprehension(e.target.value)}
+              onBlur={e => saveComprehension(e.target.value)}
+              placeholder="Niveau de compréhension, points forts, difficultés rencontrées…"
+              rows={3}
+              style={{
+                width: '100%', padding: '10px 12px', borderRadius: 10,
+                border: '1.5px solid #e2e8f0', background: '#f8fafc',
+                fontSize: 13, color: '#1e293b', resize: 'vertical',
+                fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+                transition: 'border-color .15s',
+              }}
+              onFocus={e => { e.target.style.borderColor = '#94a3b8' }}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Appréciation globale */}
+      <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Appréciation globale
+          </span>
+        </div>
+        <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {APPRECIATIONS.map(opt => {
+            const active = appreciation === opt.key
+            return (
+              <button
+                key={opt.key}
+                onClick={() => toggleAppreciation(opt.key)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
+                  border: `2px solid ${active ? opt.border : '#e2e8f0'}`,
+                  background: active ? opt.bg : '#fff',
+                  textAlign: 'left', width: '100%', transition: 'all .15s',
+                  boxShadow: active ? `0 2px 8px ${opt.border}` : 'none',
+                }}
+              >
+                <div style={{
+                  width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                  border: `2px solid ${active ? opt.color : '#cbd5e1'}`,
+                  background: active ? opt.color : '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {active && <span style={{ fontSize: 12, color: '#fff', fontWeight: 700 }}>✓</span>}
+                </div>
+                <span style={{ fontSize: 14, fontWeight: active ? 700 : 500, color: active ? opt.color : '#475569', lineHeight: 1.4 }}>
+                  {opt.label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </section>
     </div>
   )
