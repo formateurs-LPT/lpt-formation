@@ -98,13 +98,23 @@ export async function sbUpsert(table, data, onConflict) {
   const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(data) })
   if (!r.ok) {
     const err = await r.json().catch(() => ({}))
-    console.error(
-      'sbUpsert error',
-      table,
-      r.status,
-      err?.message || err?.hint || err?.details || err?.code || err
-    )
+    const msg = err?.message || err?.hint || err?.details || err?.code || JSON.stringify(err)
+    console.error('sbUpsert error', table, r.status, msg)
     return null
+  }
+  return await r.json()
+}
+
+export async function sbUpsertOrThrow(table, data, onConflict) {
+  let url = `${SB_URL}/rest/v1/${table}`
+  if (onConflict) url += '?on_conflict=' + onConflict
+  const headers = { ...sbHeaders(), Prefer: 'resolution=merge-duplicates,return=representation' }
+  const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(data) })
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}))
+    const msg = err?.message || err?.hint || err?.details || err?.code || `HTTP ${r.status}`
+    console.error('sbUpsertOrThrow error', table, r.status, msg)
+    throw new Error(msg)
   }
   return await r.json()
 }

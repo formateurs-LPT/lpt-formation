@@ -7,7 +7,7 @@ import {
   getTvUrlRoomCode,
 } from './sessionCode'
 import { archiveAndPurgeRoom } from './roomArchive'
-import { getTrainerFromDB, sbSelect, sbUpdate, sbUpsert, setRoomSharedState } from './supabase'
+import { getTrainerFromDB, sbSelect, sbUpdate, sbUpsert, sbUpsertOrThrow, setRoomSharedState } from './supabase'
 
 const ROOM_CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const OPEN_ROOM_STATUSES = new Set(['waiting', 'active'])
@@ -165,8 +165,7 @@ export async function openOrCreateRoom({
     updated_at: now,
   }
 
-  const result = await sbUpsert('sessions', row, 'code')
-  if (!result) throw new Error('Impossible de créer la salle en base')
+  const result = await sbUpsertOrThrow('sessions', row, 'code')
 
   setTrainerActiveRoomCode(code)
   await setRoomSharedState({ tv_screen: 'qr' }, code)

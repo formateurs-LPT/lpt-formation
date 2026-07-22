@@ -1052,7 +1052,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
       onOpenRoom?.({ code: result.code, resumed: !result.created, created: result.created })
     } catch (e) {
       console.error(e)
-      onToast?.('Impossible d\'ouvrir la salle')
+      onToast?.(`Impossible d'ouvrir la salle — ${e.message || 'erreur inconnue'}`)
     } finally {
       setRoomLoading(false)
     }
