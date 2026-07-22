@@ -564,6 +564,24 @@ export default function PeerQuizTrainer({ sessionCode, onBack }) {
     setAnswerCorrect(null)
   }
 
+  const skipTurn = async () => {
+    // Cherche parmi ceux qui ont déjà répondu (history) et ont des questions restantes
+    const withQ = participants.filter(p =>
+      p !== asker && (allQuestions[p] || []).filter(q => !q.used).length > 0
+    )
+    const fromHistory = withQ.filter(p => history.includes(p))
+    const pool = fromHistory.length > 0 ? fromHistory : withQ
+    if (pool.length === 0) return
+    const newAsker = pool[Math.floor(Math.random() * pool.length)]
+    await setSharedState({
+      pq_asker: newAsker,
+      pq_designated: null,
+      pq_question_id: null,
+      pq_question_text: null,
+      pq_edit_request: null,
+    })
+  }
+
   const requestEdit = async () => {
     if (!asker || !qId) return
     await setSharedState({ pq_edit_request: { author: asker, id: qId } })
@@ -703,6 +721,27 @@ export default function PeerQuizTrainer({ sessionCode, onBack }) {
               ) : (
                 <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginBottom: 16 }}>
                   {!designated ? `${asker} choisit…` : `${asker} choisit une question…`}
+                </div>
+              )}
+
+              {/* Alerte si l'asker n'a plus de questions */}
+              {!designated && asker && (allQuestions[asker] || []).filter(q => !q.used).length === 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, marginBottom: 12 }}>
+                  <span style={{ fontSize: 18 }}>⚠️</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#f87171', marginBottom: 2 }}>
+                      {asker} n'a plus de questions disponibles
+                    </div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                      Passez le tour — un autre formé (déjà passé, avec des questions restantes) sera tiré au sort
+                    </div>
+                  </div>
+                  <button
+                    onClick={skipTurn}
+                    style={{ flexShrink: 0, padding: '9px 16px', borderRadius: 10, background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    Passer →
+                  </button>
                 </div>
               )}
 
