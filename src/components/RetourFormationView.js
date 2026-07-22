@@ -73,19 +73,27 @@ function RateBar({ rate }) {
 // ── Fiche formé ───────────────────────────────────────────────────
 
 const APPRECIATIONS = [
-  { key: 'tres-bon',        label: 'Je pense que ça peut être un très bon élément',             color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0' },
-  { key: 'accompagnement',  label: 'Aura vraiment besoin d\'accompagnement mais ça ira !',       color: '#d97706', bg: '#fef3c7', border: '#fde68a' },
-  { key: 'complique',       label: 'Je pense que ça va être très compliqué',                    color: '#dc2626', bg: '#fee2e2', border: '#fecaca' },
+  { key: 'tres-bon',       label: 'Je pense que ça peut être un très bon élément',          solidBg: '#16a34a' },
+  { key: 'accompagnement', label: "Aura vraiment besoin d'accompagnement mais ça ira !",    solidBg: '#d97706' },
+  { key: 'complique',      label: 'Je pense que ça va être très compliqué',                 solidBg: '#dc2626' },
+]
+
+const COMMENTAIRE_OPTS = [
+  { key: 'ras',            label: 'Rien à signaler', color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0' },
+  { key: 'peut-mieux',    label: 'Peut mieux faire', color: '#d97706', bg: '#fef3c7', border: '#fde68a' },
+  { key: 'attention',     label: 'Attention',         color: '#dc2626', bg: '#fee2e2', border: '#fecaca' },
 ]
 
 function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
-  const [quizData, setQuizData]           = useState([])
-  const [assessments, setAssessments]     = useState({})
-  const [attitude, setAttitude]           = useState('')
-  const [comprehension, setComprehension] = useState('')
-  const [appreciation, setAppreciation]   = useState(null)
-  const [saving, setSaving]               = useState(false)
-  const [loading, setLoading]             = useState(true)
+  const [quizData, setQuizData]                 = useState([])
+  const [assessments, setAssessments]           = useState({})
+  const [attitudeStatus, setAttitudeStatus]     = useState(null)
+  const [attitudeNote, setAttitudeNote]         = useState('')
+  const [comprehensionStatus, setComprehensionStatus] = useState(null)
+  const [comprehensionNote, setComprehensionNote]     = useState('')
+  const [appreciation, setAppreciation]         = useState(null)
+  const [saving, setSaving]                     = useState(false)
+  const [loading, setLoading]                   = useState(true)
   const themes = CATEGORY_META[categoryKey]?.themes || THEMES_FRANCE
   const name = entree.fullName || `${entree.nom} ${entree.prenom}`.trim()
 
@@ -108,8 +116,10 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
       setQuizData(Object.values(byModule))
       const snap = reportRow?.[0]?.stats_snapshot || {}
       setAssessments(snap.theme_assessments || {})
-      setAttitude(snap.commentaire_attitude || '')
-      setComprehension(snap.commentaire_comprehension || '')
+      setAttitudeStatus(snap.attitude_status || null)
+      setAttitudeNote(snap.attitude_note || '')
+      setComprehensionStatus(snap.comprehension_status || null)
+      setComprehensionNote(snap.comprehension_note || '')
       setAppreciation(snap.appreciation || null)
     } catch (e) {
       console.error('[RetourFormation] loadData', e)
@@ -119,6 +129,16 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
   }, [name, weekDate, trainerName])
 
   useEffect(() => { loadData() }, [loadData])
+
+  const buildSnap = (overrides = {}) => ({
+    theme_assessments: assessments,
+    attitude_status: attitudeStatus,
+    attitude_note: attitudeNote,
+    comprehension_status: comprehensionStatus,
+    comprehension_note: comprehensionNote,
+    appreciation,
+    ...overrides,
+  })
 
   const saveSnapshot = async (patch) => {
     setSaving(true)
@@ -145,23 +165,39 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
   const setThemeStatus = async (moduleId, status) => {
     const next = { ...assessments, [moduleId]: status === assessments[moduleId] ? null : status }
     setAssessments(next)
-    await saveSnapshot({ theme_assessments: next, commentaire_attitude: attitude, commentaire_comprehension: comprehension, appreciation })
+    await saveSnapshot(buildSnap({ theme_assessments: next }))
   }
 
-  const saveAttitude = async (val) => {
-    setAttitude(val)
-    await saveSnapshot({ theme_assessments: assessments, commentaire_attitude: val, commentaire_comprehension: comprehension, appreciation })
+  const handleAttitudeStatus = async (key) => {
+    const next = attitudeStatus === key ? null : key
+    const note = next === 'ras' ? '' : attitudeNote
+    setAttitudeStatus(next)
+    if (next === 'ras') setAttitudeNote('')
+    await saveSnapshot(buildSnap({ attitude_status: next, attitude_note: note }))
   }
 
-  const saveComprehension = async (val) => {
-    setComprehension(val)
-    await saveSnapshot({ theme_assessments: assessments, commentaire_attitude: attitude, commentaire_comprehension: val, appreciation })
+  const handleAttitudeNote = async (val) => {
+    setAttitudeNote(val)
+    await saveSnapshot(buildSnap({ attitude_note: val }))
+  }
+
+  const handleComprehensionStatus = async (key) => {
+    const next = comprehensionStatus === key ? null : key
+    const note = next === 'ras' ? '' : comprehensionNote
+    setComprehensionStatus(next)
+    if (next === 'ras') setComprehensionNote('')
+    await saveSnapshot(buildSnap({ comprehension_status: next, comprehension_note: note }))
+  }
+
+  const handleComprehensionNote = async (val) => {
+    setComprehensionNote(val)
+    await saveSnapshot(buildSnap({ comprehension_note: val }))
   }
 
   const toggleAppreciation = async (key) => {
     const next = appreciation === key ? null : key
     setAppreciation(next)
-    await saveSnapshot({ theme_assessments: assessments, commentaire_attitude: attitude, commentaire_comprehension: comprehension, appreciation: next })
+    await saveSnapshot(buildSnap({ appreciation: next }))
   }
 
   const rate = computeRate(assessments)
@@ -287,47 +323,94 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
           </span>
           {saving && <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sauvegarde…</span>}
         </div>
-        <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Attitude */}
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
-              Attitude générale
-            </label>
-            <textarea
-              value={attitude}
-              onChange={e => setAttitude(e.target.value)}
-              onBlur={e => saveAttitude(e.target.value)}
-              placeholder="Comportement, implication, dynamisme, participation…"
-              rows={3}
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: 10,
-                border: '1.5px solid #e2e8f0', background: '#f8fafc',
-                fontSize: 13, color: '#1e293b', resize: 'vertical',
-                fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
-                transition: 'border-color .15s',
-              }}
-              onFocus={e => { e.target.style.borderColor = '#94a3b8' }}
-            />
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>Attitude générale</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              {COMMENTAIRE_OPTS.map(opt => {
+                const active = attitudeStatus === opt.key
+                return (
+                  <button
+                    key={opt.key}
+                    onClick={() => handleAttitudeStatus(opt.key)}
+                    style={{
+                      flex: 1, padding: '9px 6px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                      cursor: 'pointer', transition: 'all .15s',
+                      border: `1.5px solid ${active ? opt.border : '#e2e8f0'}`,
+                      background: active ? opt.bg : '#fff',
+                      color: active ? opt.color : '#94a3b8',
+                      boxShadow: active ? `0 1px 4px ${opt.border}` : 'none',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+            {attitudeStatus && attitudeStatus !== 'ras' && (
+              <textarea
+                value={attitudeNote}
+                onChange={e => setAttitudeNote(e.target.value)}
+                onBlur={e => handleAttitudeNote(e.target.value)}
+                placeholder="Précisez ce que vous avez observé…"
+                rows={3}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 10,
+                  border: '1.5px solid #e2e8f0', background: '#f8fafc',
+                  fontSize: 13, color: '#1e293b', resize: 'vertical',
+                  fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+                }}
+                onFocus={e => { e.target.style.borderColor = '#94a3b8' }}
+                onBlurCapture={e => { e.target.style.borderColor = '#e2e8f0' }}
+              />
+            )}
           </div>
+
+          {/* Compréhension */}
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
-              Compréhension des contenus
-            </label>
-            <textarea
-              value={comprehension}
-              onChange={e => setComprehension(e.target.value)}
-              onBlur={e => saveComprehension(e.target.value)}
-              placeholder="Niveau de compréhension, points forts, difficultés rencontrées…"
-              rows={3}
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: 10,
-                border: '1.5px solid #e2e8f0', background: '#f8fafc',
-                fontSize: 13, color: '#1e293b', resize: 'vertical',
-                fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
-                transition: 'border-color .15s',
-              }}
-              onFocus={e => { e.target.style.borderColor = '#94a3b8' }}
-            />
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>Compréhension des contenus</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              {COMMENTAIRE_OPTS.map(opt => {
+                const active = comprehensionStatus === opt.key
+                return (
+                  <button
+                    key={opt.key}
+                    onClick={() => handleComprehensionStatus(opt.key)}
+                    style={{
+                      flex: 1, padding: '9px 6px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                      cursor: 'pointer', transition: 'all .15s',
+                      border: `1.5px solid ${active ? opt.border : '#e2e8f0'}`,
+                      background: active ? opt.bg : '#fff',
+                      color: active ? opt.color : '#94a3b8',
+                      boxShadow: active ? `0 1px 4px ${opt.border}` : 'none',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+            {comprehensionStatus && comprehensionStatus !== 'ras' && (
+              <textarea
+                value={comprehensionNote}
+                onChange={e => setComprehensionNote(e.target.value)}
+                onBlur={e => handleComprehensionNote(e.target.value)}
+                placeholder="Précisez ce que vous avez observé…"
+                rows={3}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 10,
+                  border: '1.5px solid #e2e8f0', background: '#f8fafc',
+                  fontSize: 13, color: '#1e293b', resize: 'vertical',
+                  fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+                }}
+                onFocus={e => { e.target.style.borderColor = '#94a3b8' }}
+                onBlurCapture={e => { e.target.style.borderColor = '#e2e8f0' }}
+              />
+            )}
           </div>
+
         </div>
       </section>
 
@@ -338,7 +421,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
             Appréciation globale
           </span>
         </div>
-        <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ padding: '14px 18px', display: 'flex', gap: 10 }}>
           {APPRECIATIONS.map(opt => {
             const active = appreciation === opt.key
             return (
@@ -346,25 +429,17 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
                 key={opt.key}
                 onClick={() => toggleAppreciation(opt.key)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
-                  border: `2px solid ${active ? opt.border : '#e2e8f0'}`,
-                  background: active ? opt.bg : '#fff',
-                  textAlign: 'left', width: '100%', transition: 'all .15s',
-                  boxShadow: active ? `0 2px 8px ${opt.border}` : 'none',
+                  flex: 1, padding: '16px 8px', borderRadius: 14, cursor: 'pointer',
+                  border: `2px solid ${active ? opt.solidBg : '#e2e8f0'}`,
+                  background: active ? opt.solidBg : '#fff',
+                  color: active ? '#fff' : '#94a3b8',
+                  fontWeight: active ? 700 : 500, fontSize: 12,
+                  lineHeight: 1.4, textAlign: 'center', transition: 'all .18s',
+                  boxShadow: active ? `0 4px 14px ${opt.solidBg}55` : 'none',
+                  fontFamily: 'inherit',
                 }}
               >
-                <div style={{
-                  width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                  border: `2px solid ${active ? opt.color : '#cbd5e1'}`,
-                  background: active ? opt.color : '#fff',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {active && <span style={{ fontSize: 12, color: '#fff', fontWeight: 700 }}>✓</span>}
-                </div>
-                <span style={{ fontSize: 14, fontWeight: active ? 700 : 500, color: active ? opt.color : '#475569', lineHeight: 1.4 }}>
-                  {opt.label}
-                </span>
+                {opt.label}
               </button>
             )
           })}
