@@ -165,7 +165,21 @@ export async function openOrCreateRoom({
     updated_at: now,
   }
 
-  const result = await sbUpsertOrThrow('sessions', row, 'code')
+  // Si certaines colonnes optionnelles (room_type, label, trainer_id, started_at, updated_at)
+  // n'existent pas encore en BDD, on retente avec les colonnes de base uniquement.
+  let result
+  try {
+    result = await sbUpsertOrThrow('sessions', row, 'code')
+  } catch {
+    result = await sbUpsertOrThrow('sessions', {
+      code,
+      status: 'active',
+      current_step: -1,
+      active_scenario: 0,
+      active_module: null,
+      module_page: 0,
+    }, 'code')
+  }
 
   setTrainerActiveRoomCode(code)
   await setRoomSharedState({ tv_screen: 'qr' }, code)
