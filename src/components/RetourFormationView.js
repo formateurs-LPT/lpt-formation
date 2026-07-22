@@ -236,18 +236,16 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
   const sendToManager = () => {
     if (!managers.length || !reportUrl) return
     const emails = managers.map(m => m.email).join(',')
-    const greeting = managers.length > 1
-      ? managers.map(m => m.name).join(' et ')
-      : (managers[0].name || 'Madame, Monsieur')
-    const subject = encodeURIComponent(`Compte rendu de formation — ${name}`)
+    const prenom = entree.prenom || name.split(' ')[0]
+    const subject = encodeURIComponent(`Retour formation ${prenom}`)
     const body = encodeURIComponent(
-      `Bonjour ${greeting},\n\n` +
-      `Veuillez trouver ci-dessous le compte rendu de formation de ${name}, ` +
-      `formé(e) lors de la semaine du ${weekDate}.\n\n` +
-      `👉 Accéder au compte rendu :\n${reportUrl}\n\n` +
-      `Ce document vous permettra de suivre les thèmes acquis, en cours d'acquisition ` +
-      `et ceux à renforcer, afin d'accompagner au mieux votre nouveau collaborateur.\n\n` +
-      `Cordialement,\n${trainerName}\nFormateur — Lunettes Pour Tous`
+      `Hello,\n\n` +
+      `Voici le lien pour accéder au compte rendu de ${prenom} :\n\n` +
+      `${reportUrl}\n\n` +
+      `Si tu as des questions ou si tu veux qu'on échange à son sujet, je suis bien sûr disponible, n'hésite pas !\n\n` +
+      `Bonne journée à toi.\n\n` +
+      `${trainerName}\n` +
+      `Formateur — Lunettes Pour Tous`
     )
     window.location.href = `mailto:${emails}?subject=${subject}&body=${body}`
   }
