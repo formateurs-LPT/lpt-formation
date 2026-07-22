@@ -56,7 +56,7 @@ function computeRate(assessments) {
 
 function RateBar({ rate }) {
   if (rate === null) return (
-    <div style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>
+    <div style={{ fontSize: 13, color: '#64748b', fontStyle: 'italic' }}>
       Remplissez les thèmes ci-dessus pour calculer le taux d'acquisition
     </div>
   )
@@ -65,13 +65,13 @@ function RateBar({ rate }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>Taux d'acquisition global</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>Taux d'acquisition global</div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
           <span style={{ fontSize: 28, fontWeight: 800, color }}>{rate}%</span>
           <span style={{ fontSize: 12, fontWeight: 600, color }}>{label}</span>
         </div>
       </div>
-      <div style={{ height: 10, background: '#e2e8f0', borderRadius: 99, overflow: 'hidden' }}>
+      <div style={{ height: 10, background: '#334155', borderRadius: 99, overflow: 'hidden' }}>
         <div style={{ width: `${rate}%`, height: '100%', background: color, borderRadius: 99, transition: 'width .5s' }} />
       </div>
     </div>
@@ -320,36 +320,37 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 32 }}>
 
       {/* Quiz results */}
-      <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Résultats aux Quiz
           </span>
         </div>
         <div style={{ padding: '12px 18px' }}>
           {quizData.length === 0 ? (
-            <div style={{ color: '#94a3b8', fontSize: 13, fontStyle: 'italic', padding: '8px 0' }}>
+            <div style={{ color: '#64748b', fontSize: 13, fontStyle: 'italic', padding: '8px 0' }}>
               Aucun résultat de quiz enregistré pour ce collaborateur.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {quizData.map(({ moduleId, label, score, total }) => {
                 const pct = total > 0 ? Math.round((score / total) * 100) : null
-                const barColor = pct === null ? '#cbd5e1' : pct >= 70 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626'
-                const badgeBg  = pct === null ? '#f1f5f9' : pct >= 70 ? '#dcfce7' : pct >= 50 ? '#fef3c7' : '#fee2e2'
+                const barColor = pct === null ? '#475569' : pct >= 70 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626'
+                const badgeBg  = pct === null ? '#334155' : pct >= 70 ? '#14532d' : pct >= 50 ? '#78350f' : '#7f1d1d'
+                const badgeColor = pct === null ? '#94a3b8' : barColor
                 return (
                   <div key={moduleId}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{label}</span>
                       <span style={{
-                        fontSize: 12, fontWeight: 700, color: barColor,
+                        fontSize: 12, fontWeight: 700, color: badgeColor,
                         background: badgeBg, borderRadius: 20, padding: '2px 10px',
                       }}>
                         {pct !== null ? `${score}/${total} — ${pct}%` : `${score}/${total}`}
                       </span>
                     </div>
                     {total > 0 && (
-                      <div style={{ height: 6, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden' }}>
+                      <div style={{ height: 6, background: '#334155', borderRadius: 99, overflow: 'hidden' }}>
                         <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: 99, transition: 'width .4s' }} />
                       </div>
                     )}
@@ -362,13 +363,13 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
       </section>
 
       {/* Theme assessments */}
-      <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Thèmes abordés
           </span>
           {saving && (
-            <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sauvegarde…</span>
+            <span style={{ fontSize: 11, color: '#475569', fontStyle: 'italic' }}>Sauvegarde…</span>
           )}
         </div>
         <div style={{ padding: '8px 0' }}>
@@ -383,14 +384,14 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '10px 18px',
-                  borderBottom: idx < themes.length - 1 ? '1px solid #f1f5f9' : 'none',
-                  background: activeSt ? `${activeSt.bg}66` : '#fff',
+                  borderBottom: idx < themes.length - 1 ? '1px solid #334155' : 'none',
+                  background: activeSt ? `${activeSt.color}18` : 'transparent',
                   transition: 'background .15s',
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{meta.label}</div>
-                  {meta.sub && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{meta.sub}</div>}
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{meta.label}</div>
+                  {meta.sub && <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{meta.sub}</div>}
                 </div>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                   {STATUS_OPTIONS.map(opt => {
@@ -403,9 +404,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
                         style={{
                           padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
                           cursor: 'pointer', transition: 'all .15s', whiteSpace: 'nowrap',
-                          border: `1.5px solid ${active ? opt.border : '#e2e8f0'}`,
-                          background: active ? opt.bg : '#fff',
-                          color: active ? opt.color : '#94a3b8',
+                          border: `1.5px solid ${active ? opt.border : '#334155'}`,
+                          background: active ? opt.bg : '#253247',
+                          color: active ? opt.color : '#64748b',
                           boxShadow: active ? `0 1px 3px ${opt.border}` : 'none',
                         }}
                       >
@@ -421,23 +422,23 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
       </section>
 
       {/* Global rate */}
-      <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '20px 22px' }}>
+      <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: '20px 22px' }}>
         <RateBar rate={rate} />
       </section>
 
       {/* Commentaires */}
-      <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Commentaires du formateur
           </span>
-          {saving && <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sauvegarde…</span>}
+          {saving && <span style={{ fontSize: 11, color: '#475569', fontStyle: 'italic' }}>Sauvegarde…</span>}
         </div>
         <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* Attitude */}
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>Attitude générale</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 10 }}>Attitude générale</div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
               {COMMENTAIRE_OPTS.map(opt => {
                 const active = attitudeStatus === opt.key
@@ -448,9 +449,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
                     style={{
                       flex: 1, padding: '9px 6px', borderRadius: 10, fontSize: 12, fontWeight: 700,
                       cursor: 'pointer', transition: 'all .15s',
-                      border: `1.5px solid ${active ? opt.border : '#e2e8f0'}`,
-                      background: active ? opt.bg : '#fff',
-                      color: active ? opt.color : '#94a3b8',
+                      border: `1.5px solid ${active ? opt.border : '#334155'}`,
+                      background: active ? opt.bg : '#253247',
+                      color: active ? opt.color : '#64748b',
                       boxShadow: active ? `0 1px 4px ${opt.border}` : 'none',
                     }}
                   >
@@ -468,19 +469,19 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
                 rows={3}
                 style={{
                   width: '100%', padding: '10px 12px', borderRadius: 10,
-                  border: '1.5px solid #e2e8f0', background: '#f8fafc',
-                  fontSize: 13, color: '#1e293b', resize: 'vertical',
+                  border: '1.5px solid #334155', background: '#0f172a',
+                  fontSize: 13, color: '#f1f5f9', resize: 'vertical',
                   fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
                 }}
-                onFocus={e => { e.target.style.borderColor = '#94a3b8' }}
-                onBlurCapture={e => { e.target.style.borderColor = '#e2e8f0' }}
+                onFocus={e => { e.target.style.borderColor = '#475569' }}
+                onBlurCapture={e => { e.target.style.borderColor = '#334155' }}
               />
             )}
           </div>
 
           {/* Compréhension */}
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>Compréhension des contenus</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 10 }}>Compréhension des contenus</div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
               {COMMENTAIRE_OPTS.map(opt => {
                 const active = comprehensionStatus === opt.key
@@ -491,9 +492,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
                     style={{
                       flex: 1, padding: '9px 6px', borderRadius: 10, fontSize: 12, fontWeight: 700,
                       cursor: 'pointer', transition: 'all .15s',
-                      border: `1.5px solid ${active ? opt.border : '#e2e8f0'}`,
-                      background: active ? opt.bg : '#fff',
-                      color: active ? opt.color : '#94a3b8',
+                      border: `1.5px solid ${active ? opt.border : '#334155'}`,
+                      background: active ? opt.bg : '#253247',
+                      color: active ? opt.color : '#64748b',
                       boxShadow: active ? `0 1px 4px ${opt.border}` : 'none',
                     }}
                   >
@@ -511,12 +512,12 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
                 rows={3}
                 style={{
                   width: '100%', padding: '10px 12px', borderRadius: 10,
-                  border: '1.5px solid #e2e8f0', background: '#f8fafc',
-                  fontSize: 13, color: '#1e293b', resize: 'vertical',
+                  border: '1.5px solid #334155', background: '#0f172a',
+                  fontSize: 13, color: '#f1f5f9', resize: 'vertical',
                   fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
                 }}
-                onFocus={e => { e.target.style.borderColor = '#94a3b8' }}
-                onBlurCapture={e => { e.target.style.borderColor = '#e2e8f0' }}
+                onFocus={e => { e.target.style.borderColor = '#475569' }}
+                onBlurCapture={e => { e.target.style.borderColor = '#334155' }}
               />
             )}
           </div>
@@ -525,9 +526,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
       </section>
 
       {/* Appréciation globale */}
-      <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Appréciation globale
           </span>
         </div>
@@ -540,9 +541,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
                 onClick={() => toggleAppreciation(opt.key)}
                 style={{
                   flex: 1, padding: '16px 8px', borderRadius: 14, cursor: 'pointer',
-                  border: `2px solid ${active ? opt.solidBg : '#e2e8f0'}`,
-                  background: active ? opt.solidBg : '#fff',
-                  color: active ? '#fff' : '#94a3b8',
+                  border: `2px solid ${active ? opt.solidBg : '#334155'}`,
+                  background: active ? opt.solidBg : '#253247',
+                  color: active ? '#fff' : '#64748b',
                   fontWeight: active ? 700 : 500, fontSize: 12,
                   lineHeight: 1.4, textAlign: 'center', transition: 'all .18s',
                   boxShadow: active ? `0 4px 14px ${opt.solidBg}55` : 'none',
@@ -557,12 +558,12 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
       </section>
 
       {/* Commentaire libre formateur */}
-      <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Mot du formateur
           </span>
-          {saving && <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sauvegarde…</span>}
+          {saving && <span style={{ fontSize: 11, color: '#475569', fontStyle: 'italic' }}>Sauvegarde…</span>}
         </div>
         <div style={{ padding: '14px 18px' }}>
           <textarea
@@ -577,12 +578,12 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
             rows={4}
             style={{
               width: '100%', padding: '10px 12px', borderRadius: 10,
-              border: '1.5px solid #e2e8f0', background: '#f8fafc',
-              fontSize: 13, color: '#1e293b', resize: 'vertical',
+              border: '1.5px solid #334155', background: '#0f172a',
+              fontSize: 13, color: '#f1f5f9', resize: 'vertical',
               fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', lineHeight: 1.6,
             }}
-            onFocus={e => { e.target.style.borderColor = '#94a3b8' }}
-            onBlurCapture={e => { e.target.style.borderColor = '#e2e8f0' }}
+            onFocus={e => { e.target.style.borderColor = '#475569' }}
+            onBlurCapture={e => { e.target.style.borderColor = '#334155' }}
           />
         </div>
       </section>
@@ -593,7 +594,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
           onClick={() => setShowReport(true)}
           style={{
             flex: 1, padding: '14px 16px', borderRadius: 14,
-            background: '#0f172a', color: '#fff', border: 'none',
+            background: '#334155', color: '#f1f5f9', border: 'none',
             fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}
@@ -617,8 +618,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
         ) : (
           <div style={{
             flex: 1, padding: '14px 16px', borderRadius: 14,
-            background: '#f8fafc', border: '1.5px dashed #e2e8f0',
-            fontSize: 12, color: '#94a3b8', fontWeight: 500,
+            background: '#1e293b', border: '1.5px dashed #334155',
+            fontSize: 12, color: '#475569', fontWeight: 500,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}>
             ✉️ Manager non renseigné
@@ -724,17 +725,17 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
           }}
         >
           <div style={{
-            background: '#fff', borderRadius: 20, width: '100%', maxWidth: 480,
-            boxShadow: '0 24px 64px rgba(0,0,0,0.25)', overflow: 'hidden',
+            background: '#1e293b', borderRadius: 20, width: '100%', maxWidth: 480,
+            boxShadow: '0 24px 64px rgba(0,0,0,0.5)', overflow: 'hidden',
           }}>
             {/* Header modale */}
             <div style={{
               padding: '20px 24px 16px',
-              borderBottom: '1px solid #f1f5f9',
+              borderBottom: '1px solid #334155',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#f1f5f9' }}>
                   ✉️ Envoyer tous les comptes rendus
                 </div>
                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
@@ -744,8 +745,8 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
               <button
                 onClick={() => setShowSendAll(false)}
                 style={{
-                  background: '#f1f5f9', border: 'none', borderRadius: 8,
-                  width: 32, height: 32, cursor: 'pointer', fontSize: 16,
+                  background: '#334155', border: 'none', borderRadius: 8,
+                  width: 32, height: 32, cursor: 'pointer', fontSize: 16, color: '#94a3b8',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
                 }}
@@ -755,7 +756,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
             {/* Liste des groupes */}
             <div style={{ padding: '12px 16px', maxHeight: '60vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
               {sendAllGroups.length === 0 && (
-                <div style={{ padding: '20px 0', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                <div style={{ padding: '20px 0', textAlign: 'center', color: '#64748b', fontSize: 13 }}>
                   Aucun manager renseigné pour les formés de cette session.
                 </div>
               )}
@@ -767,14 +768,14 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
                   <div
                     key={group.emailKey}
                     style={{
-                      background: sent ? '#f0fdf4' : '#f8fafc',
-                      border: `1.5px solid ${sent ? '#bbf7d0' : '#e2e8f0'}`,
+                      background: sent ? '#14532d33' : '#253247',
+                      border: `1.5px solid ${sent ? '#16a34a55' : '#334155'}`,
                       borderRadius: 14, padding: '14px 16px',
                       display: 'flex', alignItems: 'center', gap: 14,
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9', marginBottom: 2 }}>
                         {group.managers.map(m => m.name).join(' & ')}
                       </div>
                       <div style={{ fontSize: 12, color: '#64748b' }}>
@@ -803,13 +804,13 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
               {/* Formés sans manager connu */}
               {noManagerEntrees.length > 0 && (
                 <div style={{
-                  background: '#fffbeb', border: '1.5px solid #fde68a',
+                  background: '#78350f22', border: '1.5px solid #78350f66',
                   borderRadius: 14, padding: '12px 16px',
                 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', marginBottom: 4 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24', marginBottom: 4 }}>
                     Manager non renseigné
                   </div>
-                  <div style={{ fontSize: 12, color: '#78350f' }}>
+                  <div style={{ fontSize: 12, color: '#d97706' }}>
                     {noManagerEntrees.map(e => e.prenom || (e.fullName || `${e.nom} ${e.prenom}`).trim().split(' ')[0]).join(', ')}
                   </div>
                 </div>
@@ -817,13 +818,13 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
             </div>
 
             {/* Footer */}
-            <div style={{ padding: '12px 16px 16px', borderTop: '1px solid #f1f5f9' }}>
+            <div style={{ padding: '12px 16px 16px', borderTop: '1px solid #334155' }}>
               <button
                 onClick={() => setShowSendAll(false)}
                 style={{
                   width: '100%', padding: '12px', borderRadius: 12,
-                  background: '#f1f5f9', border: 'none', cursor: 'pointer',
-                  fontSize: 13, fontWeight: 600, color: '#475569', fontFamily: 'inherit',
+                  background: '#334155', border: 'none', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600, color: '#94a3b8', fontFamily: 'inherit',
                 }}
               >
                 Fermer
@@ -844,7 +845,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
           {catMeta.icon}
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 16 }}>{catMeta.label}</div>
+          <div style={{ fontWeight: 700, color: '#f1f5f9', fontSize: 16 }}>{catMeta.label}</div>
           <div style={{ fontSize: 12, color: '#64748b' }}>
             {filtered.length} collaborateur{filtered.length > 1 ? 's' : ''} · Semaine du {weekDate}
           </div>
@@ -879,9 +880,9 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
               onClick={() => setSelected(i)}
               style={{
                 flexShrink: 0, padding: '8px 18px', borderRadius: 99,
-                border: active ? `2px solid ${catMeta.color}` : '1.5px solid #e2e8f0',
-                background: active ? catMeta.color : '#fff',
-                color: active ? '#fff' : '#475569',
+                border: active ? `2px solid ${catMeta.color}` : '1.5px solid #334155',
+                background: active ? catMeta.color : '#253247',
+                color: active ? '#fff' : '#64748b',
                 fontWeight: active ? 700 : 500,
                 fontSize: 13, cursor: 'pointer', transition: 'all .15s',
                 whiteSpace: 'nowrap', boxShadow: active ? `0 2px 8px rgba(${catMeta.rgb},0.25)` : 'none',
@@ -931,32 +932,32 @@ function CategorySelector({ entrees, onSelect }) {
               key={key}
               onClick={() => onSelect(key)}
               style={{
-                background: '#fff',
-                border: '1.5px solid #e2e8f0',
+                background: '#1e293b',
+                border: '1.5px solid #334155',
                 borderTop: `4px solid ${meta.color}`,
                 borderRadius: 14, padding: '24px 18px', cursor: 'pointer',
                 textAlign: 'left', transition: 'all .18s',
                 display: 'flex', flexDirection: 'column', gap: 6,
-                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
               }}
-              onMouseOver={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-              onMouseOut={e => { e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.transform = 'translateY(0)' }}
+              onMouseOver={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.3)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseOut={e => { e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.2)'; e.currentTarget.style.transform = 'translateY(0)' }}
             >
               <span style={{ fontSize: 28, marginBottom: 2 }}>{meta.icon}</span>
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{meta.label}</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>{meta.label}</span>
               <span style={{ fontSize: 12, color: '#64748b' }}>{meta.sub}</span>
               <div style={{ marginTop: 6 }}>
                 {count > 0 ? (
                   <span style={{
                     display: 'inline-block', fontSize: 12, fontWeight: 700,
-                    color: meta.color, background: `rgba(${meta.rgb},0.1)`,
-                    border: `1px solid rgba(${meta.rgb},0.25)`,
+                    color: meta.color, background: `rgba(${meta.rgb},0.15)`,
+                    border: `1px solid rgba(${meta.rgb},0.3)`,
                     borderRadius: 20, padding: '3px 10px',
                   }}>
                     {count} formé{count > 1 ? 's' : ''}
                   </span>
                 ) : (
-                  <span style={{ fontSize: 12, color: '#cbd5e1' }}>Aucun formé</span>
+                  <span style={{ fontSize: 12, color: '#475569' }}>Aucun formé</span>
                 )}
               </div>
             </button>
@@ -992,18 +993,18 @@ export default function RetourFormationView({ onBack, pName }) {
   }, [])
 
   return (
-    <div id="dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: '#f8fafc' }}>
+    <div id="dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: '#0f172a' }}>
       {/* Header */}
       <div style={{
-        padding: '18px 24px', background: '#fff',
-        borderBottom: '1px solid #e2e8f0',
+        padding: '18px 24px', background: '#1e293b',
+        borderBottom: '1px solid #334155',
         display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0,
       }}>
         {!category && (
           <button className="detail-back" onClick={onBack}>← Tableau de bord</button>
         )}
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>📝 Retour de formation</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: '#f1f5f9' }}>📝 Retour de formation</div>
           <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
             Fiches de suivi · Semaine du {getWeekDate()}
           </div>
