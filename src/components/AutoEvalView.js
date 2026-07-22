@@ -1,7 +1,8 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { sbSelect, getSharedState, setSharedState } from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
+import { classifyMagasin } from '@/lib/formationCategories'
 import AutoEvalReport from './AutoEvalReport'
 
 function getWeekDate() {
@@ -153,9 +154,37 @@ export default function AutoEvalView({ onBack }) {
     setToggling(false)
   }
 
-  const submittedCount = Object.keys(responses).length
-  const totalCount     = entrees.length
-  const catMeta        = CATEGORIES.find(c => c.key === selectedCategory) || CATEGORIES[3]
+  const catMeta = CATEGORIES.find(c => c.key === selectedCategory) || CATEGORIES[3]
+
+  // Reset l'item ouvert si on change de catégorie
+  useEffect(() => { setExpanded(null) }, [selectedCategory])
+
+  // Correspondance catégorie UI → valeur classifyMagasin
+  const CAT_CLASSIFY = { presentiel: 'paris', visio: 'province', belgique: 'belgique' }
+
+  // Formés filtrés par catégorie sélectionnée
+  const filteredEntrees = useMemo(() => {
+    if (selectedCategory === 'tous') return entrees
+    const want = CAT_CLASSIFY[selectedCategory]
+    return entrees.filter(e => classifyMagasin(e.magasin) === want)
+  }, [entrees, selectedCategory])
+
+  // Noms des formés filtrés (pour filtrer les réponses)
+  const filteredNameSet = useMemo(() =>
+    new Set(filteredEntrees.map(e => e.fullName || `${e.nom} ${e.prenom}`.trim())),
+    [filteredEntrees]
+  )
+
+  // Réponses filtrées : uniquement les participants de la catégorie
+  const filteredResponses = useMemo(() => {
+    if (selectedCategory === 'tous') return responses
+    return Object.fromEntries(
+      Object.entries(responses).filter(([name]) => filteredNameSet.has(name))
+    )
+  }, [responses, selectedCategory, filteredNameSet])
+
+  const submittedCount = Object.keys(filteredResponses).length
+  const totalCount     = filteredEntrees.length
 
   return (
     <>
@@ -323,12 +352,12 @@ export default function AutoEvalView({ onBack }) {
                 <div style={{ padding: 24, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Chargement…</div>
               ) : (
                 <div>
-                  {entrees.length > 0 ? entrees.map((e, i) => {
+                  {filteredEntrees.length > 0 ? filteredEntrees.map((e, i) => {
                     const name = e.fullName || `${e.nom} ${e.prenom}`.trim()
-                    const done = !!responses[name]
+                    const done = !!filteredResponses[name]
                     const open = expanded === name
                     return (
-                      <div key={i} style={{ borderBottom: i < entrees.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                      <div key={i} style={{ borderBottom: i < filteredEntrees.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                         <div
                           onClick={() => done && setExpanded(open ? null : name)}
                           style={{
@@ -360,7 +389,7 @@ export default function AutoEvalView({ onBack }) {
                         </div>
                         {open && done && (
                           <div style={{ borderTop: '1px solid #f1f5f9' }}>
-                            <ResponseDetail snap={responses[name]} />
+                            <ResponseDetail snap={filteredResponses[name]} />
                           </div>
                         )}
                       </div>
@@ -375,16 +404,16 @@ export default function AutoEvalView({ onBack }) {
             </section>
           )}
 
-          {/* Réponses hors-liste */}
-          {Object.keys(responses).filter(n => !entrees.some(e => (e.fullName || `${e.nom} ${e.prenom}`.trim()) === n)).length > 0 && (
+          {/* Réponses hors-liste (uniquement pour "Tous" — quand catégorie spécifique, on ne sait pas classer les inconnus) */}
+          {selectedCategory === 'tous' && Object.keys(filteredResponses).filter(n => !filteredEntrees.some(e => (e.fullName || `${e.nom} ${e.prenom}`.trim()) === n)).length > 0 && (
             <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, overflow: 'hidden' }}>
               <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Autres réponses reçues
                 </span>
               </div>
-              {Object.keys(responses)
-                .filter(n => !entrees.some(e => (e.fullName || `${e.nom} ${e.prenom}`.trim()) === n))
+              {Object.keys(filteredResponses)
+                .filter(n => !filteredEntrees.some(e => (e.fullName || `${e.nom} ${e.prenom}`.trim()) === n))
                 .map((name, i, arr) => {
                   const open = expanded === name
                   return (
@@ -399,7 +428,7 @@ export default function AutoEvalView({ onBack }) {
                       </div>
                       {open && (
                         <div style={{ borderTop: '1px solid #f1f5f9' }}>
-                          <ResponseDetail snap={responses[name]} />
+                          <ResponseDetail snap={filteredResponses[name]} />
                         </div>
                       )}
                     </div>
