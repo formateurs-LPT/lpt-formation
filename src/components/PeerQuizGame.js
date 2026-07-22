@@ -511,7 +511,8 @@ export default function PeerQuizTrainer({ sessionCode, onBack }) {
     return () => clearInterval(iv)
   }, [load])
 
-  const phase      = sharedSt?.pq_phase
+  // On ne considère le jeu actif que si le formateur l'a explicitement lancé (tv_screen=peer-quiz)
+  const phase      = sharedSt?.tv_screen === 'peer-quiz' ? sharedSt?.pq_phase : null
   const asker      = sharedSt?.pq_asker
   const designated = sharedSt?.pq_designated
   const qText      = sharedSt?.pq_question_text
