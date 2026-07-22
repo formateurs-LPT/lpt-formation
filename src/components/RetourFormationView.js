@@ -23,9 +23,9 @@ const CATEGORY_META = {
 }
 
 const STATUS_OPTIONS = [
-  { key: 'acquis',     label: 'Acquis',      color: '#22c55e', bg: 'rgba(34,197,94,0.18)',   icon: '✓' },
-  { key: 'en-cours',   label: 'En cours',    color: '#f59e0b', bg: 'rgba(245,158,11,0.18)',  icon: '◑' },
-  { key: 'non-acquis', label: 'Non acquis',  color: '#ef4444', bg: 'rgba(239,68,68,0.18)',   icon: '✗' },
+  { key: 'acquis',     label: 'Acquis',     color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0', icon: '✓' },
+  { key: 'en-cours',   label: 'En cours',   color: '#d97706', bg: '#fef3c7', border: '#fde68a', icon: '◑' },
+  { key: 'non-acquis', label: 'Non acquis', color: '#dc2626', bg: '#fee2e2', border: '#fecaca', icon: '✗' },
 ]
 
 function effectiveCat(e) {
@@ -48,22 +48,34 @@ function computeRate(assessments) {
 
 function RateCircle({ rate }) {
   if (rate === null) return (
-    <div style={{ textAlign: 'center', color: 'var(--text-s)', fontSize: 13 }}>
-      Remplissez les thèmes pour calculer le taux
+    <div style={{ textAlign: 'center', padding: '20px 0' }}>
+      <div style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>
+        Remplissez les thèmes ci-dessus pour calculer le taux d'acquisition
+      </div>
     </div>
   )
-  const color = rate >= 75 ? '#22c55e' : rate >= 50 ? '#f59e0b' : '#ef4444'
+  const color = rate >= 75 ? '#16a34a' : rate >= 50 ? '#d97706' : '#dc2626'
+  const bgColor = rate >= 75 ? '#dcfce7' : rate >= 50 ? '#fef3c7' : '#fee2e2'
+  const label = rate >= 75 ? 'Bonne acquisition' : rate >= 50 ? 'Acquisition partielle' : 'À renforcer'
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
       <div style={{
-        width: 90, height: 90, borderRadius: '50%',
-        background: `conic-gradient(${color} ${rate * 3.6}deg, rgba(255,255,255,0.08) 0)`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: `0 0 0 4px rgba(0,0,0,0.3), inset 0 0 0 6px var(--card)`,
+        width: 80, height: 80, borderRadius: '50%',
+        background: bgColor, border: `3px solid ${color}`,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
       }}>
-        <span style={{ fontSize: 22, fontWeight: 800, color }}>{rate}%</span>
+        <span style={{ fontSize: 22, fontWeight: 800, color, lineHeight: 1 }}>{rate}%</span>
       </div>
-      <span style={{ fontSize: 12, color: 'var(--text-s)', fontWeight: 600 }}>Taux d'acquisition global</span>
+      <div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>
+          Taux d'acquisition global
+        </div>
+        <div style={{ fontSize: 13, color, fontWeight: 600 }}>{label}</div>
+        <div style={{ marginTop: 8, height: 6, width: 200, background: '#e2e8f0', borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{ width: `${rate}%`, height: '100%', background: color, borderRadius: 99, transition: 'width .5s' }} />
+        </div>
+      </div>
     </div>
   )
 }
@@ -71,10 +83,10 @@ function RateCircle({ rate }) {
 // ── Fiche formé ───────────────────────────────────────────────────
 
 function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
-  const [quizData, setQuizData]         = useState([])   // [{moduleId, label, score, total}]
-  const [assessments, setAssessments]   = useState({})   // { moduleId: 'acquis'|'en-cours'|'non-acquis'|null }
-  const [saving, setSaving]             = useState(false)
-  const [loading, setLoading]           = useState(true)
+  const [quizData, setQuizData]       = useState([])
+  const [assessments, setAssessments] = useState({})
+  const [saving, setSaving]           = useState(false)
+  const [loading, setLoading]         = useState(true)
   const themes = CATEGORY_META[categoryKey]?.themes || THEMES_FRANCE
   const name = entree.fullName || `${entree.nom} ${entree.prenom}`.trim()
 
@@ -85,8 +97,6 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
         sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(name)}`),
         sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&week_date=eq.${weekDate}&trainer_name=eq.${encodeURIComponent(trainerName)}&limit=1`),
       ])
-
-      // Quiz data — group by module_id, keep best score per module
       const byModule = {}
       for (const r of moduleRows || []) {
         const mid = r.module_id || r.module
@@ -97,8 +107,6 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
         if (!prev || sc > prev.score) byModule[mid] = { moduleId: mid, label: MODULE_DATA[mid]?.label || mid, score: sc, total: tot }
       }
       setQuizData(Object.values(byModule))
-
-      // Assessments from formation_report
       const snap = reportRow?.[0]?.stats_snapshot || {}
       setAssessments(snap.theme_assessments || {})
     } catch (e) {
@@ -137,75 +145,86 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
   const rate = computeRate(assessments)
 
   if (loading) return (
-    <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-s)' }}>Chargement…</div>
+    <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>Chargement…</div>
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 32 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 32 }}>
 
       {/* Quiz results */}
-      <section>
-        <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-s)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-          Résultats aux Quiz
-        </h3>
-        {quizData.length === 0 ? (
-          <div style={{ color: 'var(--text-s)', fontSize: 13, fontStyle: 'italic' }}>
-            Aucun résultat de quiz enregistré pour ce collaborateur.
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {quizData.map(({ moduleId, label, score, total }) => {
-              const pct = total > 0 ? Math.round((score / total) * 100) : null
-              const barColor = pct === null ? '#555' : pct >= 70 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444'
-              return (
-                <div key={moduleId} style={{
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)',
-                  borderRadius: 10, padding: '10px 14px',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: barColor }}>
-                      {pct !== null ? `${score}/${total} (${pct}%)` : `${score}/${total}`}
-                    </span>
-                  </div>
-                  {total > 0 && (
-                    <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: 4, transition: 'width .4s' }} />
+      <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Résultats aux Quiz
+          </span>
+        </div>
+        <div style={{ padding: '12px 18px' }}>
+          {quizData.length === 0 ? (
+            <div style={{ color: '#94a3b8', fontSize: 13, fontStyle: 'italic', padding: '8px 0' }}>
+              Aucun résultat de quiz enregistré pour ce collaborateur.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {quizData.map(({ moduleId, label, score, total }) => {
+                const pct = total > 0 ? Math.round((score / total) * 100) : null
+                const barColor = pct === null ? '#cbd5e1' : pct >= 70 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626'
+                const badgeBg  = pct === null ? '#f1f5f9' : pct >= 70 ? '#dcfce7' : pct >= 50 ? '#fef3c7' : '#fee2e2'
+                return (
+                  <div key={moduleId}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{label}</span>
+                      <span style={{
+                        fontSize: 12, fontWeight: 700, color: barColor,
+                        background: badgeBg, borderRadius: 20, padding: '2px 10px',
+                      }}>
+                        {pct !== null ? `${score}/${total} — ${pct}%` : `${score}/${total}`}
+                      </span>
                     </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
+                    {total > 0 && (
+                      <div style={{ height: 6, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden' }}>
+                        <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: 99, transition: 'width .4s' }} />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Theme assessments */}
-      <section>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-s)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Thèmes abordés
-          </h3>
-          {saving && <span style={{ fontSize: 11, color: 'var(--text-s)' }}>Sauvegarde…</span>}
+          </span>
+          {saving && (
+            <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sauvegarde…</span>
+          )}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {themes.map(moduleId => {
+        <div style={{ padding: '8px 0' }}>
+          {themes.map((moduleId, idx) => {
             const meta = MODULE_DATA[moduleId]
             if (!meta) return null
             const current = assessments[moduleId] || null
+            const activeSt = STATUS_OPTIONS.find(o => o.key === current)
             return (
-              <div key={moduleId} style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)',
-                borderRadius: 10, padding: '10px 12px',
-              }}>
+              <div
+                key={moduleId}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 18px',
+                  borderBottom: idx < themes.length - 1 ? '1px solid #f1f5f9' : 'none',
+                  background: activeSt ? `${activeSt.bg}66` : '#fff',
+                  transition: 'background .15s',
+                }}
+              >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {meta.label}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-s)' }}>{meta.sub}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{meta.label}</div>
+                  {meta.sub && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{meta.sub}</div>}
                 </div>
-                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                   {STATUS_OPTIONS.map(opt => {
                     const active = current === opt.key
                     return (
@@ -214,12 +233,12 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
                         onClick={() => setThemeStatus(moduleId, opt.key)}
                         title={opt.label}
                         style={{
-                          padding: '5px 10px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                          border: active ? `1.5px solid ${opt.color}` : '1px solid var(--border)',
-                          background: active ? opt.bg : 'transparent',
-                          color: active ? opt.color : 'var(--text-s)',
-                          transition: 'all .15s',
-                          whiteSpace: 'nowrap',
+                          padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                          cursor: 'pointer', transition: 'all .15s', whiteSpace: 'nowrap',
+                          border: `1.5px solid ${active ? opt.border : '#e2e8f0'}`,
+                          background: active ? opt.bg : '#fff',
+                          color: active ? opt.color : '#94a3b8',
+                          boxShadow: active ? `0 1px 3px ${opt.border}` : 'none',
                         }}
                       >
                         {opt.icon} {opt.label}
@@ -234,10 +253,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate }) {
       </section>
 
       {/* Global rate */}
-      <section style={{
-        background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)',
-        borderRadius: 16, padding: '24px 20px',
-      }}>
+      <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '20px 22px' }}>
         <RateCircle rate={rate} />
       </section>
     </div>
@@ -260,7 +276,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
   if (filtered.length === 0) return (
     <div style={{ padding: 40, textAlign: 'center' }}>
       <div style={{ fontSize: 40, marginBottom: 12 }}>{catMeta.icon}</div>
-      <div style={{ color: 'var(--text-s)' }}>Aucun formé dans cette catégorie cette semaine.</div>
+      <div style={{ color: '#94a3b8', fontSize: 14 }}>Aucun formé dans cette catégorie cette semaine.</div>
       <button className="detail-back" style={{ marginTop: 20 }} onClick={onBack}>← Retour</button>
     </div>
   )
@@ -270,20 +286,27 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
         <button className="detail-back" onClick={onBack}>← Retour</button>
-        <span style={{ fontSize: 22, }}>{catMeta.icon}</span>
+        <div style={{
+          width: 40, height: 40, borderRadius: 10,
+          background: `rgba(${catMeta.rgb},0.1)`, border: `1px solid rgba(${catMeta.rgb},0.2)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0,
+        }}>
+          {catMeta.icon}
+        </div>
         <div>
-          <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: 17 }}>{catMeta.label}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-s)' }}>{filtered.length} collaborateur{filtered.length > 1 ? 's' : ''} · Semaine du {weekDate}</div>
+          <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 16 }}>{catMeta.label}</div>
+          <div style={{ fontSize: 12, color: '#64748b' }}>
+            {filtered.length} collaborateur{filtered.length > 1 ? 's' : ''} · Semaine du {weekDate}
+          </div>
         </div>
       </div>
 
-      {/* Tabs scrollables */}
+      {/* Tabs */}
       <div style={{
-        display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8,
-        borderBottom: '1px solid var(--border)', marginBottom: 20,
-        scrollbarWidth: 'thin',
+        display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2,
+        marginBottom: 18, scrollbarWidth: 'none',
       }}>
         {filtered.map((e, i) => {
           const nm = e.fullName || `${e.nom} ${e.prenom}`.trim()
@@ -293,13 +316,13 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
               key={i}
               onClick={() => setSelected(i)}
               style={{
-                flexShrink: 0, padding: '8px 16px', borderRadius: 10,
-                border: active ? `1.5px solid ${catMeta.color}` : '1px solid var(--border)',
-                background: active ? `rgba(${catMeta.rgb},0.15)` : 'var(--card)',
-                color: active ? catMeta.color : 'var(--text-m)',
+                flexShrink: 0, padding: '8px 18px', borderRadius: 99,
+                border: active ? `2px solid ${catMeta.color}` : '1.5px solid #e2e8f0',
+                background: active ? catMeta.color : '#fff',
+                color: active ? '#fff' : '#475569',
                 fontWeight: active ? 700 : 500,
                 fontSize: 13, cursor: 'pointer', transition: 'all .15s',
-                whiteSpace: 'nowrap',
+                whiteSpace: 'nowrap', boxShadow: active ? `0 2px 8px rgba(${catMeta.rgb},0.25)` : 'none',
               }}
             >
               {nm}
@@ -335,10 +358,10 @@ function CategorySelector({ entrees, onSelect }) {
 
   return (
     <div>
-      <div style={{ marginBottom: 24, color: 'var(--text-s)', fontSize: 14 }}>
-        Choisissez la catégorie pour accéder aux fiches de retour.
+      <div style={{ marginBottom: 20, color: '#64748b', fontSize: 14 }}>
+        Choisissez la catégorie pour accéder aux fiches de retour de formation.
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
         {Object.entries(CATEGORY_META).map(([key, meta]) => {
           const count = counts[key] || 0
           return (
@@ -346,24 +369,34 @@ function CategorySelector({ entrees, onSelect }) {
               key={key}
               onClick={() => onSelect(key)}
               style={{
-                background: 'var(--card)', border: '1px solid var(--border)',
-                borderRadius: 16, padding: '28px 20px', cursor: 'pointer',
-                textAlign: 'center', transition: 'border-color .2s',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                background: '#fff',
+                border: '1.5px solid #e2e8f0',
+                borderTop: `4px solid ${meta.color}`,
+                borderRadius: 14, padding: '24px 18px', cursor: 'pointer',
+                textAlign: 'left', transition: 'all .18s',
+                display: 'flex', flexDirection: 'column', gap: 6,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
               }}
+              onMouseOver={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseOut={e => { e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.transform = 'translateY(0)' }}
             >
-              <span style={{ fontSize: 36 }}>{meta.icon}</span>
-              <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>{meta.label}</span>
-              <span style={{ fontSize: 12, color: 'var(--text-s)' }}>{meta.sub}</span>
-              <span style={{
-                marginTop: 4, fontSize: 13, fontWeight: 700,
-                color: count ? meta.color : 'var(--text-s)',
-                background: count ? `rgba(${meta.rgb},0.12)` : 'transparent',
-                border: count ? `1px solid ${meta.color}33` : 'none',
-                borderRadius: 20, padding: count ? '2px 10px' : 0,
-              }}>
-                {count ? `${count} formé${count > 1 ? 's' : ''}` : 'Aucun formé'}
-              </span>
+              <span style={{ fontSize: 28, marginBottom: 2 }}>{meta.icon}</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{meta.label}</span>
+              <span style={{ fontSize: 12, color: '#64748b' }}>{meta.sub}</span>
+              <div style={{ marginTop: 6 }}>
+                {count > 0 ? (
+                  <span style={{
+                    display: 'inline-block', fontSize: 12, fontWeight: 700,
+                    color: meta.color, background: `rgba(${meta.rgb},0.1)`,
+                    border: `1px solid rgba(${meta.rgb},0.25)`,
+                    borderRadius: 20, padding: '3px 10px',
+                  }}>
+                    {count} formé{count > 1 ? 's' : ''}
+                  </span>
+                ) : (
+                  <span style={{ fontSize: 12, color: '#cbd5e1' }}>Aucun formé</span>
+                )}
+              </div>
             </button>
           )
         })}
@@ -375,9 +408,9 @@ function CategorySelector({ entrees, onSelect }) {
 // ── Export principal ──────────────────────────────────────────────
 
 export default function RetourFormationView({ onBack, pName }) {
-  const [entrees, setEntrees]     = useState([])
-  const [category, setCategory]   = useState(null)
-  const [loading, setLoading]     = useState(true)
+  const [entrees, setEntrees]   = useState([])
+  const [category, setCategory] = useState(null)
+  const [loading, setLoading]   = useState(true)
   const trainerName = pName || 'Formateur'
 
   useEffect(() => {
@@ -397,18 +430,27 @@ export default function RetourFormationView({ onBack, pName }) {
   }, [])
 
   return (
-    <div id="dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden' }}>
-      <div style={{ padding: '24px 24px 0', display: 'flex', alignItems: 'center', gap: 12 }}>
-        {category ? null : <button className="detail-back" onClick={onBack}>← Tableau de bord</button>}
+    <div id="dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: '#f8fafc' }}>
+      {/* Header */}
+      <div style={{
+        padding: '18px 24px', background: '#fff',
+        borderBottom: '1px solid #e2e8f0',
+        display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0,
+      }}>
+        {!category && (
+          <button className="detail-back" onClick={onBack}>← Tableau de bord</button>
+        )}
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>Retour de formation</div>
-          <div style={{ fontSize: 12, color: 'var(--text-s)' }}>Fiches de suivi des collaborateurs · Semaine du {getWeekDate()}</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>📝 Retour de formation</div>
+          <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+            Fiches de suivi · Semaine du {getWeekDate()}
+          </div>
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-s)' }}>Chargement…</div>
+          <div style={{ textAlign: 'center', padding: 48, color: '#94a3b8', fontSize: 14 }}>Chargement…</div>
         ) : category ? (
           <CollabListView
             entrees={entrees}
