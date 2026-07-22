@@ -594,8 +594,8 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
     </>
   )
 
-  // Jeu de questions entre formés
-  if (sharedState?.pq_phase) return (
+  // Jeu de questions entre formés — uniquement si le formateur l'a lancé explicitement
+  if (sharedState?.tv_screen === 'peer-quiz' && sharedState?.pq_phase) return (
     <PeerQuizParticipant sharedState={sharedState} pName={pName} sessionCode={sessionCode} />
   )
 
