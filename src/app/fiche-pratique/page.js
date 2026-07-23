@@ -26,7 +26,7 @@ function Label({ children, color = BLUE }) {
 
 function Card({ children, accent = BLUE, style = {} }) {
   return (
-    <div style={{
+    <div className="print-card" style={{
       background: CARD, border: `1px solid ${BORDER}`,
       borderLeft: `4px solid ${accent}`, borderRadius: 14, padding: '18px 22px', ...style,
     }}>{children}</div>
@@ -122,10 +122,13 @@ export default function FichePratique() {
         @media print {
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           .no-print { display: none !important; }
-          body { background: ${BG} !important; color: ${TEXT} !important; margin: 0; }
-          .print-page { background: ${BG} !important; padding: 16px !important; }
-          .print-section { break-inside: avoid; page-break-inside: avoid; }
-          @page { margin: 8mm; background: ${BG}; }
+          html, body { background: ${BG} !important; color: ${TEXT} !important; margin: 0; }
+          .print-page { background: ${BG} !important; padding: 6px 0 0 !important; min-height: 0 !important; }
+          .print-section { break-inside: auto; page-break-inside: auto; }
+          .print-card { break-inside: avoid !important; page-break-inside: avoid !important; }
+          .print-band { break-before: page !important; page-break-before: always !important; margin-top: 0 !important; }
+          .print-labo-img { height: 130px !important; }
+          @page { size: A4 landscape; margin: 12mm; }
         }
       `}</style>
 
@@ -207,7 +210,7 @@ export default function FichePratique() {
                 { label: 'Paires / jour', value: '5 000', sub: 'sur tout le réseau', color: PURPLE },
                 { label: 'Objectif 2025', value: '1 M', sub: 'paires vendues', color: GREEN },
               ].map(({ label, value, sub, color }) => (
-                <div key={label} style={{ background: CARD, border: `1px solid ${BORDER}`, borderTop: `3px solid ${color}`, borderRadius: 12, padding: '14px 16px', textAlign: 'center' }}>
+                <div key={label} className="print-card" style={{ background: CARD, border: `1px solid ${BORDER}`, borderTop: `3px solid ${color}`, borderRadius: 12, padding: '14px 16px', textAlign: 'center' }}>
                   <div style={{ fontSize: 22, fontWeight: 900, color, lineHeight: 1, marginBottom: 4 }}>{value}</div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: TEXT, marginBottom: 2 }}>{label}</div>
                   <div style={{ fontSize: 10, color: TEXT_SUB }}>{sub}</div>
@@ -243,7 +246,7 @@ export default function FichePratique() {
                 { icon: '🚚', titre: 'Logistique nationale', desc: 'Approvisionnement quotidien depuis notre centre logistique.' },
                 { icon: '0️⃣', titre: 'Zéro intermédiaire', desc: 'Nos produits sont achetés en direct auprès des fournisseurs, sans intermédiaire.' },
               ].map(({ icon, titre, desc }) => (
-                <div key={titre} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: CARD, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${BLUE_L}`, borderRadius: 10, padding: '12px 14px' }}>
+                <div key={titre} className="print-card" style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: CARD, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${BLUE_L}`, borderRadius: 10, padding: '12px 14px' }}>
                   <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 2 }}>{titre}</div>
@@ -256,7 +259,7 @@ export default function FichePratique() {
             {/* Labo progressif Châtelet */}
             <div style={{ background: `linear-gradient(135deg, ${PURPLE}18 0%, ${PURPLE}08 100%)`, border: `2px solid ${PURPLE}`, borderRadius: 18, overflow: 'hidden' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/assets/labo-progressif-chatelet.jpg" alt="Laboratoire progressif Paris Châtelet" style={{ width: '100%', height: 220, objectFit: 'cover', objectPosition: 'center 40%', display: 'block' }} />
+              <img className="print-labo-img" src="/assets/labo-progressif-chatelet.jpg" alt="Laboratoire progressif Paris Châtelet" style={{ width: '100%', height: 220, objectFit: 'cover', objectPosition: 'center 40%', display: 'block' }} />
               <div style={{ padding: '20px 24px' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18 }}>
                   <div style={{ flexShrink: 0, width: 56, height: 56, borderRadius: 16, background: `${PURPLE}30`, border: `2px solid ${PURPLE}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>🔬</div>
@@ -421,7 +424,7 @@ export default function FichePratique() {
           </div>
 
           {/* ─── Bande J2 ─────────────────────────────────────────── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 4 }}>
+          <div className="print-band" style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 4 }}>
             <div style={{ flex: 1, height: 1, background: `${GOLD}40` }} />
             <span style={{ fontSize: 10, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: 3 }}>Journée 2 · Offres & Vente</span>
             <div style={{ flex: 1, height: 1, background: `${GOLD}40` }} />
@@ -491,7 +494,7 @@ export default function FichePratique() {
           </div>
 
           {/* ─── Bande J3 ─────────────────────────────────────────── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 4 }}>
+          <div className="print-band" style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 4 }}>
             <div style={{ flex: 1, height: 1, background: `${BORDEAUX}50` }} />
             <span style={{ fontSize: 10, fontWeight: 800, color: BORDEAUX, textTransform: 'uppercase', letterSpacing: 3 }}>Journée 3 · Mesures & Remboursements</span>
             <div style={{ flex: 1, height: 1, background: `${BORDEAUX}50` }} />
