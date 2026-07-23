@@ -34,6 +34,9 @@ import ModuleRemboursementFrance from '@/components/modules/ModuleRemboursementF
 import ModuleParcoursRembourses from '@/components/modules/ModuleParcoursRembourses'
 import ModuleLptSante from '@/components/modules/ModuleLptSante'
 import ModuleAtelierPEC from '@/components/modules/ModuleAtelierPEC'
+import ModuleRetraits from '@/components/modules/ModuleRetraits'
+import ModuleAjustages from '@/components/modules/ModuleAjustages'
+import ModuleRAZ from '@/components/modules/ModuleRAZ'
 import IdeesButton from '@/components/IdeesButton'
 import TrainerQuestionsPanel from '@/components/TrainerQuestionsPanel'
 import PlanningPage from '@/components/PlanningPage'
@@ -399,6 +402,7 @@ export default function Page() {
   const handleBackToDashboard = () => { setView('dashboard'); tvBackToQr() }
   const handleBackToModules = () => { setView(moduleReturnTo); tvBackToQr() }
   const handleTerminateToJournee1 = () => { setReturnJournee('journee1'); setView('onboarding-modules'); tvBackToQr() }
+  const handleTerminateToJournee4 = () => { setReturnJournee('journee4'); setView('onboarding-modules'); tvBackToQr() }
   const handleOpenPlanning = () => setView('planning')
 
   if (!appReady) {
@@ -590,6 +594,27 @@ export default function Page() {
         <ModuleAtelierPEC
           pName={pName}
           onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-retraits' && (
+        <ModuleRetraits
+          pName={pName}
+          onBack={handleBackToModules}
+          onTerminate={handleTerminateToJournee4}
+        />
+      )}
+      {view === 'module-ajustages' && (
+        <ModuleAjustages
+          pName={pName}
+          onBack={handleBackToModules}
+          onTerminate={handleTerminateToJournee4}
+        />
+      )}
+      {view === 'module-raz' && (
+        <ModuleRAZ
+          pName={pName}
+          onBack={handleBackToModules}
+          onTerminate={handleTerminateToJournee4}
         />
       )}
       {view === 'planning' && (

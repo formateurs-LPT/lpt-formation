@@ -3332,6 +3332,34 @@ function TrameAccueilMobile() {
   )
 }
 
+function SAVContentMobile({ page, pageIndex, total }) {
+  const { color, icon, titre, sousTitre, points } = page
+  return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', display: 'flex', flexDirection: 'column', padding: '20px 18px 32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28} style={{ objectFit: 'contain', opacity: 0.6 }} />
+        <div style={{ display: 'flex', gap: 4 }}>
+          {Array(total).fill(0).map((_, i) => <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIndex ? 14 : 4, background: i === pageIndex ? color : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />)}
+        </div>
+      </div>
+      <div style={{ fontSize: 36, marginBottom: 10 }}>{icon}</div>
+      <div style={{ fontSize: 9, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>{sousTitre}</div>
+      <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', lineHeight: 1.2, marginBottom: 20 }}>{titre}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+        {points.map((pt, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderLeft: `3px solid ${color}70`, borderRadius: 12, padding: '12px 14px' }}>
+            <span style={{ fontSize: 20, flexShrink: 0 }}>{pt.emoji}</span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{pt.titre}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{pt.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint, rembfrRevealed }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
@@ -3747,6 +3775,9 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
   // Entreprise module types
   if (['impact','probleme','timeline','piliers','steps','machines','cases','visages','croissance','mission'].includes(page.type))
     return <EntreprisePageMobile page={page} pageIndex={pageIndex} total={total} />
+
+  // SAV content (Retraits, Ajustages, RAZ)
+  if (page.type === 'sav-content') return <SAVContentMobile page={page} pageIndex={pageIndex} total={total} />
 
   return (
     <div style={{

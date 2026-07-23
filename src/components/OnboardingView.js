@@ -123,6 +123,32 @@ const JOURNEES = (onLaunchModule, onLaunchPeerQuiz) => [
       },
     ],
   },
+  {
+    id: 'journee4',
+    numero: 4,
+    titre: 'Journée 4',
+    sub: 'Le SAV — Retraits, Ajustages & Recommandes',
+    modules: [
+      {
+        visual: 'emoji', icon: '📦',
+        label: 'Les Retraits',
+        sub: 'SMS · Recherche · Essayage · Signature',
+        onClick: () => onLaunchModule('retraits'),
+      },
+      {
+        visual: 'emoji', icon: '🔧',
+        label: 'Les Ajustages',
+        sub: "Confort · Acétate · Métal · Règles d'or",
+        onClick: () => onLaunchModule('ajustages'),
+      },
+      {
+        visual: 'emoji', icon: '🔄',
+        label: 'Les RAZ',
+        sub: 'Recommandes · Process · Dernier recours',
+        onClick: () => onLaunchModule('raz'),
+      },
+    ],
+  },
 ]
 
 // ── Step 1 : Choix du groupe ──────────────────────────────────────

@@ -640,6 +640,171 @@ export const TRAME_ACCUEIL_PAGES = [
   { id: 'trame', type: 'trame-accueil' },
 ]
 
+// ─── SAV — Journée 4 ──────────────────────────────────────────
+
+export const RETRAITS_PAGES = [
+  {
+    id: 'retraits-overview',
+    type: 'sav-content',
+    color: '#00abe9',
+    icon: '📦',
+    titre: 'Le Process Retrait',
+    sousTitre: 'SAV · Vue d\'ensemble',
+    points: [
+      { emoji: '📱', titre: 'SMS reçu', desc: '1 SMS par paire avec le numéro de commande' },
+      { emoji: '🔍', titre: 'Onglet Commandes', desc: 'N° de commande → téléphone de vente → nom du client' },
+      { emoji: '🗂️', titre: 'Bac retrait', desc: 'Paires classées par ordre alphabétique' },
+      { emoji: '👓', titre: 'Essayage', desc: 'Vérifier réglage, confort et adaptation visuelle' },
+      { emoji: '✅', titre: 'Signature + Avis', desc: '1 retrait signé par paire · QR code Google' },
+    ],
+    notesFormateur: [
+      { icon: '🗺️', title: 'Vue d\'ensemble', text: 'Présenter les 5 étapes avant d\'entrer dans le détail. Insister que c\'est un process qualité — pas juste une formalité administrative.' },
+    ],
+  },
+  {
+    id: 'retraits-sms',
+    type: 'sav-content',
+    color: '#00abe9',
+    icon: '📱',
+    titre: '1 — Le SMS de confirmation',
+    sousTitre: 'SAV · Retraits · Étape 1',
+    points: [
+      { emoji: '📲', titre: '1 SMS = 1 paire', desc: 'Chaque paire prête génère un SMS avec son numéro de commande' },
+      { emoji: '2️⃣', titre: '2 paires = 2 SMS', desc: 'Un client avec 2 paires reçoit 2 SMS distincts' },
+      { emoji: '🔢', titre: 'Numéro de commande', desc: 'Visible dans le SMS — c\'est la clé pour retrouver la paire' },
+    ],
+    notesFormateur: [
+      { icon: '📱', title: 'En pratique', text: 'Montrer un exemple de SMS reçu sur le téléphone de vente. Le numéro de commande est clairement affiché dans le message.' },
+      { icon: '⚠️', title: 'Règle clé', text: '2 paires = 2 retraits à effectuer sur le téléphone de vente. Même client, mais 2 opérations distinctes — ne pas les confondre.' },
+    ],
+  },
+  {
+    id: 'retraits-recherche',
+    type: 'sav-content',
+    color: '#4ade80',
+    icon: '🔍',
+    titre: '2 — Trouver la paire',
+    sousTitre: 'SAV · Retraits · Étape 2',
+    points: [
+      { emoji: '📟', titre: 'Onglet Commandes', desc: 'Entrer le N° de commande dans l\'onglet Commandes du téléphone de vente' },
+      { emoji: '👤', titre: 'Nom + Prénom', desc: 'Nom et prénom du client s\'affichent immédiatement' },
+      { emoji: '🔤', titre: 'Ordre alphabétique', desc: 'Les paires sont rangées par ordre alphabétique dans le bac' },
+    ],
+    notesFormateur: [
+      { icon: '🎯', title: 'En pratique', text: 'Montrer le geste complet : saisir le N° → nom visible → aller chercher dans le bac. Faire faire à chaque formé.' },
+      { icon: '📚', title: 'Ordre alphabétique', text: 'A → Z sur le nom de famille. Si le client a un nom composé ou un préfixe, l\'ordre suit ce qui est saisi dans le système.' },
+    ],
+  },
+  {
+    id: 'retraits-essayage',
+    type: 'sav-content',
+    color: '#f59e0b',
+    icon: '👓',
+    titre: '3 — L\'Essayage',
+    sousTitre: 'SAV · Retraits · Étape 3',
+    points: [
+      { emoji: '📦', titre: 'Sortir la paire', desc: 'Sortir de la boîte, déplier les branches, vérifier que la paire est droite' },
+      { emoji: '✅', titre: 'Vérifier le port', desc: 'Suffisamment serrée ? Droite sur le visage ? Ajuster si besoin' },
+      { emoji: '👁️', titre: 'Gêne visuelle ?', desc: 'Normal ! Toute nouvelle correction nécessite un temps d\'adaptation — la gêne s\'estompe en portant les lunettes' },
+    ],
+    notesFormateur: [
+      { icon: '💬', title: 'Script client', text: '"Vous allez peut-être trouver ça bizarre au début, c\'est tout à fait normal avec une nouvelle correction. En les portant, votre cerveau va s\'adapter et vous n\'y ferez plus attention."' },
+      { icon: '🔧', title: 'Ajustage', text: 'Si la paire est mal réglée, faire l\'ajustage maintenant — ne jamais faire signer avant que le client soit à l\'aise.' },
+    ],
+  },
+  {
+    id: 'retraits-signature',
+    type: 'sav-content',
+    color: '#22c55e',
+    icon: '✅',
+    titre: '4 — Finaliser le retrait',
+    sousTitre: 'SAV · Retraits · Étape 4',
+    points: [
+      { emoji: '✍️', titre: 'Signature sur le téléphone', desc: 'Faire signer le retrait sur le téléphone de vente — 1 signature par paire' },
+      { emoji: '2️⃣', titre: '2 paires = 2 signatures', desc: 'Un client avec 2 paires signe 2 retraits distincts sur le téléphone' },
+      { emoji: '⭐', titre: 'Avis Google', desc: 'Proposer le QR code disponible au retrait pour laisser un avis Google' },
+    ],
+    notesFormateur: [
+      { icon: '⭐', title: 'L\'avis Google', text: '"Si vous êtes satisfait, nous avons un QR code pour laisser un avis Google — ça nous aide beaucoup !" Naturel, jamais forcé.' },
+      { icon: '✅', title: 'Checklist départ', text: 'Signature(s) faite(s) ? Boîte ? Chiffon ? Avis proposé ? Si 2 paires : 2 retraits bien signés ?' },
+    ],
+  },
+]
+
+export const RETRAITS_QUIZ = [
+  { type: 'text-open', question: 'Que reçoit le client quand sa paire de lunettes est prête à être retirée ?', hint: '1 SMS par paire avec le numéro de commande' },
+  { type: 'text-open', question: 'Comment retrouve-t-on le nom du client à partir du numéro de commande ?', hint: "On entre le numéro dans l'onglet Commandes du téléphone de vente → nom et prénom apparaissent" },
+  { type: 'text-open', question: 'Comment les paires sont-elles classées dans le bac de retrait ?', hint: 'Par ordre alphabétique (nom de famille)' },
+  { type: 'text-open', question: 'Un client a commandé 2 paires. Combien de SMS reçoit-il ? Combien de retraits effectue-t-on sur le téléphone ?', hint: '2 SMS (1 par paire) · 2 retraits sur le téléphone de vente' },
+  { type: 'text-open', question: "Que vérifiez-vous avant de tendre la paire au client lors de l'essayage ?", hint: 'Paire droite, branches bien dépliées, aucun défaut visible' },
+  { type: 'text-open', question: "Un client dit que ses nouvelles lunettes lui font bizarre. Que lui répondez-vous ?", hint: "C'est normal avec une nouvelle correction — le cerveau s'adapte, la gêne va s'estomper en portant les lunettes" },
+  { type: 'text-open', question: 'Que proposez-vous systématiquement au client après la signature du retrait ?', hint: 'De laisser un avis Google via le QR code disponible au retrait' },
+]
+
+export const AJUSTAGES_PAGES = [
+  {
+    id: 'ajustages-intro',
+    type: 'sav-content',
+    color: '#a78bfa',
+    icon: '🔧',
+    titre: 'Les Ajustages',
+    sousTitre: 'SAV · Journée 4',
+    points: [
+      { emoji: '💆', titre: 'Confort quotidien', desc: 'Une paire mal réglée est vite mise au placard — le client ne reviendra pas' },
+      { emoji: '👁️', titre: 'Résolution visuelle', desc: 'Un mauvais réglage peut provoquer une gêne visuelle qu\'un simple ajustage corrige sans refabrication' },
+      { emoji: '💰', titre: 'Économique', desc: 'Évite à LPT de retailler des verres et au client d\'attendre une refabrication' },
+    ],
+    notesFormateur: [
+      { icon: '💡', title: 'Message clé', text: 'Un ajustage bien fait = client satisfait + pas de coût de refabrication. C\'est un acte professionnel, pas une formalité. Insister sur la valeur ajoutée.' },
+    ],
+  },
+  {
+    id: 'ajustages-regles',
+    type: 'sav-content',
+    color: '#a78bfa',
+    icon: '📋',
+    titre: 'Les règles à retenir',
+    sousTitre: 'SAV · Ajustages',
+    points: [
+      { emoji: '🔥', titre: 'Acétate → à chaud', desc: 'Chaleur sèche uniquement — ne jamais forcer à froid (risque de casse)' },
+      { emoji: '❄️', titre: 'Métal → à froid', desc: 'Plaquettes et branches réglables à froid — liberté de réglage maximale' },
+      { emoji: '✅', titre: 'Toujours vérifier', desc: 'Paire droite, bien serrée sans comprimer — confort confirmé par le client' },
+    ],
+    notesFormateur: [
+      { icon: '🛠️', title: 'Pratique live', text: 'Prendre une monture acétate et une monture métal. Montrer les gestes d\'ajustage. Faire pratiquer chaque formé sur une vraie paire sous supervision.' },
+      { icon: '⚠️', title: 'Erreur courante', text: 'Forcer une monture acétate à froid — elle peut se casser net. Toujours chauffer (chaleur sèche, pas d\'eau chaude) avant de plier.' },
+    ],
+  },
+]
+
+export const AJUSTAGES_QUIZ = [
+  { type: 'text-open', question: 'Pourquoi les ajustages sont-ils essentiels au quotidien pour le client ?', hint: 'Une paire mal réglée génère une gêne et finit au placard — le client ne reviendra pas' },
+  { type: 'text-open', question: 'Comment ajuste-t-on une monture en acétate ? Et une monture en métal ?', hint: 'Acétate : à chaud (chaleur sèche) · Métal : à froid (plaquettes et branches réglables)' },
+  { type: 'text-open', question: 'En dehors du confort de port, quel autre problème un ajustage peut-il résoudre ?', hint: 'Une gêne visuelle — un mauvais réglage peut créer une gêne vue, un ajustage la corrige sans refabrication' },
+  { type: 'text-open', question: 'Quels avantages un bon ajustage représente-t-il — pour LPT et pour le client ?', hint: 'LPT : évite une refabrication coûteuse · Client : problème résolu immédiatement, pas d\'attente' },
+]
+
+export const RAZ_PAGES = [
+  {
+    id: 'raz-intro',
+    type: 'sav-content',
+    color: '#f87171',
+    icon: '🔄',
+    titre: 'Les RAZ — Recommandes',
+    sousTitre: 'SAV · Journée 4 · Module 3',
+    points: [
+      { emoji: '🔄', titre: 'Dernier recours', desc: 'Une RAZ = refabriquer un équipement — uniquement quand c\'est la seule solution' },
+      { emoji: '🔍', titre: 'Identifier le problème', desc: 'Trouver la cause exacte avant de recommander — éviter la RAZ sur la RAZ' },
+      { emoji: '📋', titre: 'Process à respecter', desc: 'Des étapes précises pour ne pas créer d\'autres problèmes lors de la refabrication' },
+    ],
+    notesFormateur: [
+      { icon: '🚧', title: 'Contenu détaillé à venir', text: 'Le process RAZ complet sera présenté lors de la prochaine session. Expliquer à l\'oral les grandes lignes et le principe de précaution.' },
+    ],
+  },
+]
+
+export const RAZ_QUIZ = []
+
 export const MONTURES_QUIZ = [
   { type: 'text-open', question: 'Quelle est l\'origine de la matière première de l\'acétate de cellulose ?', hint: 'Pulpe de bois ou fibre de coton (pas du pétrole)' },
   { type: 'text-open', question: 'Comment ajuste-t-on une monture en acétate ? Quel élément ne peut PAS être ajusté ?', hint: 'À chaud (chaleur sèche) — le pont ne peut pas être ajusté en largeur' },
@@ -660,6 +825,9 @@ export const MODULE_DATA = {
   'verre-progressif': { pages: PROGRESSIF_PAGES,         quiz: PROGRESSIF_QUIZ,    label: 'Le Verre Progressif',          sub: 'Anatomie · Vente · Objections · Quiz J+14' },
   'trame-accueil':    { pages: TRAME_ACCUEIL_PAGES,      quiz: [],                 label: "Trame d'accueil",              sub: 'Bonjour · Concept · Examen de vue' },
   'montures':         { pages: [{ id: 'acetate', type: 'montures-acetate' }, { id: 'metal', type: 'montures-metal' }, { id: 'injecte', type: 'montures-injecte' }], quiz: MONTURES_QUIZ, label: 'Connaissances Montures', sub: 'Acétate · Métal · Injecté' },
+  'retraits':         { pages: RETRAITS_PAGES,   quiz: RETRAITS_QUIZ,   label: 'Les Retraits',      sub: 'SMS · Recherche · Essayage · Signature' },
+  'ajustages':        { pages: AJUSTAGES_PAGES,  quiz: AJUSTAGES_QUIZ,  label: 'Les Ajustages',     sub: 'Confort · Acétate · Métal · Règles d\'or' },
+  'raz':              { pages: RAZ_PAGES,        quiz: RAZ_QUIZ,        label: 'Les RAZ',            sub: 'Recommandes · Process · Dernier recours' },
   'quiz-final':       { pages: [], quiz: QUIZ_FINAL_QUESTIONS, label: 'Quiz de fin de formation', sub: 'Trame · Optique · Offres · Remboursement' },
   'quiz-j1':          { pages: [], quiz: QUIZ_J1, label: 'Quiz Jour 1', sub: 'Entreprise · Optique · Ordonnances · Montures' },
   'mutuelles-inami':  { pages: [

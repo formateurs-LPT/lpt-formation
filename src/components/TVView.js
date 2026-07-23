@@ -3870,6 +3870,48 @@ const TV_MONTURES_DATA = {
   },
 }
 
+function TVSAVContent({ page, pageIndex, total, moduleLabel }) {
+  const { color, icon, titre, sousTitre, points } = page
+  const [step, setStep] = useState(0)
+  useEffect(() => {
+    setStep(0)
+    const timers = points.map((_, i) => setTimeout(() => setStep(i + 1), 400 + i * 300))
+    return () => timers.forEach(clearTimeout)
+  }, [pageIndex, points])
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '40px 60px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 36 }}>
+        <div>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>{icon}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 8 }}>{sousTitre}</div>
+          <div style={{ fontSize: 44, fontWeight: 900, color: '#fff', lineHeight: 1.1, maxWidth: 800 }}>{titre}</div>
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+          {Array(total).fill(0).map((_, i) => <div key={i} style={{ height: 5, borderRadius: 3, width: i === pageIndex ? 20 : 5, background: i === pageIndex ? color : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />)}
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, justifyContent: 'center', maxWidth: 900 }}>
+        {points.map((pt, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'flex-start', gap: 20,
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            borderLeft: `4px solid ${color}80`, borderRadius: 16, padding: '18px 24px',
+            opacity: step > i ? 1 : 0, transform: step > i ? 'translateX(0)' : 'translateX(-20px)',
+            transition: 'all 0.4s ease',
+          }}>
+            <span style={{ fontSize: 32, flexShrink: 0 }}>{pt.emoji}</span>
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{pt.titre}</div>
+              <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>{pt.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ textAlign: 'right', marginTop: 20, fontSize: 12, color: 'rgba(255,255,255,0.2)', fontWeight: 600 }}>{moduleLabel}</div>
+    </div>
+  )
+}
+
 function TVMontures({ type, pageIndex, total, moduleLabel }) {
   const data = TV_MONTURES_DATA[type]
   const { title, subtitle, color, frames, infos } = data
@@ -5528,6 +5570,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'montures-acetate') return <TVMontures type="montures-acetate" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'montures-metal')   return <TVMontures type="montures-metal"   pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'montures-injecte') return <TVMontures type="montures-injecte" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'sav-content') return <TVSAVContent page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'pdm-pourquoi')     return <TVPdmPourquoi pageIndex={pageIndex} total={total} />
   if (page.type === 'offres-classique')   return <TVOffresClassique step={offresClassiqueStep} />
   if (page.type === 'offres-1-1')         return <TVOffres11 step={offres11Step} />
