@@ -576,7 +576,7 @@ export default function FichePratique() {
                 </div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '12px 16px', textAlign: 'center' }}>
-                <span style={{ fontSize: 14, fontWeight: 800, color: TEXT }}>Avec le tiers payant complet chez LPT → reste à charge <span style={{ color: GREEN }}>0 €</span></span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: TEXT }}>Chez LPT → reste à charge <span style={{ color: GREEN }}>0 €</span> pour tous (TP complet ou partiel)</span>
               </div>
             </Card>
 
