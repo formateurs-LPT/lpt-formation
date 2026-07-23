@@ -5929,6 +5929,56 @@ function TVFAQView({ journeeId, questions }) {
   )
 }
 
+function TVQrOverlay({ roomCode }) {
+  const [qrUrl, setQrUrl] = useState('')
+  useEffect(() => {
+    const code = (roomCode || getTvDisplayRoomCode() || getLegacySessionCode()).trim()
+    setQrUrl(buildQrImageUrl(code))
+  }, [roomCode])
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 800,
+      background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      pointerEvents: 'none',
+    }}>
+      <div style={{
+        background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 100%)',
+        border: '2px solid rgba(0,171,233,0.4)',
+        borderRadius: 32, padding: '48px 56px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28,
+        boxShadow: '0 32px 80px rgba(0,0,0,0.7), 0 0 80px rgba(0,171,233,0.1)',
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 3 }}>
+          Rejoindre la formation
+        </div>
+        <div style={{
+          background: '#03112a', borderRadius: 20, padding: 16,
+          border: '2px solid rgba(0,171,233,0.4)',
+          boxShadow: '0 0 60px rgba(0,171,233,0.2)',
+        }}>
+          {qrUrl
+            /* eslint-disable-next-line @next/next/no-img-element */
+            ? <img src={qrUrl} alt="QR Code" width={260} height={260} style={{ display: 'block', borderRadius: 10 }} />
+            : <div style={{ width: 260, height: 260, borderRadius: 10, background: 'rgba(255,255,255,0.05)' }} />
+          }
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
+            Scannez pour rejoindre
+          </div>
+          {roomCode && (
+            <div style={{ fontFamily: 'monospace', fontSize: 18, letterSpacing: 4, color: 'rgba(0,171,233,0.85)', fontWeight: 700 }}>
+              {roomCode}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function WelcomeScreen() {
   return (
     <div style={{
@@ -7287,6 +7337,7 @@ export default function TVView() {
         <style>{STYLES}</style>
         <FullscreenButton />
         <TVPeerQuizScreen sharedState={sharedState} />
+        {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
         <TVAnnotationCanvas />
       </>
     )
@@ -7301,6 +7352,7 @@ export default function TVView() {
           <style>{STYLES}</style>
           <FullscreenButton />
           <TVMiniJeuRules />
+          {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
         </>
       )
     }
@@ -7315,6 +7367,7 @@ export default function TVView() {
             client={sharedState.minijeu_client}
             theme={sharedState.minijeu_theme}
           />
+          {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
         </>
       )
     }
@@ -7331,26 +7384,13 @@ export default function TVView() {
           moduleId={sharedState?.mq_module || activeModule || ''}
           moduleLabel={moduleData?.label || ''}
         />
+        {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
         <TVAnnotationCanvas />
       </>
     )
   }
 
-  // tv_screen=qr — prioritaire uniquement quand aucun module n'est actif
-  if (!loading && tvScreen === 'qr' && !activeModule) {
-    return (
-      <>
-        <style>{STYLES}</style>
-        <FullscreenButton />
-        <div style={{ height: '100dvh', overflow: 'hidden', position: 'relative' }}>
-          <WaitingScreen roomCode={sessionCode} />
-        </div>
-        <TVAnnotationCanvas />
-      </>
-    )
-  }
-
-  // Pas de module actif (ou reveil-acquis qui n'est pas un vrai module) → FAQ ou écran d'attente
+  // Pas de module actif (ou reveil-acquis qui n'est pas un vrai module) → FAQ, planning ou écran LPT
   if (!loading && (!activeModule || activeModule === 'reveil-acquis') && !isLobby) {
     return (
       <>
@@ -7361,11 +7401,10 @@ export default function TVView() {
             ? <TVFAQView journeeId={faqJournee} questions={faqQuestions} />
             : tvScreen === 'planning'
               ? <TVPlanningScreen planningDay={planningDay} />
-              : tvScreen === 'qr'
-                ? <WaitingScreen roomCode={sessionCode} />
-                : <WelcomeScreen />
+              : <WelcomeScreen />
           }
         </div>
+        {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
         <TVAnnotationCanvas />
       </>
     )
@@ -7477,6 +7516,7 @@ export default function TVView() {
         )}
       </div>
 
+      {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
       <TVAnnotationCanvas />
     </>
   )

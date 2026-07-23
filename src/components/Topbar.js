@@ -433,7 +433,7 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
   useEffect(() => {
     if (!isTrainer) return
     getSharedState().then(s => {
-      setQrActive(s?.tv_screen === 'qr')
+      setQrActive(!!s?.tv_qr_overlay)
     }).catch(() => {})
   }, [isTrainer])
 
@@ -441,20 +441,10 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
     if (qrBusy) return
     setQrBusy(true)
     try {
-      // Toujours lire l'état réel depuis Supabase pour éviter les désynchronisations
       const state = await getSharedState()
-      const currentScreen = state?.tv_screen ?? null
-
-      if (currentScreen === 'qr') {
-        // QR actif → restaurer l'écran précédent (stocké dans Supabase)
-        const before = state?.tv_screen_before_qr ?? null
-        await setSharedState({ tv_screen: before, tv_screen_before_qr: null })
-        setQrActive(false)
-      } else {
-        // QR inactif → l'activer et mémoriser l'écran courant dans Supabase
-        await setSharedState({ tv_screen: 'qr', tv_screen_before_qr: currentScreen })
-        setQrActive(true)
-      }
+      const overlay = !!state?.tv_qr_overlay
+      await setSharedState({ tv_qr_overlay: !overlay })
+      setQrActive(!overlay)
     } catch (e) {
       console.error('toggleQR error', e)
     } finally {
