@@ -308,14 +308,6 @@ export default function AutoEvalView({ onBack }) {
     return () => clearInterval(t)
   }, [load])
 
-  const launch = async () => {
-    setToggling(true)
-    await setSharedState({ tv_screen: 'auto-eval', auto_eval_category: selectedCategory, auto_eval_names: [] })
-    setIsActive(true)
-    setAutoEvalNames([])
-    setToggling(false)
-  }
-
   const stop = async () => {
     setToggling(true)
     await setSharedState({ tv_screen: null, auto_eval_names: [] })
@@ -327,12 +319,18 @@ export default function AutoEvalView({ onBack }) {
   const handleLaunchSingle = async (name) => {
     setLaunching(name)
     try {
-      const current = (await import('@/lib/supabase').then(m => m.getSharedState()))?.auto_eval_names
-      const existing = Array.isArray(current) ? current : []
+      const state = await import('@/lib/supabase').then(m => m.getSharedState())
+      const existing = Array.isArray(state?.auto_eval_names) ? state.auto_eval_names : []
       if (existing.includes(name)) return
       const next = [...existing, name]
       setAutoEvalNames(next)
-      await setSharedState({ auto_eval_names: next })
+      const patch = { auto_eval_names: next }
+      if (state?.tv_screen !== 'auto-eval') {
+        patch.tv_screen = 'auto-eval'
+        patch.auto_eval_category = selectedCategory
+        setIsActive(true)
+      }
+      await setSharedState(patch)
     } finally { setLaunching(null) }
   }
 
@@ -419,121 +417,79 @@ export default function AutoEvalView({ onBack }) {
         }}>
           <button className="detail-back" onClick={onBack}>← Tableau de bord</button>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>📋 Auto-évaluation</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>📋 Auto-évaluation</span>
+              {isActive && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: '#16a34a', background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: 20, padding: '2px 10px' }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
+                  Session active
+                </span>
+              )}
+            </div>
             <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
               Questionnaire fin de formation · Semaine du {weekDate}
             </div>
           </div>
-          {submittedCount > 0 && (
-            <button
-              onClick={() => setShowReport(true)}
-              style={{
-                padding: '10px 16px', borderRadius: 12, border: 'none',
-                background: '#0f172a', color: '#fff',
-                fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
-                display: 'flex', alignItems: 'center', gap: 7,
-                flexShrink: 0,
-              }}
-            >
-              📊 Compte rendu
-            </button>
-          )}
+          <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+            {submittedCount > 0 && (
+              <button
+                onClick={() => setShowReport(true)}
+                style={{
+                  padding: '10px 16px', borderRadius: 12, border: 'none',
+                  background: '#0f172a', color: '#fff',
+                  fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+                  display: 'flex', alignItems: 'center', gap: 7,
+                }}
+              >
+                📊 Compte rendu
+              </button>
+            )}
+            {isActive && (
+              <button
+                onClick={stop}
+                disabled={toggling}
+                style={{
+                  padding: '10px 18px', borderRadius: 12, border: '1.5px solid #fecaca',
+                  background: '#fee2e2', color: '#dc2626', fontWeight: 700, fontSize: 13,
+                  cursor: toggling ? 'wait' : 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                Terminer ✕
+              </button>
+            )}
+          </div>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
 
-          {/* Bloc lancer/stopper */}
-          <section style={{
-            background: '#fff', border: `1.5px solid ${isActive ? '#bbf7d0' : '#e2e8f0'}`,
-            borderRadius: 16, padding: '20px 22px', marginBottom: 22,
-            transition: 'border-color .2s',
-          }}>
-            {isActive ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#16a34a', display: 'inline-block', boxShadow: '0 0 0 3px #dcfce7' }} />
-                    <span style={{ fontSize: 15, fontWeight: 800, color: '#16a34a' }}>Module actif</span>
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20,
-                      background: catMeta.color + '18', color: catMeta.color,
-                      border: `1px solid ${catMeta.color}40`,
-                    }}>
-                      {catMeta.icon} {catMeta.label}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 13, color: '#64748b' }}>
-                    Les formés voient le questionnaire sur leur téléphone
-                  </div>
-                </div>
-                <button
-                  onClick={stop}
-                  disabled={toggling}
-                  style={{
-                    padding: '10px 20px', borderRadius: 12, border: '1.5px solid #fecaca',
-                    background: '#fee2e2', color: '#dc2626', fontWeight: 700, fontSize: 13,
-                    cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
-                  }}
-                >
-                  Terminer ✕
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
-                  Lancer l'auto-évaluation
-                </div>
-                <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5, marginBottom: 18 }}>
-                  Choisissez le groupe à évaluer, puis lancez le questionnaire.
-                </div>
-
-                {/* Sélecteur de catégorie */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
-                  {CATEGORIES.map(cat => {
-                    const active = selectedCategory === cat.key
-                    return (
-                      <button
-                        key={cat.key}
-                        onClick={() => setSelectedCategory(cat.key)}
-                        style={{
-                          padding: '12px 8px', borderRadius: 12, cursor: 'pointer',
-                          fontFamily: 'inherit', textAlign: 'center',
-                          border: active ? `2px solid ${cat.color}` : '1.5px solid #e2e8f0',
-                          background: active ? cat.color + '12' : '#f8fafc',
-                          transition: 'all .15s',
-                          outline: 'none',
-                        }}
-                      >
-                        <div style={{ fontSize: 22, marginBottom: 4 }}>{cat.icon}</div>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: active ? cat.color : '#334155' }}>
-                          {cat.label}
-                        </div>
-                        {cat.sub && (
-                          <div style={{ fontSize: 10, color: active ? cat.color + 'cc' : '#94a3b8', marginTop: 2 }}>
-                            {cat.sub}
-                          </div>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          {/* Sélecteur de catégorie */}
+          <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: '16px 18px', marginBottom: 18 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+              Filtrer par groupe
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+              {CATEGORIES.map(cat => {
+                const active = selectedCategory === cat.key
+                return (
                   <button
-                    onClick={launch}
-                    disabled={toggling}
+                    key={cat.key}
+                    onClick={() => setSelectedCategory(cat.key)}
+                    disabled={isActive}
                     style={{
-                      padding: '12px 28px', borderRadius: 14, border: 'none',
-                      background: '#0f172a', color: '#fff', fontWeight: 800, fontSize: 14,
-                      cursor: 'pointer', fontFamily: 'inherit',
-                      boxShadow: '0 4px 14px rgba(15,23,42,0.2)',
+                      padding: '10px 6px', borderRadius: 10, cursor: isActive ? 'default' : 'pointer',
+                      fontFamily: 'inherit', textAlign: 'center',
+                      border: active ? `2px solid ${cat.color}` : '1.5px solid #e2e8f0',
+                      background: active ? cat.color + '12' : '#f8fafc',
+                      transition: 'all .15s', outline: 'none',
+                      opacity: isActive && !active ? 0.5 : 1,
                     }}
                   >
-                    🚀 Lancer · {catMeta.icon} {catMeta.label}
+                    <div style={{ fontSize: 18, marginBottom: 3 }}>{cat.icon}</div>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: active ? cat.color : '#334155' }}>{cat.label}</div>
                   </button>
-                </div>
-              </div>
-            )}
+                )
+              })}
+            </div>
           </section>
 
           {/* Progression */}
@@ -633,17 +589,15 @@ export default function AutoEvalView({ onBack }) {
                             ) : !launched ? (
                               <button
                                 onClick={ev => { ev.stopPropagation(); handleLaunchSingle(name) }}
-                                disabled={!isActive || isLaunching}
-                                title={!isActive ? 'Lancez d\'abord l\'auto-évaluation' : 'Envoyer le questionnaire à ce formé'}
+                                disabled={isLaunching}
+                                title="Envoyer le questionnaire à ce formé"
                                 style={{
                                   fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 10,
-                                  background: isActive ? 'linear-gradient(135deg, #0070a0, #0089ba)' : '#f1f5f9',
-                                  border: 'none',
-                                  color: isActive ? '#fff' : '#94a3b8',
-                                  cursor: isActive && !isLaunching ? 'pointer' : 'not-allowed',
+                                  background: 'linear-gradient(135deg, #0070a0, #0089ba)',
+                                  border: 'none', color: '#fff',
+                                  cursor: isLaunching ? 'wait' : 'pointer',
                                   fontFamily: 'inherit', lineHeight: 1.4,
-                                  boxShadow: isActive ? '0 2px 8px rgba(0,137,186,0.3)' : 'none',
-                                  transition: 'all .15s',
+                                  boxShadow: '0 2px 8px rgba(0,137,186,0.3)',
                                 }}
                               >
                                 {isLaunching ? '…' : '▶ Lancer'}
