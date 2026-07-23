@@ -148,7 +148,7 @@ export default function FicheBelgique() {
               </div>
             </div>
             <p style={{ fontSize: 13, color: TEXT_SUB, maxWidth: 480, lineHeight: 1.6 }}>
-              Fiche récapitulative de la formation · 3 journées · 8 modules
+              Fiche récapitulative de la formation · 4 journées · 9 modules
             </p>
             {/* Badges journées */}
             <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
@@ -156,6 +156,7 @@ export default function FicheBelgique() {
                 { label: 'J1 · Les fondamentaux', color: BLUE_L },
                 { label: 'J2 · Offres & Vente', color: GOLD },
                 { label: 'J3 · Mesures & Remboursements', color: RED_BE },
+                { label: 'J4 · Terrain', color: GREEN },
               ].map(({ label, color }) => (
                 <span key={label} style={{ fontSize: 10, fontWeight: 700, color, background: `${color}18`, border: `1px solid ${color}50`, borderRadius: 20, padding: '4px 12px', textTransform: 'uppercase', letterSpacing: 1 }}>
                   {label}
@@ -615,6 +616,54 @@ export default function FicheBelgique() {
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
                 * MC : ou 1 fois/an si variation de dioptrie ≥ 0,5
               </div>
+            </div>
+          </div>
+
+          {/* ─── Bande J4 ─────────────────────────────────────────── */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 4 }}>
+            <div style={{ flex: 1, height: 1, background: `${GREEN}40` }} />
+            <span style={{ fontSize: 10, fontWeight: 800, color: GREEN, textTransform: 'uppercase', letterSpacing: 3 }}>Journée 4 · Terrain</span>
+            <div style={{ flex: 1, height: 1, background: `${GREEN}40` }} />
+          </div>
+
+          {/* ── 9. J4 TERRAIN ── */}
+          <div className="print-section" style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 18, padding: '24px 26px' }}>
+            <SectionTitle accent={GREEN}>9 · Mise en situation terrain</SectionTitle>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+
+              <Card accent={BLUE_L}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: `${BLUE_L}20`, border: `2px solid ${BLUE_L}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🧑‍💼</div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: BLUE_L, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 2 }}>CVO</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: TEXT }}>En magasin</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.65 }}>
+                  Les Conseillers Vendeurs Optique partent en magasin <strong style={{ color: TEXT }}>en binôme</strong> pour une mise en situation réelle : accueil client, trame, offres.
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <Tag color={BLUE_L}>Binôme</Tag>
+                </div>
+              </Card>
+
+              <Card accent={GOLD}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: `${GOLD}20`, border: `2px solid ${GOLD}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🔧</div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 2 }}>MO / SAV</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: TEXT }}>Retraits & SAV</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.65 }}>
+                  Les Monteurs-Opticiens et profils SAV restent avec le formateur pour traiter ensemble les <strong style={{ color: TEXT }}>retraits de commandes</strong> et les <strong style={{ color: TEXT }}>demandes SAV</strong> en conditions réelles.
+                </div>
+                <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <Tag color={GOLD}>Retraits</Tag>
+                  <Tag color={GOLD}>SAV</Tag>
+                </div>
+              </Card>
+
             </div>
           </div>
 
