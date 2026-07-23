@@ -61,6 +61,7 @@ const PAGE_TYPE_LABEL = {
   'impact':         { label: 'Impact visuel', icon: '👁️' },
   'probleme':       { label: 'Problème visuel', icon: '🔍' },
   'machines':           { label: 'Points clés',     icon: '⚙️' },
+  'labo-progressif':    { label: 'Labo progressif', icon: '🔬' },
 }
 
 function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast, nextPage, onTerminate }) {
@@ -614,6 +615,96 @@ function ForceLPTTrainer({ page, navProps }) {
   )
 }
 
+// ── Page Laboratoire progressif Châtelet ──────────────────────────
+function LaboProgressifPage({ navProps }) {
+  const [revealed, setRevealed] = useState(false)
+
+  const handleReveal = () => {
+    setRevealed(true)
+    setSharedState({ reveal_labo: true }).catch(() => {})
+  }
+  const clearReveal = () => {
+    setRevealed(false)
+    setSharedState({ reveal_labo: false }).catch(() => {})
+  }
+  const navPropsWithClear = {
+    ...navProps,
+    onNext: () => { clearReveal(); navProps.onNext?.() },
+    onPrev: () => { clearReveal(); navProps.onPrev?.() },
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0d0520 55%, #150a2e 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+        <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Présentation de l&apos;entreprise · Laboratoire</span>
+      </div>
+
+      <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start', maxWidth: 1000 }}>
+        {/* Photo */}
+        <div style={{ flexShrink: 0, width: 300, borderRadius: 18, overflow: 'hidden', border: '2px solid rgba(124,58,237,0.4)', boxShadow: '0 0 32px rgba(124,58,237,0.25)' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/assets/labo-progressif-chatelet.jpg" alt="Laboratoire progressif Châtelet" style={{ width: '100%', height: 220, objectFit: 'cover', objectPosition: 'center 40%', display: 'block' }} />
+        </div>
+
+        {/* Contenu */}
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+            🔬 Exclusivité mondiale · Paris Châtelet
+          </div>
+          <h1 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 10, lineHeight: 1.2 }}>Notre laboratoire progressif unique au monde</h1>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.65, marginBottom: 24 }}>
+            Accessible à la vue des clients, équipé de <strong style={{ color: '#fff' }}>machines CoreTBA (MEI)</strong> introuvables dans n&apos;importe quel magasin d&apos;optique au monde.
+          </p>
+
+          {/* Bouton révélation */}
+          {!revealed ? (
+            <button onClick={handleReveal} style={{
+              background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
+              border: 'none', borderRadius: 14, padding: '14px 28px',
+              color: '#fff', fontSize: 15, fontWeight: 800, cursor: 'pointer',
+              fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 10,
+              boxShadow: '0 4px 20px rgba(124,58,237,0.45)',
+            }}>
+              🔬 Révéler les chiffres sur le diffuseur
+            </button>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+                {[
+                  { label: '480 paires / jour', sub: 'capacité du laboratoire', color: '#a78bfa' },
+                  { label: 'Dans la journée', sub: 'clients parisiens', color: '#4ade80' },
+                  { label: '24 heures', sub: 'tous magasins hors IDF', color: '#00abe9' },
+                  { label: '2 sem. à 1 mois', sub: 'autres opticiens', color: '#ef4444' },
+                ].map((s, i) => (
+                  <div key={i} style={{
+                    background: `${s.color}15`, border: `1px solid ${s.color}50`,
+                    borderRadius: 12, padding: '10px 16px', minWidth: 140,
+                  }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: s.color, marginBottom: 3 }}>{s.label}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{s.sub}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ background: 'rgba(124,58,237,0.15)', border: '1.5px solid rgba(124,58,237,0.4)', borderRadius: 12, padding: '10px 20px', color: '#c4b5fd', fontSize: 13, fontWeight: 700 }}>
+                  ✅ Chiffres affichés sur le diffuseur
+                </div>
+                <button onClick={clearReveal} style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '10px 16px', color: '#f87171', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Masquer
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <TrainerNav {...navPropsWithClear} />
+    </div>
+  )
+}
+
 // ── Rendu de page ─────────────────────────────────────────────────
 
 function EntreprisePage({ page, navProps }) {
@@ -658,6 +749,9 @@ function EntreprisePage({ page, navProps }) {
 
   // ── FORCE LPT ──────────────────────────────────────────────────
   if (page.type === 'force-lpt') return <ForceLPTTrainer page={page} navProps={navProps} />
+
+  // ── LABO PROGRESSIF ────────────────────────────────────────────
+  if (page.type === 'labo-progressif') return <LaboProgressifPage navProps={navProps} />
 
   // ── CHIFFRES CLÉS ──────────────────────────────────────────────
 

@@ -428,6 +428,13 @@ export const ENTREPRISE_PAGES = [
       { label: '0 intermédiaire', color: '#f472b6', video: null },
     ],
   },
+  {
+    id: 'labo-progressif',
+    type: 'labo-progressif',
+    titre: 'Notre laboratoire progressif',
+    sousTitre: 'Une exclusivité mondiale — Paris Châtelet',
+    color: '#7c3aed',
+  },
 ]
 
 export const PROGRESSIF_PAGES = [

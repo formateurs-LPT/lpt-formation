@@ -2827,6 +2827,71 @@ function TVEntrepriseMission({ page, pageIndex, total }) {
   )
 }
 
+// ── TV Labo Progressif Châtelet ──────────────────────────────────
+function TVLaboProgressif({ page, pageIndex, total, revealLabo }) {
+  const STATS = [
+    { value: '480 paires / jour', sub: 'capacité du laboratoire', color: '#a78bfa', border: 'rgba(167,139,250,0.5)' },
+    { value: 'Dans la journée',   sub: 'clients parisiens',       color: '#4ade80', border: 'rgba(74,222,128,0.5)' },
+    { value: '24 heures',         sub: 'tous magasins hors IDF',  color: '#00abe9', border: 'rgba(0,171,233,0.5)' },
+    { value: '2 sem. à 1 mois',   sub: 'autres opticiens',        color: '#ef4444', border: 'rgba(239,68,68,0.5)' },
+  ]
+  return (
+    <div style={{ height: '100vh', position: 'relative', overflow: 'hidden', background: '#020c1f' }}>
+      {/* Photo plein écran */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/labo-progressif-chatelet.jpg"
+        alt="Laboratoire progressif Châtelet"
+        style={{
+          position: 'absolute', inset: 0, width: '100%', height: '100%',
+          objectFit: 'cover', objectPosition: 'center 40%',
+          filter: revealLabo ? 'brightness(0.25) saturate(1.2)' : 'brightness(0.5)',
+          transition: 'filter 1.2s ease',
+        }}
+      />
+      {/* Gradient overlay */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(to top, rgba(2,12,31,0.97) 0%, rgba(2,12,31,0.5) 50%, rgba(2,12,31,0.1) 100%)',
+      }} />
+      {/* Compteur page */}
+      <div style={{ position: 'absolute', top: 32, right: 44, fontSize: 12, color: 'rgba(255,255,255,0.25)', fontWeight: 600, zIndex: 2 }}>
+        {pageIndex + 1} / {total}
+      </div>
+      {/* Contenu */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '0 72px 64px' }}>
+        <div style={{
+          display: 'inline-flex', alignSelf: 'flex-start',
+          background: 'rgba(124,58,237,0.25)', border: '1px solid rgba(124,58,237,0.55)',
+          borderRadius: 20, padding: '6px 22px', marginBottom: 22,
+          fontSize: 12, fontWeight: 700, color: '#c4b5fd', textTransform: 'uppercase', letterSpacing: 2,
+        }}>🔬 Exclusivité mondiale · Paris Châtelet</div>
+        <h1 style={{ fontSize: 52, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 14, maxWidth: 900 }}>
+          Notre laboratoire progressif<br />unique au monde
+        </h1>
+        <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.5)', marginBottom: revealLabo ? 40 : 0, fontStyle: 'italic', maxWidth: 700, lineHeight: 1.5 }}>
+          Accessible à la vue des clients — équipé de machines CoreTBA (MEI) introuvables dans n&apos;importe quel magasin d&apos;optique au monde.
+        </p>
+        {revealLabo && (
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', animation: 'podiumFadeIn .6s ease both' }}>
+            {STATS.map((s, i) => (
+              <div key={i} style={{
+                background: 'rgba(2,12,31,0.75)', backdropFilter: 'blur(12px)',
+                border: `1.5px solid ${s.border}`,
+                borderRadius: 16, padding: '18px 26px', minWidth: 180,
+                animation: `podiumFadeIn .5s ease ${i * 0.12}s both`,
+              }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: s.color, lineHeight: 1, marginBottom: 8 }}>{s.value}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── TV Progressif : schéma verre PNG avec zones overlay ──────────
 const TV_PROG_ZONES = [
   { key: 'haut',   label: 'LOIN',      color: '#a78bfa', top: '19%' },
@@ -5435,7 +5500,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, sessionCode, onAmeliProClick }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, sessionCode, onAmeliProClick }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -5473,6 +5538,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
 
   // Entreprise module types — tous dispatchés pour éviter le VerreAnime
+  if (page.type === 'labo-progressif') return <TVLaboProgressif page={page} pageIndex={pageIndex} total={total} revealLabo={revealLabo} />
   if (page.type === 'freins')     return <TVEntrepriseFreins   page={page} pageIndex={pageIndex} total={total} freinsResponses={freinsResponses} />
   if (page.type === 'prix')       return <TVEntreprisePrix     page={page} pageIndex={pageIndex} total={total} prixResponses={prixResponses} revealPrix={revealPrix} />
   if (page.type === 'video-lpt')  return <TVVideoLPT audioUnlocked={audioUnlocked} />
@@ -7193,6 +7259,7 @@ export default function TVView() {
   const [revealPrix, setRevealPrix]                     = useState(false)
   const [ventesResponses, setVentesResponses]           = useState({})
   const [revealVentes, setRevealVentes]                 = useState(false)
+  const [revealLabo, setRevealLabo]                     = useState(false)
   const [promesseResponses, setPromesseResponses]       = useState({})
   const [planningDay, setPlanningDay]                   = useState(null)
   // Trame d'accueil
@@ -7254,6 +7321,7 @@ export default function TVView() {
     setRevealPrix(!!sharedState.reveal_prix)
     setVentesResponses(sharedState.ventes_responses || {})
     setRevealVentes(!!sharedState.reveal_ventes)
+    setRevealLabo(!!sharedState.reveal_labo)
     setPromesseResponses(sharedState.promesse_responses || {})
     setPlanningDay(sharedState.planning_day || null)
     setProgZoneQ(sharedState.prog_zone_q ?? null)
@@ -7509,6 +7577,7 @@ export default function TVView() {
             revealPrix={revealPrix}
             ventesResponses={ventesResponses}
             revealVentes={revealVentes}
+            revealLabo={revealLabo}
             promesseResponses={promesseResponses}
             progZoneQ={progZoneQ}
             progZoneResponses={progZoneResponses}
