@@ -302,3 +302,18 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   .trainer-head-avatar-wrap{width:60px!important;height:60px!important}
   .ob-banner-icon{display:none}
 }
+
+/* ── DASHBOARD DARK CONTEXT ── */
+#dashboard {
+  --bg: #111c2b;
+  --card: #0d1825;
+  --border: rgba(255,255,255,0.08);
+  --text: #e8edf3;
+  --text-s: rgba(255,255,255,0.45);
+  --text-m: rgba(255,255,255,0.22);
+  --lpt-l: rgba(0,171,233,0.12);
+  --lpt-ll: rgba(0,171,233,0.06);
+  --green-l: rgba(34,197,94,0.12);
+  --red-l: rgba(239,68,68,0.12);
+  --orange-l: rgba(245,158,11,0.12);
+}

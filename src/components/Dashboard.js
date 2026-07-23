@@ -353,7 +353,7 @@ function SessionsHistoryView({ onBack, onToast }) {
           </div>
 
           {quizResults.length === 0 ? (
-            <div style={{ background: '#f8fafc', border: '1px dashed var(--border)', borderRadius: 'var(--rs)', padding: '28px', textAlign: 'center', marginBottom: 24 }}>
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 'var(--rs)', padding: '28px', textAlign: 'center', marginBottom: 24 }}>
               <div style={{ fontSize: 28, marginBottom: 8 }}>🧠</div>
               <p style={{ color: 'var(--text-m)', fontSize: 14 }}>Aucun résultat quiz pour l'instant.<br />Lancez le quiz depuis le module Types de verres.</p>
             </div>
@@ -364,7 +364,7 @@ function SessionsHistoryView({ onBack, onToast }) {
                 const pct = r.total > 0 ? Math.round((r.correct / r.total) * 100) : 0
                 const color = pct === 100 ? '#16a34a' : pct >= 50 ? '#0089ba' : '#dc2626'
                 return (
-                  <div key={i} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 18px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--rs)', padding: '14px 18px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 14 }}>
                     <div style={{ width: 42, height: 42, borderRadius: '50%', background: `${color}15`, border: `2px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0, fontWeight: 800, color }}>
                       {r.collaborateur.charAt(0).toUpperCase()}
                     </div>
@@ -410,7 +410,7 @@ function SessionsHistoryView({ onBack, onToast }) {
                 const cap = str => str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
                 const { notes, count } = parseSessionHistorySummary(s)
                 return (
-                  <div key={i} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--rs)', padding: '14px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 14 }}>
                     <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--lpt-l)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>📅</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{cap(date)}</div>
@@ -1266,7 +1266,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   }
 
   if (activeView === 'idees') {
-    return <IdeesView onBack={() => setActiveView('home')} pName={pName} />
+    return <div id="dashboard"><IdeesView onBack={() => setActiveView('home')} pName={pName} /></div>
   }
 
   if (activeView === 'retour-formation') {
@@ -1422,7 +1422,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
               <div
                 key={jour.id}
                 style={{
-                  background: '#fff', border: '1px solid var(--border)',
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                   borderTop: `4px solid ${jour.color}`,
                   borderRadius: 'var(--r)', padding: '24px 28px',
                   transition: 'all .2s',
@@ -1469,7 +1469,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
                         {bloc.items.length > 0 && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                             {bloc.items.map((item, j) => (
-                              <div key={j} style={{ fontSize: 11, color: 'var(--text-s)', background: '#fff', border: '1px solid var(--border)', borderRadius: 5, padding: '3px 8px' }}>
+                              <div key={j} style={{ fontSize: 11, color: 'var(--text-s)', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5, padding: '3px 8px' }}>
                                 {item}
                               </div>
                             ))}
@@ -1501,7 +1501,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             ))}
           </div>
 
-          <div style={{ marginTop: 16, background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--r)', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 13, color: 'var(--text-s)' }}>Arrêter la diffusion du planning</span>
             <button
               onClick={async () => { await setSharedState({ tv_screen: null, planning_day: null }) }}
@@ -1523,9 +1523,9 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           </div>
           <div
             onClick={() => onLaunchModule('verre-progressif')}
-            style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '28px 30px', cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 24, marginBottom: 12 }}
-            onMouseOver={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(124,58,237,.12)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--r)', padding: '28px 30px', cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 24, marginBottom: 12 }}
+            onMouseOver={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(124,58,237,.25)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
           >
             <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg,#7c3aed,#9f67fa)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, flexShrink: 0 }}>🔬</div>
             <div style={{ flex: 1 }}>
@@ -1544,9 +1544,9 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           </div>
           <div
             onClick={() => setActiveView('free-quiz')}
-            style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '28px 30px', cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 24, marginBottom: 12 }}
-            onMouseOver={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(99,102,241,.12)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--r)', padding: '28px 30px', cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 24, marginBottom: 12 }}
+            onMouseOver={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(99,102,241,.25)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
           >
             <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg,#6366f1,#818cf8)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, flexShrink: 0 }}>🎯</div>
             <div style={{ flex: 1 }}>
@@ -1603,24 +1603,24 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           onClick={() => setActiveView('planning')}
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#fff', border: '1px solid var(--border)',
-            borderLeft: '4px solid #00abe9',
+            background: 'linear-gradient(135deg, #0d1f35 0%, #0a2a40 60%, #004d6e 100%)',
+            border: '1px solid rgba(0,171,233,0.18)',
             borderRadius: 'var(--r)', padding: '18px 24px',
             cursor: 'pointer', marginBottom: 16, transition: 'all .2s',
           }}
-          onMouseOver={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,171,233,.1)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-          onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
+          onMouseOver={e => { e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,.4)'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.borderColor = 'rgba(0,171,233,0.4)' }}
+          onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(0,171,233,0.18)' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,171,233,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,171,233,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00abe9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
               </svg>
             </div>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>4 jours · Onboarding intensif</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Planning formation</div>
-              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 1 }}>Diffusez le programme du jour sur les écrans</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(0,171,233,0.75)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>4 jours · Onboarding intensif</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>Planning formation</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>Diffusez le programme du jour sur les écrans</div>
             </div>
           </div>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#00abe9' }}>Voir →</div>
