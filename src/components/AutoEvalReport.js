@@ -41,25 +41,28 @@ function filterByCategory(entrees, responses, category) {
   )
 }
 
-function ThemeBar({ label, acquis, enCours, nonAcquis, total, accompCount }) {
+function ThemeBar({ label, maitrise, enCours, notions, nonCompris, total, accompCount }) {
   if (!total) return null
-  const pA = Math.round((acquis   / total) * 100)
-  const pE = Math.round((enCours  / total) * 100)
-  const pN = Math.round((nonAcquis / total) * 100)
+  const pM = Math.round((maitrise   / total) * 100)
+  const pE = Math.round((enCours    / total) * 100)
+  const pT = Math.round((notions    / total) * 100)
+  const pN = Math.round((nonCompris / total) * 100)
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{label}</span>
         <div style={{ display: 'flex', gap: 8, fontSize: 11, flexShrink: 0 }}>
-          <span style={{ color: '#16a34a', fontWeight: 700 }}>{pA}% ✓</span>
+          <span style={{ color: '#16a34a', fontWeight: 700 }}>{pM}% ✓</span>
           <span style={{ color: '#d97706' }}>{pE}% ◑</span>
+          <span style={{ color: '#f97316' }}>{pT}% ◔</span>
           <span style={{ color: '#dc2626' }}>{pN}% ✗</span>
           {accompCount > 0 && <span style={{ color: '#0089ba', fontWeight: 700 }}>👥 ×{accompCount}</span>}
         </div>
       </div>
       <div style={{ height: 8, borderRadius: 99, overflow: 'hidden', background: '#334155', display: 'flex' }}>
-        <div style={{ width: `${pA}%`, background: '#16a34a', transition: 'width .4s' }} />
+        <div style={{ width: `${pM}%`, background: '#16a34a', transition: 'width .4s' }} />
         <div style={{ width: `${pE}%`, background: '#d97706', transition: 'width .4s' }} />
+        <div style={{ width: `${pT}%`, background: '#f97316', transition: 'width .4s' }} />
         <div style={{ width: `${pN}%`, background: '#dc2626', transition: 'width .4s' }} />
       </div>
     </div>
@@ -113,13 +116,14 @@ export default function AutoEvalReport({ responses, entrees, category, weekDate,
     const stats = {}
     for (const { ae } of responseList) {
       for (const themeId of (ae.themes_list || [])) {
-        if (!stats[themeId]) stats[themeId] = { acquis: 0, enCours: 0, nonAcquis: 0, total: 0, accompCount: 0 }
+        if (!stats[themeId]) stats[themeId] = { maitrise: 0, enCours: 0, notions: 0, nonCompris: 0, total: 0, accompCount: 0 }
         const s = ae.theme_self_assessments?.[themeId]
         if (s) {
           stats[themeId].total++
-          if (s === 'acquis') stats[themeId].acquis++
+          if (s === 'maitrise') stats[themeId].maitrise++
           else if (s === 'en-cours') stats[themeId].enCours++
-          else if (s === 'non-acquis') stats[themeId].nonAcquis++
+          else if (s === 'notions') stats[themeId].notions++
+          else if (s === 'non-compris') stats[themeId].nonCompris++
         }
         if (ae.accompagnement_themes?.includes(themeId)) stats[themeId].accompCount++
       }
@@ -130,13 +134,13 @@ export default function AutoEvalReport({ responses, entrees, category, weekDate,
         themeId,
         label: MODULE_DATA[themeId]?.label || themeId,
         ...s,
-        pctAcquis: Math.round((s.acquis / s.total) * 100),
-        pctNonAcquis: Math.round((s.nonAcquis / s.total) * 100),
+        pctMaitrise:   Math.round((s.maitrise   / s.total) * 100),
+        pctNonCompris: Math.round((s.nonCompris / s.total) * 100),
       }))
   }, [responseList])
 
-  const byAcquis    = [...themeStats].sort((a, b) => b.pctAcquis - a.pctAcquis)
-  const byNonAcquis = [...themeStats].sort((a, b) => b.pctNonAcquis - a.pctNonAcquis)
+  const byMaitrise    = [...themeStats].sort((a, b) => b.pctMaitrise - a.pctMaitrise)
+  const byNonCompris  = [...themeStats].sort((a, b) => b.pctNonCompris - a.pctNonCompris)
   const byAccomp    = [...themeStats].filter(s => s.accompCount > 0).sort((a, b) => b.accompCount - a.accompCount)
 
   const suggestions   = responseList.filter(r => r.ae.suggestions).map(r => ({ text: r.ae.suggestions, name: r.name }))
@@ -191,13 +195,13 @@ export default function AutoEvalReport({ responses, entrees, category, weekDate,
               {[
                 { label: 'Réponses', value: n, color: '#0089ba' },
                 {
-                  label: 'Thèmes bien acquis',
-                  value: byAcquis.filter(t => t.pctAcquis >= 60).length + '/' + themeStats.length,
+                  label: 'Thèmes maîtrisés',
+                  value: byMaitrise.filter(t => t.pctMaitrise >= 60).length + '/' + themeStats.length,
                   color: '#16a34a',
                 },
                 {
                   label: 'À renforcer',
-                  value: byNonAcquis.filter(t => t.pctNonAcquis >= 30).length,
+                  value: byNonCompris.filter(t => t.pctNonCompris >= 30).length,
                   color: '#dc2626',
                 },
               ].map(({ label, value, color }) => (
@@ -230,16 +234,16 @@ export default function AutoEvalReport({ responses, entrees, category, weekDate,
             )}
 
             {/* Thèmes — de la meilleure à la moins bonne acquisition */}
-            <Section title="Acquisition par thème — du meilleur au plus difficile">
-              {byAcquis.map(s => (
+            <Section title="Niveau de maîtrise par thème — du meilleur au plus difficile">
+              {byMaitrise.map(s => (
                 <ThemeBar key={s.themeId} label={s.label} {...s} />
               ))}
             </Section>
 
             {/* Thèmes à renforcer */}
-            {byNonAcquis.some(s => s.pctNonAcquis > 0) && (
-              <Section title="⚠️ Thèmes avec le plus de non-acquis">
-                {byNonAcquis.filter(s => s.pctNonAcquis > 0).slice(0, 5).map(s => (
+            {byNonCompris.some(s => s.pctNonCompris > 0) && (
+              <Section title="⚠️ Thèmes les moins compris">
+                {byNonCompris.filter(s => s.pctNonCompris > 0).slice(0, 5).map(s => (
                   <div key={s.themeId} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '10px 14px', borderRadius: 10, marginBottom: 8,
@@ -250,7 +254,7 @@ export default function AutoEvalReport({ responses, entrees, category, weekDate,
                       fontSize: 12, fontWeight: 800, color: '#dc2626',
                       background: '#7f1d1d33', borderRadius: 20, padding: '3px 10px',
                     }}>
-                      {s.nonAcquis} × non acquis ({s.pctNonAcquis}%)
+                      {s.nonCompris} × pas compris ({s.pctNonCompris}%)
                     </span>
                   </div>
                 ))}

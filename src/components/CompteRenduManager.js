@@ -21,7 +21,7 @@ const COMMENTAIRE_META = {
 function computeRate(assessments) {
   const vals = Object.values(assessments || {}).filter(Boolean)
   if (!vals.length) return null
-  const score = vals.reduce((s, v) => s + (v === 'acquis' ? 1 : v === 'en-cours' ? 0.5 : 0), 0)
+  const score = vals.reduce((s, v) => s + (v === 'maitrise' ? 1 : v === 'en-cours' ? 0.667 : v === 'notions' ? 0.333 : 0), 0)
   return Math.round((score / vals.length) * 100)
 }
 
@@ -44,8 +44,8 @@ function SectionHead({ children, accent = '#0f172a' }) {
   )
 }
 
-function ThemeCol({ title, themes, assessments, color, bg, border, icon }) {
-  const items = themes.filter(t => assessments[t] === (title === 'Acquis' ? 'acquis' : title === 'En cours' ? 'en-cours' : 'non-acquis'))
+function ThemeCol({ title, statusKey, themes, assessments, color, bg, border, icon }) {
+  const items = themes.filter(t => assessments[t] === statusKey)
   if (items.length === 0) return null
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
@@ -94,9 +94,10 @@ export default function CompteRenduManager({ data }) {
   const rate = computeRate(assessments)
   const appMeta = APPRECIATION_META[appreciation]
 
-  const acquis    = themes.filter(t => assessments[t] === 'acquis')
-  const enCours   = themes.filter(t => assessments[t] === 'en-cours')
-  const nonAcquis = themes.filter(t => assessments[t] === 'non-acquis')
+  const maitrise   = themes.filter(t => assessments[t] === 'maitrise')
+  const enCours    = themes.filter(t => assessments[t] === 'en-cours')
+  const notions    = themes.filter(t => assessments[t] === 'notions')
+  const nonCompris = themes.filter(t => assessments[t] === 'non-compris')
   const nonRenseigne = themes.filter(t => !assessments[t])
 
   const rateColor = rate === null ? '#64748b' : rate >= 75 ? '#16a34a' : rate >= 50 ? '#d97706' : '#dc2626'
@@ -173,11 +174,11 @@ export default function CompteRenduManager({ data }) {
       <div style={{ padding: '28px 36px', display: 'flex', flexDirection: 'column', gap: 32 }}>
 
         {/* ── KPIs ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
           {[
             {
-              value: acquis.length > 0 ? `${acquis.length}/${themes.length}` : '—',
-              label: 'Thèmes acquis',
+              value: maitrise.length > 0 ? `${maitrise.length}/${themes.length}` : '—',
+              label: 'Maîtrisé',
               color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0',
             },
             {
@@ -186,8 +187,13 @@ export default function CompteRenduManager({ data }) {
               color: '#d97706', bg: '#fef3c7', border: '#fde68a',
             },
             {
-              value: nonAcquis.length > 0 ? `${nonAcquis.length}/${themes.length}` : '—',
-              label: 'À renforcer',
+              value: notions.length > 0 ? `${notions.length}/${themes.length}` : '—',
+              label: 'Quelques notions',
+              color: '#f97316', bg: '#fff7ed', border: '#fed7aa',
+            },
+            {
+              value: nonCompris.length > 0 ? `${nonCompris.length}/${themes.length}` : '—',
+              label: 'Pas compris',
               color: '#dc2626', bg: '#fee2e2', border: '#fecaca',
             },
           ].map(kpi => (
@@ -205,9 +211,10 @@ export default function CompteRenduManager({ data }) {
         <div>
           <SectionHead accent="#00abe9">Thèmes de formation</SectionHead>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <ThemeCol title="Acquis"    themes={themes} assessments={assessments} color="#16a34a" bg="#f0fdf4" border="#bbf7d0" icon="✓" />
-            <ThemeCol title="En cours"  themes={themes} assessments={assessments} color="#d97706" bg="#fffbeb" border="#fde68a" icon="◑" />
-            <ThemeCol title="Non acquis" themes={themes} assessments={assessments} color="#dc2626" bg="#fff1f2" border="#fecaca" icon="✗" />
+            <ThemeCol title="Maîtrisé"         statusKey="maitrise"    themes={themes} assessments={assessments} color="#16a34a" bg="#f0fdf4" border="#bbf7d0" icon="✓" />
+            <ThemeCol title="En cours"          statusKey="en-cours"    themes={themes} assessments={assessments} color="#d97706" bg="#fffbeb" border="#fde68a" icon="◑" />
+            <ThemeCol title="Quelques notions"  statusKey="notions"     themes={themes} assessments={assessments} color="#f97316" bg="#fff7ed" border="#fed7aa" icon="◔" />
+            <ThemeCol title="Pas compris"       statusKey="non-compris" themes={themes} assessments={assessments} color="#dc2626" bg="#fff1f2" border="#fecaca" icon="✗" />
           </div>
           {nonRenseigne.length > 0 && (
             <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -289,19 +296,34 @@ export default function CompteRenduManager({ data }) {
         )}
 
         {/* ── Recommandations manager ── */}
-        {(nonAcquis.length > 0 || enCours.length > 0 || acquis.length > 0) && (
+        {(nonCompris.length > 0 || notions.length > 0 || enCours.length > 0 || maitrise.length > 0) && (
           <div>
             <SectionHead accent="#f59e0b">Guide pour le manager</SectionHead>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-              {nonAcquis.length > 0 && (
+              {nonCompris.length > 0 && (
                 <div style={{ background: '#fff1f2', border: '1.5px solid #fecaca', borderRadius: 14, padding: '14px 18px' }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>
-                    🔴 À retravailler en priorité
+                    🔴 Pas compris — à retravailler en priorité
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {nonAcquis.map(t => (
+                    {nonCompris.map(t => (
                       <span key={t} style={{ fontSize: 13, fontWeight: 600, color: '#991b1b', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 20, padding: '4px 12px' }}>
+                        {MODULE_DATA[t]?.label || t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {notions.length > 0 && (
+                <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: 14, padding: '14px 18px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#f97316', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>
+                    🟠 Quelques notions — bases à consolider
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {notions.map(t => (
+                      <span key={t} style={{ fontSize: 13, fontWeight: 600, color: '#c2410c', background: '#ffedd5', border: '1px solid #fb923c', borderRadius: 20, padding: '4px 12px' }}>
                         {MODULE_DATA[t]?.label || t}
                       </span>
                     ))}
@@ -312,7 +334,7 @@ export default function CompteRenduManager({ data }) {
               {enCours.length > 0 && (
                 <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 14, padding: '14px 18px' }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>
-                    🟡 À consolider — en cours d'acquisition
+                    🟡 En cours — peut encore progresser
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {enCours.map(t => (
@@ -324,13 +346,13 @@ export default function CompteRenduManager({ data }) {
                 </div>
               )}
 
-              {acquis.length > 0 && (
+              {maitrise.length > 0 && (
                 <div style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: 14, padding: '14px 18px' }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>
                     🟢 Maîtrisé
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {acquis.map(t => (
+                    {maitrise.map(t => (
                       <span key={t} style={{ fontSize: 13, fontWeight: 600, color: '#166534', background: '#dcfce7', border: '1px solid #86efac', borderRadius: 20, padding: '4px 12px' }}>
                         {MODULE_DATA[t]?.label || t}
                       </span>

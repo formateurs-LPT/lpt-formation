@@ -20,7 +20,7 @@ function formatDate(dateStr) {
 function computeRate(assessments) {
   const vals = Object.values(assessments || {}).filter(Boolean)
   if (!vals.length) return null
-  const score = vals.reduce((s, v) => s + (v === 'acquis' ? 1 : v === 'en-cours' ? 0.5 : 0), 0)
+  const score = vals.reduce((s, v) => s + (v === 'maitrise' ? 1 : v === 'en-cours' ? 0.667 : v === 'notions' ? 0.333 : 0), 0)
   return Math.round((score / vals.length) * 100)
 }
 

@@ -8,9 +8,10 @@ const THEMES_FRANCE   = ['entreprise','optique','types-verres','verre-progressif
 const THEMES_BELGIQUE = ['entreprise','optique','types-verres','verre-progressif','montures','trame-accueil','offres','pdm','mutuelles-inami']
 
 const STATUS_OPTS = [
-  { key: 'acquis',     label: 'Acquis',     color: '#16a34a', bg: 'rgba(22,163,74,0.18)',   border: 'rgba(22,163,74,0.5)'  },
-  { key: 'en-cours',   label: 'En cours',   color: '#f59e0b', bg: 'rgba(245,158,11,0.18)',  border: 'rgba(245,158,11,0.5)' },
-  { key: 'non-acquis', label: 'Non acquis', color: '#f87171', bg: 'rgba(248,113,113,0.18)', border: 'rgba(248,113,113,0.5)' },
+  { key: 'non-compris', label: 'Pas compris', color: '#dc2626', bg: 'rgba(220,38,38,0.18)',  border: 'rgba(220,38,38,0.5)'  },
+  { key: 'notions',     label: 'Notions',     color: '#f97316', bg: 'rgba(249,115,22,0.18)', border: 'rgba(249,115,22,0.5)' },
+  { key: 'en-cours',    label: 'En cours',    color: '#d97706', bg: 'rgba(217,119,6,0.18)',  border: 'rgba(217,119,6,0.5)'  },
+  { key: 'maitrise',    label: 'Maîtrisé',    color: '#16a34a', bg: 'rgba(22,163,74,0.18)',  border: 'rgba(22,163,74,0.5)'  },
 ]
 
 function getWeekDate() {

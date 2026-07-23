@@ -26,9 +26,10 @@ const CATEGORY_META = {
 }
 
 const STATUS_OPTIONS = [
-  { key: 'acquis',     label: 'Acquis',     color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0', icon: '✓' },
-  { key: 'en-cours',   label: 'En cours',   color: '#d97706', bg: '#fef3c7', border: '#fde68a', icon: '◑' },
-  { key: 'non-acquis', label: 'Non acquis', color: '#dc2626', bg: '#fee2e2', border: '#fecaca', icon: '✗' },
+  { key: 'maitrise',    label: 'Maîtrisé',         color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0', icon: '✓' },
+  { key: 'en-cours',    label: 'En cours',          color: '#d97706', bg: '#fef3c7', border: '#fde68a', icon: '◑' },
+  { key: 'notions',     label: 'Quelques notions',  color: '#f97316', bg: '#fff7ed', border: '#fed7aa', icon: '◔' },
+  { key: 'non-compris', label: 'Pas compris',       color: '#dc2626', bg: '#fee2e2', border: '#fecaca', icon: '✗' },
 ]
 
 /** Extrait le prénom depuis "Prénom NOM" (les mots tout-caps = nom de famille) */
@@ -51,7 +52,7 @@ function getWeekDate() {
 function computeRate(assessments) {
   const vals = Object.values(assessments || {}).filter(Boolean)
   if (!vals.length) return null
-  const score = vals.reduce((s, v) => s + (v === 'acquis' ? 1 : v === 'en-cours' ? 0.5 : 0), 0)
+  const score = vals.reduce((s, v) => s + (v === 'maitrise' ? 1 : v === 'en-cours' ? 0.667 : v === 'notions' ? 0.333 : 0), 0)
   return Math.round((score / vals.length) * 100)
 }
 

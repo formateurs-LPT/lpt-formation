@@ -12,9 +12,9 @@ function getWeekDate() {
   return d.toISOString().slice(0, 10)
 }
 
-const STATUS_LABELS = { 'acquis': 'Acquis', 'en-cours': 'En cours', 'non-acquis': 'Non acquis' }
-const STATUS_COLORS = { 'acquis': '#16a34a', 'en-cours': '#d97706', 'non-acquis': '#dc2626' }
-const STATUS_BG    = { 'acquis': '#dcfce7', 'en-cours': '#fef3c7', 'non-acquis': '#fee2e2' }
+const STATUS_LABELS = { 'maitrise': 'Maîtrisé', 'en-cours': 'En cours', 'notions': 'Quelques notions', 'non-compris': 'Pas compris' }
+const STATUS_COLORS = { 'maitrise': '#16a34a', 'en-cours': '#d97706', 'notions': '#f97316', 'non-compris': '#dc2626' }
+const STATUS_BG    = { 'maitrise': '#dcfce7', 'en-cours': '#fef3c7', 'notions': '#fff7ed', 'non-compris': '#fee2e2' }
 
 function Stars({ value, size = 16 }) {
   return (
@@ -133,9 +133,10 @@ function ParticipantRecapModal({ name, snap, onClose }) {
   const assessments = ae.theme_self_assessments || {}
   const accomp    = ae.accompagnement_themes || []
 
-  const acquis    = themes.filter(t => assessments[t] === 'acquis')
-  const enCours   = themes.filter(t => assessments[t] === 'en-cours')
-  const nonAcquis = themes.filter(t => assessments[t] === 'non-acquis')
+  const maitrise   = themes.filter(t => assessments[t] === 'maitrise')
+  const enCours    = themes.filter(t => assessments[t] === 'en-cours')
+  const notions    = themes.filter(t => assessments[t] === 'notions')
+  const nonCompris = themes.filter(t => assessments[t] === 'non-compris')
 
   return (
     <div
@@ -148,7 +149,7 @@ function ParticipantRecapModal({ name, snap, onClose }) {
       >
         {/* Header sombre */}
         <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)', padding: '24px 28px', borderRadius: '24px 24px 0 0' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: ae.rating || acquis.length || enCours.length || nonAcquis.length ? 20 : 0 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: ae.rating || maitrise.length || enCours.length || notions.length || nonCompris.length ? 20 : 0 }}>
             <div>
               <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 6 }}>
                 Récap auto-évaluation
@@ -171,12 +172,13 @@ function ParticipantRecapModal({ name, snap, onClose }) {
             </div>
           </div>
           {/* Stats strip */}
-          {(acquis.length + enCours.length + nonAcquis.length) > 0 && (
+          {(maitrise.length + enCours.length + notions.length + nonCompris.length) > 0 && (
             <div style={{ display: 'flex', gap: 10 }}>
               {[
-                { count: acquis.length,    label: 'Acquis',     color: '#22c55e', bg: 'rgba(34,197,94,0.18)' },
-                { count: enCours.length,   label: 'En cours',   color: '#f59e0b', bg: 'rgba(245,158,11,0.18)' },
-                { count: nonAcquis.length, label: 'Non acquis', color: '#f87171', bg: 'rgba(248,113,113,0.18)' },
+                { count: maitrise.length,   label: 'Maîtrisé',   color: '#22c55e', bg: 'rgba(34,197,94,0.18)' },
+                { count: enCours.length,    label: 'En cours',   color: '#f59e0b', bg: 'rgba(245,158,11,0.18)' },
+                { count: notions.length,    label: 'Notions',    color: '#f97316', bg: 'rgba(249,115,22,0.18)' },
+                { count: nonCompris.length, label: 'Pas compris',color: '#f87171', bg: 'rgba(248,113,113,0.18)' },
               ].filter(g => g.count > 0).map(({ count, label, color, bg }) => (
                 <div key={label} style={{ background: bg, borderRadius: 12, padding: '10px 16px', textAlign: 'center', flex: 1 }}>
                   <div style={{ fontSize: 24, fontWeight: 900, color, lineHeight: 1 }}>{count}</div>
@@ -190,11 +192,12 @@ function ParticipantRecapModal({ name, snap, onClose }) {
         {/* Corps */}
         <div style={{ padding: '22px 28px', display: 'flex', flexDirection: 'column', gap: 22 }}>
 
-          {/* Thèmes non acquis en premier */}
+          {/* Du moins bon au meilleur niveau */}
           {[
-            { key: 'non-acquis', list: nonAcquis, label: 'Non acquis',  color: '#dc2626', bg: '#fee2e2', border: '#fecaca', icon: '✗' },
-            { key: 'en-cours',   list: enCours,   label: 'En cours',    color: '#d97706', bg: '#fef3c7', border: '#fde68a', icon: '◑' },
-            { key: 'acquis',     list: acquis,     label: 'Acquis',      color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0', icon: '✓' },
+            { key: 'non-compris', list: nonCompris, label: 'Pas compris',       color: '#dc2626', bg: '#fee2e2', border: '#fecaca', icon: '✗' },
+            { key: 'notions',     list: notions,    label: 'Quelques notions',   color: '#f97316', bg: '#fff7ed', border: '#fed7aa', icon: '◔' },
+            { key: 'en-cours',    list: enCours,    label: 'En cours',           color: '#d97706', bg: '#fef3c7', border: '#fde68a', icon: '◑' },
+            { key: 'maitrise',    list: maitrise,   label: 'Maîtrisé',           color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0', icon: '✓' },
           ].filter(g => g.list.length > 0).map(g => (
             <section key={g.key}>
               <div style={{ fontSize: 11, fontWeight: 800, color: g.color, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -250,7 +253,7 @@ function ParticipantRecapModal({ name, snap, onClose }) {
             </section>
           )}
 
-          {!ae.suggestions && !ae.rating_comment && accomp.length === 0 && acquis.length === 0 && enCours.length === 0 && nonAcquis.length === 0 && (
+          {!ae.suggestions && !ae.rating_comment && accomp.length === 0 && maitrise.length === 0 && enCours.length === 0 && notions.length === 0 && nonCompris.length === 0 && (
             <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8', fontSize: 13 }}>Aucune donnée disponible.</div>
           )}
 
