@@ -449,6 +449,7 @@ export default function ModuleMiniJeux({ pName, onBack }) {
   const [reel1State, setReel1]    = useState('idle')
   const [reel2State, setReel2]    = useState('idle')
   const [reelTState, setReelT]    = useState('idle')
+  const vendeurPoolRef = useRef([]) // participants qui n'ont pas encore été vendeur ce cycle
 
   const activeParticipants = useMemo(
     () => participants.filter(p => !excluded.has(p)),
@@ -499,6 +500,7 @@ export default function ModuleMiniJeux({ pName, onBack }) {
     if (active.length < 2) return
     setView('game')
     setPhase('idle')
+    vendeurPoolRef.current = [...active] // initialise le pool : tout le monde peut être vendeur
     // TV affiche les roues en attente (sans spin)
     await setSharedState({ minijeu_phase: 'game_ready', minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null }).catch(() => {})
   }
@@ -508,9 +510,20 @@ export default function ModuleMiniJeux({ pName, onBack }) {
     const active = participants.filter(p => !excluded.has(p))
     if (active.length < 2) return
 
-    const shuffled = [...active].sort(() => Math.random() - 0.5)
-    const p1 = shuffled[0]
-    const p2 = shuffled[1]
+    // Pool tournant : seuls ceux qui n'ont pas encore été vendeur ce cycle
+    let pool = vendeurPoolRef.current.filter(p => active.includes(p))
+    if (pool.length === 0) {
+      // Tout le monde est passé → nouveau cycle
+      pool = [...active]
+    }
+
+    const vendeurIdx = Math.floor(Math.random() * pool.length)
+    const p1 = pool[vendeurIdx]
+    vendeurPoolRef.current = pool.filter((_, i) => i !== vendeurIdx)
+
+    // Client : n'importe qui sauf le vendeur
+    const clientCandidates = active.filter(p => p !== p1)
+    const p2 = clientCandidates[Math.floor(Math.random() * clientCandidates.length)]
     const t  = THEMES[Math.floor(Math.random() * THEMES.length)]
 
     setPhase('spinning')
