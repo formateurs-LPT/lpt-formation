@@ -5,14 +5,39 @@ export { QUIZ_J1 }
 
 export const TYPES_VERRES_QUIZ = [
   {
+    type: 'text-open',
     question: 'Quel est le délai de fabrication du verre unifocal ?',
-    options: ['9 jours', '10 minutes'],
-    correct: 1,
+    hint: '10 minutes',
   },
   {
+    type: 'text-open',
+    question: 'Comment s\'appelle le verre progressif de Lunettes Pour Tous ?',
+    hint: 'Pulsar Next',
+  },
+  {
+    type: 'text-open',
     question: 'Quel est le fournisseur du verre progressif Pulsar Next ?',
-    options: ['Essilor (France)', 'Rodenstock (Allemagne)', 'Zeiss (Allemagne)'],
-    correct: 1,
+    hint: 'Rodenstock (Allemagne)',
+  },
+  {
+    type: 'text-open',
+    question: 'Quel est le délai de fabrication pour un verre progressif Rodenstock ?',
+    hint: '9 jours',
+  },
+  {
+    type: 'text-open',
+    question: 'Quel est le délai de fabrication pour un verre progressif fabriqué dans notre laboratoire parisien ?',
+    hint: '24 à 48 heures',
+  },
+  {
+    type: 'text-open',
+    question: 'Combien de zones de vision a un verre progressif ? Citez-les.',
+    hint: '3 zones : loin (haut) · intermédiaire (centre) · près (bas)',
+  },
+  {
+    type: 'text-open',
+    question: 'Pour quel type de client propose-t-on un verre progressif ?',
+    hint: 'Les presbytes — correction de loin ET de près avec une seule paire de lunettes',
   },
 ]
 

@@ -1,14 +1,16 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbSelect, getActiveSessionCode, setSharedState } from '@/lib/supabase'
+import { sbUpdate, sbSelect, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import TrainerAvatar from '@/components/TrainerAvatar'
 import { TYPES_VERRES_PAGES as PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
 import { useIsMobile } from '@/lib/useIsMobile'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
+const BUBBLE_COLORS = ['#00abe9', '#4ade80', '#f59e0b', '#a78bfa', '#f472b6', '#34d399']
 
 // ── Keyframes injectés une seule fois ─────────────────────────────
 const STYLES = `
@@ -250,7 +252,7 @@ function ContentPageProgressif({ page, pName, onPrev, onNext, onBack, isFirst, i
             <h2 style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 4 }}>
               Verre <span style={{ color: page.color }}>progressif</span>
             </h2>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Pulsar Next — Rodenstock · 9 jours</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Pulsar Next · 2 options de fabrication</div>
           </div>
 
           {/* Checklist zones */}
@@ -294,15 +296,19 @@ function ContentPageProgressif({ page, pName, onPrev, onNext, onBack, isFirst, i
             </div>
           )}
 
-          {/* Note compacte */}
-          <div style={{
-            border: '1.5px solid rgba(239,68,68,0.5)',
-            borderRadius: 10, padding: '11px 14px',
-            background: 'rgba(239,68,68,0.06)',
-          }}>
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, margin: 0 }}>
-              Verre derniere generation — zone de flou reduite au maximum.
-            </p>
+          {/* Délais de fabrication */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 1.2 }}>Délais de fabrication</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 10, padding: '10px 14px' }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#4ade80', marginBottom: 3 }}>24 / 48h</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>Verres origine France<br />Fabriqués à Paris</div>
+              </div>
+              <div style={{ flex: 1, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 10, padding: '10px 14px' }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#fbbf24', marginBottom: 3 }}>9 jours</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>Verres Rodenstock<br />Fabriqués en Allemagne</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -532,121 +538,115 @@ function ContentPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pag
 
 // ── Quiz Controller (vue formateur) ──────────────────────────────
 function QuizController({ quizQ, onNext, onEnd, onBack }) {
-  const [liveAnswers, setLiveAnswers] = useState([])
+  const [openAnswers, setOpenAnswers] = useState([])
+  const [validating, setValidating] = useState({})
+  const [validated, setValidated] = useState({})
+
   const q = TYPES_VERRES_QUIZ[quizQ]
   const isLast = quizQ >= TYPES_VERRES_QUIZ.length - 1
+  const pageId = `types-verres:${quizQ}`
 
   useEffect(() => {
+    setOpenAnswers([])
+    setValidating({})
+    setValidated({})
     const poll = async () => {
-      const rows = await fetchTrainerQuizAnswers(
-        `session_code=eq.${getActiveSessionCode()}&module_id=eq.types-verres&question_idx=eq.${quizQ}`
-      )
-      setLiveAnswers(rows || [])
+      const rows = await fetchOpenAnswers(getActiveSessionCode(), pageId)
+      setOpenAnswers(rows || [])
     }
     poll()
-    const t = setInterval(poll, 1500)
+    const t = setInterval(poll, 2000)
     return () => clearInterval(t)
-  }, [quizQ])
+  }, [quizQ, pageId])
 
-  const total = liveAnswers.length
-  const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+  const handleValidate = async (row, isCorrect) => {
+    if (validating[row.participant_name]) return
+    setValidating(v => ({ ...v, [row.participant_name]: true }))
+    await saveModuleQuizAnswer({
+      moduleId: 'types-verres',
+      questionIdx: quizQ,
+      collaborateur: row.participant_name,
+      answerIdx: 0,
+      isCorrect,
+    })
+    setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
+    setValidating(v => ({ ...v, [row.participant_name]: false }))
+  }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-      display: 'flex', flexDirection: 'column', padding: '24px 40px',
-    }}>
-      {/* Header */}
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 40px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz · Types de verres — Vue formateur</span>
         </div>
-        <button onClick={onBack} style={{
-          background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)',
-          color: '#ff6b6b', padding: '7px 16px', borderRadius: 10,
-          fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-        }}>✕ Terminer</button>
+        <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Terminer</button>
       </div>
 
-      {/* Badge question */}
-      <div style={{ textAlign: 'center', marginBottom: 16 }}>
-        <div style={{
-          display: 'inline-block',
-          background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
-          borderRadius: 20, padding: '6px 24px',
-          fontSize: 12, fontWeight: 700, color: '#a78bfa', letterSpacing: 1.5, textTransform: 'uppercase',
-        }}>Question {quizQ + 1} / {TYPES_VERRES_QUIZ.length}</div>
+      <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 24px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+          Question {quizQ + 1} / {TYPES_VERRES_QUIZ.length}
+        </div>
       </div>
 
-      {/* Question */}
-      <div style={{
-        fontSize: 24, fontWeight: 800, color: '#fff', textAlign: 'center',
-        marginBottom: 36, lineHeight: 1.3, maxWidth: 800, alignSelf: 'center',
-      }}>{q.question}</div>
+      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.3, maxWidth: 800, margin: '0 auto 14px' }}>
+        {q.question}
+      </div>
 
-      {/* Barres réponses en direct */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, maxWidth: 720, alignSelf: 'center', width: '100%' }}>
-        {q.options.map((opt, i) => {
-          const count = counts[i]
-          const isCorrect = i === q.correct
-          const pct = total > 0 ? (count / total) * 100 : 0
+      <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.2)', borderRadius: 12, padding: '8px 22px', fontSize: 12, color: 'rgba(0,171,233,0.7)', fontStyle: 'italic' }}>
+          Réponse attendue : {q.hint}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 820, margin: '0 auto', maxHeight: '45vh', overflowY: 'auto', paddingRight: 4 }}>
+        {openAnswers.length === 0 ? (
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, fontStyle: 'italic', padding: '20px', textAlign: 'center' }}>
+            En attente des réponses des participants…
+          </div>
+        ) : openAnswers.map((row, i) => {
+          const status = validated[row.participant_name]
+          const isValidating = validating[row.participant_name]
           return (
-            <div key={i} style={{
-              background: isCorrect ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${isCorrect ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.1)'}`,
-              borderRadius: 16, padding: '14px 18px',
+            <div key={row.participant_name} style={{
+              background: status === 'correct' ? 'rgba(34,197,94,0.08)' : status === 'wrong' ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${status === 'correct' ? 'rgba(34,197,94,0.3)' : status === 'wrong' ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14,
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{
-                    width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-                    background: OPTION_COLORS[i],
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 14, fontWeight: 800, color: '#fff',
-                  }}>{'ABCD'[i]}</div>
-                  <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{opt}</span>
-                  {isCorrect && <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, background: 'rgba(34,197,94,0.15)', padding: '2px 10px', borderRadius: 20 }}>✓ Bonne réponse</span>}
-                </div>
-                <span style={{ fontSize: 22, fontWeight: 800, color: isCorrect ? '#4ade80' : '#fff' }}>
-                  {count}<span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500, marginLeft: 4 }}>vote{count > 1 ? 's' : ''}</span>
-                </span>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, background: `${BUBBLE_COLORS[i % BUBBLE_COLORS.length]}22`, border: `2px solid ${BUBBLE_COLORS[i % BUBBLE_COLORS.length]}60`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length] }}>
+                {row.participant_name?.charAt(0)?.toUpperCase() || '?'}
               </div>
-              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%', borderRadius: 4,
-                  width: `${pct}%`,
-                  background: isCorrect ? '#4ade80' : OPTION_COLORS[i],
-                  transition: 'width .5s ease',
-                }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length], marginBottom: 3 }}>{row.participant_name}</div>
+                <div style={{ fontSize: 15, color: '#fff', lineHeight: 1.4 }}>{row.answer}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                {status ? (
+                  <div style={{ fontSize: 22, fontWeight: 800, color: status === 'correct' ? '#4ade80' : '#f87171' }}>{status === 'correct' ? '✓' : '✗'}</div>
+                ) : (
+                  <>
+                    <button onClick={() => handleValidate(row, true)} disabled={!!isValidating} style={{ width: 38, height: 38, borderRadius: 10, border: 'none', background: 'rgba(34,197,94,0.18)', color: '#4ade80', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isValidating ? 0.5 : 1, fontFamily: 'inherit' }}>✓</button>
+                    <button onClick={() => handleValidate(row, false)} disabled={!!isValidating} style={{ width: 38, height: 38, borderRadius: 10, border: 'none', background: 'rgba(239,68,68,0.18)', color: '#f87171', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isValidating ? 0.5 : 1, fontFamily: 'inherit' }}>✗</button>
+                  </>
+                )}
               </div>
             </div>
           )
         })}
       </div>
 
-      {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28 }}>
-        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
-          <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginRight: 6 }}>{total}</span>
-          participant{total !== 1 ? 's' : ''} {total !== 1 ? 'ont' : 'a'} répondu
+      {openAnswers.length > 0 && (
+        <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 10 }}>
+          {openAnswers.length} réponse{openAnswers.length > 1 ? 's' : ''} reçue{openAnswers.length > 1 ? 's' : ''}
         </div>
+      )}
+
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 28 }}>
         {isLast ? (
-          <button onClick={onEnd} style={{
-            background: 'linear-gradient(135deg, #16a34a, #22c55e)',
-            border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
-            fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            boxShadow: '0 6px 24px rgba(34,197,94,0.4)',
-          }}>✓ Terminer le quiz</button>
+          <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 40px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Voir les résultats</button>
         ) : (
-          <button onClick={onNext} style={{
-            background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
-            border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
-            fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            boxShadow: '0 6px 24px rgba(124,58,237,0.45)',
-          }}>Question suivante →</button>
+          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #0089ba, #00abe9)', border: 'none', color: '#fff', padding: '14px 40px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,171,233,0.45)' }}>Question suivante →</button>
         )}
       </div>
     </div>
