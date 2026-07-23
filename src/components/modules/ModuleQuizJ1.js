@@ -490,6 +490,8 @@ export default function ModuleQuizJ1({ pName, onBack }) {
     if (next % 5 === 0 && next < QUIZ_J1.length) {
       setQuizInterstitial(true)
       setSharedState({ quiz_interstitial_q: next }).catch(() => {})
+    } else {
+      setSharedState({ quiz_interstitial_q: null }).catch(() => {})
     }
   }
 

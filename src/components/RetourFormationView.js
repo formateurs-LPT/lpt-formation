@@ -104,6 +104,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
   const [commentaireLibre, setCommentaireLibre] = useState('')
   const [saving, setSaving]                     = useState(false)
   const [loading, setLoading]                   = useState(true)
+  const [correcting, setCorrecting]             = useState(false)
   const themes = CATEGORY_META[categoryKey]?.themes || THEMES_FRANCE
   const name = entree.fullName || `${entree.nom} ${entree.prenom}`.trim()
 
@@ -240,6 +241,34 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
   }
 
   const managers = getManagers(entree.magasin)
+
+  const handleCorrectText = async () => {
+    if (!commentaireLibre.trim() || correcting) return
+    setCorrecting(true)
+    try {
+      const params = new URLSearchParams({ text: commentaireLibre, language: 'fr' })
+      const res = await fetch('https://api.languagetool.org/v2/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      })
+      const data = await res.json()
+      const matches = (data.matches || []).filter(m => m.replacements?.length)
+      if (!matches.length) return
+      // Appliquer les corrections de la fin vers le début pour ne pas décaler les offsets
+      const sorted = [...matches].sort((a, b) => b.offset - a.offset)
+      let corrected = commentaireLibre
+      for (const m of sorted) {
+        corrected = corrected.slice(0, m.offset) + m.replacements[0].value + corrected.slice(m.offset + m.length)
+      }
+      setCommentaireLibre(corrected)
+      await saveSnapshot(buildSnap({ commentaire_libre: corrected }))
+    } catch (e) {
+      console.error('Correction échouée', e)
+    } finally {
+      setCorrecting(false)
+    }
+  }
 
   const sendToManager = () => {
     if (!managers.length || !reportUrl) return
@@ -583,7 +612,25 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
           <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Mot du formateur
           </span>
-          {saving && <span style={{ fontSize: 11, color: '#475569', fontStyle: 'italic' }}>Sauvegarde…</span>}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {saving && <span style={{ fontSize: 11, color: '#475569', fontStyle: 'italic' }}>Sauvegarde…</span>}
+            {commentaireLibre.trim() && (
+              <button
+                onClick={handleCorrectText}
+                disabled={correcting}
+                style={{
+                  padding: '5px 12px', borderRadius: 8, border: '1px solid #334155',
+                  background: correcting ? '#1e293b' : '#0f172a',
+                  color: correcting ? '#475569' : '#818cf8',
+                  fontSize: 11, fontWeight: 700, cursor: correcting ? 'default' : 'pointer',
+                  fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
+                  transition: 'all .15s',
+                }}
+              >
+                {correcting ? '⏳ Correction…' : '✦ Corriger'}
+              </button>
+            )}
+          </div>
         </div>
         <div style={{ padding: '14px 18px' }}>
           <textarea

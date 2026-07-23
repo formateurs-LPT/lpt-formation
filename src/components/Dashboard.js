@@ -1302,7 +1302,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   if (activeView === 'free-quiz') {
     return (
       <div id="dashboard">
-        <FreeQuizTrainer onBack={() => setActiveView('home')} />
+        <FreeQuizTrainer onBack={() => setActiveView('modules')} />
       </div>
     )
   }
@@ -1542,6 +1542,22 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
               Lancer <span style={{ fontSize: 20 }}>→</span>
             </div>
           </div>
+          <div
+            onClick={() => setActiveView('free-quiz')}
+            style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '28px 30px', cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 24, marginBottom: 12 }}
+            onMouseOver={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(99,102,241,.12)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
+          >
+            <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg,#6366f1,#818cf8)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, flexShrink: 0 }}>🎯</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Outil pédagogique · Toutes formations</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Quiz libre</div>
+              <div style={{ fontSize: 13, color: 'var(--text-s)' }}>Pose une question · les formés répondent · tu valides et commentes en direct.</div>
+            </div>
+            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, color: '#6366f1', fontSize: 14, fontWeight: 600 }}>
+              Lancer <span style={{ fontSize: 20 }}>→</span>
+            </div>
+          </div>
           <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--r)', padding: 24, textAlign: 'center', color: 'var(--text-m)' }}>
             <div style={{ fontSize: 22, marginBottom: 8 }}>＋</div>
             <div style={{ fontSize: 13, fontWeight: 500 }}>D'autres modules seront disponibles prochainement</div>
@@ -1686,15 +1702,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             )}
           </div>
 
-          <div className="dash-tile" onClick={() => setActiveView('free-quiz')} style={{ borderColor: 'rgba(99,102,241,0.35)' }}>
-            <div className="dash-tile-top">
-              <div className="dash-tile-icon">🎯</div>
-              <span className="dash-tile-link" style={{ color: '#6366f1' }}>Lancer →</span>
-            </div>
-            <div className="dash-tile-count" style={{ color: '#6366f1', fontSize: 22 }}>Quiz libre</div>
-            <div className="dash-tile-label">Questions ouvertes</div>
-            <div className="dash-tile-sub">Pose une question · les formés répondent · tu valides</div>
-          </div>
+
         </div>
 
         {/* Planning + Shortcuts + Fiches */}

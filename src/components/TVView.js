@@ -7287,9 +7287,16 @@ export default function TVView() {
 
   // Podium interstitiel piloté par quiz_interstitial_q dans sharedState
   useEffect(() => {
-    if (sharedState?.quiz_interstitial_q) setQuizInterstitialPhase(true)
-    else setQuizInterstitialPhase(false)
-  }, [sharedState?.quiz_interstitial_q])
+    const interstitialQ = sharedState?.quiz_interstitial_q
+    // Si le formateur a avancé au-delà du point d'interstitiel sans le fermer, sortir automatiquement
+    if (interstitialQ && modulePage != null && (modulePage - 100) > interstitialQ) {
+      setQuizInterstitialPhase(false)
+    } else if (interstitialQ) {
+      setQuizInterstitialPhase(true)
+    } else {
+      setQuizInterstitialPhase(false)
+    }
+  }, [sharedState?.quiz_interstitial_q, modulePage])
 
   // Podium final — piloté par quiz_final_phase dans sharedState (formateur contrôle l'ordre)
   useEffect(() => {

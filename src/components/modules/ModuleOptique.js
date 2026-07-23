@@ -1443,6 +1443,8 @@ export default function ModuleOptique({ pName, onBack }) {
     if (next % 5 === 0 && next < OPTIQUE_QUIZ.length) {
       setQuizInterstitial(true)
       setSharedState({ quiz_interstitial_q: next }).catch(() => {})
+    } else {
+      setSharedState({ quiz_interstitial_q: null }).catch(() => {})
     }
   }
 
