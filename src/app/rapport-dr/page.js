@@ -50,9 +50,17 @@ function TraineeCard({ row }) {
   const verdict = getVerdict(snap)
   const meta = verdict ? VERDICT_META[verdict] : null
   const isMauvais = verdict === 'mauvais'
+  const isMoyen   = verdict === 'moyen'
+  const canExpand = (isMauvais || isMoyen) && hasComments
 
   const hasComments = snap.commentaire_libre || snap.attitude_note || snap.comprehension_note
   const magasin = snap.magasin || '—'
+
+  const expandBorderColor  = isMauvais ? '#fecaca' : '#fde68a'
+  const expandBg           = isMauvais ? '#fff5f5' : '#fffbeb'
+  const expandTitleColor   = isMauvais ? '#dc2626' : '#d97706'
+  const expandTitleLabel   = isMauvais ? '⚠ Commentaires du formateur' : '📝 Commentaires du formateur'
+  const expandNoteBorder   = isMauvais ? '#fecaca' : '#fde68a'
 
   return (
     <div style={{
@@ -63,20 +71,18 @@ function TraineeCard({ row }) {
       transition: 'border-color .2s',
     }}>
       <div
-        onClick={() => isMauvais && hasComments && setOpen(o => !o)}
+        onClick={() => canExpand && setOpen(o => !o)}
         style={{
           display: 'flex', alignItems: 'center', gap: 14,
           padding: '16px 20px',
-          cursor: isMauvais && hasComments ? 'pointer' : 'default',
+          cursor: canExpand ? 'pointer' : 'default',
         }}
       >
-        {/* Dot verdict */}
         <div style={{
           width: 12, height: 12, borderRadius: '50%', flexShrink: 0,
           background: meta?.dot || '#cbd5e1',
         }} />
 
-        {/* Infos */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>
             {row.collaborateur}
@@ -84,7 +90,6 @@ function TraineeCard({ row }) {
           <div style={{ fontSize: 12, color: '#64748b' }}>{magasin}</div>
         </div>
 
-        {/* Badge verdict */}
         {meta ? (
           <div style={{
             padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 800,
@@ -99,29 +104,27 @@ function TraineeCard({ row }) {
           </div>
         )}
 
-        {/* Chevron si mauvais + commentaires */}
-        {isMauvais && hasComments && (
+        {canExpand && (
           <span style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0, marginLeft: 4 }}>
             {open ? '▲' : '▼'}
           </span>
         )}
       </div>
 
-      {/* Commentaires (uniquement si mauvais) */}
-      {isMauvais && open && hasComments && (
+      {canExpand && open && (
         <div style={{
-          borderTop: '1px solid #fee2e2',
-          background: '#fff5f5',
+          borderTop: `1px solid ${expandBorderColor}`,
+          background: expandBg,
           padding: '16px 20px',
           display: 'flex', flexDirection: 'column', gap: 12,
         }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
-            ⚠ Commentaires du formateur
+          <div style={{ fontSize: 11, fontWeight: 800, color: expandTitleColor, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+            {expandTitleLabel}
           </div>
           {snap.commentaire_libre && (
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>Commentaire général</div>
-              <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#fff', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', fontStyle: 'italic' }}>
+              <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#fff', border: `1px solid ${expandNoteBorder}`, borderRadius: 10, padding: '10px 14px', fontStyle: 'italic' }}>
                 « {snap.commentaire_libre} »
               </div>
             </div>
@@ -129,7 +132,7 @@ function TraineeCard({ row }) {
           {snap.attitude_note && (
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>Attitude / comportement</div>
-              <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#fff', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', fontStyle: 'italic' }}>
+              <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#fff', border: `1px solid ${expandNoteBorder}`, borderRadius: 10, padding: '10px 14px', fontStyle: 'italic' }}>
                 « {snap.attitude_note} »
               </div>
             </div>
@@ -137,7 +140,7 @@ function TraineeCard({ row }) {
           {snap.comprehension_note && (
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>Compréhension / acquisition</div>
-              <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#fff', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', fontStyle: 'italic' }}>
+              <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#fff', border: `1px solid ${expandNoteBorder}`, borderRadius: 10, padding: '10px 14px', fontStyle: 'italic' }}>
                 « {snap.comprehension_note} »
               </div>
             </div>
@@ -271,7 +274,7 @@ function RapportDRContent() {
               ))}
             </div>
             <div style={{ marginTop: 32, padding: '14px 18px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, fontSize: 12, color: '#94a3b8', textAlign: 'center', lineHeight: 1.6 }}>
-              En cas de questions sur un formé, contactez directement votre formateur.
+              Si tu as des questions, tu peux me contacter, n'hésite pas !
             </div>
           </>
         )}
