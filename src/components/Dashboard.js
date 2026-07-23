@@ -1134,6 +1134,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
   const [obDay, setObDay] = useState('1')
   const [obReturnJournee, setObReturnJournee] = useState(null)
+  const [obReturnView, setObReturnView] = useState('onboarding')
   const [ideeCount, setIdeeCount] = useState(0)
   const [showSonnette, setShowSonnette] = useState(false)
   const [sonnettePending, setSonnettePending] = useState(0)
@@ -1293,7 +1294,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     return (
       <PeerQuizTrainer
         sessionCode={activeRoomCode}
-        onBack={() => setActiveView(obReturnJournee ? 'onboarding' : 'planning')}
+        onBack={() => setActiveView(obReturnJournee ? obReturnView : 'planning')}
       />
     )
   }
@@ -1379,7 +1380,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           onBack={() => { setObReturnJournee(null); setActiveView('onboarding-choix') }}
           onLaunchFormation={onLaunchSession}
           onLaunchModule={onLaunchModule}
-          onLaunchPeerQuiz={() => { setObReturnJournee('journee2'); setActiveView('peer-quiz') }}
+          onLaunchPeerQuiz={() => { setObReturnJournee('journee2'); setObReturnView('onboarding'); setActiveView('peer-quiz') }}
           initialStep={returnJournee ? 'modules' : 'select'}
           initialJournee={returnJournee}
         />
@@ -1388,14 +1389,17 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   }
 
   if (activeView === 'onboarding-belgique') {
+    const returnJourneeBelgique = obReturnJournee
     return (
       <div id="dashboard">
         <OnboardingViewBelgique
           pName={pName}
-          onBack={() => setActiveView('onboarding-choix')}
+          onBack={() => { setObReturnJournee(null); setActiveView('onboarding-choix') }}
           onLaunchFormation={onLaunchSession}
           onLaunchModule={(moduleId, journeeId) => onLaunchModule(moduleId, 'onboarding-modules-belgique', journeeId)}
-          onLaunchPeerQuiz={() => { setObReturnJournee('journee2'); setActiveView('peer-quiz') }}
+          onLaunchPeerQuiz={() => { setObReturnJournee('journee2'); setObReturnView('onboarding-belgique'); setActiveView('peer-quiz') }}
+          initialStep={returnJourneeBelgique ? 'modules' : 'list'}
+          initialJournee={returnJourneeBelgique}
         />
       </div>
     )
