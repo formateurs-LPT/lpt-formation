@@ -422,6 +422,15 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   const [tvScreen, setTvScreen] = useState(null)
   const [planningDay, setPlanningDay] = useState(null)
   const [sharedState, setSharedState_] = useState(null)
+  const [autoEvalDone, setAutoEvalDone] = useState(false)
+
+  // Quand le formateur ré-envoie le questionnaire à ce formé, réinitialise autoEvalDone pour ré-afficher le formulaire
+  useEffect(() => {
+    if (!autoEvalDone) return
+    const redo = sharedState?.auto_eval_redo_names
+    const shouldRedo = Array.isArray(redo) ? redo.includes(pName) : redo === 'all'
+    if (shouldRedo) setAutoEvalDone(false)
+  }, [sharedState?.auto_eval_redo_names, pName, autoEvalDone])
 
   // Polling rapide : sans module, zone-interactif, lobby (-1), quiz (100-199) ou résultats (200)
   // → lent (5s) seulement pour les pages statiques d'un module (0-99 hors quiz)
@@ -601,8 +610,8 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   )
 
   // Auto-évaluation fin de formation
-  if (sharedState?.tv_screen === 'auto-eval') return (
-    <AutoEvalParticipant pName={pName} sharedState={sharedState} sessionCode={sessionCode} />
+  if (sharedState?.tv_screen === 'auto-eval' && !autoEvalDone) return (
+    <AutoEvalParticipant pName={pName} sharedState={sharedState} sessionCode={sessionCode} onDone={() => setAutoEvalDone(true)} />
   )
 
   // Si une FAQ est active (réveil des acquis)

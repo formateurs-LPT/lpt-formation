@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { sbUpsert, setSharedState } from '@/lib/supabase'
+import { sbUpsert, sbSelect, setSharedState } from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
 import { classifyMagasin } from '@/lib/formationCategories'
 
@@ -61,26 +61,9 @@ function TextArea({ value, onChange, placeholder, rows = 3 }) {
   )
 }
 
-export default function AutoEvalParticipant({ pName, sharedState, sessionCode }) {
-  const [submitted, setSubmitted] = useState(false)
-  const [saving, setSaving]       = useState(false)
-  const [error, setError]         = useState(null)
-
-  // Détecte si le formateur demande à ce formé de recommencer
-  useEffect(() => {
-    if (!submitted) return
-    const redo = sharedState?.auto_eval_redo_names
-    if (!redo) return
-    const shouldRedo = Array.isArray(redo) ? redo.includes(pName) : redo === 'all'
-    if (!shouldRedo) return
-    setSubmitted(false)
-    setThemeStatus({})
-    setAccompagnement([])
-    setSuggestions('')
-    setRating(0)
-    setRatingHover(0)
-    setRatingComment('')
-  }, [sharedState?.auto_eval_redo_names, pName, submitted])
+export default function AutoEvalParticipant({ pName, sharedState, sessionCode, onDone }) {
+  const [saving, setSaving] = useState(false)
+  const [error, setError]   = useState(null)
 
   const entrees  = sharedState?.entrees_data || []
   const myEntry  = entrees.find(e => (e.fullName || `${e.nom} ${e.prenom}`.trim()) === pName)
@@ -93,6 +76,24 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode })
   const [rating,         setRating]         = useState(0)
   const [ratingHover,    setRatingHover]    = useState(0)
   const [ratingComment,  setRatingComment]  = useState('')
+
+  // Pré-remplissage au redo : charge les réponses précédentes dès le montage
+  useEffect(() => {
+    const redo = sharedState?.auto_eval_redo_names
+    const isRedo = Array.isArray(redo) ? redo.includes(pName) : redo === 'all'
+    if (!isRedo) return
+    sbSelect('formation_reports',
+      `collaborateur=eq.${encodeURIComponent(pName)}&week_date=eq.${getWeekDate()}&trainer_name=eq.__auto_eval__`
+    ).then(data => {
+      const ae = data?.[0]?.stats_snapshot?.auto_eval
+      if (!ae) return
+      setThemeStatus(ae.theme_self_assessments || {})
+      setAccompagnement(ae.accompagnement_themes || [])
+      setSuggestions(ae.suggestions || '')
+      setRating(ae.rating || 0)
+      setRatingComment(ae.rating_comment || '')
+    }).catch(() => {})
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleStatus = (themeId, key) => {
     setThemeStatus(prev => ({ ...prev, [themeId]: prev[themeId] === key ? null : key }))
@@ -132,7 +133,7 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode })
       } else if (redo === 'all') {
         await setSharedState({ auto_eval_redo_names: null }).catch(() => {})
       }
-      setSubmitted(true)
+      onDone()
     } catch (e) {
       console.error('[AutoEval] submit error', e)
       setError('Une erreur est survenue. Réessaie.')
@@ -140,21 +141,6 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode })
       setSaving(false)
     }
   }
-
-  if (submitted) return (
-    <div style={{
-      minHeight: '100dvh',
-      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: 40, textAlign: 'center',
-    }}>
-      <div style={{ fontSize: 64, marginBottom: 20 }}>✅</div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Merci {pName?.split(' ')[0]} !</div>
-      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7 }}>
-        Tes réponses ont bien été envoyées.<br />Tu peux fermer cet onglet ou attendre la suite.
-      </div>
-    </div>
-  )
 
   return (
     <div style={{
