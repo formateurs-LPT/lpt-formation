@@ -13,6 +13,7 @@ export const DIRECTEURS = {
     territory: 'Belgique + Lille',
     icon: '🇧🇪',
     color: '#db2777',
+    email: '',
   },
   sarah: {
     name: 'Sarah Vaillant',
@@ -20,6 +21,7 @@ export const DIRECTEURS = {
     territory: 'Île-de-France + Nord France',
     icon: '🗺️',
     color: '#0089ba',
+    email: '',
   },
   alexandre: {
     name: 'Alexandre Faye',
@@ -27,6 +29,7 @@ export const DIRECTEURS = {
     territory: 'Sud de la France',
     icon: '☀️',
     color: '#d97706',
+    email: '',
   },
 }
 

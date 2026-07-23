@@ -1139,7 +1139,6 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
 // ── Sélecteur de catégorie ────────────────────────────────────────
 
 function CategorySelector({ entrees, onSelect }) {
-  const [copied, setCopied] = useState(null)
   const weekDate = getWeekDate()
 
   const counts = {}
@@ -1153,10 +1152,15 @@ function CategorySelector({ entrees, onSelect }) {
     return `${window.location.origin}/rapport-dr/?dr=${drKey}&w=${weekDate}`
   }
 
-  const handleCopy = (drKey) => {
-    navigator.clipboard.writeText(getDrUrl(drKey)).catch(() => {})
-    setCopied(drKey)
-    setTimeout(() => setCopied(null), 2000)
+  const handleMailDR = (drKey) => {
+    const dr = DIRECTEURS[drKey]
+    const prenom = dr.name.split(' ')[0]
+    const url = getDrUrl(drKey)
+    const subject = encodeURIComponent(`Retour formation — semaine du ${weekDate}`)
+    const body = encodeURIComponent(
+      `Salut ${prenom} !\n\nVoici le retour global des entrées de la semaine sur ton réseau.\n\n${url}\n\nSi tu as des questions n'hésite pas !\n\nBonne journée à toi.`
+    )
+    window.location.href = `mailto:${dr.email || ''}?subject=${subject}&body=${body}`
   }
 
   return (
@@ -1238,16 +1242,15 @@ function CategorySelector({ entrees, onSelect }) {
                   👁 Voir
                 </button>
                 <button
-                  onClick={() => handleCopy(key)}
+                  onClick={() => handleMailDR(key)}
                   style={{
                     padding: '6px 14px', borderRadius: 8, border: 'none',
-                    background: copied === key ? '#16a34a' : dr.color,
+                    background: dr.color,
                     color: '#fff', fontSize: 12, fontWeight: 700,
-                    cursor: 'pointer', fontFamily: 'inherit', transition: 'background .2s',
-                    minWidth: 110,
+                    cursor: 'pointer', fontFamily: 'inherit',
                   }}
                 >
-                  {copied === key ? '✓ Copié !' : '🔗 Copier le lien'}
+                  ✉️ Envoyer au DR
                 </button>
               </div>
             </div>
