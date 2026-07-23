@@ -203,7 +203,7 @@ export default function FicheBelgique() {
             </div>
 
             {/* Chiffres clés */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 18 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 22 }}>
               {[
                 { label: 'Magasins', value: '33', sub: 'France & Belgique', color: BLUE_L },
                 { label: 'Collaborateurs', value: '+1 000', sub: 'au total', color: GOLD },
@@ -218,25 +218,33 @@ export default function FicheBelgique() {
               ))}
             </div>
 
-            {/* La promesse */}
-            <div style={{ background: `linear-gradient(135deg, ${BLUE}20 0%, ${BLUE}08 100%)`, border: `2px solid ${BLUE}`, borderRadius: 16, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 20, marginBottom: 14 }}>
-              <div style={{ flexShrink: 0, width: 72, height: 72, borderRadius: 18, background: BLUE, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', lineHeight: 1 }}>10</div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: 1 }}>MIN</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: BLUE_L, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Notre promesse — ce qui nous différencie</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: TEXT }}>Vos lunettes fabriquées en 10 minutes</div>
-                <div style={{ fontSize: 12, color: TEXT_SUB, marginTop: 3 }}>Avec ou sans ordonnance — en magasin</div>
+            {/* ⭐ LA PROMESSE — élément central */}
+            <div style={{ background: `linear-gradient(135deg, ${BLUE}30 0%, ${BLUE}10 100%)`, border: `2px solid ${BLUE}`, borderRadius: 20, padding: '28px 28px', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
+              {/* Glow déco */}
+              <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: '50%', background: `${BLUE}15`, pointerEvents: 'none' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                {/* Badge 10 min */}
+                <div style={{ flexShrink: 0, width: 100, height: 100, borderRadius: 24, background: `linear-gradient(135deg, ${BLUE}, ${BLUE_L})`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: `0 8px 32px ${BLUE}60` }}>
+                  <div style={{ fontSize: 36, fontWeight: 900, color: '#fff', lineHeight: 1 }}>10</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 1.5, textTransform: 'uppercase' }}>min</div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: BLUE_L, textTransform: 'uppercase', letterSpacing: 2.5, marginBottom: 8 }}>Notre promesse — ce qui nous rend uniques</div>
+                  <div style={{ fontSize: 24, fontWeight: 900, color: TEXT, lineHeight: 1.15, marginBottom: 8 }}>Vos lunettes fabriquées<br />en 10 minutes chrono</div>
+                  <div style={{ fontSize: 13, color: TEXT_SUB, lineHeight: 1.6 }}>
+                    Avec ou sans ordonnance — en magasin, devant vous.<br />
+                    <strong style={{ color: BLUE_L }}>Nous sommes les seuls opticiens au monde à proposer ça.</strong>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* 4 piliers */}
             <Label color={BLUE}>Comment c'est possible ?</Label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 22 }}>
               {[
                 { icon: '📦', titre: 'Stocks en magasin', desc: 'Verres et montures disponibles immédiatement, aucune commande à attendre.' },
-                { icon: '⚙️', titre: 'Machines de pointe', desc: 'Équipements de taille et montage directement en boutique.' },
+                { icon: '⚙️', titre: 'Investissement continu', desc: 'Nouvelles technologies et machines de pointe intégrées en permanence.' },
                 { icon: '🚚', titre: 'Logistique nationale', desc: 'Approvisionnement quotidien depuis notre centre logistique.' },
                 { icon: '0️⃣', titre: 'Zéro intermédiaire', desc: 'Notre propre marque, notre propre chaîne de production.' },
               ].map(({ icon, titre, desc }) => (
@@ -248,6 +256,40 @@ export default function FicheBelgique() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Laboratoire progressif Châtelet */}
+            <div style={{ background: `linear-gradient(135deg, ${PURPLE}18 0%, ${PURPLE}08 100%)`, border: `2px solid ${PURPLE}`, borderRadius: 18, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                {/* Photo */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/assets/labo-progressif-chatelet.jpg"
+                  alt="Laboratoire progressif Paris Châtelet"
+                  style={{ width: '100%', height: 220, objectFit: 'cover', objectPosition: 'center 40%', display: 'block' }}
+                />
+                {/* Contenu */}
+                <div style={{ padding: '20px 24px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18 }}>
+                    <div style={{ flexShrink: 0, width: 56, height: 56, borderRadius: 16, background: `${PURPLE}30`, border: `2px solid ${PURPLE}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>
+                      🔬
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 9, fontWeight: 800, color: PURPLE, textTransform: 'uppercase', letterSpacing: 2.5, marginBottom: 6 }}>Exclusivité mondiale · Paris Châtelet</div>
+                      <div style={{ fontSize: 18, fontWeight: 900, color: TEXT, marginBottom: 8 }}>Notre laboratoire progressif unique au monde</div>
+                      <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.65, marginBottom: 12 }}>
+                        Un laboratoire accessible à la vue des clients, équipé de <strong style={{ color: TEXT }}>machines CoreTBA (MEI)</strong> introuvables dans n'importe quel magasin d'optique au monde.
+                        Ces équipements permettent de fabriquer <strong style={{ color: PURPLE }}>480 paires de verres complexes progressifs par jour</strong> — une capacité industrielle, au cœur d'un magasin.
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <Tag color={PURPLE}>480 paires progressif / jour</Tag>
+                        <Tag color={BLUE_L}>Unique au monde</Tag>
+                        <Tag color={GOLD}>Paris Châtelet</Tag>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
