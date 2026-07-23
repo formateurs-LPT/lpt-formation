@@ -379,10 +379,13 @@ export default function AutoEvalView({ onBack }) {
   const handleRedo = async (name) => {
     setRedoing(name)
     try {
-      const current = (await import('@/lib/supabase').then(m => m.getSharedState()))?.auto_eval_redo_names
-      const existing = Array.isArray(current) ? current : []
-      const next = existing.includes(name) ? existing : [...existing, name]
-      await setSharedState({ auto_eval_redo_names: next, tv_screen: 'auto-eval' })
+      const state = await import('@/lib/supabase').then(m => m.getSharedState())
+      const existingRedo = Array.isArray(state?.auto_eval_redo_names) ? state.auto_eval_redo_names : []
+      const nextRedo = existingRedo.includes(name) ? existingRedo : [...existingRedo, name]
+      // Ensure participant can see the form even if session was previously stopped
+      const existingNames = Array.isArray(state?.auto_eval_names) ? state.auto_eval_names : []
+      const nextNames = existingNames.includes(name) ? existingNames : [...existingNames, name]
+      await setSharedState({ auto_eval_redo_names: nextRedo, auto_eval_names: nextNames, tv_screen: 'auto-eval' })
       await load()
     } finally { setRedoing(null) }
   }
