@@ -124,6 +124,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
   const [saving, setSaving]                     = useState(false)
   const [loading, setLoading]                   = useState(true)
   const [correcting, setCorrecting]             = useState(null) // 'attitude' | 'comprehension' | 'commentaire'
+  const [mailSentAt, setMailSentAt]             = useState(null)
   const themes = CATEGORY_META[categoryKey]?.themes || THEMES_FRANCE
   const name = entree.fullName || `${entree.nom} ${entree.prenom}`.trim()
 
@@ -152,6 +153,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
       setComprehensionNote(snap.comprehension_note || '')
       setAppreciation(snap.appreciation || null)
       setCommentaireLibre(snap.commentaire_libre || '')
+      setMailSentAt(snap.mail_sent_at || null)
     } catch (e) {
       console.error('[RetourFormation] loadData', e)
     } finally {
@@ -170,6 +172,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
     appreciation,
     commentaire_libre: commentaireLibre,
     magasin: entree.magasin || '',
+    mail_sent_at: mailSentAt,
     ...overrides,
   })
 
@@ -332,6 +335,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
       `Formateur — Lunettes Pour Tous`
     )
     window.location.href = `mailto:${emails}?subject=${subject}&body=${body}`
+    const now = new Date().toISOString()
+    setMailSentAt(now)
+    saveSnapshot(buildSnap({ mail_sent_at: now })).catch(() => {})
   }
 
   if (loading) return (
@@ -715,18 +721,42 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
         </button>
 
         {managers.length > 0 ? (
-          <button
-            onClick={sendToManager}
-            style={{
-              flex: 1, padding: '14px 16px', borderRadius: 14,
-              background: '#0089ba', color: '#fff', border: 'none',
-              fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: '0 4px 14px rgba(0,137,186,0.25)',
-            }}
-          >
-            <span>✉️</span> {managers.length > 1 ? 'Envoyer aux managers' : 'Envoyer au manager'}
-          </button>
+          mailSentAt ? (
+            <div style={{ flex: 1, display: 'flex', gap: 8, alignItems: 'stretch' }}>
+              <div style={{
+                flex: 1, padding: '12px 16px', borderRadius: 14,
+                background: '#14532d33', border: '1.5px solid #16a34a66',
+                fontSize: 13, color: '#4ade80', fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}>
+                ✉️ Envoyé le {new Date(mailSentAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+              </div>
+              <button
+                onClick={sendToManager}
+                style={{
+                  flexShrink: 0, padding: '12px 16px', borderRadius: 14,
+                  background: '#1e293b', border: '1.5px solid #334155',
+                  fontSize: 12, color: '#64748b', fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                Renvoyer
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={sendToManager}
+              style={{
+                flex: 1, padding: '14px 16px', borderRadius: 14,
+                background: '#0089ba', color: '#fff', border: 'none',
+                fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: '0 4px 14px rgba(0,137,186,0.25)',
+              }}
+            >
+              <span>✉️</span> {managers.length > 1 ? 'Envoyer aux managers' : 'Envoyer au manager'}
+            </button>
+          )
         ) : (
           <div style={{
             flex: 1, padding: '14px 16px', borderRadius: 14,
@@ -754,6 +784,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
   const [sentKeys, setSentKeys]       = useState(new Set())
   const [ranks, setRanks]             = useState({}) // { name: rankNumber }
   const [rankOf, setRankOf]           = useState(0)  // total de formés classés
+  const [mailSentMap, setMailSentMap] = useState({}) // { name: dateISO }
   const weekDate = getWeekDate()
   const catMeta  = CATEGORY_META[categoryKey] || {}
 
@@ -770,7 +801,12 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
       ])
 
       const reportMap = {}
-      for (const r of (reportsRows || [])) reportMap[r.collaborateur] = r.stats_snapshot || {}
+      const sentMap = {}
+      for (const r of (reportsRows || [])) {
+        reportMap[r.collaborateur] = r.stats_snapshot || {}
+        if (r.stats_snapshot?.mail_sent_at) sentMap[r.collaborateur] = r.stats_snapshot.mail_sent_at
+      }
+      setMailSentMap(sentMap)
 
       const scores = names.map((name, i) => {
         // Taux d'acquisition (évaluation formateur)
@@ -1055,22 +1091,23 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
           const nm = e.fullName || `${e.nom} ${e.prenom}`.trim()
           const active = i === selected
           const rank = ranks[nm]
+          const sent = !!mailSentMap[nm]
           return (
             <button
               key={i}
               onClick={() => setSelected(i)}
               style={{
                 flexShrink: 0, padding: '7px 18px', borderRadius: 99,
-                border: active ? `2px solid ${catMeta.color}` : '1.5px solid #334155',
-                background: active ? catMeta.color : '#253247',
-                color: active ? '#fff' : '#64748b',
+                border: active ? `2px solid ${catMeta.color}` : sent ? '1.5px solid #16a34a55' : '1.5px solid #334155',
+                background: active ? catMeta.color : sent ? '#14532d22' : '#253247',
+                color: active ? '#fff' : sent ? '#4ade80' : '#64748b',
                 fontWeight: active ? 700 : 500,
                 fontSize: 13, cursor: 'pointer', transition: 'all .15s',
                 whiteSpace: 'nowrap', boxShadow: active ? `0 2px 8px rgba(${catMeta.rgb},0.25)` : 'none',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
               }}
             >
-              <span>{nm}</span>
+              <span>{sent && !active ? '✉️ ' : ''}{nm}</span>
               {rank && (
                 <span style={{ fontSize: 10, fontWeight: 600, opacity: active ? 0.85 : 0.6 }}>
                   {rank}{ordFR(rank)}/{rankOf}
