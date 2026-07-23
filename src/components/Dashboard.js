@@ -18,6 +18,7 @@ import { MODULE_DATA } from '@/lib/modulesData'
 import SonnettePanel from './SonnettePanel'
 import RetourFormationView from './RetourFormationView'
 import AutoEvalView from './AutoEvalView'
+import GlobalRatingsView from './GlobalRatingsView'
 import PeerQuizTrainer from './PeerQuizGame'
 
 
@@ -1120,8 +1121,9 @@ function FichesAnnexesWidget() {
 
 
 export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onOpenTv, onToast, onOnlineCount, onOpenPlanning }) {
-  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning | retour-formation | auto-eval
+  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning | retour-formation | auto-eval | global-ratings
   const [entreeCount, setEntreeCount] = useState(null)
+  const [globalAvgRating, setGlobalAvgRating] = useState(null)
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
   const [selectedUpdate, setSelectedUpdate] = useState(null)
@@ -1198,11 +1200,21 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
   const loadTileStats = async () => {
     try {
-      const [state, history, answers] = await Promise.all([
+      const [state, history, answers, autoEvalReports] = await Promise.all([
         getSharedState(),
         sbSelect('session_history'),
         sbSelect('quiz_answers'),
+        sbSelect('formation_reports', 'trainer_name=eq.__auto_eval__'),
       ])
+      const ratings = (autoEvalReports || [])
+        .map(r => r.stats_snapshot?.auto_eval?.rating)
+        .filter(Boolean)
+      if (ratings.length) {
+        const avg = Math.round((ratings.reduce((s, v) => s + v, 0) / ratings.length) * 10) / 10
+        setGlobalAvgRating({ avg, count: ratings.length })
+      } else {
+        setGlobalAvgRating(null)
+      }
       const entrees = state.entrees_data || JSON.parse(localStorage.getItem('entrees_data') || '[]')
       setEntreeCount(entrees.length || '—')
       setObDay(state.ob_day || localStorage.getItem('ob_day') || '1')
@@ -1253,6 +1265,14 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
   if (activeView === 'auto-eval') {
     return <AutoEvalView onBack={() => setActiveView('home')} />
+  }
+
+  if (activeView === 'global-ratings') {
+    return (
+      <div id="dashboard">
+        <GlobalRatingsView onBack={() => setActiveView('home')} />
+      </div>
+    )
   }
 
   if (activeView === 'peer-quiz') {
@@ -1615,6 +1635,29 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-count" style={{ color: '#10b981', fontSize: 22 }}>Auto-éval</div>
             <div className="dash-tile-label">Auto-évaluation</div>
             <div className="dash-tile-sub">Questionnaire fin de formation par le formé</div>
+          </div>
+
+          <div className="dash-tile" onClick={() => setActiveView('global-ratings')} style={{ borderColor: 'rgba(245,158,11,0.4)' }}>
+            <div className="dash-tile-top">
+              <div className="dash-tile-icon">⭐</div>
+              <span className="dash-tile-link" style={{ color: '#d97706' }}>Voir →</span>
+            </div>
+            {globalAvgRating ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                  <span className="dash-tile-count" style={{ color: '#d97706' }}>{globalAvgRating.avg.toFixed(1)}</span>
+                  <span style={{ fontSize: 13, color: '#92400e', fontWeight: 700 }}>/5</span>
+                </div>
+                <div className="dash-tile-label">Note de la formation</div>
+                <div className="dash-tile-sub">{globalAvgRating.count} avis cumulés · tous formateurs</div>
+              </>
+            ) : (
+              <>
+                <div className="dash-tile-count" style={{ color: '#d97706', fontSize: 20 }}>—</div>
+                <div className="dash-tile-label">Note de la formation</div>
+                <div className="dash-tile-sub">Aucun avis reçu pour l'instant</div>
+              </>
+            )}
           </div>
         </div>
 
