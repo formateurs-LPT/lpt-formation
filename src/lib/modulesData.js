@@ -366,7 +366,58 @@ export const OFFRES_QUIZ = [
   },
 ]
 
-export const ENTREPRISE_QUIZ = []
+export const ENTREPRISE_QUIZ = [
+  {
+    type: 'text-open',
+    question: 'En quelle année Lunettes Pour Tous a-t-il été fondé ?',
+    hint: '2014',
+  },
+  {
+    type: 'text-open',
+    question: 'Citez les deux fondateurs de Lunettes Pour Tous.',
+    hint: 'Paul Morlet & Xavier Niel',
+  },
+  {
+    type: 'text-open',
+    question: 'Quelle est la promesse de Lunettes Pour Tous en matière de délai ?',
+    hint: '10 minutes',
+  },
+  {
+    type: 'text-open',
+    question: 'Combien de magasins Lunettes Pour Tous compte-t-il à ce jour ?',
+    hint: '33 magasins France & Belgique',
+  },
+  {
+    type: 'text-open',
+    question: 'Combien de paires de lunettes Lunettes Pour Tous vend-il en moyenne par jour sur tout le réseau ?',
+    hint: '5 000 paires par jour',
+  },
+  {
+    type: 'text-open',
+    question: 'Citez les 5 éléments qui font la force de Lunettes Pour Tous.',
+    hint: 'Stocks dans chaque magasin · Machines à la pointe · Volume de ventes conséquent · Propre marque · 0 intermédiaire',
+  },
+  {
+    type: 'text-open',
+    question: 'Où se trouve le laboratoire progressif unique au monde de Lunettes Pour Tous ?',
+    hint: 'Paris Châtelet',
+  },
+  {
+    type: 'text-open',
+    question: 'Quel est le délai de fabrication pour un client d\'un magasin parisien Lunettes Pour Tous ?',
+    hint: 'Dans la journée (le jour même)',
+  },
+  {
+    type: 'text-open',
+    question: 'Quel est le prix moyen d\'une paire de lunettes chez un opticien traditionnel ?',
+    hint: 'Entre 400 et 500 euros',
+  },
+  {
+    type: 'text-open',
+    question: 'Combien de paires par jour un opticien traditionnel vend-il en moyenne ?',
+    hint: 'Entre 3 et 5 paires',
+  },
+]
 
 export const ENTREPRISE_PAGES = [
   {
