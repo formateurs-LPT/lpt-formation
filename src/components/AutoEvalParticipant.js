@@ -72,8 +72,6 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode })
   const themes   = cat === 'belgique' ? THEMES_BELGIQUE : THEMES_FRANCE
 
   const [themeStatus,    setThemeStatus]    = useState({})
-  const [progres,        setProgres]        = useState('')
-  const [appreciation,   setAppreciation]   = useState('')
   const [accompagnement, setAccompagnement] = useState([])
   const [suggestions,    setSuggestions]    = useState('')
 
@@ -99,8 +97,6 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode })
           auto_eval: {
             themes_list: themes,
             theme_self_assessments: themeStatus,
-            progres,
-            appreciation_formation: appreciation,
             accompagnement_themes: accompagnement,
             suggestions,
           },
@@ -193,39 +189,7 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode })
           </div>
         </Card>
 
-        {/* Section 2 — Progrès */}
-        <Card>
-          <CardHead>Tes progrès</CardHead>
-          <div style={{ padding: '14px 16px' }}>
-            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10, lineHeight: 1.5 }}>
-              Penses-tu avoir fait des progrès durant la formation ?
-            </label>
-            <TextArea
-              value={progres}
-              onChange={setProgres}
-              placeholder="Décris ce que tu as appris, ce qui a changé pour toi…"
-              rows={4}
-            />
-          </div>
-        </Card>
-
-        {/* Section 3 — Appréciation */}
-        <Card>
-          <CardHead>Ton ressenti</CardHead>
-          <div style={{ padding: '14px 16px' }}>
-            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 10, lineHeight: 1.5 }}>
-              As-tu apprécié la formation ?
-            </label>
-            <TextArea
-              value={appreciation}
-              onChange={setAppreciation}
-              placeholder="Ce que tu as aimé, ce qui t'a plu ou déplu…"
-              rows={4}
-            />
-          </div>
-        </Card>
-
-        {/* Section 4 — Accompagnement (multi-select) */}
+        {/* Section 2 — Accompagnement (multi-select) */}
         <Card>
           <CardHead>Accompagnement souhaité</CardHead>
           <div style={{ padding: '14px 16px' }}>
@@ -262,7 +226,7 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode })
           </div>
         </Card>
 
-        {/* Section 5 — Suggestions */}
+        {/* Section 3 — Suggestions */}
         <Card>
           <CardHead>Suggestions</CardHead>
           <div style={{ padding: '14px 16px' }}>
