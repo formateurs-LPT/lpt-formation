@@ -269,18 +269,18 @@ function TVOrdonnanceDisplay({ ordonnance }) {
 }
 
 // ── TV texte libre ──────────────────────────────────────────────────
-function TVQuizTextOpen({ question, qIdx, total, moduleLabel, sessionCode }) {
+function TVQuizTextOpen({ question, qIdx, total, moduleLabel, sessionCode, moduleId }) {
   const [answers, setAnswers] = useState([])
   useEffect(() => {
     if (!sessionCode) return
     const poll = async () => {
-      const rows = await fetchOpenAnswers(sessionCode, `quiz-j1:${qIdx}`)
+      const rows = await fetchOpenAnswers(sessionCode, `${moduleId}:${qIdx}`)
       setAnswers(rows || [])
     }
     poll()
     const t = setInterval(poll, 2000)
     return () => clearInterval(t)
-  }, [sessionCode, qIdx])
+  }, [sessionCode, qIdx, moduleId])
 
   return (
     <div style={{
@@ -460,11 +460,11 @@ function TVQuizMultiQuestion({ question, qIdx, total, moduleLabel }) {
 }
 
 // ── TV Quiz Question ──────────────────────────────────────────────
-function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode }) {
+function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode, moduleId }) {
   const type = question.type || 'qcm'
 
   if (type === 'text-open') {
-    return <TVQuizTextOpen question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} />
+    return <TVQuizTextOpen question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} moduleId={moduleId} />
   }
   if (type === 'ordonnance-fill') {
     return <TVQuizOrdonnanceFill question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
@@ -7557,6 +7557,7 @@ export default function TVView() {
                   total={moduleData.quiz.length}
                   moduleLabel={moduleData?.label || ''}
                   sessionCode={sessionCode}
+                  moduleId={activeModule}
                 />
         ) : isPdmAnimation ? (
           <TVPdmAnimation step={pdmAnimStep} />

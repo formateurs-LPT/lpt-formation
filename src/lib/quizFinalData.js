@@ -1,7 +1,7 @@
 export const QUIZ_FINAL_QUESTIONS = [
   // ── Trame d'accueil ──────────────────────────────────────────────
   {
-    question: "Quelle est la première phrase de la trame d'accueil chez LPT ?",
+    question: "Quelle est la première phrase de la trame d'accueil chez Lunettes Pour Tous ?",
     options: [
       "Bonjour et bienvenue chez Lunettes Pour Tous",
       "Bonjour, vous avez votre ordonnance ?",
@@ -22,12 +22,12 @@ export const QUIZ_FINAL_QUESTIONS = [
   },
   // ── L'entreprise ─────────────────────────────────────────────────
   {
-    question: "En quelle année l'entreprise LPT a-t-elle été fondée ?",
+    question: "En quelle année l'entreprise Lunettes Pour Tous a-t-elle été fondée ?",
     options: ["2010", "2016", "2018", "2014"],
     correct: 3,
   },
   {
-    question: "Qui sont les fondateurs de LPT ?",
+    question: "Qui sont les fondateurs de Lunettes Pour Tous ?",
     options: [
       "Paul Morlet & Xavier Niel",
       "Pierre Dupont & Xavier Niel",
@@ -38,7 +38,7 @@ export const QUIZ_FINAL_QUESTIONS = [
   },
   // ── Le concept ───────────────────────────────────────────────────
   {
-    question: "Quel est le délai de fabrication des lunettes unifocales chez LPT ?",
+    question: "Quel est le délai de fabrication des lunettes unifocales chez Lunettes Pour Tous ?",
     options: ["10 minutes", "24 heures", "3 jours", "9 jours"],
     correct: 0,
   },
@@ -178,7 +178,7 @@ export const QUIZ_FINAL_QUESTIONS = [
   // ── Verre progressif ─────────────────────────────────────────────
   {
     type: 'qcm-multi',
-    question: "Quel est le délai de fabrication d'un verre progressif chez LPT ?",
+    question: "Quel est le délai de fabrication d'un verre progressif chez Lunettes Pour Tous ?",
     instruction: "⚠ Sélectionne 2 bonnes réponses",
     options: ["10 minutes", "9 jours", "24 à 48 heures", "6 mois"],
     correct: [1, 2],
@@ -220,7 +220,7 @@ export const QUIZ_FINAL_QUESTIONS = [
     correct: 3,
   },
   {
-    question: "Chez LPT, le reste à charge après remboursement complet est de :",
+    question: "Chez Lunettes Pour Tous, le reste à charge après remboursement complet est de :",
     options: ["Variable selon la mutuelle", "50 euros maximum", "100 euros maximum", "0 euro"],
     correct: 3,
   },
@@ -256,7 +256,7 @@ export const QUIZ_FINAL_QUESTIONS = [
     correct: 1,
   },
   {
-    question: "Comment LPT peut-il proposer des lunettes à partir de 10 € ?",
+    question: "Comment Lunettes Pour Tous peut-il proposer des lunettes à partir de 10 € ?",
     options: [
       "Des verres de moindre qualité importés",
       "Des subventions de l'État",
@@ -264,5 +264,31 @@ export const QUIZ_FINAL_QUESTIONS = [
       "Zéro intermédiaire — achat direct fournisseurs et fabrication sur place",
     ],
     correct: 3,
+  },
+  // ── Questions texte libre ─────────────────────────────────────────────
+  {
+    type: 'text-open',
+    question: "Qui a fondé Lunettes Pour Tous ?",
+    hint: "Paul Morlet & Xavier Niel (en 2014)",
+  },
+  {
+    type: 'text-open',
+    question: "Quels sont les 5 éléments qui nous permettent de faire des lunettes accessibles, en un temps record ?",
+    hint: "Zéro intermédiaire, achat direct fournisseurs, fabrication sur place, large choix de montures, examen de vue gratuit et sans rendez-vous",
+  },
+  {
+    type: 'text-open',
+    question: "Donnez moi un élément qui me permet de reconnaître un presbyte sans ordonnance, sans lui parler.",
+    hint: "Le client tient son téléphone / un document à bout de bras pour lire, ou porte des lunettes de lecture sur le nez",
+  },
+  {
+    type: 'text-open',
+    question: "Citez moi 2 arguments que nous devons mettre en avant pour vendre des verres progressifs à un client réticent.",
+    hint: "Garantie adaptation 100 jours, large champ de vision 180°, zones de flou réduites, vision naturelle, fabrication en boutique (9 jours), financement possible",
+  },
+  {
+    type: 'text-open',
+    question: "Écrivez la trame d'accueil",
+    hint: "Bonjour et bienvenue chez Lunettes Pour Tous, mon prénom est [...]. Avez-vous votre ordonnance ? Êtes-vous venu(e) avec votre mutuelle ? Avez-vous déjà effectué un examen de vue chez nous ?",
   },
 ]

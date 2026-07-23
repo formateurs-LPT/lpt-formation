@@ -267,7 +267,7 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
     setSaving(true)
     await insertOpenAnswer({
       sessionCode: getParticipantSessionCode(),
-      pageId: `quiz-j1:${qIdx}`,
+      pageId: `${moduleId}:${qIdx}`,
       participantName: pName.trim(),
       answer: text.trim(),
     })

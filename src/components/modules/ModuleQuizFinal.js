@@ -1,8 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { QUIZ_FINAL_QUESTIONS } from '@/lib/quizFinalData'
 
 // quiz_final_phase values (same mechanism as ModuleOptique):
@@ -19,6 +20,136 @@ const STYLES = `
     to   { opacity: 1; transform: translateY(0); }
   }
 `
+
+// ── Contrôleur questions texte libre ─────────────────────────────
+function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
+  const q = QUIZ_FINAL_QUESTIONS[quizQ]
+  const [answers, setAnswers] = useState([])
+  const [validations, setValidations] = useState({})
+
+  useEffect(() => {
+    setValidations({})
+    const code = getActiveSessionCode()
+    const poll = async () => {
+      const rows = await fetchOpenAnswers(code, `${MODULE_ID}:${quizQ}`)
+      setAnswers(rows || [])
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [quizQ])
+
+  const handleValidate = async (name, isCorrect) => {
+    await saveModuleQuizAnswer({
+      sessionCode: getActiveSessionCode(),
+      moduleId: MODULE_ID,
+      questionIdx: quizQ,
+      collaborateur: name,
+      answerIdx: 0,
+      isCorrect,
+    })
+    setValidations(v => ({ ...v, [name]: isCorrect }))
+  }
+
+  const validatedCount = Object.keys(validations).length
+  const correctCount = Object.values(validations).filter(Boolean).length
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '24px 40px',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz final — Réponse libre</span>
+        </div>
+        <div style={{
+          background: 'rgba(201,162,39,0.2)', border: '1px solid rgba(201,162,39,0.4)',
+          borderRadius: 16, padding: '5px 18px', fontSize: 12, fontWeight: 700, color: '#c9a227',
+        }}>Q{quizQ + 1} / {QUIZ_FINAL_QUESTIONS.length}</div>
+      </div>
+
+      {/* Question */}
+      <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10, lineHeight: 1.3 }}>{q.question}</div>
+
+      {/* Hint formateur */}
+      <div style={{
+        background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.3)',
+        borderRadius: 12, padding: '10px 16px', marginBottom: 20,
+        fontSize: 13, color: '#c9a227', fontStyle: 'italic',
+      }}>
+        💡 Réponse attendue : {q.hint}
+      </div>
+
+      {/* Compteur */}
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 14 }}>
+        <span style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginRight: 4 }}>{answers.length}</span>
+        réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''} &nbsp;·&nbsp;
+        <span style={{ color: '#4ade80', fontWeight: 700 }}>{correctCount} ✓</span>&nbsp;&nbsp;
+        <span style={{ color: '#ef4444', fontWeight: 700 }}>{validatedCount - correctCount} ✗</span>
+      </div>
+
+      {/* Liste des réponses */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto', marginBottom: 20 }}>
+        {answers.length === 0 && (
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 14, padding: '40px 0' }}>
+            En attente des réponses…
+          </div>
+        )}
+        {answers.map(row => {
+          const v = validations[row.participant_name]
+          return (
+            <div key={row.participant_name} style={{
+              background: v === true ? 'rgba(34,197,94,0.08)' : v === false ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${v === true ? 'rgba(34,197,94,0.3)' : v === false ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)'}`,
+              borderRadius: 14, padding: '12px 16px',
+              display: 'flex', alignItems: 'center', gap: 12,
+              animation: 'finalFadeIn .3s ease',
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 2 }}>{row.participant_name}</div>
+                <div style={{ fontSize: 15, color: '#fff', fontWeight: 600 }}>{row.answer}</div>
+              </div>
+              <button onClick={() => handleValidate(row.participant_name, true)} style={{
+                width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                background: v === true ? '#16a34a' : 'rgba(34,197,94,0.15)',
+                fontSize: 18, fontFamily: 'inherit', transition: 'background .2s',
+              }}>✓</button>
+              <button onClick={() => handleValidate(row.participant_name, false)} style={{
+                width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                background: v === false ? '#dc2626' : 'rgba(239,68,68,0.15)',
+                fontSize: 18, fontFamily: 'inherit', transition: 'background .2s',
+              }}>✗</button>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        {isLast ? (
+          <button onClick={onEnd} style={{
+            background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none',
+            color: '#fff', padding: '14px 36px', borderRadius: 14,
+            fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 6px 24px rgba(34,197,94,0.4)',
+          }}>✓ Terminer le quiz</button>
+        ) : (
+          <button onClick={onNext} style={{
+            background: 'linear-gradient(135deg, #c9a227, #e0b830)', border: 'none',
+            color: '#fff', padding: '14px 36px', borderRadius: 14,
+            fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 6px 24px rgba(201,162,39,0.45)',
+          }}>Question suivante →</button>
+        )}
+      </div>
+    </div>
+  )
+}
 
 // ── Quiz Controller (vue formateur) ───────────────────────────────
 function QuizController({ quizQ, onNext, onEnd, onBack }) {
@@ -434,15 +565,22 @@ export default function ModuleQuizFinal({ pName, onBack }) {
     </>
   )
 
+  const isLast = quizQ >= QUIZ_FINAL_QUESTIONS.length - 1
+  const isTextOpen = QUIZ_FINAL_QUESTIONS[quizQ]?.type === 'text-open'
+
   return (
     <>
       <style>{STYLES}</style>
-      <QuizController
-        quizQ={quizQ}
-        onNext={handleNextQuestion}
-        onEnd={handleEndQuiz}
-        onBack={handleEndQuiz}
-      />
+      {isTextOpen ? (
+        <TextOpenController quizQ={quizQ} isLast={isLast} onNext={handleNextQuestion} onEnd={handleEndQuiz} />
+      ) : (
+        <QuizController
+          quizQ={quizQ}
+          onNext={handleNextQuestion}
+          onEnd={handleEndQuiz}
+          onBack={handleEndQuiz}
+        />
+      )}
     </>
   )
 }
