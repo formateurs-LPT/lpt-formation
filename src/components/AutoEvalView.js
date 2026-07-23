@@ -16,6 +16,16 @@ const STATUS_LABELS = { 'acquis': 'Acquis', 'en-cours': 'En cours', 'non-acquis'
 const STATUS_COLORS = { 'acquis': '#16a34a', 'en-cours': '#d97706', 'non-acquis': '#dc2626' }
 const STATUS_BG    = { 'acquis': '#dcfce7', 'en-cours': '#fef3c7', 'non-acquis': '#fee2e2' }
 
+function Stars({ value, size = 16 }) {
+  return (
+    <span style={{ display: 'inline-flex', gap: 2 }}>
+      {[1,2,3,4,5].map(s => (
+        <span key={s} style={{ fontSize: size, filter: s <= value ? 'none' : 'grayscale(1) brightness(0.5)' }}>⭐</span>
+      ))}
+    </span>
+  )
+}
+
 const CATEGORIES = [
   { key: 'presentiel', label: 'Présentiel', sub: 'Paris & IDF', icon: '🏢', color: '#0089ba' },
   { key: 'visio',      label: 'Visio',      sub: 'Province',    icon: '💻', color: '#7c3aed' },
@@ -94,6 +104,25 @@ function ResponseDetail({ snap }) {
           </div>
         </section>
       )}
+
+      {ae.rating && (
+        <section>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+            Avis formation
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: ae.rating_comment ? 10 : 0 }}>
+            <Stars value={ae.rating} size={18} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: ae.rating >= 4 ? '#16a34a' : ae.rating === 3 ? '#d97706' : '#dc2626' }}>
+              {['','Insuffisant','Passable','Bien','Très bien','Excellent !'][ae.rating]}
+            </span>
+          </div>
+          {ae.rating_comment && (
+            <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#f8fafc', borderRadius: 10, padding: '10px 14px', border: '1px solid #f1f5f9', fontStyle: 'italic' }}>
+              « {ae.rating_comment} »
+            </div>
+          )}
+        </section>
+      )}
     </div>
   )
 }
@@ -108,6 +137,7 @@ export default function AutoEvalView({ onBack }) {
   const [toggling,        setToggling]        = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('tous')
   const [showReport,      setShowReport]      = useState(false)
+  const [showComments,    setShowComments]    = useState(false)
   const firstLoad = useRef(true)
 
   const load = useCallback(async () => {
@@ -185,6 +215,16 @@ export default function AutoEvalView({ onBack }) {
 
   const submittedCount = Object.keys(filteredResponses).length
   const totalCount     = filteredEntrees.length
+
+  const ratingList = useMemo(() =>
+    Object.entries(filteredResponses)
+      .map(([name, snap]) => ({ name, rating: snap?.auto_eval?.rating, comment: snap?.auto_eval?.rating_comment }))
+      .filter(r => r.rating),
+    [filteredResponses]
+  )
+  const avgRating = ratingList.length
+    ? Math.round((ratingList.reduce((s, r) => s + r.rating, 0) / ratingList.length) * 10) / 10
+    : null
 
   return (
     <>
@@ -402,6 +442,75 @@ export default function AutoEvalView({ onBack }) {
                 </div>
               )}
             </section>
+          )}
+
+          {/* Widget note moyenne */}
+          {avgRating !== null && (
+            <section
+              onClick={() => setShowComments(true)}
+              style={{
+                background: '#fff', border: '1.5px solid #fde68a',
+                borderRadius: 16, padding: '18px 22px', marginBottom: 22,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 20,
+                transition: 'box-shadow .15s',
+                boxShadow: '0 2px 12px rgba(245,158,11,0.1)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 24px rgba(245,158,11,0.22)' }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 12px rgba(245,158,11,0.1)' }}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+                  Note de la formation
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Stars value={Math.round(avgRating)} size={22} />
+                  <span style={{ fontSize: 26, fontWeight: 900, color: '#0f172a' }}>{avgRating.toFixed(1)}</span>
+                  <span style={{ fontSize: 13, color: '#64748b' }}>/ 5 · {ratingList.length} avis</span>
+                </div>
+              </div>
+              <div style={{ fontSize: 12, color: '#f59e0b', fontWeight: 700, flexShrink: 0 }}>
+                Voir les commentaires →
+              </div>
+            </section>
+          )}
+
+          {/* Modal commentaires */}
+          {showComments && (
+            <div
+              style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+              onClick={() => setShowComments(false)}
+            >
+              <div
+                onClick={e => e.stopPropagation()}
+                style={{ background: '#fff', borderRadius: 20, padding: '24px 26px', width: 520, maxWidth: '100%', maxHeight: '80vh', overflow: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.3)' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>⭐ Avis formation</div>
+                    <div style={{ fontSize: 12, color: '#64748b' }}>
+                      Moyenne : <strong>{avgRating?.toFixed(1)}/5</strong> · {ratingList.length} avis
+                    </div>
+                  </div>
+                  <button onClick={() => setShowComments(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {ratingList.map((r, i) => (
+                    <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: r.comment ? 8 : 0 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{r.name}</span>
+                        <Stars value={r.rating} size={15} />
+                      </div>
+                      {r.comment && (
+                        <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, fontStyle: 'italic' }}>« {r.comment} »</div>
+                      )}
+                    </div>
+                  ))}
+                  {ratingList.every(r => !r.comment) && (
+                    <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '12px 0' }}>Aucun commentaire laissé.</div>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Réponses hors-liste (uniquement pour "Tous" — quand catégorie spécifique, on ne sait pas classer les inconnus) */}

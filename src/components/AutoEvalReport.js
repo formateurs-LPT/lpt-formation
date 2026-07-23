@@ -3,6 +3,16 @@ import { useMemo } from 'react'
 import { MODULE_DATA } from '@/lib/modulesData'
 import { classifyMagasin } from '@/lib/formationCategories'
 
+function Stars({ value, size = 16 }) {
+  return (
+    <span style={{ display: 'inline-flex', gap: 2 }}>
+      {[1,2,3,4,5].map(s => (
+        <span key={s} style={{ fontSize: size, filter: s <= value ? 'none' : 'grayscale(1) brightness(0.4)' }}>⭐</span>
+      ))}
+    </span>
+  )
+}
+
 const CAT_LABELS = {
   presentiel: '🏢 Présentiel · Paris',
   visio:      '💻 Visio · Province',
@@ -132,6 +142,8 @@ export default function AutoEvalReport({ responses, entrees, category, weekDate,
   const suggestions   = responseList.filter(r => r.ae.suggestions).map(r => ({ text: r.ae.suggestions, name: r.name }))
   const appreciations = responseList.filter(r => r.ae.appreciation_formation).map(r => ({ text: r.ae.appreciation_formation, name: r.name }))
   const progres       = responseList.filter(r => r.ae.progres).map(r => ({ text: r.ae.progres, name: r.name }))
+  const ratingList    = responseList.filter(r => r.ae.rating).map(r => ({ name: r.name, rating: r.ae.rating, comment: r.ae.rating_comment }))
+  const avgRating     = ratingList.length ? Math.round((ratingList.reduce((s, r) => s + r.rating, 0) / ratingList.length) * 10) / 10 : null
 
   const n = responseList.length
 
@@ -175,7 +187,7 @@ export default function AutoEvalReport({ responses, entrees, category, weekDate,
         ) : (
           <>
             {/* KPI */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 28 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: avgRating ? 12 : 28 }}>
               {[
                 { label: 'Réponses', value: n, color: '#0089ba' },
                 {
@@ -198,6 +210,24 @@ export default function AutoEvalReport({ responses, entrees, category, weekDate,
                 </div>
               ))}
             </div>
+
+            {/* Note moyenne */}
+            {avgRating && (
+              <div style={{
+                background: '#1e293b', border: '1px solid #fde68a33',
+                borderRadius: 14, padding: '16px 20px', marginBottom: 28,
+                display: 'flex', alignItems: 'center', gap: 16,
+              }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Note de la formation</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Stars value={Math.round(avgRating)} size={20} />
+                    <span style={{ fontSize: 28, fontWeight: 900, color: '#f1f5f9' }}>{avgRating.toFixed(1)}</span>
+                    <span style={{ fontSize: 13, color: '#64748b' }}>/ 5 · {ratingList.length} avis</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Thèmes — de la meilleure à la moins bonne acquisition */}
             <Section title="Acquisition par thème — du meilleur au plus difficile">
@@ -249,6 +279,23 @@ export default function AutoEvalReport({ responses, entrees, category, weekDate,
                     </div>
                   ))}
                 </div>
+              </Section>
+            )}
+
+            {/* Avis formation */}
+            {ratingList.length > 0 && (
+              <Section title={`⭐ Avis formation · ${avgRating?.toFixed(1)}/5 (${ratingList.length} avis)`}>
+                {ratingList.map((r, i) => (
+                  <div key={i} style={{ background: '#253247', border: '1px solid #334155', borderRadius: 12, padding: '12px 16px', marginBottom: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: r.comment ? 8 : 0 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0' }}>{r.name}</span>
+                      <Stars value={r.rating} size={14} />
+                    </div>
+                    {r.comment && (
+                      <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.6, fontStyle: 'italic' }}>« {r.comment} »</div>
+                    )}
+                  </div>
+                ))}
               </Section>
             )}
 

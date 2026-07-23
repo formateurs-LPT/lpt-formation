@@ -74,6 +74,9 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode })
   const [themeStatus,    setThemeStatus]    = useState({})
   const [accompagnement, setAccompagnement] = useState([])
   const [suggestions,    setSuggestions]    = useState('')
+  const [rating,         setRating]         = useState(0)
+  const [ratingHover,    setRatingHover]    = useState(0)
+  const [ratingComment,  setRatingComment]  = useState('')
 
   const toggleStatus = (themeId, key) => {
     setThemeStatus(prev => ({ ...prev, [themeId]: prev[themeId] === key ? null : key }))
@@ -99,6 +102,8 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode })
             theme_self_assessments: themeStatus,
             accompagnement_themes: accompagnement,
             suggestions,
+            rating: rating || null,
+            rating_comment: ratingComment.trim() || null,
           },
         },
         updated_at: new Date().toISOString(),
@@ -241,6 +246,54 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode })
               onChange={setSuggestions}
               placeholder="Tes idées sont précieuses pour nous aider à améliorer les prochaines formations…"
               rows={4}
+            />
+          </div>
+        </Card>
+
+        {/* Section 3 — Avis formation */}
+        <Card>
+          <CardHead>Ton avis sur la formation</CardHead>
+          <div style={{ padding: '18px 16px' }}>
+            <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 16, lineHeight: 1.5 }}>
+              Note la formation
+            </label>
+            {/* Étoiles */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 20, justifyContent: 'center' }}>
+              {[1,2,3,4,5].map(star => {
+                const filled = star <= (ratingHover || rating)
+                return (
+                  <button
+                    key={star}
+                    onClick={() => setRating(star === rating ? 0 : star)}
+                    onMouseEnter={() => setRatingHover(star)}
+                    onMouseLeave={() => setRatingHover(0)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                      fontSize: 44, lineHeight: 1,
+                      filter: filled ? 'none' : 'grayscale(1) brightness(0.4)',
+                      transform: filled ? 'scale(1.1)' : 'scale(1)',
+                      transition: 'all .15s',
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    ⭐
+                  </button>
+                )
+              })}
+            </div>
+            {rating > 0 && (
+              <div style={{ textAlign: 'center', fontSize: 13, color: rating >= 4 ? '#22c55e' : rating === 3 ? '#f59e0b' : '#f87171', fontWeight: 700, marginBottom: 16 }}>
+                {['', 'Insuffisant', 'Passable', 'Bien', 'Très bien', 'Excellent !'][rating]}
+              </div>
+            )}
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginBottom: 8 }}>
+              Un commentaire ? <span style={{ fontWeight: 400, opacity: 0.6 }}>(facultatif)</span>
+            </label>
+            <TextArea
+              value={ratingComment}
+              onChange={setRatingComment}
+              placeholder="Ce que tu as aimé, ce qui t'a manqué, un conseil pour les prochaines promos…"
+              rows={3}
             />
           </div>
         </Card>
