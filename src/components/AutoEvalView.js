@@ -127,6 +127,139 @@ function ResponseDetail({ snap }) {
   )
 }
 
+function ParticipantRecapModal({ name, snap, onClose }) {
+  const ae = snap?.auto_eval || {}
+  const themes    = ae.themes_list || []
+  const assessments = ae.theme_self_assessments || {}
+  const accomp    = ae.accompagnement_themes || []
+
+  const acquis    = themes.filter(t => assessments[t] === 'acquis')
+  const enCours   = themes.filter(t => assessments[t] === 'en-cours')
+  const nonAcquis = themes.filter(t => assessments[t] === 'non-acquis')
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+      onClick={onClose}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ background: '#fff', borderRadius: 24, width: 580, maxWidth: '100%', maxHeight: '88vh', overflow: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.35)' }}
+      >
+        {/* Header sombre */}
+        <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)', padding: '24px 28px', borderRadius: '24px 24px 0 0' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: ae.rating || acquis.length || enCours.length || nonAcquis.length ? 20 : 0 }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 6 }}>
+                Récap auto-évaluation
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>{name}</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+              {ae.rating && (
+                <div style={{ textAlign: 'center' }}>
+                  <Stars value={ae.rating} size={18} />
+                  <div style={{ fontSize: 12, fontWeight: 800, marginTop: 4, color: ae.rating >= 4 ? '#22c55e' : ae.rating === 3 ? '#f59e0b' : '#f87171' }}>
+                    {['','Insuffisant','Passable','Bien','Très bien','Excellent !'][ae.rating]}
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={onClose}
+                style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 10, width: 34, height: 34, cursor: 'pointer', fontSize: 15, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+              >✕</button>
+            </div>
+          </div>
+          {/* Stats strip */}
+          {(acquis.length + enCours.length + nonAcquis.length) > 0 && (
+            <div style={{ display: 'flex', gap: 10 }}>
+              {[
+                { count: acquis.length,    label: 'Acquis',     color: '#22c55e', bg: 'rgba(34,197,94,0.18)' },
+                { count: enCours.length,   label: 'En cours',   color: '#f59e0b', bg: 'rgba(245,158,11,0.18)' },
+                { count: nonAcquis.length, label: 'Non acquis', color: '#f87171', bg: 'rgba(248,113,113,0.18)' },
+              ].filter(g => g.count > 0).map(({ count, label, color, bg }) => (
+                <div key={label} style={{ background: bg, borderRadius: 12, padding: '10px 16px', textAlign: 'center', flex: 1 }}>
+                  <div style={{ fontSize: 24, fontWeight: 900, color, lineHeight: 1 }}>{count}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color, opacity: 0.85, marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Corps */}
+        <div style={{ padding: '22px 28px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+
+          {/* Thèmes non acquis en premier */}
+          {[
+            { key: 'non-acquis', list: nonAcquis, label: 'Non acquis',  color: '#dc2626', bg: '#fee2e2', border: '#fecaca', icon: '✗' },
+            { key: 'en-cours',   list: enCours,   label: 'En cours',    color: '#d97706', bg: '#fef3c7', border: '#fde68a', icon: '◑' },
+            { key: 'acquis',     list: acquis,     label: 'Acquis',      color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0', icon: '✓' },
+          ].filter(g => g.list.length > 0).map(g => (
+            <section key={g.key}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: g.color, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span>{g.icon}</span> {g.label} ({g.list.length})
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {g.list.map(t => (
+                  <span key={t} style={{ padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, background: g.bg, color: g.color, border: `1px solid ${g.border}` }}>
+                    {MODULE_DATA[t]?.label || t}
+                  </span>
+                ))}
+              </div>
+            </section>
+          ))}
+
+          {/* Accompagnement */}
+          {accomp.length > 0 && (
+            <section style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 14, padding: '16px 18px' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#0369a1', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
+                👥 Accompagnement souhaité ({accomp.length})
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {accomp.map(t => (
+                  <span key={t} style={{ padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, background: 'rgba(0,137,186,0.12)', color: '#0089ba', border: '1px solid rgba(0,137,186,0.3)' }}>
+                    {MODULE_DATA[t]?.label || t}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Suggestions */}
+          {ae.suggestions && (
+            <section>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
+                💡 Suggestions
+              </div>
+              <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 14, padding: '14px 18px', fontSize: 14, color: '#1e293b', lineHeight: 1.7, fontStyle: 'italic' }}>
+                « {ae.suggestions} »
+              </div>
+            </section>
+          )}
+
+          {/* Commentaire note */}
+          {ae.rating_comment && (
+            <section>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
+                ⭐ Commentaire
+              </div>
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 14, padding: '14px 18px', fontSize: 14, color: '#1e293b', lineHeight: 1.7, fontStyle: 'italic' }}>
+                « {ae.rating_comment} »
+              </div>
+            </section>
+          )}
+
+          {!ae.suggestions && !ae.rating_comment && accomp.length === 0 && acquis.length === 0 && enCours.length === 0 && nonAcquis.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8', fontSize: 13 }}>Aucune donnée disponible.</div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AutoEvalView({ onBack }) {
   const weekDate = getWeekDate()
   const [isActive,        setIsActive]        = useState(false)
@@ -138,6 +271,7 @@ export default function AutoEvalView({ onBack }) {
   const [selectedCategory, setSelectedCategory] = useState('tous')
   const [showReport,      setShowReport]      = useState(false)
   const [showComments,    setShowComments]    = useState(false)
+  const [showRecap,       setShowRecap]       = useState(null) // nom du participant ou null
   const [redoing,         setRedoing]         = useState(null) // nom ou 'all' en cours
   const firstLoad = useRef(true)
 
@@ -240,6 +374,14 @@ export default function AutoEvalView({ onBack }) {
 
   return (
     <>
+      {showRecap && (
+        <ParticipantRecapModal
+          name={showRecap}
+          snap={filteredResponses[showRecap] || responses[showRecap]}
+          onClose={() => setShowRecap(null)}
+        />
+      )}
+
       {showReport && (
         <AutoEvalReport
           responses={responses}
@@ -437,6 +579,16 @@ export default function AutoEvalView({ onBack }) {
                           </div>
                           {done && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                              <button
+                                onClick={e => { e.stopPropagation(); setShowRecap(name) }}
+                                style={{
+                                  fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 8,
+                                  background: 'rgba(0,137,186,0.1)', border: '1px solid rgba(0,137,186,0.3)',
+                                  color: '#0089ba', cursor: 'pointer', fontFamily: 'inherit', lineHeight: 1.4,
+                                }}
+                              >
+                                📋 Récap
+                              </button>
                               <button
                                 onClick={e => { e.stopPropagation(); handleRedo(name) }}
                                 disabled={redoing !== null}
