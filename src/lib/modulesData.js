@@ -640,6 +640,17 @@ export const TRAME_ACCUEIL_PAGES = [
   { id: 'trame', type: 'trame-accueil' },
 ]
 
+export const MONTURES_QUIZ = [
+  { type: 'text-open', question: 'Quelle est l\'origine de la matière première de l\'acétate de cellulose ?', hint: 'Pulpe de bois ou fibre de coton (pas du pétrole)' },
+  { type: 'text-open', question: 'Comment ajuste-t-on une monture en acétate ? Quel élément ne peut PAS être ajusté ?', hint: 'À chaud (chaleur sèche) — le pont ne peut pas être ajusté en largeur' },
+  { type: 'text-open', question: 'Citez un avantage et un inconvénient de la monture en acétate.', hint: 'Avantage : hypoallergénique, coloris variés, premium / Inconvénient : plus lourd que métal & injecté' },
+  { type: 'text-open', question: 'Quel est le principal avantage du métal par rapport aux autres matériaux en termes de port ?', hint: 'Plus léger et plus fin — discret sur le visage' },
+  { type: 'text-open', question: 'Comment ajuste-t-on une monture en métal ? Quels éléments sont réglables ?', hint: 'À froid — plaquettes et branches réglables' },
+  { type: 'text-open', question: 'Quel risque allergique existe avec le métal ? Quelle solution proposons-nous ?', hint: 'Allergie au nickel — modèles en titane (sans nickel) disponibles' },
+  { type: 'text-open', question: 'Comment est fabriquée une monture en plastique injecté ? Qu\'est-ce que cela implique pour le design ?', hint: 'Moulée en série dans un moule industriel — couleur uniforme, pas de veinage ni motif dans la masse' },
+  { type: 'text-open', question: 'Quel type de client ciblez-vous avec une monture en plastique injecté ? Pourquoi ?', hint: 'Budget serré, enfants, clients qui cassent régulièrement — meilleur rapport qualité/prix de la gamme' },
+]
+
 export const MODULE_DATA = {
   'types-verres':     { pages: TYPES_VERRES_PAGES,      quiz: TYPES_VERRES_QUIZ,  label: 'Types de verres',               sub: 'Le verre unifocal' },
   'pdm':              { pages: PDM_PAGES,                quiz: PDM_QUIZ,           label: 'Prises de mesures',             sub: 'Écart pupillaire · Hauteur · LPTVISION' },
@@ -648,7 +659,7 @@ export const MODULE_DATA = {
   'entreprise':       { pages: ENTREPRISE_PAGES,         quiz: ENTREPRISE_QUIZ,    label: "Présentation de l'entreprise", sub: 'Mission · Histoire · Culture LPT' },
   'verre-progressif': { pages: PROGRESSIF_PAGES,         quiz: PROGRESSIF_QUIZ,    label: 'Le Verre Progressif',          sub: 'Anatomie · Vente · Objections · Quiz J+14' },
   'trame-accueil':    { pages: TRAME_ACCUEIL_PAGES,      quiz: [],                 label: "Trame d'accueil",              sub: 'Bonjour · Concept · Examen de vue' },
-  'montures':         { pages: [{ id: 'acetate', type: 'montures-acetate' }, { id: 'metal', type: 'montures-metal' }, { id: 'injecte', type: 'montures-injecte' }], quiz: [], label: 'Connaissances Montures', sub: 'Acétate · Métal · Injecté' },
+  'montures':         { pages: [{ id: 'acetate', type: 'montures-acetate' }, { id: 'metal', type: 'montures-metal' }, { id: 'injecte', type: 'montures-injecte' }], quiz: MONTURES_QUIZ, label: 'Connaissances Montures', sub: 'Acétate · Métal · Injecté' },
   'quiz-final':       { pages: [], quiz: QUIZ_FINAL_QUESTIONS, label: 'Quiz de fin de formation', sub: 'Trame · Optique · Offres · Remboursement' },
   'quiz-j1':          { pages: [], quiz: QUIZ_J1, label: 'Quiz Jour 1', sub: 'Entreprise · Optique · Ordonnances · Montures' },
   'mutuelles-inami':  { pages: [
