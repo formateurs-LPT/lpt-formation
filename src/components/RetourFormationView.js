@@ -277,13 +277,18 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
     const greeting = managers.length > 1
       ? managers.map(m => extractPrenom(m.name)).join(' et ')
       : extractPrenom(managers[0].name)
+    const isPlural = managers.length > 1
     const subject = encodeURIComponent(`Retour formation ${prenom}`)
     const body = encodeURIComponent(
       `Hello ${greeting},\n\n` +
       `Voici le lien pour accéder au compte rendu de ${prenom} :\n\n` +
       `${reportUrl}\n\n` +
-      `Si tu as des questions ou si tu veux qu'on échange à son sujet, je suis bien sûr disponible, n'hésite pas !\n\n` +
-      `Bonne journée à toi.\n\n` +
+      (isPlural
+        ? `Si vous avez des questions ou si vous voulez qu'on échange à son sujet, je suis bien sûr disponible, n'hésitez pas !\n\n` +
+          `Bonne journée à vous.\n\n`
+        : `Si tu as des questions ou si tu veux qu'on échange à son sujet, je suis bien sûr disponible, n'hésite pas !\n\n` +
+          `Bonne journée à toi.\n\n`
+      ) +
       `${trainerName}\n` +
       `Formateur — Lunettes Pour Tous`
     )
