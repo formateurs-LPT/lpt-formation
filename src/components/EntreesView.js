@@ -124,7 +124,7 @@ function effectiveCat(c) {
   return c._forceCat || classifyMagasin(c.magasin) || 'province'
 }
 
-function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving, onToggleMode }) {
+function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving, onToggleMode, onDelete }) {
   const cat = effectiveCat(c)
   const meta = CAT_META[cat] || CAT_META.province
   const fullName = entreeDisplayName(c)
@@ -209,15 +209,29 @@ function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving, onT
         {c.telephone && <div style={{ fontSize: 11, color: 'var(--text-m)' }}>{c.telephone}</div>}
       </div>
       {!editing && (
-        <button
-          type="button"
-          className="btn2"
-          style={{ fontSize: 11, padding: '4px 10px', flexShrink: 0 }}
-          onClick={onStartEdit}
-          title="Modifier le nom"
-        >
-          ✏️
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+          <button
+            type="button"
+            className="btn2"
+            style={{ fontSize: 11, padding: '4px 10px' }}
+            onClick={onStartEdit}
+            title="Modifier le nom"
+          >
+            ✏️
+          </button>
+          <button
+            type="button"
+            style={{
+              fontSize: 11, padding: '4px 10px', borderRadius: 6,
+              background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.25)',
+              color: '#dc2626', cursor: 'pointer', fontFamily: 'inherit', lineHeight: 1.4, fontWeight: 700,
+            }}
+            onClick={onDelete}
+            title="Supprimer ce formé"
+          >
+            🗑
+          </button>
+        </div>
       )}
     </div>
   )
@@ -332,7 +346,7 @@ function QuickAddModal({ onClose, onAdd }) {
   )
 }
 
-function GroupSection({ title, items, editingIndex, savingIndex, onStartEdit, onCancelEdit, onSave, onToggleMode }) {
+function GroupSection({ title, items, editingIndex, savingIndex, onStartEdit, onCancelEdit, onSave, onToggleMode, onDelete }) {
   if (!items.length) return null
   return (
     <div style={{ marginBottom: 24 }}>
@@ -350,6 +364,7 @@ function GroupSection({ title, items, editingIndex, savingIndex, onStartEdit, on
           onCancelEdit={onCancelEdit}
           onSave={(nom, prenom) => onSave(index, nom, prenom)}
           onToggleMode={() => onToggleMode(index)}
+          onDelete={() => onDelete(index)}
         />
       ))}
     </div>
@@ -580,6 +595,18 @@ export default function EntreesView({ onBack, onToast, pName }) {
     }
   }
 
+  const handleDelete = async (index) => {
+    const c = entrees[index]
+    const name = entreeDisplayName(c)
+    if (!confirm(`Supprimer ${name} de la liste ?`)) return
+    const next = entrees.filter((_, i) => i !== index)
+    setEntrees(next)
+    if (editingIndex === index) setEditingIndex(null)
+    const synced = await persistEntreesList(next)
+    onToast(synced ? `${name} retiré de la liste` : `${name} retiré localement — sync échouée`)
+    if (next.length === 0) setShowResults(false)
+  }
+
   const handleToggleMode = async (index) => {
     const c = entrees[index]
     const current = effectiveCat(c)
@@ -614,6 +641,7 @@ export default function EntreesView({ onBack, onToast, pName }) {
     onCancelEdit: () => setEditingIndex(null),
     onSave: handleSaveCollab,
     onToggleMode: handleToggleMode,
+    onDelete: handleDelete,
   }
 
   return (
