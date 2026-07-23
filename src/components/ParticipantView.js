@@ -9,6 +9,7 @@ import { PLANNING_JOURS } from '@/lib/planningData'
 import Image from 'next/image'
 import ParticipantModuleView, { FAQInputMobile } from '@/components/ParticipantModuleView'
 import { PeerQuizParticipant } from '@/components/PeerQuizGame'
+import { FreeQuizParticipant } from '@/components/FreeQuizGame'
 import AutoEvalParticipant from '@/components/AutoEvalParticipant'
 
 const QUIZ10 = [
@@ -607,6 +608,11 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   // Jeu de questions entre formés — uniquement si le formateur l'a lancé explicitement
   if (sharedState?.tv_screen === 'peer-quiz' && sharedState?.pq_phase) return (
     <PeerQuizParticipant sharedState={sharedState} pName={pName} sessionCode={sessionCode} />
+  )
+
+  // Quiz réponses libres — le formateur pose une question, le formé répond sur son téléphone
+  if (sharedState?.free_quiz_active && sharedState?.free_quiz_prompt) return (
+    <FreeQuizParticipant sharedState={sharedState} pName={pName} />
   )
 
   // Auto-évaluation fin de formation

@@ -9,6 +9,7 @@ import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/l
 import ZeroInterChain from '@/components/ZeroInterChain'
 import { PDMAnimationSVG } from '@/lib/pdmAnimationSvg'
 import { TVPeerQuizScreen } from '@/components/PeerQuizGame'
+import { TVFreeQuizScreen } from '@/components/FreeQuizGame'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -7337,6 +7338,19 @@ export default function TVView() {
         <style>{STYLES}</style>
         <FullscreenButton />
         <TVPeerQuizScreen sharedState={sharedState} />
+        {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+        <TVAnnotationCanvas />
+      </>
+    )
+  }
+
+  // Quiz réponses libres — le formateur pose une question, les formés répondent sur leur téléphone
+  if (!loading && sharedState?.tv_screen === 'free-quiz') {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <FullscreenButton />
+        <TVFreeQuizScreen sharedState={sharedState} />
         {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
         <TVAnnotationCanvas />
       </>

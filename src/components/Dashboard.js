@@ -20,6 +20,7 @@ import RetourFormationView from './RetourFormationView'
 import AutoEvalView from './AutoEvalView'
 import GlobalRatingsView from './GlobalRatingsView'
 import PeerQuizTrainer from './PeerQuizGame'
+import FreeQuizTrainer from './FreeQuizGame'
 
 
 function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoom, onSonnetteClick, sonnettePending }) {
@@ -1121,7 +1122,7 @@ function FichesAnnexesWidget() {
 
 
 export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onOpenTv, onToast, onOnlineCount, onOpenPlanning }) {
-  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning | retour-formation | auto-eval | global-ratings
+  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning | retour-formation | auto-eval | global-ratings | free-quiz
   const [entreeCount, setEntreeCount] = useState(null)
   const [globalAvgRating, setGlobalAvgRating] = useState(null)
   const [sessionCount, setSessionCount] = useState('—')
@@ -1294,6 +1295,14 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
         sessionCode={activeRoomCode}
         onBack={() => setActiveView(obReturnJournee ? 'onboarding' : 'planning')}
       />
+    )
+  }
+
+  if (activeView === 'free-quiz') {
+    return (
+      <div id="dashboard">
+        <FreeQuizTrainer onBack={() => setActiveView('home')} />
+      </div>
     )
   }
 
@@ -1671,6 +1680,16 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
                 <div className="dash-tile-sub">Aucun avis reçu pour l'instant</div>
               </>
             )}
+          </div>
+
+          <div className="dash-tile" onClick={() => setActiveView('free-quiz')} style={{ borderColor: 'rgba(99,102,241,0.35)' }}>
+            <div className="dash-tile-top">
+              <div className="dash-tile-icon">🎯</div>
+              <span className="dash-tile-link" style={{ color: '#6366f1' }}>Lancer →</span>
+            </div>
+            <div className="dash-tile-count" style={{ color: '#6366f1', fontSize: 22 }}>Quiz libre</div>
+            <div className="dash-tile-label">Questions ouvertes</div>
+            <div className="dash-tile-sub">Pose une question · les formés répondent · tu valides</div>
           </div>
         </div>
 
