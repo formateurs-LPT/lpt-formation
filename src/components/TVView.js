@@ -238,7 +238,8 @@ function TVOrdonnanceDisplay({ ordonnance }) {
   return (
     <div style={{
       background: 'rgba(124,58,237,0.08)', border: '2px solid rgba(124,58,237,0.3)',
-      borderRadius: 20, padding: '16px 0', marginBottom: 36, alignSelf: 'stretch', maxWidth: 720,
+      borderRadius: 20, padding: '16px 0', marginBottom: 36,
+      width: '100%', maxWidth: 720, alignSelf: 'center',
     }}>
       <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', letterSpacing: 2, textTransform: 'uppercase', textAlign: 'center', marginBottom: 12 }}>ORDONNANCE</div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
