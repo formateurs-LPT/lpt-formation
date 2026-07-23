@@ -5,6 +5,7 @@ import { classifyMagasin } from '@/lib/formationCategories'
 import { MODULE_DATA } from '@/lib/modulesData'
 import CompteRenduManager from './CompteRenduManager'
 import { getManagers } from '@/lib/managersData'
+import { DIRECTEURS } from '@/lib/directeursData'
 
 // ── Constantes ────────────────────────────────────────────────────
 
@@ -1009,10 +1010,24 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
 // ── Sélecteur de catégorie ────────────────────────────────────────
 
 function CategorySelector({ entrees, onSelect }) {
+  const [copied, setCopied] = useState(null)
+  const weekDate = getWeekDate()
+
   const counts = {}
   for (const e of entrees) {
     const cat = effectiveCat(e)
     counts[cat] = (counts[cat] || 0) + 1
+  }
+
+  const getDrUrl = (drKey) => {
+    if (typeof window === 'undefined') return ''
+    return `${window.location.origin}/rapport-dr/?dr=${drKey}&w=${weekDate}`
+  }
+
+  const handleCopy = (drKey) => {
+    navigator.clipboard.writeText(getDrUrl(drKey)).catch(() => {})
+    setCopied(drKey)
+    setTimeout(() => setCopied(null), 2000)
   }
 
   return (
@@ -1059,6 +1074,60 @@ function CategorySelector({ entrees, onSelect }) {
             </button>
           )
         })}
+      </div>
+
+      {/* ── Rapports Directeurs Régionaux ── */}
+      <div style={{ marginTop: 32, borderTop: '1px solid #334155', paddingTop: 24 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>
+          Rapports Directeurs Régionaux
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {Object.entries(DIRECTEURS).map(([key, dr]) => (
+            <div
+              key={key}
+              style={{
+                background: '#1e293b', border: '1px solid #334155',
+                borderLeft: `3px solid ${dr.color}`,
+                borderRadius: 12, padding: '12px 16px',
+                display: 'flex', alignItems: 'center', gap: 14,
+              }}
+            >
+              <span style={{ fontSize: 20, flexShrink: 0 }}>{dr.icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9' }}>{dr.fullName}</div>
+                <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{dr.territory}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <button
+                  onClick={() => window.open(getDrUrl(key), '_blank')}
+                  style={{
+                    padding: '6px 12px', borderRadius: 8, border: '1px solid #475569',
+                    background: 'transparent', color: '#94a3b8',
+                    fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  👁 Voir
+                </button>
+                <button
+                  onClick={() => handleCopy(key)}
+                  style={{
+                    padding: '6px 14px', borderRadius: 8, border: 'none',
+                    background: copied === key ? '#16a34a' : dr.color,
+                    color: '#fff', fontSize: 12, fontWeight: 700,
+                    cursor: 'pointer', fontFamily: 'inherit', transition: 'background .2s',
+                    minWidth: 110,
+                  }}
+                >
+                  {copied === key ? '✓ Copié !' : '🔗 Copier le lien'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 12, fontSize: 11, color: '#475569', lineHeight: 1.6 }}>
+          Les rapports DR affichent uniquement les formés de leur réseau avec une appréciation Bon / Moyen / Mauvais.
+          Les appréciations se basent sur les fiches complétées ci-dessus.
+        </div>
       </div>
     </div>
   )

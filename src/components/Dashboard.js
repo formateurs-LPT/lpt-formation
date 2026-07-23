@@ -17,7 +17,6 @@ import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees,
 import { MODULE_DATA } from '@/lib/modulesData'
 import SonnettePanel from './SonnettePanel'
 import RetourFormationView from './RetourFormationView'
-import RetourDirecteurView from './RetourDirecteurView'
 import AutoEvalView from './AutoEvalView'
 import GlobalRatingsView from './GlobalRatingsView'
 import PeerQuizTrainer from './PeerQuizGame'
@@ -1279,10 +1278,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     )
   }
 
-  if (activeView === 'retour-directeur') {
-    return <RetourDirecteurView onBack={() => setActiveView('home')} />
-  }
-
   if (activeView === 'auto-eval') {
     return <AutoEvalView onBack={() => setActiveView('home')} />
   }
@@ -1656,16 +1651,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-count" style={{ color: '#818cf8' }}>{entreeCount ?? '—'}</div>
             <div className="dash-tile-label">Retour de formation</div>
             <div className="dash-tile-sub">Fiches de suivi par collaborateur</div>
-          </div>
-
-          <div className="dash-tile" onClick={() => setActiveView('retour-directeur')} style={{ borderColor: 'rgba(234,88,12,0.35)' }}>
-            <div className="dash-tile-top">
-              <div className="dash-tile-icon">🗂</div>
-              <span className="dash-tile-link" style={{ color: '#ea580c' }}>Générer →</span>
-            </div>
-            <div className="dash-tile-count" style={{ color: '#ea580c' }}>3</div>
-            <div className="dash-tile-label">Retour Directeurs</div>
-            <div className="dash-tile-sub">Rapports synthétiques par DR</div>
           </div>
 
           <div className="dash-tile" onClick={() => setActiveView('auto-eval')} style={{ borderColor: 'rgba(16,185,129,0.35)' }}>
