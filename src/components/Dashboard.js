@@ -940,6 +940,7 @@ function IdeesView({ onBack, pName }) {
 
 const FICHES = [
   { label: 'Fiche pratique', href: '/fiche-pratique', icon: '📄', color: '#c9a227', sub: 'Synthèse de la formation' },
+  { label: 'Fiche Belgique', href: '/fiche-belgique', icon: '🇧🇪', color: '#e63946', sub: 'Onboarding belge récap' },
   { label: 'Fiche accès LPT', href: '/fiche-acces', icon: '🔑', color: '#0089ba', sub: 'Gmail · Slack · LPTBot' },
 ]
 
