@@ -4,8 +4,8 @@ import { sbUpsert } from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
 import { classifyMagasin } from '@/lib/formationCategories'
 
-const THEMES_FRANCE   = ['entreprise','types-verres','pdm','optique','offres','verre-progressif','trame-accueil','montures','remboursement-france','parcours-rembourses','lpt-sante']
-const THEMES_BELGIQUE = ['entreprise','types-verres','pdm','optique','offres','verre-progressif','trame-accueil','montures','mutuelles-inami']
+const THEMES_FRANCE   = ['entreprise','optique','types-verres','verre-progressif','montures','trame-accueil','offres','pdm','parcours-rembourses','remboursement-france','lpt-sante']
+const THEMES_BELGIQUE = ['entreprise','optique','types-verres','verre-progressif','montures','trame-accueil','offres','pdm','mutuelles-inami']
 
 const STATUS_OPTS = [
   { key: 'acquis',     label: 'Acquis',     color: '#16a34a', bg: 'rgba(22,163,74,0.18)',   border: 'rgba(22,163,74,0.5)'  },
