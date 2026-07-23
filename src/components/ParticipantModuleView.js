@@ -3332,7 +3332,7 @@ function TrameAccueilMobile() {
   )
 }
 
-function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint }) {
+function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint, rembfrRevealed }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
@@ -3484,68 +3484,84 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
   if (page.type === 'lpt-sante-explication') return <LptSanteExplicationMobile />
   if (page.type === 'lpt-sante-pec')         return <LptSantePecMobile />
 
-  if (page.type === 'rembfr-conditions') return (
-    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column', padding: '28px 20px 40px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28} style={{ objectFit: 'contain', opacity: 0.7 }} />
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>Remboursement</div>
-      </div>
-      <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>Les 3 conditions</div>
-      <h2 style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 20 }}>Pour être remboursé, le client doit :</h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {/* Condition 1 */}
-        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '16px 18px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 16 }}>🏥</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#0089ba' }}>01</span>
-            <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Couverture SS + mutuelle / CSS</span>
-          </div>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.5 }}>Être couvert par la Sécurité Sociale et une mutuelle complémentaire ou la Complémentaire Santé Solidaire.</p>
+  if (page.type === 'rembfr-conditions') {
+    const revealed = rembfrRevealed || []
+    const ordoRevealed = revealed.includes('ordonnance')
+    const delaisRevealed = revealed.includes('delais')
+    return (
+      <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column', padding: '28px 20px 40px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28} style={{ objectFit: 'contain', opacity: 0.7 }} />
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>Remboursement</div>
         </div>
-        {/* Condition 2 */}
-        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '16px 18px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 16 }}>📋</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#0089ba' }}>02</span>
-            <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Ordonnance en cours de validité</span>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>Les 3 conditions</div>
+        <h2 style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 20 }}>Pour être remboursé, le client doit :</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Condition 1 — toujours visible */}
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '16px 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <span style={{ fontSize: 16 }}>🏥</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#0089ba' }}>01</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Couverture SS + mutuelle / CSS</span>
+            </div>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.5 }}>Être couvert par la Sécurité Sociale et une mutuelle complémentaire ou la Complémentaire Santé Solidaire.</p>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
-            {[{ label: 'Moins de 16 ans', duree: '1 an', color: '#f59e0b' }, { label: 'De 16 à 42 ans', duree: '5 ans', color: '#00abe9' }, { label: '43 ans et plus', duree: '3 ans', color: '#a78bfa' }].map(r => (
-              <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{r.label}</span>
-                <span style={{ fontSize: 13, fontWeight: 800, color: r.color }}>{r.duree}</span>
+          {/* Condition 2 — révélée par le formateur */}
+          {ordoRevealed && (
+            <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '16px 18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <span style={{ fontSize: 16 }}>📋</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#0089ba' }}>02</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Ordonnance en cours de validité</span>
               </div>
-            ))}
-          </div>
-          <div style={{ padding: '8px 10px', background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)', borderRadius: 8 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#c9a227', marginBottom: 3 }}>💡 Pas d'ordonnance valable ? → LYLEOO</div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>Disponible en magasin pour les +18 ans. À utiliser uniquement pour débloquer un remboursement.</div>
-          </div>
-        </div>
-        {/* Condition 3 */}
-        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '16px 18px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 16 }}>📅</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#0089ba' }}>03</span>
-            <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Délais de renouvellement</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ padding: '8px 10px', background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 8 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', marginBottom: 3 }}>Moins de 16 ans</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>Tous les ans · <strong style={{ color: '#fff' }}>Sans délai</strong> si changement ≥ 0,50</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+                {[{ label: 'Moins de 16 ans', duree: '1 an', color: '#f59e0b' }, { label: 'De 16 à 42 ans', duree: '5 ans', color: '#00abe9' }, { label: '43 ans et plus', duree: '3 ans', color: '#a78bfa' }].map(r => (
+                  <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{r.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: r.color }}>{r.duree}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: '8px 10px', background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)', borderRadius: 8 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: '#c9a227', marginBottom: 3 }}>💡 Pas d'ordonnance valable ? → LYLEOO</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>Disponible en magasin pour les +18 ans. À utiliser uniquement pour débloquer un remboursement.</div>
+              </div>
             </div>
-            <div style={{ padding: '8px 10px', background: 'rgba(0,171,233,0.07)', border: '1px solid rgba(0,171,233,0.18)', borderRadius: 8 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', marginBottom: 3 }}>16 ans et plus</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>Tous les <strong style={{ color: '#fff' }}>2 ans</strong> · Anticipé à partir de <strong style={{ color: '#fff' }}>1 an et 1 jour</strong> si changement ≥ 0,50</div>
+          )}
+          {/* Condition 3 — révélée par le formateur */}
+          {delaisRevealed && (
+            <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '16px 18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 16 }}>📅</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#0089ba' }}>03</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Délais de renouvellement</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ padding: '8px 10px', background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', marginBottom: 3 }}>Moins de 16 ans</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>Tous les ans · <strong style={{ color: '#fff' }}>Sans délai</strong> si changement ≥ 0,50</div>
+                </div>
+                <div style={{ padding: '8px 10px', background: 'rgba(0,171,233,0.07)', border: '1px solid rgba(0,171,233,0.18)', borderRadius: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', marginBottom: 3 }}>16 ans et plus</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>Tous les <strong style={{ color: '#fff' }}>2 ans</strong> · Anticipé à partir de <strong style={{ color: '#fff' }}>1 an et 1 jour</strong> si changement ≥ 0,50</div>
+                </div>
+                <div style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>
+                  💻 Vérifiable sur <strong style={{ color: '#00abe9' }}>AMELIPRO</strong> avec le numéro de sécu du patient
+                </div>
+              </div>
             </div>
-            <div style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>
-              💻 Vérifiable sur <strong style={{ color: '#00abe9' }}>AMELIPRO</strong> avec le numéro de sécu du patient
+          )}
+          {/* Indication d'attente si rien n'est encore révélé */}
+          {!ordoRevealed && !delaisRevealed && (
+            <div style={{ padding: '16px 18px', background: 'rgba(0,137,186,0.06)', border: '1px dashed rgba(0,137,186,0.25)', borderRadius: 14, textAlign: 'center' }}>
+              <div style={{ fontSize: 20, marginBottom: 8 }}>👀</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>Le formateur va révéler les conditions une par une…</div>
             </div>
-          </div>
+          )}
         </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   if (page.type === 'parcours-rembourses-offres') return (
     <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column', padding: '28px 20px 40px' }}>
@@ -4234,6 +4250,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const [progObjectionResponses, setProgObjectionResponses] = useState({})
   const [modelePoint, setModelePoint]             = useState(null)
   const [faqJournee, setFaqJournee]               = useState(null)
+  const [rembfrRevealed, setRembfrRevealed]       = useState([])
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
@@ -4247,6 +4264,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     setProgObjectionResponses(sharedState.prog_objection_responses || {})
     setModelePoint(sharedState.modele_point ?? null)
     setFaqJournee(sharedState.faq_journee || null)
+    setRembfrRevealed(sharedState.rembfr_revealed || [])
     // Force-disconnect déclenché par le formateur
     // Ignoré si le formé s'est reconnecté après le kick (joined_at > kickTimestamp)
     const kickTimestamp = Number(sharedState.forced_disconnects?.[pName]) || 0
@@ -4342,7 +4360,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
               : isQuiz
               ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
               : page
-                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} />
+                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} rembfrRevealed={rembfrRevealed} />
                 : faqJournee
                   ? <FAQInputMobile journeeId={faqJournee} />
                   : <WaitingScreen />

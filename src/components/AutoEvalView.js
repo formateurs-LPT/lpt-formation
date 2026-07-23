@@ -273,6 +273,8 @@ export default function AutoEvalView({ onBack }) {
   const [showComments,    setShowComments]    = useState(false)
   const [showRecap,       setShowRecap]       = useState(null) // nom du participant ou null
   const [redoing,         setRedoing]         = useState(null) // nom ou 'all' en cours
+  const [autoEvalNames,   setAutoEvalNames]   = useState([]) // formés individuellement lancés
+  const [launching,       setLaunching]       = useState(null) // nom en cours de lancement
   const firstLoad = useRef(true)
 
   const load = useCallback(async () => {
@@ -283,6 +285,7 @@ export default function AutoEvalView({ onBack }) {
       ])
       setIsActive(state?.tv_screen === 'auto-eval')
       setEntrees(state?.entrees_data || [])
+      setAutoEvalNames(Array.isArray(state?.auto_eval_names) ? state.auto_eval_names : [])
       // Read saved category only on first load so the UI selector isn't overridden on polls
       if (firstLoad.current && state?.auto_eval_category) {
         setSelectedCategory(state.auto_eval_category)
@@ -307,16 +310,30 @@ export default function AutoEvalView({ onBack }) {
 
   const launch = async () => {
     setToggling(true)
-    await setSharedState({ tv_screen: 'auto-eval', auto_eval_category: selectedCategory })
+    await setSharedState({ tv_screen: 'auto-eval', auto_eval_category: selectedCategory, auto_eval_names: [] })
     setIsActive(true)
+    setAutoEvalNames([])
     setToggling(false)
   }
 
   const stop = async () => {
     setToggling(true)
-    await setSharedState({ tv_screen: null })
+    await setSharedState({ tv_screen: null, auto_eval_names: [] })
     setIsActive(false)
+    setAutoEvalNames([])
     setToggling(false)
+  }
+
+  const handleLaunchSingle = async (name) => {
+    setLaunching(name)
+    try {
+      const current = (await import('@/lib/supabase').then(m => m.getSharedState()))?.auto_eval_names
+      const existing = Array.isArray(current) ? current : []
+      if (existing.includes(name)) return
+      const next = [...existing, name]
+      setAutoEvalNames(next)
+      await setSharedState({ auto_eval_names: next })
+    } finally { setLaunching(null) }
   }
 
   const catMeta = CATEGORIES.find(c => c.key === selectedCategory) || CATEGORIES[3]
@@ -549,7 +566,9 @@ export default function AutoEvalView({ onBack }) {
                   {filteredEntrees.length > 0 ? filteredEntrees.map((e, i) => {
                     const name = e.fullName || `${e.nom} ${e.prenom}`.trim()
                     const done = !!filteredResponses[name]
+                    const launched = autoEvalNames.includes(name)
                     const open = expanded === name
+                    const isLaunching = launching === name
                     return (
                       <div key={i} style={{ borderBottom: i < filteredEntrees.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                         <div
@@ -564,47 +583,73 @@ export default function AutoEvalView({ onBack }) {
                         >
                           <div style={{
                             width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                            background: done ? '#dcfce7' : '#f1f5f9',
-                            border: `1.5px solid ${done ? '#bbf7d0' : '#e2e8f0'}`,
+                            background: done ? '#dcfce7' : launched ? '#fef3c7' : '#f1f5f9',
+                            border: `1.5px solid ${done ? '#bbf7d0' : launched ? '#fde68a' : '#e2e8f0'}`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: 14,
                           }}>
-                            {done ? '✓' : '○'}
+                            {done ? '✓' : launched ? '⏳' : '○'}
                           </div>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>{name}</div>
                             {done && (
                               <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>A répondu · Cliquer pour voir les réponses</div>
                             )}
+                            {!done && launched && (
+                              <div style={{ fontSize: 11, color: '#d97706', marginTop: 2 }}>Questionnaire envoyé — en attente de réponse</div>
+                            )}
+                            {!done && !launched && (
+                              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>Pas encore lancé</div>
+                            )}
                           </div>
-                          {done && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                            {done ? (
+                              <>
+                                <button
+                                  onClick={ev => { ev.stopPropagation(); setShowRecap(name) }}
+                                  style={{
+                                    fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 8,
+                                    background: 'rgba(0,137,186,0.1)', border: '1px solid rgba(0,137,186,0.3)',
+                                    color: '#0089ba', cursor: 'pointer', fontFamily: 'inherit', lineHeight: 1.4,
+                                  }}
+                                >
+                                  📋 Récap
+                                </button>
+                                <button
+                                  onClick={ev => { ev.stopPropagation(); handleRedo(name) }}
+                                  disabled={redoing !== null}
+                                  title="Renvoyer le questionnaire à ce formé"
+                                  style={{
+                                    fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 8,
+                                    background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+                                    color: '#d97706', cursor: redoing ? 'wait' : 'pointer', fontFamily: 'inherit',
+                                    lineHeight: 1.4,
+                                  }}
+                                >
+                                  {redoing === name ? '…' : 'Renvoyer'}
+                                </button>
+                                <span style={{ fontSize: 13, color: '#94a3b8' }}>{open ? '▲' : '▼'}</span>
+                              </>
+                            ) : !launched ? (
                               <button
-                                onClick={e => { e.stopPropagation(); setShowRecap(name) }}
+                                onClick={ev => { ev.stopPropagation(); handleLaunchSingle(name) }}
+                                disabled={!isActive || isLaunching}
+                                title={!isActive ? 'Lancez d\'abord l\'auto-évaluation' : 'Envoyer le questionnaire à ce formé'}
                                 style={{
-                                  fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 8,
-                                  background: 'rgba(0,137,186,0.1)', border: '1px solid rgba(0,137,186,0.3)',
-                                  color: '#0089ba', cursor: 'pointer', fontFamily: 'inherit', lineHeight: 1.4,
+                                  fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 10,
+                                  background: isActive ? 'linear-gradient(135deg, #0070a0, #0089ba)' : '#f1f5f9',
+                                  border: 'none',
+                                  color: isActive ? '#fff' : '#94a3b8',
+                                  cursor: isActive && !isLaunching ? 'pointer' : 'not-allowed',
+                                  fontFamily: 'inherit', lineHeight: 1.4,
+                                  boxShadow: isActive ? '0 2px 8px rgba(0,137,186,0.3)' : 'none',
+                                  transition: 'all .15s',
                                 }}
                               >
-                                📋 Récap
+                                {isLaunching ? '…' : '▶ Lancer'}
                               </button>
-                              <button
-                                onClick={e => { e.stopPropagation(); handleRedo(name) }}
-                                disabled={redoing !== null}
-                                title="Renvoyer le questionnaire à ce formé"
-                                style={{
-                                  fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 8,
-                                  background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
-                                  color: '#d97706', cursor: redoing ? 'wait' : 'pointer', fontFamily: 'inherit',
-                                  lineHeight: 1.4,
-                                }}
-                              >
-                                {redoing === name ? '…' : 'Renvoyer'}
-                              </button>
-                              <span style={{ fontSize: 13, color: '#94a3b8' }}>{open ? '▲' : '▼'}</span>
-                            </div>
-                          )}
+                            ) : null}
+                          </div>
                         </div>
                         {open && done && (
                           <div style={{ borderTop: '1px solid #f1f5f9' }}>

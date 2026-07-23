@@ -616,9 +616,23 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   )
 
   // Auto-évaluation fin de formation
-  if (sharedState?.tv_screen === 'auto-eval' && !autoEvalDone) return (
-    <AutoEvalParticipant pName={pName} sharedState={sharedState} sessionCode={sessionCode} onDone={() => setAutoEvalDone(true)} />
-  )
+  if (sharedState?.tv_screen === 'auto-eval') {
+    const autoEvalLaunched = Array.isArray(sharedState?.auto_eval_names)
+      ? sharedState.auto_eval_names.includes(pName)
+      : false
+    if (autoEvalLaunched && !autoEvalDone) return (
+      <AutoEvalParticipant pName={pName} sharedState={sharedState} sessionCode={sessionCode} onDone={() => setAutoEvalDone(true)} />
+    )
+    if (!autoEvalLaunched) return (
+      <div style={{ minHeight: '100dvh', background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: 48, marginBottom: 20 }}>📋</div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Auto-évaluation</div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>
+          Le formateur va vous envoyer le questionnaire dans quelques instants…
+        </div>
+      </div>
+    )
+  }
 
   // Si une FAQ est active (réveil des acquis)
   if (sharedState?.faq_journee) return <FAQInputMobile journeeId={sharedState.faq_journee} />
