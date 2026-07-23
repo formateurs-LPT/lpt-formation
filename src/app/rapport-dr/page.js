@@ -49,12 +49,11 @@ function TraineeCard({ row }) {
   const snap = row.stats_snapshot || {}
   const verdict = getVerdict(snap)
   const meta = verdict ? VERDICT_META[verdict] : null
+  const hasComments = snap.commentaire_libre || snap.attitude_note || snap.comprehension_note
+  const magasin = snap.magasin || '—'
   const isMauvais = verdict === 'mauvais'
   const isMoyen   = verdict === 'moyen'
   const canExpand = (isMauvais || isMoyen) && hasComments
-
-  const hasComments = snap.commentaire_libre || snap.attitude_note || snap.comprehension_note
-  const magasin = snap.magasin || '—'
 
   const expandBorderColor  = isMauvais ? '#fecaca' : '#fde68a'
   const expandBg           = isMauvais ? '#fff5f5' : '#fffbeb'
