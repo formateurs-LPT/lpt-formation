@@ -277,10 +277,37 @@ export default function FicheBelgique() {
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 9, fontWeight: 800, color: PURPLE, textTransform: 'uppercase', letterSpacing: 2.5, marginBottom: 6 }}>Exclusivité mondiale · Paris Châtelet</div>
                       <div style={{ fontSize: 18, fontWeight: 900, color: TEXT, marginBottom: 8 }}>Notre laboratoire progressif unique au monde</div>
-                      <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.65, marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.65, marginBottom: 16 }}>
                         Un laboratoire accessible à la vue des clients, équipé de <strong style={{ color: TEXT }}>machines CoreTBA (MEI)</strong> introuvables dans n'importe quel magasin d'optique au monde.
                         Ces équipements permettent de fabriquer <strong style={{ color: PURPLE }}>480 paires de verres complexes progressifs par jour</strong> — une capacité industrielle, au cœur d'un magasin.
                       </div>
+
+                      {/* Délais de livraison */}
+                      <div style={{ background: 'rgba(0,0,0,0.25)', border: `1px solid ${PURPLE}30`, borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: PURPLE, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Délais de livraison — verres progressifs origine France garantis</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', background: GREEN }} />
+                            <span style={{ fontSize: 12, color: TEXT_SUB, flex: 1 }}>Clients parisiens</span>
+                            <span style={{ fontSize: 13, fontWeight: 800, color: GREEN }}>Dans la journée</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', background: BLUE_L }} />
+                            <span style={{ fontSize: 12, color: TEXT_SUB, flex: 1 }}>Hors Île-de-France (tous magasins)</span>
+                            <span style={{ fontSize: 13, fontWeight: 800, color: BLUE_L }}>24 heures</span>
+                          </div>
+                          <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '2px 0' }} />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ flexShrink: 0, width: 8, height: 8, borderRadius: '50%', background: RED_BE }} />
+                            <span style={{ fontSize: 12, color: TEXT_SUB, flex: 1 }}>Autres opticiens (progressif)</span>
+                            <span style={{ fontSize: 13, fontWeight: 800, color: RED_BE }}>2 sem. à 1 mois</span>
+                          </div>
+                        </div>
+                        <div style={{ marginTop: 10, fontSize: 11, fontStyle: 'italic', color: PURPLE, fontWeight: 600 }}>
+                          Même sur le progressif, nous sommes imbattables.
+                        </div>
+                      </div>
+
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         <Tag color={PURPLE}>480 paires progressif / jour</Tag>
                         <Tag color={BLUE_L}>Unique au monde</Tag>
