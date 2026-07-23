@@ -255,7 +255,7 @@ export default function FicheBelgique() {
                 { icon: '📦', titre: 'Stocks en magasin', desc: 'Verres et montures disponibles immédiatement, aucune commande à attendre.' },
                 { icon: '⚙️', titre: 'Investissement continu', desc: 'Nouvelles technologies et machines de pointe intégrées en permanence.' },
                 { icon: '🚚', titre: 'Logistique nationale', desc: 'Approvisionnement quotidien depuis notre centre logistique.' },
-                { icon: '0️⃣', titre: 'Zéro intermédiaire', desc: 'Notre propre marque, notre propre chaîne de production.' },
+                { icon: '0️⃣', titre: 'Zéro intermédiaire', desc: 'Nos produits sont achetés en direct auprès des fournisseurs, sans intermédiaire.' },
               ].map(({ icon, titre, desc }) => (
                 <div key={titre} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: CARD, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${BLUE_L}`, borderRadius: 10, padding: '12px 14px' }}>
                   <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
