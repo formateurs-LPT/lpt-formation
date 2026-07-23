@@ -407,16 +407,6 @@ export const ENTREPRISE_QUIZ = [
     question: 'Quel est le délai de fabrication pour un client d\'un magasin parisien Lunettes Pour Tous ?',
     hint: 'Dans la journée (le jour même)',
   },
-  {
-    type: 'text-open',
-    question: 'Quel est le prix moyen d\'une paire de lunettes chez un opticien traditionnel ?',
-    hint: 'Entre 400 et 500 euros',
-  },
-  {
-    type: 'text-open',
-    question: 'Combien de paires par jour un opticien traditionnel vend-il en moyenne ?',
-    hint: 'Entre 3 et 5 paires',
-  },
 ]
 
 export const ENTREPRISE_PAGES = [
