@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import FicheShareModal from '@/components/FicheShareModal'
 
 const BLUE      = '#0089ba'
 const BLUE_L    = '#00abe9'
@@ -104,14 +105,16 @@ function QrModal({ url, onClose }) {
 
 /* ── Page principale ────────────────────────────────────────── */
 export default function FicheBelgique() {
-  const [showQr, setShowQr] = useState(false)
-  const [ficheUrl, setFicheUrl] = useState('')
+  const [showQr,    setShowQr]    = useState(false)
+  const [showShare, setShowShare] = useState(false)
+  const [ficheUrl,  setFicheUrl]  = useState('')
 
   useEffect(() => { setFicheUrl(window.location.origin + '/fiche-belgique') }, [])
 
   return (
     <>
       {showQr && ficheUrl && <QrModal url={ficheUrl} onClose={() => setShowQr(false)} />}
+      {showShare && ficheUrl && <FicheShareModal ficheUrl={ficheUrl} ficheLabel="Belgique" allowedGroups={['belgique']} onClose={() => setShowShare(false)} />}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -170,6 +173,11 @@ export default function FicheBelgique() {
               onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}35` }}
               onMouseLeave={e => { e.currentTarget.style.background = `${GOLD}18` }}>
               ⬜ QR Code
+            </button>
+            <button onClick={() => setShowShare(true)} style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', color: '#22c55e', fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .2s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.25)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.12)' }}>
+              📧 Partager
             </button>
             <button onClick={() => window.print()} style={{ background: `${BLUE}18`, border: `1px solid ${BLUE}60`, color: BLUE_L, fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .2s' }}
               onMouseEnter={e => { e.currentTarget.style.background = `${BLUE}35` }}
