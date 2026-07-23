@@ -1198,23 +1198,36 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     }
   }
 
+  // Chargement séparé de la note globale (isolé des autres requêtes)
+  useEffect(() => {
+    const loadGlobalRating = async () => {
+      try {
+        const data = await sbSelect('formation_reports', 'trainer_name=eq.__auto_eval__')
+        const ratings = (data || [])
+          .map(r => r.stats_snapshot?.auto_eval?.rating)
+          .filter(Boolean)
+        if (ratings.length) {
+          const avg = Math.round((ratings.reduce((s, v) => s + v, 0) / ratings.length) * 10) / 10
+          setGlobalAvgRating({ avg, count: ratings.length })
+        } else {
+          setGlobalAvgRating(null)
+        }
+      } catch (e) {
+        console.error('[Dashboard] global rating', e)
+      }
+    }
+    loadGlobalRating()
+    const t = setInterval(loadGlobalRating, 30000)
+    return () => clearInterval(t)
+  }, [])
+
   const loadTileStats = async () => {
     try {
-      const [state, history, answers, autoEvalReports] = await Promise.all([
+      const [state, history, answers] = await Promise.all([
         getSharedState(),
         sbSelect('session_history'),
         sbSelect('quiz_answers'),
-        sbSelect('formation_reports', 'trainer_name=eq.__auto_eval__'),
       ])
-      const ratings = (autoEvalReports || [])
-        .map(r => r.stats_snapshot?.auto_eval?.rating)
-        .filter(Boolean)
-      if (ratings.length) {
-        const avg = Math.round((ratings.reduce((s, v) => s + v, 0) / ratings.length) * 10) / 10
-        setGlobalAvgRating({ avg, count: ratings.length })
-      } else {
-        setGlobalAvgRating(null)
-      }
       const entrees = state.entrees_data || JSON.parse(localStorage.getItem('entrees_data') || '[]')
       setEntreeCount(entrees.length || '—')
       setObDay(state.ob_day || localStorage.getItem('ob_day') || '1')
