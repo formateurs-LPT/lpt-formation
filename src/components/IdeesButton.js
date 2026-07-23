@@ -48,6 +48,20 @@ export async function clearAllIdees() {
   await writeIdees([])
 }
 
+export async function addIdee({ text, moduleLabel, moduleId, auteur }) {
+  const current = await loadIdeesFromSupabase()
+  const newIdee = {
+    id: Date.now().toString(),
+    text: text.trim(),
+    moduleId: moduleId || 'libre',
+    moduleLabel: moduleLabel || 'Thème libre',
+    pageLabel: 'Ajout direct',
+    auteur: auteur || 'Formateur',
+    timestamp: new Date().toISOString(),
+  }
+  await writeIdees([...current, newIdee])
+}
+
 // ── Composant bouton flottant ─────────────────────────────────────
 export default function IdeesButton({ moduleId, pName }) {
   const isMobile = useIsMobile()

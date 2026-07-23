@@ -13,7 +13,8 @@ import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
 import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { isDynamicRoomCode } from '@/lib/sessionCode'
-import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees } from '@/components/IdeesButton'
+import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees, addIdee } from '@/components/IdeesButton'
+import { MODULE_DATA } from '@/lib/modulesData'
 import SonnettePanel from './SonnettePanel'
 import RetourFormationView from './RetourFormationView'
 import AutoEvalView from './AutoEvalView'
@@ -664,10 +665,130 @@ function AppUpdatesWidget() {
 }
 
 // ── Vue Idées ─────────────────────────────────────────────────────
+const MODULE_OPTIONS = Object.entries(MODULE_DATA).map(([id, m]) => ({ id, label: m.label }))
+
+function AddIdeeModal({ pName, onClose, onSaved }) {
+  const [text, setText] = useState('')
+  const [moduleId, setModuleId] = useState('__libre__')
+  const [themeLibre, setThemeLibre] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const isLibre = moduleId === '__libre__'
+  const moduleLabel = isLibre
+    ? (themeLibre.trim() || 'Thème libre')
+    : (MODULE_DATA[moduleId]?.label || moduleId)
+  const canSave = text.trim() && (!isLibre || themeLibre.trim())
+
+  const handleSave = async () => {
+    if (!canSave) return
+    setSaving(true)
+    try {
+      await addIdee({ text, moduleId: isLibre ? 'libre' : moduleId, moduleLabel, auteur: pName || 'Formateur' })
+      setSaved(true)
+      setTimeout(() => { onSaved(); onClose() }, 800)
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, padding: '28px 32px', width: 520, maxWidth: '94vw', boxShadow: '0 24px 60px rgba(0,0,0,0.5)' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+          <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>💡 Ajouter une idée</div>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', color: 'rgba(255,255,255,0.5)', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+        </div>
+
+        {/* Sélecteur module */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Module / Thème</div>
+          <select
+            value={moduleId}
+            onChange={e => setModuleId(e.target.value)}
+            style={{
+              width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 10, padding: '11px 14px', color: '#fff', fontSize: 13,
+              fontFamily: 'inherit', outline: 'none', cursor: 'pointer',
+            }}
+          >
+            <option value="__libre__" style={{ background: '#0d1f3c' }}>✏️ Thème libre (à préciser)</option>
+            <optgroup label="── Modules ──" style={{ background: '#0d1f3c' }}>
+              {MODULE_OPTIONS.map(m => (
+                <option key={m.id} value={m.id} style={{ background: '#0d1f3c' }}>{m.label}</option>
+              ))}
+            </optgroup>
+          </select>
+        </div>
+
+        {/* Champ thème libre */}
+        {isLibre && (
+          <div style={{ marginBottom: 14 }}>
+            <input
+              autoFocus
+              value={themeLibre}
+              onChange={e => setThemeLibre(e.target.value)}
+              placeholder="Ex : Accueil téléphonique, suivi client…"
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(245,158,11,0.4)',
+                borderRadius: 10, padding: '11px 14px', color: '#fff', fontSize: 13,
+                fontFamily: 'inherit', outline: 'none',
+              }}
+            />
+          </div>
+        )}
+
+        {/* Idée */}
+        <div style={{ marginBottom: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Idée</div>
+          <textarea
+            autoFocus={!isLibre}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Décrivez votre idée…"
+            rows={4}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 12, padding: '14px 16px', resize: 'vertical',
+              color: '#fff', fontSize: 14, fontFamily: 'inherit', lineHeight: 1.6, outline: 'none',
+            }}
+            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSave() }}
+          />
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 6 }}>⌘/Ctrl + Entrée pour enregistrer</div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.6)', padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Annuler</button>
+          <button
+            onClick={handleSave}
+            disabled={!canSave || saving}
+            style={{
+              background: saved ? 'rgba(74,222,128,0.2)' : canSave ? 'linear-gradient(135deg, #d97706, #f59e0b)' : 'rgba(255,255,255,0.08)',
+              border: saved ? '1px solid rgba(74,222,128,0.4)' : 'none',
+              color: saved ? '#4ade80' : canSave ? '#fff' : 'rgba(255,255,255,0.3)',
+              padding: '10px 24px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+              cursor: canSave ? 'pointer' : 'default', fontFamily: 'inherit', transition: 'all .2s',
+            }}
+          >
+            {saved ? '✓ Enregistrée !' : saving ? '…' : 'Enregistrer'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function IdeesView({ onBack, pName }) {
   const [idees, setIdees] = useState([])
   const [loading, setLoading] = useState(true)
   const [subTab, setSubTab] = useState('pending') // 'pending' | 'validated'
+  const [showAdd, setShowAdd] = useState(false)
 
   const refresh = async () => {
     const data = await loadIdeesFromSupabase()
@@ -880,6 +1001,7 @@ function IdeesView({ onBack, pName }) {
 
   return (
     <div className="dash-wrap">
+      {showAdd && <AddIdeeModal pName={pName} onClose={() => setShowAdd(false)} onSaved={refresh} />}
       <button className="detail-back" onClick={onBack}>← Retour au tableau de bord</button>
 
       <div className="dash-header" style={{ marginBottom: 24 }}>
@@ -889,16 +1011,27 @@ function IdeesView({ onBack, pName }) {
             {pending.length} en attente · {validated.length} validée{validated.length > 1 ? 's' : ''} · <span style={{ opacity: 0.5 }}>sync toutes les 10s</span>
           </p>
         </div>
-        {idees.length > 0 && (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <button
-            onClick={async () => { if (window.confirm('Supprimer toutes les idées ?')) { await clearAllIdees(); setIdees([]) } }}
+            onClick={() => setShowAdd(true)}
             style={{
-              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
-              color: '#ef4444', borderRadius: 10, padding: '8px 16px',
-              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              background: 'linear-gradient(135deg, #d97706, #f59e0b)', border: 'none',
+              color: '#fff', borderRadius: 10, padding: '8px 18px',
+              fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 4px 14px rgba(245,158,11,0.35)',
             }}
-          >Tout effacer</button>
-        )}
+          >💡 Ajouter une idée</button>
+          {idees.length > 0 && (
+            <button
+              onClick={async () => { if (window.confirm('Supprimer toutes les idées ?')) { await clearAllIdees(); setIdees([]) } }}
+              style={{
+                background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+                color: '#ef4444', borderRadius: 10, padding: '8px 16px',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >Tout effacer</button>
+          )}
+        </div>
       </div>
 
       {/* Sous-onglets */}
