@@ -96,7 +96,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
                     background: OPTION_COLORS[i],
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 14, fontWeight: 800, color: '#fff',
-                  }}>{'ABC'[i]}</div>
+                  }}>{'ABCD'[i]}</div>
                   <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{opt}</span>
                   {isCorrect && (
                     <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, background: 'rgba(34,197,94,0.15)', padding: '2px 10px', borderRadius: 20 }}>
