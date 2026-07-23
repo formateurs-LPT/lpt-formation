@@ -11,7 +11,7 @@ import { getLegacySessionCode, isDynamicRoomCode } from '@/lib/sessionCode'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import ConfirmModal from '@/components/ConfirmModal'
 
-const JOURNEES_BELGIQUE = (onLaunchModule) => [
+const JOURNEES_BELGIQUE = (onLaunchModule, onLaunchPeerQuiz) => [
   {
     id: 'journee1',
     numero: 1,
@@ -56,6 +56,12 @@ const JOURNEES_BELGIQUE = (onLaunchModule) => [
     titre: 'Journée 2',
     sub: 'Les offres et la vente',
     modules: [
+      {
+        visual: 'emoji', icon: '🎯',
+        label: 'Jeu de questions',
+        sub: 'Les formés s\'interrogent entre eux — révision Jour 1',
+        onClick: () => onLaunchPeerQuiz?.(),
+      },
       {
         visual: 'emoji', icon: '🪟',
         label: 'Merch montures',
@@ -287,9 +293,9 @@ function JourneeModulesBelgique({ journee, onBack, onLaunchModule }) {
 }
 
 // ── Step 3 : Sélection de la journée ─────────────────────────────
-function SessionModulesBelgique({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, initialJournee = null }) {
+function SessionModulesBelgique({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, onLaunchPeerQuiz, initialJournee = null }) {
   const [selectedJournee, setSelectedJournee] = useState(initialJournee)
-  const journees = JOURNEES_BELGIQUE(onLaunchModule)
+  const journees = JOURNEES_BELGIQUE(onLaunchModule, onLaunchPeerQuiz)
   const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
   const [roomCode, setRoomCode] = useState('')
@@ -480,10 +486,10 @@ function SessionModulesBelgique({ pName, onBack, onLaunchFormation, onLaunchModu
 }
 
 // ── Composant principal ───────────────────────────────────────────
-export default function OnboardingViewBelgique({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, initialStep = 'list', initialJournee = null }) {
+export default function OnboardingViewBelgique({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, onLaunchPeerQuiz, initialStep = 'list', initialJournee = null }) {
   const [step, setStep] = useState(initialStep) // list | modules
 
   if (step === 'list') return <CollabListBelgique onNext={() => setStep('modules')} onBack={onBack} />
-  if (step === 'modules') return <SessionModulesBelgique pName={pName} onBack={() => setStep('list')} onLaunchFormation={onLaunchFormation} onLaunchModule={onLaunchModule} onEndRoom={onEndRoom} initialJournee={initialJournee} />
+  if (step === 'modules') return <SessionModulesBelgique pName={pName} onBack={() => setStep('list')} onLaunchFormation={onLaunchFormation} onLaunchModule={onLaunchModule} onEndRoom={onEndRoom} onLaunchPeerQuiz={onLaunchPeerQuiz} initialJournee={initialJournee} />
   return null
 }
