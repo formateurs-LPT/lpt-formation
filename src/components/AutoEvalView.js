@@ -138,6 +138,7 @@ export default function AutoEvalView({ onBack }) {
   const [selectedCategory, setSelectedCategory] = useState('tous')
   const [showReport,      setShowReport]      = useState(false)
   const [showComments,    setShowComments]    = useState(false)
+  const [redoing,         setRedoing]         = useState(null) // nom ou 'all' en cours
   const firstLoad = useRef(true)
 
   const load = useCallback(async () => {
@@ -225,6 +226,26 @@ export default function AutoEvalView({ onBack }) {
   const avgRating = ratingList.length
     ? Math.round((ratingList.reduce((s, r) => s + r.rating, 0) / ratingList.length) * 10) / 10
     : null
+
+  const handleRedo = async (name) => {
+    setRedoing(name)
+    try {
+      const current = (await import('@/lib/supabase').then(m => m.getSharedState()))?.auto_eval_redo_names
+      const existing = Array.isArray(current) ? current : []
+      const next = existing.includes(name) ? existing : [...existing, name]
+      await setSharedState({ auto_eval_redo_names: next, tv_screen: 'auto-eval' })
+      await load()
+    } finally { setRedoing(null) }
+  }
+
+  const handleRedoAll = async () => {
+    setRedoing('all')
+    try {
+      const submittedNames = Object.keys(filteredResponses)
+      await setSharedState({ auto_eval_redo_names: submittedNames, tv_screen: 'auto-eval' })
+      await load()
+    } finally { setRedoing(null) }
+  }
 
   return (
     <>
@@ -368,13 +389,29 @@ export default function AutoEvalView({ onBack }) {
           {/* Progression */}
           {(totalCount > 0 || submittedCount > 0) && (
             <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, overflow: 'hidden', marginBottom: 22 }}>
-              <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Réponses reçues
                 </span>
-                <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>
-                  {submittedCount} / {totalCount || '?'}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {submittedCount > 0 && (
+                    <button
+                      onClick={handleRedoAll}
+                      disabled={redoing !== null}
+                      title="Renvoyer le questionnaire à tous ceux qui ont déjà répondu"
+                      style={{
+                        fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 8,
+                        background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
+                        color: '#d97706', cursor: redoing ? 'wait' : 'pointer', fontFamily: 'inherit',
+                      }}
+                    >
+                      {redoing === 'all' ? '…' : '↩ Renvoyer à tous'}
+                    </button>
+                  )}
+                  <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>
+                    {submittedCount} / {totalCount || '?'}
+                  </span>
+                </div>
               </div>
 
               {totalCount > 0 && (
@@ -424,7 +461,22 @@ export default function AutoEvalView({ onBack }) {
                             )}
                           </div>
                           {done && (
-                            <span style={{ fontSize: 13, color: '#94a3b8' }}>{open ? '▲' : '▼'}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                              <button
+                                onClick={e => { e.stopPropagation(); handleRedo(name) }}
+                                disabled={redoing !== null}
+                                title="Renvoyer le questionnaire à ce formé"
+                                style={{
+                                  fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 8,
+                                  background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+                                  color: '#d97706', cursor: redoing ? 'wait' : 'pointer', fontFamily: 'inherit',
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                {redoing === name ? '…' : '↩'}
+                              </button>
+                              <span style={{ fontSize: 13, color: '#94a3b8' }}>{open ? '▲' : '▼'}</span>
+                            </div>
                           )}
                         </div>
                         {open && done && (

@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { sbUpsert } from '@/lib/supabase'
+import { sbUpsert, setSharedState } from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
 import { classifyMagasin } from '@/lib/formationCategories'
 
@@ -66,6 +66,22 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode })
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState(null)
 
+  // Détecte si le formateur demande à ce formé de recommencer
+  useEffect(() => {
+    if (!submitted) return
+    const redo = sharedState?.auto_eval_redo_names
+    if (!redo) return
+    const shouldRedo = Array.isArray(redo) ? redo.includes(pName) : redo === 'all'
+    if (!shouldRedo) return
+    setSubmitted(false)
+    setThemeStatus({})
+    setAccompagnement([])
+    setSuggestions('')
+    setRating(0)
+    setRatingHover(0)
+    setRatingComment('')
+  }, [sharedState?.auto_eval_redo_names, pName, submitted])
+
   const entrees  = sharedState?.entrees_data || []
   const myEntry  = entrees.find(e => (e.fullName || `${e.nom} ${e.prenom}`.trim()) === pName)
   const cat      = myEntry ? (classifyMagasin(myEntry.magasin) || 'province') : 'province'
@@ -108,6 +124,14 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode })
         },
         updated_at: new Date().toISOString(),
       }, 'collaborateur,week_date,trainer_name')
+      // Retire ce formé de la liste redo si présent
+      const redo = sharedState?.auto_eval_redo_names
+      if (Array.isArray(redo) && redo.includes(pName)) {
+        const next = redo.filter(n => n !== pName)
+        await setSharedState({ auto_eval_redo_names: next.length ? next : null }).catch(() => {})
+      } else if (redo === 'all') {
+        await setSharedState({ auto_eval_redo_names: null }).catch(() => {})
+      }
       setSubmitted(true)
     } catch (e) {
       console.error('[AutoEval] submit error', e)
