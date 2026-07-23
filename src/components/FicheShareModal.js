@@ -83,9 +83,9 @@ export default function FicheShareModal({ ficheUrl, ficheLabel, allowedGroups, o
   const handleSend = () => {
     if (!recipients.length) return
     const bcc     = recipients.map(r => r.email).join(',')
-    const subject = encodeURIComponent(`Fiche pratique formation LPT — ${ficheLabel}`)
+    const subject = encodeURIComponent(`Ta fiche récapitulative de formation — Lunettes Pour Tous`)
     const body    = encodeURIComponent(
-      `Bonjour,\n\nRetrouvez votre fiche de formation en cliquant sur le lien ci-dessous :\n\n${ficheUrl}\n\nBonne continuation !\n— L’équipe Formation LPT`
+      `Bonjour,\n\nAprès ces trois jours de formation, tu as reçu énormément d’informations. Tu trouveras dans le lien ci-dessous une fiche récapitulative de ces trois journées. Elle reprend les points essentiels vus durant la formation.\n\n${ficheUrl}\n\nSi tu as la moindre question, n’hésite pas à me contacter sur ce mail.\n\nJe te souhaite une excellente intégration et peut-être à bientôt en magasin !\n\nBonnes ventes à toi !`
     )
     window.open(`mailto:?bcc=${bcc}&subject=${subject}&body=${body}`)
     setSent(true)
