@@ -1,5 +1,5 @@
 export const QUIZ_FINAL_QUESTIONS = [
-  // Trame d'accueil
+  // ── Trame d'accueil ──────────────────────────────────────────────
   {
     question: "Quelle est la première phrase de la trame d'accueil chez LPT ?",
     options: [
@@ -18,18 +18,22 @@ export const QUIZ_FINAL_QUESTIONS = [
     ],
     correct: 1,
   },
-  // L'entreprise
+  // ── L'entreprise ─────────────────────────────────────────────────
   {
     question: "En quelle année l'entreprise LPT a-t-elle été fondée ?",
     options: ["2010", "2018", "2014"],
     correct: 2,
   },
   {
-    question: "Combien de paires de lunettes LPT fabrique-t-il par jour en France ?",
-    options: ["1 000", "5 000", "10 000"],
-    correct: 1,
+    question: "Qui sont les fondateurs de LPT ?",
+    options: [
+      "Paul Morlet & Xavier Niel",
+      "Pierre Dupont & Xavier Niel",
+      "Paul Morlet & Bernard Arnault",
+    ],
+    correct: 0,
   },
-  // Le concept
+  // ── Le concept ───────────────────────────────────────────────────
   {
     question: "Quel est le délai de fabrication des lunettes unifocales chez LPT ?",
     options: ["10 minutes", "24 heures", "9 jours"],
@@ -44,7 +48,7 @@ export const QUIZ_FINAL_QUESTIONS = [
     ],
     correct: 2,
   },
-  // Troubles visuels
+  // ── Troubles visuels ─────────────────────────────────────────────
   {
     question: "La myopie affecte principalement :",
     options: [
@@ -71,20 +75,25 @@ export const QUIZ_FINAL_QUESTIONS = [
   {
     question: "L'hypermétropie correspond à :",
     options: [
-      "Voir flou de près, en forçant pour voir de loin",
+      "Voir flou à toutes distances — l'œil doit accommoder en permanence",
       "Voir flou uniquement de loin",
       "Ne pas distinguer les couleurs",
     ],
     correct: 0,
   },
-  // Lecture d'ordonnance
+  // ── Lecture d'ordonnance ─────────────────────────────────────────
   {
     question: "Sur une ordonnance, OD désigne :",
     options: ["L'oeil gauche", "L'oeil droit", "Les deux yeux"],
     correct: 1,
   },
   {
-    question: "Ordonnance : Sph -2,50 / Cyl -0,75. Quelles corrections sont indiquées ?",
+    type: 'qcm-ordonnance',
+    question: "Quelles corrections sont indiquées sur cette ordonnance ?",
+    ordonnance: {
+      od: { sph: '-2,50', cyl: '-0,75', axe: '170°' },
+      og: { sph: '-2,00', cyl: '-0,50', axe: '010°' },
+    },
     options: [
       "Myopie + Astigmatisme",
       "Hypermétropie + Astigmatisme",
@@ -102,11 +111,16 @@ export const QUIZ_FINAL_QUESTIONS = [
     correct: 2,
   },
   {
-    question: "Ordonnance : Sph +1,50 — quelle correction est indiquée ?",
+    type: 'qcm-ordonnance',
+    question: "Quelle correction est indiquée sur cette ordonnance ?",
+    ordonnance: {
+      od: { sph: '+1,50' },
+      og: { sph: '+1,25' },
+    },
     options: ["Astigmatisme", "Hypermétropie", "Myopie"],
     correct: 1,
   },
-  // Les offres
+  // ── Les offres ───────────────────────────────────────────────────
   {
     question: "Dans l'offre Classique, la première paire commence à :",
     options: ["10 euros", "1 euro", "29 euros"],
@@ -139,11 +153,13 @@ export const QUIZ_FINAL_QUESTIONS = [
     ],
     correct: 1,
   },
-  // Verre progressif
+  // ── Verre progressif ─────────────────────────────────────────────
   {
+    type: 'qcm-multi',
     question: "Quel est le délai de fabrication d'un verre progressif chez LPT ?",
-    options: ["10 minutes", "9 jours", "24 heures"],
-    correct: 1,
+    instruction: "⚠ Sélectionne 2 bonnes réponses",
+    options: ["10 minutes", "9 jours", "24 à 48 heures"],
+    correct: [1, 2],
   },
   {
     question: "Le verre progressif est recommandé pour quel trouble visuel ?",
@@ -155,7 +171,7 @@ export const QUIZ_FINAL_QUESTIONS = [
     options: ["1", "2", "3"],
     correct: 2,
   },
-  // Remboursement
+  // ── Remboursement ────────────────────────────────────────────────
   {
     question: "Pour bénéficier d'un remboursement optique, il faut :",
     options: [
@@ -183,6 +199,31 @@ export const QUIZ_FINAL_QUESTIONS = [
   {
     question: "Le renouvellement adapté pour un patient de plus de 16 ans est possible :",
     options: ["Après 2 ans", "Après 1 an et 1 jour", "Sans délai"],
+    correct: 1,
+  },
+  // ── Questions bonus (Q27 → Q30) ──────────────────────────────────
+  {
+    question: "Que signifie OG sur une ordonnance ?",
+    options: ["Optique Globale", "Oeil Gauche", "Objectif Général"],
+    correct: 1,
+  },
+  {
+    question: "Parmi ces matières de montures, laquelle est l'entrée de gamme la plus abordable ?",
+    options: ["Acétate", "Métal", "Injecté"],
+    correct: 2,
+  },
+  {
+    question: "La CSS (Complémentaire Santé Solidaire) remplace quel élément du remboursement ?",
+    options: ["La Sécurité Sociale", "La mutuelle", "L'ordonnance"],
+    correct: 1,
+  },
+  {
+    question: "Comment LPT peut-il proposer des prix aussi bas que des lunettes à 10 € ?",
+    options: [
+      "Des verres de moindre qualité",
+      "Zéro intermédiaire — achat direct fournisseurs et fabrication sur place",
+      "Des subventions de l'État",
+    ],
     correct: 1,
   },
 ]

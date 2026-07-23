@@ -81,7 +81,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, maxWidth: 720, alignSelf: 'center', width: '100%' }}>
         {q.options.map((opt, i) => {
           const count = counts[i]
-          const isCorrect = i === q.correct
+          const isCorrect = Array.isArray(q.correct) ? q.correct.includes(i) : i === q.correct
           const pct = total > 0 ? (count / total) * 100 : 0
           return (
             <div key={i} style={{
@@ -332,7 +332,7 @@ function Lobby({ onStart, onBack }) {
           borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer',
           boxShadow: '0 8px 32px rgba(201,162,39,0.45)', fontFamily: 'inherit',
         }}>▶ Lancer le quiz</button>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>{QUIZ_FINAL_QUESTIONS.length} questions · ~15 minutes</p>
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>{QUIZ_FINAL_QUESTIONS.length} questions · ~20 minutes</p>
       </div>
     </div>
   )
