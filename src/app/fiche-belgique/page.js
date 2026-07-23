@@ -348,15 +348,15 @@ export default function FicheBelgique() {
               {[
                 {
                   matière: 'Acétate', icon: '🎨', color: '#f472b6',
-                  args: ['Matière plastique premium, légère', 'Grande variété de couleurs et motifs', 'Aspect mat ou brillant', 'Montage vissé à l\'intérieur'],
+                  args: ['Grande variété de couleurs et motifs'],
                 },
                 {
                   matière: 'Métal', icon: '✨', color: BLUE_L,
-                  args: ['Monture fine et discrète', 'Alliages légers (titane, inox)', 'Branches flexibles souvent', 'Look professionnel et élégant'],
+                  args: ['Monture fine et discrète'],
                 },
                 {
                   matière: 'Injecté', icon: '⚡', color: GREEN,
-                  args: ['Plastique moulé par injection', 'Légères et résistantes', 'Prix d\'entrée de gamme', 'Peu de flexibilité'],
+                  args: ['Plastique moulé par injection', 'Légères et résistantes', 'Prix d\'entrée de gamme (5/15 €)'],
                 },
               ].map(({ matière, icon, color, args }) => (
                 <Card key={matière} accent={color} style={{ padding: '16px 18px' }}>
@@ -370,7 +370,7 @@ export default function FicheBelgique() {
             </div>
             <div style={{ marginTop: 12, padding: '12px 16px', background: `${GOLD}08`, border: `1px solid ${GOLD}25`, borderRadius: 10, fontSize: 12, color: TEXT_SUB, display: 'flex', alignItems: 'center', gap: 10 }}>
               <span>🔍</span>
-              <span>La journée 1 se termine par une <strong style={{ color: GOLD }}>activité terrain</strong> — découverte des montures en magasin (~17h00).</span>
+              <span>La journée 1 se termine par une <strong style={{ color: GOLD }}>activité terrain</strong> — découverte des montures avec le formateur (~17h00).</span>
             </div>
           </div>
 
@@ -423,16 +423,6 @@ export default function FicheBelgique() {
                 <Row label="Progressif (2 paires)" value="~260 €" accent={GOLD} last />
               </Card>
 
-              <Card accent={RED_BE}>
-                <Label color={RED_BE}>Parcours Suprême</Label>
-                <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.6, marginBottom: 12 }}>
-                  1 paire achetée = <strong style={{ color: RED_BE }}>1 paire offerte</strong><br />
-                  Verres <strong style={{ color: TEXT }}>Origine France</strong> garantis<br />
-                  Condition : <strong style={{ color: RED_BE }}>tiers payant complet</strong>
-                </div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: GREEN }}>Reste à charge : 0 €</div>
-              </Card>
-
               <Card accent={BLUE}>
                 <Label color={BLUE}>Pack Plan — 95 €</Label>
                 <div style={{ fontSize: 28, fontWeight: 900, color: BLUE_L, marginBottom: 10 }}>95 €</div>
@@ -457,7 +447,7 @@ export default function FicheBelgique() {
             <Card accent={GOLD} style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: GOLD, marginBottom: 4 }}>Règle absolue</div>
               <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.6 }}>
-                <strong style={{ color: TEXT }}>LPTVISION est obligatoire.</strong> Aucune mesure manuelle autorisée.<br />
+                <strong style={{ color: TEXT }}>LPTVISION est obligatoire.</strong><br />
                 Objectif : aligner le centre optique du verre exactement devant la pupille du client.
               </div>
             </Card>
