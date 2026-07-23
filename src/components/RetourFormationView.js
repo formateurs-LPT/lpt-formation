@@ -148,6 +148,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
     comprehension_note: comprehensionNote,
     appreciation,
     commentaire_libre: commentaireLibre,
+    magasin: entree.magasin || '',
     ...overrides,
   })
 
