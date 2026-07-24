@@ -3870,6 +3870,53 @@ const TV_MONTURES_DATA = {
   },
 }
 
+const TV_BUBBLE_COLORS = ['#00abe9', '#4ade80', '#f59e0b', '#a78bfa', '#f472b6', '#34d399']
+
+function TVSAVBrainstorm({ page, sessionCode }) {
+  const [answers, setAnswers] = useState([])
+  const pageId = `${page.moduleId}:brainstorm`
+
+  useEffect(() => {
+    setAnswers([])
+    const poll = async () => {
+      const rows = await fetchOpenAnswers(sessionCode, pageId)
+      setAnswers(rows || [])
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [pageId, sessionCode])
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '48px 72px' }}>
+      <div style={{ textAlign: 'center', marginBottom: 40 }}>
+        <div style={{ display: 'inline-block', background: `${page.color}20`, border: `1px solid ${page.color}50`, borderRadius: 24, padding: '6px 24px', fontSize: 13, fontWeight: 700, color: page.color, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 20 }}>💬 Brainstorm</div>
+        <div style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1.2, whiteSpace: 'pre-line' }}>{page.question}</div>
+      </div>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16, alignContent: 'start', overflowY: 'auto' }}>
+        {answers.length === 0 ? (
+          <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 60 }}>
+            <div style={{ fontSize: 32, marginBottom: 16 }}>📱</div>
+            <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic' }}>En attente des réponses sur les téléphones…</div>
+          </div>
+        ) : answers.map((row, i) => (
+          <div key={row.participant_name} style={{
+            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+            borderLeft: `4px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
+            borderRadius: 16, padding: '18px 22px',
+            animation: 'fadeInUp .4s ease forwards',
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length], marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>{row.participant_name}</div>
+            <div style={{ fontSize: 18, color: '#fff', lineHeight: 1.5 }}>{row.answer}</div>
+          </div>
+        ))}
+      </div>
+      {answers.length > 0 && <div style={{ textAlign: 'center', marginTop: 16, fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>{answers.length} réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''}</div>}
+      <style>{`@keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }`}</style>
+    </div>
+  )
+}
+
 function TVSAVContent({ page, pageIndex, total, moduleLabel }) {
   const { color, icon, titre, sousTitre, points } = page
   const [step, setStep] = useState(0)
@@ -5570,6 +5617,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'montures-acetate') return <TVMontures type="montures-acetate" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'montures-metal')   return <TVMontures type="montures-metal"   pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'montures-injecte') return <TVMontures type="montures-injecte" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'sav-brainstorm') return <TVSAVBrainstorm page={page} sessionCode={sessionCode} />
   if (page.type === 'sav-content') return <TVSAVContent page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'pdm-pourquoi')     return <TVPdmPourquoi pageIndex={pageIndex} total={total} />
   if (page.type === 'offres-classique')   return <TVOffresClassique step={offresClassiqueStep} />

@@ -10,6 +10,61 @@ import { RETRAITS_PAGES, RETRAITS_QUIZ } from '@/lib/modulesData'
 const BUBBLE_COLORS = ['#00abe9', '#4ade80', '#f59e0b', '#a78bfa', '#f472b6', '#34d399']
 const TOTAL_PAGES = RETRAITS_PAGES.length
 
+function BrainstormController({ page, onNext, onBack }) {
+  const [answers, setAnswers] = useState([])
+  const pageId = `${page.moduleId}:brainstorm`
+
+  useEffect(() => {
+    const poll = async () => {
+      const rows = await fetchOpenAnswers(getActiveSessionCode(), pageId)
+      setAnswers(rows || [])
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [pageId])
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '20px 32px 32px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>SAV · Retraits — Brainstorm</span>
+        </div>
+        <button onClick={onBack}
+          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+        >✕ Quitter</button>
+      </div>
+      <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.35)', borderRadius: 20, padding: '5px 20px', fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>💬 Brainstorm — Les formés répondent sur leur téléphone</div>
+        <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', lineHeight: 1.3, whiteSpace: 'pre-line' }}>{page.question}</div>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 820, alignSelf: 'center', width: '100%' }}>
+        {answers.length === 0 ? (
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, fontStyle: 'italic', padding: '28px', textAlign: 'center' }}>En attente des réponses…</div>
+        ) : answers.map((row, i) => (
+          <div key={row.participant_name} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderLeft: `3px solid ${BUBBLE_COLORS[i % BUBBLE_COLORS.length]}`, borderRadius: 14, padding: '12px 18px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+            <div style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: `${BUBBLE_COLORS[i % BUBBLE_COLORS.length]}22`, border: `2px solid ${BUBBLE_COLORS[i % BUBBLE_COLORS.length]}60`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length] }}>{row.participant_name?.charAt(0)?.toUpperCase() || '?'}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length], marginBottom: 4 }}>{row.participant_name}</div>
+              <div style={{ fontSize: 15, color: '#fff', lineHeight: 1.5 }}>{row.answer}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {answers.length > 0 && <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>{answers.length} réponse{answers.length > 1 ? 's' : ''}</div>}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+        <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #00abe9, #0089ba)', border: 'none', color: '#fff', padding: '13px 32px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 5px 20px rgba(0,171,233,0.4)' }}>
+          Passer aux explications →
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Page de contenu ──────────────────────────────────────────
 function SAVPage({ page, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage, onTerminate, quizLaunched, onLaunchQuiz }) {
   const [notesOpen, setNotesOpen] = useState(true)
@@ -394,20 +449,26 @@ export default function ModuleRetraits({ pName, onBack, onTerminate }) {
   if (showGroupResults) return <GroupResultsView onTerminate={handleTerminate} />
   if (quizLaunched) return <QuizController quizQ={quizQ} onNext={handleNextQuestion} onEnd={handleEndQuiz} onBack={handleEndQuiz} />
 
+  const currentPage = RETRAITS_PAGES[page]
+  if (currentPage.type === 'sav-brainstorm') return <BrainstormController page={currentPage} onNext={handleNext} onBack={handleBack} />
+
+  const contentStart = 1 // brainstorm is page 0
+  const contentTotal = TOTAL_PAGES - 1
+  const contentIndex = page - contentStart
   const nextPage = page < TOTAL_PAGES - 1
     ? { type: RETRAITS_PAGES[page + 1].type, color: RETRAITS_PAGES[page + 1].color, label: RETRAITS_PAGES[page + 1].titre }
     : null
 
   return (
     <SAVPage
-      page={RETRAITS_PAGES[page]}
+      page={currentPage}
       onBack={handleBack}
       onPrev={handlePrev}
       onNext={handleNext}
-      isFirst={page === 0}
+      isFirst={false}
       isLast={page >= TOTAL_PAGES - 1}
-      pageIndex={page}
-      total={TOTAL_PAGES}
+      pageIndex={contentIndex}
+      total={contentTotal}
       nextPage={nextPage}
       onTerminate={handleTerminate}
       quizLaunched={quizLaunched}

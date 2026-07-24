@@ -644,6 +644,14 @@ export const TRAME_ACCUEIL_PAGES = [
 
 export const RETRAITS_PAGES = [
   {
+    id: 'retraits-brainstorm',
+    type: 'sav-brainstorm',
+    moduleId: 'retraits',
+    color: '#00abe9',
+    icon: '💬',
+    question: 'Comment faire un retrait de lunettes ?\nQuelles sont les étapes ?',
+  },
+  {
     id: 'retraits-overview',
     type: 'sav-content',
     color: '#00abe9',
@@ -746,6 +754,14 @@ export const RETRAITS_QUIZ = [
 
 export const AJUSTAGES_PAGES = [
   {
+    id: 'ajustages-brainstorm',
+    type: 'sav-brainstorm',
+    moduleId: 'ajustages',
+    color: '#a78bfa',
+    icon: '💬',
+    question: 'À quoi sert un ajustage ?\nComment on fait ?',
+  },
+  {
     id: 'ajustages-intro',
     type: 'sav-content',
     color: '#a78bfa',
@@ -788,6 +804,14 @@ export const AJUSTAGES_QUIZ = [
 ]
 
 export const RAZ_PAGES = [
+  {
+    id: 'raz-brainstorm',
+    type: 'sav-brainstorm',
+    moduleId: 'raz',
+    color: '#f87171',
+    icon: '💬',
+    question: "C'est quoi une RAZ ?\nPourquoi est-ce qu'on en fait ?\nComment on fait ?",
+  },
   {
     id: 'raz-intro',
     type: 'sav-content',

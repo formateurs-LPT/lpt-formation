@@ -3332,6 +3332,53 @@ function TrameAccueilMobile() {
   )
 }
 
+function SAVBrainstormMobile({ page, moduleId, pName }) {
+  const [text, setText] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const pageId = `${moduleId}:brainstorm`
+
+  const handleSubmit = async () => {
+    if (!text.trim() || saving) return
+    setSaving(true)
+    await insertOpenAnswer({
+      sessionCode: getParticipantSessionCode(),
+      pageId,
+      participantName: (pName || 'Anonyme').trim(),
+      answer: text.trim(),
+    })
+    setSaving(false)
+    setSubmitted(true)
+  }
+
+  if (submitted) return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>✍️</div>
+      <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Réponse envoyée !</div>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>Le formateur va présenter les explications.</div>
+      <div style={{ marginTop: 28, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.15)', borderTop: `3px solid ${page.color}`, borderRadius: '50%', animation: 'savSpin 1s linear infinite' }} />
+      <style>{`@keyframes savSpin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+
+  return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', padding: '40px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ display: 'inline-block', background: `${page.color}20`, border: `1px solid ${page.color}40`, borderRadius: 20, padding: '5px 18px', fontSize: 10, fontWeight: 700, color: page.color, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>💬 Brainstorm</div>
+      <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', lineHeight: 1.35, textAlign: 'center', marginBottom: 28, whiteSpace: 'pre-line' }}>{page.question}</div>
+      <textarea
+        value={text}
+        onChange={e => setText(e.target.value)}
+        placeholder="Tapez votre réponse…"
+        rows={5}
+        style={{ width: '100%', maxWidth: 420, padding: '16px', borderRadius: 16, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: 16, fontFamily: 'inherit', resize: 'none', outline: 'none', marginBottom: 20 }}
+      />
+      <button onClick={handleSubmit} disabled={!text.trim() || saving} style={{ background: text.trim() ? `linear-gradient(135deg, ${page.color}, ${page.color}cc)` : 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16, fontSize: 16, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default', fontFamily: 'inherit', width: '100%', maxWidth: 420 }}>
+        {saving ? 'Envoi…' : '✓ Envoyer'}
+      </button>
+    </div>
+  )
+}
+
 function SAVContentMobile({ page, pageIndex, total }) {
   const { color, icon, titre, sousTitre, points } = page
   return (
@@ -3776,7 +3823,8 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
   if (['impact','probleme','timeline','piliers','steps','machines','cases','visages','croissance','mission'].includes(page.type))
     return <EntreprisePageMobile page={page} pageIndex={pageIndex} total={total} />
 
-  // SAV content (Retraits, Ajustages, RAZ)
+  // SAV modules (Retraits, Ajustages, RAZ)
+  if (page.type === 'sav-brainstorm') return <SAVBrainstormMobile page={page} moduleId={page.moduleId} pName={pName} />
   if (page.type === 'sav-content') return <SAVContentMobile page={page} pageIndex={pageIndex} total={total} />
 
   return (
