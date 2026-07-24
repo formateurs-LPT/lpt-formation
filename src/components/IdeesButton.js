@@ -82,10 +82,23 @@ export default function IdeesButton({ moduleId, pName }) {
         pageIndex = rows?.[0]?.module_page ?? 0
       } catch {}
 
-      const page = moduleData?.pages?.[pageIndex]
-      const pageLabel = page?.titre
-        ? `Page ${pageIndex + 1} — ${page.titre}`
-        : `Page ${pageIndex + 1}`
+      let pageLabel
+      if (pageIndex === -1) {
+        pageLabel = 'Lobby'
+      } else if (pageIndex === 200) {
+        pageLabel = 'Résultats'
+      } else if (pageIndex >= 100) {
+        const qIdx = pageIndex - 100
+        const q = moduleData?.quiz?.[qIdx]
+        pageLabel = q?.question
+          ? `Quiz — Question ${qIdx + 1} : ${q.question.slice(0, 60)}${q.question.length > 60 ? '…' : ''}`
+          : `Quiz — Question ${qIdx + 1}`
+      } else {
+        const page = moduleData?.pages?.[pageIndex]
+        pageLabel = page?.titre
+          ? `Slide ${pageIndex + 1} — ${page.titre}`
+          : `Slide ${pageIndex + 1}`
+      }
 
       const newIdee = {
         id: Date.now().toString(),
