@@ -89,22 +89,19 @@ function Lobby({ onStart, onBack }) {
         <div style={{ fontSize: 56, marginBottom: 24 }}>🔄</div>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#f87171', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>SAV · Journée 4 · Module 3</div>
         <h1 style={{ fontSize: 32, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Les RAZ — Recommandes</h1>
-        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 16, lineHeight: 1.6 }}>
-          Refabrication d'équipements · Process · Dernier recours
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 28, lineHeight: 1.6 }}>
+          Les 4 vérifications · La saisie · L'appel supervision
         </p>
-        <div style={{ display: 'inline-block', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 12, padding: '10px 20px', fontSize: 13, color: '#f59e0b', marginBottom: 28 }}>
-          🚧 Contenu détaillé à venir lors de la prochaine session
-        </div>
-        <br />
-        <button onClick={onStart} style={{ background: 'linear-gradient(135deg, #b91c1c, #ef4444)', border: 'none', color: '#fff', padding: '16px 48px', borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 32px rgba(239,68,68,0.35)', fontFamily: 'inherit' }}>▶ Introduction</button>
+        <button onClick={onStart} style={{ background: 'linear-gradient(135deg, #b91c1c, #ef4444)', border: 'none', color: '#fff', padding: '16px 48px', borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 32px rgba(239,68,68,0.35)', fontFamily: 'inherit' }}>▶ Commencer</button>
       </div>
     </div>
   )
 }
 
-function IntroPage({ page, onBack, onTerminate }) {
+function ContentPage({ page, pageIdx, totalPages, onBack, onNext, onTerminate }) {
   const [notesOpen, setNotesOpen] = useState(true)
   const { color, icon, titre, sousTitre, points, notesFormateur } = page
+  const isLast = pageIdx === totalPages - 1
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
@@ -112,7 +109,7 @@ function IntroPage({ page, onBack, onTerminate }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>SAV · RAZ · Introduction</span>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>SAV · RAZ · {pageIdx + 1}/{totalPages}</span>
         </div>
         <button onClick={onBack}
           style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
@@ -137,10 +134,6 @@ function IntroPage({ page, onBack, onTerminate }) {
               </div>
             ))}
           </div>
-          <div style={{ marginTop: 24, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 20 }}>🚧</span>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>Le process détaillé des RAZ sera présenté lors de la prochaine session de formation.</div>
-          </div>
         </div>
 
         <div style={{ flex: '2', padding: '24px 24px', overflowY: 'auto' }}>
@@ -158,13 +151,24 @@ function IntroPage({ page, onBack, onTerminate }) {
               ))}
             </div>
           )}
+          <div style={{ marginTop: 20, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {Array(totalPages).fill(0).map((_, i) => (
+              <div key={i} style={{ height: 4, borderRadius: 2, width: i === pageIdx ? 20 : 6, background: i === pageIdx ? '#f87171' : 'rgba(255,255,255,0.15)', transition: 'all .3s' }} />
+            ))}
+          </div>
         </div>
       </div>
 
       <div style={{ padding: '12px 28px 16px', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'flex-end' }}>
-        <button onClick={onTerminate} style={{ background: 'linear-gradient(135deg, #dc2626, #ef4444)', border: 'none', color: '#fff', padding: '11px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-          ✓ Terminer le module
-        </button>
+        {isLast ? (
+          <button onClick={onTerminate} style={{ background: 'linear-gradient(135deg, #dc2626, #ef4444)', border: 'none', color: '#fff', padding: '11px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            ✓ Terminer le module
+          </button>
+        ) : (
+          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #b91c1c, #ef4444)', border: 'none', color: '#fff', padding: '11px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            Suivant →
+          </button>
+        )}
       </div>
     </div>
   )
@@ -182,6 +186,8 @@ export default function ModuleRAZ({ pName, onBack, onTerminate }) {
 
   if (!started) return <Lobby onStart={handleStart} onBack={handleBack} />
   const currentPage = RAZ_PAGES[page]
+  const contentPages = RAZ_PAGES.filter(p => p.type === 'sav-content')
+  const contentPageIdx = contentPages.findIndex(p => p.id === currentPage.id)
   if (currentPage.type === 'sav-brainstorm') return <BrainstormController page={currentPage} onNext={handleNext} onBack={handleBack} />
-  return <IntroPage page={currentPage} onBack={handleBack} onTerminate={handleTerminate} />
+  return <ContentPage page={currentPage} pageIdx={contentPageIdx} totalPages={contentPages.length} onBack={handleBack} onNext={handleNext} onTerminate={handleTerminate} />
 }
