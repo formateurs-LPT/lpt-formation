@@ -921,7 +921,7 @@ export const RAZ_PAGES = [
     titre: 'Saisir la RAZ — Le commentaire',
     sousTitre: 'Dans la commande problématique',
     points: [
-      { emoji: '1️⃣', titre: 'Quoi recommande', desc: 'Ex : "RAZ verres" quand on recommande des verres seuls' },
+      { emoji: '1️⃣', titre: "Ce qu'on recommande", desc: 'Ex : "RAZ verres" quand on recommande des verres seuls' },
       { emoji: '2️⃣', titre: 'Pourquoi on recommande', desc: 'Ex : "Erreur saisie correction" — la raison précise de la RAZ' },
       { emoji: '3️⃣', titre: "Ce qu'on a vérifié + ses initiales", desc: 'Ex : "Prises de mesures ok, corrections validées en lunettes d\'essai — QB"' },
     ],
