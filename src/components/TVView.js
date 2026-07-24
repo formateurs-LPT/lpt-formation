@@ -3963,7 +3963,7 @@ function IPhoneSMS() {
           <div style={{ width: 26 }} />
         </div>
         {/* Messages */}
-        <div style={{ flex: 1, padding: '14px 10px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, overflowY: 'hidden' }}>
+        <div style={{ flex: 1, padding: '14px 10px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 8, overflowY: 'hidden' }}>
           <div style={{ textAlign: 'center', fontSize: 9, color: '#8e8e93', marginBottom: 4 }}>sam. 20 juin à 16:07</div>
           {/* SMS 1 */}
           <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
@@ -4032,7 +4032,7 @@ function TVSAVContent({ page, pageIndex, total, moduleLabel }) {
           ))}
         </div>
         {showIphone && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', flexShrink: 0, alignSelf: 'flex-start' }}>
             <IPhoneSMS />
           </div>
         )}
