@@ -260,6 +260,15 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .ob-collab-check{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text-s);cursor:pointer;font-weight:500}
 .ob-collab-check input[type=checkbox]{accent-color:var(--lpt);width:16px;height:16px;cursor:pointer}
 
+/* ── ONBOARDING DARK MODE OVERRIDES ── */
+#dashboard .ob-group-card{background:var(--card);border-color:rgba(255,255,255,0.1)}
+#dashboard .ob-group-card-title{color:#e8edf3}
+#dashboard .ob-group-card-sub{color:rgba(255,255,255,0.6)}
+#dashboard .ob-group-card-count{background:rgba(0,171,233,0.15);color:#7dd3fc}
+#dashboard .ob-collab-row{background:var(--card);border-color:rgba(255,255,255,0.08)}
+#dashboard .ob-collab-name{color:#e8edf3}
+#dashboard .ob-collab-check{color:rgba(255,255,255,0.65)}
+
 /* ── RESPONSIVE ── */
 @media(max-width:640px){
   .tlayout{grid-template-columns:1fr}

@@ -653,7 +653,7 @@ export const RETRAITS_PAGES = [
     points: [
       { emoji: '📱', titre: 'SMS reçu', desc: '1 SMS par paire avec le numéro de commande' },
       { emoji: '🔍', titre: 'Onglet Commandes', desc: 'N° de commande → téléphone de vente → nom du client' },
-      { emoji: '🗂️', titre: 'Bac retrait', desc: 'Paires classées par ordre alphabétique' },
+      { emoji: '🗂️', titre: 'Étagères retrait', desc: 'Paires classées par ordre alphabétique sur les étagères' },
       { emoji: '👓', titre: 'Essayage', desc: 'Vérifier réglage, confort et adaptation visuelle' },
       { emoji: '✅', titre: 'Signature + Avis', desc: '1 retrait signé par paire · QR code Google' },
     ],
@@ -688,11 +688,13 @@ export const RETRAITS_PAGES = [
     points: [
       { emoji: '📟', titre: 'Onglet Commandes', desc: 'Entrer le N° de commande dans l\'onglet Commandes du téléphone de vente' },
       { emoji: '👤', titre: 'Nom + Prénom', desc: 'Nom et prénom du client s\'affichent immédiatement' },
-      { emoji: '🔤', titre: 'Ordre alphabétique', desc: 'Les paires sont rangées par ordre alphabétique dans le bac' },
+      { emoji: '🔤', titre: 'Ordre alphabétique', desc: 'Les paires sont rangées par ordre alphabétique sur les étagères' },
+      { emoji: '💻', titre: 'Un seul SMS ?', desc: 'Si le client n\'a reçu qu\'un SMS, vérifier l\'état de la 2ᵉ paire directement dans le Back End sur l\'ordinateur' },
     ],
     notesFormateur: [
-      { icon: '🎯', title: 'En pratique', text: 'Montrer le geste complet : saisir le N° → nom visible → aller chercher dans le bac. Faire faire à chaque formé.' },
+      { icon: '🎯', title: 'En pratique', text: 'Montrer le geste complet : saisir le N° → nom visible → aller chercher sur les étagères. Faire faire à chaque formé.' },
       { icon: '📚', title: 'Ordre alphabétique', text: 'A → Z sur le nom de famille. Si le client a un nom composé ou un préfixe, l\'ordre suit ce qui est saisi dans le système.' },
+      { icon: '💻', title: 'Back End — vérification 2ᵉ paire', text: 'Si le client n\'a reçu qu\'un seul SMS, ne pas lui dire que la 2ᵉ n\'est pas prête sans vérifier. Ouvrir le Back End sur l\'ordinateur pour voir l\'état exact de la commande.' },
     ],
   },
   {
@@ -734,7 +736,8 @@ export const RETRAITS_PAGES = [
 export const RETRAITS_QUIZ = [
   { type: 'text-open', question: 'Que reçoit le client quand sa paire de lunettes est prête à être retirée ?', hint: '1 SMS par paire avec le numéro de commande' },
   { type: 'text-open', question: 'Comment retrouve-t-on le nom du client à partir du numéro de commande ?', hint: "On entre le numéro dans l'onglet Commandes du téléphone de vente → nom et prénom apparaissent" },
-  { type: 'text-open', question: 'Comment les paires sont-elles classées dans le bac de retrait ?', hint: 'Par ordre alphabétique (nom de famille)' },
+  { type: 'text-open', question: 'Comment les paires sont-elles classées sur les étagères de retrait ?', hint: 'Par ordre alphabétique (nom de famille)' },
+  { type: 'text-open', question: 'Un client arrive avec un seul SMS. Que faites-vous avant de lui dire que la 2ᵉ paire n\'est pas prête ?', hint: 'On vérifie l\'état de la 2ᵉ paire dans le Back End sur l\'ordinateur' },
   { type: 'text-open', question: 'Un client a commandé 2 paires. Combien de SMS reçoit-il ? Combien de retraits effectue-t-on sur le téléphone ?', hint: '2 SMS (1 par paire) · 2 retraits sur le téléphone de vente' },
   { type: 'text-open', question: "Que vérifiez-vous avant de tendre la paire au client lors de l'essayage ?", hint: 'Paire droite, branches bien dépliées, aucun défaut visible' },
   { type: 'text-open', question: "Un client dit que ses nouvelles lunettes lui font bizarre. Que lui répondez-vous ?", hint: "C'est normal avec une nouvelle correction — le cerveau s'adapte, la gêne va s'estomper en portant les lunettes" },
