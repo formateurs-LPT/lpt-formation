@@ -271,6 +271,15 @@ function TVOrdonnanceDisplay({ ordonnance }) {
 // ── TV texte libre ──────────────────────────────────────────────────
 function TVQuizTextOpen({ question, qIdx, total, moduleLabel, sessionCode, moduleId }) {
   const [answers, setAnswers] = useState([])
+  const [participantCount, setParticipantCount] = useState(0)
+
+  useEffect(() => {
+    if (!sessionCode) return
+    sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`)
+      .then(rows => setParticipantCount((rows || []).length))
+      .catch(() => {})
+  }, [sessionCode])
+
   useEffect(() => {
     if (!sessionCode) return
     const poll = async () => {
@@ -281,6 +290,8 @@ function TVQuizTextOpen({ question, qIdx, total, moduleLabel, sessionCode, modul
     const t = setInterval(poll, 2000)
     return () => clearInterval(t)
   }, [sessionCode, qIdx, moduleId])
+
+  const allAnswered = participantCount > 0 && answers.length >= participantCount
 
   return (
     <div style={{
@@ -293,14 +304,32 @@ function TVQuizTextOpen({ question, qIdx, total, moduleLabel, sessionCode, modul
       <h1 style={{ fontSize: 52, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 40, maxWidth: 1000 }}>
         {question.question}
       </h1>
-      <div style={{
-        background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.2)',
-        borderRadius: 16, padding: '14px 32px', marginBottom: answers.length ? 32 : 0,
-        fontSize: 18, color: 'rgba(255,255,255,0.6)', fontWeight: 500,
-      }}>
-        ✍️ Saisissez votre réponse depuis votre téléphone
-      </div>
-      {answers.length > 0 && (
+      {!allAnswered ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+          <div style={{
+            background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.2)',
+            borderRadius: 16, padding: '14px 32px',
+            fontSize: 18, color: 'rgba(255,255,255,0.6)', fontWeight: 500,
+          }}>
+            ✍️ Saisissez votre réponse depuis votre téléphone
+          </div>
+          {answers.length > 0 && (
+            <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>
+              {answers.length}
+              <span style={{ fontSize: 15, fontWeight: 400, color: 'rgba(255,255,255,0.45)', marginLeft: 8 }}>
+                / {participantCount > 0 ? participantCount : '?'} réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
+          {answers.length > 0 && (
+            <div style={{ display: 'flex', gap: 10 }}>
+              {answers.map((_, i) => (
+                <div key={i} style={{ width: 14, height: 14, borderRadius: '50%', background: TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length] }} />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, maxWidth: 1000, justifyContent: 'center' }}>
           {answers.slice(0, 10).map(a => (
             <div key={a.participant_name} style={{
