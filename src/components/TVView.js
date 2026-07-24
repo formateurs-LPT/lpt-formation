@@ -3870,8 +3870,6 @@ const TV_MONTURES_DATA = {
   },
 }
 
-const TV_BUBBLE_COLORS = ['#00abe9', '#4ade80', '#f59e0b', '#a78bfa', '#f472b6', '#34d399']
-
 function TVSAVBrainstorm({ page, sessionCode }) {
   const [answers, setAnswers] = useState([])
   const pageId = `${page.moduleId}:brainstorm`
