@@ -6,7 +6,7 @@ import QuestionBubble from '@/components/QuestionBubble'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, getRoomSharedState, setSharedState, setRoomSharedState, insertOpenAnswer, setParticipantPage } from '@/lib/supabase'
+import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, getRoomSharedState, setSharedState, setRoomSharedState, insertOpenAnswer, updateOpenAnswer, setParticipantPage } from '@/lib/supabase'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
@@ -854,8 +854,8 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
           const row = answerMap[idx]
           const isCorrect = row ? row.is_correct : null
           const chosenIdx = row ? row.answer_idx : null
-          const chosenText = chosenIdx != null ? q.options[chosenIdx] : null
-          const correctText = q.options[q.correct]
+          const chosenText = (chosenIdx != null && q.options) ? q.options[chosenIdx] : null
+          const correctText = q.options ? q.options[q.correct] : (q.hint || null)
 
           return (
             <div key={idx} style={{
@@ -879,6 +879,11 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
                   {chosenText && (
                     <div style={{ fontSize: 12, color: isCorrect ? '#4ade80' : '#f87171', fontWeight: 600 }}>
                       {isCorrect ? '✅' : '❌'} {chosenText}
+                    </div>
+                  )}
+                  {!chosenText && row && isCorrect !== null && (
+                    <div style={{ fontSize: 12, color: isCorrect ? '#4ade80' : '#f87171', fontWeight: 600 }}>
+                      {isCorrect ? '✅ Bonne réponse' : '❌ À retravailler'}
                     </div>
                   )}
                   {!row && (
@@ -3335,27 +3340,50 @@ function TrameAccueilMobile() {
 function SAVBrainstormMobile({ page, moduleId, pName }) {
   const [text, setText] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [revealed, setRevealed] = useState(false)
   const pageId = `${moduleId}:brainstorm`
+  const sessionCode = getParticipantSessionCode()
+
+  useEffect(() => {
+    const poll = async () => {
+      const s = await getSharedState()
+      setRevealed(!!s?.brainstorm_revealed)
+    }
+    poll()
+    const t = setInterval(poll, 3000)
+    return () => clearInterval(t)
+  }, [])
 
   const handleSubmit = async () => {
     if (!text.trim() || saving) return
     setSaving(true)
-    await insertOpenAnswer({
-      sessionCode: getParticipantSessionCode(),
-      pageId,
-      participantName: (pName || 'Anonyme').trim(),
-      answer: text.trim(),
-    })
+    if (editing) {
+      await updateOpenAnswer({ sessionCode, pageId, participantName: (pName || 'Anonyme').trim(), answer: text.trim() })
+    } else {
+      await insertOpenAnswer({ sessionCode, pageId, participantName: (pName || 'Anonyme').trim(), answer: text.trim() })
+    }
     setSaving(false)
     setSubmitted(true)
+    setEditing(false)
   }
 
-  if (submitted) return (
+  if (submitted && !editing) return (
     <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
       <div style={{ fontSize: 48, marginBottom: 16 }}>✍️</div>
       <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Réponse envoyée !</div>
-      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>Le formateur va présenter les explications.</div>
+      {revealed ? (
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>Les réponses sont affichées sur l'écran.</div>
+      ) : (
+        <>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 24 }}>En attente des autres participants…</div>
+          <button
+            onClick={() => { setEditing(true) }}
+            style={{ background: 'rgba(255,255,255,0.08)', border: `1px solid ${page.color}60`, color: page.color, padding: '12px 28px', borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+          >✏️ Modifier ma réponse</button>
+        </>
+      )}
       <div style={{ marginTop: 28, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.15)', borderTop: `3px solid ${page.color}`, borderRadius: '50%', animation: 'savSpin 1s linear infinite' }} />
       <style>{`@keyframes savSpin { to { transform: rotate(360deg); } }`}</style>
     </div>
@@ -3363,7 +3391,9 @@ function SAVBrainstormMobile({ page, moduleId, pName }) {
 
   return (
     <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', padding: '40px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <div style={{ display: 'inline-block', background: `${page.color}20`, border: `1px solid ${page.color}40`, borderRadius: 20, padding: '5px 18px', fontSize: 10, fontWeight: 700, color: page.color, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>💬 Brainstorm</div>
+      <div style={{ display: 'inline-block', background: `${page.color}20`, border: `1px solid ${page.color}40`, borderRadius: 20, padding: '5px 18px', fontSize: 10, fontWeight: 700, color: page.color, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>
+        {editing ? '✏️ Modification' : '💬 Brainstorm'}
+      </div>
       <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', lineHeight: 1.35, textAlign: 'center', marginBottom: 28, whiteSpace: 'pre-line' }}>{page.question}</div>
       <textarea
         value={text}
@@ -3372,9 +3402,12 @@ function SAVBrainstormMobile({ page, moduleId, pName }) {
         rows={5}
         style={{ width: '100%', maxWidth: 420, padding: '16px', borderRadius: 16, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: 16, fontFamily: 'inherit', resize: 'none', outline: 'none', marginBottom: 20 }}
       />
-      <button onClick={handleSubmit} disabled={!text.trim() || saving} style={{ background: text.trim() ? `linear-gradient(135deg, ${page.color}, ${page.color}cc)` : 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16, fontSize: 16, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default', fontFamily: 'inherit', width: '100%', maxWidth: 420 }}>
-        {saving ? 'Envoi…' : '✓ Envoyer'}
+      <button onClick={handleSubmit} disabled={!text.trim() || saving} style={{ background: text.trim() ? `linear-gradient(135deg, ${page.color}, ${page.color}cc)` : 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16, fontSize: 16, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default', fontFamily: 'inherit', width: '100%', maxWidth: 420, marginBottom: 12 }}>
+        {saving ? 'Envoi…' : editing ? '✓ Mettre à jour' : '✓ Envoyer'}
       </button>
+      {editing && (
+        <button onClick={() => { setEditing(false) }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Annuler</button>
+      )}
     </div>
   )
 }

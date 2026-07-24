@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, fetchOpenAnswers } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, fetchOpenAnswers, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { NextPagePreview } from '@/lib/trainerPreview'
@@ -12,6 +12,7 @@ const TOTAL_PAGES = RETRAITS_PAGES.length
 
 function BrainstormController({ page, onNext, onBack }) {
   const [answers, setAnswers] = useState([])
+  const [revealed, setRevealed] = useState(false)
   const pageId = `${page.moduleId}:brainstorm`
 
   useEffect(() => {
@@ -23,6 +24,16 @@ function BrainstormController({ page, onNext, onBack }) {
     const t = setInterval(poll, 2000)
     return () => clearInterval(t)
   }, [pageId])
+
+  const handleReveal = async () => {
+    await setSharedState({ brainstorm_revealed: true })
+    setRevealed(true)
+  }
+
+  const handleNext = async () => {
+    await setSharedState({ brainstorm_revealed: false })
+    onNext()
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '20px 32px 32px' }}>
@@ -56,8 +67,17 @@ function BrainstormController({ page, onNext, onBack }) {
         ))}
       </div>
       {answers.length > 0 && <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>{answers.length} réponse{answers.length > 1 ? 's' : ''}</div>}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
-        <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #00abe9, #0089ba)', border: 'none', color: '#fff', padding: '13px 32px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 5px 20px rgba(0,171,233,0.4)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }}>
+        {!revealed ? (
+          <button onClick={handleReveal} disabled={answers.length === 0} style={{ background: answers.length > 0 ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'rgba(255,255,255,0.07)', border: 'none', color: '#fff', padding: '13px 28px', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: answers.length > 0 ? 'pointer' : 'default', fontFamily: 'inherit', opacity: answers.length === 0 ? 0.5 : 1 }}>
+            👁 Révéler les réponses sur le diffuseur
+          </button>
+        ) : (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 12, padding: '10px 20px', fontSize: 13, color: '#f59e0b', fontWeight: 600 }}>
+            ✓ Réponses affichées sur le diffuseur
+          </div>
+        )}
+        <button onClick={handleNext} style={{ background: 'linear-gradient(135deg, #00abe9, #0089ba)', border: 'none', color: '#fff', padding: '13px 32px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 5px 20px rgba(0,171,233,0.4)' }}>
           Passer aux explications →
         </button>
       </div>

@@ -3870,7 +3870,7 @@ const TV_MONTURES_DATA = {
   },
 }
 
-function TVSAVBrainstorm({ page, sessionCode }) {
+function TVSAVBrainstorm({ page, sessionCode, brainstormRevealed }) {
   const [answers, setAnswers] = useState([])
   const pageId = `${page.moduleId}:brainstorm`
 
@@ -3891,25 +3891,44 @@ function TVSAVBrainstorm({ page, sessionCode }) {
         <div style={{ display: 'inline-block', background: `${page.color}20`, border: `1px solid ${page.color}50`, borderRadius: 24, padding: '6px 24px', fontSize: 13, fontWeight: 700, color: page.color, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 20 }}>💬 Brainstorm</div>
         <div style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1.2, whiteSpace: 'pre-line' }}>{page.question}</div>
       </div>
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16, alignContent: 'start', overflowY: 'auto' }}>
-        {answers.length === 0 ? (
-          <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 60 }}>
-            <div style={{ fontSize: 32, marginBottom: 16 }}>📱</div>
-            <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic' }}>En attente des réponses sur les téléphones…</div>
+      {!brainstormRevealed ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
+          <div style={{ fontSize: 64 }}>📱</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: '#fff' }}>
+            {answers.length === 0 ? 'En attente des réponses…' : `${answers.length} réponse${answers.length > 1 ? 's' : ''} reçue${answers.length > 1 ? 's' : ''}`}
           </div>
-        ) : answers.map((row, i) => (
-          <div key={row.participant_name} style={{
-            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-            borderLeft: `4px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
-            borderRadius: 16, padding: '18px 22px',
-            animation: 'fadeInUp .4s ease forwards',
-          }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length], marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>{row.participant_name}</div>
-            <div style={{ fontSize: 18, color: '#fff', lineHeight: 1.5 }}>{row.answer}</div>
+          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic' }}>
+            {answers.length === 0 ? 'Les participants tapent leur réponse sur leur téléphone' : 'Le formateur révèlera les réponses au bon moment'}
           </div>
-        ))}
-      </div>
-      {answers.length > 0 && <div style={{ textAlign: 'center', marginTop: 16, fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>{answers.length} réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''}</div>}
+          {answers.length > 0 && (
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              {answers.map((_, i) => (
+                <div key={i} style={{ width: 14, height: 14, borderRadius: '50%', background: TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length] }} />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16, alignContent: 'start', overflowY: 'auto' }}>
+          {answers.length === 0 ? (
+            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 60 }}>
+              <div style={{ fontSize: 32, marginBottom: 16 }}>📱</div>
+              <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic' }}>Aucune réponse reçue.</div>
+            </div>
+          ) : answers.map((row, i) => (
+            <div key={row.participant_name} style={{
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+              borderLeft: `4px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
+              borderRadius: 16, padding: '18px 22px',
+              animation: 'fadeInUp .4s ease forwards',
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length], marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>{row.participant_name}</div>
+              <div style={{ fontSize: 18, color: '#fff', lineHeight: 1.5 }}>{row.answer}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {brainstormRevealed && answers.length > 0 && <div style={{ textAlign: 'center', marginTop: 16, fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>{answers.length} réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''}</div>}
       <style>{`@keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }`}</style>
     </div>
   )
@@ -5700,7 +5719,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'montures-acetate') return <TVMontures type="montures-acetate" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'montures-metal')   return <TVMontures type="montures-metal"   pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'montures-injecte') return <TVMontures type="montures-injecte" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'sav-brainstorm') return <TVSAVBrainstorm page={page} sessionCode={sessionCode} />
+  if (page.type === 'sav-brainstorm') return <TVSAVBrainstorm page={page} sessionCode={sessionCode} brainstormRevealed={brainstormRevealed} />
   if (page.type === 'sav-content') return <TVSAVContent page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'pdm-pourquoi')     return <TVPdmPourquoi pageIndex={pageIndex} total={total} />
   if (page.type === 'offres-classique')   return <TVOffresClassique step={offresClassiqueStep} />
@@ -7466,6 +7485,7 @@ export default function TVView() {
   const [lptsPecScenario, setLptsPecScenario]             = useState(null)
   const [parcoursRevealed, setParcoursRevealed]           = useState([])
   const [tiersPayantRevealed, setTiersPayantRevealed]     = useState(false)
+  const [brainstormRevealed, setBrainstormRevealed]       = useState(false)
 
   const handleAmeliProClick = async () => {
     try { await setRoomSharedState({ rembfr_amelipro_clicked: true }, sessionCode) } catch {}
@@ -7518,6 +7538,7 @@ export default function TVView() {
     setLptsPecScenario(sharedState.lpts_pec_scenario ?? null)
     setParcoursRevealed(sharedState.parcours_revealed || [])
     setTiersPayantRevealed(!!sharedState.tiers_payant_revealed)
+    setBrainstormRevealed(!!sharedState.brainstorm_revealed)
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null

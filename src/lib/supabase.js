@@ -361,6 +361,14 @@ export async function insertOpenAnswer({
   })
 }
 
+export async function updateOpenAnswer({ sessionCode, pageId, participantName, answer }) {
+  return sbUpdate(
+    'open_answers',
+    { answer: answer.trim() },
+    `session_code=eq.${encodeURIComponent(sessionCode)}&page_id=eq.${encodeURIComponent(pageId)}&participant_name=eq.${encodeURIComponent(participantName)}`
+  )
+}
+
 export async function fetchOpenAnswers(sessionCode, pageId) {
   return sbSelect(
     'open_answers',
