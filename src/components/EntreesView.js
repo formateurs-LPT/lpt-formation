@@ -140,7 +140,7 @@ function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving, onT
   }, [editing, c.nom, c.prenom])
 
   return (
-    <div style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
       <div style={{ width: 36, height: 36, borderRadius: '50%', background: meta.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: meta.color, flexShrink: 0 }}>
         {(c.nom || '?')[0]}
       </div>
@@ -265,7 +265,7 @@ function QuickAddModal({ onClose, onAdd }) {
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)' }} />
       <div style={{
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-        zIndex: 201, background: '#fff', borderRadius: 16,
+        zIndex: 201, background: 'var(--card)', borderRadius: 16,
         boxShadow: '0 24px 64px rgba(0,0,0,0.2)',
         padding: '28px 32px', width: 380, maxWidth: '90vw',
       }}>
@@ -317,13 +317,13 @@ function QuickAddModal({ onClose, onAdd }) {
 
           {/* Aperçu classification */}
           <div style={{
-            background: hasInput ? zoneColor + '12' : '#f5f5f5',
-            border: `1.5px solid ${hasInput ? zoneColor + '55' : '#e5e7eb'}`,
+            background: hasInput ? zoneColor + '12' : 'rgba(255,255,255,0.04)',
+            border: `1.5px solid ${hasInput ? zoneColor + '55' : 'rgba(255,255,255,0.1)'}`,
             borderRadius: 10, padding: '10px 14px',
             display: 'flex', alignItems: 'center', gap: 10,
             transition: 'all .2s',
           }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: hasInput ? zoneColor : '#d1d5db', flexShrink: 0, transition: 'all .2s' }} />
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: hasInput ? zoneColor : 'rgba(255,255,255,0.2)', flexShrink: 0, transition: 'all .2s' }} />
             <div>
               <div style={{ fontSize: 12, fontWeight: 700, color: hasInput ? zoneColor : 'var(--text-s)' }}>
                 {hasInput ? zoneLabel : 'Classification automatique'}
@@ -350,9 +350,9 @@ function GroupSection({ title, items, editingIndex, savingIndex, onStartEdit, on
   if (!items.length) return null
   return (
     <div style={{ marginBottom: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 12, borderBottom: '2px solid #111' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
         <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h3>
-        <span style={{ fontSize: 13, color: 'var(--text-m)' }}>{items.length} collaborateur{items.length > 1 ? 's' : ''}</span>
+        <span style={{ fontSize: 13, color: 'var(--text-s)' }}>{items.length} collaborateur{items.length > 1 ? 's' : ''}</span>
       </div>
       {items.map(({ c, index }) => (
         <CollabCard
@@ -676,13 +676,13 @@ export default function EntreesView({ onBack, onToast, pName }) {
 
       {/* Paste zone */}
       {!showResults && (
-        <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--r)', padding: 24, marginBottom: 16, background: '#fafafa' }}>
+        <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--r)', padding: 24, marginBottom: 16, background: 'var(--card)' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>📋 Coller le texte du tableau RH</div>
           <p style={{ fontSize: 12, color: 'var(--text-s)', marginBottom: 12 }}>
             Ouvrez votre image dans Aperçu (Mac) → sélectionnez tout (Cmd+A) → copiez (Cmd+C) → collez ici
           </p>
           <textarea
-            style={{ width: '100%', height: 180, padding: 12, border: '1.5px solid var(--border)', borderRadius: 'var(--rs)', fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text)', resize: 'vertical', outline: 'none', background: '#fff' }}
+            style={{ width: '100%', height: 180, padding: 12, border: '1.5px solid var(--border)', borderRadius: 'var(--rs)', fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text)', resize: 'vertical', outline: 'none', background: 'rgba(255,255,255,0.05)' }}
             placeholder="Collez ici le contenu copié depuis votre tableau..."
             value={pasteText}
             onChange={e => setPasteText(e.target.value)}
@@ -711,7 +711,7 @@ export default function EntreesView({ onBack, onToast, pName }) {
               { label: 'Visio Province', count: province.length, color: '#7c3aed' },
               { label: 'Présentiel Belgique', count: belgique.length, color: '#db2777' },
             ].map(s => (
-              <div key={s.label} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', textAlign: 'center' }}>
+              <div key={s.label} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', textAlign: 'center' }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.count}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 4 }}>{s.label}</div>
               </div>

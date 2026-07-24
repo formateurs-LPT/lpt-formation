@@ -268,6 +268,11 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 #dashboard .ob-collab-row{background:var(--card);border-color:rgba(255,255,255,0.08)}
 #dashboard .ob-collab-name{color:#e8edf3}
 #dashboard .ob-collab-check{color:rgba(255,255,255,0.65)}
+#dashboard .btn2{background:rgba(255,255,255,0.06);color:#e8edf3;border-color:rgba(255,255,255,0.15)}
+#dashboard .btn2:hover{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.25)}
+#dashboard .finput{background:rgba(255,255,255,0.06);color:#e8edf3;border-color:rgba(255,255,255,0.15)}
+#dashboard .finput:focus{border-color:rgba(0,171,233,0.55);background:rgba(255,255,255,0.09)}
+#dashboard .finput::placeholder{color:rgba(255,255,255,0.3)}
 
 /* ── RESPONSIVE ── */
 @media(max-width:640px){

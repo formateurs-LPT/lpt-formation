@@ -612,7 +612,7 @@ function AppUpdatesWidget() {
   return (
     <>
       <div style={{
-        background: '#fff', border: '1px solid var(--border)',
+        background: 'var(--card)', border: '1px solid var(--border)',
         borderLeft: '4px solid #a78bfa',
         borderRadius: 'var(--r)', padding: '18px 24px',
         marginBottom: 16,
