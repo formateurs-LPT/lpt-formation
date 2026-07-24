@@ -676,6 +676,7 @@ export const RETRAITS_PAGES = [
     icon: '📱',
     titre: '1 — Le SMS de confirmation',
     sousTitre: 'SAV · Retraits · Étape 1',
+    showIphone: true,
     points: [
       { emoji: '📲', titre: '1 SMS = 1 paire', desc: 'Chaque paire prête génère un SMS avec son numéro de commande' },
       { emoji: '2️⃣', titre: '2 paires = 2 SMS', desc: 'Un client avec 2 paires reçoit 2 SMS distincts' },

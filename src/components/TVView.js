@@ -3917,8 +3917,86 @@ function TVSAVBrainstorm({ page, sessionCode }) {
   )
 }
 
+function IPhoneSMS() {
+  return (
+    <div style={{ position: 'relative', width: 260, height: 530, flexShrink: 0 }}>
+      {/* Coque iPhone */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(145deg, #3a3a3c, #1c1c1e)',
+        borderRadius: 46, border: '1px solid #555',
+        boxShadow: '0 30px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08)',
+      }} />
+      {/* Boutons latéraux gauche */}
+      <div style={{ position: 'absolute', left: -3, top: 100, width: 3, height: 32, background: '#3a3a3c', borderRadius: '3px 0 0 3px' }} />
+      <div style={{ position: 'absolute', left: -3, top: 145, width: 3, height: 52, background: '#3a3a3c', borderRadius: '3px 0 0 3px' }} />
+      <div style={{ position: 'absolute', left: -3, top: 210, width: 3, height: 52, background: '#3a3a3c', borderRadius: '3px 0 0 3px' }} />
+      {/* Bouton power droite */}
+      <div style={{ position: 'absolute', right: -3, top: 155, width: 3, height: 70, background: '#3a3a3c', borderRadius: '0 3px 3px 0' }} />
+      {/* Écran */}
+      <div style={{
+        position: 'absolute', inset: 8,
+        background: '#000', borderRadius: 38,
+        overflow: 'hidden', display: 'flex', flexDirection: 'column',
+      }}>
+        {/* Dynamic Island */}
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12, paddingBottom: 4, flexShrink: 0 }}>
+          <div style={{ width: 88, height: 28, background: '#000', border: '2px solid #1a1a1a', borderRadius: 20, boxShadow: '0 0 0 1px #333' }} />
+        </div>
+        {/* Status bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 18px 6px', flexShrink: 0 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>09:04</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <svg width="14" height="10" viewBox="0 0 14 10"><rect x="0" y="3" width="3" height="7" fill="white" rx="1"/><rect x="4" y="2" width="3" height="8" fill="white" rx="1"/><rect x="8" y="0" width="3" height="10" fill="white" rx="1"/><rect x="12" y="0" width="2" height="10" fill="rgba(255,255,255,0.3)" rx="1"/></svg>
+            <span style={{ fontSize: 9, fontWeight: 700, color: '#fff' }}>5G</span>
+            <div style={{ width: 22, height: 11, border: '1.5px solid rgba(255,255,255,0.5)', borderRadius: 3, position: 'relative', display: 'flex', alignItems: 'center', padding: '0 2px' }}>
+              <div style={{ width: '75%', height: 6, background: '#4ade80', borderRadius: 1 }} />
+              <div style={{ position: 'absolute', right: -4, top: '50%', transform: 'translateY(-50%)', width: 3, height: 5, background: 'rgba(255,255,255,0.4)', borderRadius: '0 1px 1px 0' }} />
+            </div>
+          </div>
+        </div>
+        {/* SMS header */}
+        <div style={{ display: 'flex', alignItems: 'center', padding: '6px 14px 8px', borderBottom: '1px solid #222', flexShrink: 0 }}>
+          <div style={{ fontSize: 18, color: '#0a84ff', marginRight: 6 }}>‹</div>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, #5e5ce6, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#fff', fontWeight: 700, margin: '0 auto 2px' }}>L</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>Lunettes Pour Tous</div>
+          </div>
+          <div style={{ width: 26 }} />
+        </div>
+        {/* Messages */}
+        <div style={{ flex: 1, padding: '14px 10px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, overflowY: 'hidden' }}>
+          <div style={{ textAlign: 'center', fontSize: 9, color: '#8e8e93', marginBottom: 4 }}>sam. 20 juin à 16:07</div>
+          {/* SMS 1 */}
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div style={{ maxWidth: '82%', background: '#2c2c2e', borderRadius: '16px 16px 16px 4px', padding: '8px 11px' }}>
+              <div style={{ fontSize: 12, color: '#fff', lineHeight: 1.45 }}>
+                Lunettes Pour Tous.<br />Votre commande <span style={{ fontWeight: 700 }}>#7987948</span> est prête au magasin de Charleroi !
+              </div>
+            </div>
+          </div>
+          {/* SMS 2 */}
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div style={{ maxWidth: '82%', background: '#2c2c2e', borderRadius: '4px 16px 16px 4px', padding: '8px 11px' }}>
+              <div style={{ fontSize: 12, color: '#fff', lineHeight: 1.45 }}>
+                Lunettes Pour Tous.<br />Votre commande <span style={{ fontWeight: 700 }}>#7987972</span> est prête au magasin de Charleroi !
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Input bar */}
+        <div style={{ padding: '8px 10px 12px', display: 'flex', alignItems: 'center', gap: 8, borderTop: '1px solid #222', flexShrink: 0 }}>
+          <div style={{ width: 24, height: 24, borderRadius: '50%', border: '1.5px solid #555', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#555', flexShrink: 0 }}>+</div>
+          <div style={{ flex: 1, height: 28, background: '#1c1c1e', borderRadius: 14, border: '1px solid #3a3a3c' }} />
+          <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#0a84ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>↑</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function TVSAVContent({ page, pageIndex, total, moduleLabel }) {
-  const { color, icon, titre, sousTitre, points } = page
+  const { color, icon, titre, sousTitre, points, showIphone } = page
   const [step, setStep] = useState(0)
   useEffect(() => {
     setStep(0)
@@ -3937,22 +4015,29 @@ function TVSAVContent({ page, pageIndex, total, moduleLabel }) {
           {Array(total).fill(0).map((_, i) => <div key={i} style={{ height: 5, borderRadius: 3, width: i === pageIndex ? 20 : 5, background: i === pageIndex ? color : 'rgba(255,255,255,0.2)', transition: 'all .3s' }} />)}
         </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, justifyContent: 'center', maxWidth: 900 }}>
-        {points.map((pt, i) => (
-          <div key={i} style={{
-            display: 'flex', alignItems: 'flex-start', gap: 20,
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-            borderLeft: `4px solid ${color}80`, borderRadius: 16, padding: '18px 24px',
-            opacity: step > i ? 1 : 0, transform: step > i ? 'translateX(0)' : 'translateX(-20px)',
-            transition: 'all 0.4s ease',
-          }}>
-            <span style={{ fontSize: 32, flexShrink: 0 }}>{pt.emoji}</span>
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{pt.titre}</div>
-              <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>{pt.desc}</div>
+      <div style={{ display: 'flex', gap: 48, flex: 1, alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, justifyContent: 'center' }}>
+          {points.map((pt, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 20,
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+              borderLeft: `4px solid ${color}80`, borderRadius: 16, padding: '18px 24px',
+              opacity: step > i ? 1 : 0, transform: step > i ? 'translateX(0)' : 'translateX(-20px)',
+              transition: 'all 0.4s ease',
+            }}>
+              <span style={{ fontSize: 32, flexShrink: 0 }}>{pt.emoji}</span>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{pt.titre}</div>
+                <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>{pt.desc}</div>
+              </div>
             </div>
+          ))}
+        </div>
+        {showIphone && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <IPhoneSMS />
           </div>
-        ))}
+        )}
       </div>
       <div style={{ textAlign: 'right', marginTop: 20, fontSize: 12, color: 'rgba(255,255,255,0.2)', fontWeight: 600 }}>{moduleLabel}</div>
     </div>
