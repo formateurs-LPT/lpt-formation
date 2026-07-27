@@ -936,13 +936,17 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
 // ── TV Pause (type = pause) ───────────────────────────────────────
 function OpenAnswersFeed({ sessionCode, pageId }) {
   const [answers, setAnswers] = useState([])
+  const [participantCount, setParticipantCount] = useState(0)
   const [knownIds, setKnownIds] = useState(new Set())
 
   useEffect(() => {
     if (!sessionCode || !pageId) return
     const poll = async () => {
       try {
-        const state = await getRoomSharedState(sessionCode)
+        const [state, pRows] = await Promise.all([
+          getRoomSharedState(sessionCode),
+          sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`),
+        ])
         const prefix = `oa__${pageId}__`
         const rows = Object.entries(state || {})
           .filter(([k, v]) => k.startsWith(prefix) && v?.answer)
@@ -954,6 +958,7 @@ function OpenAnswersFeed({ sessionCode, pageId }) {
           }))
           .sort((a, b) => a.ts - b.ts)
         setAnswers(rows.slice(-8))
+        setParticipantCount((pRows || []).length)
         setKnownIds(prev => {
           const next = new Set(prev)
           rows.forEach(r => next.add(r.id))
@@ -966,27 +971,39 @@ function OpenAnswersFeed({ sessionCode, pageId }) {
     return () => clearInterval(t)
   }, [sessionCode, pageId])
 
+  const allAnswered = participantCount > 0 && answers.length >= participantCount
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'waitingPulse 1.5s ease-in-out infinite' }} />
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>
-          Réponses en direct
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: allAnswered ? '#22c55e' : '#00abe9', animation: 'waitingPulse 1.5s ease-in-out infinite' }} />
+        <span style={{ fontSize: 12, fontWeight: 700, color: allAnswered ? '#22c55e' : '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+          {allAnswered ? 'Tout le monde a répondu' : 'En attente des réponses'}
         </span>
-        {answers.length > 0 && (
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginLeft: 4 }}>({answers.length})</span>
+        {participantCount > 0 && (
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginLeft: 4 }}>{answers.length}/{participantCount}</span>
         )}
       </div>
 
-      {answers.length === 0 ? (
+      {!allAnswered ? (
         <div style={{
           flex: 1, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: 10,
+          alignItems: 'center', justifyContent: 'center', gap: 12,
           color: 'rgba(255,255,255,0.2)', textAlign: 'center',
         }}>
           <div style={{ fontSize: 32 }}>💬</div>
-          <div style={{ fontSize: 14, fontWeight: 500 }}>En attente de réponses…</div>
-          <div style={{ fontSize: 11 }}>Les réponses apparaîtront ici</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.3)' }}>Les réponses s'afficheront quand tout le monde aura répondu</div>
+          {answers.length > 0 && participantCount > 0 && (
+            <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginTop: 4 }}>
+              {answers.length}
+              <span style={{ fontSize: 14, fontWeight: 400, color: 'rgba(255,255,255,0.4)', marginLeft: 8 }}>/ {participantCount} réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''}</span>
+            </div>
+          )}
+          {answers.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+              {answers.map((_, i) => <div key={i} style={{ width: 12, height: 12, borderRadius: '50%', background: TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length] }} />)}
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, overflow: 'hidden' }}>
@@ -2198,7 +2215,7 @@ const B_ROT = [-5, 3, -2, 6, -4, 1, -7, 4, -1, 5, -3, 7]       // rotation deg
 const B_RAD = [20, 26, 18, 28, 22, 16, 24, 20, 26, 18, 22, 16]  // borderRadius px
 
 // ── Composant partagé : layout TV pour questions libres ───────────
-function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting, revealBanner }) {
+function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting, revealBanner, answerCount = 0, participantCount = 0 }) {
   return (
     <div style={{
       height: '100vh', overflow: 'hidden',
@@ -2240,8 +2257,25 @@ function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting, rev
         overflow: 'hidden',
       }}>
         {waiting ? (
-          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.28)', fontStyle: 'italic', marginTop: 40 }}>
-            En attente des réponses…
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, marginTop: 40 }}>
+            <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.28)', fontStyle: 'italic' }}>
+              En attente des réponses…
+            </div>
+            {participantCount > 0 && (
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>
+                {answerCount}
+                <span style={{ fontSize: 14, fontWeight: 400, color: 'rgba(255,255,255,0.4)', marginLeft: 8 }}>
+                  / {participantCount} réponse{answerCount > 1 ? 's' : ''} reçue{answerCount > 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
+            {answerCount > 0 && (
+              <div style={{ display: 'flex', gap: 8 }}>
+                {Array.from({ length: answerCount }).map((_, i) => (
+                  <div key={i} style={{ width: 12, height: 12, borderRadius: '50%', background: TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length] }} />
+                ))}
+              </div>
+            )}
           </div>
         ) : children}
       </div>
@@ -2250,12 +2284,19 @@ function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting, rev
   )
 }
 
-function TVEntrepriseFreins({ page, pageIndex, total, freinsResponses }) {
+function TVEntrepriseFreins({ page, pageIndex, total, freinsResponses, sessionCode }) {
   const entries = Object.entries(freinsResponses || {})
   const accent = '#00abe9'
+  const [participantCount, setParticipantCount] = useState(0)
+  useEffect(() => {
+    if (!sessionCode) return
+    const poll = () => sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`).then(r => setParticipantCount((r || []).length)).catch(() => {})
+    poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
+  }, [sessionCode])
+  const allAnswered = participantCount > 0 && entries.length >= participantCount
 
   return (
-    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={entries.length === 0}>
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!allAnswered} answerCount={entries.length} participantCount={participantCount}>
       {entries.map(([pName, resp], i) => (
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)',
@@ -2279,9 +2320,16 @@ function TVEntrepriseFreins({ page, pageIndex, total, freinsResponses }) {
 }
 
 // ── TV Entreprise : prix moyen ────────────────────────────────────
-function TVEntreprisePrix({ page, pageIndex, total, prixResponses, revealPrix }) {
+function TVEntreprisePrix({ page, pageIndex, total, prixResponses, revealPrix, sessionCode }) {
   const entries = Object.entries(prixResponses || {})
   const accent = '#f59e0b'
+  const [participantCount, setParticipantCount] = useState(0)
+  useEffect(() => {
+    if (!sessionCode) return
+    const poll = () => sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`).then(r => setParticipantCount((r || []).length)).catch(() => {})
+    poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
+  }, [sessionCode])
+  const allAnswered = participantCount > 0 && entries.length >= participantCount
 
   const prixBanner = revealPrix ? (
     <div style={{
@@ -2301,7 +2349,7 @@ function TVEntreprisePrix({ page, pageIndex, total, prixResponses, revealPrix })
   ) : null
 
   return (
-    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={entries.length === 0} revealBanner={prixBanner}>
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!allAnswered} answerCount={entries.length} participantCount={participantCount} revealBanner={prixBanner}>
       {entries.map(([pName, resp], i) => (
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)',
@@ -2324,12 +2372,19 @@ function TVEntreprisePrix({ page, pageIndex, total, prixResponses, revealPrix })
   )
 }
 
-function TVEntreprisePromesse({ page, pageIndex, total, promesseResponses }) {
+function TVEntreprisePromesse({ page, pageIndex, total, promesseResponses, sessionCode }) {
   const entries = Object.entries(promesseResponses || {})
   const accent = '#34d399'
+  const [participantCount, setParticipantCount] = useState(0)
+  useEffect(() => {
+    if (!sessionCode) return
+    const poll = () => sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`).then(r => setParticipantCount((r || []).length)).catch(() => {})
+    poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
+  }, [sessionCode])
+  const allAnswered = participantCount > 0 && entries.length >= participantCount
 
   return (
-    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={entries.length === 0}>
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!allAnswered} answerCount={entries.length} participantCount={participantCount}>
       {entries.map(([pName, resp], i) => (
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)',
@@ -2349,9 +2404,16 @@ function TVEntreprisePromesse({ page, pageIndex, total, promesseResponses }) {
   )
 }
 
-function TVEntrepriseVentesOpticien({ page, pageIndex, total, ventesResponses, revealVentes }) {
+function TVEntrepriseVentesOpticien({ page, pageIndex, total, ventesResponses, revealVentes, sessionCode }) {
   const entries = Object.entries(ventesResponses || {})
   const accent = '#a78bfa'
+  const [participantCount, setParticipantCount] = useState(0)
+  useEffect(() => {
+    if (!sessionCode) return
+    const poll = () => sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`).then(r => setParticipantCount((r || []).length)).catch(() => {})
+    poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
+  }, [sessionCode])
+  const allAnswered = participantCount > 0 && entries.length >= participantCount
 
   const ventesBanner = revealVentes ? (
     <div style={{
@@ -2371,7 +2433,7 @@ function TVEntrepriseVentesOpticien({ page, pageIndex, total, ventesResponses, r
   ) : null
 
   return (
-    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={entries.length === 0} revealBanner={ventesBanner}>
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!allAnswered} answerCount={entries.length} participantCount={participantCount} revealBanner={ventesBanner}>
       {entries.map(([pName, resp], i) => (
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)', border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
@@ -3349,11 +3411,18 @@ function TVProgressifZoneInteractif({ page, pageIndex, total, progZoneQ, progZon
 }
 
 // ── TV Progressif : retour terrain (bulles) ───────────────────────
-function TVProgressifRetourTerrain({ page, pageIndex, total, progRetourResponses }) {
+function TVProgressifRetourTerrain({ page, pageIndex, total, progRetourResponses, sessionCode }) {
   const entries = Object.entries(progRetourResponses || {})
+  const [participantCount, setParticipantCount] = useState(0)
+  useEffect(() => {
+    if (!sessionCode) return
+    const poll = () => sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`).then(r => setParticipantCount((r || []).length)).catch(() => {})
+    poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
+  }, [sessionCode])
+  const allAnswered = participantCount > 0 && entries.length >= participantCount
   return (
     <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent="#7c3aed"
-      waiting={entries.length === 0}
+      waiting={!allAnswered} answerCount={entries.length} participantCount={participantCount}
       moduleLabel="Le Verre Progressif"
     >
       {entries.map(([name, resp], idx) => (
@@ -3371,9 +3440,16 @@ function TVProgressifRetourTerrain({ page, pageIndex, total, progRetourResponses
 }
 
 // ── TV Progressif : jeu d'objections ────────────────────────────
-function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, progObjectionResponses, progBestAnswer }) {
+function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, progObjectionResponses, progBestAnswer, sessionCode }) {
   const objection = progObjectionIdx !== null && progObjectionIdx !== undefined ? page.objections[progObjectionIdx] : null
   const entries = Object.entries(progObjectionResponses || {})
+  const [participantCount, setParticipantCount] = useState(0)
+  useEffect(() => {
+    if (!sessionCode) return
+    const poll = () => sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`).then(r => setParticipantCount((r || []).length)).catch(() => {})
+    poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
+  }, [sessionCode])
+  const allAnswered = participantCount > 0 && entries.length >= participantCount
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #12013a 55%, #0d0a3a 100%)', display: 'flex', flexDirection: 'column', padding: '32px 56px' }}>
@@ -3395,9 +3471,20 @@ function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, p
           </div>
 
           {/* Réponses */}
-          {entries.length === 0 ? (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.4 }}>
+          {!allAnswered ? (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, opacity: 0.8 }}>
               <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>En attente des réponses sur les téléphones…</div>
+              {participantCount > 0 && (
+                <div style={{ fontSize: 26, fontWeight: 700, color: '#fff' }}>
+                  {entries.length}
+                  <span style={{ fontSize: 16, fontWeight: 400, color: 'rgba(255,255,255,0.4)', marginLeft: 8 }}>/ {participantCount} réponse{entries.length > 1 ? 's' : ''} reçue{entries.length > 1 ? 's' : ''}</span>
+                </div>
+              )}
+              {entries.length > 0 && (
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {entries.map((_, i) => <div key={i} style={{ width: 12, height: 12, borderRadius: '50%', background: TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length] }} />)}
+                </div>
+              )}
             </div>
           ) : (
             <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start', padding: '8px 0', columnGap: 20, rowGap: 44 }}>
@@ -4155,18 +4242,24 @@ const TV_MONTURES_DATA = {
 
 function TVSAVBrainstorm({ page, sessionCode, brainstormRevealed }) {
   const [answers, setAnswers] = useState([])
+  const [participantCount, setParticipantCount] = useState(0)
   const pageId = `${page.moduleId}:brainstorm`
 
   useEffect(() => {
     setAnswers([])
     const poll = async () => {
-      const rows = await fetchOpenAnswers(sessionCode, pageId)
+      const [rows, pRows] = await Promise.all([
+        fetchOpenAnswers(sessionCode, pageId),
+        sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`),
+      ])
       setAnswers(rows || [])
+      setParticipantCount((pRows || []).length)
     }
     poll()
     const t = setInterval(poll, 2000)
     return () => clearInterval(t)
   }, [pageId, sessionCode])
+  const allAnswered = participantCount > 0 && answers.length >= participantCount
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '48px 72px' }}>
@@ -4174,14 +4267,16 @@ function TVSAVBrainstorm({ page, sessionCode, brainstormRevealed }) {
         <div style={{ display: 'inline-block', background: `${page.color}20`, border: `1px solid ${page.color}50`, borderRadius: 24, padding: '6px 24px', fontSize: 13, fontWeight: 700, color: page.color, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 20 }}>💬 Brainstorm</div>
         <div style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1.2, whiteSpace: 'pre-line' }}>{page.question}</div>
       </div>
-      {!brainstormRevealed ? (
+      {(!brainstormRevealed || !allAnswered) ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
           <div style={{ fontSize: 64 }}>📱</div>
           <div style={{ fontSize: 28, fontWeight: 700, color: '#fff' }}>
-            {answers.length === 0 ? 'En attente des réponses…' : `${answers.length} réponse${answers.length > 1 ? 's' : ''} reçue${answers.length > 1 ? 's' : ''}`}
+            {participantCount > 0
+              ? `${answers.length} / ${participantCount} réponse${answers.length > 1 ? 's' : ''} reçue${answers.length > 1 ? 's' : ''}`
+              : answers.length === 0 ? 'En attente des réponses…' : `${answers.length} réponse${answers.length > 1 ? 's' : ''} reçue${answers.length > 1 ? 's' : ''}`}
           </div>
           <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic' }}>
-            {answers.length === 0 ? 'Les participants tapent leur réponse sur leur téléphone' : 'Le formateur révèlera les réponses au bon moment'}
+            {allAnswered ? 'Le formateur révèlera les réponses au bon moment' : 'Les participants tapent leur réponse sur leur téléphone'}
           </div>
           {answers.length > 0 && (
             <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
@@ -4211,7 +4306,7 @@ function TVSAVBrainstorm({ page, sessionCode, brainstormRevealed }) {
           ))}
         </div>
       )}
-      {brainstormRevealed && answers.length > 0 && <div style={{ textAlign: 'center', marginTop: 16, fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>{answers.length} réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''}</div>}
+      {brainstormRevealed && allAnswered && answers.length > 0 && <div style={{ textAlign: 'center', marginTop: 16, fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>{answers.length} réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''}</div>}
       <style>{`@keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }`}</style>
     </div>
   )
@@ -6028,11 +6123,11 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
       </p>
     </div>
   )
-  if (page.type === 'freins')     return <TVEntrepriseFreins   page={page} pageIndex={pageIndex} total={total} freinsResponses={freinsResponses} />
-  if (page.type === 'prix')       return <TVEntreprisePrix     page={page} pageIndex={pageIndex} total={total} prixResponses={prixResponses} revealPrix={revealPrix} />
+  if (page.type === 'freins')     return <TVEntrepriseFreins   page={page} pageIndex={pageIndex} total={total} freinsResponses={freinsResponses} sessionCode={sessionCode} />
+  if (page.type === 'prix')       return <TVEntreprisePrix     page={page} pageIndex={pageIndex} total={total} prixResponses={prixResponses} revealPrix={revealPrix} sessionCode={sessionCode} />
   if (page.type === 'video-lpt')  return <TVVideoLPT audioUnlocked={audioUnlocked} />
-  if (page.type === 'ventes-opticien') return <TVEntrepriseVentesOpticien page={page} pageIndex={pageIndex} total={total} ventesResponses={ventesResponses} revealVentes={revealVentes} />
-  if (page.type === 'promesse')        return <TVEntreprisePromesse       page={page} pageIndex={pageIndex} total={total} promesseResponses={promesseResponses} />
+  if (page.type === 'ventes-opticien') return <TVEntrepriseVentesOpticien page={page} pageIndex={pageIndex} total={total} ventesResponses={ventesResponses} revealVentes={revealVentes} sessionCode={sessionCode} />
+  if (page.type === 'promesse')        return <TVEntreprisePromesse       page={page} pageIndex={pageIndex} total={total} promesseResponses={promesseResponses} sessionCode={sessionCode} />
   if (page.type === 'chiffres')           return <TVEntrepriseChiffres   page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'force-lpt') return <TVEntrepriseForceLPT  page={page} pageIndex={pageIndex} total={total} modelePoint={modelePoint} audioUnlocked={audioUnlocked} />
   if (page.type === 'naissance')  return <TVEntrepriseNaissance page={page} pageIndex={pageIndex} total={total} />
@@ -6050,8 +6145,8 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   // Progressif module types
   if (page.type === 'progressif-anatomie') return <TVProgressifAnatomie      page={page} pageIndex={pageIndex} total={total} progAnatomieReveal={progAnatomieReveal} />
   if (page.type === 'zone-interactif')     return <TVProgressifZoneInteractif page={page} pageIndex={pageIndex} total={total} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progZoneShowCorrect={progZoneShowCorrect} />
-  if (page.type === 'prog-retour')         return <TVProgressifRetourTerrain  page={page} pageIndex={pageIndex} total={total} progRetourResponses={progRetourResponses} />
-  if (page.type === 'prog-objections')     return <TVProgressifJeuObjections  page={page} pageIndex={pageIndex} total={total} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} progBestAnswer={progBestAnswer} />
+  if (page.type === 'prog-retour')         return <TVProgressifRetourTerrain  page={page} pageIndex={pageIndex} total={total} progRetourResponses={progRetourResponses} sessionCode={sessionCode} />
+  if (page.type === 'prog-objections')     return <TVProgressifJeuObjections  page={page} pageIndex={pageIndex} total={total} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} progBestAnswer={progBestAnswer} sessionCode={sessionCode} />
 
   // Types de verres
   if (page.type === 'unifocal')  return <TVTypesVerresUnifocal  pageIndex={pageIndex} total={total} />

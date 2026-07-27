@@ -192,7 +192,9 @@ export const MANAGERS = {
   'bruxelles fripiers': [
     { name: 'Gwen TATE FERREIRA DOS SANTOS', email: 'gtateferreiradossantos@lunettespourtous.com' },
   ],
-  // ixelles : pas de manager actuellement
+  'ixelles': [
+    { name: 'Bryan SABBAH', email: 'bsabbah@lunettespourtous.com' },
+  ],
   'charleroi': [
     { name: 'Maxime DOUMONT', email: 'mdoumont@lunettespourtous.com' },
   ],
