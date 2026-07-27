@@ -367,6 +367,19 @@ export default function Page() {
     // uniquement via faq_journee dans sharedState. Ne jamais écrire active_module=reveil-acquis
     // en base, sinon la TV retourne null (page blanche) car elle ne reconnaît pas ce module.
     if (moduleId === 'reveil-acquis') return
+    // Mini-jeux piloté par minijeu_phase dans sharedState (pas dans MODULE_DATA)
+    // On efface active_module pour que la TV affiche la roulette via !activeModule
+    if (moduleId === 'mini-jeux') {
+      try {
+        const code = getActiveSessionCode()
+        if (isDynamicRoomCode(code)) {
+          await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + code)
+        } else if (SESSION_CODE) {
+          await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + SESSION_CODE)
+        }
+      } catch {}
+      return
+    }
     // Affiche le lobby du module sur le diffuseur immediatement
     try {
       const code = getActiveSessionCode()

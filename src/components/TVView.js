@@ -8189,7 +8189,7 @@ export default function TVView() {
 
   // Mini jeu actif — seulement si aucun module n'est en cours
   const mjPhase = sharedState?.minijeu_phase
-  if (!loading && !activeModule && mjPhase && mjPhase !== 'idle') {
+  if (!loading && (!activeModule || activeModule === 'mini-jeux') && mjPhase && mjPhase !== 'idle') {
     if (mjPhase === 'rules') {
       return (
         <>
