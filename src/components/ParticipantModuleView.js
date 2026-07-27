@@ -6,7 +6,7 @@ import QuestionBubble from '@/components/QuestionBubble'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbUpsert, sbSelect, getParticipantSessionCode, ensureSession, getSharedState, getRoomSharedState, setSharedState, setRoomSharedState, insertOpenAnswer, updateOpenAnswer, setParticipantPage } from '@/lib/supabase'
+import { sbUpsert, sbSelect, sbDelete, getParticipantSessionCode, ensureSession, getSharedState, getRoomSharedState, setSharedState, setRoomSharedState, insertOpenAnswer, updateOpenAnswer, setParticipantPage } from '@/lib/supabase'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
@@ -4289,6 +4289,44 @@ function AlertPopup({ message, onDismiss }) {
   )
 }
 
+function TestResetButton({ pName }) {
+  const [confirm, setConfirm] = useState(false)
+  const [resetting, setResetting] = useState(false)
+
+  const handleReset = async () => {
+    setResetting(true)
+    const code = getParticipantSessionCode()
+    try {
+      const name = encodeURIComponent(pName.trim())
+      const sc   = encodeURIComponent(code)
+      await Promise.all([
+        sbDelete('quiz_answers', `session_code=eq.${sc}&collaborateur=eq.${name}`),
+        sbDelete('open_answers', `session_code=eq.${sc}&participant_name=eq.${name}`),
+      ])
+    } catch (e) { console.error('reset test', e) }
+    window.location.reload()
+  }
+
+  return (
+    <div style={{ position: 'fixed', bottom: 70, right: 14, zIndex: 999 }}>
+      {confirm ? (
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button onClick={() => setConfirm(false)} style={{ background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+            Annuler
+          </button>
+          <button onClick={handleReset} disabled={resetting} style={{ background: '#ef4444', border: 'none', color: '#fff', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            {resetting ? '…' : '✓ Confirmer reset'}
+          </button>
+        </div>
+      ) : (
+        <button onClick={() => setConfirm(true)} style={{ background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171', borderRadius: 8, padding: '6px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+          🔄 Reset test
+        </button>
+      )}
+    </div>
+  )
+}
+
 function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp, onDisconnect }) {
   const sessionCode = getParticipantSessionCode()
   const [sessionEnded, setSessionEnded] = useState(false)
@@ -4439,6 +4477,10 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
         }} />
       )}
       <DisconnectChip pName={pName} onDisconnect={onDisconnect} />
+      {/* Bouton reset test — visible uniquement pour le compte test Quentin Bahougne */}
+      {pName?.toLowerCase().includes('bahougne') && (
+        <TestResetButton pName={pName} />
+      )}
       {/* Bulle question — discrète, visible sur toutes les pages de module */}
       {activeModule && !isLobby && !isResults && !sessionEnded && (
         <QuestionBubble moduleId={activeModule} pName={pName} />

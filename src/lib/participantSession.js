@@ -33,7 +33,10 @@ export async function resolveParticipantSessionCode(entree) {
   }
 
   const rows = await sbSelect('sessions', 'order=started_at.desc')
-  const open = filterOpenSessionsForEntree(rows, entree)
+  // Compte test : rejoint n'importe quelle session ouverte sans filtre catégorie
+  const open = entree?._isTest
+    ? (rows || []).filter(s => OPEN_STATUSES.has(s?.status))
+    : filterOpenSessionsForEntree(rows, entree)
   if (!open.length) {
     return {
       ok: false,
