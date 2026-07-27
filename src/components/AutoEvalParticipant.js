@@ -7,12 +7,8 @@ import { classifyMagasin } from '@/lib/formationCategories'
 const THEMES_FRANCE   = ['entreprise','optique','types-verres','verre-progressif','montures','trame-accueil','offres','pdm','parcours-rembourses','remboursement-france','lpt-sante']
 const THEMES_BELGIQUE = ['entreprise','optique','types-verres','verre-progressif','montures','trame-accueil','offres','pdm','mutuelles-inami']
 
-const STATUS_OPTS = [
-  { key: 'non-compris', label: 'Pas compris', color: '#dc2626', bg: 'rgba(220,38,38,0.18)',  border: 'rgba(220,38,38,0.5)'  },
-  { key: 'notions',     label: 'Notions',     color: '#f97316', bg: 'rgba(249,115,22,0.18)', border: 'rgba(249,115,22,0.5)' },
-  { key: 'en-cours',    label: 'En cours',    color: '#d97706', bg: 'rgba(217,119,6,0.18)',  border: 'rgba(217,119,6,0.5)'  },
-  { key: 'maitrise',    label: 'Maîtrisé',    color: '#16a34a', bg: 'rgba(22,163,74,0.18)',  border: 'rgba(22,163,74,0.5)'  },
-]
+const STAR_LABELS = ['', 'Difficile', 'Quelques notions', 'Correct', 'Bien maîtrisé', 'Maîtrisé !']
+const STAR_COLORS = ['', '#dc2626', '#f97316', '#d97706', '#16a34a', '#22c55e']
 
 function getWeekDate() {
   const d = new Date()
@@ -96,8 +92,8 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode, o
     }).catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const toggleStatus = (themeId, key) => {
-    setThemeStatus(prev => ({ ...prev, [themeId]: prev[themeId] === key ? null : key }))
+  const setStars = (themeId, star) => {
+    setThemeStatus(prev => ({ ...prev, [themeId]: prev[themeId] === star ? 0 : star }))
   }
 
   const toggleAccomp = (key) => {
@@ -164,40 +160,40 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode, o
 
         {/* Section 1 — Thèmes */}
         <Card>
-          <CardHead>Thèmes abordés — Ton niveau d'acquisition</CardHead>
+          <CardHead>Thèmes abordés — Ton niveau</CardHead>
           <div style={{ padding: '14px 16px' }}>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginBottom: 16, lineHeight: 1.5 }}>
-              Pour chaque thème, indique ton ressenti sur ce que tu as retenu
+              Donne-toi une note de 1 à 5 étoiles pour chaque thème
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {themes.map((themeId, idx) => {
                 const meta = MODULE_DATA[themeId]
                 if (!meta) return null
-                const current = themeStatus[themeId] || null
+                const current = themeStatus[themeId] || 0
                 return (
-                  <div key={themeId} style={{ paddingBottom: idx < themes.length - 1 ? 14 : 0, borderBottom: idx < themes.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 10 }}>{meta.label}</div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      {STATUS_OPTS.map(opt => {
-                        const active = current === opt.key
-                        return (
-                          <button
-                            key={opt.key}
-                            onClick={() => toggleStatus(themeId, opt.key)}
-                            style={{
-                              flex: 1, padding: '10px 4px', borderRadius: 12, fontSize: 12, fontWeight: 700,
-                              border: `1.5px solid ${active ? opt.border : 'rgba(255,255,255,0.12)'}`,
-                              background: active ? opt.bg : 'rgba(255,255,255,0.04)',
-                              color: active ? opt.color : 'rgba(255,255,255,0.4)',
-                              cursor: 'pointer', transition: 'all .15s',
-                              WebkitTapHighlightColor: 'transparent',
-                            }}
-                          >
-                            {opt.label}
-                          </button>
-                        )
-                      })}
+                  <div key={themeId} style={{ paddingBottom: idx < themes.length - 1 ? 18 : 0, borderBottom: idx < themes.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 12 }}>{meta.label}</div>
+                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                      {[1,2,3,4,5].map(star => (
+                        <button
+                          key={star}
+                          onClick={() => setStars(themeId, star)}
+                          style={{
+                            background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px',
+                            fontSize: 34, lineHeight: 1,
+                            filter: star <= current ? 'none' : 'grayscale(1) brightness(0.3)',
+                            transform: star <= current ? 'scale(1.15)' : 'scale(1)',
+                            transition: 'all .15s',
+                            WebkitTapHighlightColor: 'transparent',
+                          }}
+                        >⭐</button>
+                      ))}
                     </div>
+                    {current > 0 && (
+                      <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, color: STAR_COLORS[current], marginTop: 8 }}>
+                        {STAR_LABELS[current]}
+                      </div>
+                    )}
                   </div>
                 )
               })}

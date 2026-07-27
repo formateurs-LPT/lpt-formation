@@ -27,11 +27,22 @@ const CATEGORY_META = {
 }
 
 const STATUS_OPTIONS = [
-  { key: 'maitrise',    label: 'Maîtrisé',         color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0', icon: '✓' },
-  { key: 'en-cours',    label: 'En cours',          color: '#d97706', bg: '#fef3c7', border: '#fde68a', icon: '◑' },
-  { key: 'notions',     label: 'Quelques notions',  color: '#f97316', bg: '#fff7ed', border: '#fed7aa', icon: '◔' },
-  { key: 'non-compris', label: 'Pas compris',       color: '#dc2626', bg: '#fee2e2', border: '#fecaca', icon: '✗' },
 ]
+
+function toStars(v) {
+  if (typeof v === 'number') return v
+  if (v === 'maitrise')    return 5
+  if (v === 'en-cours')    return 3
+  if (v === 'notions')     return 2
+  if (v === 'non-compris') return 1
+  return 0
+}
+
+function starsDisplay(v) {
+  const n = toStars(v)
+  if (!n) return null
+  return [1,2,3,4,5].map(s => s <= n ? '⭐' : '☆').join('')
+}
 
 /** Extrait le prénom depuis "Prénom NOM" (les mots tout-caps = nom de famille) */
 function extractPrenom(fullName) {
@@ -53,8 +64,8 @@ function getWeekDate() {
 function computeRate(assessments) {
   const vals = Object.values(assessments || {}).filter(Boolean)
   if (!vals.length) return null
-  const score = vals.reduce((s, v) => s + (v === 'maitrise' ? 1 : v === 'en-cours' ? 0.667 : v === 'notions' ? 0.333 : 0), 0)
-  return Math.round((score / vals.length) * 100)
+  const sum = vals.reduce((s, v) => s + toStars(v), 0)
+  return Math.round((sum / (vals.length * 5)) * 100)
 }
 
 function CorrectButton({ onClick, loading }) {
@@ -1354,8 +1365,6 @@ function CategorySelector({ entrees, onSelect }) {
 
 // ── Historique : auto-éval (lecture seule) ───────────────────────
 
-const HIST_STATUS_COLORS = { 'maitrise': '#16a34a', 'en-cours': '#d97706', 'notions': '#f97316', 'non-compris': '#dc2626' }
-const HIST_STATUS_LABELS = { 'maitrise': 'Maîtrisé', 'en-cours': 'En cours', 'notions': 'Quelques notions', 'non-compris': 'Pas compris' }
 const HIST_APPR_META = {
   'tres-bon':       { label: '🌟 Très bon potentiel', color: '#4ade80' },
   'accompagnement': { label: '🤝 Accompagnement',     color: '#fbbf24' },
@@ -1383,14 +1392,13 @@ function AutoEvalReadOnly({ snap }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {themes.map(t => {
               const s = asmts[t]
+              const stars = starsDisplay(s)
               return (
                 <div key={t} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                   <span style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 500 }}>{MODULE_DATA[t]?.label || t}</span>
-                  {s ? (
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, color: '#fff', background: HIST_STATUS_COLORS[s], whiteSpace: 'nowrap' }}>
-                      {HIST_STATUS_LABELS[s]}
-                    </span>
-                  ) : <span style={{ fontSize: 11, color: '#475569' }}>—</span>}
+                  {stars
+                    ? <span style={{ fontSize: 13, letterSpacing: 1 }}>{stars}</span>
+                    : <span style={{ fontSize: 11, color: '#475569' }}>—</span>}
                 </div>
               )
             })}

@@ -41,29 +41,36 @@ function filterByCategory(entrees, responses, category) {
   )
 }
 
-function ThemeBar({ label, maitrise, enCours, notions, nonCompris, total, accompCount }) {
-  if (!total) return null
-  const pM = Math.round((maitrise   / total) * 100)
-  const pE = Math.round((enCours    / total) * 100)
-  const pT = Math.round((notions    / total) * 100)
-  const pN = Math.round((nonCompris / total) * 100)
+function toStars(v) {
+  if (typeof v === 'number') return v
+  if (v === 'maitrise')    return 5
+  if (v === 'en-cours')    return 3
+  if (v === 'notions')     return 2
+  if (v === 'non-compris') return 1
+  return 0
+}
+
+function starColor(avg) {
+  if (avg >= 4) return '#16a34a'
+  if (avg >= 3) return '#d97706'
+  return '#dc2626'
+}
+
+function ThemeStarRow({ label, avgStars, count, accompCount }) {
+  if (!count) return null
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{label}</span>
-        <div style={{ display: 'flex', gap: 8, fontSize: 11, flexShrink: 0 }}>
-          <span style={{ color: '#16a34a', fontWeight: 700 }}>{pM}% ✓</span>
-          <span style={{ color: '#d97706' }}>{pE}% ◑</span>
-          <span style={{ color: '#f97316' }}>{pT}% ◔</span>
-          <span style={{ color: '#dc2626' }}>{pN}% ✗</span>
-          {accompCount > 0 && <span style={{ color: '#0089ba', fontWeight: 700 }}>👥 ×{accompCount}</span>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <Stars value={Math.round(avgStars)} size={13} />
+          <span style={{ fontSize: 12, fontWeight: 800, color: starColor(avgStars) }}>{avgStars.toFixed(1)}</span>
+          <span style={{ fontSize: 10, color: '#475569' }}>/ 5</span>
+          {accompCount > 0 && <span style={{ fontSize: 11, color: '#0089ba', fontWeight: 700 }}>👥 ×{accompCount}</span>}
         </div>
       </div>
-      <div style={{ height: 8, borderRadius: 99, overflow: 'hidden', background: '#334155', display: 'flex' }}>
-        <div style={{ width: `${pM}%`, background: '#16a34a', transition: 'width .4s' }} />
-        <div style={{ width: `${pE}%`, background: '#d97706', transition: 'width .4s' }} />
-        <div style={{ width: `${pT}%`, background: '#f97316', transition: 'width .4s' }} />
-        <div style={{ width: `${pN}%`, background: '#dc2626', transition: 'width .4s' }} />
+      <div style={{ height: 7, borderRadius: 99, overflow: 'hidden', background: '#334155' }}>
+        <div style={{ width: `${(avgStars / 5) * 100}%`, background: starColor(avgStars), transition: 'width .4s' }} />
       </div>
     </div>
   )
@@ -116,32 +123,30 @@ export default function AutoEvalReport({ responses, entrees, category, weekDate,
     const stats = {}
     for (const { ae } of responseList) {
       for (const themeId of (ae.themes_list || [])) {
-        if (!stats[themeId]) stats[themeId] = { maitrise: 0, enCours: 0, notions: 0, nonCompris: 0, total: 0, accompCount: 0 }
+        if (!stats[themeId]) stats[themeId] = { totalStars: 0, count: 0, accompCount: 0 }
         const s = ae.theme_self_assessments?.[themeId]
-        if (s) {
-          stats[themeId].total++
-          if (s === 'maitrise') stats[themeId].maitrise++
-          else if (s === 'en-cours') stats[themeId].enCours++
-          else if (s === 'notions') stats[themeId].notions++
-          else if (s === 'non-compris') stats[themeId].nonCompris++
+        const stars = toStars(s)
+        if (stars > 0) {
+          stats[themeId].totalStars += stars
+          stats[themeId].count++
         }
         if (ae.accompagnement_themes?.includes(themeId)) stats[themeId].accompCount++
       }
     }
     return Object.entries(stats)
-      .filter(([, s]) => s.total > 0)
+      .filter(([, s]) => s.count > 0)
       .map(([themeId, s]) => ({
         themeId,
         label: MODULE_DATA[themeId]?.label || themeId,
-        ...s,
-        pctMaitrise:   Math.round((s.maitrise   / s.total) * 100),
-        pctNonCompris: Math.round((s.nonCompris / s.total) * 100),
+        avgStars: s.totalStars / s.count,
+        count: s.count,
+        accompCount: s.accompCount,
       }))
   }, [responseList])
 
-  const byMaitrise    = [...themeStats].sort((a, b) => b.pctMaitrise - a.pctMaitrise)
-  const byNonCompris  = [...themeStats].sort((a, b) => b.pctNonCompris - a.pctNonCompris)
-  const byAccomp    = [...themeStats].filter(s => s.accompCount > 0).sort((a, b) => b.accompCount - a.accompCount)
+  const byAvg      = [...themeStats].sort((a, b) => b.avgStars - a.avgStars)
+  const byWeakest  = [...themeStats].sort((a, b) => a.avgStars - b.avgStars)
+  const byAccomp   = [...themeStats].filter(s => s.accompCount > 0).sort((a, b) => b.accompCount - a.accompCount)
 
   const suggestions   = responseList.filter(r => r.ae.suggestions).map(r => ({ text: r.ae.suggestions, name: r.name }))
   const appreciations = responseList.filter(r => r.ae.appreciation_formation).map(r => ({ text: r.ae.appreciation_formation, name: r.name }))
@@ -195,13 +200,13 @@ export default function AutoEvalReport({ responses, entrees, category, weekDate,
               {[
                 { label: 'Réponses', value: n, color: '#0089ba' },
                 {
-                  label: 'Thèmes maîtrisés',
-                  value: byMaitrise.filter(t => t.pctMaitrise >= 60).length + '/' + themeStats.length,
+                  label: 'Thèmes bien notés',
+                  value: byAvg.filter(t => t.avgStars >= 4).length + '/' + themeStats.length,
                   color: '#16a34a',
                 },
                 {
                   label: 'À renforcer',
-                  value: byNonCompris.filter(t => t.pctNonCompris >= 30).length,
+                  value: byWeakest.filter(t => t.avgStars < 3).length,
                   color: '#dc2626',
                 },
               ].map(({ label, value, color }) => (
@@ -233,29 +238,27 @@ export default function AutoEvalReport({ responses, entrees, category, weekDate,
               </div>
             )}
 
-            {/* Thèmes — de la meilleure à la moins bonne acquisition */}
-            <Section title="Niveau de maîtrise par thème — du meilleur au plus difficile">
-              {byMaitrise.map(s => (
-                <ThemeBar key={s.themeId} label={s.label} {...s} />
+            {/* Thèmes — du mieux noté au moins bien noté */}
+            <Section title="Niveau par thème — du mieux noté au moins bien noté">
+              {byAvg.map(s => (
+                <ThemeStarRow key={s.themeId} label={s.label} avgStars={s.avgStars} count={s.count} accompCount={s.accompCount} />
               ))}
             </Section>
 
             {/* Thèmes à renforcer */}
-            {byNonCompris.some(s => s.pctNonCompris > 0) && (
-              <Section title="⚠️ Thèmes les moins compris">
-                {byNonCompris.filter(s => s.pctNonCompris > 0).slice(0, 5).map(s => (
+            {byWeakest.some(s => s.avgStars < 3) && (
+              <Section title="⚠️ Thèmes les moins bien notés">
+                {byWeakest.filter(s => s.avgStars < 3).slice(0, 5).map(s => (
                   <div key={s.themeId} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '10px 14px', borderRadius: 10, marginBottom: 8,
                     background: '#1e293b', border: '1px solid #334155',
                   }}>
                     <span style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{s.label}</span>
-                    <span style={{
-                      fontSize: 12, fontWeight: 800, color: '#dc2626',
-                      background: '#7f1d1d33', borderRadius: 20, padding: '3px 10px',
-                    }}>
-                      {s.nonCompris} × pas compris ({s.pctNonCompris}%)
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      <Stars value={Math.round(s.avgStars)} size={12} />
+                      <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>{s.avgStars.toFixed(1)}/5</span>
+                    </div>
                   </div>
                 ))}
               </Section>
