@@ -1175,12 +1175,12 @@ export const MODULE_DATA = {
     { id: 'rembfr-conditions', type: 'rembfr-conditions', titre: 'Les conditions de remboursement' },
     { id: 'rembfr-demarche', type: 'rembfr-demarche', titre: 'Quand un client souhaite se faire rembourser je dois donc :' },
     { id: 'rembfr-supreme', type: 'rembfr-supreme', titre: 'Test Supreme' },
-  ], quiz: [], label: 'Remboursement optique en France', sub: 'SS · Mutuelle · 100% Santé · Conditions' },
+  ], quiz: TIERS_PAYANT_QUIZ, label: 'Remboursement optique en France', sub: 'SS · Mutuelle · 100% Santé · Conditions · Tiers payant' },
   'parcours-rembourses': { pages: [
     { id: 'parcours-offres', type: 'parcours-rembourses-offres', titre: 'Les offres remboursées' },
     { id: 'parcours-tiers-payant', type: 'parcours-tiers-payant', titre: 'C\'est quoi le tiers payant pour vous ?' },
     { id: 'tiers-payant-explication', type: 'tiers-payant-explication', titre: 'Comment fonctionne le tiers payant ?' },
-  ], quiz: TIERS_PAYANT_QUIZ, label: 'Les parcours remboursés', sub: 'Le Suprême · Le 1=1 · 100% Santé · Tiers payant' },
+  ], quiz: [], label: 'Les parcours remboursés', sub: 'Le Suprême · Le 1=1 · 100% Santé' },
   'lpt-sante': { pages: [
     { id: 'lpts-q1', type: 'lpt-sante-intro', titre: 'À quoi ça sert ?' },
     { id: 'lpts-explication', type: 'lpt-sante-explication', titre: 'Comment ça marche ?' },

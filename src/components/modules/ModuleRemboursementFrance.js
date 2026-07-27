@@ -1,8 +1,10 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
-import { MODULE_DATA } from '@/lib/modulesData'
+import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState, fetchOpenAnswers } from '@/lib/supabase'
+import { MODULE_DATA, TIERS_PAYANT_QUIZ } from '@/lib/modulesData'
+import { saveModuleQuizAnswer } from '@/lib/formationSave'
+import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 
 const MODULE_ID = 'remboursement-france'
@@ -559,11 +561,209 @@ function PageSupremeFormateur({ supremeStep, onReveal }) {
 
 const AMELIPRO_URL = 'https://authps-espacepro.ameli.fr/oauth2/authorize?response_type=code&scope=openid%20profile%20infosps%20email&client_id=csm-cen-prod_ameliprotransverse-connexionadmin_1_amtrx_i1_csm-cen-prod%2Fameliprotransverse-connexionadmin_1%2Famtrx_i1&state=AjMjWnxZwchYEjmuwYdOF2ogOMc&redirect_uri=https%3A%2F%2Fespacepro.ameli.fr%2Fpage-accueil-ihm%2Fredirect_uri&nonce=lbfIe0l3pfPl3Jg_NqJOPNZ_8ZLrL1VJFulngzVD6gY'
 
+const OPTION_COLORS = ['#8b5cf6', '#f59e0b', '#ef4444', '#10b981']
+
+// ── Quiz question ouverte ─────────────────────────────────────────
+function RembfrTextOpenController({ quizQ, onNext, onEnd, onBack }) {
+  const [openAnswers, setOpenAnswers] = useState([])
+  const [validating, setValidating]   = useState({})
+  const [validated, setValidated]     = useState({})
+  const autoValidatedRef = useRef(new Set())
+
+  const q      = TIERS_PAYANT_QUIZ[quizQ]
+  const isLast = quizQ >= TIERS_PAYANT_QUIZ.length - 1
+  const pageId = `remboursement-france:${quizQ}`
+
+  useEffect(() => {
+    setOpenAnswers([]); setValidating({}); setValidated({})
+    autoValidatedRef.current = new Set()
+
+    const autoValidate = (rows) => {
+      const kws = q?.autoCorrect
+      if (!kws?.length) return
+      for (const row of rows) {
+        const name = row.participant_name
+        if (autoValidatedRef.current.has(name)) continue
+        const text = (row.answer || '').trim().toLowerCase()
+        if (kws.some(kw => text.includes(kw.toLowerCase()))) {
+          autoValidatedRef.current.add(name)
+          setValidating(v => ({ ...v, [name]: true }))
+          saveModuleQuizAnswer({ moduleId: MODULE_ID, questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
+            .then(() => { setValidated(v => ({ ...v, [name]: 'correct' })); setValidating(v => ({ ...v, [name]: false })) })
+            .catch(() => { autoValidatedRef.current.delete(name) })
+        }
+      }
+    }
+
+    const poll = async () => {
+      const rows = await fetchOpenAnswers(getActiveSessionCode(), pageId)
+      const latest = {}
+      for (const row of rows || []) latest[row.participant_name] = row
+      const deduped = Object.values(latest)
+      setOpenAnswers(deduped)
+      autoValidate(deduped)
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [quizQ, pageId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleValidate = async (row, isCorrect) => {
+    if (validating[row.participant_name]) return
+    setValidating(v => ({ ...v, [row.participant_name]: true }))
+    await saveModuleQuizAnswer({ moduleId: MODULE_ID, questionIdx: quizQ, collaborateur: row.participant_name, answerIdx: 0, isCorrect })
+    setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
+    setValidating(v => ({ ...v, [row.participant_name]: false }))
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)', padding: '24px 40px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz · Remboursement &amp; Tiers payant</span>
+        </div>
+        <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Terminer</button>
+      </div>
+
+      <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 24px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+          Question {quizQ + 1} / {TIERS_PAYANT_QUIZ.length}
+        </div>
+      </div>
+
+      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.3, maxWidth: 800, margin: '0 auto 12px' }}>{q.question}</div>
+
+      {q.hint && (
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.2)', borderRadius: 12, padding: '8px 22px', fontSize: 12, color: 'rgba(0,171,233,0.8)', fontStyle: 'italic' }}>
+            Réponse attendue : {q.hint}
+          </div>
+        </div>
+      )}
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 820, width: '100%', margin: '0 auto', maxHeight: '40vh', overflowY: 'auto' }}>
+        {openAnswers.length === 0 ? (
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, fontStyle: 'italic', padding: '20px', textAlign: 'center' }}>En attente des réponses…</div>
+        ) : openAnswers.map((row, i) => {
+          const status = validated[row.participant_name]
+          return (
+            <div key={row.participant_name} style={{
+              background: status === 'correct' ? 'rgba(34,197,94,0.08)' : status === 'wrong' ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${status === 'correct' ? 'rgba(34,197,94,0.3)' : status === 'wrong' ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
+            }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length], minWidth: 80, flexShrink: 0 }}>{row.participant_name}</span>
+              <span style={{ flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>{row.answer}</span>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                {!status && (
+                  <>
+                    <button onClick={() => handleValidate(row, true)} style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)', color: '#4ade80', padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓</button>
+                    <button onClick={() => handleValidate(row, false)} style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', color: '#f87171', padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✗</button>
+                  </>
+                )}
+                {status === 'correct' && <span style={{ fontSize: 18 }}>✅</span>}
+                {status === 'wrong'   && <span style={{ fontSize: 18 }}>❌</span>}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+        {isLast ? (
+          <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Terminer le quiz</button>
+        ) : (
+          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #0070a0, #0089ba)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,137,186,0.4)' }}>Question suivante →</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Quiz QCM ──────────────────────────────────────────────────────
+function RembfrMCQController({ quizQ, onNext, onEnd, onBack }) {
+  const [liveAnswers, setLiveAnswers] = useState([])
+  const q      = TIERS_PAYANT_QUIZ[quizQ]
+  const isLast = quizQ >= TIERS_PAYANT_QUIZ.length - 1
+
+  useEffect(() => {
+    const poll = async () => {
+      const rows = await fetchTrainerQuizAnswers(
+        `session_code=eq.${getActiveSessionCode()}&module_id=eq.${MODULE_ID}&question_idx=eq.${quizQ}`
+      )
+      setLiveAnswers(rows || [])
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [quizQ])
+
+  const total  = liveAnswers.length
+  const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz · Remboursement &amp; Tiers payant</span>
+        </div>
+        <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Terminer</button>
+      </div>
+      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 24px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+          Question {quizQ + 1} / {TIERS_PAYANT_QUIZ.length}
+        </div>
+      </div>
+      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', textAlign: 'center', marginBottom: 36, lineHeight: 1.3, maxWidth: 800, alignSelf: 'center' }}>{q.question}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, maxWidth: 720, alignSelf: 'center', width: '100%' }}>
+        {q.options.map((opt, i) => {
+          const count     = counts[i]
+          const isCorrect = i === q.correct
+          const pct       = total > 0 ? (count / total) * 100 : 0
+          return (
+            <div key={i} style={{ background: isCorrect ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)', border: `1px solid ${isCorrect ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 16, padding: '14px 18px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: OPTION_COLORS[i % OPTION_COLORS.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff' }}>{'ABCD'[i]}</div>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{opt}</span>
+                  {isCorrect && <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, background: 'rgba(34,197,94,0.15)', padding: '2px 10px', borderRadius: 20 }}>✓ Bonne réponse</span>}
+                </div>
+                <span style={{ fontSize: 22, fontWeight: 800, color: isCorrect ? '#4ade80' : '#fff' }}>
+                  {count}<span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500, marginLeft: 4 }}>vote{count !== 1 ? 's' : ''}</span>
+                </span>
+              </div>
+              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{ height: '100%', borderRadius: 4, width: `${pct}%`, background: isCorrect ? '#4ade80' : OPTION_COLORS[i % OPTION_COLORS.length], transition: 'width .5s ease' }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28 }}>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
+          <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginRight: 6 }}>{total}</span>
+          participant{total !== 1 ? 's' : ''} {total !== 1 ? 'ont' : 'a'} répondu
+        </div>
+        {isLast ? (
+          <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Terminer le quiz</button>
+        ) : (
+          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #0070a0, #0089ba)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,137,186,0.4)' }}>Question suivante →</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function ModuleRemboursementFrance({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
   const syncedRef = useRef(false)
   const [rembfrRevealed, setRembfrRevealed] = useState([])
+  const [quizQ, setQuizQ] = useState(null)
   const [revealing, setRevealing] = useState(false)
   const [demarcheA, setDemarcheA] = useState(0)
   const [demarcheB, setDemarcheB] = useState(0)
@@ -651,6 +851,31 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
       resetShared(),
     ])
     onBack()
+  }
+
+  const handleStartQuiz = async () => {
+    setQuizQ(0)
+    await syncAndWrite({ module_page: 100 })
+  }
+
+  const handleNextQ = async () => {
+    const next = quizQ + 1
+    setQuizQ(next)
+    await syncAndWrite({ module_page: 100 + next })
+  }
+
+  const handleEndQuiz = async () => {
+    await syncAndWrite({ module_page: 200 })
+    await handleTerminate()
+  }
+
+  // ── Quiz ─────────────────────────────────────────────────────────
+  if (started && quizQ !== null) {
+    const q = TIERS_PAYANT_QUIZ[quizQ]
+    if (q?.type === 'text-open') {
+      return <RembfrTextOpenController quizQ={quizQ} onNext={handleNextQ} onEnd={handleEndQuiz} onBack={handleEndQuiz} />
+    }
+    return <RembfrMCQController quizQ={quizQ} onNext={handleNextQ} onEnd={handleEndQuiz} onBack={handleEndQuiz} />
   }
 
   // ── Écran de démarrage ───────────────────────────────────────────
@@ -822,12 +1047,12 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
               >← Précédent</button>
 
               {isLast ? (
-                <button onClick={handleTerminate} style={{
-                  background: 'linear-gradient(135deg, #0070a0, #0089ba)',
+                <button onClick={handleStartQuiz} style={{
+                  background: 'linear-gradient(135deg, #7c3aed, #9f67f5)',
                   border: 'none', color: '#fff', padding: '12px 32px',
                   borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                  boxShadow: '0 4px 16px rgba(0,137,186,0.35)',
-                }}>Terminer le module ✓</button>
+                  boxShadow: '0 4px 16px rgba(124,58,237,0.4)',
+                }}>▶ Démarrer le quiz</button>
               ) : (
                 <button
                   onClick={ameliproBlocked ? undefined : () => setPageIndex(i => Math.min(PAGES.length - 1, i + 1))}
