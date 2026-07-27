@@ -228,44 +228,71 @@ function TVQuizFooter() {
   )
 }
 
-function TVOrdonnanceDisplay({ ordonnance, hideLabels }) {
+function TVOrdonnanceDisplay({ ordonnance, hideLabels, cylInParens, hideNonAddHeaders, topLabel }) {
   const { od, og } = ordonnance
   const hasCyl = od.cyl || og.cyl
   const hasAdd = od.add || og.add
   const cellStyle = { padding: '8px 16px', textAlign: 'center', fontSize: 22, fontWeight: 700, color: '#fff' }
   const headerStyle = { padding: '6px 16px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1 }
   const labelStyle = { padding: '8px 20px', textAlign: 'right', fontSize: 16, fontWeight: 800, color: '#a78bfa' }
+
+  const eyes = [{ label: 'OD', data: od }, { label: 'OG', data: og }]
+
   return (
     <div style={{
       background: 'rgba(124,58,237,0.08)', border: '2px solid rgba(124,58,237,0.3)',
       borderRadius: 20, padding: '16px 0', marginBottom: 36,
       width: '100%', maxWidth: 720, alignSelf: 'center',
     }}>
+      {topLabel && (
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#4ade80', textAlign: 'center', marginBottom: 6 }}>{topLabel}</div>
+      )}
       <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', letterSpacing: 2, textTransform: 'uppercase', textAlign: 'center', marginBottom: 12 }}>ORDONNANCE</div>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        {!hideLabels && (
-          <thead>
-            <tr>
-              <th style={{ width: 80 }}></th>
-              <th style={headerStyle}>Sphère</th>
-              {hasCyl && <th style={headerStyle}>Cylindre</th>}
-              {hasCyl && <th style={headerStyle}>Axe</th>}
-              {hasAdd && <th style={headerStyle}>Addition</th>}
-            </tr>
-          </thead>
-        )}
-        <tbody>
-          {[{ label: 'OD', data: od }, { label: 'OG', data: og }].map(({ label, data }) => (
-            <tr key={label} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <td style={labelStyle}>{label}</td>
-              <td style={cellStyle}>{data.sph || '—'}</td>
-              {hasCyl && <td style={cellStyle}>{data.cyl || 'Plan'}</td>}
-              {hasCyl && <td style={cellStyle}>{data.axe || '—'}</td>}
-              {hasAdd && <td style={cellStyle}>{data.add || '—'}</td>}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      {cylInParens && hasCyl ? (
+        /* Mode compact : sph (cyl) axe */
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <tbody>
+            {eyes.map(({ label, data }) => (
+              <tr key={label} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <td style={labelStyle}>{label}</td>
+                <td style={{ ...cellStyle, whiteSpace: 'nowrap' }}>
+                  {data.sph || '—'}
+                  {data.cyl && <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}> ({data.cyl})</span>}
+                </td>
+                {hasCyl && <td style={{ ...cellStyle, fontSize: 18, color: 'rgba(255,255,255,0.7)' }}>{data.axe ? `${data.axe}°` : '—'}</td>}
+                {hasAdd && <td style={cellStyle}>{data.add || '—'}</td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          {!hideLabels && (
+            <thead>
+              <tr>
+                <th style={{ width: 80 }}></th>
+                {!hideNonAddHeaders && <th style={headerStyle}>Sphère</th>}
+                {!hideNonAddHeaders && hasCyl && <th style={headerStyle}>Cylindre</th>}
+                {!hideNonAddHeaders && hasCyl && <th style={headerStyle}>Axe</th>}
+                {hideNonAddHeaders && <th style={headerStyle}></th>}
+                {hasAdd && <th style={headerStyle}>Add</th>}
+              </tr>
+            </thead>
+          )}
+          <tbody>
+            {eyes.map(({ label, data }) => (
+              <tr key={label} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <td style={labelStyle}>{label}</td>
+                <td style={cellStyle}>{data.sph || '—'}</td>
+                {hasCyl && <td style={cellStyle}>{data.cyl || 'Plan'}</td>}
+                {hasCyl && <td style={cellStyle}>{data.axe || '—'}</td>}
+                {hasAdd && <td style={cellStyle}>{data.add || '—'}</td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   )
 }
@@ -360,7 +387,7 @@ function TVQuizOrdonnanceFill({ question, qIdx, total, moduleLabel }) {
       <h1 style={{ fontSize: 46, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 40, maxWidth: 900 }}>
         {question.question}
       </h1>
-      <TVOrdonnanceDisplay ordonnance={question.ordonnance} />
+      <TVOrdonnanceDisplay ordonnance={question.ordonnance} hideLabels={question.hideOrdoLabels} cylInParens={question.cylInParens} hideNonAddHeaders={question.hideNonAddHeaders} topLabel={question.ordoLabel} />
       <div style={{
         background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.2)',
         borderRadius: 16, padding: '12px 28px',
@@ -386,7 +413,7 @@ function TVQuizOrdonnanceQCM({ question, qIdx, total, moduleLabel }) {
       <h1 style={{ fontSize: 38, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 28, maxWidth: 900 }}>
         {question.question}
       </h1>
-      <TVOrdonnanceDisplay ordonnance={question.ordonnance} hideLabels={question.hideLabels} />
+      <TVOrdonnanceDisplay ordonnance={question.ordonnance} hideLabels={question.hideOrdoLabels || question.hideLabels} cylInParens={question.cylInParens} hideNonAddHeaders={question.hideNonAddHeaders} topLabel={question.ordoLabel} />
       <div style={{
         display: 'grid',
         gridTemplateColumns: question.options.length === 2 ? '1fr 1fr' : 'repeat(auto-fit, minmax(280px, 1fr))',

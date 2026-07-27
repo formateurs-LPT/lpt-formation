@@ -410,152 +410,171 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
   )
 }
 
-// ── Quiz remplir ordonnance ──────────────────────────────────────
-function genSphOpts() {
-  const opts = []
-  for (let v = -800; v <= 725; v += 25) {
-    if (v === 0) { opts.push('Plan'); continue }
-    opts.push(`${v > 0 ? '+' : ''}${(v / 100).toFixed(2).replace('.', ',')}`)
-  }
-  return opts
-}
-function genCylOpts() {
-  const opts = []
-  for (let v = -400; v <= 400; v += 25) {
-    if (v === 0) { opts.push('Plan'); continue }
-    opts.push(`${v > 0 ? '+' : ''}${(v / 100).toFixed(2).replace('.', ',')}`)
-  }
-  return opts
-}
-function genAxeOpts() {
-  const opts = []
-  for (let v = 5; v <= 180; v += 5) opts.push(`${v}`)
-  return opts
-}
-function genAddOpts() {
-  const opts = []
-  for (let v = 50; v <= 350; v += 25) opts.push(`+${(v / 100).toFixed(2).replace('.', ',')}`)
-  return opts
-}
-const SPH_OPTS = genSphOpts()
-const CYL_OPTS = genCylOpts()
-const AXE_OPTS = genAxeOpts()
-const ADD_OPTS = genAddOpts()
-
-function OrdoSelect({ value, onChange, options, placeholder }) {
-  return (
-    <select value={value} onChange={e => onChange(e.target.value)} style={{
-      flex: 1, padding: '10px 8px', borderRadius: 10,
-      background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.2)',
-      color: value ? '#fff' : 'rgba(255,255,255,0.35)', fontSize: 15, fontWeight: 600,
-      fontFamily: 'inherit', outline: 'none', appearance: 'none', textAlign: 'center',
-    }}>
-      <option value="">{placeholder}</option>
-      {options.map(o => <option key={o} value={o} style={{ background: '#0d1f3c', color: '#fff' }}>{o}</option>)}
-    </select>
-  )
+// ── Quiz remplir ordonnance (style LPT app WheelPicker) ─────────────
+function parseOrdoVal(str) {
+  if (!str) return null
+  return parseFloat(str.replace(',', '.'))
 }
 
 function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
   const hasCyl = !!(q.ordonnance.od.cyl || q.ordonnance.og.cyl)
   const hasAdd = !!(q.ordonnance.od.add || q.ordonnance.og.add)
 
-  const [vals, setVals] = useState({
-    od_sph: '', od_cyl: '', od_axe: '', od_add: '',
-    og_sph: '', og_cyl: '', og_axe: '', og_add: '',
+  const initIdx = () => ({
+    od: { sph: SPH_ZERO, cyl: CYL_ZERO, axe: AXE_ZERO, add: ADD_ZERO },
+    og: { sph: SPH_ZERO, cyl: CYL_ZERO, axe: AXE_ZERO, add: ADD_ZERO },
   })
+
+  const [idx, setIdx] = useState(initIdx)
+  const [showResult, setShowResult] = useState(false)
+  const [results, setResults] = useState(null)
+  const [saving, setSaving] = useState(false)
   const [answered, setAnswered] = useState(false)
   const [isCorrect, setIsCorrect] = useState(null)
-  const [saving, setSaving] = useState(false)
 
-  const set = (k, v) => setVals(prev => ({ ...prev, [k]: v }))
-
-  const allFilled = () => {
-    if (!vals.od_sph || !vals.og_sph) return false
-    if (hasCyl && (!vals.od_cyl || !vals.od_axe || !vals.og_cyl || !vals.og_axe)) return false
-    if (hasAdd && (!vals.od_add || !vals.og_add)) return false
-    return true
+  const setField = (eye, field, val) => {
+    setIdx(prev => ({ ...prev, [eye]: { ...prev[eye], [field]: val } }))
+    if (showResult) { setShowResult(false); setResults(null) }
   }
 
-  const checkCorrect = () => {
-    const { od, og } = q.ordonnance
-    const match = (entered, expected) => {
-      if (!expected) return true
-      return entered.trim().replace('.', ',') === expected.trim().replace('.', ',')
+  const near = (a, b) => Math.abs(a - b) < 0.001
+
+  const verify = async () => {
+    const od = q.ordonnance.od
+    const og = q.ordonnance.og
+    const r = {
+      od: {
+        sph: near(SPH_VALS[idx.od.sph].val, parseOrdoVal(od.sph) ?? 0),
+        cyl: !hasCyl || near(CYL_VALS[idx.od.cyl].val, parseOrdoVal(od.cyl) ?? 0),
+        axe: !hasCyl || AXE_VALS[idx.od.axe].val === (parseInt(od.axe) || 0),
+        add: !hasAdd || near(ADD_VALS[idx.od.add].val, parseOrdoVal(od.add) ?? 0),
+      },
+      og: {
+        sph: near(SPH_VALS[idx.og.sph].val, parseOrdoVal(og.sph) ?? 0),
+        cyl: !hasCyl || near(CYL_VALS[idx.og.cyl].val, parseOrdoVal(og.cyl) ?? 0),
+        axe: !hasCyl || AXE_VALS[idx.og.axe].val === (parseInt(og.axe) || 0),
+        add: !hasAdd || near(ADD_VALS[idx.og.add].val, parseOrdoVal(og.add) ?? 0),
+      },
     }
-    return (
-      match(vals.od_sph, od.sph) &&
-      match(vals.og_sph, og.sph) &&
-      (!hasCyl || (match(vals.od_cyl, od.cyl) && match(vals.od_axe, od.axe) && match(vals.og_cyl, og.cyl) && match(vals.og_axe, og.axe))) &&
-      (!hasAdd || (match(vals.od_add, od.add) && match(vals.og_add, og.add)))
-    )
+    setResults(r)
+    setShowResult(true)
+    const fields = [r.od.sph, r.od.cyl, r.od.axe, r.od.add, r.og.sph, r.og.cyl, r.og.axe, r.og.add]
+    const perfect = fields.every(Boolean)
+    if (perfect && !saving) {
+      setSaving(true)
+      await saveModuleQuizAnswer({
+        sessionCode: getParticipantSessionCode(),
+        moduleId, questionIdx: qIdx,
+        collaborateur: pName.trim(),
+        answerIdx: 0, isCorrect: true,
+      })
+      setSaving(false)
+      setIsCorrect(true)
+      setAnswered(true)
+    }
   }
 
-  const handleSubmit = async () => {
-    if (!allFilled() || saving) return
-    setSaving(true)
-    const ok = checkCorrect()
-    await saveModuleQuizAnswer({
-      sessionCode: getParticipantSessionCode(),
-      moduleId, questionIdx: qIdx,
-      collaborateur: pName.trim(),
-      answerIdx: 0, isCorrect: ok,
-    })
-    setIsCorrect(ok)
-    setAnswered(true)
-    setSaving(false)
+  const handleWrongRetry = () => {
+    setShowResult(false)
+    setResults(null)
   }
 
   if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
 
-  const rowStyle = { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }
-  const labelStyle = { fontSize: 13, fontWeight: 800, color: '#a78bfa', width: 28, flexShrink: 0 }
+  const corrLabel = {
+    od: {
+      sph: SPH_VALS[findSphIdx(parseOrdoVal(q.ordonnance.od.sph) ?? 0)]?.label || '',
+      cyl: hasCyl ? CYL_VALS[findCylIdx(parseOrdoVal(q.ordonnance.od.cyl) ?? 0)]?.label || '' : '',
+      axe: hasCyl ? `${parseInt(q.ordonnance.od.axe) || 0}°` : '',
+      add: hasAdd ? ADD_VALS[Math.max(0, Math.min(16, Math.round((parseOrdoVal(q.ordonnance.od.add) ?? 0) / 0.25)))]?.label || '' : '',
+    },
+    og: {
+      sph: SPH_VALS[findSphIdx(parseOrdoVal(q.ordonnance.og.sph) ?? 0)]?.label || '',
+      cyl: hasCyl ? CYL_VALS[findCylIdx(parseOrdoVal(q.ordonnance.og.cyl) ?? 0)]?.label || '' : '',
+      axe: hasCyl ? `${parseInt(q.ordonnance.og.axe) || 0}°` : '',
+      add: hasAdd ? ADD_VALS[Math.max(0, Math.min(16, Math.round((parseOrdoVal(q.ordonnance.og.add) ?? 0) / 0.25)))]?.label || '' : '',
+    },
+  }
+
+  const colLabels = ['Sph', ...(hasCyl ? ['Cyl', 'Axe'] : []), ...(hasAdd ? ['Add'] : [])]
 
   return (
-    <div style={{
-      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-    }}>
-      <div style={{
-        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
-        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
-        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20,
-      }}>Question {qIdx + 1}</div>
-      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 8, textAlign: 'center' }}>
-        Regardez l&apos;ordonnance sur l&apos;écran
-      </div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 24, textAlign: 'center' }}>
-        {q.question}
+    <div style={{ minHeight: '100dvh', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
+      {/* Header doré */}
+      <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={52} height={18} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+        <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' }}>Saisir l&apos;ordonnance</span>
+        <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#fff' }}>Q{qIdx + 1}</div>
       </div>
 
-      {/* Colonnes */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8, width: '100%', maxWidth: 400, paddingLeft: 36 }}>
-        <div style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Sph</div>
-        {hasCyl && <div style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Cyl</div>}
-        {hasCyl && <div style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Axe</div>}
-        {hasAdd && <div style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Add</div>}
+      {/* Corps scrollable */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 12px 8px' }}>
+        <div style={{ fontSize: 12, color: '#666', fontWeight: 600, textAlign: 'center', marginBottom: 14 }}>
+          Regardez l&apos;ordonnance sur l&apos;écran et saisissez les valeurs
+        </div>
+
+        {/* En-têtes colonnes */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 4, paddingLeft: 40 }}>
+          {colLabels.map(lbl => (
+            <div key={lbl} style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: 0.5 }}>{lbl}</div>
+          ))}
+        </div>
+
+        {/* OD + OG rows */}
+        {[{ eye: 'od', label: 'OD' }, { eye: 'og', label: 'OG' }].map(({ eye, label }) => {
+          const fields = [
+            { key: 'sph', vals: SPH_VALS, curIdx: idx[eye].sph, isCorr: results?.[eye]?.sph, corrLbl: corrLabel[eye].sph, show: true },
+            { key: 'cyl', vals: CYL_VALS, curIdx: idx[eye].cyl, isCorr: results?.[eye]?.cyl, corrLbl: corrLabel[eye].cyl, show: hasCyl },
+            { key: 'axe', vals: AXE_VALS, curIdx: idx[eye].axe, isCorr: results?.[eye]?.axe, corrLbl: corrLabel[eye].axe, show: hasCyl, circular: true },
+            { key: 'add', vals: ADD_VALS, curIdx: idx[eye].add, isCorr: results?.[eye]?.add, corrLbl: corrLabel[eye].add, show: hasAdd },
+          ].filter(f => f.show)
+
+          return (
+            <div key={eye} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+              <div style={{ width: 34, textAlign: 'center', fontSize: 13, fontWeight: 900, color: APP_DARK, flexShrink: 0 }}>{label}</div>
+              {fields.map(f => (
+                <div key={f.key} style={{ flex: 1, background: '#fff', borderRadius: 10, border: `1.5px solid ${showResult ? (f.isCorr ? '#22c55e' : '#ef4444') : APP_GOLD + '88'}`, overflow: 'hidden' }}>
+                  <WheelPicker
+                    values={f.vals}
+                    selectedIdx={f.curIdx}
+                    onChange={v => setField(eye, f.key, v)}
+                    showResult={showResult}
+                    isCorrect={f.isCorr}
+                    correctLabel={f.corrLbl}
+                    circular={f.circular || false}
+                  />
+                </div>
+              ))}
+            </div>
+          )
+        })}
       </div>
 
-      <div style={{ width: '100%', maxWidth: 400 }}>
-        {[{ key: 'od', label: 'OD' }, { key: 'og', label: 'OG' }].map(({ key, label }) => (
-          <div key={key} style={rowStyle}>
-            <div style={labelStyle}>{label}</div>
-            <OrdoSelect value={vals[`${key}_sph`]} onChange={v => set(`${key}_sph`, v)} options={SPH_OPTS} placeholder="—" />
-            {hasCyl && <OrdoSelect value={vals[`${key}_cyl`]} onChange={v => set(`${key}_cyl`, v)} options={CYL_OPTS} placeholder="—" />}
-            {hasCyl && <OrdoSelect value={vals[`${key}_axe`]} onChange={v => set(`${key}_axe`, v)} options={AXE_OPTS} placeholder="—" />}
-            {hasAdd && <OrdoSelect value={vals[`${key}_add`]} onChange={v => set(`${key}_add`, v)} options={ADD_OPTS} placeholder="—" />}
+      {/* Footer */}
+      <div style={{ padding: '12px 14px 36px', background: APP_BG, flexShrink: 0, borderTop: `1px solid ${APP_GOLD}33` }}>
+        {showResult && results && !answered && (
+          <div style={{ textAlign: 'center', marginBottom: 12 }}>
+            {[results.od.sph, results.od.cyl, results.od.axe, results.od.add, results.og.sph, results.og.cyl, results.og.axe, results.og.add].every(Boolean) ? (
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#22c55e' }}>✓ Parfait, enregistrement…</div>
+            ) : (
+              <div style={{ fontSize: 14, color: '#ef4444', fontWeight: 600 }}>Certaines valeurs sont incorrectes. Réessayez !</div>
+            )}
           </div>
-        ))}
+        )}
+        <button
+          onClick={showResult && !answered ? handleWrongRetry : verify}
+          disabled={saving}
+          style={{
+            width: '100%', padding: '16px', borderRadius: 14,
+            background: saving ? '#ccc' : APP_GOLD,
+            border: 'none', color: '#fff',
+            fontSize: 16, fontWeight: 800, cursor: saving ? 'default' : 'pointer',
+            fontFamily: 'inherit', letterSpacing: 0.5,
+          }}
+        >
+          {saving ? 'Enregistrement…' : showResult && !answered ? '↺ Réessayer' : '✓ Vérifier'}
+        </button>
       </div>
-
-      <button onClick={handleSubmit} disabled={!allFilled() || saving} style={{
-        background: allFilled() ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
-        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
-        fontSize: 16, fontWeight: 700, cursor: allFilled() ? 'pointer' : 'default',
-        fontFamily: 'inherit', width: '100%', maxWidth: 400, marginTop: 16,
-      }}>
-        {saving ? 'Envoi…' : '✓ Valider'}
-      </button>
     </div>
   )
 }

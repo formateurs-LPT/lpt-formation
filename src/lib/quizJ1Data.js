@@ -2,44 +2,55 @@
 // qcm           : options[], correct (index)
 // qcm-multi     : options[], correct (array d'indices), instruction
 // text-open     : hint (affiché formateur uniquement)
+//                 autoCorrect    (OR)  : valide si réponse contient AU MOINS UN mot
+//                 autoCorrectAll (AND) : valide si réponse contient TOUS les mots
+//                 autoCorrectAllOr     : valide si chaque groupe (tableau) a au moins un match
 // ordonnance-fill : ordonnance { od, og } avec sph, cyl, axe, add (null si absent)
+//                   hideOrdoLabels : masque les en-têtes Sph/Cyl/Axe
+//                   hideNonAddHeaders : masque Sph/Cyl/Axe mais garde Add
+//                   cylInParens : affiche le cyl entre parenthèses dans la colonne sph
 // qcm-ordonnance : ordonnance + options[] + correct — ordonnance affichée TV, QCM sur tél
-// power-selector : correctPos, correctNeg
+//                  hideOrdoLabels, cylInParens, ordoLabel (texte au-dessus de l'ordonnance)
 export const QUIZ_J1 = [
-  // Q1 — texte libre
+  // Q1 — année de création
   {
     type: 'text-open',
-    question: 'En quelle année a ouvert le premier magasin LPT ?',
+    question: 'En quelle année a ouvert le premier magasin Lunettes Pour Tous ?',
     hint: '2014',
+    autoCorrect: ['2014'],
   },
-  // Q2 — texte libre
+  // Q2 — fondateur
   {
     type: 'text-open',
-    question: 'Qui a fondé LPT avec le soutien de Xavier Niel ?',
+    question: 'Qui a fondé Lunettes Pour Tous avec le soutien de Xavier Niel ?',
     hint: 'Paul Morlet',
+    autoCorrect: ['paul morlet'],
   },
-  // Q3 — texte libre
+  // Q3 — différenciateur
   {
     type: 'text-open',
     question: 'Quel élément nous différencie totalement de la concurrence ?',
     hint: 'La fabrication sur place en 10 minutes',
+    autoCorrect: ['10'],
   },
-  // Q4 — texte libre
+  // Q4 — 5 piliers
   {
     type: 'text-open',
-    question: 'Quels sont les 5 points clés qui permettent de remplir la promesse LPT ?',
+    question: 'Quels sont les 5 points clés qui permettent de remplir la promesse Lunettes Pour Tous ?',
     hint: 'Examen de vue gratuit · Fabrication sur place · 10 minutes · Prix bas · 0 € reste à charge',
+    autoCorrectAll: ['examen', 'fabrication', '10', 'prix', 'reste'],
   },
-  // Q5 — texte libre
+  // Q5 — 4 problèmes de vue
   {
     type: 'text-open',
     question: 'Citez les 4 problèmes de vue et leur définition.',
-    hint: 'Myopie (mal de loin) · Hypermétropie (mal de près, force) · Astigmatisme (vision déformée) · Presbytie (liée à l\'âge)',
+    hint: 'Myope (flou de loin) · Hypermétrope (flou à toute distance) · Astigmate (déformé à toute distance) · Presbyte (flou de près)',
+    autoCorrectAll: ['myope', 'hyperm', 'astigm', 'presbyt'],
   },
-  // Q6 — qcm multi-sélection (classement après Q5)
+  // Q6 — qcm multi-sélection
   {
     type: 'qcm-multi',
-    question: 'Dans la Sphère d\'une ordonnance, quels problèmes de vue peut-on trouver ?',
+    question: 'Dans la Sphère, quels problèmes de vue peut-on trouver ?',
     options: ['Astigmatisme', 'Hypermétropie', 'Presbytie', 'Myopie'],
     correct: [1, 3],
     instruction: 'Sélectionnez les 2 bonnes réponses (B et D)',
@@ -55,9 +66,11 @@ export const QUIZ_J1 = [
     type: 'ordonnance-fill',
     question: 'Saisissez les valeurs de cette ordonnance.',
     ordonnance: {
-      od: { sph: '+2,00', cyl: '-0,50', axe: '90', add: null },
-      og: { sph: '+1,75', cyl: '-0,50', axe: '85', add: null },
+      od: { sph: '+2,00', cyl: '-0,50', axe: '90',  add: null },
+      og: { sph: '+1,75', cyl: '-0,50', axe: '85',  add: null },
     },
+    hideOrdoLabels: true,
+    cylInParens: true,
   },
   // Q9 — remplir ordonnance
   {
@@ -67,8 +80,10 @@ export const QUIZ_J1 = [
       od: { sph: '-1,50', cyl: '+0,75', axe: '170', add: null },
       og: { sph: '-2,00', cyl: '+0,50', axe: '165', add: null },
     },
+    hideOrdoLabels: true,
+    cylInParens: true,
   },
-  // Q10 — remplir ordonnance (presbytie, add) — classement après Q10
+  // Q10 — remplir ordonnance presbytie (avec add) — classement après Q10
   {
     type: 'ordonnance-fill',
     question: 'Saisissez les valeurs de cette ordonnance.',
@@ -76,6 +91,7 @@ export const QUIZ_J1 = [
       od: { sph: '+0,50', cyl: null, axe: null, add: '+2,00' },
       og: { sph: '+0,75', cyl: null, axe: null, add: '+2,00' },
     },
+    hideNonAddHeaders: true,
   },
   // Q11 — qcm + ordonnance TV
   {
@@ -87,6 +103,7 @@ export const QUIZ_J1 = [
     },
     options: ['Myopie', 'Hypermétropie', 'Presbytie', 'Astigmatisme'],
     correct: 0,
+    hideOrdoLabels: true,
   },
   // Q12 — qcm + ordonnance TV
   {
@@ -98,49 +115,55 @@ export const QUIZ_J1 = [
     },
     options: ['Myopie', 'Hypermétropie', 'Presbytie', 'Astigmatisme'],
     correct: 1,
+    hideOrdoLabels: true,
   },
-  // Q13 — qcm + ordonnance TV (presbytie VP)
+  // Q13 — presbytie VP unifocale affichée en +2,50 sans ADD
   {
     type: 'qcm-ordonnance',
-    question: 'Quel est le problème de vue de ce client ? (ordonnance VP unifocale)',
+    question: 'Quel est le problème de vue de ce client ?',
     ordonnance: {
-      od: { sph: 'Plan', cyl: null, axe: null, add: '+2,50' },
-      og: { sph: 'Plan', cyl: null, axe: null, add: '+2,50' },
+      od: { sph: '+2,50', cyl: null, axe: null, add: null },
+      og: { sph: '+2,50', cyl: null, axe: null, add: null },
     },
+    ordoLabel: '1 paire de lunettes vision de près',
     options: ['Myopie', 'Astigmatisme', 'Presbytie', 'Hypermétropie'],
     correct: 2,
+    hideOrdoLabels: true,
   },
-  // Q14 — sélecteur de puissances
-  {
-    type: 'power-selector',
-    question: 'Quelles sont les puissances maximales fabriquées en 10 minutes chez LPT ?',
-    correctPos: '+7,25',
-    correctNeg: '-8,00',
-  },
-  // Q15 — qcm standard — classement après Q15
-  {
-    question: 'Sur une ordonnance, que signifie "Plan" dans la colonne Sphère ?',
-    options: ['La puissance maximale', 'Un traitement antireflet', 'La valeur 0 — aucune correction', 'Un verre plan sans traitement'],
-    correct: 2,
-  },
-  // Q16 — texte libre
+  // Q14 — puissances maximales (texte libre) — classement après Q14 (était Q15)
   {
     type: 'text-open',
-    question: 'Citez 3 matériaux utilisés pour les montures chez LPT.',
+    question: 'Quelles sont les puissances maximales fabriquées en 10 minutes chez Lunettes Pour Tous ? (positif et négatif)',
+    hint: '+7,25 (positif) · −8,00 (négatif)',
+    autoCorrectAll: ['7,25', '8'],
+  },
+  // Q15 — signification de Plan — classement après Q15
+  {
+    question: "Votre client a 'Plan' dans la colonne Sphère de son ordonnance. Quel est son profil ?",
+    options: ['Myope', 'Presbyte', 'Astigmate', 'Ni myope ni hypermétrope'],
+    correct: 3,
+  },
+  // Q16 — catégories de montures
+  {
+    type: 'text-open',
+    question: 'Citez les trois catégories de montures disponibles chez Lunettes Pour Tous.',
     hint: 'Acétate · Métal · Injecté',
+    autoCorrectAllOr: [['acétate', 'acetate'], ['métal', 'metal'], ['inject', 'plastique']],
   },
   // Q17 — qcm + ordonnance TV
   {
     type: 'qcm-ordonnance',
     question: 'Quels sont les problèmes de vue de ce client ?',
     ordonnance: {
-      od: { sph: '-1,00', cyl: '-1,50', axe: '45', add: null },
+      od: { sph: '-1,00', cyl: '-1,50', axe: '45',  add: null },
       og: { sph: '-0,75', cyl: '-1,25', axe: '135', add: null },
     },
     options: ['Myopie + Astigmatisme', 'Hypermétropie + Presbytie', 'Myopie seule', 'Presbytie seule'],
     correct: 0,
+    hideOrdoLabels: true,
+    cylInParens: true,
   },
-  // Q18 — qcm + ordonnance TV
+  // Q18 — qcm + ordonnance TV (avec add)
   {
     type: 'qcm-ordonnance',
     question: 'Quels sont les problèmes de vue de ce client ?',
@@ -150,30 +173,22 @@ export const QUIZ_J1 = [
     },
     options: ['Myopie + Astigmatisme', 'Hypermétropie + Astigmatisme + Presbytie', 'Presbytie seule', 'Astigmatisme seul'],
     correct: 1,
+    hideOrdoLabels: true,
+    cylInParens: true,
   },
-  // Q19 — qcm + ordonnance TV (délai)
+  // Q19 — délai forte correction sphérique pure (10 min) — classement après Q19 (dernier)
   {
     type: 'qcm-ordonnance',
     question: 'Quel est le délai de fabrication pour ces lunettes ?',
     ordonnance: {
-      od: { sph: '-2,00', cyl: null, axe: null, add: null },
-      og: { sph: '-1,75', cyl: null, axe: null, add: null },
+      od: { sph: '-7,75', cyl: null, axe: null, add: null },
+      og: { sph: '-8,00', cyl: null, axe: null, add: null },
     },
     options: ['10 minutes', '9 jours', '24 heures', 'Impossible à fabriquer'],
     correct: 0,
+    hideOrdoLabels: true,
   },
-  // Q20 — qcm + ordonnance TV (délai, forte puissance) — classement après Q20
-  {
-    type: 'qcm-ordonnance',
-    question: 'Quel est le délai de fabrication pour ces lunettes ? (stocks jusqu\'à -8,00)',
-    ordonnance: {
-      od: { sph: '-7,75', cyl: '+1,50', axe: '90', add: null },
-      og: { sph: '-7,75', cyl: '+1,50', axe: '90', add: null },
-    },
-    options: ['10 minutes', '9 jours', 'Impossible à fabriquer', '24 heures'],
-    correct: 0,
-  },
-  // Q21 — vrai/faux
+  // Q20 — vrai/faux
   {
     question: 'Un enfant peut être presbyte.',
     options: ['VRAI', 'FAUX'],
