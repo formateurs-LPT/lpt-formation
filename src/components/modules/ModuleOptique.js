@@ -948,6 +948,8 @@ function EntrainementOralPage({ page, onBack, onPrev, onNext, isFirst, isLast, p
   const [answers, setAnswers] = useState([])
   const [vfCorrect, setVfCorrect] = useState(null)
   const [onlineCount, setOnlineCount] = useState(0)
+  const [validatedMap, setValidatedMap] = useState({})
+  const [resetting, setResetting] = useState(false)
   const code = getActiveSessionCode()
 
   useEffect(() => {
@@ -984,12 +986,16 @@ function EntrainementOralPage({ page, onBack, onPrev, onNext, isFirst, isLast, p
   const clearAnswers = async () => {
     await sbDelete('open_answers', `session_code=eq.${encodeURIComponent(code)}&page_id=eq.${encodeURIComponent(ENTRAINEMENT_PAGE_ID)}`)
     setAnswers([])
+    setValidatedMap({})
+    setResetting(false)
   }
 
   const selectQuestion = async (idx) => {
     await clearAnswers()
     setVfCorrect(null)
     setSelectedQ(idx)
+    setValidatedMap({})
+    setResetting(false)
     await setSharedState({ entrainement_q: idx, entrainement_vf_correct: null, entrainement_clear_ts: Date.now() })
   }
 
@@ -1004,6 +1010,30 @@ function EntrainementOralPage({ page, onBack, onPrev, onNext, isFirst, isLast, p
     const newVf = vfCorrect === answer ? null : answer
     setVfCorrect(newVf)
     await setSharedState({ entrainement_vf_correct: newVf })
+  }
+
+  const validateResponse = async (participantName, isCorrect) => {
+    await saveModuleQuizAnswer({
+      sessionCode: code,
+      moduleId: 'optique',
+      questionIdx: 100 + selectedQ,
+      collaborateur: participantName,
+      isCorrect,
+    })
+    const newMap = { ...validatedMap, [participantName]: isCorrect }
+    setValidatedMap(newMap)
+    if (answers.length > 0 && Object.keys(newMap).length >= answers.length) {
+      setResetting(true)
+      setTimeout(async () => {
+        await sbDelete('open_answers', `session_code=eq.${encodeURIComponent(code)}&page_id=eq.${encodeURIComponent(ENTRAINEMENT_PAGE_ID)}`)
+        setAnswers([])
+        setValidatedMap({})
+        setResetting(false)
+        setSelectedQ(null)
+        setVfCorrect(null)
+        await setSharedState({ entrainement_q: null, entrainement_vf_correct: null, entrainement_clear_ts: Date.now() })
+      }, 2000)
+    }
   }
 
   const currentQ = selectedQ !== null ? ENTRAINEMENT_QUESTIONS[selectedQ] : null
@@ -1104,33 +1134,82 @@ function EntrainementOralPage({ page, onBack, onPrev, onNext, isFirst, isLast, p
               )}
 
               {/* Indicateur "Tous ont répondu" */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                background: allAnswered ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${allAnswered ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                borderRadius: 12, padding: '10px 16px',
-              }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: allAnswered ? '#4ade80' : '#f59e0b', animation: allAnswered ? 'none' : 'optiqueHalo 1.2s ease-in-out infinite' }} />
-                <span style={{ fontSize: 14, fontWeight: 700, color: allAnswered ? '#4ade80' : 'rgba(255,255,255,0.6)' }}>
-                  {answers.length} réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''}
-                  {onlineCount > 0 && ` / ${onlineCount} participant${onlineCount > 1 ? 's' : ''}`}
-                  {allAnswered && ' — Tout le monde a répondu ✓'}
-                </span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{
+                  flex: 1, display: 'flex', alignItems: 'center', gap: 10,
+                  background: allAnswered ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${allAnswered ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: 12, padding: '10px 16px',
+                }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: allAnswered ? '#4ade80' : '#f59e0b', animation: allAnswered ? 'none' : 'optiqueHalo 1.2s ease-in-out infinite' }} />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: allAnswered ? '#4ade80' : 'rgba(255,255,255,0.6)' }}>
+                    {answers.length} réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''}
+                    {onlineCount > 0 && ` / ${onlineCount} participant${onlineCount > 1 ? 's' : ''}`}
+                    {allAnswered && ' — Tout le monde a répondu ✓'}
+                  </span>
+                </div>
+                {answers.length > 0 && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px',
+                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12,
+                    fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.55)',
+                  }}>
+                    <span style={{ color: '#4ade80' }}>{Object.keys(validatedMap).length}</span>
+                    <span>/</span>
+                    <span>{answers.length}</span>
+                    <span style={{ fontSize: 11, fontWeight: 500 }}>validées</span>
+                  </div>
+                )}
               </div>
+
+              {/* Bannière reset automatique */}
+              {resetting && (
+                <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 12, padding: '12px 16px', textAlign: 'center', fontSize: 14, fontWeight: 700, color: '#4ade80' }}>
+                  ✓ Toutes les réponses validées — Remise à zéro dans 2s…
+                </div>
+              )}
 
               {/* Liste des réponses */}
               <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {answers.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.25)', fontSize: 14 }}>En attente des réponses…</div>
-                ) : answers.map(row => (
-                  <div key={row.participant_name} style={{
-                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 12, padding: '12px 16px',
-                  }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>{row.participant_name}</div>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{row.answer}</div>
-                  </div>
-                ))}
+                ) : answers.map(row => {
+                  const status = validatedMap[row.participant_name]
+                  const isValidated = status !== undefined
+                  return (
+                    <div key={row.participant_name} style={{
+                      background: isValidated ? (status ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)') : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${isValidated ? (status ? 'rgba(34,197,94,0.35)' : 'rgba(239,68,68,0.35)') : 'rgba(255,255,255,0.1)'}`,
+                      borderRadius: 12, padding: '12px 16px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>{row.participant_name}</div>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{row.answer}</div>
+                        </div>
+                        {!isValidated ? (
+                          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                            <button onClick={() => validateResponse(row.participant_name, true)} style={{
+                              width: 36, height: 36, borderRadius: 10, border: '1.5px solid rgba(34,197,94,0.5)', background: 'rgba(34,197,94,0.12)',
+                              color: '#4ade80', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+                            }}>✓</button>
+                            <button onClick={() => validateResponse(row.participant_name, false)} style={{
+                              width: 36, height: 36, borderRadius: 10, border: '1.5px solid rgba(239,68,68,0.5)', background: 'rgba(239,68,68,0.12)',
+                              color: '#f87171', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+                            }}>✗</button>
+                          </div>
+                        ) : (
+                          <div style={{
+                            flexShrink: 0, padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                            background: status ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)',
+                            color: status ? '#4ade80' : '#f87171',
+                            border: `1px solid ${status ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
+                          }}>{status ? '+10 pts ✓' : '0 pt ✗'}</div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </>
           )}

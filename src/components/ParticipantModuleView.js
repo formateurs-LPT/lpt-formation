@@ -2234,7 +2234,7 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
 
           {/* Sphère */}
           <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>Sphère</div>
+            <div />
             <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
               <WheelPicker values={SPH_VALS} selectedIdx={idx.od.sph} onChange={v => setEye('od', 'sph', v)} showResult={showResult} isCorrect={results?.od?.sph} correctLabel={corrLabel.od.sph} />
             </div>
@@ -2245,7 +2245,7 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
 
           {/* Cylindre */}
           <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>Cylindre</div>
+            <div />
             <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
               <WheelPicker values={CYL_VALS} selectedIdx={idx.od.cyl} onChange={v => setEye('od', 'cyl', v)} showResult={showResult} isCorrect={results?.od?.cyl} correctLabel={corrLabel.od.cyl} />
             </div>
@@ -2256,7 +2256,7 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
 
           {/* Axe */}
           <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: '#555', paddingTop: 36 }}>Axe</div>
+            <div />
             <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
               <WheelPicker values={AXE_VALS} selectedIdx={idx.od.axe} onChange={v => setEye('od', 'axe', v)} showResult={showResult} isCorrect={results?.od?.axe} correctLabel={corrLabel.od.axe} circular />
             </div>
