@@ -396,6 +396,7 @@ export const ENTREPRISE_QUIZ = [
     type: 'text-open',
     question: 'En quelle année Lunettes Pour Tous a-t-il été fondé ?',
     hint: '2014',
+    autoCorrect: ['2014'],
   },
   {
     type: 'text-open',
@@ -406,16 +407,7 @@ export const ENTREPRISE_QUIZ = [
     type: 'text-open',
     question: 'Quelle est la promesse de Lunettes Pour Tous en matière de délai ?',
     hint: '10 minutes',
-  },
-  {
-    type: 'text-open',
-    question: 'Combien de magasins Lunettes Pour Tous compte-t-il à ce jour ?',
-    hint: '33 magasins France & Belgique',
-  },
-  {
-    type: 'text-open',
-    question: 'Combien de paires de lunettes Lunettes Pour Tous vend-il en moyenne par jour sur tout le réseau ?',
-    hint: '5 000 paires par jour',
+    autoCorrect: ['10'],
   },
   {
     type: 'text-open',
@@ -429,8 +421,8 @@ export const ENTREPRISE_QUIZ = [
   },
   {
     type: 'text-open',
-    question: 'Quel est le délai de fabrication pour un client d\'un magasin parisien Lunettes Pour Tous ?',
-    hint: 'Dans la journée (le jour même)',
+    question: 'Quel est le délai de fabrication pour un verre complexe (progressif) d\'un client parisien ?',
+    hint: 'Dans la journée — (Rappel : pour les unifocaux, le délai est de 10 min à Paris comme partout en France)',
   },
 ]
 

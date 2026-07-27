@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
@@ -1218,6 +1218,7 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
   const [openAnswers, setOpenAnswers] = useState([])
   const [validating, setValidating] = useState({})
   const [validated, setValidated] = useState({})
+  const autoValidatedRef = useRef(new Set())
 
   const q = ENTREPRISE_QUIZ[quizQ]
   const isLast = quizQ >= ENTREPRISE_QUIZ.length - 1
@@ -1227,9 +1228,32 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
     setOpenAnswers([])
     setValidating({})
     setValidated({})
+    autoValidatedRef.current = new Set()
+
+    const autoValidate = (rows) => {
+      const kws = q?.autoCorrect
+      if (!kws?.length) return
+      for (const row of rows) {
+        const name = row.participant_name
+        if (autoValidatedRef.current.has(name)) continue
+        const text = (row.answer || '').trim().toLowerCase()
+        if (kws.some(kw => text.includes(kw.toLowerCase()))) {
+          autoValidatedRef.current.add(name)
+          setValidating(v => ({ ...v, [name]: true }))
+          saveModuleQuizAnswer({ moduleId: 'entreprise', questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
+            .then(() => {
+              setValidated(v => ({ ...v, [name]: 'correct' }))
+              setValidating(v => ({ ...v, [name]: false }))
+            })
+            .catch(() => { autoValidatedRef.current.delete(name) })
+        }
+      }
+    }
+
     const poll = async () => {
       const rows = await fetchOpenAnswers(getActiveSessionCode(), pageId)
       setOpenAnswers(rows || [])
+      autoValidate(rows || [])
     }
     poll()
     const t = setInterval(poll, 2000)
