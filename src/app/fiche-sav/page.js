@@ -1,13 +1,11 @@
 'use client'
 import { useState, useEffect } from 'react'
 
-const BLUE    = '#0089ba'
 const BLUE_L  = '#00abe9'
 const GOLD    = '#f59e0b'
 const GREEN   = '#22c55e'
 const PURPLE  = '#a78bfa'
 const RED     = '#f87171'
-const RED_D   = '#dc2626'
 const BG      = '#03112a'
 const BG2     = '#0d1f3c'
 const CARD    = 'rgba(255,255,255,0.04)'
