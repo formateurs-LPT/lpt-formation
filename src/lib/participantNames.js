@@ -182,14 +182,19 @@ export async function renameParticipantIdentity(oldCanonical, newCanonical) {
 /**
  * Résout un nom saisi : liste RH (trainer_state) puis secours table participants.
  */
-const TEST_ACCOUNT_KEY = 'bahougne quentin'
+const TEST_ACCOUNT_KEYS = new Set([
+  'bahougne quentin',
+  'dupuy kevin',
+  'duchemin thomas',
+  'huchet nadege',
+])
 
 export async function resolveParticipantName(rawInput) {
   const raw = (rawInput || '').trim().replace(/\s+/g, ' ')
   if (!raw) return { ok: false, reason: 'empty' }
 
-  // Compte test : bypass liste RH, rejoint toutes les sessions
-  if (normalizeNameKey(raw) === TEST_ACCOUNT_KEY) {
+  // Comptes test : bypass liste RH, rejoignent toutes les sessions
+  if (TEST_ACCOUNT_KEYS.has(normalizeNameKey(raw))) {
     return { ok: true, canonicalName: raw, prenom: raw.split(' ')[0], entry: { _isTest: true } }
   }
 

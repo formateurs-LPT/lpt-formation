@@ -4478,7 +4478,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
       )}
       <DisconnectChip pName={pName} onDisconnect={onDisconnect} />
       {/* Bouton reset test — visible uniquement pour le compte test Quentin Bahougne */}
-      {pName?.toLowerCase().includes('bahougne') && (
+      {['bahougne', 'dupuy', 'duchemin', 'huchet'].some(n => pName?.toLowerCase().includes(n)) && (
         <TestResetButton pName={pName} />
       )}
       {/* Bulle question — discrète, visible sur toutes les pages de module */}
