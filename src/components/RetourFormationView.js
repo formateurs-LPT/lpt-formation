@@ -1283,12 +1283,339 @@ function CategorySelector({ entrees, onSelect }) {
   )
 }
 
+// ── Historique : auto-éval (lecture seule) ───────────────────────
+
+const HIST_STATUS_COLORS = { 'maitrise': '#16a34a', 'en-cours': '#d97706', 'notions': '#f97316', 'non-compris': '#dc2626' }
+const HIST_STATUS_LABELS = { 'maitrise': 'Maîtrisé', 'en-cours': 'En cours', 'notions': 'Quelques notions', 'non-compris': 'Pas compris' }
+const HIST_APPR_META = {
+  'tres-bon':       { label: '🌟 Très bon potentiel', color: '#4ade80' },
+  'accompagnement': { label: '🤝 Accompagnement',     color: '#fbbf24' },
+  'complique':      { label: '⚠️ Compliqué',          color: '#f87171' },
+}
+
+function AutoEvalReadOnly({ snap }) {
+  const ae     = snap?.auto_eval || {}
+  const themes = ae.themes_list || []
+  const asmts  = ae.theme_self_assessments || {}
+  const accomp = ae.accompagnement_themes || []
+
+  if (!themes.length && !ae.progres && !ae.rating) {
+    return (
+      <div style={{ textAlign: 'center', color: '#64748b', fontSize: 13, padding: '28px 0' }}>
+        Aucune auto-évaluation disponible pour ce formé.
+      </div>
+    )
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      {themes.length > 0 && (
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 10 }}>Auto-évaluation des thèmes</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {themes.map(t => {
+              const s = asmts[t]
+              return (
+                <div key={t} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                  <span style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 500 }}>{MODULE_DATA[t]?.label || t}</span>
+                  {s ? (
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, color: '#fff', background: HIST_STATUS_COLORS[s], whiteSpace: 'nowrap' }}>
+                      {HIST_STATUS_LABELS[s]}
+                    </span>
+                  ) : <span style={{ fontSize: 11, color: '#475569' }}>—</span>}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+      {accomp.length > 0 && (
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Accompagnement souhaité</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {accomp.map(t => (
+              <span key={t} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: 'rgba(0,171,233,0.12)', color: '#38bdf8', border: '1px solid rgba(0,171,233,0.25)' }}>
+                {MODULE_DATA[t]?.label || t}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {[
+        { key: 'progres',               label: 'Progrès perçus' },
+        { key: 'appreciation_formation', label: 'Appréciation de la formation' },
+        { key: 'suggestions',           label: 'Suggestions' },
+      ].map(({ key, label }) => ae[key] ? (
+        <div key={key}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>{label}</div>
+          <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.7, background: '#0f172a', borderRadius: 10, padding: '10px 14px', border: '1px solid #334155' }}>{ae[key]}</div>
+        </div>
+      ) : null)}
+      {ae.rating && (
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Avis formation</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 22 }}>{'⭐'.repeat(ae.rating)}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: ae.rating >= 4 ? '#4ade80' : ae.rating === 3 ? '#fbbf24' : '#f87171' }}>
+              {['','Insuffisant','Passable','Bien','Très bien','Excellent !'][ae.rating]}
+            </span>
+          </div>
+          {ae.rating_comment && (
+            <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.7, background: '#0f172a', borderRadius: 10, padding: '10px 14px', border: '1px solid #334155', fontStyle: 'italic', marginTop: 8 }}>
+              « {ae.rating_comment} »
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Historique : fiche formé (retour + auto-éval) ─────────────────
+
+function HistoriqueFiche({ record, autoEvalSnap, onBack }) {
+  const [tab, setTab] = useState('retour')
+  const snap     = record.stats_snapshot || {}
+  const magasin  = snap.magasin || '—'
+  const catKey   = classifyMagasin(magasin) || 'province'
+  const hasAE    = !!(autoEvalSnap?.auto_eval)
+
+  const reportData = {
+    collaborateur:      record.collaborateur,
+    trainerName:        record.trainer_name,
+    weekDate:           record.week_date,
+    categoryKey:        catKey,
+    assessments:        snap.theme_assessments     || {},
+    attitudeStatus:     snap.attitude_status       || null,
+    attitudeNote:       snap.attitude_note         || '',
+    comprehensionStatus: snap.comprehension_status || null,
+    comprehensionNote:  snap.comprehension_note    || '',
+    appreciation:       snap.appreciation          || null,
+    commentaireLibre:   snap.commentaire_libre     || '',
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <button className="detail-back" onClick={onBack}>← Retour</button>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#f1f5f9' }}>{record.collaborateur}</div>
+          <div style={{ fontSize: 12, color: '#64748b' }}>{magasin} · Formation du {formatDate(record.week_date)}</div>
+        </div>
+      </div>
+
+      {hasAE && (
+        <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#1e293b', borderRadius: 12, padding: 4 }}>
+          {[['retour', '📝 Retour formateur'], ['autoval', '🙋 Auto-évaluation']].map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)} style={{
+              flex: 1, padding: '9px 16px', borderRadius: 9, border: 'none',
+              fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              background: tab === key ? '#0f172a' : 'transparent',
+              color: tab === key ? '#f1f5f9' : '#64748b',
+              transition: 'all .15s',
+            }}>{label}</button>
+          ))}
+        </div>
+      )}
+
+      {tab === 'retour' ? (
+        <CompteRenduManager data={reportData} />
+      ) : (
+        <div style={{ background: '#1e293b', borderRadius: 16, padding: '20px 22px', border: '1px solid #334155' }}>
+          <AutoEvalReadOnly snap={autoEvalSnap} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Historique : liste des formés d'un magasin ───────────────────
+
+function HistoriqueCollabList({ records, magasin, autoEvals, onSelect, onBack }) {
+  const sorted = [...records].sort((a, b) => (b.week_date || '').localeCompare(a.week_date || ''))
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <button className="detail-back" onClick={onBack}>← Magasins</button>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#f1f5f9' }}>{magasin}</div>
+          <div style={{ fontSize: 12, color: '#64748b' }}>{records.length} formé{records.length !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {sorted.map(r => {
+          const appr    = r.stats_snapshot?.appreciation
+          const apprMeta = HIST_APPR_META[appr]
+          const hasAE   = !!autoEvals[r.collaborateur]?.auto_eval
+          return (
+            <button key={r.collaborateur + r.week_date} onClick={() => onSelect(r)} style={{
+              background: '#1e293b', border: '1px solid #334155', borderRadius: 14,
+              padding: '14px 18px', cursor: 'pointer', textAlign: 'left',
+              display: 'flex', alignItems: 'center', gap: 14, width: '100%', fontFamily: 'inherit',
+            }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#475569'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#334155'}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#0f172a', border: '2px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#94a3b8', flexShrink: 0 }}>
+                {r.collaborateur?.charAt(0)?.toUpperCase()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9', marginBottom: 2 }}>{r.collaborateur}</div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>Formation du {formatDate(r.week_date)}</div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                {apprMeta && <span style={{ fontSize: 11, fontWeight: 700, color: apprMeta.color }}>{apprMeta.label}</span>}
+                {hasAE && <span style={{ fontSize: 10, color: '#94a3b8', background: '#0f172a', borderRadius: 8, padding: '2px 8px' }}>Auto-éval ✓</span>}
+              </div>
+              <span style={{ color: '#475569', fontSize: 18 }}>›</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Historique : vue principale ────────────────────────────────────
+
+function HistoriqueView({ trainerName }) {
+  const [loading, setLoading]                   = useState(true)
+  const [records, setRecords]                   = useState([])   // plus récent par formé
+  const [autoEvals, setAutoEvals]               = useState({})   // collab → snap
+  const [search, setSearch]                     = useState('')
+  const [selectedMagasin, setSelectedMagasin]   = useState(null)
+  const [selectedRecord, setSelectedRecord]     = useState(null)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [recs, evals] = await Promise.all([
+          sbSelect('formation_reports', `trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc`),
+          sbSelect('formation_reports', `trainer_name=eq.__auto_eval__&order=updated_at.desc`),
+        ])
+        // Garde le plus récent par formé
+        const seen = new Set()
+        setRecords((recs || []).filter(r => { if (seen.has(r.collaborateur)) return false; seen.add(r.collaborateur); return true }))
+        // Plus récent auto-eval par formé
+        const em = {}
+        for (const r of (evals || [])) if (!em[r.collaborateur]) em[r.collaborateur] = r.stats_snapshot
+        setAutoEvals(em)
+      } catch (e) { console.error('[Historique] load', e) }
+      finally { setLoading(false) }
+    }
+    load()
+  }, [trainerName])
+
+  const byMagasin = useMemo(() => {
+    const map = {}
+    for (const r of records) {
+      const m = r.stats_snapshot?.magasin || 'Magasin non renseigné'
+      if (!map[m]) map[m] = []
+      map[m].push(r)
+    }
+    return map
+  }, [records])
+
+  const searchResults = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return []
+    return records.filter(r => r.collaborateur.toLowerCase().includes(q))
+  }, [search, records])
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 48, color: '#94a3b8', fontSize: 14 }}>Chargement de l'historique…</div>
+
+  if (selectedRecord) {
+    return <HistoriqueFiche record={selectedRecord} autoEvalSnap={autoEvals[selectedRecord.collaborateur]} onBack={() => setSelectedRecord(null)} />
+  }
+
+  if (selectedMagasin && !search) {
+    return <HistoriqueCollabList records={byMagasin[selectedMagasin] || []} magasin={selectedMagasin} autoEvals={autoEvals} onSelect={r => setSelectedRecord(r)} onBack={() => setSelectedMagasin(null)} />
+  }
+
+  const magasins = Object.entries(byMagasin).sort((a, b) => b[1].length - a[1].length)
+
+  return (
+    <div>
+      {/* Recherche */}
+      <div style={{ marginBottom: 24, position: 'relative' }}>
+        <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: 16, pointerEvents: 'none' }}>🔍</span>
+        <input
+          type="text" value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Rechercher un formé par nom ou prénom…"
+          style={{ width: '100%', boxSizing: 'border-box', background: '#1e293b', border: '1px solid #334155', borderRadius: 12, padding: '12px 42px 12px 42px', fontSize: 14, color: '#f1f5f9', fontFamily: 'inherit', outline: 'none' }}
+          onFocus={e => e.target.style.borderColor = '#475569'}
+          onBlur={e => e.target.style.borderColor = '#334155'}
+        />
+        {search && (
+          <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 4 }}>×</button>
+        )}
+      </div>
+
+      {search ? (
+        /* Résultats de recherche */
+        <div>
+          <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>
+            {searchResults.length} résultat{searchResults.length !== 1 ? 's' : ''} pour « {search} »
+          </div>
+          {searchResults.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: '#475569', fontSize: 14 }}>Aucun formé trouvé.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {searchResults.map(r => {
+                const apprMeta = HIST_APPR_META[r.stats_snapshot?.appreciation]
+                return (
+                  <button key={r.collaborateur} onClick={() => setSelectedRecord(r)} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: '14px 18px', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 14, width: '100%', fontFamily: 'inherit' }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = '#475569'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = '#334155'}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#0f172a', border: '2px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#94a3b8', flexShrink: 0 }}>{r.collaborateur?.charAt(0)?.toUpperCase()}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9', marginBottom: 2 }}>{r.collaborateur}</div>
+                      <div style={{ fontSize: 12, color: '#64748b' }}>{r.stats_snapshot?.magasin || '—'} · Formation du {formatDate(r.week_date)}</div>
+                    </div>
+                    {apprMeta && <span style={{ fontSize: 11, fontWeight: 700, color: apprMeta.color, flexShrink: 0 }}>{apprMeta.label}</span>}
+                    <span style={{ color: '#475569', fontSize: 18 }}>›</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Grille des magasins */
+        magasins.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '48px 0', color: '#475569', fontSize: 14 }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>📂</div>
+            <div style={{ fontWeight: 600, color: '#64748b', marginBottom: 6 }}>Aucun historique disponible</div>
+            <div style={{ fontSize: 12 }}>Les retours de formation apparaîtront ici au fil des semaines.</div>
+          </div>
+        ) : (
+          <>
+            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>
+              {records.length} formé{records.length !== 1 ? 's' : ''} · {magasins.length} magasin{magasins.length !== 1 ? 's' : ''}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+              {magasins.map(([mag, collabs]) => (
+                <button key={mag} onClick={() => setSelectedMagasin(mag)} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 16, padding: '18px 20px', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', transition: 'all .15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#475569'; e.currentTarget.style.background = '#243249' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.background = '#1e293b' }}>
+                  <div style={{ fontSize: 24, marginBottom: 8 }}>🏪</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#f1f5f9', marginBottom: 4, lineHeight: 1.3 }}>{mag}</div>
+                  <div style={{ fontSize: 12, color: '#64748b' }}>{collabs.length} formé{collabs.length !== 1 ? 's' : ''}</div>
+                </button>
+              ))}
+            </div>
+          </>
+        )
+      )}
+    </div>
+  )
+}
+
 // ── Export principal ──────────────────────────────────────────────
 
 export default function RetourFormationView({ onBack, pName }) {
   const [entrees, setEntrees]   = useState([])
   const [category, setCategory] = useState(null)
   const [loading, setLoading]   = useState(true)
+  const [tab, setTab]           = useState('semaine') // 'semaine' | 'historique'
   const trainerName = pName || 'Formateur'
 
   useEffect(() => {
@@ -1315,27 +1642,37 @@ export default function RetourFormationView({ onBack, pName }) {
         borderBottom: '1px solid #334155',
         display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0,
       }}>
-        {!category && (
+        {(tab === 'semaine' ? !category : true) && (
           <button className="detail-back" onClick={onBack}>← Tableau de bord</button>
         )}
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 800, color: '#f1f5f9' }}>📝 Retour de formation</div>
           <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-            Fiches de suivi · Semaine du {getWeekDate()}
+            {tab === 'semaine' ? `Fiches de suivi · Semaine du ${getWeekDate()}` : 'Historique des formations'}
           </div>
         </div>
       </div>
 
+      {/* Onglets */}
+      <div style={{ display: 'flex', background: '#1e293b', borderBottom: '1px solid #334155', flexShrink: 0, padding: '0 24px' }}>
+        {[['semaine', '📋 Semaine en cours'], ['historique', '📚 Historique']].map(([key, label]) => (
+          <button key={key} onClick={() => { setTab(key); if (key === 'semaine') setCategory(null) }} style={{
+            padding: '10px 20px', background: 'none', border: 'none',
+            borderBottom: `2px solid ${tab === key ? '#00abe9' : 'transparent'}`,
+            color: tab === key ? '#00abe9' : '#64748b',
+            fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            transition: 'all .15s',
+          }}>{label}</button>
+        ))}
+      </div>
+
       <div style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
-        {loading ? (
+        {tab === 'historique' ? (
+          <HistoriqueView trainerName={trainerName} />
+        ) : loading ? (
           <div style={{ textAlign: 'center', padding: 48, color: '#94a3b8', fontSize: 14 }}>Chargement…</div>
         ) : category ? (
-          <CollabListView
-            entrees={entrees}
-            categoryKey={category}
-            trainerName={trainerName}
-            onBack={() => setCategory(null)}
-          />
+          <CollabListView entrees={entrees} categoryKey={category} trainerName={trainerName} onBack={() => setCategory(null)} />
         ) : (
           <CategorySelector entrees={entrees} onSelect={setCategory} />
         )}
