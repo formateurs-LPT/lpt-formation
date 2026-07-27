@@ -937,7 +937,7 @@ export const RAZ_PAGES = [
     points: [
       { emoji: '📏', titre: 'Unifocaux — Centre optique au frontofocométre', desc: "Le centre optique doit se trouver devant la pupille du client quand il porte la paire" },
       { emoji: '🔭', titre: 'Progressifs — Gravures + marqueur + ditest', desc: 'La croix obtenue = point de vision de loin → doit être juste devant la pupille' },
-      { emoji: '❌', titre: 'Si centrage incorrect → passer à l'ajustement', desc: "Un mauvais centrage peut provoquer une gêne même avec une correction parfaite" },
+      { emoji: '❌', titre: "Si centrage incorrect → passer à l'ajustement", desc: "Un mauvais centrage peut provoquer une gêne même avec une correction parfaite" },
       { emoji: '✅', titre: 'Si PDM correctes → étape suivante (ordo)', desc: "Les mesures sont bonnes, le problème vient peut-être de l'ordonnance elle-même" },
     ],
     notesFormateur: [
