@@ -7,8 +7,6 @@ import { classifyMagasin } from '@/lib/formationCategories'
 const THEMES_FRANCE   = ['entreprise','optique','types-verres','verre-progressif','montures','trame-accueil','offres','pdm','parcours-rembourses','remboursement-france','lpt-sante']
 const THEMES_BELGIQUE = ['entreprise','optique','types-verres','verre-progressif','montures','trame-accueil','offres','pdm','mutuelles-inami']
 
-const STAR_LABELS = ['', 'Difficile', 'Quelques notions', 'Correct', 'Bien maîtrisé', 'Maîtrisé !']
-const STAR_COLORS = ['', '#dc2626', '#f97316', '#d97706', '#16a34a', '#22c55e']
 
 function getWeekDate() {
   const d = new Date()
@@ -189,11 +187,6 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode, o
                         >⭐</button>
                       ))}
                     </div>
-                    {current > 0 && (
-                      <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, color: STAR_COLORS[current], marginTop: 8 }}>
-                        {STAR_LABELS[current]}
-                      </div>
-                    )}
                   </div>
                 )
               })}
