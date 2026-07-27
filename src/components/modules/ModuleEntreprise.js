@@ -135,12 +135,12 @@ function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast,
 
         {isLast ? (
           <button onClick={onTerminate} style={{
-            background: 'linear-gradient(135deg, #16a34a, #22c55e)',
+            background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
             border: 'none', color: '#fff',
             padding: '9px 22px', borderRadius: 10, fontSize: 13, fontWeight: 700,
             cursor: 'pointer', fontFamily: 'inherit',
-            boxShadow: '0 4px 16px rgba(34,197,94,0.4)',
-          }}>✓ Terminer le module</button>
+            boxShadow: '0 4px 16px rgba(124,58,237,0.45)',
+          }}>▶ Démarrer le quiz</button>
         ) : (
           <button onClick={onNext} style={{
             background: 'linear-gradient(135deg, #0089ba, #00abe9)',
@@ -706,6 +706,44 @@ function LaboProgressifPage({ navProps }) {
   )
 }
 
+// ── Page de transition vers le quiz ──────────────────────────────
+
+function QuizTransitionPage({ navProps }) {
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a0a3d 60%, #0d0a2e 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', paddingBottom: 80 }}>
+      {/* Halo décoratif */}
+      <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      {/* Icône */}
+      <div style={{ fontSize: 64, marginBottom: 32, position: 'relative', zIndex: 1 }}>🧠</div>
+      {/* Titre */}
+      <h1 style={{ fontSize: 38, fontWeight: 900, color: '#fff', textAlign: 'center', lineHeight: 1.2, maxWidth: 600, marginBottom: 16, position: 'relative', zIndex: 1 }}>
+        Des questions avant<br />de passer au quiz ?
+      </h1>
+      <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: 56, position: 'relative', zIndex: 1 }}>
+        Le formateur peut répondre à vos dernières questions.
+      </p>
+      {/* Bouton Démarrer */}
+      <button
+        onClick={navProps.onTerminate}
+        style={{
+          position: 'relative', zIndex: 1,
+          background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
+          border: 'none', color: '#fff',
+          padding: '16px 48px', borderRadius: 16, fontSize: 18, fontWeight: 800,
+          cursor: 'pointer', fontFamily: 'inherit',
+          boxShadow: '0 8px 32px rgba(124,58,237,0.5)',
+          transition: 'transform .15s, box-shadow .15s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(124,58,237,0.65)' }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(124,58,237,0.5)' }}
+      >
+        ▶ Démarrer le quiz
+      </button>
+      <TrainerNav {...navProps} />
+    </div>
+  )
+}
+
 // ── Rendu de page ─────────────────────────────────────────────────
 
 function EntreprisePage({ page, navProps }) {
@@ -753,6 +791,7 @@ function EntreprisePage({ page, navProps }) {
 
   // ── LABO PROGRESSIF ────────────────────────────────────────────
   if (page.type === 'labo-progressif') return <LaboProgressifPage navProps={navProps} />
+  if (page.type === 'quiz-transition') return <QuizTransitionPage navProps={navProps} />
 
   // ── CHIFFRES CLÉS ──────────────────────────────────────────────
 

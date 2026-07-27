@@ -5761,6 +5761,18 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
 
   // Entreprise module types — tous dispatchés pour éviter le VerreAnime
   if (page.type === 'labo-progressif') return <TVLaboProgressif page={page} pageIndex={pageIndex} total={total} revealLabo={revealLabo} />
+  if (page.type === 'quiz-transition') return (
+    <div style={{ height: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a0a3d 60%, #0d0a2e 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ fontSize: 80, marginBottom: 40, position: 'relative', zIndex: 1 }}>🧠</div>
+      <h1 style={{ fontSize: 56, fontWeight: 900, color: '#fff', textAlign: 'center', lineHeight: 1.2, maxWidth: 800, marginBottom: 20, position: 'relative', zIndex: 1 }}>
+        Des questions avant<br />de passer au quiz ?
+      </h1>
+      <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.4)', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+        Le formateur peut répondre à vos dernières questions.
+      </p>
+    </div>
+  )
   if (page.type === 'freins')     return <TVEntrepriseFreins   page={page} pageIndex={pageIndex} total={total} freinsResponses={freinsResponses} />
   if (page.type === 'prix')       return <TVEntreprisePrix     page={page} pageIndex={pageIndex} total={total} prixResponses={prixResponses} revealPrix={revealPrix} />
   if (page.type === 'video-lpt')  return <TVVideoLPT audioUnlocked={audioUnlocked} />

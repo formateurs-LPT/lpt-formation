@@ -493,6 +493,12 @@ export const ENTREPRISE_PAGES = [
     sousTitre: 'Une exclusivité mondiale — Paris Châtelet',
     color: '#7c3aed',
   },
+  {
+    id: 'quiz-transition',
+    type: 'quiz-transition',
+    titre: 'Des questions avant de passer au quiz ?',
+    color: '#7c3aed',
+  },
 ]
 
 export const PROGRESSIF_PAGES = [
