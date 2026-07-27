@@ -4228,6 +4228,81 @@ function TVMiniJeuGame({ mjPhase, vendeur, client, theme }) {
   )
 }
 
+function TVMiniJeuDebrief({ sharedState }) {
+  const vendeur = sharedState?.minijeu_vendeur
+  const client  = sharedState?.minijeu_client
+  const theme   = sharedState?.minijeu_theme
+
+  const obs = Object.entries(sharedState || {})
+    .filter(([k, v]) => k.startsWith('mj_obs__') && typeof v === 'string' && v)
+    .sort(([a], [b]) => Number(a.split('__')[1]) - Number(b.split('__')[1]))
+    .map(([, v]) => v)
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'radial-gradient(ellipse at 30% 20%, #1a0a3a 0%, #03112a 50%, #0a0a1a 100%)',
+      padding: '60px 80px',
+      display: 'flex', flexDirection: 'column', gap: 36,
+    }}>
+      {/* Header */}
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 16 }}>
+          Mini Jeux · Accueil moi si tu peux 🎰 · Débrief collectif
+        </div>
+        {vendeur && client && (
+          <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 10, padding: '8px 20px' }}>
+              <span style={{ fontSize: 11, color: '#8b5cf6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginRight: 10 }}>Vendeur</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{vendeur}</span>
+            </div>
+            <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.15)' }}>↔</div>
+            <div style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, padding: '8px 20px' }}>
+              <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginRight: 10 }}>Client</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{client}</span>
+            </div>
+            {theme && (
+              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', fontStyle: 'italic', flex: 1, minWidth: 200 }}>
+                « {theme} »
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Observations */}
+      {obs.length === 0 ? (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.25)', animation: 'mjPulse 1.5s ease-in-out infinite' }}>
+            En attente des remarques des observateurs…
+          </div>
+        </div>
+      ) : (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 2 }}>
+            {obs.length} remarque{obs.length > 1 ? 's' : ''} des observateurs
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
+            {obs.map((text, i) => (
+              <div
+                key={i}
+                style={{
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.11)',
+                  borderRadius: 16, padding: '22px 26px',
+                  animation: 'mjFadeUp 0.4s ease both',
+                  animationDelay: `${i * 0.07}s`,
+                }}
+              >
+                <div style={{ fontSize: 18, color: '#fff', lineHeight: 1.65 }}>{text}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── TV Content Page (no controls, no avatar) ──────────────────────
 // ── TV Trame d'accueil ────────────────────────────────────────────
 function TVTrameAccueil({ step }) {
@@ -8121,6 +8196,16 @@ export default function TVView() {
           <style>{STYLES}</style>
           <FullscreenButton />
           <TVMiniJeuRules />
+          {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+        </>
+      )
+    }
+    if (mjPhase === 'debrief') {
+      return (
+        <>
+          <style>{STYLES}</style>
+          <FullscreenButton />
+          <TVMiniJeuDebrief sharedState={sharedState} />
           {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
         </>
       )

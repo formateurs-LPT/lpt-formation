@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import Image from 'next/image'
-import { sbSelect, getActiveSessionCode, setSharedState } from '@/lib/supabase'
+import { sbSelect, getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
 
 const THEMES = [
   'Un client qui veut du progressif mais n\'en a jamais porté',
@@ -198,7 +198,7 @@ function ThemeReel({ reelState, result, large = false }) {
 }
 
 // ── Roulette view (formateur + TV partagent la même logique) ───────
-export function RouletteView({ participants, phase, vendeur, client, theme, reel1State, reel2State, reelTState, onLaunch, onReset, isTV = false }) {
+export function RouletteView({ participants, phase, vendeur, client, theme, reel1State, reel2State, reelTState, onLaunch, onDebrief, onTerminer, isTV = false }) {
   const isRunning = phase === 'spinning' || phase === 'vendeur' || phase === 'client'
 
   return (
@@ -237,14 +237,25 @@ export function RouletteView({ participants, phase, vendeur, client, theme, reel
 
       {/* Boutons (formateur seulement) */}
       {!isTV && (
-        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           {phase === 'revealed' && (
-            <button onClick={onReset} style={{
+            <button onClick={onDebrief} style={{
+              background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+              border: 'none', color: '#fff', padding: '13px 28px', borderRadius: 13,
+              fontSize: 15, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 4px 20px rgba(124,58,237,0.45)',
+            }}>
+              🎭 Lancer le débrief
+            </button>
+          )}
+          {phase === 'debrief' && (
+            <button onClick={onTerminer} style={{
               background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)',
               color: 'rgba(255,255,255,0.65)', padding: '13px 26px', borderRadius: 13,
               fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
             }}>
-              ↺ Relancer
+              ↺ Nouveau tour
             </button>
           )}
           {phase === 'idle' && (
@@ -266,11 +277,17 @@ export function RouletteView({ participants, phase, vendeur, client, theme, reel
               🎰 En cours…
             </div>
           )}
+          </div>
+          {phase === 'debrief' && (
+            <div style={{ padding: '10px 20px', background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 10, fontSize: 13, color: '#a78bfa', fontWeight: 600 }}>
+              📺 Les remarques des observateurs s'affichent sur le diffuseur
+            </div>
+          )}
         </div>
       )}
 
-      {/* Résumé (formateur, après reveal) */}
-      {!isTV && phase === 'revealed' && vendeur && client && theme && (
+      {/* Résumé (formateur, après reveal ou débrief) */}
+      {!isTV && (phase === 'revealed' || phase === 'debrief') && vendeur && client && theme && (
         <div style={{
           width: '100%', maxWidth: 580,
           background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
@@ -559,13 +576,23 @@ export default function ModuleMiniJeux({ pName, onBack }) {
     }, 1500)
   }, [participants, excluded, stopReel])
 
-  const handleReset = async () => {
+  const handleDebrief = async () => {
+    setPhase('debrief')
+    await setSharedState({ minijeu_phase: 'debrief' }).catch(() => {})
+  }
+
+  const handleTerminer = useCallback(async () => {
+    try {
+      const state = await getSharedState()
+      const patch = { minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null, minijeu_phase: 'game_ready' }
+      Object.keys(state || {}).filter(k => k.startsWith('mj_obs__')).forEach(k => { patch[k] = null })
+      await setSharedState(patch)
+    } catch {}
     setPhase('idle')
     setReel1('idle'); setReel2('idle'); setReelT('idle')
     setVendeur(null); setClient(null); setTheme(null)
-    await setSharedState({ minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null }).catch(() => {})
     setTimeout(() => handleLaunch(), 80)
-  }
+  }, [handleLaunch])
 
   const handleBack = async () => {
     if (view === 'game') {
@@ -625,7 +652,8 @@ export default function ModuleMiniJeux({ pName, onBack }) {
               reel2State={reel2State}
               reelTState={reelTState}
               onLaunch={handleLaunch}
-              onReset={handleReset}
+              onDebrief={handleDebrief}
+              onTerminer={handleTerminer}
             />
           )}
         </div>
