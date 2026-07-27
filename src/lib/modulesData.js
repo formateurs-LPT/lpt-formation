@@ -424,6 +424,7 @@ export const ENTREPRISE_QUIZ = [
     type: 'text-open',
     question: 'Quel est le délai de fabrication pour un verre complexe (progressif) d\'un client parisien ?',
     hint: 'Dans la journée — (Rappel : pour les unifocaux, le délai est de 10 min à Paris comme partout en France)',
+    autoCorrect: ['journée', 'journee', 'jour même', 'jour meme'],
   },
 ]
 
