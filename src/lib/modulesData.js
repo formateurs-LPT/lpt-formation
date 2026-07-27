@@ -437,6 +437,7 @@ export const ENTREPRISE_QUIZ = [
     type: 'text-open',
     question: 'Citez les deux fondateurs de Lunettes Pour Tous.',
     hint: 'Paul Morlet & Xavier Niel',
+    autoCorrectAll: ['morlet', 'niel'],
   },
   {
     type: 'text-open',

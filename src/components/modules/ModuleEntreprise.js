@@ -1270,13 +1270,16 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
     autoValidatedRef.current = new Set()
 
     const autoValidate = (deduped) => {
-      const kws = q?.autoCorrect
-      if (!kws?.length) return
+      const kws    = q?.autoCorrect    // OR : n'importe quel mot suffit
+      const kwsAll = q?.autoCorrectAll // AND : tous les mots doivent être présents
+      if (!kws?.length && !kwsAll?.length) return
       for (const row of deduped) {
         const name = row.participant_name
         if (autoValidatedRef.current.has(name)) continue
         const text = (row.answer || '').trim().toLowerCase()
-        if (kws.some(kw => text.includes(kw.toLowerCase()))) {
+        const matchOr  = kws?.length    && kws.some(kw  => text.includes(kw.toLowerCase()))
+        const matchAnd = kwsAll?.length && kwsAll.every(kw => text.includes(kw.toLowerCase()))
+        if (matchOr || matchAnd) {
           autoValidatedRef.current.add(name)
           setValidating(v => ({ ...v, [name]: true }))
           saveModuleQuizAnswer({ moduleId: 'entreprise', questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
