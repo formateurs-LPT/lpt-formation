@@ -1063,6 +1063,82 @@ export const RAZ_PAGES = [
 
 export const RAZ_QUIZ = []
 
+export const TIERS_PAYANT_QUIZ = [
+  {
+    type: 'text-open',
+    question: 'Quels sont les documents qui donnent droit au remboursement ?',
+    hint: 'Carte Vitale + Mutuelle + Ordonnance valide',
+  },
+  {
+    question: 'Quelle est la durée de validité d\'une ordonnance pour une personne de 42 ans ?',
+    options: ['3 ans', '5 ans', '10 ans'],
+    correct: 1,
+  },
+  {
+    question: 'Quelle est la durée de validité d\'une ordonnance pour un enfant de 16 ans ?',
+    options: ['1 an', '2 ans', '5 ans'],
+    correct: 0,
+  },
+  {
+    question: 'Un enfant de 12 ans accompagné de son père souhaite faire un examen de vue chez l\'opticien. Est-ce réalisable ?',
+    options: ['Oui', 'Non'],
+    correct: 1,
+  },
+  {
+    question: 'Amelipro doit être vérifié à chaque vente réalisée avec un remboursement.',
+    options: ['Vrai', 'Faux'],
+    correct: 0,
+  },
+  {
+    question: 'Le forfait optique se renouvelle tous les combien de temps ?',
+    options: ['1 an', '2 ans', '3 ans'],
+    correct: 1,
+  },
+  {
+    type: 'text-open',
+    question: 'Que veut dire « RA » ?',
+    hint: 'Renouvellement Anticipé',
+    autoCorrect: ['renouvellement anticipé', 'renouvellement anticipe', 'renouvellement anticipé'],
+  },
+  {
+    type: 'text-open',
+    question: 'Sous quelles conditions puis-je bénéficier d\'un RA ?',
+    hint: '1 an + 1 jour ET changement de correction ≥ 0,50 δ',
+  },
+  {
+    type: 'text-open',
+    question: 'Avec quelle plateforme pouvons-nous regarder les droits de consommation optique ?',
+    hint: 'Amelipro',
+    autoCorrect: ['amelipro'],
+  },
+  {
+    type: 'text-open',
+    question: 'Sur quel site faisons-nous passer nos PEC (Prises En Charge) ?',
+    hint: 'lyleoo',
+    autoCorrect: ['lyleoo'],
+  },
+  {
+    type: 'text-open',
+    question: 'Qu\'est-ce que signifie le tiers payant ?',
+    hint: 'Le client n\'avance pas les frais : LPT est remboursé directement par la Sécurité Sociale et la mutuelle',
+  },
+  {
+    type: 'text-open',
+    question: 'À quoi sert lyleoo ?',
+    hint: 'Plateforme de gestion des Prises En Charge (PEC) avec les mutuelles',
+  },
+  {
+    type: 'text-open',
+    question: 'Quels sont nos parcours remboursables ?',
+    hint: 'Le Suprême · Le 1=1 · 100% Santé',
+  },
+  {
+    question: 'Il y a un reste à charge chez LPT ?',
+    options: ['Vrai', 'Faux'],
+    correct: 1,
+  },
+]
+
 export const MONTURES_QUIZ = [
   { type: 'text-open', question: 'Quelle est l\'origine de la matière première de l\'acétate de cellulose ?', hint: 'Fibre de bois ou fibre de coton (pas du pétrole)' },
   { type: 'text-open', question: 'Comment ajuste-t-on une monture en acétate ? Quel élément ne peut PAS être ajusté ?', hint: 'À chaud (chaleur sèche) — le pont ne peut pas être ajusté en largeur' },
@@ -1104,7 +1180,7 @@ export const MODULE_DATA = {
     { id: 'parcours-offres', type: 'parcours-rembourses-offres', titre: 'Les offres remboursées' },
     { id: 'parcours-tiers-payant', type: 'parcours-tiers-payant', titre: 'C\'est quoi le tiers payant pour vous ?' },
     { id: 'tiers-payant-explication', type: 'tiers-payant-explication', titre: 'Comment fonctionne le tiers payant ?' },
-  ], quiz: [], label: 'Les parcours remboursés', sub: 'Le Suprême · Le 1=1 · 100% Santé' },
+  ], quiz: TIERS_PAYANT_QUIZ, label: 'Les parcours remboursés', sub: 'Le Suprême · Le 1=1 · 100% Santé · Tiers payant' },
   'lpt-sante': { pages: [
     { id: 'lpts-q1', type: 'lpt-sante-intro', titre: 'À quoi ça sert ?' },
     { id: 'lpts-explication', type: 'lpt-sante-explication', titre: 'Comment ça marche ?' },
