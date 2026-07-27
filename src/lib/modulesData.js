@@ -8,36 +8,44 @@ export const TYPES_VERRES_QUIZ = [
     type: 'text-open',
     question: 'Quel est le délai de fabrication du verre unifocal ?',
     hint: '10 minutes',
+    autoCorrect: ['10'],
   },
   {
     type: 'text-open',
     question: 'Comment s\'appelle le verre progressif de Lunettes Pour Tous ?',
     hint: 'Pulsar Next',
+    autoCorrect: ['pulsar'],
   },
   {
     type: 'text-open',
-    question: 'Quel est le fournisseur du verre progressif Pulsar Next ?',
+    question: 'Pour les verres progressifs non fabriqués à Paris, d\'où viennent-ils ? (Pays et nom du fournisseur)',
     hint: 'Rodenstock (Allemagne)',
+    autoCorrectAll: ['rodenstock', 'allemagne'],
   },
   {
     type: 'text-open',
     question: 'Quel est le délai de fabrication pour un verre progressif Rodenstock ?',
     hint: '9 jours',
+    autoCorrect: ['9'],
   },
   {
     type: 'text-open',
-    question: 'Quel est le délai de fabrication pour un verre progressif fabriqué dans notre laboratoire parisien ?',
-    hint: '24 à 48 heures',
+    question: 'Quel est le délai de fabrication pour un verre progressif fabriqué dans notre laboratoire parisien ? Pour les magasins parisiens ? Pour tous les autres magasins ?',
+    hint: 'Dans la journée pour l\'IDF — 24h à 48h pour les magasins hors IDF',
+    autoCorrect: ['24', '48'],
   },
   {
     type: 'text-open',
     question: 'Combien de zones de vision a un verre progressif ? Citez-les.',
     hint: '3 zones : loin (haut) · intermédiaire (centre) · près (bas)',
+    autoCorrect: ['3'],
   },
   {
     type: 'text-open',
     question: 'Pour quel type de client propose-t-on un verre progressif ?',
     hint: 'Les presbytes — correction de loin ET de près avec une seule paire de lunettes',
+    autoCorrect: ['presbyte'],
+    autoCorrectNot: ['non presbyte', 'pas presbyte'],
   },
 ]
 
@@ -542,7 +550,7 @@ export const ENTREPRISE_PAGES = [
 export const PROGRESSIF_PAGES = [
   {
     id: 'anatomie',
-    type: 'cours',
+    type: 'progressif-anatomie',
     titre: 'Anatomie du verre progressif',
     sousTitre: 'Trois zones actives · Aberrations latérales',
     image: '/assets/verre-prog.png',
@@ -551,6 +559,7 @@ export const PROGRESSIF_PAGES = [
       { emoji: '🖥️', titre: 'Zone centrale — Vision intermédiaire', texte: 'Écran, comptoir, bras tendu. De 40 cm à 3 m. Zone de transition fluide entre loin et près.' },
       { emoji: '📖', titre: 'Zone inférieure — Vision de près', texte: 'Lecture, smartphone, écriture. En dessous de 40 cm. Le client regarde naturellement vers le bas.' },
       { emoji: '↔️', titre: 'Zones latérales — Flou inévitable', texte: "Sur les bords du verre, la vision est floue. C'est physique. Apprentissage : tourner la tête, pas les yeux." },
+      { emoji: '🚀', titre: 'Délai express grâce à Paris', texte: "Grâce à notre laboratoire progressif à Paris : livraison dans la journée pour l'Île-de-France, en 24h pour les magasins hors IDF." },
     ],
     avatarScript: "Le progressif a trois zones actives : loin en haut, intermédiaire au centre, près en bas. Les bords latéraux sont flous — c'est inévitable physiquement. L'apprentissage clé : tourner la tête, pas les yeux.",
     color: '#7c3aed',

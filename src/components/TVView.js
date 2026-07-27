@@ -2979,6 +2979,193 @@ function TVVerreProgressifSchema({ highlight }) {
 
 const OPT_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
+// ── TV Progressif : anatomie lunette avec révélation des zones ───
+const TV_PA_ZONE_COLORS = { haut: '#a78bfa', milieu: '#4ade80', bas: '#fbbf24' }
+const TV_PA_POINT_ZONE  = { 0: 'haut', 1: 'milieu', 2: 'bas' }
+
+function TVProgressifAnatomie({ page, pageIndex, total, progAnatomieReveal }) {
+  const [entered, setEntered] = useState(false)
+  useEffect(() => {
+    setEntered(false)
+    const t = setTimeout(() => setEntered(true), 100)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  const revealed = Array.isArray(progAnatomieReveal) ? progAnatomieReveal : []
+
+  // Lens geometry (SVG viewBox "0 0 560 480")
+  const cx = 240, cy = 238, rx = 200, ry = 178
+  const lT = cy - ry         // 60
+  const lB = cy + ry         // 416
+  const lL = cx - rx         // 40
+  const lR = cx + rx         // 440
+  const lH = 2 * ry          // 356
+  const hB = lT + lH * 0.38  // 195.3
+  const mB = hB + lH * 0.28  // 295.0
+  const hY = (lT + hB) / 2   // 127.6
+  const mY = (hB + mB) / 2   // 245.1
+  const bY = (mB + lB) / 2   // 355.5
+
+  const ZONES = [
+    { key: 'haut',   color: '#a78bfa', label: 'LOIN',      zy: hY, yStart: lT, yEnd: hB },
+    { key: 'milieu', color: '#4ade80', label: 'INTERMÉD.', zy: mY, yStart: hB, yEnd: mB },
+    { key: 'bas',    color: '#fbbf24', label: 'PRÈS',      zy: bY, yStart: mB, yEnd: lB },
+  ]
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+    }}>
+      {/* ── Gauche : lunette SVG ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        borderRight: '1px solid rgba(255,255,255,0.06)',
+        position: 'relative',
+        opacity: entered ? 1 : 0,
+        transform: entered ? 'scale(1)' : 'scale(0.88)',
+        transition: 'all .7s ease .1s',
+      }}>
+        {/* Halo respirant */}
+        <div style={{
+          position: 'absolute', width: 680, height: 680, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 68%)',
+          animation: 'haloPulse 3.8s ease-in-out infinite',
+          pointerEvents: 'none',
+        }} />
+        <div style={{ animation: 'verreFloat 5s ease-in-out infinite', position: 'relative', zIndex: 1, filter: 'drop-shadow(0 0 44px rgba(124,58,237,0.55)) drop-shadow(0 24px 56px rgba(0,0,0,0.55))' }}>
+          <svg viewBox="0 0 560 480" width={500} height={429} style={{ overflow: 'visible' }}>
+            <defs>
+              <clipPath id="tv-pa-lens">
+                <ellipse cx={cx} cy={cy} rx={rx} ry={ry} />
+              </clipPath>
+              <radialGradient id="tv-pa-sclera" cx="38%" cy="35%">
+                <stop offset="0%" stopColor="#f5f0eb" />
+                <stop offset="100%" stopColor="#d4ccc0" />
+              </radialGradient>
+              <radialGradient id="tv-pa-iris" cx="35%" cy="30%">
+                <stop offset="0%" stopColor="#8aae78" />
+                <stop offset="60%" stopColor="#52794a" />
+                <stop offset="100%" stopColor="#3c5834" />
+              </radialGradient>
+            </defs>
+
+            {/* Zone tints clipped to lens */}
+            {ZONES.map(z => (
+              <rect key={z.key}
+                x={lL} y={z.yStart} width={2 * rx} height={z.yEnd - z.yStart}
+                clipPath="url(#tv-pa-lens)"
+                fill={z.color}
+                opacity={revealed.includes(z.key) ? 0.3 : 0}
+                style={{ transition: 'opacity 0.55s ease' }}
+              />
+            ))}
+
+            {/* Eye inside the lens */}
+            <g clipPath="url(#tv-pa-lens)">
+              <ellipse cx={cx} cy={196} rx={118} ry={70} fill="url(#tv-pa-sclera)" />
+              <circle  cx={cx} cy={196} r={52}   fill="url(#tv-pa-iris)" />
+              <circle  cx={cx} cy={196} r={23}   fill="#14100c" />
+              <circle  cx={cx + 18} cy={180} r={10} fill="rgba(255,255,255,0.88)" />
+              <circle  cx={cx - 14} cy={210} r={5}  fill="rgba(255,255,255,0.28)" />
+            </g>
+
+            {/* Subtle zone dividers */}
+            <g clipPath="url(#tv-pa-lens)" opacity={0.18}>
+              <line x1={lL} y1={hB} x2={lR} y2={hB} stroke="white" strokeWidth="1.5" strokeDasharray="8,5" />
+              <line x1={lL} y1={mB} x2={lR} y2={mB} stroke="white" strokeWidth="1.5" strokeDasharray="8,5" />
+            </g>
+
+            {/* Glass tint */}
+            <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="rgba(160,210,255,0.04)" />
+
+            {/* Frame */}
+            <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="none" stroke="#94a3b8" strokeWidth={11} />
+            <ellipse cx={cx} cy={cy} rx={rx - 1} ry={ry - 1} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={1.5} />
+
+            {/* Temple arm (right) */}
+            <path d={`M ${lR - 4} ${lT + 95} C ${lR + 28} ${lT + 84}, ${lR + 60} ${lT + 76}, ${lR + 118} ${lT + 52}`}
+              fill="none" stroke="#94a3b8" strokeWidth={8} strokeLinecap="round" />
+            <path d={`M ${lR - 4} ${lT + 95} C ${lR + 28} ${lT + 84}, ${lR + 60} ${lT + 76}, ${lR + 118} ${lT + 52}`}
+              fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={2} strokeLinecap="round" />
+
+            {/* Nosepad (left) */}
+            <path d={`M ${lL + 6} ${cy + 18} C ${lL - 14} ${cy + 34}, ${lL - 14} ${cy + 52}, ${lL + 4} ${cy + 62}`}
+              fill="none" stroke="#94a3b8" strokeWidth={6} strokeLinecap="round" />
+
+            {/* Zone badges */}
+            {ZONES.map(z => {
+              const active  = revealed.includes(z.key)
+              const opacity = revealed.length === 0 ? 0.4 : active ? 1 : 0.13
+              return (
+                <g key={z.key} opacity={opacity} style={{ transition: 'opacity 0.5s ease' }}>
+                  <line x1={lR} y1={z.zy} x2={lR + 18} y2={z.zy} stroke={z.color} strokeWidth="1.5" />
+                  <rect x={lR + 20} y={z.zy - 14} width={88} height={28} rx={10}
+                    fill={active ? `${z.color}22` : 'transparent'}
+                    stroke={`${z.color}${active ? '90' : '48'}`} strokeWidth="1.5" />
+                  <text x={lR + 30} y={z.zy + 5} fontSize="13" fontWeight="800" fill={z.color} letterSpacing="1.2">{z.label}</text>
+                </g>
+              )
+            })}
+          </svg>
+        </div>
+      </div>
+
+      {/* ── Droite : titre + points ── */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        padding: '48px 60px',
+        opacity: entered ? 1 : 0,
+        transform: entered ? 'translateX(0)' : 'translateX(28px)',
+        transition: 'all .6s ease .05s',
+      }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Le Verre Progressif</span>
+        </div>
+
+        <div style={{ display: 'inline-block', background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.45)', borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>
+          Formation J+14 · LPT
+        </div>
+        <h1 style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1.1, marginBottom: 6 }}>{page.titre}</h1>
+        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.42)', marginBottom: 28 }}>{page.sousTitre}</p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {(page.points || []).map((pt, i) => {
+            const zKey  = TV_PA_POINT_ZONE[i]
+            const zColor = zKey && revealed.includes(zKey) ? TV_PA_ZONE_COLORS[zKey] : null
+            return (
+              <div key={i} style={{
+                display: 'flex', gap: 12, alignItems: 'flex-start',
+                opacity: entered ? 1 : 0,
+                transform: entered ? 'translateX(0)' : 'translateX(20px)',
+                transition: `all .5s ease ${0.12 + i * 0.1}s`,
+              }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                  background: zColor ? `${zColor}25` : 'rgba(124,58,237,0.15)',
+                  border: `1.5px solid ${zColor ? zColor + '65' : 'rgba(124,58,237,0.3)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+                  transition: 'all 0.5s ease',
+                  boxShadow: zColor ? `0 0 14px ${zColor}38` : 'none',
+                }}>{pt.emoji}</div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: zColor || '#fff', marginBottom: 2, transition: 'color 0.5s ease' }}>{pt.titre}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.55 }}>{pt.texte}</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── TV Progressif : zone interactif ──────────────────────────────
 function TVProgressifZoneInteractif({ page, pageIndex, total, progZoneQ, progZoneResponses, progZoneShowCorrect }) {
   const q = progZoneQ !== null && progZoneQ !== undefined ? page.zoneQuestions[progZoneQ] : null
@@ -5719,7 +5906,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, sessionCode, onAmeliProClick }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, sessionCode, onAmeliProClick }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -5792,9 +5979,10 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'mission')    return <TVEntrepriseMission   page={page} pageIndex={pageIndex} total={total} />
 
   // Progressif module types
-  if (page.type === 'zone-interactif') return <TVProgressifZoneInteractif page={page} pageIndex={pageIndex} total={total} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progZoneShowCorrect={progZoneShowCorrect} />
-  if (page.type === 'prog-retour')     return <TVProgressifRetourTerrain  page={page} pageIndex={pageIndex} total={total} progRetourResponses={progRetourResponses} />
-  if (page.type === 'prog-objections') return <TVProgressifJeuObjections  page={page} pageIndex={pageIndex} total={total} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} progBestAnswer={progBestAnswer} />
+  if (page.type === 'progressif-anatomie') return <TVProgressifAnatomie      page={page} pageIndex={pageIndex} total={total} progAnatomieReveal={progAnatomieReveal} />
+  if (page.type === 'zone-interactif')     return <TVProgressifZoneInteractif page={page} pageIndex={pageIndex} total={total} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progZoneShowCorrect={progZoneShowCorrect} />
+  if (page.type === 'prog-retour')         return <TVProgressifRetourTerrain  page={page} pageIndex={pageIndex} total={total} progRetourResponses={progRetourResponses} />
+  if (page.type === 'prog-objections')     return <TVProgressifJeuObjections  page={page} pageIndex={pageIndex} total={total} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} progBestAnswer={progBestAnswer} />
 
   // Types de verres
   if (page.type === 'unifocal')  return <TVTypesVerresUnifocal  pageIndex={pageIndex} total={total} />
@@ -7513,6 +7701,7 @@ export default function TVView() {
   const [progObjectionIdx, setProgObjectionIdx]         = useState(null)
   const [progObjectionResponses, setProgObjectionResponses] = useState({})
   const [progBestAnswer, setProgBestAnswer]             = useState(null)
+  const [progAnatomieReveal, setProgAnatomieReveal]     = useState([])
 
   // Mutuelles Belgique
   const [mutuellesRevealed, setMutuellesRevealed]         = useState([])
@@ -7565,6 +7754,7 @@ export default function TVView() {
     setProgObjectionIdx(sharedState.prog_objection_idx ?? null)
     setProgObjectionResponses(sharedState.prog_objection_responses || {})
     setProgBestAnswer(sharedState.prog_best_answer || null)
+    setProgAnatomieReveal(sharedState.prog_anatomie_reveal || [])
     const fj = sharedState.faq_journee || null
     setFaqJournee(fj)
     setFaqQuestions(fj ? (sharedState[`faq_${fj}_q`] || []) : [])
@@ -7822,6 +8012,7 @@ export default function TVView() {
             progObjectionIdx={progObjectionIdx}
             progObjectionResponses={progObjectionResponses}
             progBestAnswer={progBestAnswer}
+            progAnatomieReveal={progAnatomieReveal}
             trameStep={trameStep}
             offres11Step={offres11Step}
             offresClassiqueStep={offresClassiqueStep}

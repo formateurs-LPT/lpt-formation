@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { sbUpdate, sbSelect, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
@@ -541,6 +541,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   const [openAnswers, setOpenAnswers] = useState([])
   const [validating, setValidating] = useState({})
   const [validated, setValidated] = useState({})
+  const autoValidatedRef = useRef(new Set())
 
   const q = TYPES_VERRES_QUIZ[quizQ]
   const isLast = quizQ >= TYPES_VERRES_QUIZ.length - 1
@@ -550,6 +551,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
     setOpenAnswers([])
     setValidating({})
     setValidated({})
+    autoValidatedRef.current = new Set()
     const poll = async () => {
       const rows = await fetchOpenAnswers(getActiveSessionCode(), pageId)
       setOpenAnswers(rows || [])
@@ -558,6 +560,27 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
     const t = setInterval(poll, 2000)
     return () => clearInterval(t)
   }, [quizQ, pageId])
+
+  // Auto-validation
+  useEffect(() => {
+    const kws    = q?.autoCorrect
+    const kwsAll = q?.autoCorrectAll
+    const kwsNot = q?.autoCorrectNot
+    if (!kws?.length && !kwsAll?.length) return
+    openAnswers.forEach(row => {
+      const name = row.participant_name
+      if (autoValidatedRef.current.has(name)) return
+      const text = (row.answer || '').trim().toLowerCase()
+      const matchOr  = kws?.length    && kws.some(kw  => text.includes(kw.toLowerCase()))
+      const matchAnd = kwsAll?.length && kwsAll.every(kw => text.includes(kw.toLowerCase()))
+      const blocked  = kwsNot?.length && kwsNot.some(kw => text.includes(kw.toLowerCase()))
+      if ((matchOr || matchAnd) && !blocked) {
+        autoValidatedRef.current.add(name)
+        saveModuleQuizAnswer({ moduleId: 'types-verres', questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
+        setValidated(v => ({ ...v, [name]: 'correct' }))
+      }
+    })
+  }, [openAnswers, q, quizQ])
 
   const handleValidate = async (row, isCorrect) => {
     if (validating[row.participant_name]) return

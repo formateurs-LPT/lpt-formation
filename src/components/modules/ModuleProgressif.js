@@ -204,6 +204,121 @@ function CoursPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pageI
   )
 }
 
+// ── Page Anatomie (formateur) ─────────────────────────────────────
+function AnatomieTrainerPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextPage }) {
+  const isMobile = useIsMobile()
+  const [entered, setEntered]   = useState(false)
+  const [revealed, setRevealed] = useState([])
+  const [syncing, setSyncing]   = useState(false)
+
+  useEffect(() => {
+    setEntered(false)
+    const t = setTimeout(() => setEntered(true), 60)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  const ZONE_BTNS = [
+    { key: 'haut',   label: 'Vision de LOIN',    color: '#a78bfa' },
+    { key: 'milieu', label: 'Vision INTERMÉD.',   color: '#4ade80' },
+    { key: 'bas',    label: 'Vision de PRÈS',     color: '#fbbf24' },
+  ]
+
+  const toggle = async (key) => {
+    if (syncing) return
+    setSyncing(true)
+    const next = revealed.includes(key) ? revealed.filter(k => k !== key) : [...revealed, key]
+    setRevealed(next)
+    try { await setSharedState({ prog_anatomie_reveal: next }) } finally { setSyncing(false) }
+  }
+
+  const resetReveal = async () => {
+    if (syncing) return
+    setSyncing(true)
+    setRevealed([])
+    try { await setSharedState({ prog_anatomie_reveal: [] }) } finally { setSyncing(false) }
+  }
+
+  const lastRevealed = revealed.length > 0 ? revealed[revealed.length - 1] : null
+
+  return (
+    <PageShell pageIndex={pageIndex} total={total} onBack={onBack}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, padding: '16px 48px 24px', alignItems: 'center', position: 'relative', zIndex: 5 }}>
+        {/* Left: points */}
+        <div style={{ opacity: entered ? 1 : 0, transform: entered ? 'translateX(0)' : 'translateX(-28px)', transition: 'all .55s ease' }}>
+          <div style={{ display: 'inline-block', background: `${ACCENT}20`, border: `1px solid ${ACCENT}45`, borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: ACCENT, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Formation J+14 · LPT</div>
+          <h1 style={{ fontSize: 38, fontWeight: 800, color: '#fff', lineHeight: 1.1, marginBottom: 8 }}>{page.titre}</h1>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 28, fontWeight: 400 }}>{page.sousTitre}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {(page.points || []).map((pt, i) => (
+              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', opacity: entered ? 1 : 0, transform: entered ? 'translateX(0)' : 'translateX(-16px)', transition: `all .45s ease ${0.08 + i * 0.09}s` }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: `${ACCENT}18`, border: `1px solid ${ACCENT}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17 }}>{pt.emoji}</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{pt.titre}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{pt.texte}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: schema + zone reveal buttons */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24, opacity: entered ? 1 : 0, transform: entered ? 'scale(1)' : 'scale(0.88)', transition: 'all .65s ease .1s' }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ position: 'absolute', width: 440, height: 440, borderRadius: '50%', background: `radial-gradient(circle, ${ACCENT}28 0%, transparent 70%)`, animation: 'progHalo 3.5s ease-in-out infinite' }} />
+            <div style={{ animation: 'progFloat 4.5s ease-in-out infinite', filter: 'drop-shadow(0 0 28px rgba(124,58,237,0.45))' }}>
+              <VerreProgressifSchema highlight={lastRevealed} />
+            </div>
+          </div>
+
+          {/* Zone reveal toggles */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 300 }}>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.2, textAlign: 'center', marginBottom: 2 }}>Révéler sur le diffuseur</div>
+            {ZONE_BTNS.map(z => {
+              const active = revealed.includes(z.key)
+              return (
+                <button key={z.key} onClick={() => toggle(z.key)} disabled={syncing} style={{
+                  background: active ? `${z.color}20` : 'rgba(255,255,255,0.04)',
+                  border: `1.5px solid ${active ? z.color + '70' : 'rgba(255,255,255,0.12)'}`,
+                  color: active ? z.color : 'rgba(255,255,255,0.5)',
+                  padding: '9px 16px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                  cursor: syncing ? 'wait' : 'pointer', fontFamily: 'inherit',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  transition: 'all .2s ease',
+                  boxShadow: active ? `0 0 12px ${z.color}28` : 'none',
+                }}>
+                  <span style={{ width: 9, height: 9, borderRadius: 3, background: z.color, display: 'inline-block', opacity: active ? 1 : 0.38 }} />
+                  {z.label}
+                  {active && <span style={{ marginLeft: 'auto', fontSize: 10, opacity: 0.8 }}>✓ Visible</span>}
+                </button>
+              )
+            })}
+            {revealed.length > 0 && (
+              <button onClick={resetReveal} disabled={syncing} style={{ background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.22)', color: 'rgba(255,100,100,0.65)', padding: '6px 14px', borderRadius: 10, fontSize: 11, fontWeight: 600, cursor: syncing ? 'wait' : 'pointer', fontFamily: 'inherit', marginTop: 2 }}>
+                ↺ Masquer tout
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: isMobile ? '0 14px calc(env(safe-area-inset-bottom,0px) + 20px)' : '0 340px 0 48px', position: 'relative', zIndex: 20, flexShrink: 0 }}>
+        {!isMobile && <NextPagePreview nextPage={nextPage} />}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: isMobile ? 0 : 28, gap: isMobile ? 10 : 0 }}>
+          <button onClick={onPrev} disabled={isFirst} style={{ background: isFirst ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: isFirst ? 'rgba(255,255,255,0.2)' : '#fff', padding: isMobile ? '16px 0' : '12px 24px', borderRadius: 12, fontSize: isMobile ? 16 : 14, fontWeight: 600, cursor: isFirst ? 'default' : 'pointer', fontFamily: 'inherit', flex: isMobile ? 1 : undefined }}>← Précédent</button>
+          {isLast ? (
+            quizLaunched
+              ? <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: isMobile ? 2 : undefined }}><span style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>✓ Quiz envoyé</span><button onClick={onBack} style={{ background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.35)', color: '#ff6b6b', padding: isMobile ? '16px 0' : '12px 24px', borderRadius: 12, fontSize: isMobile ? 16 : 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', flex: isMobile ? 1 : undefined }}>Terminer →</button></div>
+              : <button onClick={onLaunchQuiz} style={{ background: `linear-gradient(135deg, ${ACCENT}, #9f67fa)`, border: 'none', color: '#fff', padding: isMobile ? '16px 0' : '12px 32px', borderRadius: 12, fontSize: isMobile ? 16 : 15, fontWeight: 700, cursor: 'pointer', boxShadow: `0 6px 24px ${ACCENT}50`, fontFamily: 'inherit', flex: isMobile ? 2 : undefined, textAlign: 'center' }}>🏆 Quiz final →</button>
+          ) : (
+            <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${ACCENT}, #9f67fa)`, border: 'none', color: '#fff', padding: isMobile ? '16px 0' : '12px 32px', borderRadius: 12, fontSize: isMobile ? 16 : 15, fontWeight: 700, cursor: 'pointer', boxShadow: `0 6px 24px ${ACCENT}50`, fontFamily: 'inherit', flex: isMobile ? 2 : undefined, textAlign: 'center' }}>Suivant →</button>
+          )}
+        </div>
+      </div>
+      <AvatarBubble script={page.avatarScript} pName={pName} />
+    </PageShell>
+  )
+}
+
 // ── Page Zone Interactif (formateur) ─────────────────────────────
 function ZoneInteractifPage({ page, pName, onPrev, onNext, onBack, isFirst, pageIndex, total }) {
   const [activeQ, setActiveQ] = useState(null) // null | 0 | 1 | 2
@@ -779,6 +894,10 @@ export default function ModuleProgressif({ pName, onBack }) {
   const handleNext = async () => {
     const nextPage = PROGRESSIF_PAGES[pageIndex + 1]
 
+    // Reset anatomie reveal quand on quitte la slide anatomie
+    if (page.type === 'progressif-anatomie') {
+      await setSharedState({ prog_anatomie_reveal: [] })
+    }
     // Reset zone-interactif AVANT d'y entrer (évite race condition avec launchQuestion)
     if (nextPage?.type === 'zone-interactif') {
       await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_zone_show_correct: false })
@@ -806,10 +925,11 @@ export default function ModuleProgressif({ pName, onBack }) {
   return (
     <>
       <style>{STYLES}</style>
-      {page.type === 'zone-interactif'  && <ZoneInteractifPage  {...navProps} />}
-      {page.type === 'prog-retour'      && <RetourTerrainPage   {...navProps} />}
-      {page.type === 'prog-objections'  && <JeuObjectionsPage   {...navProps} />}
-      {page.type === 'cours'            && <CoursPage           {...navProps} />}
+      {page.type === 'progressif-anatomie' && <AnatomieTrainerPage {...navProps} />}
+      {page.type === 'zone-interactif'    && <ZoneInteractifPage  {...navProps} />}
+      {page.type === 'prog-retour'        && <RetourTerrainPage   {...navProps} />}
+      {page.type === 'prog-objections'    && <JeuObjectionsPage   {...navProps} />}
+      {page.type === 'cours'              && <CoursPage           {...navProps} />}
     </>
   )
 }
