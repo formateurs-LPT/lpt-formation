@@ -1,23 +1,21 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { sbSelect, getSharedState } from '@/lib/supabase'
 import { resolveRoomStateCode, isDynamicRoomCode } from '@/lib/sessionCode'
 
 // ─────────────────────────────────────────────────────────────────
 //  useModuleSync — synchronisation TV / participant
 //
-//  Stratégie de polling adaptatif :
-//  • Aucun module actif  → intervalle lent (IDLE_MS)
-//  • Module actif        → intervalle rapide (BASE_MS)
-//  • Rien n'a changé depuis N polls → on ralentit progressivement
-//  • Un changement détecté          → on revient à BASE_MS immédiatement
+//  Stratégie :
+//  • Module actif  → polling 400ms   (quasi temps réel)
+//  • Idle          → polling 1000ms
+//  • Tab redevient visible → poll immédiat
+//  • Pas de snapshotRef : setState à chaque poll (simple et fiable)
 // ─────────────────────────────────────────────────────────────────
 
-const BASE_MS = 1200    // polling rapide — module actif avec changements
-const IDLE_MS = 2000    // polling lent  — aucun module en cours
+const ACTIVE_MS = 400
+const IDLE_MS   = 1000
 
-// En mode TV sans ?room= dans l'URL (vidéoprojecteur ouvert manuellement),
-// on cherche la salle dynamique ouverte pour lire le bon trainer_state.
 async function resolveTvSessionCode(legacyCode) {
   try {
     const rows = await sbSelect('sessions', 'order=updated_at.desc&limit=10')
@@ -38,78 +36,88 @@ export function useModuleSync({ disabled = false } = {}) {
     sessionCode: '',
   })
 
-  const timerRef    = useRef(null)
-  const snapshotRef = useRef(null)
-  const resolvedCodeRef = useRef('')   // cache du code salle découvert
+  const timerRef       = useRef(null)
+  const resolvedRef    = useRef('')   // code salle découvert par auto-discovery
+  const cancelledRef   = useRef(false)
+  const isPollingRef   = useRef(false) // évite les polls simultanés
+
+  const doPoll = useCallback(async () => {
+    if (isPollingRef.current || cancelledRef.current) return
+    isPollingRef.current = true
+
+    try {
+      const isTvMode = typeof window !== 'undefined'
+        && new URLSearchParams(window.location.search).get('mode') === 'tv'
+
+      let sessionCode = resolveRoomStateCode()
+
+      // TV sur appareil séparé sans ?room= → auto-découverte
+      if (isTvMode && !isDynamicRoomCode(sessionCode)) {
+        if (resolvedRef.current && isDynamicRoomCode(resolvedRef.current)) {
+          sessionCode = resolvedRef.current
+        } else {
+          sessionCode = await resolveTvSessionCode(sessionCode)
+          if (isDynamicRoomCode(sessionCode)) resolvedRef.current = sessionCode
+        }
+      }
+
+      if (cancelledRef.current) return
+
+      const [rows, shared] = await Promise.all([
+        sbSelect('sessions', 'code=eq.' + encodeURIComponent(sessionCode)),
+        getSharedState(sessionCode),
+      ])
+
+      if (cancelledRef.current) return
+
+      const session    = rows?.[0]
+      const activeModule = session?.active_module ?? null
+      const modulePage   = session?.module_page   ?? 0
+
+      // Si la session devient inactive, réinitialiser l'auto-discovery
+      if (isTvMode && !isDynamicRoomCode(resolveRoomStateCode())) {
+        const stillActive = session?.status === 'active' || session?.status === 'waiting'
+        if (!stillActive) resolvedRef.current = ''
+      }
+
+      // Toujours mettre à jour l'état — pas de snapshot : simple et fiable
+      setState({ activeModule, modulePage, sharedState: shared, loading: false, sessionCode })
+
+      const next = (!activeModule && !shared?.faq_journee) ? IDLE_MS : ACTIVE_MS
+      if (!cancelledRef.current) {
+        timerRef.current = setTimeout(doPoll, next)
+      }
+    } catch (e) {
+      console.error('[useModuleSync]', e)
+      if (!cancelledRef.current) {
+        timerRef.current = setTimeout(doPoll, IDLE_MS)
+      }
+    } finally {
+      isPollingRef.current = false
+    }
+  }, [])
 
   useEffect(() => {
     if (disabled) return
-    let cancelled = false
 
-    const isTvMode = typeof window !== 'undefined'
-      && new URLSearchParams(window.location.search).get('mode') === 'tv'
+    cancelledRef.current = false
+    doPoll()
 
-    const poll = async () => {
-      try {
-        let sessionCode = resolveRoomStateCode()
-
-        // TV sur appareil séparé sans ?room= → auto-découverte de la salle dynamique
-        if (isTvMode && !isDynamicRoomCode(sessionCode)) {
-          // On réutilise le code découvert précédemment, ou on cherche à nouveau
-          if (resolvedCodeRef.current && isDynamicRoomCode(resolvedCodeRef.current)) {
-            sessionCode = resolvedCodeRef.current
-          } else {
-            sessionCode = await resolveTvSessionCode(sessionCode)
-            if (isDynamicRoomCode(sessionCode)) resolvedCodeRef.current = sessionCode
-          }
-        }
-
-        const [rows, shared] = await Promise.all([
-          sbSelect('sessions', 'code=eq.' + encodeURIComponent(sessionCode)),
-          getSharedState(sessionCode),
-        ])
-
-        if (cancelled) return
-
-        const session = rows?.[0]
-        const activeModule = session?.active_module ?? null
-        const modulePage   = session?.module_page   ?? 0
-
-        // Si plus aucune session active sur ce code, effacer le cache pour re-chercher
-        if (isTvMode && !isDynamicRoomCode(resolveRoomStateCode())) {
-          const stillActive = session?.status === 'active' || session?.status === 'waiting'
-          if (!stillActive) resolvedCodeRef.current = ''
-        }
-
-        const newSnap = `${sessionCode}:${activeModule}:${modulePage}:${JSON.stringify(shared)}`
-
-        if (newSnap !== snapshotRef.current) {
-          snapshotRef.current = newSnap
-          setState({ activeModule, modulePage, sharedState: shared, loading: false, sessionCode })
-        }
-
-        const next = (!activeModule && !shared?.faq_journee) ? IDLE_MS : BASE_MS
-
-        if (!cancelled) {
-          timerRef.current = setTimeout(poll, next)
-        }
-
-      } catch (e) {
-        if (!cancelled) {
-          setState(s => ({ ...s, loading: false }))
-          console.error('[useModuleSync]', e)
-          timerRef.current = setTimeout(poll, IDLE_MS)
-        }
+    // Poll immédiat quand l'onglet redevient visible (formateur change de fenêtre puis revient)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        clearTimeout(timerRef.current)
+        doPoll()
       }
     }
-
-    poll()
+    document.addEventListener('visibilitychange', onVisible)
 
     return () => {
-      cancelled = true
+      cancelledRef.current = true
       clearTimeout(timerRef.current)
+      document.removeEventListener('visibilitychange', onVisible)
     }
-  }, [disabled])
+  }, [disabled, doPoll])
 
   return state
 }
