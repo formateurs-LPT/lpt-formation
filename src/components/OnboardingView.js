@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { generatePin } from '@/lib/pin'
 import { getSharedState, setSharedState, setRoomSharedState, sbUpsert, sbSelect, getActiveSessionCode } from '@/lib/supabase'
+import { getLevelInfo, getRankMessage } from '@/lib/scoring'
 import {
   countEntreesByCategory,
   entreeMatchesCategory,
@@ -398,9 +399,96 @@ function JourneeModules({ journee, onBack, onLaunchModule }) {
   )
 }
 
+// ── Classement temps réel de la session ──────────────────────────
+function SessionRanking({ sessionCode }) {
+  const [ranking, setRanking] = useState(null)
+
+  useEffect(() => {
+    if (!sessionCode) return
+    let cancelled = false
+    const load = async () => {
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(sessionCode)}&is_correct=eq.true`)
+      if (cancelled) return
+      const counts = {}
+      for (const r of (rows || [])) {
+        counts[r.collaborateur] = (counts[r.collaborateur] || 0) + 1
+      }
+      const sorted = Object.entries(counts)
+        .map(([name, cnt]) => ({ name, points: cnt * 10 }))
+        .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
+      let rk = 1
+      const withRanks = sorted.map((entry, i) => {
+        if (i > 0 && entry.points !== sorted[i - 1].points) rk = i + 1
+        return { ...entry, rank: rk, ...getLevelInfo(entry.points) }
+      })
+      setRanking(withRanks)
+    }
+    load()
+    const t = setInterval(load, 8000)
+    return () => { cancelled = true; clearInterval(t) }
+  }, [sessionCode])
+
+  const MEDALS = ['🥇', '🥈', '🥉']
+
+  if (!sessionCode) return (
+    <div style={{ padding: '40px 24px', textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: 14 }}>
+      Aucune session active.
+    </div>
+  )
+  if (ranking === null) return (
+    <div style={{ padding: '40px 24px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>
+      Chargement du classement…
+    </div>
+  )
+  if (ranking.length === 0) return (
+    <div style={{ padding: '40px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 36, marginBottom: 12 }}>📊</div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 6 }}>Classement vide</div>
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>Les formés n'ont pas encore répondu à des quizz.</div>
+    </div>
+  )
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          {ranking.length} participant{ranking.length > 1 ? 's' : ''}
+        </span>
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>Mise à jour auto · 8s</span>
+      </div>
+      {ranking.map((entry, i) => {
+        const msg = getRankMessage(entry.rank)
+        return (
+          <div key={entry.name} style={{
+            background: i === 0 ? 'rgba(234,179,8,0.08)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${i === 0 ? 'rgba(234,179,8,0.25)' : 'rgba(255,255,255,0.07)'}`,
+            borderRadius: 14, padding: '14px 16px',
+            display: 'flex', alignItems: 'center', gap: 14,
+          }}>
+            <span style={{ fontSize: i < 3 ? 22 : 15, width: 28, textAlign: 'center', flexShrink: 0, fontWeight: 800, color: 'rgba(255,255,255,0.3)' }}>
+              {i < 3 ? MEDALS[i] : `${entry.rank}`}
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {entry.name}
+              </div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{msg.text}</div>
+            </div>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ fontSize: 11, marginBottom: 2 }}>{entry.levelDef.icon} <span style={{ color: entry.levelDef.color, fontWeight: 700 }}>{entry.levelDef.name}</span></div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#fff' }}>{entry.points} pts</div>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Step 3 : Sélection de la journée ─────────────────────────────
 function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, onLaunchPeerQuiz, initialJournee = null }) {
   const [selectedJournee, setSelectedJournee] = useState(initialJournee)
+  const [activeTab, setActiveTab] = useState('modules')
   const journees = JOURNEES(onLaunchModule, onLaunchPeerQuiz)
   const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
@@ -506,7 +594,37 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
         <div style={{ width: 56, height: 56, background: 'rgba(255,255,255,.08)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, position: 'relative', zIndex: 1 }}>🎓</div>
       </div>
 
-      <div className="dash-tiles" style={{ gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+      {/* Onglets Modules / Classement */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {[
+          { id: 'modules', label: '📚 Modules' },
+          { id: 'classement', label: '📊 Classement' },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              padding: '8px 20px', borderRadius: 99, border: 'none', cursor: 'pointer',
+              fontSize: 13, fontWeight: activeTab === tab.id ? 700 : 500,
+              background: activeTab === tab.id ? '#00abe9' : 'rgba(255,255,255,0.06)',
+              color: activeTab === tab.id ? '#fff' : 'rgba(255,255,255,0.5)',
+              transition: 'all .15s',
+              boxShadow: activeTab === tab.id ? '0 2px 8px rgba(0,171,233,0.35)' : 'none',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'classement' && (
+        <div style={{ marginBottom: 24 }}>
+          <SessionRanking sessionCode={(isDynamicRoomCode(roomCode) ? roomCode : null) || getActiveSessionCode()} />
+        </div>
+      )}
+
+      {activeTab === 'modules' && <div className="dash-tiles" style={{ gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         {journees.map((j) => (
           <div key={j.id} className="dash-tile" onClick={() => openJournee(j.id)} style={{ cursor: 'pointer' }}>
             <div className="dash-tile-top">
@@ -596,7 +714,7 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
           <div className="dash-tile-sub">Simulation de l&#39;application magasin sur mobile</div>
           <div style={{ fontSize: 11, color: '#f97316', marginTop: 8, fontWeight: 600 }}>Tester le module →</div>
         </div>
-      </div>
+      </div>}
 
       {endConfirmOpen && (
         <ConfirmModal

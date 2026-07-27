@@ -12,6 +12,7 @@ import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName } from '@/lib/participantNames'
 import { mergeRoomSharedField } from '@/lib/roomSharedState'
+import { getLevelInfo, getRankMessage } from '@/lib/scoring'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -80,6 +81,174 @@ function WaitingScreen() {
       </div>
     </div>
   )
+}
+
+function WelcomeScreenFirst({ pName }) {
+  const firstName = (pName || '').split(' ')[0] || 'toi'
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px', textAlign: 'center',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={160} height={60}
+        style={{ objectFit: 'contain', marginBottom: 40 }} />
+      <div style={{ fontSize: 44, marginBottom: 12 }}>👋</div>
+      <h2 style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 10 }}>
+        Bonjour, {firstName} !
+      </h2>
+      <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.65)', lineHeight: 1.7, maxWidth: 300, margin: '0 auto' }}>
+        Bienvenue chez <strong style={{ color: '#00abe9' }}>Lunettes Pour Tous</strong>.<br />
+        Ta formation commence maintenant.
+      </p>
+      <div style={{
+        marginTop: 32,
+        background: 'rgba(107,114,128,0.15)', border: '1px solid rgba(107,114,128,0.3)',
+        borderRadius: 16, padding: '20px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+      }}>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Niveau de départ</div>
+        <div style={{ fontSize: 34 }}>🌱</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#6b7280', marginTop: 6 }}>Débutant</div>
+      </div>
+      <div style={{ marginTop: 32, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'waitDot 1.4s ease-in-out infinite' }} />
+        <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>En attente du formateur…</span>
+      </div>
+    </div>
+  )
+}
+
+function DashboardScreen({ pName, myEntry, ranking }) {
+  const firstName = (pName || '').split(' ')[0] || 'toi'
+  const points = myEntry?.points ?? 0
+  const rank = myEntry?.rank
+  const levelInfo = getLevelInfo(points)
+  const msg = rank ? getRankMessage(rank) : null
+  const MEDALS = ['🥇', '🥈', '🥉']
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '32px 20px 48px', overflowY: 'auto',
+    }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={120} height={45}
+          style={{ objectFit: 'contain', marginBottom: 18 }} />
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', textAlign: 'center', margin: 0 }}>
+          Bonjour, {firstName} 👋
+        </h2>
+      </div>
+
+      {/* Carte niveau + points */}
+      <div style={{
+        background: levelInfo.levelDef.bg, border: `1px solid ${levelInfo.levelDef.border}`,
+        borderRadius: 20, padding: '24px 20px', textAlign: 'center', marginBottom: 16,
+      }}>
+        <div style={{ fontSize: 42 }}>{levelInfo.levelDef.icon}</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: levelInfo.levelDef.color, marginTop: 6, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          {levelInfo.levelDef.name}
+        </div>
+        <div style={{ fontSize: 56, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginTop: 8 }}>{points}</div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 16 }}>points</div>
+        {!levelInfo.isMaxLevel ? (
+          <>
+            <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden', margin: '0 8px' }}>
+              <div style={{ width: `${levelInfo.progressPct}%`, height: '100%', background: levelInfo.levelDef.color, borderRadius: 99, transition: 'width 0.6s' }} />
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 8 }}>
+              Encore {levelInfo.ptsToNext} pts pour le niveau suivant
+            </div>
+          </>
+        ) : (
+          <div style={{ fontSize: 12, color: levelInfo.levelDef.color, fontWeight: 700 }}>Niveau maximum atteint !</div>
+        )}
+      </div>
+
+      {/* Message classement */}
+      {msg && (
+        <div style={{ textAlign: 'center', fontSize: 14, color: msg.color, fontStyle: 'italic', marginBottom: 16, padding: '0 4px', lineHeight: 1.5 }}>
+          {msg.text}
+        </div>
+      )}
+
+      {/* Classement */}
+      {ranking.length > 0 && (
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16 }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Classement de la session
+          </div>
+          <div style={{ padding: '6px 0' }}>
+            {ranking.map((entry, i) => {
+              const isMe = entry.name === pName
+              const entryLvl = getLevelInfo(entry.points)
+              return (
+                <div key={entry.name} style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px',
+                  background: isMe ? 'rgba(0,171,233,0.1)' : 'transparent',
+                  borderLeft: isMe ? '3px solid #00abe9' : '3px solid transparent',
+                }}>
+                  <span style={{ width: 22, textAlign: 'center', fontSize: i < 3 ? 17 : 12, fontWeight: 800, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
+                    {i < 3 ? MEDALS[i] : `${entry.rank}`}
+                  </span>
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: isMe ? 800 : 500, color: isMe ? '#fff' : 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {isMe ? 'Toi' : entry.name}
+                  </span>
+                  <span style={{ fontSize: 14 }}>{entryLvl.levelDef.icon}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: isMe ? '#00abe9' : 'rgba(255,255,255,0.4)', flexShrink: 0 }}>
+                    {entry.points} pts
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ParticipantDashboard({ pName, sessionCode }) {
+  const [loadState, setLoadState] = useState('loading')
+  const [ranking, setRanking] = useState([])
+
+  useEffect(() => {
+    if (!pName || !sessionCode) return
+    let cancelled = false
+    const load = async () => {
+      const [anyRows, correctRows] = await Promise.all([
+        sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(pName)}&session_code=eq.${encodeURIComponent(sessionCode)}&limit=1`),
+        sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(sessionCode)}&is_correct=eq.true`),
+      ])
+      if (cancelled) return
+      const counts = {}
+      for (const r of (correctRows || [])) {
+        counts[r.collaborateur] = (counts[r.collaborateur] || 0) + 1
+      }
+      const sorted = Object.entries(counts)
+        .map(([name, cnt]) => ({ name, points: cnt * 10 }))
+        .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
+      let rk = 1
+      const withRanks = sorted.map((entry, i) => {
+        if (i > 0 && entry.points !== sorted[i - 1].points) rk = i + 1
+        return { ...entry, rank: rk }
+      })
+      if (!withRanks.find(r => r.name === pName)) {
+        withRanks.push({ name: pName, points: 0, rank: withRanks.length + 1 })
+      }
+      setRanking(withRanks)
+      setLoadState((anyRows || []).length === 0 ? 'welcome' : 'dashboard')
+    }
+    load()
+    const t = setInterval(load, 12000)
+    return () => { cancelled = true; clearInterval(t) }
+  }, [pName, sessionCode])
+
+  if (loadState === 'loading') return <WaitingScreen />
+  const myEntry = ranking.find(r => r.name === pName)
+  if (loadState === 'welcome') return <WelcomeScreenFirst pName={pName} />
+  return <DashboardScreen pName={pName} myEntry={myEntry} ranking={ranking} />
 }
 
 function ParticipantModuleLobby({ moduleLabel, moduleSub }) {
@@ -4665,7 +4834,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
                 ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} rembfrRevealed={rembfrRevealed} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} />
                 : faqJournee
                   ? <FAQInputMobile journeeId={faqJournee} />
-                  : <WaitingScreen />
+                  : <ParticipantDashboard pName={pName} sessionCode={sessionCode} />
       }
     </>
   )

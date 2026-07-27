@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { sbSelect, sbUpsert, getSharedState } from '@/lib/supabase'
+import { getLevelInfo } from '@/lib/scoring'
 import { classifyMagasin } from '@/lib/formationCategories'
 import { MODULE_DATA } from '@/lib/modulesData'
 import CompteRenduManager from './CompteRenduManager'
@@ -113,7 +114,7 @@ const COMMENTAIRE_OPTS = [
   { key: 'attention',     label: 'Attention',         color: '#dc2626', bg: '#fee2e2', border: '#fecaca' },
 ]
 
-function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf }) {
+function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf, pointsRank, totalPoints = 0, pointsRankOf }) {
   const [quizData, setQuizData]                 = useState([])
   const [assessments, setAssessments]           = useState({})
   const [attitudeStatus, setAttitudeStatus]     = useState(null)
@@ -409,22 +410,58 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 32 }}>
 
-      {/* Nom + classement */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9' }}>{name}</div>
-        {rank && rankOf && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: rank === 1 ? 'rgba(22,163,74,0.15)' : 'rgba(100,116,139,0.15)',
-            border: `1px solid ${rank === 1 ? 'rgba(22,163,74,0.3)' : '#334155'}`,
-            borderRadius: 20, padding: '4px 12px',
-          }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: rank === 1 ? '#16a34a' : '#94a3b8' }}>
-              {rank}{ordFR(rank)}
-            </span>
-            <span style={{ fontSize: 11, color: '#64748b' }}>du groupe sur {rankOf}</span>
-          </div>
-        )}
+      {/* Nom + classements */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9' }}>{name}</div>
+          {rank && rankOf && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: rank === 1 ? 'rgba(22,163,74,0.15)' : 'rgba(100,116,139,0.15)',
+              border: `1px solid ${rank === 1 ? 'rgba(22,163,74,0.3)' : '#334155'}`,
+              borderRadius: 20, padding: '4px 12px',
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: rank === 1 ? '#16a34a' : '#94a3b8' }}>
+                {rank}{ordFR(rank)}
+              </span>
+              <span style={{ fontSize: 11, color: '#64748b' }}>du groupe sur {rankOf}</span>
+            </div>
+          )}
+        </div>
+        {/* Bande points / niveau / classement points */}
+        {(() => {
+          const lvl = getLevelInfo(totalPoints)
+          return (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              background: lvl.levelDef.bg, border: `1px solid ${lvl.levelDef.border}`,
+              borderRadius: 12, padding: '10px 14px',
+            }}>
+              <span style={{ fontSize: 22 }}>{lvl.levelDef.icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: lvl.levelDef.color, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                  {lvl.levelDef.name}
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>
+                  {totalPoints} pts
+                </div>
+              </div>
+              {pointsRank && pointsRankOf && (
+                <div style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2,
+                  background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '6px 10px',
+                }}>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>
+                    {pointsRank}{ordFR(pointsRank)}
+                  </span>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>
+                    classement pts / {pointsRankOf}
+                  </span>
+                </div>
+              )}
+            </div>
+          )
+        })()}
       </div>
 
       {/* Quiz results */}
@@ -793,6 +830,9 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
   const [sentKeys, setSentKeys]       = useState(new Set())
   const [ranks, setRanks]             = useState({}) // { name: rankNumber }
   const [rankOf, setRankOf]           = useState(0)  // total de formés classés
+  const [pointsRanks, setPointsRanks]   = useState({}) // { name: rankNumber } basé sur les points quiz
+  const [pointsTotals, setPointsTotals] = useState({}) // { name: totalPoints }
+  const [pointsRankOf, setPointsRankOf] = useState(0)
   const [mailSentMap, setMailSentMap] = useState({}) // { name: dateISO }
   const [weekDateMap, setWeekDateMap] = useState({}) // { name: week_date du dernier rapport }
   const weekDate = getWeekDate()
@@ -871,6 +911,32 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
 
       setRanks(rankMap)
       setRankOf(Object.keys(rankMap).length)
+
+      // Classement basé sur les points (réponses correctes × 10)
+      const ptsScores = names.map((name, i) => {
+        const byMod = {}
+        for (const r of (quizArrays[i] || [])) {
+          const mid = r.module_id || r.module
+          if (!mid) continue
+          const sc = r.score ?? 0
+          const tot = r.score_total ?? r.total ?? 0
+          if (!byMod[mid] || sc > byMod[mid].score) byMod[mid] = { score: sc, total: tot }
+        }
+        const pts = Object.values(byMod).reduce((s, m) => s + (m.score || 0), 0) * 10
+        return { name, points: pts }
+      })
+      const sortedByPts = [...ptsScores].sort((a, b) => b.points - a.points)
+      const ptsRankMap = {}
+      const ptsTotMap = {}
+      let pr = 1
+      for (let i = 0; i < sortedByPts.length; i++) {
+        if (i > 0 && sortedByPts[i].points !== sortedByPts[i - 1].points) pr = i + 1
+        ptsTotMap[sortedByPts[i].name] = sortedByPts[i].points
+        if (sortedByPts[i].points > 0) ptsRankMap[sortedByPts[i].name] = pr
+      }
+      setPointsRanks(ptsRankMap)
+      setPointsTotals(ptsTotMap)
+      setPointsRankOf(Object.keys(ptsRankMap).length)
     }
 
     computeRanks()
@@ -1147,6 +1213,9 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
             weekDate={weekDate}
             rank={ranks[selEntry.fullName || `${selEntry.nom} ${selEntry.prenom}`.trim()]}
             rankOf={rankOf}
+            pointsRank={pointsRanks[selEntry.fullName || `${selEntry.nom} ${selEntry.prenom}`.trim()]}
+            totalPoints={pointsTotals[selEntry.fullName || `${selEntry.nom} ${selEntry.prenom}`.trim()] ?? 0}
+            pointsRankOf={pointsRankOf}
           />
         )}
       </div>
