@@ -42,6 +42,7 @@ import TrainerQuestionsPanel from '@/components/TrainerQuestionsPanel'
 import PlanningPage from '@/components/PlanningPage'
 import OnboardingView from '@/components/OnboardingView'
 import OnboardingViewBelgique from '@/components/OnboardingViewBelgique'
+import PeerQuizTrainer from '@/components/PeerQuizGame'
 import TVView from '@/components/TVView'
 import ParticipantModuleView from '@/components/ParticipantModuleView'
 
@@ -58,6 +59,7 @@ export default function Page() {
   const [returnJournee, setReturnJournee] = useState(null)
   const [moduleReturnTo, setModuleReturnTo] = useState('onboarding-modules')
   const [returnJourneeBelgique, setReturnJourneeBelgique] = useState(null)
+  const [peerQuizReturnView, setPeerQuizReturnView] = useState('onboarding-modules')
   const { message, toast } = useToast()
 
   useOnlineCount({
@@ -398,7 +400,16 @@ export default function Page() {
   const handleBackToDashboard = () => { setView('dashboard'); tvBackToQr() }
   const handleBackToModules = () => { setView(moduleReturnTo); tvBackToQr() }
   const handleTerminateToJournee1 = () => { setReturnJournee('journee1'); setView('onboarding-modules'); tvBackToQr() }
-  const handleTerminateToJournee4 = () => { setReturnJournee('journee4'); setView('onboarding-modules'); tvBackToQr() }
+  const handleTerminateToJournee4 = () => {
+    if (moduleReturnTo === 'onboarding-modules-belgique') {
+      setReturnJourneeBelgique('journee4')
+      setView('onboarding-modules-belgique')
+    } else {
+      setReturnJournee('journee4')
+      setView('onboarding-modules')
+    }
+    tvBackToQr()
+  }
   const handleOpenPlanning = () => setView('planning')
 
   if (!appReady) {
@@ -469,6 +480,7 @@ export default function Page() {
             onLaunchFormation={handleLaunchSession}
             onLaunchModule={handleLaunchModule}
             onEndRoom={handleEndRoom}
+            onLaunchPeerQuiz={() => { setPeerQuizReturnView('onboarding-modules'); setReturnJournee('journee2'); setView('peer-quiz') }}
             initialStep="modules"
             initialJournee={returnJournee}
           />
@@ -481,6 +493,7 @@ export default function Page() {
             onBack={handleBackToDashboard}
             onLaunchFormation={handleLaunchSession}
             onLaunchModule={(moduleId, journeeId) => handleLaunchModule(moduleId, 'onboarding-modules-belgique', journeeId)}
+            onLaunchPeerQuiz={() => { setPeerQuizReturnView('onboarding-modules-belgique'); setReturnJourneeBelgique('journee2'); setView('peer-quiz') }}
             initialStep="modules"
             initialJournee={returnJourneeBelgique}
           />
@@ -611,6 +624,12 @@ export default function Page() {
           pName={pName}
           onBack={handleBackToModules}
           onTerminate={handleTerminateToJournee4}
+        />
+      )}
+      {view === 'peer-quiz' && (
+        <PeerQuizTrainer
+          sessionCode={getActiveSessionCode()}
+          onBack={() => setView(peerQuizReturnView)}
         />
       )}
       {view === 'planning' && (

@@ -102,6 +102,32 @@ const JOURNEES_BELGIQUE = (onLaunchModule, onLaunchPeerQuiz) => [
       },
     ],
   },
+  {
+    id: 'journee4',
+    numero: 4,
+    titre: 'Journée 4',
+    sub: 'Le SAV — Retraits, Ajustages & Recommandes',
+    modules: [
+      {
+        visual: 'emoji', icon: '📦',
+        label: 'Les Retraits',
+        sub: 'SMS · Recherche · Essayage · Signature',
+        onClick: () => onLaunchModule('retraits', 'journee4'),
+      },
+      {
+        visual: 'emoji', icon: '🔧',
+        label: 'Les Ajustages',
+        sub: "Confort · Acétate · Métal · Règles d'or",
+        onClick: () => onLaunchModule('ajustages', 'journee4'),
+      },
+      {
+        visual: 'emoji', icon: '🔄',
+        label: 'Les RAZ',
+        sub: 'Recommandes · Process · Dernier recours',
+        onClick: () => onLaunchModule('raz', 'journee4'),
+      },
+    ],
+  },
 ]
 
 // ── Step 1 : Liste présence ───────────────────────────────────────
