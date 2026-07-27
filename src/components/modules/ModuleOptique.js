@@ -2,11 +2,11 @@
 // fix: getActiveSessionCode pour sync TV
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbSelect, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
+import { sbUpdate, sbSelect, sbDelete, getActiveSessionCode, setSharedState, fetchOpenAnswers, insertOpenAnswer } from '@/lib/supabase'
 import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
-import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, OPTIQUE_QUIZ } from '@/lib/modulesData'
+import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, OPTIQUE_QUIZ, ENTRAINEMENT_QUESTIONS } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import { useIsMobile } from '@/lib/useIsMobile'
@@ -940,6 +940,208 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
   )
 }
 
+// ── Entraînement oral (formateur) ─────────────────────────────────
+const ENTRAINEMENT_PAGE_ID = 'optique:entrainement'
+
+function EntrainementOralPage({ page, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage, quizLaunched, onLaunchQuiz }) {
+  const [selectedQ, setSelectedQ] = useState(null)
+  const [answers, setAnswers] = useState([])
+  const [vfCorrect, setVfCorrect] = useState(null)
+  const [onlineCount, setOnlineCount] = useState(0)
+  const code = getActiveSessionCode()
+
+  useEffect(() => {
+    setSharedState({ entrainement_q: null, entrainement_vf_correct: null, entrainement_clear_ts: null }).catch(() => {})
+    setSelectedQ(null)
+    setAnswers([])
+    setVfCorrect(null)
+  }, [page.id])
+
+  useEffect(() => {
+    if (selectedQ === null) return
+    const poll = async () => {
+      const rows = await fetchOpenAnswers(code, ENTRAINEMENT_PAGE_ID)
+      const latest = {}
+      for (const r of (rows || [])) latest[r.participant_name] = r
+      setAnswers(Object.values(latest))
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [selectedQ, code])
+
+  useEffect(() => {
+    const fetch = async () => {
+      const { fetchOnlineParticipantCount } = await import('@/lib/participantPresence')
+      const count = await fetchOnlineParticipantCount(code)
+      setOnlineCount(count || 0)
+    }
+    fetch()
+    const t = setInterval(fetch, 6000)
+    return () => clearInterval(t)
+  }, [code])
+
+  const clearAnswers = async () => {
+    await sbDelete('open_answers', `session_code=eq.${encodeURIComponent(code)}&page_id=eq.${encodeURIComponent(ENTRAINEMENT_PAGE_ID)}`)
+    setAnswers([])
+  }
+
+  const selectQuestion = async (idx) => {
+    await clearAnswers()
+    setVfCorrect(null)
+    setSelectedQ(idx)
+    await setSharedState({ entrainement_q: idx, entrainement_vf_correct: null, entrainement_clear_ts: Date.now() })
+  }
+
+  const handleClearAndReset = async () => {
+    await clearAnswers()
+    setSelectedQ(null)
+    setVfCorrect(null)
+    await setSharedState({ entrainement_q: null, entrainement_vf_correct: null, entrainement_clear_ts: Date.now() })
+  }
+
+  const handleVF = async (answer) => {
+    const newVf = vfCorrect === answer ? null : answer
+    setVfCorrect(newVf)
+    await setSharedState({ entrainement_vf_correct: newVf })
+  }
+
+  const currentQ = selectedQ !== null ? ENTRAINEMENT_QUESTIONS[selectedQ] : null
+  const allAnswered = onlineCount > 0 && answers.length >= onlineCount
+  const isVF = currentQ?.type === 'vrai-faux'
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
+      {/* Topbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Les bases de l&apos;optique</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            onClick={handleClearAndReset}
+            style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', padding: '8px 18px', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+          >🗑 Effacer les réponses</button>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {Array(total).fill(0).map((_, i) => (
+              <div key={i} style={{ height: 5, borderRadius: 3, transition: 'all .3s', width: i === pageIndex ? 22 : 5, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)' }} />
+            ))}
+          </div>
+          <button onClick={onBack}
+            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+          >✕ Quitter</button>
+        </div>
+      </div>
+
+      {/* Corps */}
+      <div style={{ flex: 1, display: 'flex', gap: 24, padding: '8px 32px 100px' }}>
+        {/* Colonne gauche — questions */}
+        <div style={{ width: 380, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>Cliquez pour envoyer une question</div>
+          {ENTRAINEMENT_QUESTIONS.map((q, i) => {
+            const isSelected = selectedQ === i
+            return (
+              <button key={i} onClick={() => selectQuestion(i)} style={{
+                background: isSelected ? 'rgba(0,171,233,0.15)' : 'rgba(255,255,255,0.04)',
+                border: `1.5px solid ${isSelected ? 'rgba(0,171,233,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: 14, padding: '14px 16px',
+                textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'all .15s',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                  <div style={{
+                    width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                    background: isSelected ? '#00abe9' : 'rgba(255,255,255,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 11, fontWeight: 800, color: '#fff',
+                  }}>{i + 1}</div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: isSelected ? '#fff' : 'rgba(255,255,255,0.7)', lineHeight: 1.4 }}>{q.text}</div>
+                    {q.type === 'vrai-faux' && (
+                      <div style={{ fontSize: 11, color: isSelected ? 'rgba(0,171,233,0.8)' : 'rgba(255,255,255,0.35)', marginTop: 4, fontWeight: 600 }}>→ Réponse VRAI / FAUX</div>
+                    )}
+                  </div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Colonne droite — réponses */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {currentQ === null ? (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, opacity: 0.4 }}>
+              <div style={{ fontSize: 48 }}>🗣️</div>
+              <div style={{ fontSize: 16, color: '#fff', fontWeight: 600 }}>Sélectionnez une question</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>Les participants verront la question sur leur téléphone</div>
+            </div>
+          ) : (
+            <>
+              {/* Question active + indicateur */}
+              <div style={{ background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.3)', borderRadius: 16, padding: '16px 20px' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Question diffusée</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>{currentQ.text}</div>
+              </div>
+
+              {/* Boutons VRAI/FAUX formateur (Q4 uniquement) */}
+              {isVF && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Votre réponse (bonne réponse officielle)</div>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    {['VRAI', 'FAUX'].map(v => (
+                      <button key={v} onClick={() => handleVF(v)} style={{
+                        flex: 1, padding: '14px', borderRadius: 14, fontSize: 16, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+                        background: vfCorrect === v ? (v === 'VRAI' ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)') : 'rgba(255,255,255,0.07)',
+                        border: `2px solid ${vfCorrect === v ? (v === 'VRAI' ? '#4ade80' : '#f87171') : 'rgba(255,255,255,0.15)'}`,
+                        color: vfCorrect === v ? (v === 'VRAI' ? '#4ade80' : '#f87171') : 'rgba(255,255,255,0.6)',
+                      }}>{v}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Indicateur "Tous ont répondu" */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                background: allAnswered ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${allAnswered ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: 12, padding: '10px 16px',
+              }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: allAnswered ? '#4ade80' : '#f59e0b', animation: allAnswered ? 'none' : 'optiqueHalo 1.2s ease-in-out infinite' }} />
+                <span style={{ fontSize: 14, fontWeight: 700, color: allAnswered ? '#4ade80' : 'rgba(255,255,255,0.6)' }}>
+                  {answers.length} réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''}
+                  {onlineCount > 0 && ` / ${onlineCount} participant${onlineCount > 1 ? 's' : ''}`}
+                  {allAnswered && ' — Tout le monde a répondu ✓'}
+                </span>
+              </div>
+
+              {/* Liste des réponses */}
+              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {answers.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.25)', fontSize: 14 }}>En attente des réponses…</div>
+                ) : answers.map(row => (
+                  <div key={row.participant_name} style={{
+                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 12, padding: '12px 16px',
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>{row.participant_name}</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{row.answer}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} quizLaunched={quizLaunched} onLaunchQuiz={onLaunchQuiz} nextPage={nextPage} />
+    </div>
+  )
+}
+
 // ── Affichage ordonnance (formateur) ─────────────────────────────
 function OrdonnanceDisplay({ ordonnance, hideLabels }) {
   if (!ordonnance) return null
@@ -1765,6 +1967,7 @@ export default function ModuleOptique({ pName, onBack }) {
       {page.type === 'ordonnance'        && <OrdonnancePage         page={page} {...navProps} />}
       {page.type === 'pause'             && <PausePage              page={page} {...navProps} />}
       {page.type === 'saisie-interactive' && <SaisieInteractivePage page={page} {...navProps} />}
+      {page.type === 'entrainement-oral'  && <EntrainementOralPage  page={page} {...navProps} />}
     </>
   )
 }

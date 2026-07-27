@@ -2145,6 +2145,47 @@ function TVSaisieInteractive({ page, pageIndex, total, moduleLabel }) {
   )
 }
 
+// ── TV Entraînement oral (type = entrainement-oral) ──────────────
+function TVEntrainementOral({ page, pageIndex, total, moduleLabel }) {
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
+      {/* Topbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{pageIndex + 1} / {total}</span>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {Array(total).fill(0).map((_, i) => (
+              <div key={i} style={{ height: 5, borderRadius: 3, transition: 'all .3s', width: i === pageIndex ? 22 : 5, background: i === pageIndex ? '#00abe9' : 'rgba(255,255,255,0.2)' }} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Corps centré */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28 }}>
+        <div style={{ fontSize: 80 }}>🗣️</div>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 3, textAlign: 'center', marginBottom: 14 }}>Questions orales</div>
+          <h1 style={{ fontSize: 48, fontWeight: 900, color: '#fff', textAlign: 'center', lineHeight: 1.2, maxWidth: 820, margin: '0 auto 16px' }}>
+            Répondez sur votre téléphone
+          </h1>
+          <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>Le formateur vous pose des questions — saisissez votre réponse</p>
+        </div>
+
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 14, background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)', borderRadius: 40, padding: '16px 36px' }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#00abe9', animation: 'waitingPulse 1.5s ease-in-out infinite' }} />
+          <span style={{ fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>📱 Regardez votre téléphone</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── TV Entreprise : freins à l'achat ─────────────────────────────
 const TV_BUBBLE_COLORS = ['rgba(0,171,233,0.9)','rgba(74,222,128,0.9)','rgba(245,158,11,0.9)','rgba(167,139,250,0.9)','rgba(244,114,182,0.9)','rgba(52,211,153,0.9)']
 
@@ -5971,6 +6012,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} ordoRevealStep={ordoRevealStep} audioUnlocked={audioUnlocked} />
   if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'entrainement-oral')  return <TVEntrainementOral  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
 
   // Entreprise module types — tous dispatchés pour éviter le VerreAnime
   if (page.type === 'labo-progressif') return <TVLaboProgressif page={page} pageIndex={pageIndex} total={total} revealLabo={revealLabo} />

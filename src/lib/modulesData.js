@@ -191,6 +191,23 @@ export const OPTIQUE_PAGES = [
     icon: '⌨️',
     color: '#00abe9',
   },
+  {
+    id: 'entrainement-oral',
+    type: 'entrainement-oral',
+    titre: 'Questions orales',
+    sousTitre: 'Entraînement collectif — posez une question, récupérez les réponses',
+    icon: '🗣️',
+    color: '#00abe9',
+  },
+]
+
+export const ENTRAINEMENT_QUESTIONS = [
+  { id: 0, text: 'Quels sont les problèmes de vue de cette personne ?', type: 'text' },
+  { id: 1, text: 'Ce client voit : (répondez avec les définitions des problèmes de vue)', type: 'text' },
+  { id: 2, text: 'De combien est la sphère sur cette ordonnance ?', type: 'text' },
+  { id: 3, text: 'De combien est le cylindre sur cette ordonnance ?', type: 'text' },
+  { id: 4, text: 'Ce client est presbyte.', type: 'vrai-faux' },
+  { id: 5, text: 'Quels sont les problèmes de vue de ce client ?', type: 'text' },
 ]
 
 export const OPTIQUE_QUIZ = [

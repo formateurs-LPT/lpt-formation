@@ -4,7 +4,7 @@ import Image from 'next/image'
 import LPTSaleApp from '@/components/LPTSaleApp'
 import QuestionBubble from '@/components/QuestionBubble'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES } from '@/lib/modulesData'
+import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, ENTRAINEMENT_QUESTIONS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbUpsert, sbSelect, sbDelete, getParticipantSessionCode, ensureSession, getSharedState, getRoomSharedState, setSharedState, setRoomSharedState, insertOpenAnswer, updateOpenAnswer, setParticipantPage } from '@/lib/supabase'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
@@ -3459,7 +3459,129 @@ function SAVContentMobile({ page, pageIndex, total }) {
   )
 }
 
-function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint, rembfrRevealed }) {
+// ── Entraînement oral (participant) ──────────────────────────────
+const ENTRAINEMENT_PAGE_ID = 'optique:entrainement'
+
+function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, entrainementClearTs }) {
+  const [text, setText] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const [vfSelected, setVfSelected] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setText('')
+    setSubmitted(false)
+    setVfSelected(null)
+  }, [entrainementQ, entrainementClearTs])
+
+  const q = entrainementQ != null ? ENTRAINEMENT_QUESTIONS[entrainementQ] : null
+
+  const submitText = async () => {
+    if (!text.trim() || submitted || saving) return
+    setSaving(true)
+    await insertOpenAnswer({
+      sessionCode: getParticipantSessionCode(),
+      pageId: ENTRAINEMENT_PAGE_ID,
+      participantName: pName?.trim() || 'Anonyme',
+      answer: text.trim(),
+    })
+    setSaving(false)
+    setSubmitted(true)
+  }
+
+  const submitVF = async (answer) => {
+    if (submitted || saving) return
+    setSaving(true)
+    setVfSelected(answer)
+    await insertOpenAnswer({
+      sessionCode: getParticipantSessionCode(),
+      pageId: ENTRAINEMENT_PAGE_ID,
+      participantName: pName?.trim() || 'Anonyme',
+      answer,
+    })
+    setSaving(false)
+    setSubmitted(true)
+  }
+
+  const bg = { minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 20px 40px' }
+
+  if (q === null) {
+    return (
+      <div style={bg}>
+        <div style={{ fontSize: 48, marginBottom: 20 }}>🗣️</div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10, textAlign: 'center' }}>Questions orales</div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', lineHeight: 1.6 }}>
+          Le formateur va vous poser une question.<br />Elle apparaîtra ici.
+        </div>
+        <div style={{ marginTop: 28, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'waitDot 1.4s ease-in-out infinite' }} />
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>En attente…</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (submitted) {
+    return (
+      <div style={bg}>
+        <div style={{ fontSize: 48, marginBottom: 20 }}>✍️</div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 10, textAlign: 'center' }}>Réponse envoyée !</div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center' }}>Le formateur va commenter les réponses.</div>
+        {q.type === 'vrai-faux' && vfSelected && (
+          <div style={{
+            marginTop: 24, background: vfSelected === 'VRAI' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+            border: `1px solid ${vfSelected === 'VRAI' ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
+            borderRadius: 16, padding: '14px 32px', fontSize: 22, fontWeight: 900,
+            color: vfSelected === 'VRAI' ? '#4ade80' : '#f87171',
+          }}>{vfSelected}</div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.35)', borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24 }}>
+        Question du formateur
+      </div>
+
+      <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.3, maxWidth: 340, marginBottom: 32 }}>
+        {q.text}
+      </div>
+
+      {q.type === 'vrai-faux' ? (
+        <div style={{ display: 'flex', gap: 16, width: '100%', maxWidth: 340 }}>
+          {['VRAI', 'FAUX'].map(v => (
+            <button key={v} onClick={() => submitVF(v)} disabled={saving} style={{
+              flex: 1, padding: '22px 0', borderRadius: 18, fontSize: 22, fontWeight: 900,
+              cursor: saving ? 'default' : 'pointer', fontFamily: 'inherit',
+              background: v === 'VRAI' ? 'linear-gradient(135deg, #16a34a, #22c55e)' : 'linear-gradient(135deg, #dc2626, #ef4444)',
+              border: 'none', color: '#fff',
+              boxShadow: v === 'VRAI' ? '0 6px 20px rgba(34,197,94,0.35)' : '0 6px 20px rgba(239,68,68,0.35)',
+            }}>{v}</button>
+          ))}
+        </div>
+      ) : (
+        <div style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Votre réponse…"
+            rows={4}
+            style={{ width: '100%', padding: '16px', borderRadius: 16, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: 16, fontFamily: 'inherit', resize: 'none', outline: 'none', boxSizing: 'border-box' }}
+          />
+          <button onClick={submitText} disabled={!text.trim() || saving} style={{
+            background: text.trim() ? 'linear-gradient(135deg, #0070a8, #00abe9)' : 'rgba(255,255,255,0.08)',
+            border: 'none', color: '#fff', padding: '16px', borderRadius: 16,
+            fontSize: 16, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default', fontFamily: 'inherit',
+          }}>{saving ? 'Envoi…' : '✓ Envoyer'}</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint, rembfrRevealed, entrainementQ, entrainementVfCorrect, entrainementClearTs }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
@@ -3731,6 +3853,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
   )
 
   if (page.type === 'saisie-interactive') return <SaisieInteractiveMobile page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'entrainement-oral')  return <EntrainementOralMobile pName={pName} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} />
 
   // Freins à l'achat — saisie libre
   if (page.type === 'freins') return <FreinsInputMobile page={page} pName={pName || 'Anonyme'} />
@@ -4420,6 +4543,9 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const [modelePoint, setModelePoint]             = useState(null)
   const [faqJournee, setFaqJournee]               = useState(null)
   const [rembfrRevealed, setRembfrRevealed]       = useState([])
+  const [entrainementQ, setEntrainementQ]           = useState(null)
+  const [entrainementVfCorrect, setEntrainementVfCorrect] = useState(null)
+  const [entrainementClearTs, setEntrainementClearTs]     = useState(null)
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
@@ -4434,6 +4560,9 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     setModelePoint(sharedState.modele_point ?? null)
     setFaqJournee(sharedState.faq_journee || null)
     setRembfrRevealed(sharedState.rembfr_revealed || [])
+    setEntrainementQ(sharedState.entrainement_q ?? null)
+    setEntrainementVfCorrect(sharedState.entrainement_vf_correct ?? null)
+    setEntrainementClearTs(sharedState.entrainement_clear_ts ?? null)
     // Force-disconnect déclenché par le formateur
     // Ignoré si le formé s'est reconnecté après le kick (joined_at > kickTimestamp)
     const kickTimestamp = Number(sharedState.forced_disconnects?.[pName]) || 0
@@ -4533,7 +4662,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
               : isQuiz
               ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
               : page
-                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} rembfrRevealed={rembfrRevealed} />
+                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} rembfrRevealed={rembfrRevealed} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} />
                 : faqJournee
                   ? <FAQInputMobile journeeId={faqJournee} />
                   : <WaitingScreen />
