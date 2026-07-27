@@ -418,6 +418,7 @@ export const ENTREPRISE_QUIZ = [
     type: 'text-open',
     question: 'Où se trouve le laboratoire progressif unique au monde de Lunettes Pour Tous ?',
     hint: 'Paris Châtelet',
+    autoCorrect: ['paris', 'chatelet', 'châtelet'],
   },
   {
     type: 'text-open',
