@@ -202,7 +202,6 @@ export const OPTIQUE_PAGES = [
 ]
 
 export const ENTRAINEMENT_QUESTIONS = [
-  { id: 0, text: 'Quels sont les problèmes de vue de cette personne ?', type: 'text' },
   { id: 1, text: 'Ce client voit : (répondez avec les définitions des problèmes de vue)', type: 'text' },
   { id: 2, text: 'De combien est la sphère sur cette ordonnance ?', type: 'text' },
   { id: 3, text: 'De combien est le cylindre sur cette ordonnance ?', type: 'text' },
@@ -421,6 +420,7 @@ export const OFFRES_PAGES = [
   { id: 'un-pour-un',    type: 'offres-1-1',            color: '#c9a227' },
   { id: 'unifocal-11',   type: 'offres-unifocal-11',   color: '#c9a227' },
   { id: 'progressif-11', type: 'offres-progressif-11', color: '#c9a227' },
+  { id: 'pack-plan',     type: 'offres-pack-plan',      color: '#00abe9' },
 ]
 
 export const OFFRES_QUIZ = [
@@ -899,10 +899,10 @@ export const RAZ_PAGES = [
     titre: 'Trouver la cause avant de recommander',
     sousTitre: 'SAV · RAZ — Les 4 vérifications',
     points: [
-      { emoji: '1️⃣', titre: 'Saisie de la correction', desc: "Comparer l'ordonnance avec le back-end (attention à la transposition)" },
-      { emoji: '2️⃣', titre: 'Les verres sur la paire', desc: 'Vérifier au frontofocométre que les verres correspondent au back-end' },
-      { emoji: '3️⃣', titre: 'Les prises de mesures', desc: 'Hauteur et écarts — un mauvais centrage peut provoquer une gêne visuelle' },
-      { emoji: '4️⃣', titre: "L'ordonnance / examen de vue", desc: 'Si tout est conforme, la base même est peut-être incorrecte' },
+      { emoji: '1️⃣', titre: 'Saisie de correction + vérif fronto', desc: "Comparer l'ordonnance avec le back-end, puis vérifier les verres au frontofocométre" },
+      { emoji: '2️⃣', titre: 'PDM — Prises de mesures', desc: 'Hauteur et écarts pupillaires — un mauvais centrage provoque une gêne visuelle' },
+      { emoji: '3️⃣', titre: 'Ajustement', desc: "Tenter de corriger le problème par un ajustage avant de lancer la refabrication" },
+      { emoji: '4️⃣', titre: "Ordonnance / Examen de vue", desc: 'Si tout est conforme, la base même est peut-être incorrecte' },
     ],
     notesFormateur: [
       { icon: '⚠️', title: 'Ordre des vérifications', text: "Toujours faire les 4 étapes dans l'ordre, même si on pense déjà connaître le problème. Chaque étape est un filet de sécurité. Peu importe le problème trouvé, on vérifie les autres éléments quand même — pour éviter la RAZ sur la RAZ." },
@@ -913,49 +913,52 @@ export const RAZ_PAGES = [
     type: 'sav-content',
     color: '#f87171',
     icon: '📋',
-    titre: 'Étape 1 — La saisie de la correction',
-    sousTitre: "Ouvrir le dossier client → ouvrir l'ordonnance",
+    titre: 'Étape 1 — Saisie de correction + vérif fronto',
+    sousTitre: "Dossier client → ordonnance → frontofocométre",
     points: [
-      { emoji: '👁', titre: 'Comparer ordonnance ↔ back-end', desc: 'Attention : faire la transposition si nécessaire avant de comparer' },
-      { emoji: '❌', titre: 'Si différent → problème trouvé', desc: "Le vendeur s'est trompé → le client n'a pas les bonnes corrections sur ses lunettes" },
-      { emoji: '✅', titre: 'Si identique → étape suivante', desc: "La saisie est correcte, le problème vient d'ailleurs" },
+      { emoji: '👁', titre: 'Comparer ordonnance ↔ back-end', desc: 'Attention à la transposition si la prescription est en négatif avant de comparer' },
+      { emoji: '🔬', titre: 'Vérifier les verres au frontofocométre', desc: 'Mesurer sphère, cylindre et axe sur la paire — comparer avec le back-end' },
+      { emoji: '❌', titre: 'Si différent → problème trouvé', desc: "Erreur de saisie ou mauvais verres montés — ne pas aller plus loin sur cette cause" },
+      { emoji: '✅', titre: 'Si identique → étape suivante (PDM)', desc: "Saisie et verres corrects, le problème vient des mesures ou de l'ordonnance" },
     ],
     notesFormateur: [
       { icon: '🔄', title: 'La transposition', text: "Si la prescription est en négatif, il faut la transposer avant de comparer avec le back-end. Ex : -2.00 (-0.50 × 90) = -2.50 (+0.50 × 180). C'est l'erreur la plus fréquente en magasin." },
-      { icon: '📊', title: 'La cause n°1', text: "L'erreur de saisie est la cause n°1 des RAZ. Prendre le temps de bien former les vendeurs à la saisie correcte dès le départ évite beaucoup de refabrications." },
+      { icon: '🔬', title: 'Utilisation du frontofocométre', text: "Mesurer les deux verres séparément. Comparer sphère, cylindre et axe avec le back-end. Une inversion OD/OG est une erreur classique au montage — à vérifier en priorité." },
+      { icon: '📊', title: 'La cause n°1', text: "L'erreur de saisie reste la cause n°1 des RAZ. Ces deux vérifications (saisie + fronto) sont liées et se font dans la foulée — c'est pourquoi on les traite ensemble." },
     ],
   },
   {
     id: 'raz-etape2',
     type: 'sav-content',
     color: '#f87171',
-    icon: '🔬',
-    titre: 'Étape 2 — Les verres sur la paire',
-    sousTitre: 'Vérification avec le frontofocométre',
+    icon: '📐',
+    titre: 'Étape 2 — PDM, Prises de mesures',
+    sousTitre: 'Hauteur et écarts pupillaires',
     points: [
-      { emoji: '🔬', titre: 'Mesurer les corrections sur la paire', desc: 'Comparer avec ce qui est dans le back-end — peut-être une erreur au montage' },
-      { emoji: '❌', titre: 'Si différent → problème trouvé', desc: 'Les mauvais verres ont été montés — bonne saisie informatique mais mauvaise fabrication' },
-      { emoji: '✅', titre: 'Si identique → étape suivante', desc: "Les verres correspondent au back-end, le problème vient d'ailleurs" },
+      { emoji: '📏', titre: 'Unifocaux — Centre optique au frontofocométre', desc: "Le centre optique doit se trouver devant la pupille du client quand il porte la paire" },
+      { emoji: '🔭', titre: 'Progressifs — Gravures + marqueur + ditest', desc: 'La croix obtenue = point de vision de loin → doit être juste devant la pupille' },
+      { emoji: '❌', titre: 'Si centrage incorrect → passer à l'ajustement', desc: "Un mauvais centrage peut provoquer une gêne même avec une correction parfaite" },
+      { emoji: '✅', titre: 'Si PDM correctes → étape suivante (ordo)', desc: "Les mesures sont bonnes, le problème vient peut-être de l'ordonnance elle-même" },
     ],
     notesFormateur: [
-      { icon: '🔬', title: 'Utilisation du frontofocométre', text: "Mesurer les deux verres séparément. Comparer sphère, cylindre et axe avec le back-end. Une inversion OD/OG est une erreur classique au montage — à vérifier en priorité." },
+      { icon: '🎯', title: 'Progressifs : trouver le centre optique', text: "Trouver les gravures dans le verre (petits points gravés), marquer au ditest, tracer la croix avec le marqueur. La croix = vision de loin. La montrer sur le diffuseur avec des visuels. (Visuels à ajouter ultérieurement)" },
     ],
   },
   {
     id: 'raz-etape3',
     type: 'sav-content',
     color: '#f87171',
-    icon: '📐',
-    titre: 'Étape 3 — Prises de mesures & centrage',
-    sousTitre: 'Hauteur et écarts pupillaires',
+    icon: '🔧',
+    titre: 'Étape 3 — Ajustement',
+    sousTitre: "Corriger le problème sans refabriquer si possible",
     points: [
-      { emoji: '📏', titre: 'Unifocaux — Centre optique au frontofocométre', desc: "Le centre optique doit se trouver devant la pupille du client quand il porte la paire" },
-      { emoji: '🔭', titre: 'Progressifs — Gravures + marqueur + ditest', desc: 'La croix obtenue = point de vision de loin → doit être juste devant la pupille' },
-      { emoji: '🔧', titre: 'Si centrage incorrect → ajuster ou refabriquer', desc: "Ajuster la monture si possible — sinon refabrication avec les bonnes mesures" },
+      { emoji: '🔧', titre: 'Ajuster la monture', desc: "Modifier l'angle des branches, la position du pont, l'inclinaison — pour que la paire se positionne correctement sur le visage" },
+      { emoji: '🕶', titre: 'Faire essayer et valider avec le client', desc: "Le client doit confirmer que la gêne a disparu avant de conclure à un ajustage réussi" },
+      { emoji: '⚠️', titre: 'Si ajustement impossible → RAZ avec les bonnes mesures', desc: "Si le décalage est trop important ou que la monture ne le permet pas, il faut refabriquer" },
     ],
     notesFormateur: [
-      { icon: '🎯', title: 'Progressifs : trouver le centre optique', text: "Expliquer oralement : trouver les gravures dans le verre (petits points gravés), marquer au ditest, tracer la croix avec le marqueur. La croix = vision de loin. La montrer sur le diffuseur avec des visuels. (Visuels à ajouter ultérieurement)" },
-      { icon: '📐', title: 'Ajustage vs Refabrication', text: "Un léger décalage peut être corrigé en ajustant la monture (changer l'angle, remonter la paire). Si le décalage est trop important ou que la monture ne le permet pas, il faut refabriquer." },
+      { icon: '📐', title: 'Ajustage vs Refabrication', text: "Un léger décalage peut suffire à créer une gêne — et se corriger en 2 minutes. Toujours essayer l'ajustage en premier. Si le problème persiste malgré un bon ajustage, alors seulement on lance la RAZ avec les nouvelles mesures." },
+      { icon: '💬', title: 'Valider avec le client', text: "Ne jamais supposer que l'ajustage a résolu le problème. Faire essayer la paire et demander explicitement : 'Est-ce que la gêne a disparu ?' Un client qui repart sans confirmer peut revenir la semaine suivante." },
     ],
   },
   {
@@ -963,8 +966,8 @@ export const RAZ_PAGES = [
     type: 'sav-content',
     color: '#f87171',
     icon: '👁',
-    titre: "Étape 4 — L'ordonnance & la règle d'or",
-    sousTitre: 'Quand tout est conforme…',
+    titre: "Étape 4 — Ordonnance & examen de vue",
+    sousTitre: 'Quand saisie, fronto, PDM et ajustement sont corrects…',
     points: [
       { emoji: '🩺', titre: 'Tout est conforme → envoyer en examen de vue', desc: "Le problème vient sûrement de l'ordonnance — l'opticien trouvera certainement une correction différente" },
       { emoji: '🕶', titre: "Essayer en lunettes d'essai avant de relancer", desc: 'Faire valider la nouvelle correction au client avant toute refabrication' },
@@ -972,7 +975,7 @@ export const RAZ_PAGES = [
     ],
     notesFormateur: [
       { icon: '💬', title: 'Rassurer le client', text: "Ce n'est pas sa faute si sa correction a évolué. L'examen de vue est gratuit chez LPT. Le rassurer sur la prise en charge totale et sur le fait qu'on va tout refaire correctement." },
-      { icon: '⚠️', title: "La règle d'or — insister dessus", text: "Même si on a trouvé l'erreur à l'étape 1 (saisie), on vérifie quand même les prises de mesures. On ne veut pas refabriquer et rappeler le client 3 semaines plus tard parce que les hauteurs n'étaient pas bonnes non plus." },
+      { icon: '⚠️', title: "La règle d'or — insister dessus", text: "Même si on a trouvé l'erreur à l'étape 1 (saisie), on vérifie quand même les prises de mesures et l'ajustement. On ne veut pas refabriquer et rappeler le client 3 semaines plus tard parce que les hauteurs n'étaient pas bonnes non plus." },
     ],
   },
   {
@@ -1061,7 +1064,7 @@ export const RAZ_PAGES = [
 export const RAZ_QUIZ = []
 
 export const MONTURES_QUIZ = [
-  { type: 'text-open', question: 'Quelle est l\'origine de la matière première de l\'acétate de cellulose ?', hint: 'Pulpe de bois ou fibre de coton (pas du pétrole)' },
+  { type: 'text-open', question: 'Quelle est l\'origine de la matière première de l\'acétate de cellulose ?', hint: 'Fibre de bois ou fibre de coton (pas du pétrole)' },
   { type: 'text-open', question: 'Comment ajuste-t-on une monture en acétate ? Quel élément ne peut PAS être ajusté ?', hint: 'À chaud (chaleur sèche) — le pont ne peut pas être ajusté en largeur' },
   { type: 'text-open', question: 'Citez un avantage et un inconvénient de la monture en acétate.', hint: 'Avantage : hypoallergénique, coloris variés, premium / Inconvénient : plus lourd que métal & injecté' },
   { type: 'text-open', question: 'Quel est le principal avantage du métal par rapport aux autres matériaux en termes de port ?', hint: 'Plus léger et plus fin — discret sur le visage' },

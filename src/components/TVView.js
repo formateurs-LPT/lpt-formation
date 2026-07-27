@@ -3666,7 +3666,7 @@ function TVPdmAnimation({ step }) {
 const TV_ITEMS_CLASSIQUE = [
   { label: '1 paire achetée', sub: null },
   { label: 'Deuxième paire à -20%', sub: null },
-  { label: '10€ en 10 minutes', sub: null },
+  { label: '10€ en 10 minutes', sub: 'Uniquement dans ce parcours' },
 ]
 
 function TVOffresClassique({ step = 0 }) {
@@ -3686,8 +3686,8 @@ function TVOffresClassique({ step = 0 }) {
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `4px solid ${COLOR}`, borderRadius: 16, padding: '24px 28px' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>Tarifs</div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>Entrée de gamme</span>
-            <span style={{ fontSize: 30, fontWeight: 900, color: COLOR }}>dès 10€</span>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>Montures</span>
+            <span style={{ fontSize: 30, fontWeight: 900, color: COLOR }}>5€ à 90€</span>
           </div>
           <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 16 }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -3715,6 +3715,7 @@ function TVOffresClassique({ step = 0 }) {
             borderRadius: 16, padding: '22px 28px',
           }}>
             <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{item.label}</div>
+            {item.sub && <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{item.sub}</div>}
           </div>
         ))}
         {/* Barre de progression */}
@@ -3866,6 +3867,73 @@ function TVOffresProgressif11() {
               <div style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>{item.label}</div>
               {item.sub && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{item.sub}</div>}
             </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── TV Offres : Pack Plan 95€ ─────────────────────────────────────
+const TV_ITEMS_PACK_PLAN = [
+  { label: '2 paires de lunettes', sub: null },
+  { label: 'Monture au choix', sub: null },
+  { label: 'Traitement au choix', sub: null },
+  { label: 'Solaire inclus', sub: 'Sauf polarisé' },
+]
+
+function TVOffresPackPlan({ step = 0 }) {
+  const COLOR = '#00abe9'
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+      {/* Gauche */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 32 }}>
+          <div style={{ width: 96, height: 96, borderRadius: '50%', border: `14px solid ${COLOR}`, boxShadow: `0 0 40px ${COLOR}50`, flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Les parcours LPT</div>
+            <div style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1 }}>Pack</div>
+            <div style={{ fontSize: 48, fontWeight: 900, color: COLOR, lineHeight: 1 }}>Plan 95€</div>
+          </div>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `4px solid ${COLOR}`, borderRadius: 16, padding: '24px 28px' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 }}>Tarif</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>2 paires</span>
+            <span style={{ fontSize: 40, fontWeight: 900, color: COLOR }}>95€</span>
+          </div>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 16 }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>Sans correction</span>
+            <span style={{ fontSize: 24, fontWeight: 800, color: '#4ade80' }}>✓</span>
+          </div>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 16 }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)' }}>Solaire</span>
+            <span style={{ fontSize: 18, fontWeight: 700, color: '#4ade80' }}>✓ sauf polarisé</span>
+          </div>
+        </div>
+      </div>
+      {/* Droite */}
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 56px', gap: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Ce qui est inclus</div>
+        {TV_ITEMS_PACK_PLAN.map((item, i) => (
+          <div key={i} style={{
+            opacity: i < step ? 1 : 0,
+            transform: i < step ? 'translateX(0)' : 'translateX(16px)',
+            transition: 'opacity 0.5s ease, transform 0.5s ease',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderLeft: `4px solid ${COLOR}`,
+            borderRadius: 16, padding: '22px 28px',
+          }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{item.label}</div>
+            {item.sub && <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{item.sub}</div>}
+          </div>
+        ))}
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          {TV_ITEMS_PACK_PLAN.map((_, i) => (
+            <div key={i} style={{ height: 4, flex: 1, borderRadius: 2, background: i < step ? COLOR : 'rgba(255,255,255,0.1)', transition: 'background 0.4s' }} />
           ))}
         </div>
       </div>
@@ -4206,10 +4274,11 @@ const TV_MONTURES_DATA = {
       { src: '/assets/montures/acetate/SLPT075-EFOBPL-001.avif', ref: 'SLPT075-EFOBPL' },
     ],
     infos: [
-      { icon: '🌿', label: 'Naturel', desc: 'Pulpe de bois ou fibre de coton' },
+      { icon: '🌿', label: 'Naturel', desc: 'Fibre de bois ou fibre de coton' },
       { icon: '✨', label: 'Premium', desc: 'Large choix de coloris & motifs' },
       { icon: '💎', label: 'Modèle unique', desc: 'Chaque paire diffère selon sa plaque' },
       { icon: '🌡️', label: 'Ajustable à chaud', desc: 'Hypoallergénique' },
+      { icon: '💶', label: 'Prix', desc: 'De 30 € à 90 €' },
     ],
   },
   'montures-metal': {
@@ -4223,6 +4292,7 @@ const TV_MONTURES_DATA = {
       { icon: '🪶', label: 'Léger & fin', desc: 'Discret sur le visage' },
       { icon: '🛡️', label: 'Résistant', desc: 'Alliage métallique et revêtement anti-allergique' },
       { icon: '🔧', label: 'Ajustable facilement', desc: 'Plaquettes et branches réglables' },
+      { icon: '💶', label: 'Prix', desc: 'De 30 € à 90 €' },
     ],
   },
   'montures-injecte': {
@@ -4236,6 +4306,7 @@ const TV_MONTURES_DATA = {
       { icon: '🏭', label: 'Moulé à chaud', desc: 'Injecté en série dans un moule industriel' },
       { icon: '🪶', label: 'Léger & résistant', desc: 'Très bonne durabilité au quotidien' },
       { icon: '💚', label: 'Accessible', desc: 'Meilleur rapport qualité / prix de la gamme' },
+      { icon: '💶', label: 'Prix', desc: '5 € ou 15 €' },
     ],
   },
 }
@@ -4439,10 +4510,18 @@ function TVSAVContent({ page, pageIndex, total, moduleLabel }) {
   )
 }
 
-function TVMontures({ type, pageIndex, total, moduleLabel }) {
+const MONTURES_PRIX = {
+  'montures-injecte': '5 € ou 15 €',
+  'montures-acetate': "jusqu'à 90 €",
+  'montures-metal':   "jusqu'à 90 €",
+}
+
+function TVMontures({ type, pageIndex, total, moduleLabel, priceRevealed }) {
   const data = TV_MONTURES_DATA[type]
   const { title, subtitle, color, frames, infos } = data
   const [step, setStep] = useState(0)
+  const baseInfos = infos.filter(i => i.label !== 'Prix')
+  const priceText = MONTURES_PRIX[type] || ''
 
   useEffect(() => {
     setStep(0)
@@ -4497,7 +4576,7 @@ function TVMontures({ type, pageIndex, total, moduleLabel }) {
           <div style={{ fontSize: 16, fontWeight: 400, color: 'rgba(255,255,255,0.35)', marginBottom: 28 }}>{subtitle}</div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {infos.map((info, i) => (
+            {baseInfos.map((info, i) => (
               <div key={i} style={{
                 opacity: step > 3 ? 1 : 0,
                 transform: step > 3 ? 'translateX(0)' : 'translateX(24px)',
@@ -4513,9 +4592,27 @@ function TVMontures({ type, pageIndex, total, moduleLabel }) {
                 </div>
               </div>
             ))}
+
+            {priceRevealed && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                background: 'linear-gradient(135deg, rgba(245,158,11,0.18), rgba(245,158,11,0.08))',
+                border: '1px solid rgba(245,158,11,0.5)',
+                borderLeft: '3px solid #f59e0b',
+                borderRadius: 12, padding: '14px 18px',
+                animation: 'fadeInUp 0.4s ease',
+              }}>
+                <span style={{ fontSize: 24, flexShrink: 0 }}>💶</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>Prix</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', lineHeight: 1 }}>{priceText}</div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
+      <style>{`@keyframes fadeInUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }`}</style>
     </div>
   )
 }
@@ -6069,7 +6166,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, sessionCode, onAmeliProClick }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, sessionCode, onAmeliProClick }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -6094,9 +6191,9 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />
   if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />
-  if (page.type === 'montures-acetate') return <TVMontures type="montures-acetate" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'montures-metal')   return <TVMontures type="montures-metal"   pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'montures-injecte') return <TVMontures type="montures-injecte" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'montures-acetate') return <TVMontures type="montures-acetate" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} priceRevealed={monturesPrixRevealed} />
+  if (page.type === 'montures-metal')   return <TVMontures type="montures-metal"   pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} priceRevealed={monturesPrixRevealed} />
+  if (page.type === 'montures-injecte') return <TVMontures type="montures-injecte" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} priceRevealed={monturesPrixRevealed} />
   if (page.type === 'sav-brainstorm') return <TVSAVBrainstorm page={page} sessionCode={sessionCode} brainstormRevealed={brainstormRevealed} />
   if (page.type === 'sav-content') return <TVSAVContent page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'pdm-pourquoi')     return <TVPdmPourquoi pageIndex={pageIndex} total={total} />
@@ -6104,6 +6201,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'offres-1-1')         return <TVOffres11 step={offres11Step} />
   if (page.type === 'offres-unifocal-11')   return <TVOffresUnifocal11 />
   if (page.type === 'offres-progressif-11') return <TVOffresProgressif11 />
+  if (page.type === 'offres-pack-plan')   return <TVOffresPackPlan step={offresPackPlanStep} />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} ordoRevealStep={ordoRevealStep} audioUnlocked={audioUnlocked} />
   if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
@@ -7852,6 +7950,7 @@ export default function TVView() {
   // Offres 1=1
   const [offres11Step, setOffres11Step]                 = useState(0)
   const [offresClassiqueStep, setOffresClassiqueStep]   = useState(0)
+  const [offresPackPlanStep, setOffresPackPlanStep]     = useState(0)
   // Force LPT — point sélectionné par le formateur
   const [modelePoint, setModelePoint]                   = useState(null)
   // FAQ Réveil des acquis
@@ -7879,6 +7978,7 @@ export default function TVView() {
   const [parcoursRevealed, setParcoursRevealed]           = useState([])
   const [tiersPayantRevealed, setTiersPayantRevealed]     = useState(false)
   const [brainstormRevealed, setBrainstormRevealed]       = useState(false)
+  const [monturesPrixRevealed, setMonturesPrixRevealed]   = useState(false)
 
   const handleAmeliProClick = async () => {
     try { await setRoomSharedState({ rembfr_amelipro_clicked: true }, sessionCode) } catch {}
@@ -7897,6 +7997,7 @@ export default function TVView() {
     setTrameStep(sharedState.trame_step ?? null)
     setOffres11Step(sharedState.offres_11_step ?? 0)
     setOffresClassiqueStep(sharedState.offres_classique_step ?? 0)
+    setOffresPackPlanStep(sharedState.offres_pack_plan_step ?? 0)
     setModelePoint(sharedState.modele_point ?? null)
     setTroublesPhase(sharedState.troubles_phase || 1)
     setOpticienPlaying(!!sharedState.opticien_playing)
@@ -7933,6 +8034,7 @@ export default function TVView() {
     setParcoursRevealed(sharedState.parcours_revealed || [])
     setTiersPayantRevealed(!!sharedState.tiers_payant_revealed)
     setBrainstormRevealed(!!sharedState.brainstorm_revealed)
+    setMonturesPrixRevealed(!!sharedState.montures_prix_revealed)
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
@@ -8180,6 +8282,7 @@ export default function TVView() {
             trameStep={trameStep}
             offres11Step={offres11Step}
             offresClassiqueStep={offresClassiqueStep}
+            offresPackPlanStep={offresPackPlanStep}
             modelePoint={modelePoint}
             mutuellesRevealed={mutuellesRevealed}
             inamiRevealed={inamiRevealed}
@@ -8192,6 +8295,7 @@ export default function TVView() {
             tiersPayantRevealed={tiersPayantRevealed}
             lptsPecScenario={lptsPecScenario}
             brainstormRevealed={brainstormRevealed}
+            monturesPrixRevealed={monturesPrixRevealed}
             sessionCode={sessionCode}
             onAmeliProClick={handleAmeliProClick}
           />

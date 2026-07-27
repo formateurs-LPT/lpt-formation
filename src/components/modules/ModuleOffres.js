@@ -53,7 +53,14 @@ function Ring({ color, size = 80 }) {
 const ITEMS_CLASSIQUE = [
   { text: '1 paire achetée', sub: null },
   { text: 'Deuxième paire à -20%', sub: null },
-  { text: '10€ en 10 minutes', sub: null },
+  { text: '10€ en 10 minutes', sub: 'Uniquement dans ce parcours' },
+]
+
+const ITEMS_PACK_PLAN = [
+  { text: '2 paires de lunettes', sub: null },
+  { text: 'Monture au choix', sub: null },
+  { text: 'Traitement au choix', sub: null },
+  { text: 'Solaire inclus', sub: 'Sauf polarisé' },
 ]
 
 // ── Page Classique (formateur) ───────────────────────────────────
@@ -114,8 +121,8 @@ function CoursClassique({ onNext, onPrev, onBack }) {
           <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `3px solid ${COLOR}`, borderRadius: 14, padding: '20px 24px' }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Tarifs</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>Entrée de gamme</span>
-              <span style={{ fontSize: 22, fontWeight: 800, color: COLOR }}>dès 10€</span>
+              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>Montures</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: COLOR }}>5€ à 90€</span>
             </div>
             <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 12 }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -157,9 +164,123 @@ function CoursClassique({ onNext, onPrev, onBack }) {
 
       {/* Nav */}
       <div style={{ flexShrink: 0 }}>
-        <NextPagePreview nextPage={{ type: 'zone-interactif', label: 'Quiz offres', color: '#7c3aed' }} />
+        <NextPagePreview nextPage={{ type: 'offres-pack-plan', label: 'Pack Plan 95€', color: '#00abe9' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
           <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '13px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← 1=1</button>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={hide} disabled={step === 0} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: step === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', padding: '13px 22px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: step === 0 ? 'default' : 'pointer', fontFamily: 'inherit' }}>← Masquer</button>
+            {allRevealed ? (
+              <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${COLOR}, #0090c5)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 6px 24px ${COLOR}45` }}>Pack Plan 95€ →</button>
+            ) : (
+              <button onClick={reveal} style={{ background: `linear-gradient(135deg, ${COLOR}, #0090c5)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 6px 24px ${COLOR}45` }}>Révéler →</button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Page Pack Plan 95€ (formateur) ──────────────────────────────
+function CoursPackPlan({ onNext, onPrev, onBack }) {
+  const COLOR = '#00abe9'
+  const isMobile = useIsMobile()
+  const [step, setStep] = useState(0)
+
+  useEffect(() => {
+    setSharedState({ offres_pack_plan_step: 0 }).catch(() => {})
+    return () => { setSharedState({ offres_pack_plan_step: 0 }).catch(() => {}) }
+  }, [])
+
+  const reveal = async () => {
+    if (step >= ITEMS_PACK_PLAN.length) return
+    const next = step + 1
+    setStep(next)
+    await setSharedState({ offres_pack_plan_step: next })
+  }
+
+  const hide = async () => {
+    if (step <= 0) return
+    const prev = step - 1
+    setStep(prev)
+    await setSharedState({ offres_pack_plan_step: prev })
+  }
+
+  const allRevealed = step >= ITEMS_PACK_PLAN.length
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001e40 100%)', display: 'flex', flexDirection: 'column', padding: isMobile ? '16px 14px 14px' : '24px 40px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · Pack Plan</span>
+        </div>
+        <button onClick={onBack}
+          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .2s', letterSpacing: .3 }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+        >✕ Quitter</button>
+      </div>
+
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 20 : 40, alignItems: 'center' }}>
+        {/* Gauche */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+            <Ring color={COLOR} size={72} />
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Les parcours LPT</div>
+              <div style={{ fontSize: 32, fontWeight: 900, color: '#fff' }}>Pack</div>
+              <div style={{ fontSize: 32, fontWeight: 900, color: COLOR }}>Plan 95€</div>
+            </div>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `3px solid ${COLOR}`, borderRadius: 14, padding: '20px 24px' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Tarif</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>2 paires</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: COLOR }}>95€</span>
+            </div>
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 12 }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>Sans correction</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: '#4ade80' }}>✓</span>
+            </div>
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 12 }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>Solaire</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#4ade80' }}>✓ sauf polarisé</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Droite : points révélés */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {ITEMS_PACK_PLAN.map((item, i) => (
+            <div key={i} style={{
+              opacity: i < step ? 1 : 0.15,
+              transform: i < step ? 'translateX(0)' : 'translateX(12px)',
+              transition: 'opacity 0.4s ease, transform 0.4s ease',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderLeft: `3px solid ${i < step ? COLOR : 'rgba(255,255,255,0.1)'}`,
+              borderRadius: 14, padding: '14px 20px',
+            }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{item.text}</div>
+              {item.sub && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 3 }}>{item.sub}</div>}
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+            {ITEMS_PACK_PLAN.map((_, i) => (
+              <div key={i} style={{ height: 3, flex: 1, borderRadius: 2, background: i < step ? COLOR : 'rgba(255,255,255,0.1)', transition: 'background 0.3s' }} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ flexShrink: 0 }}>
+        <NextPagePreview nextPage={{ type: 'zone-interactif', label: 'Quiz offres', color: '#7c3aed' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
+          <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '13px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← Classique</button>
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={hide} disabled={step === 0} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: step === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', padding: '13px 22px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: step === 0 ? 'default' : 'pointer', fontFamily: 'inherit' }}>← Masquer</button>
             {allRevealed ? (
@@ -733,7 +854,7 @@ function Lobby({ onStart, onBack }) {
 
 // ── Composant principal ───────────────────────────────────────────
 export default function ModuleOffres({ pName, onBack }) {
-  // phase: 'lobby' | 'classique' | 'un-pour-un' | 'quiz' | 'results'
+  // phase: 'lobby' | 'classique' | 'pack-plan' | 'un-pour-un' | 'quiz' | 'results'
   const [phase, setPhase] = useState('lobby')
   const [quizQ, setQuizQ] = useState(0)
 
@@ -772,6 +893,11 @@ export default function ModuleOffres({ pName, onBack }) {
     setPhase('progressif-11')
   }
 
+  const goPackPlan = async () => {
+    await sbUpdate('sessions', { active_module: 'offres', module_page: 4 }, `code=eq.${getActiveSessionCode()}`)
+    setPhase('pack-plan')
+  }
+
   const startQuiz = async () => {
     await sbUpdate('sessions', { active_module: 'offres', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(0)
@@ -798,7 +924,8 @@ export default function ModuleOffres({ pName, onBack }) {
   if (phase === 'un-pour-un')    return <Cours11 onPrev={goLobby} onNext={goUnifocal11} onBack={handleBack} />
   if (phase === 'unifocal-11')   return <CoursUnifocal11 onPrev={go11} onNext={goProgressif11} onBack={handleBack} />
   if (phase === 'progressif-11') return <CoursProgressif11 onPrev={goUnifocal11} onNext={goClassique} onBack={handleBack} />
-  if (phase === 'classique')     return <CoursClassique onNext={startQuiz} onPrev={goProgressif11} onBack={handleBack} />
+  if (phase === 'classique')     return <CoursClassique onNext={goPackPlan} onPrev={goProgressif11} onBack={handleBack} />
+  if (phase === 'pack-plan')     return <CoursPackPlan onNext={startQuiz} onPrev={goClassique} onBack={handleBack} />
   if (phase === 'results')   return <GroupResultsView onTerminate={handleTerminateModule} />
 
   return (

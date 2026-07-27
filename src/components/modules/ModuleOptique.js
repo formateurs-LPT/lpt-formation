@@ -1018,6 +1018,7 @@ function EntrainementOralPage({ page, onBack, onPrev, onNext, isFirst, isLast, p
       moduleId: 'optique',
       questionIdx: 100 + selectedQ,
       collaborateur: participantName,
+      answerIdx: 0,
       isCorrect,
     })
     const newMap = { ...validatedMap, [participantName]: isCorrect }

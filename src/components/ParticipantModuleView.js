@@ -177,7 +177,7 @@ function DashboardScreen({ pName, myEntry, ranking }) {
       {ranking.length > 0 && (
         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16 }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-            Classement de la session
+            Classement de la semaine
           </div>
           <div style={{ padding: '6px 0' }}>
             {ranking.map((entry, i) => {
@@ -214,16 +214,20 @@ function ParticipantDashboard({ pName, sessionCode }) {
   const [ranking, setRanking] = useState([])
 
   useEffect(() => {
-    if (!pName || !sessionCode) return
+    if (!pName) return
     let cancelled = false
     const load = async () => {
       const [anyRows, correctRows] = await Promise.all([
-        sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(pName)}&session_code=eq.${encodeURIComponent(sessionCode)}&limit=1`),
-        sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(sessionCode)}&is_correct=eq.true`),
+        sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(pName)}&limit=1`),
+        sbSelect('quiz_answers', `is_correct=eq.true`),
       ])
       if (cancelled) return
+      const seen = new Set()
       const counts = {}
       for (const r of (correctRows || [])) {
+        const key = `${r.collaborateur}|${r.module_id}|${r.question_idx}`
+        if (seen.has(key)) continue
+        seen.add(key)
         counts[r.collaborateur] = (counts[r.collaborateur] || 0) + 1
       }
       const sorted = Object.entries(counts)
@@ -243,7 +247,7 @@ function ParticipantDashboard({ pName, sessionCode }) {
     load()
     const t = setInterval(load, 12000)
     return () => { cancelled = true; clearInterval(t) }
-  }, [pName, sessionCode])
+  }, [pName])
 
   if (loadState === 'loading') return <WaitingScreen />
   const myEntry = ranking.find(r => r.name === pName)
@@ -3677,14 +3681,29 @@ function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, e
   if (q === null) {
     return (
       <div style={bg}>
-        <div style={{ fontSize: 48, marginBottom: 20 }}>🗣️</div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10, textAlign: 'center' }}>Questions orales</div>
-        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', lineHeight: 1.6 }}>
-          Le formateur va vous poser une question.<br />Elle apparaîtra ici.
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30}
+          style={{ objectFit: 'contain', opacity: 0.5, marginBottom: 40 }} />
+        <div style={{
+          fontSize: 11, fontWeight: 700, color: '#00abe9',
+          textTransform: 'uppercase', letterSpacing: 3, marginBottom: 16,
+        }}>Bases de l'optique</div>
+        <div style={{
+          fontSize: 52, fontWeight: 900, color: '#fff',
+          letterSpacing: 4, textTransform: 'uppercase',
+          textAlign: 'center', lineHeight: 1.1, marginBottom: 12,
+          textShadow: '0 0 40px rgba(0,171,233,0.5)',
+        }}>Entraîne&shy;ment</div>
+        <div style={{
+          width: 48, height: 3, borderRadius: 2,
+          background: 'linear-gradient(90deg, #00abe9, #7c3aed)',
+          marginBottom: 28,
+        }} />
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 1.7 }}>
+          Le formateur va choisir une question.<br />Elle apparaîtra ici — préparez-vous.
         </div>
-        <div style={{ marginTop: 28, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ marginTop: 32, display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'waitDot 1.4s ease-in-out infinite' }} />
-          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>En attente…</span>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', letterSpacing: 0.5 }}>En attente du formateur…</span>
         </div>
       </div>
     )
@@ -4021,7 +4040,28 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
     </div>
   )
 
-  if (page.type === 'saisie-interactive') return <SaisieInteractiveMobile page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'saisie-interactive') return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px', textAlign: 'center',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30}
+        style={{ objectFit: 'contain', opacity: 0.5, marginBottom: 36 }} />
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>
+        Place à la pratique
+      </div>
+      <div style={{ fontSize: 48, marginBottom: 20 }}>📺</div>
+      <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
+        Regardez l'écran
+      </div>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', lineHeight: 1.7 }}>
+        Suivez l'exercice avec le formateur.
+      </div>
+    </div>
+  )
   if (page.type === 'entrainement-oral')  return <EntrainementOralMobile pName={pName} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} />
 
   // Freins à l'achat — saisie libre
@@ -4170,6 +4210,47 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
   // SAV modules (Retraits, Ajustages, RAZ)
   if (page.type === 'sav-brainstorm') return <SAVBrainstormMobile page={page} moduleId={page.moduleId} pName={pName} />
   if (page.type === 'sav-content') return <SAVContentMobile page={page} pageIndex={pageIndex} total={total} />
+
+  // Types de verres — verre progressif
+  if (page.type === 'progressif') return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0d1d3a 50%, #100820 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28}
+        style={{ objectFit: 'contain', opacity: 0.6, marginBottom: 32 }} />
+      <div style={{
+        display: 'inline-block',
+        background: 'rgba(124,58,237,0.18)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '4px 16px',
+        fontSize: 10, fontWeight: 700, color: '#a78bfa',
+        textTransform: 'uppercase', letterSpacing: 2, marginBottom: 14,
+      }}>Types de verres · Journée 1</div>
+      <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 32 }}>
+        Le Verre Progressif
+      </div>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{
+          position: 'absolute', inset: -30, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%)',
+          animation: 'haloBreath 3.5s ease-in-out infinite',
+        }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/assets/verre-prog.png"
+          alt="Verre progressif"
+          style={{
+            width: 240, height: 'auto', display: 'block', position: 'relative', zIndex: 1,
+            animation: 'verreFloat 5s ease-in-out infinite',
+            filter: 'drop-shadow(0 0 32px rgba(124,58,237,0.6)) drop-shadow(0 12px 24px rgba(0,0,0,0.5))',
+          }}
+        />
+      </div>
+    </div>
+  )
 
   return (
     <div style={{

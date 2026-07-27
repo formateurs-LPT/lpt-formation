@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, fetchOpenAnswers } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, fetchOpenAnswers, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { NextPagePreview } from '@/lib/trainerPreview'
@@ -18,13 +18,14 @@ const ACETATE_FRAMES = [
   { src: '/assets/montures/acetate/SLPT075-EFOBPL-001.avif', ref: 'SLPT075-EFOBPL' },
 ]
 const ACETATE_INFOS = [
-  { icon: '🌿', label: 'Naturel', desc: 'Pulpe de bois ou fibre de coton' },
+  { icon: '🌿', label: 'Naturel', desc: 'Fibre de bois ou fibre de coton' },
   { icon: '✨', label: 'Premium', desc: 'Large choix de coloris & motifs' },
   { icon: '💎', label: 'Modèle unique', desc: 'Chaque paire diffère selon sa plaque' },
   { icon: '🌡️', label: 'Ajustable à chaud', desc: 'Hypoallergénique — aucun risque allergie' },
+  { icon: '💶', label: 'Prix', desc: 'De 30 € à 90 €' },
 ]
 const ACETATE_NOTES = [
-  { icon: '🌲', title: "L'origine", text: "Plastique noble — pulpe de bois ou fibre de coton, pas du pétrole. Argument premium face au client." },
+  { icon: '🌲', title: "L'origine", text: "Plastique noble — fibre de bois ou fibre de coton, pas du pétrole. Argument premium face au client." },
   { icon: '🔲', title: 'La plaque', text: "Découpée dans la masse. Montrer une plaque si dispo en magasin. Chaque paire est légèrement unique." },
   { icon: '🔥', title: 'Ajustable à chaud', text: "On chauffe doucement (chaleur sèche), puis on plie. Le pont est en une seule pièce : non ajustable en largeur." },
   { icon: '⚖️', title: 'À mentionner si besoin', text: "Plus lourd que métal & injecté · Pont non ajustable en largeur." },
@@ -39,6 +40,7 @@ const METAL_INFOS = [
   { icon: '🪶', label: 'Léger & fin', desc: 'Discret sur le visage' },
   { icon: '🛡️', label: 'Résistant', desc: 'Alliage métallique et revêtement anti-allergique' },
   { icon: '🔧', label: 'Ajustable facilement', desc: 'Plaquettes et branches réglables' },
+  { icon: '💶', label: 'Prix', desc: 'De 30 € à 90 €' },
 ]
 const METAL_NOTES = [
   { icon: '⚗️', title: "L'alliage", text: "Pas de l'acier pur — un alliage travaillé (souvent nickel, titane ou inox). Plus fin que l'acétate, d'où la légèreté." },
@@ -56,6 +58,7 @@ const INJECTE_INFOS = [
   { icon: '🏭', label: 'Moulé à chaud', desc: 'Injecté en série dans un moule industriel' },
   { icon: '🪶', label: 'Léger & résistant', desc: 'Très bonne durabilité au quotidien' },
   { icon: '💚', label: 'Accessible', desc: 'Meilleur rapport qualité / prix de la gamme' },
+  { icon: '💶', label: 'Prix', desc: '5 € ou 15 €' },
 ]
 const INJECTE_NOTES = [
   { icon: '🏭', title: 'Le procédé', text: "Injecté dans un moule = production en série. C'est ce qui le rend accessible. Moins noble que l'acétate mais très pratique." },
@@ -73,7 +76,7 @@ const PAGES_META = [
 const TOTAL_PAGES = PAGES_META.length
 
 // ─── Composant page générique (formateur) ────────────────────
-function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage, onTerminate, quizLaunched, onLaunchQuiz }) {
+function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage, onTerminate, quizLaunched, onLaunchQuiz, priceRevealed, onRevealPrice }) {
   const isMobile = useIsMobile()
   const [step, setStep] = useState(0)
   const [notesOpen, setNotesOpen] = useState(true)
@@ -189,7 +192,7 @@ function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex,
       {/* Navigation */}
       <div style={{ padding: '0 28px 16px', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 12 }}>
         <NextPagePreview nextPage={nextPage} />
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button onClick={onPrev} disabled={isFirst} style={{
             background: isFirst ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.09)',
             border: '1px solid rgba(255,255,255,0.15)',
@@ -197,6 +200,20 @@ function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex,
             padding: '11px 22px', borderRadius: 12, fontSize: 14, fontWeight: 600,
             cursor: isFirst ? 'default' : 'pointer', fontFamily: 'inherit',
           }}>← Précédent</button>
+
+          <button onClick={onRevealPrice} style={{
+            background: priceRevealed
+              ? 'linear-gradient(135deg, rgba(245,158,11,0.25), rgba(245,158,11,0.15))'
+              : 'rgba(255,255,255,0.06)',
+            border: priceRevealed ? '1px solid rgba(245,158,11,0.6)' : '1px solid rgba(255,255,255,0.15)',
+            color: priceRevealed ? '#f59e0b' : 'rgba(255,255,255,0.5)',
+            padding: '9px 18px', borderRadius: 12, fontSize: 13, fontWeight: 700,
+            cursor: 'pointer', fontFamily: 'inherit', transition: 'all .25s',
+            display: 'flex', alignItems: 'center', gap: 7,
+          }}>
+            <span>💶</span>
+            <span>{priceRevealed ? 'Prix affiché sur TV' : 'Révéler le prix'}</span>
+          </button>
 
           {isLast ? (
             quizLaunched ? (
@@ -484,16 +501,25 @@ export default function ModuleMontures({ pName, onBack, onTerminate }) {
   const [quizLaunched, setQuizLaunched] = useState(false)
   const [quizQ, setQuizQ] = useState(0)
   const [showGroupResults, setShowGroupResults] = useState(false)
+  const [priceRevealed, setPriceRevealed] = useState(false)
 
   const handleStart = async () => {
     await sbUpdate('sessions', { active_module: 'montures', module_page: 0 }, 'code=eq.' + getActiveSessionCode())
     setStarted(true)
   }
 
+  const handleRevealPrice = async () => {
+    const next = !priceRevealed
+    setPriceRevealed(next)
+    await setSharedState({ montures_prix_revealed: next })
+  }
+
   const handleNext = async () => {
     if (page >= TOTAL_PAGES - 1) return
     const next = page + 1
     await sbUpdate('sessions', { active_module: 'montures', module_page: next }, 'code=eq.' + getActiveSessionCode())
+    setPriceRevealed(false)
+    await setSharedState({ montures_prix_revealed: false })
     setPage(next)
   }
 
@@ -501,10 +527,13 @@ export default function ModuleMontures({ pName, onBack, onTerminate }) {
     if (page <= 0) return
     const prev = page - 1
     await sbUpdate('sessions', { active_module: 'montures', module_page: prev }, 'code=eq.' + getActiveSessionCode())
+    setPriceRevealed(false)
+    await setSharedState({ montures_prix_revealed: false })
     setPage(prev)
   }
 
   const handleBack = async () => {
+    await setSharedState({ montures_prix_revealed: false })
     await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
     onBack()
   }
@@ -527,6 +556,7 @@ export default function ModuleMontures({ pName, onBack, onTerminate }) {
   }
 
   const handleTerminateModule = async () => {
+    await setSharedState({ montures_prix_revealed: false })
     await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
     ;(onTerminate ?? onBack)()
   }
@@ -563,6 +593,8 @@ export default function ModuleMontures({ pName, onBack, onTerminate }) {
       onTerminate={handleTerminateModule}
       quizLaunched={quizLaunched}
       onLaunchQuiz={handleLaunchQuiz}
+      priceRevealed={priceRevealed}
+      onRevealPrice={handleRevealPrice}
     />
   )
 }

@@ -48,6 +48,12 @@ const JOURNEES_BELGIQUE = (onLaunchModule, onLaunchPeerQuiz) => [
         sub: 'Activité terrain — ~17h00',
         soon: true,
       },
+      {
+        visual: 'emoji', icon: '🧠',
+        label: 'Quiz Jour 1',
+        sub: 'Entreprise · Optique · Ordonnances · Montures',
+        onClick: () => onLaunchModule('quiz-j1', 'journee1'),
+      },
     ],
   },
   {
