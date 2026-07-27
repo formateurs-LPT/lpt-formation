@@ -186,116 +186,151 @@ export const OPTIQUE_PAGES = [
 ]
 
 export const OPTIQUE_QUIZ = [
+  // Q1
   {
     question: 'Un client voit bien de près mais flou de loin. Quel est son trouble ?',
     options: ['Myope', 'Hypermétrope', 'Presbyte', 'Astigmate'],
     correct: 0,
   },
+  // Q2
   {
     question: 'Comment reconnaît-on une hypermétropie sur une ordonnance ?',
     options: ['Signe + dans la sphère', 'Signe - dans la sphère', 'Entre parenthèse', 'Avec un degré'],
     correct: 0,
   },
+  // Q3
   {
-    question: "Quel est la particularité de la vision de l'astigmatisme ?",
-    options: ['Vision flou de loin', 'Vision flou de près', 'Vision déformée', 'Vision flou de loin & de près'],
+    question: "Astigmate c'est :",
+    options: ['Vision floue de loin', 'Vision floue de près', 'Vision déformée', 'Vision floue de loin & de près'],
     correct: 2,
   },
+  // Q4 — texte libre, auto-valide si contient "45"
   {
-    question: 'A partir de quelle âge apparait généralement la presbytie ?',
-    options: ['30-35 ans', '35-40 ans', '40-45 ans', '45-50 ans'],
-    correct: 2,
+    type: 'text-open',
+    question: 'La presbytie apparaît en moyenne à :',
+    hint: '45 ans',
+    autoCorrect: ['45'],
   },
+  // Q5 — texte libre, auto-valide si contient "0,25" ou "0.25"
   {
-    question: 'De combien en combien évoluent les corrections ?',
-    options: ['0,15', '0,25', '0,50', '0,10'],
-    correct: 1,
+    type: 'text-open',
+    question: 'Les corrections évoluent :',
+    hint: 'de 0,25 en 0,25',
+    autoCorrect: ['0,25', '0.25'],
   },
+  // Q6 — texte libre, auto-valide si contient "myopie" ou "myope"
   {
-    question: 'Sur une ordonnance, une sphère négative (ex : -2) indique :',
-    options: ['Myopie', 'Hypermétropie', 'Presbytie', 'Astigmatisme'],
-    correct: 0,
+    type: 'text-open',
+    question: 'Une sphère négative indique que le patient est :',
+    hint: 'Myope',
+    autoCorrect: ['myopie', 'myope'],
   },
+  // Q7
   {
     question: 'A quoi correspond le cylindre ?',
     options: ['Hypermétropie', 'Myopie', 'Presbytie', 'Astigmatisme'],
     correct: 3,
   },
+  // Q8
   {
     question: 'A quoi correspond la colonne « Add » ?',
     options: ['La presbytie', "L'astigmatisme", 'La myopie', "L'hypermétropie"],
     correct: 0,
   },
+  // Q9 — labels masqués, cylindre entre parenthèses
   {
     question: 'Quels sont les problèmes de vue de ce client ?',
     type: 'qcm-ordonnance',
+    hideLabels: true,
     ordonnance: {
-      od: { sph: '-2,25', cyl: '-0,50', axe: '10°' },
-      og: { sph: '-1,75', cyl: '-0,75', axe: '15°' },
+      od: { sph: '-2,25', cyl: '(-0,50)', axe: '10°' },
+      og: { sph: '-1,75', cyl: '(-0,75)', axe: '15°' },
     },
     options: ['Hypermétrope & Astigmate', 'Astigmate & Presbyte', 'Myope & Presbyte', 'Myope & Astigmate'],
     correct: 3,
   },
+  // Q10
   {
-    question: 'Un client voit flou à toute distance et force constamment pour voir net. Quel est son trouble ?',
+    question: 'Un client force constamment sur ses yeux pour voir net, quand il relâche il voit flou à toutes les distances, quel est son problème de vue ?',
     options: ['Myope & Presbyte', 'Hypermétrope', 'Astigmate & Presbyte', 'Myope'],
     correct: 1,
   },
+  // Q11 — labels masqués, cylindre entre parenthèses
   {
     question: 'Quels sont les problèmes de vue de ce client ?',
     type: 'qcm-ordonnance',
+    hideLabels: true,
     ordonnance: {
-      od: { sph: '+2,00', cyl: '-1,00', axe: '145°' },
-      og: { sph: '+1,75', cyl: '-0,75', axe: '150°' },
+      od: { sph: '+2,00', cyl: '(-1,00)', axe: '145°' },
+      og: { sph: '+1,75', cyl: '(-0,75)', axe: '150°' },
     },
     options: ['Myope & Astigmate', 'Myope & Presbyte', 'Hypermétrope & Astigmate', 'Hypermétrope & Myope'],
     correct: 2,
   },
+  // Q12 — double bonne réponse
   {
-    question: 'Comment appelle-t-on la valeur 0,00 ?',
-    options: ['Nulle', 'Plan', 'Inexistant', 'Correction de repos'],
-    correct: 1,
+    type: 'qcm-multi',
+    question: "Sur une ordonnance, comment l'ophtalmologiste peut indiquer une sphère nulle ?",
+    instruction: 'Sélectionnez les 2 bonnes réponses',
+    options: ['0 / Rien', 'PLAN', 'Nulle', 'Correction de repos'],
+    correct: [0, 1],
   },
+  // Q13
   {
-    question: "Sur une ordonnance, l'axe du cylindre est exprimé en :",
+    question: "Sur une ordonnance, l'axe est exprimé en :",
     options: ['Millimètre', 'Degré', 'Pourcentage'],
     correct: 1,
   },
+  // Q14 — labels masqués, cylindre entre parenthèses
   {
     question: 'Quels sont les problèmes de vue de ce client ?',
     type: 'qcm-ordonnance',
+    hideLabels: true,
     ordonnance: {
-      od: { sph: '-3,00', cyl: '-1,50', axe: '23°', add: '+2,00' },
-      og: { sph: '-2,75', cyl: '-1,25', axe: '30°', add: '+2,00' },
+      od: { sph: '-3,00', cyl: '(-1,50)', axe: '23°', add: '+2,00' },
+      og: { sph: '-2,75', cyl: '(-1,25)', axe: '30°', add: '+2,00' },
     },
     options: ['Myope, Astigmate & Hypermétrope', 'Hypermétrope, Astigmate & Presbyte', 'Myope, Astigmate & Presbyte', 'Myope, Hypermétrope & Presbyte'],
     correct: 2,
   },
+  // Q15
   {
     question: 'Comment reconnaît-on une myopie sur une ordonnance ?',
     options: ['Signe - dans la sphère', 'Signe + dans la sphère', 'Avec un degré', 'Entre parenthèse'],
     correct: 0,
   },
+  // Q16 — texte libre, auto-valide si contient "vision de près"
   {
-    question: 'Que signifie « ADD » ?',
-    options: ['Addition', 'Addiction', 'A Déduire Directement', 'Addict'],
-    correct: 0,
+    type: 'text-open',
+    question: 'À quoi sert la valeur ADD sur une ordonnance ?',
+    hint: 'à calculer la vision de près',
+    autoCorrect: ['vision de près', 'vision de pres'],
   },
+  // Q17
   {
-    question: "Jusqu'à quelle correction va-t-on en magasin pour la myopie ?",
+    question: 'Nous fabriquons des lunettes directement sur place aux clients ayant une myopie maximum de :',
     options: ['-8,00', '-2,00', '-15,00', '-5,00'],
     correct: 0,
   },
+  // Q18
   {
     question: 'En combien de temps peut-on fabriquer une paire de lunettes en magasin ?',
     options: ['9 jours', '1h', '10 minutes', '30 minutes'],
     correct: 2,
   },
+  // Q19 — labels masqués, cylindre entre parenthèses
   {
-    question: "Jusque combien allons-nous en myopie sur commande ?",
-    options: ['-8', '-22', '-25', '-15'],
+    question: 'Quels sont les problèmes de vue de ce client ?',
+    type: 'qcm-ordonnance',
+    hideLabels: true,
+    ordonnance: {
+      od: { sph: '+1,50', cyl: '(-0,50)', axe: '90°', add: '+1,50' },
+      og: { sph: '+1,25', cyl: '(-0,25)', axe: '80°', add: '+1,50' },
+    },
+    options: ['Myope & Presbyte', 'Hypermétrope, Astigmate & Presbyte', 'Astigmate & Presbyte', 'Hypermétrope & Presbyte'],
     correct: 1,
   },
+  // Q20
   {
     question: "De quoi est toujours accompagné l'axe ?",
     options: ['La sphère', "L'addition", 'Le cylindre'],

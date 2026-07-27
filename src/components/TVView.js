@@ -228,7 +228,7 @@ function TVQuizFooter() {
   )
 }
 
-function TVOrdonnanceDisplay({ ordonnance }) {
+function TVOrdonnanceDisplay({ ordonnance, hideLabels }) {
   const { od, og } = ordonnance
   const hasCyl = od.cyl || og.cyl
   const hasAdd = od.add || og.add
@@ -243,15 +243,17 @@ function TVOrdonnanceDisplay({ ordonnance }) {
     }}>
       <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', letterSpacing: 2, textTransform: 'uppercase', textAlign: 'center', marginBottom: 12 }}>ORDONNANCE</div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ width: 80 }}></th>
-            <th style={headerStyle}>Sphère</th>
-            {hasCyl && <th style={headerStyle}>Cylindre</th>}
-            {hasCyl && <th style={headerStyle}>Axe</th>}
-            {hasAdd && <th style={headerStyle}>Addition</th>}
-          </tr>
-        </thead>
+        {!hideLabels && (
+          <thead>
+            <tr>
+              <th style={{ width: 80 }}></th>
+              <th style={headerStyle}>Sphère</th>
+              {hasCyl && <th style={headerStyle}>Cylindre</th>}
+              {hasCyl && <th style={headerStyle}>Axe</th>}
+              {hasAdd && <th style={headerStyle}>Addition</th>}
+            </tr>
+          </thead>
+        )}
         <tbody>
           {[{ label: 'OD', data: od }, { label: 'OG', data: og }].map(({ label, data }) => (
             <tr key={label} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
@@ -384,7 +386,7 @@ function TVQuizOrdonnanceQCM({ question, qIdx, total, moduleLabel }) {
       <h1 style={{ fontSize: 38, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 28, maxWidth: 900 }}>
         {question.question}
       </h1>
-      <TVOrdonnanceDisplay ordonnance={question.ordonnance} />
+      <TVOrdonnanceDisplay ordonnance={question.ordonnance} hideLabels={question.hideLabels} />
       <div style={{
         display: 'grid',
         gridTemplateColumns: question.options.length === 2 ? '1fr 1fr' : 'repeat(auto-fit, minmax(280px, 1fr))',

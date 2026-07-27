@@ -2,9 +2,10 @@
 // fix: getActiveSessionCode pour sync TV
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbSelect, getActiveSessionCode, setSharedState } from '@/lib/supabase'
+import { sbUpdate, sbSelect, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, OPTIQUE_QUIZ } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { NextPagePreview } from '@/lib/trainerPreview'
@@ -940,7 +941,7 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
 }
 
 // ── Affichage ordonnance (formateur) ─────────────────────────────
-function OrdonnanceDisplay({ ordonnance }) {
+function OrdonnanceDisplay({ ordonnance, hideLabels }) {
   if (!ordonnance) return null
   const { od, og } = ordonnance
   const hasCyl = od.cyl || og.cyl
@@ -956,15 +957,17 @@ function OrdonnanceDisplay({ ordonnance }) {
     }}>
       <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', letterSpacing: 2, textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 }}>ORDONNANCE</div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ width: 60 }} />
-            <th style={hdr}>Sphère</th>
-            {hasCyl && <th style={hdr}>Cylindre</th>}
-            {hasCyl && <th style={hdr}>Axe</th>}
-            {hasAdd && <th style={hdr}>Addition</th>}
-          </tr>
-        </thead>
+        {!hideLabels && (
+          <thead>
+            <tr>
+              <th style={{ width: 60 }} />
+              <th style={hdr}>Sphère</th>
+              {hasCyl && <th style={hdr}>Cylindre</th>}
+              {hasCyl && <th style={hdr}>Axe</th>}
+              {hasAdd && <th style={hdr}>Addition</th>}
+            </tr>
+          </thead>
+        )}
         <tbody>
           {[{ label: 'OD', data: od }, { label: 'OG', data: og }].map(({ label, data }) => (
             <tr key={label} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
@@ -981,8 +984,142 @@ function OrdonnanceDisplay({ ordonnance }) {
   )
 }
 
-// ── Quiz Controller (vue formateur) ──────────────────────────────
+// ── Contrôleur texte libre (questions text-open) ──────────────────
+function TextOpenControllerOptique({ quizQ, isLast, onNext, onEnd, onBack }) {
+  const [openAnswers, setOpenAnswers] = useState([])
+  const [validating, setValidating]   = useState({})
+  const [validated, setValidated]     = useState({})
+  const autoValidatedRef              = useRef(new Set())
+
+  const q      = OPTIQUE_QUIZ[quizQ]
+  const pageId = `optique:${quizQ}`
+
+  useEffect(() => {
+    setOpenAnswers([])
+    setValidating({})
+    setValidated({})
+    autoValidatedRef.current = new Set()
+
+    const autoValidate = (deduped) => {
+      const kws = q?.autoCorrect
+      if (!kws?.length) return
+      for (const row of deduped) {
+        const name = row.participant_name
+        if (autoValidatedRef.current.has(name)) continue
+        const text = (row.answer || '').trim().toLowerCase()
+        if (kws.some(kw => text.includes(kw.toLowerCase()))) {
+          autoValidatedRef.current.add(name)
+          setValidating(v => ({ ...v, [name]: true }))
+          saveModuleQuizAnswer({ moduleId: 'optique', questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
+            .then(() => {
+              setValidated(v => ({ ...v, [name]: 'correct' }))
+              setValidating(v => ({ ...v, [name]: false }))
+            })
+            .catch(() => { autoValidatedRef.current.delete(name) })
+        }
+      }
+    }
+
+    const poll = async () => {
+      const rows = await fetchOpenAnswers(getActiveSessionCode(), pageId)
+      const latest = {}
+      for (const row of rows || []) latest[row.participant_name] = row
+      const deduped = Object.values(latest)
+      setOpenAnswers(deduped)
+      autoValidate(deduped)
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [quizQ, pageId])
+
+  const handleValidate = async (row, isCorrect) => {
+    if (validating[row.participant_name]) return
+    setValidating(v => ({ ...v, [row.participant_name]: true }))
+    await saveModuleQuizAnswer({ moduleId: 'optique', questionIdx: quizQ, collaborateur: row.participant_name, answerIdx: 0, isCorrect })
+    setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
+    setValidating(v => ({ ...v, [row.participant_name]: false }))
+  }
+
+  const bg = { minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 40px' }
+
+  return (
+    <div style={bg}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz · Les bases de l&apos;optique — Vue formateur</span>
+        </div>
+        <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Terminer</button>
+      </div>
+
+      <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 24px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+          Question {quizQ + 1} / {OPTIQUE_QUIZ.length}
+        </div>
+      </div>
+
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.3, maxWidth: 800, margin: '0 auto 12px' }}>{q.question}</div>
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.2)', borderRadius: 12, padding: '8px 22px', fontSize: 12, color: 'rgba(0,171,233,0.7)', fontStyle: 'italic' }}>
+          Réponse attendue : {q.hint}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 820, margin: '0 auto', maxHeight: '45vh', overflowY: 'auto', paddingRight: 4 }}>
+        {openAnswers.length === 0 ? (
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, fontStyle: 'italic', padding: '20px', textAlign: 'center' }}>En attente des réponses des participants…</div>
+        ) : openAnswers.map(row => {
+          const status = validated[row.participant_name]
+          const isValidating = validating[row.participant_name]
+          return (
+            <div key={row.participant_name} style={{
+              background: status === 'correct' ? 'rgba(34,197,94,0.08)' : status === 'wrong' ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${status === 'correct' ? 'rgba(34,197,94,0.3)' : status === 'wrong' ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: 14, padding: '14px 18px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>{row.participant_name}</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>{row.answer || '—'}</div>
+                </div>
+                {!status && (
+                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                    <button onClick={() => handleValidate(row, true)} disabled={isValidating} style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)', color: '#4ade80', padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓</button>
+                    <button onClick={() => handleValidate(row, false)} disabled={isValidating} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171', padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✗</button>
+                  </div>
+                )}
+                {status === 'correct' && <span style={{ fontSize: 22, color: '#4ade80', flexShrink: 0 }}>✓</span>}
+                {status === 'wrong'   && <span style={{ fontSize: 22, color: '#f87171', flexShrink: 0 }}>✗</span>}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        {isLast ? (
+          <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓ Terminer le quiz</button>
+        ) : (
+          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #7c3aed, #9f67fa)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Question suivante →</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Quiz Controller (vue formateur) — switcher de type ──────────
 function QuizController({ quizQ, onNext, onEnd, onBack }) {
+  const q      = OPTIQUE_QUIZ[quizQ]
+  const isLast = quizQ >= OPTIQUE_QUIZ.length - 1
+  if (q?.type === 'text-open') {
+    return <TextOpenControllerOptique quizQ={quizQ} isLast={isLast} onNext={onNext} onEnd={onEnd} onBack={onBack} />
+  }
+  return <QuizControllerMCQ quizQ={quizQ} onNext={onNext} onEnd={onEnd} onBack={onBack} />
+}
+
+function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
   const [liveAnswers, setLiveAnswers]     = useState([])
   const [connectedCount, setConnectedCount] = useState(0)
   const [correctionPhase, setCorrectionPhase] = useState(false)
@@ -1061,10 +1198,11 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
     onEnd()
   }
 
-  const answered     = liveAnswers.length
-  const counts       = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+  const answered       = liveAnswers.length
+  const correctArr     = Array.isArray(q.correct) ? q.correct : [q.correct]
+  const counts         = (q.options || []).map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
   const wrongAnswerers = liveAnswers.filter(r => !r.is_correct)
-  const correctCount = liveAnswers.filter(r => r.is_correct).length
+  const correctCount   = liveAnswers.filter(r => r.is_correct).length
 
   const bg = { minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }
   const headerLogo = (
@@ -1109,15 +1247,19 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
           <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.35, maxWidth: 700, alignSelf: 'center' }}>
             {q.question}
           </div>
-          <OrdonnanceDisplay ordonnance={q.ordonnance} />
+          <OrdonnanceDisplay ordonnance={q.ordonnance} hideLabels={q.hideLabels} />
 
-          {/* Bonne réponse */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, alignSelf: 'center', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 16, padding: '12px 24px' }}>
-            <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: '#052e16' }}>
-              {'ABCD'[q.correct]}
-            </div>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#4ade80' }}>{q.options[q.correct]}</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', background: 'rgba(34,197,94,0.2)', padding: '2px 10px', borderRadius: 20 }}>✓ Bonne réponse</span>
+          {/* Bonne(s) réponse(s) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignSelf: 'center', maxWidth: 640, width: '100%' }}>
+            {correctArr.map(ci => (
+              <div key={ci} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 16, padding: '12px 24px' }}>
+                <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: '#052e16', flexShrink: 0 }}>
+                  {'ABCD'[ci]}
+                </div>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#4ade80' }}>{q.options[ci]}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', background: 'rgba(34,197,94,0.2)', padding: '2px 10px', borderRadius: 20, flexShrink: 0 }}>✓ Bonne réponse</span>
+              </div>
+            ))}
           </div>
 
           {/* Qui s'est trompé — confidentiel */}
@@ -1179,12 +1321,12 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
       <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', textAlign: 'center', marginBottom: q.ordonnance ? 20 : 36, lineHeight: 1.3, maxWidth: 800, alignSelf: 'center' }}>
         {q.question}
       </div>
-      <OrdonnanceDisplay ordonnance={q.ordonnance} />
+      <OrdonnanceDisplay ordonnance={q.ordonnance} hideLabels={q.hideLabels} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, maxWidth: 720, alignSelf: 'center', width: '100%' }}>
-        {q.options.map((opt, i) => {
+        {(q.options || []).map((opt, i) => {
           const count = counts[i]
-          const isCorrect = i === q.correct
+          const isCorrect = correctArr.includes(i)
           const pct = answered > 0 ? (count / answered) * 100 : 0
           return (
             <div key={i} style={{ background: isCorrect ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)', border: `1px solid ${isCorrect ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 16, padding: '14px 18px' }}>
