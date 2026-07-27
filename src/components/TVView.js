@@ -14,21 +14,52 @@ import { TVFreeQuizScreen } from '@/components/FreeQuizGame'
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
 // ── Affichage anonyme des questions formés (TV) ───────────────────
-function TVModuleQuestionsView({ sessionCode, moduleId, moduleLabel }) {
+function TVModuleQuestionsView({ sessionCode, moduleId, moduleLabel, singleId }) {
   const [questions, setQuestions] = useState([])
 
   useEffect(() => {
     if (!sessionCode || !moduleId) return
     const load = async () => {
       try {
-        const rows = await fetchOpenAnswers(sessionCode, 'mq_' + moduleId)
-        setQuestions(rows || [])
+        const state = await getRoomSharedState(sessionCode)
+        const prefix = `mq__${moduleId}__`
+        const rows = Object.entries(state || {})
+          .filter(([k, v]) => k.startsWith(prefix) && v?.answer)
+          .map(([k, v]) => ({ id: k, answer: v.answer, ts: v.ts || 0 }))
+          .sort((a, b) => a.ts - b.ts)
+        setQuestions(rows)
       } catch {}
     }
     load()
-    const id = setInterval(load, 6000)
+    const id = setInterval(load, 4000)
     return () => clearInterval(id)
   }, [sessionCode, moduleId])
+
+  const displayed = singleId ? questions.filter(q => q.id === singleId) : questions
+
+  if (singleId) {
+    const q = displayed[0]
+    return (
+      <div style={{
+        height: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #071832 100%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: '60px 100px', fontFamily: 'system-ui, sans-serif', boxSizing: 'border-box', color: '#fff',
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 32 }}>
+          {moduleLabel || 'Module en cours'} · Question
+        </div>
+        <div style={{
+          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,171,233,0.3)',
+          borderLeft: '6px solid #00abe9', borderRadius: 20, padding: '48px 56px',
+          maxWidth: 900, width: '100%',
+        }}>
+          <div style={{ fontSize: 36, fontWeight: 700, color: '#fff', lineHeight: 1.5 }}>
+            {q ? q.answer : '…'}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{
@@ -37,27 +68,19 @@ function TVModuleQuestionsView({ sessionCode, moduleId, moduleLabel }) {
       fontFamily: 'system-ui, sans-serif', boxSizing: 'border-box',
       color: '#fff', overflow: 'hidden',
     }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 36 }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>
             {moduleLabel || 'Module en cours'}
           </div>
-          <h2 style={{ fontSize: 36, fontWeight: 900, margin: 0, letterSpacing: -0.5 }}>
-            Vos questions
-          </h2>
+          <h2 style={{ fontSize: 36, fontWeight: 900, margin: 0, letterSpacing: -0.5 }}>Vos questions</h2>
         </div>
-        <div style={{
-          background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)',
-          borderRadius: 20, padding: '8px 20px',
-          fontSize: 14, fontWeight: 700, color: '#00abe9',
-        }}>
-          {questions.length} question{questions.length !== 1 ? 's' : ''}
+        <div style={{ background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)', borderRadius: 20, padding: '8px 20px', fontSize: 14, fontWeight: 700, color: '#00abe9' }}>
+          {displayed.length} question{displayed.length !== 1 ? 's' : ''}
         </div>
       </div>
 
-      {/* Grille de questions */}
-      {questions.length === 0 ? (
+      {displayed.length === 0 ? (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
           <div style={{ fontSize: 52 }}>❓</div>
           <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.3)' }}>En attente de questions…</div>
@@ -65,24 +88,19 @@ function TVModuleQuestionsView({ sessionCode, moduleId, moduleLabel }) {
       ) : (
         <div style={{
           flex: 1, display: 'grid', overflow: 'hidden',
-          gridTemplateColumns: questions.length <= 3 ? '1fr' : 'repeat(2, 1fr)',
+          gridTemplateColumns: displayed.length <= 3 ? '1fr' : 'repeat(2, 1fr)',
           gap: 16, alignContent: 'start',
-          overflowY: questions.length > 6 ? 'auto' : 'hidden',
+          overflowY: displayed.length > 6 ? 'auto' : 'hidden',
         }}>
-          {questions.map((q, i) => (
+          {displayed.map((q, i) => (
             <div key={q.id || i} style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.09)',
-              borderLeft: '4px solid #00abe9',
-              borderRadius: 14, padding: '20px 24px',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
+              borderLeft: '4px solid #00abe9', borderRadius: 14, padding: '20px 24px',
             }}>
-              <div style={{
-                fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)',
-                textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10,
-              }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
                 Question {i + 1}
               </div>
-              <div style={{ fontSize: questions.length <= 4 ? 20 : 16, color: '#fff', lineHeight: 1.55, fontWeight: 500 }}>
+              <div style={{ fontSize: displayed.length <= 4 ? 20 : 16, color: '#fff', lineHeight: 1.55, fontWeight: 500 }}>
                 {q.answer}
               </div>
             </div>
@@ -4364,13 +4382,12 @@ function TVSAVBrainstorm({ page, sessionCode, brainstormRevealed }) {
               <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic' }}>Aucune réponse reçue.</div>
             </div>
           ) : answers.map((row, i) => (
-            <div key={row.participant_name} style={{
+            <div key={row.participant_name || i} style={{
               background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
               borderLeft: `4px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
               borderRadius: 16, padding: '18px 22px',
               animation: 'fadeInUp .4s ease forwards',
             }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length], marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>{row.participant_name}</div>
               <div style={{ fontSize: 18, color: '#fff', lineHeight: 1.5 }}>{row.answer}</div>
             </div>
           ))}
@@ -8135,6 +8152,7 @@ export default function TVView() {
           sessionCode={sessionCode}
           moduleId={sharedState?.mq_module || activeModule || ''}
           moduleLabel={moduleData?.label || ''}
+          singleId={sharedState?.mq_single_id || null}
         />
         {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
         <TVAnnotationCanvas />
