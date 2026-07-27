@@ -2899,7 +2899,7 @@ function TVLaboProgressif({ page, pageIndex, total, revealLabo }) {
           Notre laboratoire progressif<br />unique au monde
         </h1>
         <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.5)', marginBottom: revealLabo ? 40 : 0, fontStyle: 'italic', maxWidth: 700, lineHeight: 1.5 }}>
-          Accessible à la vue des clients — équipé de machines CoreTBA (MEI) introuvables dans n&apos;importe quel magasin d&apos;optique au monde.
+          Accessible à la vue des clients — équipé de machines introuvables dans n&apos;importe quel magasin d&apos;optique au monde.
         </p>
         {revealLabo && (
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', animation: 'podiumFadeIn .6s ease both' }}>
