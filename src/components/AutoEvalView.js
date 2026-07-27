@@ -284,7 +284,8 @@ export default function AutoEvalView({ onBack }) {
     try {
       const [state, reports] = await Promise.all([
         getSharedState(),
-        sbSelect('formation_reports', `week_date=eq.${weekDate}&trainer_name=eq.__auto_eval__`),
+        // Charge tous les auto-évals, triés du plus récent au plus ancien — pas de filtre week_date
+        sbSelect('formation_reports', `trainer_name=eq.__auto_eval__&order=updated_at.desc`),
       ])
       setIsActive(state?.tv_screen === 'auto-eval')
       setEntrees(state?.entrees_data || [])
@@ -295,7 +296,10 @@ export default function AutoEvalView({ onBack }) {
         firstLoad.current = false
       }
       const byCollab = {}
-      for (const r of (reports || [])) byCollab[r.collaborateur] = r.stats_snapshot
+      for (const r of (reports || [])) {
+        // Garde uniquement le plus récent par formé (ordre updated_at.desc, premier = plus récent)
+        if (!byCollab[r.collaborateur]) byCollab[r.collaborateur] = r.stats_snapshot
+      }
       setResponses(byCollab)
     } catch (e) {
       console.error('[AutoEvalView] load', e)

@@ -126,6 +126,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
   const [loading, setLoading]                   = useState(true)
   const [correcting, setCorrecting]             = useState(null) // 'attitude' | 'comprehension' | 'commentaire'
   const [mailSentAt, setMailSentAt]             = useState(null)
+  // week_date du dernier enregistrement trouvé — peut différer de weekDate si la session a eu lieu une semaine précédente
+  const [saveWeekDate, setSaveWeekDate]         = useState(weekDate)
   const themes = CATEGORY_META[categoryKey]?.themes || THEMES_FRANCE
   const name = entree.fullName || `${entree.nom} ${entree.prenom}`.trim()
 
@@ -134,7 +136,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
     try {
       const [moduleRows, reportRow] = await Promise.all([
         sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(name)}`),
-        sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&week_date=eq.${weekDate}&trainer_name=eq.${encodeURIComponent(trainerName)}&limit=1`),
+        // Charge le rapport le plus récent pour ce formé+formateur, quelle que soit la semaine
+        sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc&limit=1`),
       ])
       const byModule = {}
       for (const r of moduleRows || []) {
@@ -146,7 +149,12 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
         if (!prev || sc > prev.score) byModule[mid] = { moduleId: mid, label: MODULE_DATA[mid]?.label || mid, score: sc, total: tot }
       }
       setQuizData(Object.values(byModule))
-      const snap = reportRow?.[0]?.stats_snapshot || {}
+      const found = reportRow?.[0]
+      if (found) {
+        // Conserve la week_date d'origine pour sauvegarder sur le bon enregistrement
+        setSaveWeekDate(found.week_date || weekDate)
+      }
+      const snap = found?.stats_snapshot || {}
       setAssessments(snap.theme_assessments || {})
       setAttitudeStatus(snap.attitude_status || null)
       setAttitudeNote(snap.attitude_note || '')
@@ -160,7 +168,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
     } finally {
       setLoading(false)
     }
-  }, [name, weekDate, trainerName])
+  }, [name, trainerName, weekDate])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -184,7 +192,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
         'formation_reports',
         {
           collaborateur: name,
-          week_date: weekDate,
+          week_date: saveWeekDate,
           trainer_name: trainerName,
           status: 'draft',
           stats_snapshot: patch,
@@ -243,7 +251,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
   const reportData = {
     collaborateur: name,
     trainerName,
-    weekDate,
+    weekDate: saveWeekDate,
     categoryKey,
     assessments,
     attitudeStatus,
@@ -255,7 +263,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf 
   }
 
   const reportUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/rapport/?c=${encodeURIComponent(name)}&w=${weekDate}&t=${encodeURIComponent(trainerName)}&cat=${categoryKey}`
+    ? `${window.location.origin}/rapport/?c=${encodeURIComponent(name)}&w=${saveWeekDate}&t=${encodeURIComponent(trainerName)}&cat=${categoryKey}`
     : ''
 
   const copyLink = () => {
@@ -786,6 +794,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
   const [ranks, setRanks]             = useState({}) // { name: rankNumber }
   const [rankOf, setRankOf]           = useState(0)  // total de formés classés
   const [mailSentMap, setMailSentMap] = useState({}) // { name: dateISO }
+  const [weekDateMap, setWeekDateMap] = useState({}) // { name: week_date du dernier rapport }
   const weekDate = getWeekDate()
   const catMeta  = CATEGORY_META[categoryKey] || {}
 
@@ -797,17 +806,24 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
 
     const computeRanks = async () => {
       const [reportsRows, ...quizArrays] = await Promise.all([
-        sbSelect('formation_reports', `week_date=eq.${weekDate}&trainer_name=eq.${encodeURIComponent(trainerName)}`),
+        // Charge tous les rapports pour ce formateur, triés du plus récent au plus ancien
+        sbSelect('formation_reports', `trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc`),
         ...names.map(n => sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(n)}`)),
       ])
 
+      // Garde uniquement le rapport le plus récent par formé (premier rencontré = plus récent)
       const reportMap = {}
-      const sentMap = {}
+      const sentMap   = {}
+      const wdMap     = {}
       for (const r of (reportsRows || [])) {
-        reportMap[r.collaborateur] = r.stats_snapshot || {}
-        if (r.stats_snapshot?.mail_sent_at) sentMap[r.collaborateur] = r.stats_snapshot.mail_sent_at
+        if (!reportMap[r.collaborateur]) {
+          reportMap[r.collaborateur] = r.stats_snapshot || {}
+          wdMap[r.collaborateur]     = r.week_date || weekDate
+          if (r.stats_snapshot?.mail_sent_at) sentMap[r.collaborateur] = r.stats_snapshot.mail_sent_at
+        }
       }
       setMailSentMap(sentMap)
+      setWeekDateMap(wdMap)
 
       const scores = names.map((name, i) => {
         // Taux d'acquisition (évaluation formateur)
@@ -886,7 +902,8 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
 
     const links = group.entrees.map(e => {
       const name = e.fullName || `${e.nom} ${e.prenom}`.trim()
-      const url  = `${window.location.origin}/rapport/?c=${encodeURIComponent(name)}&w=${weekDate}&t=${encodeURIComponent(trainerName)}&cat=${categoryKey}`
+      const wd   = weekDateMap[name] || weekDate
+      const url  = `${window.location.origin}/rapport/?c=${encodeURIComponent(name)}&w=${wd}&t=${encodeURIComponent(trainerName)}&cat=${categoryKey}`
       return prenoms.length === 1 ? url : `${getPrenom(e)} : ${url}`
     }).join('\n')
 

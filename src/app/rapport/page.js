@@ -55,10 +55,17 @@ function RapportContent() {
 
     const load = async () => {
       try {
-        const rows = await sbSelect(
+        // Cherche d'abord l'enregistrement exact (semaine du lien), sinon prend le plus récent
+        let rows = await sbSelect(
           'formation_reports',
           `collaborateur=eq.${encodeURIComponent(collaborateur)}&week_date=eq.${weekDate}&trainer_name=eq.${encodeURIComponent(trainerName)}&limit=1`
         )
+        if (!rows?.length) {
+          rows = await sbSelect(
+            'formation_reports',
+            `collaborateur=eq.${encodeURIComponent(collaborateur)}&trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc&limit=1`
+          )
+        }
         const snap = rows?.[0]?.stats_snapshot || {}
         setData({
           collaborateur,
