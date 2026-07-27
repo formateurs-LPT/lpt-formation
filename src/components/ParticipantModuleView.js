@@ -4308,19 +4308,19 @@ function TestResetButton({ pName }) {
   }
 
   return (
-    <div style={{ position: 'fixed', bottom: 70, right: 14, zIndex: 999 }}>
+    <div style={{ position: 'fixed', top: 14, right: 14, zIndex: 99999 }}>
       {confirm ? (
         <div style={{ display: 'flex', gap: 6 }}>
-          <button onClick={() => setConfirm(false)} style={{ background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button onClick={() => setConfirm(false)} style={{ background: '#374151', border: 'none', color: '#fff', borderRadius: 8, padding: '8px 14px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
             Annuler
           </button>
-          <button onClick={handleReset} disabled={resetting} style={{ background: '#ef4444', border: 'none', color: '#fff', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-            {resetting ? '…' : '✓ Confirmer reset'}
+          <button onClick={handleReset} disabled={resetting} style={{ background: '#ef4444', border: 'none', color: '#fff', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            {resetting ? '…' : '✓ Reset'}
           </button>
         </div>
       ) : (
-        <button onClick={() => setConfirm(true)} style={{ background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171', borderRadius: 8, padding: '6px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-          🔄 Reset test
+        <button onClick={() => setConfirm(true)} style={{ background: '#ef4444', border: 'none', color: '#fff', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+          🔄 Reset
         </button>
       )}
     </div>
