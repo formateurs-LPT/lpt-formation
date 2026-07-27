@@ -1269,10 +1269,10 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
     setValidated({})
     autoValidatedRef.current = new Set()
 
-    const autoValidate = (rows) => {
+    const autoValidate = (deduped) => {
       const kws = q?.autoCorrect
       if (!kws?.length) return
-      for (const row of rows) {
+      for (const row of deduped) {
         const name = row.participant_name
         if (autoValidatedRef.current.has(name)) continue
         const text = (row.answer || '').trim().toLowerCase()
@@ -1291,8 +1291,13 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
 
     const poll = async () => {
       const rows = await fetchOpenAnswers(getActiveSessionCode(), pageId)
-      setOpenAnswers(rows || [])
-      autoValidate(rows || [])
+      // Dédupliquer par participant : garder uniquement la dernière réponse
+      // (évite qu'une ancienne réponse correcte d'une session précédente déclenche le ✓)
+      const latest = {}
+      for (const row of rows || []) latest[row.participant_name] = row
+      const deduped = Object.values(latest)
+      setOpenAnswers(deduped)
+      autoValidate(deduped)
     }
     poll()
     const t = setInterval(poll, 2000)

@@ -275,16 +275,13 @@ function TVQuizTextOpen({ question, qIdx, total, moduleLabel, sessionCode, modul
 
   useEffect(() => {
     if (!sessionCode) return
-    sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`)
-      .then(rows => setParticipantCount((rows || []).length))
-      .catch(() => {})
-  }, [sessionCode])
-
-  useEffect(() => {
-    if (!sessionCode) return
     const poll = async () => {
-      const rows = await fetchOpenAnswers(sessionCode, `${moduleId}:${qIdx}`)
-      setAnswers(rows || [])
+      const [answerRows, pRows] = await Promise.all([
+        fetchOpenAnswers(sessionCode, `${moduleId}:${qIdx}`),
+        sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`),
+      ])
+      setAnswers(answerRows || [])
+      setParticipantCount((pRows || []).length)
     }
     poll()
     const t = setInterval(poll, 2000)
