@@ -240,7 +240,7 @@ export default function ModuleMutuelles({ pName, onBack }) {
           {/* Présentation INAMI */}
           <div style={{ marginBottom: 28 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 8 }}>
-              Vue formateur · Page 3
+              Vue formateur · Page 2
             </div>
             <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: -1, marginBottom: 6 }}>INAMI</div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 16 }}>
@@ -317,14 +317,14 @@ export default function ModuleMutuelles({ pName, onBack }) {
         <div style={{ flex: 1, padding: '28px 40px', overflowY: 'auto' }}>
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 6 }}>
-              Vue formateur · Cliquez «&nbsp;Révéler&nbsp;» pour projeter sur TV
+              Vue formateur · Page 3 — Cliquez «&nbsp;Révéler&nbsp;» pour projeter sur TV
             </div>
             <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>Les organismes assureurs en Belgique</div>
           </div>
 
-          {/* Cartes individuelles — avec optique */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 12, marginBottom: 12 }}>
-            {MUTUELLES_BELGIQUE.filter(m => m.complementaire).map((m) => {
+          {/* Toutes les mutuelles — révélation individuelle */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 12 }}>
+            {MUTUELLES_BELGIQUE.map((m) => {
               const isRevealed = revealedIds.includes(m.id)
               return (
                 <div key={m.id} style={{
@@ -334,27 +334,33 @@ export default function ModuleMutuelles({ pName, onBack }) {
                   borderRadius: 12, padding: '14px 16px',
                   display: 'flex', flexDirection: 'column', gap: 8,
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.3, marginBottom: 3 }}>{m.nom}</div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{m.type}</div>
-                    </div>
-                    <span style={{ fontSize: 9, fontWeight: 700, borderRadius: 20, padding: '2px 8px', flexShrink: 0, background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', color: '#4ade80' }}>
-                      ✓ Optique
-                    </span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.3, marginBottom: 3 }}>{m.nom}</div>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{m.type}</div>
                   </div>
 
-                  {isRevealed && m.montant !== null && (
-                    <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '10px 12px', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 10px' }}>
-                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.7 }}>Montant</span>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: '#c9a227' }}>{m.montant}</span>
-                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.7 }}>Fréquence</span>
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4 }}>{m.frequence}</span>
-                      {m.particularites && m.particularites !== '/' && (
-                        <>
-                          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.7 }}>Particularités</span>
-                          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{m.particularites}</span>
-                        </>
+                  {isRevealed && (
+                    <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: m.complementaire ? '#4ade80' : '#f87171' }}>
+                        {m.complementaire ? '✓ Assurance complémentaire optique' : '✗ Sans assurance complémentaire optique'}
+                      </span>
+                      {m.montant && m.montant !== '0 €' && m.montant !== 'Aucun' && (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 10px', marginTop: 4 }}>
+                          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.7 }}>Montant</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: '#c9a227' }}>{m.montant}</span>
+                          {m.frequence && m.frequence !== '/' && (
+                            <>
+                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.7 }}>Fréquence</span>
+                              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4 }}>{m.frequence}</span>
+                            </>
+                          )}
+                          {m.particularites && m.particularites !== '/' && (
+                            <>
+                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.7 }}>Particularités</span>
+                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{m.particularites}</span>
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
@@ -377,24 +383,6 @@ export default function ModuleMutuelles({ pName, onBack }) {
                 </div>
               )
             })}
-          </div>
-
-          {/* Carte groupée — sans optique */}
-          <div style={{
-            background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
-            borderLeft: '3px solid rgba(239,68,68,0.45)', borderRadius: 12, padding: '14px 18px',
-            display: 'flex', alignItems: 'center', gap: 16,
-          }}>
-            <span style={{ fontSize: 9, fontWeight: 700, borderRadius: 20, padding: '3px 10px', flexShrink: 0, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
-              ✗ Pas de complémentaire optique
-            </span>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {MUTUELLES_BELGIQUE.filter(m => !m.complementaire).map(m => (
-                <span key={m.id} style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '4px 12px' }}>
-                  {m.nom}
-                </span>
-              ))}
-            </div>
           </div>
         </div>
       ) : (

@@ -1090,8 +1090,8 @@ export const MODULE_DATA = {
   'quiz-j1':          { pages: [], quiz: QUIZ_J1, label: 'Quiz Jour 1', sub: 'Entreprise · Optique · Ordonnances · Montures' },
   'mutuelles-inami':  { pages: [
     { id: 'mutuelles-q1', type: 'pause', icon: '🛡️', titre: 'Que savez-vous des mutuelles ?', sousTitre: 'Partagez ce que vous savez déjà' },
-    { id: 'mutuelles-reveal', type: 'mutuelles-reveal', titre: 'Les organismes assureurs en Belgique' },
     { id: 'inami-info', type: 'inami-info', titre: 'INAMI' },
+    { id: 'mutuelles-reveal', type: 'mutuelles-reveal', titre: 'Les organismes assureurs en Belgique' },
     { id: 'partena-offre', type: 'partena-offre', titre: 'PARTENA' },
   ], quiz: [], label: 'Mutuelles et INAMI', sub: 'Remboursements · INAMI · Mutuelles belges' },
   'remboursement-france': { pages: [
@@ -1120,7 +1120,7 @@ export const MUTUELLES_BELGIQUE = [
     complementaire: true,
     montant: "Jusqu'à 120 €",
     frequence: 'Tous les 3 ans (ou 1×/an si Δ dioptrie ≥ 0,5)',
-    particularites: "Sans prescription, tout âge, toute dioptrie. Sur base de la facture d'achat. Sous présentation d'une facture uniquement.",
+    particularites: "Sans prescription ophtalmologue. Sur base de la facture d'achat et du papier LPT « toute mutuelle »",
   },
   {
     id: 'solidaris',
@@ -1138,16 +1138,16 @@ export const MUTUELLES_BELGIQUE = [
     complementaire: true,
     montant: "Jusqu'à 75 €",
     frequence: 'Tous les 2 ans',
-    particularites: "Achat chez opticien physique dans l'UE. Prescription non obligatoire si la facture mentionne la dioptrie.",
+    particularites: "Sans prescription ophtalmologue. Sur base de la facture d'achat et du papier LPT « Partena »",
   },
   {
     id: 'neutre',
     nom: 'Mutualité neutre',
     type: 'Mutuelle',
     complementaire: true,
-    montant: "24 à 120 € selon l'âge",
+    montant: "Jusqu'à 120 €",
     frequence: 'Tous les 3 ans',
-    particularites: "Sous présentation d'une prescription ophtalmologue.",
+    particularites: "Avec prescription ophtalmologue. Sur base de la facture d'achat et de la prescription ophtalmologue.",
   },
   {
     id: 'liberale',
