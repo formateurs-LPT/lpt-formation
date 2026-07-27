@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, getRoomSharedState, setSharedState, setRoomSharedState } from '@/lib/supabase'
+import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, getRoomSharedState, setRoomSharedState } from '@/lib/supabase'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
 import { PDMAnimationSVG } from '@/lib/pdmAnimationSvg'
@@ -1134,7 +1134,6 @@ function LptpMockScreen({ phaseIdx, stepIdx, resultOk }) {
   const avance = isPartial ? (s===3?'active':s>3?'done':'hidden') : 'hidden'
   const valid  = (!isTest) ? (s===4?'active':s>4?'done':'hidden') : 'hidden'
   const result = isTest && s===5 ? 'active' : 'hidden'
-  const factTabActive = isFact && s >= 1
 
   return (
     <div style={{
@@ -1328,6 +1327,9 @@ function TVLptSantePec({ scenario }) {
     if (phaseIdx === null) return
     const phase = LPTS_PEC_PHASES[phaseIdx]
     const step = phase.steps[stepIdx]
+    // stepIdx may be out-of-bounds for the new phase during scenario switch —
+    // the sibling useEffect([scenario]) will reset it; just bail out safely here.
+    if (!step) return
     let altTimer
 
     if (phaseIdx === 0 && stepIdx === 5) {

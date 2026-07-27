@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbSelect, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { NextPagePreview } from '@/lib/trainerPreview'

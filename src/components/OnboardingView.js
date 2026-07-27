@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { TRAINER_AVATARS } from '@/lib/constants'
 import { generatePin } from '@/lib/pin'
 import { getSharedState, setSharedState, setRoomSharedState, sbUpsert, sbSelect, getActiveSessionCode } from '@/lib/supabase'
 import { getLevelInfo, getRankMessage } from '@/lib/scoring'

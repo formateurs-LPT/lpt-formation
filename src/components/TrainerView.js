@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
-import { sbSelect, sbUpdate, sbUpsert, sbDelete, insertSessionHistory, getActiveSessionCode } from '@/lib/supabase'
+import { useState, useEffect } from 'react'
+import { sbSelect, sbUpdate, sbDelete, insertSessionHistory, getActiveSessionCode } from '@/lib/supabase'
 import {
   filterParticipantsInRh,
   loadEntreesList,

@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'

@@ -5,7 +5,6 @@ import { sbUpdate, getActiveSessionCode, setSharedState } from '@/lib/supabase'
 import { useIsMobile } from '@/lib/useIsMobile'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { OFFRES_QUIZ } from '@/lib/modulesData'
-import { TRAINER_AVATARS } from '@/lib/constants'
 import { NextPagePreview } from '@/lib/trainerPreview'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']

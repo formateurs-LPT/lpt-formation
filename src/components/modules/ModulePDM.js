@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbSelect, getActiveSessionCode } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import { PDMAnimationSVG, PDM_ANIM_STEP_LABELS } from '@/lib/pdmAnimationSvg'

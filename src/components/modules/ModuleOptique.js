@@ -2,7 +2,7 @@
 // fix: getActiveSessionCode pour sync TV
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbSelect, sbDelete, getActiveSessionCode, setSharedState, fetchOpenAnswers, insertOpenAnswer } from '@/lib/supabase'
+import { sbUpdate, sbDelete, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'

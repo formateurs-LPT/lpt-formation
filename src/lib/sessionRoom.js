@@ -7,7 +7,7 @@ import {
   getTvUrlRoomCode,
 } from './sessionCode'
 import { archiveAndPurgeRoom } from './roomArchive'
-import { getTrainerFromDB, sbSelect, sbUpdate, sbUpsert, sbUpsertOrThrow, setRoomSharedState } from './supabase'
+import { getTrainerFromDB, sbSelect, sbUpdate, sbUpsertOrThrow, setRoomSharedState } from './supabase'
 
 const ROOM_CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const OPEN_ROOM_STATUSES = new Set(['waiting', 'active'])

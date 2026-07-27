@@ -7,7 +7,7 @@ import {
   renameParticipantIdentity,
   normalizeEntreeList,
 } from '@/lib/participantNames'
-import { sbInsert, sbUpsert, sbSelect, getSharedState, setSharedState, getActiveSessionCode, insertSessionHistory } from '@/lib/supabase'
+import { sbInsert, sbSelect, getSharedState, setSharedState, getActiveSessionCode, insertSessionHistory } from '@/lib/supabase'
 import { classifyMagasin } from '@/lib/formationCategories'
 
 function fixSpaced(str) {
