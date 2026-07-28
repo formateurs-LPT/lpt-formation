@@ -2301,7 +2301,7 @@ function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting, rev
   )
 }
 
-function TVEntrepriseFreins({ page, pageIndex, total, freinsResponses, sessionCode }) {
+function TVEntrepriseFreins({ page, pageIndex, total, freinsResponses, revealFreins, sessionCode }) {
   const entries = Object.entries(freinsResponses || {})
   const accent = '#00abe9'
   const [participantCount, setParticipantCount] = useState(0)
@@ -2311,9 +2311,10 @@ function TVEntrepriseFreins({ page, pageIndex, total, freinsResponses, sessionCo
     poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
   }, [sessionCode])
   const allAnswered = participantCount > 0 && entries.length >= participantCount
+  const shouldShow = revealFreins || allAnswered
 
   return (
-    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!allAnswered} answerCount={entries.length} participantCount={participantCount}>
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!shouldShow} answerCount={entries.length} participantCount={participantCount}>
       {entries.map(([pName, resp], i) => (
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)',
@@ -2347,6 +2348,7 @@ function TVEntreprisePrix({ page, pageIndex, total, prixResponses, revealPrix, s
     poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
   }, [sessionCode])
   const allAnswered = participantCount > 0 && entries.length >= participantCount
+  const shouldShow = revealPrix || allAnswered
 
   const prixBanner = revealPrix ? (
     <div style={{
@@ -2366,7 +2368,7 @@ function TVEntreprisePrix({ page, pageIndex, total, prixResponses, revealPrix, s
   ) : null
 
   return (
-    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!allAnswered} answerCount={entries.length} participantCount={participantCount} revealBanner={prixBanner}>
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!shouldShow} answerCount={entries.length} participantCount={participantCount} revealBanner={prixBanner}>
       {entries.map(([pName, resp], i) => (
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)',
@@ -2389,7 +2391,7 @@ function TVEntreprisePrix({ page, pageIndex, total, prixResponses, revealPrix, s
   )
 }
 
-function TVEntreprisePromesse({ page, pageIndex, total, promesseResponses, sessionCode }) {
+function TVEntreprisePromesse({ page, pageIndex, total, promesseResponses, revealPromesse, sessionCode }) {
   const entries = Object.entries(promesseResponses || {})
   const accent = '#34d399'
   const [participantCount, setParticipantCount] = useState(0)
@@ -2399,9 +2401,10 @@ function TVEntreprisePromesse({ page, pageIndex, total, promesseResponses, sessi
     poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
   }, [sessionCode])
   const allAnswered = participantCount > 0 && entries.length >= participantCount
+  const shouldShow = revealPromesse || allAnswered
 
   return (
-    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!allAnswered} answerCount={entries.length} participantCount={participantCount}>
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!shouldShow} answerCount={entries.length} participantCount={participantCount}>
       {entries.map(([pName, resp], i) => (
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)',
@@ -2431,6 +2434,7 @@ function TVEntrepriseVentesOpticien({ page, pageIndex, total, ventesResponses, r
     poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
   }, [sessionCode])
   const allAnswered = participantCount > 0 && entries.length >= participantCount
+  const shouldShow = revealVentes || allAnswered
 
   const ventesBanner = revealVentes ? (
     <div style={{
@@ -2450,7 +2454,7 @@ function TVEntrepriseVentesOpticien({ page, pageIndex, total, ventesResponses, r
   ) : null
 
   return (
-    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!allAnswered} answerCount={entries.length} participantCount={participantCount} revealBanner={ventesBanner}>
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!shouldShow} answerCount={entries.length} participantCount={participantCount} revealBanner={ventesBanner}>
       {entries.map(([pName, resp], i) => (
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)', border: `1.5px solid ${TV_BUBBLE_COLORS[i % TV_BUBBLE_COLORS.length]}`,
@@ -6229,7 +6233,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, prixResponses, ventesResponses, promesseResponses, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, sessionCode, onAmeliProClick }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, sessionCode, onAmeliProClick }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -6284,11 +6288,11 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
       </p>
     </div>
   )
-  if (page.type === 'freins')     return <TVEntrepriseFreins   page={page} pageIndex={pageIndex} total={total} freinsResponses={freinsResponses} sessionCode={sessionCode} />
+  if (page.type === 'freins')     return <TVEntrepriseFreins   page={page} pageIndex={pageIndex} total={total} freinsResponses={freinsResponses} revealFreins={revealFreins} sessionCode={sessionCode} />
   if (page.type === 'prix')       return <TVEntreprisePrix     page={page} pageIndex={pageIndex} total={total} prixResponses={prixResponses} revealPrix={revealPrix} sessionCode={sessionCode} />
   if (page.type === 'video-lpt')  return <TVVideoLPT audioUnlocked={audioUnlocked} />
   if (page.type === 'ventes-opticien') return <TVEntrepriseVentesOpticien page={page} pageIndex={pageIndex} total={total} ventesResponses={ventesResponses} revealVentes={revealVentes} sessionCode={sessionCode} />
-  if (page.type === 'promesse')        return <TVEntreprisePromesse       page={page} pageIndex={pageIndex} total={total} promesseResponses={promesseResponses} sessionCode={sessionCode} />
+  if (page.type === 'promesse')        return <TVEntreprisePromesse       page={page} pageIndex={pageIndex} total={total} promesseResponses={promesseResponses} revealPromesse={revealPromesse} sessionCode={sessionCode} />
   if (page.type === 'chiffres')           return <TVEntrepriseChiffres   page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'force-lpt') return <TVEntrepriseForceLPT  page={page} pageIndex={pageIndex} total={total} modelePoint={modelePoint} audioUnlocked={audioUnlocked} />
   if (page.type === 'naissance')  return <TVEntrepriseNaissance page={page} pageIndex={pageIndex} total={total} />
@@ -8001,12 +8005,14 @@ export default function TVView() {
   const [ordoRevealStep, setOrdoRevealStep]   = useState(1)
   const [audioUnlocked, setAudioUnlocked]     = useState(false)
   const [freinsResponses, setFreinsResponses]           = useState({})
+  const [revealFreins, setRevealFreins]                 = useState(false)
   const [prixResponses, setPrixResponses]               = useState({})
   const [revealPrix, setRevealPrix]                     = useState(false)
   const [ventesResponses, setVentesResponses]           = useState({})
   const [revealVentes, setRevealVentes]                 = useState(false)
   const [revealLabo, setRevealLabo]                     = useState(false)
   const [promesseResponses, setPromesseResponses]       = useState({})
+  const [revealPromesse, setRevealPromesse]             = useState(false)
   const [planningDay, setPlanningDay]                   = useState(null)
   // Trame d'accueil
   const [trameStep, setTrameStep]                       = useState(null)
@@ -8068,12 +8074,14 @@ export default function TVView() {
     setOrdoPlaying(!!sharedState.ordo_playing)
     setOrdoRevealStep(sharedState.ordo_reveal_step ?? 1)
     setFreinsResponses(sharedState.freins_responses || {})
+    setRevealFreins(!!sharedState.reveal_freins)
     setPrixResponses(sharedState.prix_responses || {})
     setRevealPrix(!!sharedState.reveal_prix)
     setVentesResponses(sharedState.ventes_responses || {})
     setRevealVentes(!!sharedState.reveal_ventes)
     setRevealLabo(!!sharedState.reveal_labo)
     setPromesseResponses(sharedState.promesse_responses || {})
+    setRevealPromesse(!!sharedState.reveal_promesse)
     setPlanningDay(sharedState.planning_day || null)
     setProgZoneQ(sharedState.prog_zone_q ?? null)
     setProgZoneResponses(sharedState.prog_zone_responses || {})
@@ -8339,12 +8347,14 @@ export default function TVView() {
             ordoRevealStep={ordoRevealStep}
             audioUnlocked={audioUnlocked}
             freinsResponses={freinsResponses}
+            revealFreins={revealFreins}
             prixResponses={prixResponses}
             revealPrix={revealPrix}
             ventesResponses={ventesResponses}
             revealVentes={revealVentes}
             revealLabo={revealLabo}
             promesseResponses={promesseResponses}
+            revealPromesse={revealPromesse}
             progZoneQ={progZoneQ}
             progZoneResponses={progZoneResponses}
             progZoneShowCorrect={progZoneShowCorrect}

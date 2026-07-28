@@ -950,10 +950,12 @@ function EntrainementOralPage({ page, onBack, onPrev, onNext, isFirst, isLast, p
   const [onlineCount, setOnlineCount] = useState(0)
   const [validatedMap, setValidatedMap] = useState({})
   const [resetting, setResetting] = useState(false)
+  const [customQText, setCustomQText] = useState('')
+  const [sendingCustomQ, setSendingCustomQ] = useState(false)
   const code = getActiveSessionCode()
 
   useEffect(() => {
-    setSharedState({ entrainement_q: null, entrainement_vf_correct: null, entrainement_clear_ts: null }).catch(() => {})
+    setSharedState({ entrainement_q: null, entrainement_vf_correct: null, entrainement_clear_ts: null, entrainement_custom_q_text: null }).catch(() => {})
     setSelectedQ(null)
     setAnswers([])
     setVfCorrect(null)
@@ -1003,7 +1005,19 @@ function EntrainementOralPage({ page, onBack, onPrev, onNext, isFirst, isLast, p
     await clearAnswers()
     setSelectedQ(null)
     setVfCorrect(null)
-    await setSharedState({ entrainement_q: null, entrainement_vf_correct: null, entrainement_clear_ts: Date.now() })
+    await setSharedState({ entrainement_q: null, entrainement_vf_correct: null, entrainement_clear_ts: Date.now(), entrainement_custom_q_text: null })
+  }
+
+  const sendCustomQ = async () => {
+    if (!customQText.trim() || sendingCustomQ) return
+    setSendingCustomQ(true)
+    await clearAnswers()
+    setVfCorrect(null)
+    setSelectedQ(-1)
+    setValidatedMap({})
+    setResetting(false)
+    await setSharedState({ entrainement_q: -1, entrainement_custom_q_text: customQText.trim(), entrainement_vf_correct: null, entrainement_clear_ts: Date.now() })
+    setSendingCustomQ(false)
   }
 
   const handleVF = async (answer) => {
@@ -1032,12 +1046,14 @@ function EntrainementOralPage({ page, onBack, onPrev, onNext, isFirst, isLast, p
         setResetting(false)
         setSelectedQ(null)
         setVfCorrect(null)
-        await setSharedState({ entrainement_q: null, entrainement_vf_correct: null, entrainement_clear_ts: Date.now() })
+        await setSharedState({ entrainement_q: null, entrainement_vf_correct: null, entrainement_clear_ts: Date.now(), entrainement_custom_q_text: null })
       }, 2000)
     }
   }
 
-  const currentQ = selectedQ !== null ? ENTRAINEMENT_QUESTIONS[selectedQ] : null
+  const currentQ = selectedQ === -1
+    ? { text: customQText.trim(), type: 'text' }
+    : selectedQ !== null ? ENTRAINEMENT_QUESTIONS[selectedQ] : null
   const allAnswered = onlineCount > 0 && answers.length >= onlineCount
   const isVF = currentQ?.type === 'vrai-faux'
 
@@ -1099,6 +1115,47 @@ function EntrainementOralPage({ page, onBack, onPrev, onNext, isFirst, isLast, p
               </button>
             )
           })}
+
+          {/* Séparateur + question libre */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 4 }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: 1.5 }}>ou</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+          </div>
+
+          <div style={{
+            background: selectedQ === -1 ? 'rgba(124,58,237,0.12)' : 'rgba(255,255,255,0.03)',
+            border: `1.5px solid ${selectedQ === -1 ? 'rgba(124,58,237,0.5)' : 'rgba(255,255,255,0.1)'}`,
+            borderRadius: 14, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10,
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: selectedQ === -1 ? '#a78bfa' : 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              ✏️ Question personnalisée
+            </div>
+            <textarea
+              value={customQText}
+              onChange={e => setCustomQText(e.target.value)}
+              placeholder="Tapez votre question ici…"
+              rows={3}
+              style={{
+                width: '100%', padding: '10px 12px', borderRadius: 10, resize: 'none', outline: 'none',
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                color: '#fff', fontSize: 13, fontFamily: 'inherit', lineHeight: 1.5, boxSizing: 'border-box',
+              }}
+            />
+            <button
+              onClick={sendCustomQ}
+              disabled={!customQText.trim() || sendingCustomQ}
+              style={{
+                background: customQText.trim() ? 'linear-gradient(135deg, #7c3aed, #9f67fa)' : 'rgba(255,255,255,0.06)',
+                border: 'none', borderRadius: 10, padding: '10px 14px',
+                color: '#fff', fontSize: 13, fontWeight: 700,
+                cursor: customQText.trim() ? 'pointer' : 'default',
+                fontFamily: 'inherit', transition: 'all .15s',
+              }}
+            >
+              {sendingCustomQ ? 'Envoi…' : '📤 Envoyer cette question'}
+            </button>
+          </div>
         </div>
 
         {/* Colonne droite — réponses */}

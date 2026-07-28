@@ -3635,7 +3635,7 @@ function SAVContentMobile({ page, pageIndex, total }) {
 // ── Entraînement oral (participant) ──────────────────────────────
 const ENTRAINEMENT_PAGE_ID = 'optique:entrainement'
 
-function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, entrainementClearTs }) {
+function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, entrainementClearTs, entrainementCustomQText }) {
   const [text, setText] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [vfSelected, setVfSelected] = useState(null)
@@ -3647,7 +3647,9 @@ function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, e
     setVfSelected(null)
   }, [entrainementQ, entrainementClearTs])
 
-  const q = entrainementQ != null ? ENTRAINEMENT_QUESTIONS[entrainementQ] : null
+  const q = entrainementQ === -1
+    ? { text: entrainementCustomQText || '…', type: 'text' }
+    : entrainementQ != null ? ENTRAINEMENT_QUESTIONS[entrainementQ] : null
 
   const submitText = async () => {
     if (!text.trim() || submitted || saving) return
@@ -3769,7 +3771,7 @@ function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, e
   )
 }
 
-function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint, rembfrRevealed, entrainementQ, entrainementVfCorrect, entrainementClearTs }) {
+function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint, rembfrRevealed, entrainementQ, entrainementVfCorrect, entrainementClearTs, entrainementCustomQText }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
@@ -4062,7 +4064,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
       </div>
     </div>
   )
-  if (page.type === 'entrainement-oral')  return <EntrainementOralMobile pName={pName} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} />
+  if (page.type === 'entrainement-oral')  return <EntrainementOralMobile pName={pName} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} entrainementCustomQText={entrainementCustomQText} />
 
   // Freins à l'achat — saisie libre
   if (page.type === 'freins') return <FreinsInputMobile page={page} pName={pName || 'Anonyme'} />
@@ -4796,6 +4798,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const [entrainementQ, setEntrainementQ]           = useState(null)
   const [entrainementVfCorrect, setEntrainementVfCorrect] = useState(null)
   const [entrainementClearTs, setEntrainementClearTs]     = useState(null)
+  const [entrainementCustomQText, setEntrainementCustomQText] = useState(null)
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
@@ -4813,6 +4816,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     setEntrainementQ(sharedState.entrainement_q ?? null)
     setEntrainementVfCorrect(sharedState.entrainement_vf_correct ?? null)
     setEntrainementClearTs(sharedState.entrainement_clear_ts ?? null)
+    setEntrainementCustomQText(sharedState.entrainement_custom_q_text ?? null)
     // Force-disconnect déclenché par le formateur
     // Ignoré si le formé s'est reconnecté après le kick (joined_at > kickTimestamp)
     const kickTimestamp = Number(sharedState.forced_disconnects?.[pName]) || 0
@@ -4912,7 +4916,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
               : isQuiz
               ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
               : page
-                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} rembfrRevealed={rembfrRevealed} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} />
+                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} rembfrRevealed={rembfrRevealed} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} entrainementCustomQText={entrainementCustomQText} />
                 : faqJournee
                   ? <FAQInputMobile journeeId={faqJournee} />
                   : <ParticipantDashboard pName={pName} sessionCode={sessionCode} />

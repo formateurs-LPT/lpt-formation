@@ -159,6 +159,7 @@ const BUBBLE_COLORS = ['#00abe9','#4ade80','#f59e0b','#a78bfa','#f472b6','#34d39
 // ── Page interactive : freins à l'achat ───────────────────────────
 function FreinsPage({ page, navProps }) {
   const [responses, setResponses] = useState({})
+  const [revealed, setRevealed] = useState(false)
 
   useEffect(() => {
     const poll = async () => {
@@ -178,6 +179,10 @@ function FreinsPage({ page, navProps }) {
     setSharedState({ freins_responses: {} }).catch(() => {})
     setResponses({})
   }
+
+  const handleReveal = () => { setRevealed(true); setSharedState({ reveal_freins: true }).catch(() => {}) }
+  const clearReveal = () => { setRevealed(false); setSharedState({ reveal_freins: false }).catch(() => {}) }
+  const navPropsWithClear = { ...navProps, onNext: () => { clearReveal(); navProps.onNext?.() }, onPrev: () => { clearReveal(); navProps.onPrev?.() } }
 
   return (
     <div style={{
@@ -239,7 +244,29 @@ function FreinsPage({ page, navProps }) {
         </div>
       )}
 
-      <TrainerNav {...navProps} />
+      <div style={{ marginTop: 32 }}>
+        {!revealed ? (
+          <button onClick={handleReveal} disabled={entries.length === 0} style={{
+            background: entries.length > 0 ? 'linear-gradient(135deg, #00abe9, #0089ba)' : 'rgba(255,255,255,0.08)',
+            border: 'none', borderRadius: 14, padding: '14px 28px',
+            color: '#fff', fontSize: 15, fontWeight: 800,
+            cursor: entries.length > 0 ? 'pointer' : 'default',
+            fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 10,
+            boxShadow: entries.length > 0 ? '0 4px 20px rgba(0,171,233,0.35)' : 'none',
+          }}>
+            📺 Afficher les réponses sur TV
+          </button>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ background: 'rgba(0,171,233,0.12)', border: '1.5px solid rgba(0,171,233,0.4)', borderRadius: 14, padding: '12px 22px', color: '#00abe9', fontSize: 14, fontWeight: 700 }}>
+              ✅ Réponses affichées sur le diffuseur
+            </div>
+            <button onClick={clearReveal} style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '10px 16px', color: '#f87171', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Masquer</button>
+          </div>
+        )}
+      </div>
+
+      <TrainerNav {...navPropsWithClear} />
     </div>
   )
 }
@@ -484,6 +511,7 @@ function VentesOpticienPage({ page, navProps }) {
 // ── Page interactive : promesse ───────────────────────────────────
 function PromessePage({ page, navProps }) {
   const [responses, setResponses] = useState({})
+  const [revealed, setRevealed] = useState(false)
   const accent = '#34d399'
 
   useEffect(() => {
@@ -504,6 +532,10 @@ function PromessePage({ page, navProps }) {
     setSharedState({ promesse_responses: {} }).catch(() => {})
     setResponses({})
   }
+
+  const handleReveal = () => { setRevealed(true); setSharedState({ reveal_promesse: true }).catch(() => {}) }
+  const clearReveal = () => { setRevealed(false); setSharedState({ reveal_promesse: false }).catch(() => {}) }
+  const navPropsWithClear = { ...navProps, onNext: () => { clearReveal(); navProps.onNext?.() }, onPrev: () => { clearReveal(); navProps.onPrev?.() } }
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px', position: 'relative' }}>
@@ -533,7 +565,30 @@ function PromessePage({ page, navProps }) {
         ))}
       </div>
       {entries.length > 0 && <div style={{ marginTop: 16, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{entries.length} réponse{entries.length > 1 ? 's' : ''} reçue{entries.length > 1 ? 's' : ''}</div>}
-      <TrainerNav {...navProps} />
+
+      <div style={{ marginTop: 32 }}>
+        {!revealed ? (
+          <button onClick={handleReveal} disabled={entries.length === 0} style={{
+            background: entries.length > 0 ? 'linear-gradient(135deg, #34d399, #059669)' : 'rgba(255,255,255,0.08)',
+            border: 'none', borderRadius: 14, padding: '14px 28px',
+            color: '#fff', fontSize: 15, fontWeight: 800,
+            cursor: entries.length > 0 ? 'pointer' : 'default',
+            fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 10,
+            boxShadow: entries.length > 0 ? '0 4px 20px rgba(52,211,153,0.35)' : 'none',
+          }}>
+            📺 Afficher les réponses sur TV
+          </button>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ background: 'rgba(52,211,153,0.12)', border: '1.5px solid rgba(52,211,153,0.4)', borderRadius: 14, padding: '12px 22px', color: '#34d399', fontSize: 14, fontWeight: 700 }}>
+              ✅ Réponses affichées sur le diffuseur
+            </div>
+            <button onClick={clearReveal} style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '10px 16px', color: '#f87171', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Masquer</button>
+          </div>
+        )}
+      </div>
+
+      <TrainerNav {...navPropsWithClear} />
     </div>
   )
 }
