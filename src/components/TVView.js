@@ -6999,6 +6999,7 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, sho
     return () => clearInterval(t)
   }, [qIdx, sessionCode])
 
+  if (!question?.options) return null
   const total_answers = answers.length
   const correct_count = answers.filter(r => r.is_correct).length
   const wrong_count   = total_answers - correct_count

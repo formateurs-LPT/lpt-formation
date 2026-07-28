@@ -1444,7 +1444,7 @@ function TextOpenControllerOptique({ quizQ, isLast, onNext, onEnd, onBack }) {
         {isLast ? (
           <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓ Terminer le quiz</button>
         ) : (
-          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #7c3aed, #9f67fa)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Question suivante →</button>
+          <button onClick={async () => { await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false }).catch(() => {}); onNext() }} style={{ background: 'linear-gradient(135deg, #7c3aed, #9f67fa)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Question suivante →</button>
         )}
       </div>
     </div>
@@ -1914,7 +1914,7 @@ export default function ModuleOptique({ pName, onBack }) {
 
   const handleLaunchQuiz = async () => {
     await sbUpdate('sessions', { active_module: 'optique', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
-    await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: null })
+    await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: null, quiz_show_correction: false, quiz_ordo_show: false })
     setQuizQ(0)
     setQuizLaunched(true)
     setQuizFinalPhase(null)
