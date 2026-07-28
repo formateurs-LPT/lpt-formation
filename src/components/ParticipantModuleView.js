@@ -3640,11 +3640,13 @@ function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, e
   const [submitted, setSubmitted] = useState(false)
   const [vfSelected, setVfSelected] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(false)
 
   useEffect(() => {
     setText('')
     setSubmitted(false)
     setVfSelected(null)
+    setSaveError(false)
   }, [entrainementQ, entrainementClearTs])
 
   const q = entrainementQ === -1
@@ -3654,33 +3656,48 @@ function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, e
   const submitText = async () => {
     if (!text.trim() || submitted || saving) return
     setSaving(true)
-    await insertOpenAnswer({
-      sessionCode: getParticipantSessionCode(),
-      pageId: ENTRAINEMENT_PAGE_ID,
-      participantName: pName?.trim() || 'Anonyme',
-      answer: text.trim(),
-    })
-    setSaving(false)
-    setSubmitted(true)
+    setSaveError(false)
+    try {
+      const ok = await insertOpenAnswer({
+        sessionCode: getParticipantSessionCode(),
+        pageId: ENTRAINEMENT_PAGE_ID,
+        participantName: pName?.trim() || 'Anonyme',
+        answer: text.trim(),
+      })
+      if (ok === false) throw new Error('insert failed')
+      setSubmitted(true)
+    } catch {
+      setSaveError(true)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const submitVF = async (answer) => {
     if (submitted || saving) return
     setSaving(true)
+    setSaveError(false)
     setVfSelected(answer)
-    await insertOpenAnswer({
-      sessionCode: getParticipantSessionCode(),
-      pageId: ENTRAINEMENT_PAGE_ID,
-      participantName: pName?.trim() || 'Anonyme',
-      answer,
-    })
-    setSaving(false)
-    setSubmitted(true)
+    try {
+      const ok = await insertOpenAnswer({
+        sessionCode: getParticipantSessionCode(),
+        pageId: ENTRAINEMENT_PAGE_ID,
+        participantName: pName?.trim() || 'Anonyme',
+        answer,
+      })
+      if (ok === false) throw new Error('insert failed')
+      setSubmitted(true)
+    } catch {
+      setSaveError(true)
+      setVfSelected(null)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const bg = { minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 20px 40px' }
 
-  if (q === null) {
+  if (!q) {
     return (
       <div style={bg}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30}
@@ -3764,7 +3781,12 @@ function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, e
             background: text.trim() ? 'linear-gradient(135deg, #0070a8, #00abe9)' : 'rgba(255,255,255,0.08)',
             border: 'none', color: '#fff', padding: '16px', borderRadius: 16,
             fontSize: 16, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default', fontFamily: 'inherit',
-          }}>{saving ? 'Envoi…' : '✓ Envoyer'}</button>
+          }}>{saving ? 'Envoi…' : saveError ? '✗ Réessayer' : '✓ Envoyer'}</button>
+          {saveError && (
+            <div style={{ color: '#f87171', fontSize: 13, textAlign: 'center', marginTop: 4 }}>
+              Erreur lors de l'envoi. Réessayez.
+            </div>
+          )}
         </div>
       )}
     </div>

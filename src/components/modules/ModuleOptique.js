@@ -1011,13 +1011,16 @@ function EntrainementOralPage({ page, onBack, onPrev, onNext, isFirst, isLast, p
   const sendCustomQ = async () => {
     if (!customQText.trim() || sendingCustomQ) return
     setSendingCustomQ(true)
-    await clearAnswers()
-    setVfCorrect(null)
-    setSelectedQ(-1)
-    setValidatedMap({})
-    setResetting(false)
-    await setSharedState({ entrainement_q: -1, entrainement_custom_q_text: customQText.trim(), entrainement_vf_correct: null, entrainement_clear_ts: Date.now() })
-    setSendingCustomQ(false)
+    try {
+      await clearAnswers()
+      setVfCorrect(null)
+      setSelectedQ(-1)
+      setValidatedMap({})
+      setResetting(false)
+      await setSharedState({ entrainement_q: -1, entrainement_custom_q_text: customQText.trim(), entrainement_vf_correct: null, entrainement_clear_ts: Date.now() })
+    } finally {
+      setSendingCustomQ(false)
+    }
   }
 
   const handleVF = async (answer) => {
