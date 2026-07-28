@@ -5,7 +5,7 @@ import {
   readParticipantSessionCode,
   setParticipantSessionCode,
 } from './sessionCode'
-import { filterOpenSessionsForEntree, noRoomMessageForEntree } from './formationCategories'
+import { filterOpenSessionsForEntree, noRoomMessageForEntree, canParticipantJoinSession } from './formationCategories'
 
 const OPEN_STATUSES = new Set(['waiting', 'active'])
 
@@ -26,10 +26,18 @@ export async function resolveParticipantSessionCode(entree) {
     const rows = await sbSelect('sessions', `code=eq.${encodeURIComponent(code)}&limit=1`)
     const session = rows?.[0]
     if (session && OPEN_STATUSES.has(session.status)) {
-      return { ok: true, code, session }
+      // Si la catégorie de la salle stockée ne correspond plus au profil (ex: basculé visio → présentiel),
+      // on purge le code et on retombe sur l'auto-détection par catégorie.
+      if (!canParticipantJoinSession(session, entree)) {
+        setParticipantSessionCode('')
+        code = ''
+      } else {
+        return { ok: true, code, session }
+      }
+    } else {
+      setParticipantSessionCode('')
+      code = ''
     }
-    setParticipantSessionCode('')
-    code = ''
   }
 
   const rows = await sbSelect('sessions', 'order=started_at.desc')
