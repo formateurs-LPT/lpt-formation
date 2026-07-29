@@ -27,6 +27,10 @@ const CATEGORY_META = {
 }
 
 const STATUS_OPTIONS = [
+  { key: 'maitrise',    label: 'Maîtrisé',        color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0', icon: '✓' },
+  { key: 'en-cours',    label: 'En cours',         color: '#d97706', bg: '#fef3c7', border: '#fde68a', icon: '◑' },
+  { key: 'notions',     label: 'Quelques notions', color: '#f97316', bg: '#fff7ed', border: '#fed7aa', icon: '◔' },
+  { key: 'non-compris', label: 'Pas compris',      color: '#dc2626', bg: '#fee2e2', border: '#fecaca', icon: '✗' },
 ]
 
 function toStars(v) {
