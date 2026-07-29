@@ -5,6 +5,7 @@ import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, getRoomSharedState, setRoomSharedState } from '@/lib/supabase'
+import { isTrainerAccount } from '@/lib/participantNames'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
 import { PDMAnimationSVG } from '@/lib/pdmAnimationSvg'
@@ -7153,7 +7154,7 @@ function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal }) {
   useEffect(() => {
     sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}`).then(rows => {
       const grouped = {}
-      ;(rows || []).filter(r => r.question_idx < qIdx).forEach(r => {
+      ;(rows || []).filter(r => r.question_idx < qIdx && !isTrainerAccount(r.collaborateur)).forEach(r => {
         if (!grouped[r.collaborateur]) grouped[r.collaborateur] = 0
         if (r.is_correct) grouped[r.collaborateur]++
       })
@@ -7297,7 +7298,7 @@ function TVQuizFinalPodium({ quiz, sessionCode }) {
   useEffect(() => {
     sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}`).then(rows => {
       const grouped = {}
-      ;(rows || []).forEach(r => {
+      ;(rows || []).filter(r => !isTrainerAccount(r.collaborateur)).forEach(r => {
         if (!grouped[r.collaborateur]) grouped[r.collaborateur] = 0
         if (r.is_correct) grouped[r.collaborateur]++
       })
@@ -7579,7 +7580,7 @@ function TVGroupResults({ moduleId, moduleLabel, quiz, sessionCode }) {
     const fetchAnswers = async () => {
       try {
         const rows = await sbSelect('quiz_answers', query)
-        setAnswers(rows || [])
+        setAnswers((rows || []).filter(r => !isTrainerAccount(r.collaborateur)))
       } catch { /* ignore */ }
       finally { setLoading(false) }
     }
@@ -7587,7 +7588,7 @@ function TVGroupResults({ moduleId, moduleLabel, quiz, sessionCode }) {
     const interval = setInterval(async () => {
       try {
         const rows = await sbSelect('quiz_answers', query)
-        setAnswers(rows || [])
+        setAnswers((rows || []).filter(r => !isTrainerAccount(r.collaborateur)))
       } catch { /* ignore */ }
     }, 3000)
     return () => clearInterval(interval)

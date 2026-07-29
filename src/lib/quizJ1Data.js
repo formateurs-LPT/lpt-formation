@@ -31,14 +31,14 @@ export const QUIZ_J1 = [
     type: 'text-open',
     question: 'Quel élément nous différencie totalement de la concurrence ?',
     hint: 'La fabrication sur place en 10 minutes',
-    autoCorrect: ['10'],
+    autoCorrect: ['10 min', '10min'],
   },
   // Q4 — 5 piliers
   {
     type: 'text-open',
     question: 'Quels sont les 5 points clés qui permettent de remplir la promesse Lunettes Pour Tous ?',
     hint: 'Examen de vue gratuit · Fabrication sur place · 10 minutes · Prix bas · 0 € reste à charge',
-    autoCorrectAll: ['examen', 'fabrication', '10', 'prix', 'reste'],
+    autoCorrectAll: ['examen', 'fabrication', '10 min', 'prix', 'reste'],
   },
   // Q5 — 4 problèmes de vue
   {
@@ -53,7 +53,7 @@ export const QUIZ_J1 = [
     question: 'Dans la Sphère, quels problèmes de vue peut-on trouver ?',
     options: ['Astigmatisme', 'Hypermétropie', 'Presbytie', 'Myopie'],
     correct: [1, 3],
-    instruction: 'Sélectionnez les 2 bonnes réponses (B et D)',
+    instruction: 'Sélectionnez les 2 bonnes réponses',
   },
   // Q7 — qcm standard
   {
@@ -135,7 +135,7 @@ export const QUIZ_J1 = [
     type: 'text-open',
     question: 'Quelles sont les puissances maximales fabriquées en 10 minutes chez Lunettes Pour Tous ? (positif et négatif)',
     hint: '+7,25 (positif) · −8,00 (négatif)',
-    autoCorrectAll: ['7,25', '8'],
+    autoCorrectAll: ['7,25', '8,0'],
   },
   // Q15 — signification de Plan — classement après Q15
   {

@@ -10,7 +10,7 @@ import { sbUpsert, sbSelect, sbDelete, getParticipantSessionCode, ensureSession,
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
-import { resolveParticipantName } from '@/lib/participantNames'
+import { resolveParticipantName, isTrainerAccount } from '@/lib/participantNames'
 import { mergeRoomSharedField } from '@/lib/roomSharedState'
 import { getLevelInfo, getRankMessage } from '@/lib/scoring'
 import { canParticipantJoinSession, getCategoryJoinDeniedMessage } from '@/lib/formationCategories'
@@ -227,6 +227,7 @@ function ParticipantDashboard({ pName, sessionCode }) {
         const seen = new Set()
         const counts = {}
         for (const r of (correctRows || [])) {
+          if (isTrainerAccount(r.collaborateur)) continue
           const key = `${r.collaborateur}|${r.module_id}|${r.question_idx}`
           if (seen.has(key)) continue
           seen.add(key)
@@ -307,7 +308,7 @@ function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
     if (!rows) return
     // Score = nombre de bonnes réponses jusqu'à la question actuelle incluse
     const scores = {}
-    rows.filter(r => r.question_idx <= qIdx).forEach(r => {
+    rows.filter(r => r.question_idx <= qIdx && !isTrainerAccount(r.collaborateur)).forEach(r => {
       if (!scores[r.collaborateur]) scores[r.collaborateur] = 0
       if (r.is_correct) scores[r.collaborateur]++
     })

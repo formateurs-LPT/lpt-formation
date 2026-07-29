@@ -189,6 +189,10 @@ const TEST_ACCOUNT_KEYS = new Set([
   'huchet nadege',
 ])
 
+export function isTrainerAccount(name) {
+  return TEST_ACCOUNT_KEYS.has(normalizeNameKey(name))
+}
+
 export async function resolveParticipantName(rawInput) {
   const raw = (rawInput || '').trim().replace(/\s+/g, ' ')
   if (!raw) return { ok: false, reason: 'empty' }
