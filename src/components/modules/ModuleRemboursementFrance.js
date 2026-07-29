@@ -590,7 +590,7 @@ function RembfrTextOpenController({ quizQ, onNext, onEnd, onBack }) {
           setValidating(v => ({ ...v, [name]: true }))
           saveModuleQuizAnswer({ moduleId: MODULE_ID, questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
             .then(() => { setValidated(v => ({ ...v, [name]: 'correct' })); setValidating(v => ({ ...v, [name]: false })) })
-            .catch(() => { autoValidatedRef.current.delete(name) })
+            .catch(() => { autoValidatedRef.current.delete(name); setValidating(v => ({ ...v, [name]: false })) })
         }
       }
     }
@@ -611,9 +611,12 @@ function RembfrTextOpenController({ quizQ, onNext, onEnd, onBack }) {
   const handleValidate = async (row, isCorrect) => {
     if (validating[row.participant_name]) return
     setValidating(v => ({ ...v, [row.participant_name]: true }))
-    await saveModuleQuizAnswer({ moduleId: MODULE_ID, questionIdx: quizQ, collaborateur: row.participant_name, answerIdx: 0, isCorrect })
-    setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
-    setValidating(v => ({ ...v, [row.participant_name]: false }))
+    try {
+      await saveModuleQuizAnswer({ moduleId: MODULE_ID, questionIdx: quizQ, collaborateur: row.participant_name, answerIdx: 0, isCorrect })
+      setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
+    } catch { /* best-effort */ } finally {
+      setValidating(v => ({ ...v, [row.participant_name]: false }))
+    }
   }
 
   return (
@@ -838,28 +841,24 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
   }, [started, pageIndex, demarcheA, ameliproClicked])
 
   const handleBack = async () => {
-    await Promise.all([
-      sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
-      resetShared(),
-    ])
+    try { await Promise.all([sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()), resetShared()]) } catch { /* best-effort */ }
     onBack()
   }
 
   const handleTerminate = async () => {
-    await Promise.all([
-      sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
-      resetShared(),
-    ])
-    onBack()
+    try { await Promise.all([sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()), resetShared()]) } catch { /* best-effort */ }
+    ;(onTerminate ?? onBack)()
   }
 
   const handleStartQuiz = async () => {
+    await setSharedState({ quiz_show_correction: false }).catch(() => {})
     setQuizQ(0)
     await syncAndWrite({ module_page: 100 })
   }
 
   const handleNextQ = async () => {
     const next = quizQ + 1
+    await setSharedState({ quiz_show_correction: false }).catch(() => {})
     setQuizQ(next)
     await syncAndWrite({ module_page: 100 + next })
   }

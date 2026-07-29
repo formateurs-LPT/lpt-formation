@@ -313,15 +313,18 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   const handleValidate = async (row, isCorrect) => {
     if (validating[row.participant_name]) return
     setValidating(v => ({ ...v, [row.participant_name]: true }))
-    await saveModuleQuizAnswer({
-      moduleId: 'montures',
-      questionIdx: quizQ,
-      collaborateur: row.participant_name,
-      answerIdx: 0,
-      isCorrect,
-    })
-    setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
-    setValidating(v => ({ ...v, [row.participant_name]: false }))
+    try {
+      await saveModuleQuizAnswer({
+        moduleId: 'montures',
+        questionIdx: quizQ,
+        collaborateur: row.participant_name,
+        answerIdx: 0,
+        isCorrect,
+      })
+      setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
+    } catch { /* best-effort */ } finally {
+      setValidating(v => ({ ...v, [row.participant_name]: false }))
+    }
   }
 
   return (
@@ -533,12 +536,15 @@ export default function ModuleMontures({ pName, onBack, onTerminate }) {
   }
 
   const handleBack = async () => {
-    await setSharedState({ montures_prix_revealed: false })
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+    try {
+      await setSharedState({ montures_prix_revealed: false }).catch(() => {})
+      await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+    } catch { /* best-effort */ }
     onBack()
   }
 
   const handleLaunchQuiz = async () => {
+    await setSharedState({ quiz_show_correction: false, montures_prix_revealed: false }).catch(() => {})
     await sbUpdate('sessions', { active_module: 'montures', module_page: 100 }, 'code=eq.' + getActiveSessionCode())
     setQuizQ(0)
     setQuizLaunched(true)
@@ -546,18 +552,21 @@ export default function ModuleMontures({ pName, onBack, onTerminate }) {
 
   const handleNextQuestion = async () => {
     const next = quizQ + 1
+    await setSharedState({ quiz_show_correction: false }).catch(() => {})
     await sbUpdate('sessions', { active_module: 'montures', module_page: 100 + next }, 'code=eq.' + getActiveSessionCode())
     setQuizQ(next)
   }
 
   const handleEndQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'montures', module_page: 200 }, 'code=eq.' + getActiveSessionCode())
+    try { await sbUpdate('sessions', { active_module: 'montures', module_page: 200 }, 'code=eq.' + getActiveSessionCode()) } catch { /* best-effort */ }
     setShowGroupResults(true)
   }
 
   const handleTerminateModule = async () => {
-    await setSharedState({ montures_prix_revealed: false })
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+    try {
+      await setSharedState({ montures_prix_revealed: false }).catch(() => {})
+      await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+    } catch { /* best-effort */ }
     ;(onTerminate ?? onBack)()
   }
 

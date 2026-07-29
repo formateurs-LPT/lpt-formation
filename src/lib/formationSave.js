@@ -18,7 +18,7 @@ export async function saveScenarioResponse({
     console.error('[saveScenarioResponse] session ou nom manquant', { code, name })
     return false
   }
-  if (!(await ensureSession())) return false
+  if (!(await ensureSession(code))) return false
 
   const payload = {
     session_code: code,
@@ -52,7 +52,7 @@ export async function saveModuleQuizAnswer({
     console.error('[saveModuleQuizAnswer] données manquantes', { code, name, moduleId })
     return false
   }
-  if (!(await ensureSession())) return false
+  if (!(await ensureSession(code))) return false
 
   const payload = {
     session_code: code,

@@ -182,7 +182,7 @@ function FreinsPage({ page, navProps }) {
 
   const handleReveal = () => { setRevealed(true); setSharedState({ reveal_freins: true }).catch(() => {}) }
   const clearReveal = () => { setRevealed(false); setSharedState({ reveal_freins: false }).catch(() => {}) }
-  const navPropsWithClear = { ...navProps, onNext: () => { clearReveal(); navProps.onNext?.() }, onPrev: () => { clearReveal(); navProps.onPrev?.() } }
+  const navPropsWithClear = { ...navProps, onNext: () => { clearReveal(); navProps.onNext?.() }, onPrev: () => { clearReveal(); navProps.onPrev?.() }, onTerminate: () => { clearReveal(); navProps.onTerminate?.() } }
 
   return (
     <div style={{
@@ -307,8 +307,9 @@ function PrixPage({ page, navProps }) {
 
   const navPropsWithClear = {
     ...navProps,
-    onNext: () => { clearReveal(); navProps.onNext?.() },
-    onPrev: () => { clearReveal(); navProps.onPrev?.() },
+    onNext:      () => { clearReveal(); navProps.onNext?.() },
+    onPrev:      () => { clearReveal(); navProps.onPrev?.() },
+    onTerminate: () => { clearReveal(); navProps.onTerminate?.() },
   }
 
   return (
@@ -439,8 +440,9 @@ function VentesOpticienPage({ page, navProps }) {
 
   const navPropsWithClear = {
     ...navProps,
-    onNext: () => { clearReveal(); navProps.onNext?.() },
-    onPrev: () => { clearReveal(); navProps.onPrev?.() },
+    onNext:      () => { clearReveal(); navProps.onNext?.() },
+    onPrev:      () => { clearReveal(); navProps.onPrev?.() },
+    onTerminate: () => { clearReveal(); navProps.onTerminate?.() },
   }
 
   return (
@@ -535,7 +537,7 @@ function PromessePage({ page, navProps }) {
 
   const handleReveal = () => { setRevealed(true); setSharedState({ reveal_promesse: true }).catch(() => {}) }
   const clearReveal = () => { setRevealed(false); setSharedState({ reveal_promesse: false }).catch(() => {}) }
-  const navPropsWithClear = { ...navProps, onNext: () => { clearReveal(); navProps.onNext?.() }, onPrev: () => { clearReveal(); navProps.onPrev?.() } }
+  const navPropsWithClear = { ...navProps, onNext: () => { clearReveal(); navProps.onNext?.() }, onPrev: () => { clearReveal(); navProps.onPrev?.() }, onTerminate: () => { clearReveal(); navProps.onTerminate?.() } }
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 100px', position: 'relative' }}>
@@ -684,8 +686,9 @@ function LaboProgressifPage({ navProps }) {
   }
   const navPropsWithClear = {
     ...navProps,
-    onNext: () => { clearReveal(); navProps.onNext?.() },
-    onPrev: () => { clearReveal(); navProps.onPrev?.() },
+    onNext:      () => { clearReveal(); navProps.onNext?.() },
+    onPrev:      () => { clearReveal(); navProps.onPrev?.() },
+    onTerminate: () => { clearReveal(); navProps.onTerminate?.() },
   }
 
   return (
@@ -1364,15 +1367,19 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
   const handleValidate = async (row, isCorrect) => {
     if (validating[row.participant_name]) return
     setValidating(v => ({ ...v, [row.participant_name]: true }))
-    await saveModuleQuizAnswer({
-      moduleId: 'entreprise',
-      questionIdx: quizQ,
-      collaborateur: row.participant_name,
-      answerIdx: 0,
-      isCorrect,
-    })
-    setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
-    setValidating(v => ({ ...v, [row.participant_name]: false }))
+    try {
+      await saveModuleQuizAnswer({
+        moduleId: 'entreprise',
+        questionIdx: quizQ,
+        collaborateur: row.participant_name,
+        answerIdx: 0,
+        isCorrect,
+      })
+      setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
+    } catch { /* permet de réessayer */ }
+    finally {
+      setValidating(v => ({ ...v, [row.participant_name]: false }))
+    }
   }
 
   return (
@@ -1473,7 +1480,7 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
             ✓ Voir les résultats
           </button>
         ) : (
-          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #0089ba, #00abe9)', border: 'none', color: '#fff', padding: '14px 40px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,171,233,0.45)' }}>
+          <button onClick={async () => { await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{ background: 'linear-gradient(135deg, #0089ba, #00abe9)', border: 'none', color: '#fff', padding: '14px 40px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,171,233,0.45)' }}>
             Question suivante →
           </button>
         )}
@@ -1670,33 +1677,44 @@ export default function ModuleEntreprise({ pName, onBack, onTerminate }) {
   const [quizQ, setQuizQ] = useState(0)
 
   useEffect(() => {
-    sbUpdate('sessions', { active_module: 'entreprise', module_page: -1 }, `code=eq.${getActiveSessionCode()}`)
+    sbUpdate('sessions', { active_module: 'entreprise', module_page: -1 }, `code=eq.${getActiveSessionCode()}`).catch(() => {})
   }, [])
 
   useEffect(() => {
     if (started && !quizMode) {
-      sbUpdate('sessions', { active_module: 'entreprise', module_page: pageIndex }, `code=eq.${getActiveSessionCode()}`)
+      sbUpdate('sessions', { active_module: 'entreprise', module_page: pageIndex }, `code=eq.${getActiveSessionCode()}`).catch(() => {})
     }
   }, [pageIndex, started, quizMode])
 
   useEffect(() => {
     if (quizMode === 'quiz') {
-      sbUpdate('sessions', { active_module: 'entreprise', module_page: 100 + quizQ }, `code=eq.${getActiveSessionCode()}`)
+      sbUpdate('sessions', { active_module: 'entreprise', module_page: 100 + quizQ }, `code=eq.${getActiveSessionCode()}`).catch(() => {})
     }
   }, [quizMode, quizQ])
 
   const handleBack = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+    try {
+      await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+    } catch { /* best-effort */ }
     ;(onTerminate ?? onBack)()
   }
 
-  const handleTerminateSlides = () => {
+  const handleTerminateSlides = async () => {
+    try {
+      await setSharedState({
+        reveal_freins: false, reveal_prix: false, reveal_ventes: false,
+        reveal_promesse: false, reveal_labo: false, modele_point: null,
+        quiz_show_correction: false,
+      })
+    } catch { /* best-effort */ }
     setQuizMode('quiz')
     setQuizQ(0)
   }
 
   const handleEndModule = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+    try {
+      await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+    } catch { /* best-effort */ }
     ;(onTerminate ?? onBack)()
   }
 

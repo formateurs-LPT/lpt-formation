@@ -207,6 +207,7 @@ export const ENTRAINEMENT_QUESTIONS = [
   { id: 3, text: 'De combien est le cylindre sur cette ordonnance ?', type: 'text' },
   { id: 4, text: 'Ce client est presbyte.', type: 'vrai-faux' },
   { id: 5, text: 'Quels sont les problèmes de vue de ce client ?', type: 'text' },
+  { id: 6, text: 'Calculez la sphère de près pour ce client.', type: 'text' },
 ]
 
 export const OPTIQUE_QUIZ = [

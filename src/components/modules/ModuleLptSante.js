@@ -254,13 +254,13 @@ export default function ModuleLptSante({ pName, onBack }) {
   }, [pageIndex])
 
   const handleBack = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()) } catch { /* best-effort */ }
     onBack()
   }
 
   const handleTerminate = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
-    onBack()
+    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()) } catch { /* best-effort */ }
+    ;(onTerminate ?? onBack)()
   }
 
   if (!started) {

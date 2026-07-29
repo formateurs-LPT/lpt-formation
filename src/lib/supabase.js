@@ -164,6 +164,7 @@ export async function insertSessionHistory({
 
 export function parseSessionHistorySummary(row) {
   const quizResults = parseJsonField(row?.quiz_results, [])
+  const participants = parseJsonField(row?.participants, [])
   if (quizResults?.type === 'onboarding_week') {
     return {
       notes: quizResults.notes || '—',
@@ -180,7 +181,6 @@ export function parseSessionHistorySummary(row) {
     }
   }
 
-  const participants = parseJsonField(row?.participants, [])
   const count = Array.isArray(participants) ? participants.length : 0
   const trainer = row?.trainer_name?.trim()
   return {
@@ -222,10 +222,12 @@ export async function sbUpdate(table, data, filter) {
 }
 
 export async function sbDelete(table, filter) {
-  await fetch(`${SB_URL}/rest/v1/${table}?${filter}`, {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${filter}`, {
     method: 'DELETE',
     headers: sbHeaders(),
   })
+  if (!r.ok) console.error(`sbDelete ${table} failed:`, r.status)
+  return r.ok
 }
 
 // ── Trainer auth depuis la table Supabase ─────────────────────────
@@ -354,7 +356,7 @@ export async function insertOpenAnswer({
     session_code: sessionCode,
     page_id: pageId,
     participant_name: participantName || 'Anonyme',
-    answer: answer.trim(),
+    answer: (answer ?? '').trim(),
     module_id: moduleId,
     question_idx: questionIdx,
     question_prompt: questionPrompt,

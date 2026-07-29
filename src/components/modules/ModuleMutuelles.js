@@ -85,19 +85,13 @@ export default function ModuleMutuelles({ pName, onBack }) {
   }, [pageIndex])
 
   const handleBack = async () => {
-    await Promise.all([
-      sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
-      setSharedState({ mutuelles_revealed: [], inami_revealed: false, partena_revealed: false }),
-    ])
+    try { await Promise.all([sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()), setSharedState({ mutuelles_revealed: [], inami_revealed: false, partena_revealed: false })]) } catch { /* best-effort */ }
     onBack()
   }
 
   const handleTerminate = async () => {
-    await Promise.all([
-      sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
-      setSharedState({ mutuelles_revealed: [], inami_revealed: false, partena_revealed: false }),
-    ])
-    onBack()
+    try { await Promise.all([sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()), setSharedState({ mutuelles_revealed: [], inami_revealed: false, partena_revealed: false })]) } catch { /* best-effort */ }
+    ;(onTerminate ?? onBack)()
   }
 
   if (!started) {

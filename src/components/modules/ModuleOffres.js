@@ -858,11 +858,11 @@ export default function ModuleOffres({ pName, onBack }) {
   const [quizQ, setQuizQ] = useState(0)
 
   useEffect(() => {
-    sbUpdate('sessions', { active_module: 'offres', module_page: -1 }, `code=eq.${getActiveSessionCode()}`)
+    sbUpdate('sessions', { active_module: 'offres', module_page: -1 }, `code=eq.${getActiveSessionCode()}`).catch(() => {})
   }, [])
 
   const handleBack = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`) } catch { /* best-effort */ }
     onBack()
   }
 
@@ -898,6 +898,7 @@ export default function ModuleOffres({ pName, onBack }) {
   }
 
   const startQuiz = async () => {
+    await setSharedState({ quiz_show_correction: false }).catch(() => {})
     await sbUpdate('sessions', { active_module: 'offres', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(0)
     setPhase('quiz')
@@ -905,17 +906,18 @@ export default function ModuleOffres({ pName, onBack }) {
 
   const handleNextQuestion = async () => {
     const next = quizQ + 1
+    await setSharedState({ quiz_show_correction: false }).catch(() => {})
     await sbUpdate('sessions', { active_module: 'offres', module_page: 100 + next }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(next)
   }
 
   const handleEndQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'offres', module_page: 200 }, `code=eq.${getActiveSessionCode()}`)
+    try { await sbUpdate('sessions', { active_module: 'offres', module_page: 200 }, `code=eq.${getActiveSessionCode()}`) } catch { /* best-effort */ }
     setPhase('results')
   }
 
   const handleTerminateModule = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`) } catch { /* best-effort */ }
     onBack()
   }
 

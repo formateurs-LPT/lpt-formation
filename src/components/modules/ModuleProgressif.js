@@ -844,14 +844,15 @@ export default function ModuleProgressif({ pName, onBack }) {
   const [showGroupResults, setShowGroupResults] = useState(false)
 
   useEffect(() => {
-    if (started) sbUpdate('sessions', { active_module: 'verre-progressif', module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+    if (started) sbUpdate('sessions', { active_module: 'verre-progressif', module_page: 0 }, 'code=eq.' + getActiveSessionCode()).catch(() => {})
   }, [started])
 
   useEffect(() => {
-    if (started) sbUpdate('sessions', { module_page: pageIndex }, 'code=eq.' + getActiveSessionCode())
+    if (started) sbUpdate('sessions', { module_page: pageIndex }, 'code=eq.' + getActiveSessionCode()).catch(() => {})
   }, [pageIndex, started])
 
   const handleLaunchQuiz = async () => {
+    await setSharedState({ quiz_show_correction: false }).catch(() => {})
     await sbUpdate('sessions', { module_page: 100 }, 'code=eq.' + getActiveSessionCode())
     setQuizQ(0)
     setQuizLaunched(true)
@@ -859,24 +860,29 @@ export default function ModuleProgressif({ pName, onBack }) {
 
   const handleNextQuestion = async () => {
     const next = quizQ + 1
+    await setSharedState({ quiz_show_correction: false }).catch(() => {})
     await sbUpdate('sessions', { module_page: 100 + next }, 'code=eq.' + getActiveSessionCode())
     setQuizQ(next)
   }
 
   const handleEndQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'verre-progressif', module_page: 200 }, 'code=eq.' + getActiveSessionCode())
+    try { await sbUpdate('sessions', { active_module: 'verre-progressif', module_page: 200 }, 'code=eq.' + getActiveSessionCode()) } catch { /* best-effort */ }
     setShowGroupResults(true)
   }
 
   const handleTerminate = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
-    await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_retour_responses: {}, prog_objection_idx: null, prog_objection_responses: {}, prog_best_answer: null })
+    try {
+      await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+      await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_retour_responses: {}, prog_objection_idx: null, prog_objection_responses: {}, prog_best_answer: null }).catch(() => {})
+    } catch { /* best-effort */ }
     onBack()
   }
 
   const handleBack = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
-    await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_retour_responses: {}, prog_objection_idx: null, prog_objection_responses: {}, prog_best_answer: null })
+    try {
+      await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+      await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_retour_responses: {}, prog_objection_idx: null, prog_objection_responses: {}, prog_best_answer: null }).catch(() => {})
+    } catch { /* best-effort */ }
     onBack()
   }
 

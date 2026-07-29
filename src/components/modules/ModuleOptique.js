@@ -1033,7 +1033,7 @@ function EntrainementOralPage({ page, onBack, onPrev, onNext, isFirst, isLast, p
     await saveModuleQuizAnswer({
       sessionCode: code,
       moduleId: 'optique',
-      questionIdx: 100 + selectedQ,
+      questionIdx: selectedQ === -1 ? 199 : 100 + selectedQ,
       collaborateur: participantName,
       answerIdx: 0,
       isCorrect,
@@ -1378,9 +1378,13 @@ function TextOpenControllerOptique({ quizQ, isLast, onNext, onEnd, onBack }) {
   const handleValidate = async (row, isCorrect) => {
     if (validating[row.participant_name]) return
     setValidating(v => ({ ...v, [row.participant_name]: true }))
-    await saveModuleQuizAnswer({ moduleId: 'optique', questionIdx: quizQ, collaborateur: row.participant_name, answerIdx: 0, isCorrect })
-    setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
-    setValidating(v => ({ ...v, [row.participant_name]: false }))
+    try {
+      await saveModuleQuizAnswer({ moduleId: 'optique', questionIdx: quizQ, collaborateur: row.participant_name, answerIdx: 0, isCorrect })
+      setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
+    } catch { /* permet de réessayer */ }
+    finally {
+      setValidating(v => ({ ...v, [row.participant_name]: false }))
+    }
   }
 
   const bg = { minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 40px' }
@@ -1717,7 +1721,7 @@ function GroupResultsView({ onTerminate }) {
   const toggleRate = async () => {
     const next = !rateShowing
     setRateShowing(next)
-    await setSharedState({ quiz_rate_show: next ? Date.now() : false })
+    await setSharedState({ quiz_rate_show: next }).catch(() => {})
   }
 
   useEffect(() => {
@@ -1897,13 +1901,13 @@ export default function ModuleOptique({ pName, onBack }) {
 
   // Dès que le Lobby s'affiche → on signale le module en attente de lancement
   useEffect(() => {
-    sbUpdate('sessions', { active_module: 'optique', module_page: -1 }, `code=eq.${getActiveSessionCode()}`)
+    sbUpdate('sessions', { active_module: 'optique', module_page: -1 }, `code=eq.${getActiveSessionCode()}`).catch(() => {})
   }, [])
 
   // Sync Supabase seulement quand le module est lancé
   useEffect(() => {
     if (started) {
-      sbUpdate('sessions', { active_module: 'optique', module_page: pageIndex }, `code=eq.${getActiveSessionCode()}`)
+      sbUpdate('sessions', { active_module: 'optique', module_page: pageIndex }, `code=eq.${getActiveSessionCode()}`).catch(() => {})
     }
   }, [pageIndex, started])
 
@@ -1913,8 +1917,10 @@ export default function ModuleOptique({ pName, onBack }) {
   }
 
   const handleLaunchQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'optique', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
-    await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: null, quiz_show_correction: false, quiz_ordo_show: false })
+    try {
+      await sbUpdate('sessions', { active_module: 'optique', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
+      await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: null, quiz_show_correction: false, quiz_ordo_show: false })
+    } catch { /* best-effort */ }
     setQuizQ(0)
     setQuizLaunched(true)
     setQuizFinalPhase(null)
@@ -1938,8 +1944,10 @@ export default function ModuleOptique({ pName, onBack }) {
   }
 
   const handleEndQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'optique', module_page: 200 }, `code=eq.${getActiveSessionCode()}`)
-    await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: 'podium' })
+    try {
+      await sbUpdate('sessions', { active_module: 'optique', module_page: 200 }, `code=eq.${getActiveSessionCode()}`)
+      await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: 'podium' })
+    } catch { /* best-effort */ }
     setQuizFinalPhase('podium')
   }
 
@@ -1955,8 +1963,10 @@ export default function ModuleOptique({ pName, onBack }) {
   }
 
   const handleTerminateModule = async () => {
-    await setSharedState({ quiz_final_phase: null })
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+    try {
+      await setSharedState({ quiz_final_phase: null })
+      await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+    } catch { /* best-effort */ }
     onBack()
   }
 

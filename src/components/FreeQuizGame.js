@@ -313,56 +313,68 @@ export default function FreeQuizTrainer({ onBack }) {
   const handleLaunch = async () => {
     if (!prompt.trim()) return
     setLaunching(true)
-    const pid = `fq_${Date.now()}`
-    await setSharedState({
-      tv_screen: 'free-quiz',
-      free_quiz_active: true,
-      free_quiz_prompt: prompt.trim(),
-      free_quiz_hint: hint.trim() || null,
-      free_quiz_page_id: pid,
-    })
-    setPageId(pid)
-    setActive(true)
-    setAnswers([])
-    setLaunching(false)
+    try {
+      const pid = `fq_${Date.now()}`
+      await setSharedState({
+        tv_screen: 'free-quiz',
+        free_quiz_active: true,
+        free_quiz_prompt: prompt.trim(),
+        free_quiz_hint: hint.trim() || null,
+        free_quiz_page_id: pid,
+      })
+      setPageId(pid)
+      setActive(true)
+      setAnswers([])
+    } catch { /* best-effort */ } finally {
+      setLaunching(false)
+    }
   }
 
   const handleStop = async () => {
     setStopping(true)
-    await setSharedState({
-      tv_screen: null,
-      free_quiz_active: false,
-      free_quiz_prompt: null,
-      free_quiz_hint: null,
-      free_quiz_page_id: null,
-    })
-    setActive(false)
-    setPageId(null)
-    setStopping(false)
+    try {
+      await setSharedState({
+        tv_screen: null,
+        free_quiz_active: false,
+        free_quiz_prompt: null,
+        free_quiz_hint: null,
+        free_quiz_page_id: null,
+      })
+      setActive(false)
+      setPageId(null)
+    } catch { /* best-effort */ } finally {
+      setStopping(false)
+    }
   }
 
   const handleNewQuestion = async () => {
     setStopping(true)
-    await setSharedState({
-      tv_screen: null,
-      free_quiz_active: false,
-      free_quiz_prompt: null,
-      free_quiz_hint: null,
-      free_quiz_page_id: null,
-    })
-    setActive(false)
-    setPageId(null)
-    setPrompt('')
-    setHint('')
-    setAnswers([])
-    setStopping(false)
+    try {
+      await setSharedState({
+        tv_screen: null,
+        free_quiz_active: false,
+        free_quiz_prompt: null,
+        free_quiz_hint: null,
+        free_quiz_page_id: null,
+      })
+      setActive(false)
+      setPageId(null)
+      setPrompt('')
+      setHint('')
+      setAnswers([])
+    } catch { /* best-effort */ } finally {
+      setStopping(false)
+    }
   }
 
   const handleGrade = async (answer, isCorrect) => {
     setGrading(answer.id)
-    await gradeOpenAnswer(answer.id, { isCorrect, gradedBy: 'trainer' })
-    setAnswers(prev => prev.map(a => a.id === answer.id ? { ...a, is_correct: isCorrect } : a))
-    setGrading(null)
+    try {
+      await gradeOpenAnswer(answer.id, { isCorrect, gradedBy: 'trainer' })
+      setAnswers(prev => prev.map(a => a.id === answer.id ? { ...a, is_correct: isCorrect } : a))
+    } catch { /* best-effort */ } finally {
+      setGrading(null)
+    }
   }
 
   const graded       = answers.filter(a => a.is_correct !== null && a.is_correct !== undefined)

@@ -531,42 +531,43 @@ export default function PeerQuizTrainer({ sessionCode, onBack }) {
   const playersWithQ = participants.filter(p => (allQuestions[p] || []).length > 0)
 
   const startCollecting = async () => {
-    await setSharedState({ tv_screen: 'peer-quiz', pq_phase: 'collecting', pq_asker: null, pq_designated: null, pq_question_id: null, pq_question_text: null, pq_history: [], pq_answer_correct: null, pq_edit_request: null })
+    await setSharedState({ tv_screen: 'peer-quiz', pq_phase: 'collecting', pq_asker: null, pq_designated: null, pq_question_id: null, pq_question_text: null, pq_history: [], pq_answer_correct: null, pq_edit_request: null }).catch(() => {})
     setAnswerCorrect(null)
   }
 
   const startGame = async () => {
     if (playersWithQ.length < 2) return
     const askerPick = playersWithQ[Math.floor(Math.random() * playersWithQ.length)]
-    await setSharedState({ pq_phase: 'playing', pq_asker: askerPick, pq_designated: null, pq_question_id: null, pq_question_text: null, pq_history: [], pq_answer_correct: null, pq_edit_request: null })
+    await setSharedState({ pq_phase: 'playing', pq_asker: askerPick, pq_designated: null, pq_question_id: null, pq_question_text: null, pq_history: [], pq_answer_correct: null, pq_edit_request: null }).catch(() => {})
     setAnswerCorrect(null)
   }
 
   const handleNext = async () => {
     if (!designated) return
-    // Mark question as used + record result
-    if (asker && qId) {
-      const qs = (sharedSt?.[`pq_q_${asker}`] || []).map(q =>
-        q.id === qId ? { ...q, used: true, askedTo: designated, correct: answerCorrect } : q
-      )
-      await setSharedState({ [`pq_q_${asker}`]: qs })
-    }
-    const newHistory = [...history, designated]
-    const allDone = participants.every(p => newHistory.includes(p))
-    await setSharedState({
-      pq_asker: designated,
-      pq_designated: null,
-      pq_question_id: null,
-      pq_question_text: null,
-      pq_history: allDone ? [] : newHistory,
-      pq_answer_correct: answerCorrect,
-      pq_edit_request: null,
-    })
+    try {
+      // Mark question as used + record result
+      if (asker && qId) {
+        const qs = (sharedSt?.[`pq_q_${asker}`] || []).map(q =>
+          q.id === qId ? { ...q, used: true, askedTo: designated, correct: answerCorrect } : q
+        )
+        await setSharedState({ [`pq_q_${asker}`]: qs })
+      }
+      const newHistory = [...history, designated]
+      const allDone = participants.every(p => newHistory.includes(p))
+      await setSharedState({
+        pq_asker: designated,
+        pq_designated: null,
+        pq_question_id: null,
+        pq_question_text: null,
+        pq_history: allDone ? [] : newHistory,
+        pq_answer_correct: answerCorrect,
+        pq_edit_request: null,
+      })
+    } catch { /* best-effort */ }
     setAnswerCorrect(null)
   }
 
   const skipTurn = async () => {
-    // Cherche parmi ceux qui ont déjà répondu (history) et ont des questions restantes
     const withQ = participants.filter(p =>
       p !== asker && (allQuestions[p] || []).filter(q => !q.used).length > 0
     )
@@ -580,20 +581,20 @@ export default function PeerQuizTrainer({ sessionCode, onBack }) {
       pq_question_id: null,
       pq_question_text: null,
       pq_edit_request: null,
-    })
+    }).catch(() => {})
   }
 
   const requestEdit = async () => {
     if (!asker || !qId) return
-    await setSharedState({ pq_edit_request: { author: asker, id: qId } })
+    await setSharedState({ pq_edit_request: { author: asker, id: qId } }).catch(() => {})
   }
 
   const cancelEdit = async () => {
-    await setSharedState({ pq_edit_request: null })
+    await setSharedState({ pq_edit_request: null }).catch(() => {})
   }
 
   const stopGame = async () => {
-    await setSharedState({ tv_screen: null, pq_phase: null, pq_asker: null, pq_designated: null, pq_question_id: null, pq_question_text: null, pq_history: [], pq_answer_correct: null, pq_edit_request: null })
+    await setSharedState({ tv_screen: null, pq_phase: null, pq_asker: null, pq_designated: null, pq_question_id: null, pq_question_text: null, pq_history: [], pq_answer_correct: null, pq_edit_request: null }).catch(() => {})
     setAnswerCorrect(null)
   }
 

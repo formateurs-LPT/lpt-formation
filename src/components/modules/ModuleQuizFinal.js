@@ -40,15 +40,17 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
   }, [quizQ])
 
   const handleValidate = async (name, isCorrect) => {
-    await saveModuleQuizAnswer({
-      sessionCode: getActiveSessionCode(),
-      moduleId: MODULE_ID,
-      questionIdx: quizQ,
-      collaborateur: name,
-      answerIdx: 0,
-      isCorrect,
-    })
-    setValidations(v => ({ ...v, [name]: isCorrect }))
+    try {
+      await saveModuleQuizAnswer({
+        sessionCode: getActiveSessionCode(),
+        moduleId: MODULE_ID,
+        questionIdx: quizQ,
+        collaborateur: name,
+        answerIdx: 0,
+        isCorrect,
+      })
+      setValidations(v => ({ ...v, [name]: isCorrect }))
+    } catch { /* best-effort */ }
   }
 
   const validatedCount = Object.keys(validations).length
@@ -477,32 +479,36 @@ export default function ModuleQuizFinal({ pName, onBack }) {
   const [showGroupResults, setShowGroupResults] = useState(false)
 
   useEffect(() => {
-    sbUpdate('sessions', { active_module: MODULE_ID, module_page: -1 }, `code=eq.${getActiveSessionCode()}`)
-    setSharedState({ quiz_final_phase: null })
+    const init = async () => {
+      await setSharedState({ quiz_final_phase: null, quiz_show_correction: false }).catch(() => {})
+      await sbUpdate('sessions', { active_module: MODULE_ID, module_page: -1 }, `code=eq.${getActiveSessionCode()}`)
+    }
+    init()
   }, [])
 
   const handleBack = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`) } catch { /* best-effort */ }
     onBack()
   }
 
   const handleStart = async () => {
+    await setSharedState({ quiz_show_correction: false, quiz_interstitial_q: null, quiz_final_phase: null })
     await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
-    await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: null })
     setQuizQ(0)
     setStarted(true)
   }
 
   const handleNextQuestion = async () => {
     const next = quizQ + 1
+    await setSharedState({ quiz_show_correction: false }).catch(() => {})
     await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 100 + next }, `code=eq.${getActiveSessionCode()}`)
-    setQuizQ(next)
     if (next % 5 === 0 && next < QUIZ_FINAL_QUESTIONS.length) {
+      await setSharedState({ quiz_interstitial_q: next }).catch(() => {})
       setQuizInterstitial(true)
-      setSharedState({ quiz_interstitial_q: next }).catch(() => {})
     } else {
-      setSharedState({ quiz_interstitial_q: null }).catch(() => {})
+      await setSharedState({ quiz_interstitial_q: null }).catch(() => {})
     }
+    setQuizQ(next)
   }
 
   const handleContinueInterstitial = async () => {
@@ -511,14 +517,18 @@ export default function ModuleQuizFinal({ pName, onBack }) {
   }
 
   const handleEndQuiz = async () => {
-    await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 200 }, `code=eq.${getActiveSessionCode()}`)
-    await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: 'podium' })
+    try {
+      await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 200 }, `code=eq.${getActiveSessionCode()}`)
+      await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: 'podium' }).catch(() => {})
+    } catch { /* best-effort */ }
     setShowGroupResults(true)
   }
 
   const handleTerminateModule = async () => {
-    await setSharedState({ quiz_final_phase: 'ended' })
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+    try {
+      await setSharedState({ quiz_final_phase: 'ended' }).catch(() => {})
+      await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+    } catch { /* best-effort */ }
     onBack()
   }
 

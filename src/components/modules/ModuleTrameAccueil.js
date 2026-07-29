@@ -66,9 +66,11 @@ export default function ModuleTrameAccueil({ pName, onBack }) {
   }
 
   const handleTerminate = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
-    await setSharedState({ trame_step: null })
-    onBack()
+    try {
+      await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+      await setSharedState({ trame_step: null }).catch(() => {})
+    } catch { /* best-effort */ }
+    ;(onTerminate ?? onBack)()
   }
 
   if (!started) {

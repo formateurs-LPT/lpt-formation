@@ -213,9 +213,12 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   const handleValidate = async (row, isCorrect) => {
     if (validating[row.participant_name]) return
     setValidating(v => ({ ...v, [row.participant_name]: true }))
-    await saveModuleQuizAnswer({ moduleId: 'ajustages', questionIdx: quizQ, collaborateur: row.participant_name, answerIdx: 0, isCorrect })
-    setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
-    setValidating(v => ({ ...v, [row.participant_name]: false }))
+    try {
+      await saveModuleQuizAnswer({ moduleId: 'ajustages', questionIdx: quizQ, collaborateur: row.participant_name, answerIdx: 0, isCorrect })
+      setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
+    } catch { /* best-effort */ } finally {
+      setValidating(v => ({ ...v, [row.participant_name]: false }))
+    }
   }
 
   return (
@@ -348,11 +351,29 @@ export default function ModuleAjustages({ pName, onBack, onTerminate }) {
   const handleStart = async () => { await sbUpdate('sessions', { active_module: 'ajustages', module_page: 0 }, 'code=eq.' + sc()); setStarted(true) }
   const handleNext = async () => { const n = page + 1; await sbUpdate('sessions', { active_module: 'ajustages', module_page: n }, 'code=eq.' + sc()); setPage(n) }
   const handlePrev = async () => { const p = page - 1; await sbUpdate('sessions', { active_module: 'ajustages', module_page: p }, 'code=eq.' + sc()); setPage(p) }
-  const handleBack = async () => { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + sc()); onBack() }
-  const handleLaunchQuiz = async () => { await sbUpdate('sessions', { active_module: 'ajustages', module_page: 100 }, 'code=eq.' + sc()); setQuizQ(0); setQuizLaunched(true) }
-  const handleNextQuestion = async () => { const n = quizQ + 1; await sbUpdate('sessions', { active_module: 'ajustages', module_page: 100 + n }, 'code=eq.' + sc()); setQuizQ(n) }
-  const handleEndQuiz = async () => { await sbUpdate('sessions', { active_module: 'ajustages', module_page: 200 }, 'code=eq.' + sc()); setShowGroupResults(true) }
-  const handleTerminate = async () => { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + sc()); ;(onTerminate ?? onBack)() }
+  const handleBack = async () => {
+    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + sc()) } catch { /* best-effort */ }
+    onBack()
+  }
+  const handleLaunchQuiz = async () => {
+    await setSharedState({ quiz_show_correction: false }).catch(() => {})
+    await sbUpdate('sessions', { active_module: 'ajustages', module_page: 100 }, 'code=eq.' + sc())
+    setQuizQ(0); setQuizLaunched(true)
+  }
+  const handleNextQuestion = async () => {
+    const n = quizQ + 1
+    await setSharedState({ quiz_show_correction: false }).catch(() => {})
+    await sbUpdate('sessions', { active_module: 'ajustages', module_page: 100 + n }, 'code=eq.' + sc())
+    setQuizQ(n)
+  }
+  const handleEndQuiz = async () => {
+    try { await sbUpdate('sessions', { active_module: 'ajustages', module_page: 200 }, 'code=eq.' + sc()) } catch { /* best-effort */ }
+    setShowGroupResults(true)
+  }
+  const handleTerminate = async () => {
+    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + sc()) } catch { /* best-effort */ }
+    ;(onTerminate ?? onBack)()
+  }
 
   if (!started) return <Lobby onStart={handleStart} onBack={handleBack} />
   if (showGroupResults) return <GroupResultsView onTerminate={handleTerminate} />

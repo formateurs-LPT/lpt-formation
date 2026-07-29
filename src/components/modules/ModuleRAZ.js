@@ -181,8 +181,14 @@ export default function ModuleRAZ({ pName, onBack, onTerminate }) {
 
   const handleStart = async () => { await sbUpdate('sessions', { active_module: 'raz', module_page: 0 }, 'code=eq.' + sc()); setStarted(true) }
   const handleNext = async () => { const n = page + 1; await sbUpdate('sessions', { active_module: 'raz', module_page: n }, 'code=eq.' + sc()); setPage(n) }
-  const handleBack = async () => { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + sc()); onBack() }
-  const handleTerminate = async () => { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + sc()); ;(onTerminate ?? onBack)() }
+  const handleBack = async () => {
+    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + sc()) } catch { /* best-effort */ }
+    onBack()
+  }
+  const handleTerminate = async () => {
+    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + sc()) } catch { /* best-effort */ }
+    ;(onTerminate ?? onBack)()
+  }
 
   if (!started) return <Lobby onStart={handleStart} onBack={handleBack} />
   const currentPage = RAZ_PAGES[page]

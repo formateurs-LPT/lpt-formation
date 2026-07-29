@@ -22,11 +22,13 @@ function ParticipantList({ sessionCode }) {
   const [participants, setParticipants] = useState([])
   useEffect(() => {
     const load = async () => {
-      const [data, entrees] = await Promise.all([
-        sbSelect('participants', 'session_code=eq.' + sessionCode),
-        loadEntreesList(),
-      ])
-      setParticipants(filterParticipantsInRh(data || [], entrees))
+      try {
+        const [data, entrees] = await Promise.all([
+          sbSelect('participants', 'session_code=eq.' + sessionCode),
+          loadEntreesList(),
+        ])
+        setParticipants(filterParticipantsInRh(data || [], entrees))
+      } catch { /* ignore, réessai au prochain tick */ }
     }
     load()
     const interval = setInterval(load, 3000)
@@ -38,7 +40,7 @@ function ParticipantList({ sessionCode }) {
       {participants.length === 0 ? (
         <p style={{ fontSize: 12, color: 'var(--text-m)', padding: '4px 6px' }}>En attente...</p>
       ) : participants.map(p => {
-        const initials = p.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
+        const initials = (p.name || '?').split(' ').map(w => w[0] || '').join('').substring(0, 2).toUpperCase() || '?'
         return (
           <div key={p.name} className="pchip">
             <div className="pavatar">{initials}</div>
@@ -55,13 +57,15 @@ function ResponseFeed({ sessionCode, scenarioIdx, label }) {
   const [items, setItems] = useState([])
   useEffect(() => {
     const load = async () => {
-      const [data, participants, entrees] = await Promise.all([
-        sbSelect('scenario_responses', `session_code=eq.${sessionCode}&scenario_idx=eq.${scenarioIdx}`),
-        sbSelect('participants', 'session_code=eq.' + sessionCode),
-        loadEntreesList(),
-      ])
-      const rows = data || []
-      setItems(rows.filter(r => shouldShowAnswerForTrainer(r.participant_name, participants, entrees)))
+      try {
+        const [data, participants, entrees] = await Promise.all([
+          sbSelect('scenario_responses', `session_code=eq.${sessionCode}&scenario_idx=eq.${scenarioIdx}`),
+          sbSelect('participants', 'session_code=eq.' + sessionCode),
+          loadEntreesList(),
+        ])
+        const rows = data || []
+        setItems(rows.filter(r => shouldShowAnswerForTrainer(r.participant_name, participants, entrees)))
+      } catch { /* ignore */ }
     }
     load()
     const interval = setInterval(load, 3000)
@@ -72,7 +76,7 @@ function ResponseFeed({ sessionCode, scenarioIdx, label }) {
   return (
     <div className="rfeed">
       {items.map((r, i) => {
-        const av = r.participant_name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
+        const av = (r.participant_name || '?').split(' ').map(w => w[0] || '').join('').substring(0, 2).toUpperCase() || '?'
         return (
           <div key={i} className="ritem">
             <div className="ravatar">{av}</div>
@@ -91,13 +95,15 @@ function QuizResults({ sessionCode }) {
   const [results, setResults] = useState([])
   useEffect(() => {
     const load = async () => {
-      const [data, participants, entrees] = await Promise.all([
-        sbSelect('quiz_results', 'session_code=eq.' + sessionCode),
-        sbSelect('participants', 'session_code=eq.' + sessionCode),
-        loadEntreesList(),
-      ])
-      const rows = data || []
-      setResults(rows.filter(r => shouldShowAnswerForTrainer(r.participant_name, participants, entrees)))
+      try {
+        const [data, participants, entrees] = await Promise.all([
+          sbSelect('quiz_results', 'session_code=eq.' + sessionCode),
+          sbSelect('participants', 'session_code=eq.' + sessionCode),
+          loadEntreesList(),
+        ])
+        const rows = data || []
+        setResults(rows.filter(r => shouldShowAnswerForTrainer(r.participant_name, participants, entrees)))
+      } catch { /* ignore */ }
     }
     load()
     const interval = setInterval(load, 3000)
@@ -108,7 +114,7 @@ function QuizResults({ sessionCode }) {
   return (
     <div className="qgrid">
       {results.map(r => {
-        const av = r.participant_name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
+        const av = (r.participant_name || '?').split(' ').map(w => w[0] || '').join('').substring(0, 2).toUpperCase() || '?'
         const finalScore = typeof r.answers?.final_score === 'number' ? r.answers.final_score : r.score
         const initial = r.answers?.initial_score ?? '—'
         const cls = finalScore >= 8 ? 'sg' : finalScore >= 6 ? 'sok' : 'sl'
@@ -165,18 +171,26 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
   })
 
   const launchFormation = async () => {
-    await sbUpdate('sessions', { current_step: 0 }, 'code=eq.' + getActiveSessionCode())
-    setCurStep(0)
-    setLobbyActive(false)
-    onToast('Formation lancée !')
+    try {
+      await sbUpdate('sessions', { current_step: 0 }, 'code=eq.' + getActiveSessionCode())
+      setCurStep(0)
+      setLobbyActive(false)
+      onToast('Formation lancée !')
+    } catch {
+      onToast('Erreur — impossible de lancer la formation')
+    }
   }
 
   const trainerGo = async (step) => {
     if (step < 0 || step > 4) return
-    setCurStep(step)
-    await sbUpdate('sessions', { current_step: step, active_scenario: step === 1 ? 1 : 0 }, 'code=eq.' + getActiveSessionCode())
-    if (step === 1) setCurSlide(1)
-    onToast(`"${STEP_NAMES[step]}" diffusée`)
+    try {
+      await sbUpdate('sessions', { current_step: step, active_scenario: step === 1 ? 1 : 0 }, 'code=eq.' + getActiveSessionCode())
+      setCurStep(step)
+      if (step === 1) setCurSlide(1)
+      onToast(`"${STEP_NAMES[step]}" diffusée`)
+    } catch {
+      onToast('Erreur de synchronisation — réessayez')
+    }
   }
 
   const nextSlide = async () => {
@@ -197,25 +211,33 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
 
   const endSession = async () => {
     if (!window.confirm('Terminer et enregistrer la session ?')) return
-    const participants = await sbSelect('participants', 'session_code=eq.' + getActiveSessionCode())
-    const quizResults = await sbSelect('quiz_results', 'session_code=eq.' + getActiveSessionCode())
-    const responses = await sbSelect('scenario_responses', 'session_code=eq.' + getActiveSessionCode())
-    if (participants?.length || quizResults?.length) {
-      await insertSessionHistory({
-        sessionCode: getActiveSessionCode() + '_' + Date.now(),
-        sessionDate: new Date().toISOString(),
-        trainerName: localStorage.getItem('trainer_name') || 'Formateur',
-        participants: participants || [],
-        quizResults: quizResults || [],
-        scenarioResponses: responses || [],
-      })
+    try {
+      const [participants, quizResults, responses] = await Promise.all([
+        sbSelect('participants', 'session_code=eq.' + getActiveSessionCode()),
+        sbSelect('quiz_results', 'session_code=eq.' + getActiveSessionCode()),
+        sbSelect('scenario_responses', 'session_code=eq.' + getActiveSessionCode()),
+      ])
+      if (participants?.length || quizResults?.length) {
+        await insertSessionHistory({
+          sessionCode: getActiveSessionCode() + '_' + Date.now(),
+          sessionDate: new Date().toISOString(),
+          trainerName: localStorage.getItem('trainer_name') || 'Formateur',
+          participants: participants || [],
+          quizResults: quizResults || [],
+          scenarioResponses: responses || [],
+        })
+      }
+      await Promise.all([
+        sbDelete('participants', 'session_code=eq.' + getActiveSessionCode()),
+        sbDelete('scenario_responses', 'session_code=eq.' + getActiveSessionCode()),
+        sbDelete('quiz_results', 'session_code=eq.' + getActiveSessionCode()),
+      ])
+      await sbUpdate('sessions', { current_step: -1 }, 'code=eq.' + getActiveSessionCode())
+      onToast('Session enregistrée ✓')
+      onBack()
+    } catch {
+      onToast('Erreur lors de la clôture — réessayez')
     }
-    await sbDelete('participants', 'session_code=eq.' + getActiveSessionCode())
-    await sbDelete('scenario_responses', 'session_code=eq.' + getActiveSessionCode())
-    await sbDelete('quiz_results', 'session_code=eq.' + getActiveSessionCode())
-    await sbUpdate('sessions', { current_step: -1 }, 'code=eq.' + getActiveSessionCode())
-    onToast('Session enregistrée ✓')
-    onBack()
   }
 
   return (

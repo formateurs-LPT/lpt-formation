@@ -576,8 +576,9 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
       const blocked  = kwsNot?.length && kwsNot.some(kw => text.includes(kw.toLowerCase()))
       if ((matchOr || matchAnd) && !blocked) {
         autoValidatedRef.current.add(name)
-        saveModuleQuizAnswer({ moduleId: 'types-verres', questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
-        setValidated(v => ({ ...v, [name]: 'correct' }))
+        saveModuleQuizAnswer({ sessionCode: getActiveSessionCode(), moduleId: 'types-verres', questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
+          .then(() => setValidated(v => ({ ...v, [name]: 'correct' })))
+          .catch(() => { autoValidatedRef.current.delete(name) })
       }
     })
   }, [openAnswers, q, quizQ])
@@ -585,15 +586,19 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   const handleValidate = async (row, isCorrect) => {
     if (validating[row.participant_name]) return
     setValidating(v => ({ ...v, [row.participant_name]: true }))
-    await saveModuleQuizAnswer({
-      moduleId: 'types-verres',
-      questionIdx: quizQ,
-      collaborateur: row.participant_name,
-      answerIdx: 0,
-      isCorrect,
-    })
-    setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
-    setValidating(v => ({ ...v, [row.participant_name]: false }))
+    try {
+      await saveModuleQuizAnswer({
+        sessionCode: getActiveSessionCode(),
+        moduleId: 'types-verres',
+        questionIdx: quizQ,
+        collaborateur: row.participant_name,
+        answerIdx: 0,
+        isCorrect,
+      })
+      setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
+    } catch { /* best-effort */ } finally {
+      setValidating(v => ({ ...v, [row.participant_name]: false }))
+    }
   }
 
   return (
@@ -842,6 +847,7 @@ export default function ModuleTypesVerres({ pName, onBack, onTerminate }) {
   const [showGroupResults, setShowGroupResults] = useState(false)
 
   const handleLaunchQuiz = async () => {
+    await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false })
     await sbUpdate('sessions', { module_page: 100 }, 'code=eq.' + getActiveSessionCode())
     setQuizQ(0)
     setQuizLaunched(true)
@@ -849,36 +855,37 @@ export default function ModuleTypesVerres({ pName, onBack, onTerminate }) {
 
   const handleNextQuestion = async () => {
     const next = quizQ + 1
+    await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false }).catch(() => {})
     await sbUpdate('sessions', { module_page: 100 + next }, 'code=eq.' + getActiveSessionCode())
     setQuizQ(next)
   }
 
   const handleEndQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'types-verres', module_page: 200 }, 'code=eq.' + getActiveSessionCode())
+    try { await sbUpdate('sessions', { active_module: 'types-verres', module_page: 200 }, 'code=eq.' + getActiveSessionCode()) } catch { /* best-effort */ }
     setShowGroupResults(true)
   }
 
   const handleTerminateModule = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()) } catch { /* best-effort */ }
     ;(onTerminate ?? onBack)()
   }
 
   // Write to Supabase when module starts
   useEffect(() => {
     if (started) {
-      sbUpdate('sessions', { active_module: 'types-verres', module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+      sbUpdate('sessions', { active_module: 'types-verres', module_page: 0 }, 'code=eq.' + getActiveSessionCode()).catch(() => {})
     }
   }, [started])
 
   // Write to Supabase when page changes
   useEffect(() => {
     if (started) {
-      sbUpdate('sessions', { module_page: pageIndex }, 'code=eq.' + getActiveSessionCode())
+      sbUpdate('sessions', { module_page: pageIndex }, 'code=eq.' + getActiveSessionCode()).catch(() => {})
     }
   }, [pageIndex, started])
 
   const handleBack = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()) } catch { /* best-effort */ }
     onBack()
   }
 

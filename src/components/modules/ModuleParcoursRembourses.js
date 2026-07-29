@@ -161,19 +161,13 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
   }, [pageIndex])
 
   const handleBack = async () => {
-    await Promise.all([
-      sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
-      setSharedState({ parcours_revealed: [], tiers_payant_revealed: false }),
-    ])
+    try { await Promise.all([sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()), setSharedState({ parcours_revealed: [], tiers_payant_revealed: false })]) } catch { /* best-effort */ }
     onBack()
   }
 
   const handleTerminate = async () => {
-    await Promise.all([
-      sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()),
-      setSharedState({ parcours_revealed: [], tiers_payant_revealed: false }),
-    ])
-    onBack()
+    try { await Promise.all([sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()), setSharedState({ parcours_revealed: [], tiers_payant_revealed: false })]) } catch { /* best-effort */ }
+    ;(onTerminate ?? onBack)()
   }
 
   if (!started) {

@@ -781,19 +781,19 @@ export default function ModulePDM({ pName, onBack }) {
   }
 
   const handleEndQuiz = async () => {
-    await sbUpdate('sessions', { active_module: 'pdm', module_page: 200 }, 'code=eq.' + getActiveSessionCode())
+    try { await sbUpdate('sessions', { active_module: 'pdm', module_page: 200 }, 'code=eq.' + getActiveSessionCode()) } catch { /* best-effort */ }
     setShowGroupResults(true)
   }
 
   const handleTerminateModule = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()) } catch { /* best-effort */ }
     onBack()
   }
 
   // Write to Supabase when module starts
   useEffect(() => {
     if (started) {
-      sbUpdate('sessions', { active_module: 'pdm', module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+      sbUpdate('sessions', { active_module: 'pdm', module_page: 0 }, 'code=eq.' + getActiveSessionCode()).catch(() => {})
     }
   }, [started])
 
@@ -802,12 +802,12 @@ export default function ModulePDM({ pName, onBack }) {
     if (started) {
       const p = PAGES[pageIndex]
       const mpValue = p?.type === 'pdm-animation' ? 1000 : pageIndex
-      sbUpdate('sessions', { module_page: mpValue }, 'code=eq.' + getActiveSessionCode())
+      sbUpdate('sessions', { module_page: mpValue }, 'code=eq.' + getActiveSessionCode()).catch(() => {})
     }
   }, [pageIndex, started])
 
   const handleBack = async () => {
-    await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
+    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()) } catch { /* best-effort */ }
     onBack()
   }
 
