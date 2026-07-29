@@ -150,19 +150,33 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [moduleRows, reportRow] = await Promise.all([
+      const [moduleRows, reportRow, answerRows] = await Promise.all([
         sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(name)}`),
         // Charge le rapport le plus récent pour ce formé+formateur, quelle que soit la semaine
         sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc&limit=1`),
+        // Fallback : quiz_answers si module_results absent (formé parti avant l'écran de résultats)
+        sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(name)}`),
       ])
       const byModule = {}
       for (const r of moduleRows || []) {
         const mid = r.module_id || r.module
         if (!mid) continue
-        const prev = byModule[mid]
         const sc = r.score ?? 0
         const tot = r.score_total ?? r.total ?? 0
-        if (!prev || sc > prev.score) byModule[mid] = { moduleId: mid, label: MODULE_DATA[mid]?.label || mid, score: sc, total: tot }
+        if (!byModule[mid] || sc > byModule[mid].score) byModule[mid] = { moduleId: mid, label: MODULE_DATA[mid]?.label || mid, score: sc, total: tot }
+      }
+      // Complète les modules absents de module_results depuis quiz_answers
+      const qaByModule = {}
+      for (const r of answerRows || []) {
+        const mid = r.module_id
+        if (!mid || byModule[mid]) continue
+        if (!qaByModule[mid]) qaByModule[mid] = {}
+        qaByModule[mid][r.question_idx] = r.is_correct // dernière réponse par question gagne
+      }
+      for (const [mid, qMap] of Object.entries(qaByModule)) {
+        const correct = Object.values(qMap).filter(Boolean).length
+        const total = MODULE_DATA[mid]?.quiz?.length || Object.keys(qMap).length
+        if (total > 0) byModule[mid] = { moduleId: mid, label: MODULE_DATA[mid]?.label || mid, score: correct, total }
       }
       setQuizData(Object.values(byModule))
       const found = reportRow?.[0]
@@ -860,11 +874,15 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
     const names = filtered.map(e => e.fullName || `${e.nom} ${e.prenom}`.trim())
 
     const computeRanks = async () => {
-      const [reportsRows, ...quizArrays] = await Promise.all([
+      const [reportsRows, ...rawArrays] = await Promise.all([
         // Charge tous les rapports pour ce formateur, triés du plus récent au plus ancien
         sbSelect('formation_reports', `trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc`),
         ...names.map(n => sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(n)}`)),
+        // Fallback : quiz_answers si module_results absent (formé parti avant l'écran de résultats)
+        ...names.map(n => sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(n)}`)),
       ])
+      const quizArrays  = rawArrays.slice(0, names.length)
+      const answerArrays = rawArrays.slice(names.length)
 
       // Garde uniquement le rapport le plus récent par formé (premier rencontré = plus récent)
       const reportMap = {}
@@ -880,20 +898,38 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
       setMailSentMap(sentMap)
       setWeekDateMap(wdMap)
 
-      const scores = names.map((name, i) => {
-        // Taux d'acquisition (évaluation formateur)
-        const snap = reportMap[name] || {}
-        const acqRate = computeRate(snap.theme_assessments)
-
-        // Score quiz (meilleur score par module)
+      // Construit byModule pour un formé en combinant module_results + quiz_answers
+      const buildByModule = (modRows, ansRows) => {
         const byModule = {}
-        for (const r of (quizArrays[i] || [])) {
+        for (const r of (modRows || [])) {
           const mid = r.module_id || r.module
           if (!mid) continue
           const sc = r.score ?? 0
           const tot = r.score_total ?? r.total ?? 0
           if (!byModule[mid] || sc > byModule[mid].score) byModule[mid] = { score: sc, total: tot }
         }
+        // Complète les modules absents de module_results depuis quiz_answers
+        const qaByModule = {}
+        for (const r of (ansRows || [])) {
+          const mid = r.module_id
+          if (!mid || byModule[mid]) continue
+          if (!qaByModule[mid]) qaByModule[mid] = {}
+          qaByModule[mid][r.question_idx] = r.is_correct
+        }
+        for (const [mid, qMap] of Object.entries(qaByModule)) {
+          const correct = Object.values(qMap).filter(Boolean).length
+          const total = MODULE_DATA[mid]?.quiz?.length || Object.keys(qMap).length
+          if (total > 0) byModule[mid] = { score: correct, total }
+        }
+        return byModule
+      }
+
+      const scores = names.map((name, i) => {
+        // Taux d'acquisition (évaluation formateur)
+        const snap = reportMap[name] || {}
+        const acqRate = computeRate(snap.theme_assessments)
+
+        const byModule = buildByModule(quizArrays[i], answerArrays[i])
         const modules = Object.values(byModule).filter(m => m.total > 0)
         const quizRate = modules.length > 0
           ? Math.round(modules.reduce((s, m) => s + m.score, 0) / modules.reduce((s, m) => s + m.total, 0) * 100)
@@ -905,7 +941,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
         else if (acqRate !== null) composite = acqRate
         else if (quizRate !== null) composite = quizRate
 
-        return { name, composite }
+        return { name, composite, byModule }
       })
 
       // Tri décroissant, nuls en dernier
@@ -927,17 +963,9 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
       setRanks(rankMap)
       setRankOf(Object.keys(rankMap).length)
 
-      // Classement basé sur les points (réponses correctes × 10)
-      const ptsScores = names.map((name, i) => {
-        const byMod = {}
-        for (const r of (quizArrays[i] || [])) {
-          const mid = r.module_id || r.module
-          if (!mid) continue
-          const sc = r.score ?? 0
-          const tot = r.score_total ?? r.total ?? 0
-          if (!byMod[mid] || sc > byMod[mid].score) byMod[mid] = { score: sc, total: tot }
-        }
-        const pts = Object.values(byMod).reduce((s, m) => s + (m.score || 0), 0) * 10
+      // Classement basé sur les points (réponses correctes × 10) — byModule déjà construit
+      const ptsScores = scores.map(({ name, byModule: bm }) => {
+        const pts = Object.values(bm).reduce((s, m) => s + (m.score || 0), 0) * 10
         return { name, points: pts }
       })
       const sortedByPts = [...ptsScores].sort((a, b) => b.points - a.points)
