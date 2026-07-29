@@ -8311,7 +8311,7 @@ export default function TVView() {
         </div>
       )}
 
-      <div style={{ height: '100dvh', overflow: 'hidden', position: 'relative' }}>
+      <div style={{ height: '100dvh', overflow: 'hidden', position: 'relative', background: '#020d1f' }}>
         {loading ? (
           <WelcomeScreen />
         ) : isLobby ? (
@@ -8327,7 +8327,7 @@ export default function TVView() {
         ) : isQuiz && quizQuestion ? (
           quizInterstitialPhase
             ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} skipSignal={sharedState?.quiz_podium_skip} />
-            : sharedState?.quiz_show_correction
+            : sharedState?.quiz_show_correction && quizQuestion?.type !== 'text-open'
               ? <TVQuizCorrection
                   question={quizQuestion}
                   qIdx={modulePage - 100}
