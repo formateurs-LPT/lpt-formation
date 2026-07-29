@@ -247,6 +247,7 @@ function TVQuizFooter() {
 }
 
 function TVOrdonnanceDisplay({ ordonnance, hideLabels, cylInParens, hideNonAddHeaders, topLabel }) {
+  if (!ordonnance) return null
   const { od, og } = ordonnance
   const hasCyl = od.cyl || og.cyl
   const hasAdd = od.add || og.add
@@ -323,12 +324,14 @@ function TVQuizTextOpen({ question, qIdx, total, moduleLabel, sessionCode, modul
   useEffect(() => {
     if (!sessionCode) return
     const poll = async () => {
-      const [answerRows, pRows] = await Promise.all([
-        fetchOpenAnswers(sessionCode, `${moduleId}:${qIdx}`),
-        sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`),
-      ])
-      setAnswers(answerRows || [])
-      setParticipantCount((pRows || []).length)
+      try {
+        const [answerRows, pRows] = await Promise.all([
+          fetchOpenAnswers(sessionCode, `${moduleId}:${qIdx}`),
+          sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`),
+        ])
+        setAnswers(answerRows || [])
+        setParticipantCount((pRows || []).length)
+      } catch { /* erreur réseau, réessai au prochain tick */ }
     }
     poll()
     const t = setInterval(poll, 2000)
@@ -434,10 +437,10 @@ function TVQuizOrdonnanceQCM({ question, qIdx, total, moduleLabel }) {
       <TVOrdonnanceDisplay ordonnance={question.ordonnance} hideLabels={question.hideOrdoLabels || question.hideLabels} cylInParens={question.cylInParens} hideNonAddHeaders={question.hideNonAddHeaders} topLabel={question.ordoLabel} />
       <div style={{
         display: 'grid',
-        gridTemplateColumns: question.options.length === 2 ? '1fr 1fr' : 'repeat(auto-fit, minmax(280px, 1fr))',
+        gridTemplateColumns: (question.options?.length ?? 0) === 2 ? '1fr 1fr' : 'repeat(auto-fit, minmax(280px, 1fr))',
         gap: 18, width: '100%', maxWidth: 900,
       }}>
-        {question.options.map((opt, i) => (
+        {(question.options || []).map((opt, i) => (
           <div key={i} style={{
             background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: 20, padding: '20px 24px',
@@ -511,7 +514,7 @@ function TVQuizMultiQuestion({ question, qIdx, total, moduleLabel }) {
         display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
         gap: 24, width: '100%', maxWidth: 1000,
       }}>
-        {question.options.map((opt, i) => (
+        {(question.options || []).map((opt, i) => (
           <div key={i} style={{
             background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: 24, padding: '28px 32px',
@@ -584,10 +587,10 @@ function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode, modul
       {/* Réponses */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: question.options.length === 2 ? '1fr 1fr' : 'repeat(auto-fit, minmax(320px, 1fr))',
+        gridTemplateColumns: (question.options?.length ?? 0) === 2 ? '1fr 1fr' : 'repeat(auto-fit, minmax(320px, 1fr))',
         gap: 24, width: '100%', maxWidth: 1000,
       }}>
-        {question.options.map((opt, i) => (
+        {(question.options || []).map((opt, i) => (
           <div key={i} style={{
             background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: 24, padding: '28px 32px',
@@ -1969,7 +1972,7 @@ function TVTroublesList({ page, pageIndex, total, moduleLabel }) {
 
   useEffect(() => {
     setVisibleCount(0)
-    const timers = page.troubles.map((_, i) =>
+    const timers = (page.troubles || []).map((_, i) =>
       setTimeout(() => setVisibleCount(c => Math.max(c, i + 1)), 300 + i * 280)
     )
     return () => timers.forEach(clearTimeout)
@@ -2026,7 +2029,7 @@ function TVTroublesList({ page, pageIndex, total, moduleLabel }) {
 
         {/* Liste */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, justifyContent: 'center' }}>
-          {page.troubles.map((t, i) => (
+          {(page.troubles || []).map((t, i) => (
             <div key={i} style={{
               display: 'flex', alignItems: 'center', gap: 32,
               background: i < visibleCount ? `${t.color}09` : 'transparent',
@@ -2527,7 +2530,7 @@ function TVEntrepriseChiffres({ page, pageIndex, total }) {
   const [visible, setVisible] = useState(0)
   useEffect(() => {
     setVisible(0)
-    const timers = page.stats.map((_, i) =>
+    const timers = (page.stats || []).map((_, i) =>
       setTimeout(() => setVisible(v => Math.max(v, i + 1)), 600 + i * 700)
     )
     return () => timers.forEach(clearTimeout)
@@ -2545,7 +2548,7 @@ function TVEntrepriseChiffres({ page, pageIndex, total }) {
 
       {/* Grille de tuiles */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, justifyContent: 'center', flex: 1, alignContent: 'center' }}>
-        {page.stats.map((stat, i) => (
+        {(page.stats || []).map((stat, i) => (
           <div key={i} style={{
             width: 'calc(33% - 14px)', minWidth: 200, maxWidth: 280,
             background: 'rgba(255,255,255,0.04)',
@@ -2630,7 +2633,7 @@ function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlock
   useEffect(() => {
     if (modelePoint !== null) return
     setVisible(0)
-    const timers = page.items.map((_, i) =>
+    const timers = (page.items || []).map((_, i) =>
       setTimeout(() => setVisible(v => Math.max(v, i + 1)), 600 + i * 700)
     )
     return () => timers.forEach(clearTimeout)
@@ -2649,7 +2652,7 @@ function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlock
     }
   }, [modelePoint, audioUnlocked])
 
-  const selectedItem = modelePoint !== null ? page.items[modelePoint] : null
+  const selectedItem = modelePoint !== null ? (page.items || [])[modelePoint] : null
 
   // ── Mode vidéo : point sélectionné ──
   if (selectedItem) {
@@ -2674,7 +2677,7 @@ function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlock
             </div>
             {/* Autres points en petit */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {page.items.map((item, i) => i !== modelePoint && (
+              {(page.items || []).map((item, i) => i !== modelePoint && (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.3 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
                   <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{item.label}</div>
@@ -2721,7 +2724,7 @@ function TVEntrepriseForceLPT({ page, pageIndex, total, modelePoint, audioUnlock
         <h1 style={{ fontSize: 38, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>{page.titre}</h1>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, justifyContent: 'center', flex: 1, alignContent: 'center' }}>
-        {page.items.map((item, i) => (
+        {(page.items || []).map((item, i) => (
           <div key={i} style={{
             width: 'calc(33% - 14px)', minWidth: 220, maxWidth: 300,
             background: 'rgba(255,255,255,0.04)',
@@ -2853,7 +2856,7 @@ function TVEntrepriseTimeline({ page, pageIndex, total }) {
         <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>{page.sousTitre}</p>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, justifyContent: 'center' }}>
-        {page.timeline.map((item, i) => (
+        {(page.timeline || []).map((item, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             <div style={{ width: 100, flexShrink: 0, textAlign: 'right', fontSize: 13, fontWeight: 800, color: '#00abe9' }}>{item.year}</div>
             <div style={{ width: 14, height: 14, borderRadius: '50%', background: i === page.timeline.length - 1 ? '#00abe9' : 'rgba(0,171,233,0.4)', border: '2px solid #00abe9', flexShrink: 0 }} />
@@ -2877,7 +2880,7 @@ function TVEntreprisePiliers({ page, pageIndex, total }) {
         <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>{page.sousTitre}</p>
       </div>
       <div style={{ display: 'flex', gap: 24, flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        {page.points.map((p, i) => (
+        {(page.points || []).map((p, i) => (
           <div key={i} style={{ flex: 1, background: `${accent}12`, border: `1px solid ${accent}35`, borderRadius: 24, padding: '36px 24px', textAlign: 'center' }}>
             <div style={{ fontSize: 52, marginBottom: 16 }}>{p.emoji}</div>
             <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 12 }}>{p.titre}</div>
@@ -2897,7 +2900,7 @@ function TVEntrepriseSteps({ page, pageIndex, total }) {
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>{page.sousTitre}</p>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, flex: 1 }}>
-        {page.steps.map((s, i) => (
+        {(page.steps || []).map((s, i) => (
           <div key={i} style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 18, padding: '22px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
               <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{s.num}</div>
@@ -2920,7 +2923,7 @@ function TVEntrepriseCases({ page, pageIndex, total }) {
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>{page.sousTitre}</p>
       </div>
       <div style={{ display: 'flex', gap: 20, flex: 1, alignItems: 'center' }}>
-        {page.cases.map((c, i) => (
+        {(page.cases || []).map((c, i) => (
           <div key={i} style={{ flex: 1, background: 'rgba(219,39,119,0.06)', border: '1px solid rgba(219,39,119,0.2)', borderRadius: 20, padding: '24px 20px' }}>
             <div style={{ fontSize: 36, marginBottom: 10 }}>{c.emoji}</div>
             <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 3 }}>{c.prenom}</div>
@@ -2942,7 +2945,7 @@ function TVEntrepriseVisages({ page, pageIndex, total }) {
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>{page.sousTitre}</p>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1 }}>
-        {page.profils.map((p, i) => (
+        {(page.profils || []).map((p, i) => (
           <div key={i} style={{ background: 'rgba(8,145,178,0.07)', border: '1px solid rgba(8,145,178,0.2)', borderRadius: 18, padding: '22px 24px', display: 'flex', alignItems: 'flex-start', gap: 16 }}>
             <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(8,145,178,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>{p.emoji}</div>
             <div>
@@ -2964,7 +2967,7 @@ function TVEntrepriseCroissance({ page, pageIndex, total }) {
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>{page.sousTitre}</p>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 24 }}>
-        {page.stats.map((s, i) => (
+        {(page.stats || []).map((s, i) => (
           <div key={i} style={{ background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.25)', borderRadius: 18, padding: '24px 12px', textAlign: 'center' }}>
             <div style={{ fontSize: 38, fontWeight: 900, color: '#4ade80', lineHeight: 1, marginBottom: 8 }}>{s.value}</div>
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontWeight: 600 }}>{s.label}</div>
@@ -2972,7 +2975,7 @@ function TVEntrepriseCroissance({ page, pageIndex, total }) {
         ))}
       </div>
       <div style={{ display: 'flex', gap: 16 }}>
-        {page.points.map((p, i) => (
+        {(page.points || []).map((p, i) => (
           <div key={i} style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 22 }}>{p.emoji}</span>
             <div>
@@ -2993,7 +2996,7 @@ function TVEntrepriseMission({ page, pageIndex, total }) {
         <h1 style={{ fontSize: 38, fontWeight: 900, color: '#fff', marginBottom: 8 }}>{page.titre}</h1>
         <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', marginBottom: 40 }}>{page.sousTitre}</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 36 }}>
-          {page.temoignages.map((t, i) => (
+          {(page.temoignages || []).map((t, i) => (
             <div key={i} style={{ background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.25)', borderRadius: 16, padding: '20px 28px', textAlign: 'left' }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', fontStyle: 'italic', marginBottom: 6 }}>{t.quote}</div>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{t.context}</div>
@@ -4415,12 +4418,14 @@ function TVSAVBrainstorm({ page, sessionCode, brainstormRevealed }) {
   useEffect(() => {
     setAnswers([])
     const poll = async () => {
-      const [rows, pRows] = await Promise.all([
-        fetchOpenAnswers(sessionCode, pageId),
-        sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`),
-      ])
-      setAnswers(rows || [])
-      setParticipantCount((pRows || []).length)
+      try {
+        const [rows, pRows] = await Promise.all([
+          fetchOpenAnswers(sessionCode, pageId),
+          sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`),
+        ])
+        setAnswers(rows || [])
+        setParticipantCount((pRows || []).length)
+      } catch { /* erreur réseau, réessai au prochain tick */ }
     }
     poll()
     const t = setInterval(poll, 2000)
@@ -4561,7 +4566,7 @@ function TVSAVContent({ page, pageIndex, total, moduleLabel }) {
   const [step, setStep] = useState(0)
   useEffect(() => {
     setStep(0)
-    const timers = points.map((_, i) => setTimeout(() => setStep(i + 1), 400 + i * 300))
+    const timers = (points || []).map((_, i) => setTimeout(() => setStep(i + 1), 400 + i * 300))
     return () => timers.forEach(clearTimeout)
   }, [pageIndex, points])
   return (
@@ -4578,7 +4583,7 @@ function TVSAVContent({ page, pageIndex, total, moduleLabel }) {
       </div>
       <div style={{ display: 'flex', gap: 48, flex: 1, alignItems: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, justifyContent: 'center' }}>
-          {points.map((pt, i) => (
+          {(points || []).map((pt, i) => (
             <div key={i} style={{
               display: 'flex', alignItems: 'flex-start', gap: 20,
               background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
@@ -6108,8 +6113,10 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
 
   useEffect(() => {
     const poll = async () => {
-      const s = await getSharedState()
-      setRevealed(Number(s?.typesVerresZone) || 0)
+      try {
+        const s = await getSharedState()
+        setRevealed(Number(s?.typesVerresZone) || 0)
+      } catch { /* best-effort */ }
     }
     poll()
     const t = setInterval(poll, 1500)
@@ -6991,10 +6998,10 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, sho
 
   useEffect(() => {
     sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}`)
-      .then(rows => setAnswers(rows || []))
+      .then(rows => setAnswers(rows || [])).catch(() => {})
     const t = setInterval(() => {
       sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}`)
-        .then(rows => setAnswers(rows || []))
+        .then(rows => setAnswers(rows || [])).catch(() => {})
     }, 2000)
     return () => clearInterval(t)
   }, [qIdx, sessionCode])
@@ -7159,8 +7166,8 @@ function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal }) {
         const firstName = sorted[0].name.split(' ').pop()
         phraseRef.current = pickPhrase(PHRASES_TOP5, firstName)
       }
-    })
-  }, [qIdx])
+    }).catch(() => {})
+  }, [qIdx, sessionCode])
 
   useEffect(() => {
     if (skipSignal) onDone()
@@ -7304,8 +7311,8 @@ function TVQuizFinalPodium({ quiz, sessionCode }) {
         phraseRef.current = pickPhrase(PHRASES_P1, firstName)
       }
       setTimeout(() => setReady(true), 400)
-    })
-  }, [])
+    }).catch(() => { setTimeout(() => setReady(true), 400) })
+  }, [sessionCode])
 
   const slots = [top3[1], top3[0], top3[2]]
   const stepH = [220, 300, 170]
@@ -7455,7 +7462,7 @@ function TVQuizRateReveal({ sessionCode, moduleId, moduleLabel, quiz }) {
         const totalPossible    = totalQ * participants
         const pct              = totalPossible > 0 ? Math.round((correct / totalPossible) * 100) : 0
         setTimeout(() => setRate(pct), 700)
-      })
+      }).catch(() => { setTimeout(() => setRate(0), 700) })
   }, [sessionCode, moduleId])
 
   useEffect(() => {
@@ -7570,14 +7577,18 @@ function TVGroupResults({ moduleId, moduleLabel, quiz, sessionCode }) {
     const code = sessionCode || SESSION_CODE
     const query = `session_code=eq.${code}&module_id=eq.${moduleId}`
     const fetchAnswers = async () => {
-      const rows = await sbSelect('quiz_answers', query)
-      setAnswers(rows || [])
-      setLoading(false)
+      try {
+        const rows = await sbSelect('quiz_answers', query)
+        setAnswers(rows || [])
+      } catch { /* ignore */ }
+      finally { setLoading(false) }
     }
     fetchAnswers()
     const interval = setInterval(async () => {
-      const rows = await sbSelect('quiz_answers', query)
-      setAnswers(rows || [])
+      try {
+        const rows = await sbSelect('quiz_answers', query)
+        setAnswers(rows || [])
+      } catch { /* ignore */ }
     }, 3000)
     return () => clearInterval(interval)
   }, [moduleId, sessionCode])
@@ -7696,7 +7707,7 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSele
     }
   }, [troublesSelected, audioUnlocked])
 
-  const sel = troublesSelected !== null ? page.troubles[troublesSelected] : null
+  const sel = troublesSelected !== null ? (page.troubles || [])[troublesSelected] : null
 
   // ── Mode focus : un trouble sélectionné ──
   if (sel) {
@@ -7741,7 +7752,7 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSele
           </div>
 
           <div style={{ display: 'flex', gap: 28 }}>
-            {page.troubles.map((t, i) => i !== troublesSelected && (
+            {(page.troubles || []).map((t, i) => i !== troublesSelected && (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.25 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.color, flexShrink: 0 }} />
                 <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{t.nom}</div>
@@ -7804,7 +7815,7 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSele
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
-          {page.troubles.map((t, i) => (
+          {(page.troubles || []).map((t, i) => (
             <div key={i} style={{
               display: 'flex', alignItems: 'center', gap: 28,
               background: `${t.color}09`, border: `1px solid ${t.color}28`,

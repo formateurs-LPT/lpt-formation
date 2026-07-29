@@ -13,6 +13,7 @@ import { generatePin } from '@/lib/pin'
 import { resolveParticipantName } from '@/lib/participantNames'
 import { mergeRoomSharedField } from '@/lib/roomSharedState'
 import { getLevelInfo, getRankMessage } from '@/lib/scoring'
+import { canParticipantJoinSession, getCategoryJoinDeniedMessage } from '@/lib/formationCategories'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -217,32 +218,36 @@ function ParticipantDashboard({ pName, sessionCode }) {
     if (!pName) return
     let cancelled = false
     const load = async () => {
-      const [anyRows, correctRows] = await Promise.all([
-        sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(pName)}&limit=1`),
-        sbSelect('quiz_answers', `is_correct=eq.true`),
-      ])
-      if (cancelled) return
-      const seen = new Set()
-      const counts = {}
-      for (const r of (correctRows || [])) {
-        const key = `${r.collaborateur}|${r.module_id}|${r.question_idx}`
-        if (seen.has(key)) continue
-        seen.add(key)
-        counts[r.collaborateur] = (counts[r.collaborateur] || 0) + 1
+      try {
+        const [anyRows, correctRows] = await Promise.all([
+          sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(pName)}&limit=1`),
+          sbSelect('quiz_answers', `is_correct=eq.true`),
+        ])
+        if (cancelled) return
+        const seen = new Set()
+        const counts = {}
+        for (const r of (correctRows || [])) {
+          const key = `${r.collaborateur}|${r.module_id}|${r.question_idx}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          counts[r.collaborateur] = (counts[r.collaborateur] || 0) + 1
+        }
+        const sorted = Object.entries(counts)
+          .map(([name, cnt]) => ({ name, points: cnt * 10 }))
+          .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
+        let rk = 1
+        const withRanks = sorted.map((entry, i) => {
+          if (i > 0 && entry.points !== sorted[i - 1].points) rk = i + 1
+          return { ...entry, rank: rk }
+        })
+        if (!withRanks.find(r => r.name === pName)) {
+          withRanks.push({ name: pName, points: 0, rank: withRanks.length + 1 })
+        }
+        setRanking(withRanks)
+        setLoadState((anyRows || []).length === 0 ? 'welcome' : 'dashboard')
+      } catch {
+        if (!cancelled) setLoadState('welcome')
       }
-      const sorted = Object.entries(counts)
-        .map(([name, cnt]) => ({ name, points: cnt * 10 }))
-        .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
-      let rk = 1
-      const withRanks = sorted.map((entry, i) => {
-        if (i > 0 && entry.points !== sorted[i - 1].points) rk = i + 1
-        return { ...entry, rank: rk }
-      })
-      if (!withRanks.find(r => r.name === pName)) {
-        withRanks.push({ name: pName, points: 0, rank: withRanks.length + 1 })
-      }
-      setRanking(withRanks)
-      setLoadState((anyRows || []).length === 0 ? 'welcome' : 'dashboard')
     }
     load()
     const t = setInterval(load, 12000)
@@ -295,10 +300,10 @@ function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
   const [myRank, setMyRank] = useState(null)
 
   const refresh = async () => {
-    const rows = await sbSelect(
-      'quiz_answers',
-      `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${moduleId}`
-    )
+    let rows
+    try {
+      rows = await sbSelect('quiz_answers', `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${moduleId}`)
+    } catch { return }
     if (!rows) return
     // Score = nombre de bonnes réponses jusqu'à la question actuelle incluse
     const scores = {}
@@ -438,14 +443,17 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
   const handleSubmit = async () => {
     if (!text.trim() || saving) return
     setSaving(true)
-    await insertOpenAnswer({
-      sessionCode: getParticipantSessionCode(),
-      pageId: `${moduleId}:${qIdx}`,
-      participantName: pName.trim(),
-      answer: text.trim(),
-    })
-    setSaving(false)
-    setSubmitted(true)
+    try {
+      await insertOpenAnswer({
+        sessionCode: getParticipantSessionCode(),
+        pageId: `${moduleId}:${qIdx}`,
+        participantName: pName.trim(),
+        answer: text.trim(),
+      })
+      setSubmitted(true)
+    } catch { /* best-effort */ } finally {
+      setSaving(false)
+    }
   }
 
   if (validated !== null) return <QuizResultScreen isCorrect={validated} />
@@ -517,20 +525,26 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
 
   const handleSubmit = async () => {
     if (selected.length === 0 || saving || answered) return
+    if (!q?.correct) return
     setSaving(true)
-    const correctArr = [...q.correct].sort()
-    const selectedSorted = [...selected].sort()
-    const ok = JSON.stringify(correctArr) === JSON.stringify(selectedSorted)
-    const answerIdx = selectedSorted[0] ?? 0
-    await saveModuleQuizAnswer({
-      sessionCode: getParticipantSessionCode(),
-      moduleId, questionIdx: qIdx,
-      collaborateur: pName.trim(),
-      answerIdx, isCorrect: ok,
-    })
-    setIsCorrect(ok)
-    setAnswered(true)
-    setSaving(false)
+    try {
+      const correctArr = [...q.correct].sort()
+      const selectedSorted = [...selected].sort()
+      const ok = JSON.stringify(correctArr) === JSON.stringify(selectedSorted)
+      const answerIdx = selectedSorted[0] ?? 0
+      await saveModuleQuizAnswer({
+        sessionCode: getParticipantSessionCode(),
+        moduleId, questionIdx: qIdx,
+        collaborateur: pName.trim(),
+        answerIdx, isCorrect: ok,
+      })
+      setIsCorrect(ok)
+      setAnswered(true)
+    } catch (e) {
+      console.error('QuizMultiSelect save error', e)
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
@@ -549,7 +563,7 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
         <div style={{ fontSize: 13, color: '#f59e0b', fontWeight: 600, marginBottom: 24, textAlign: 'center' }}>{q.instruction}</div>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 400, marginBottom: 24 }}>
-        {q.options.map((opt, i) => {
+        {(q?.options || []).map((opt, i) => {
           const sel = selected.includes(i)
           return (
             <button key={i} onClick={() => toggle(i)} style={{
@@ -590,6 +604,7 @@ function parseOrdoVal(str) {
 }
 
 function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
+  if (!q?.ordonnance?.od || !q?.ordonnance?.og) return null
   const hasCyl = !!(q.ordonnance.od.cyl || q.ordonnance.og.cyl)
   const hasAdd = !!(q.ordonnance.od.add || q.ordonnance.og.add)
 
@@ -635,15 +650,18 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
     const perfect = fields.every(Boolean)
     if (perfect && !saving) {
       setSaving(true)
-      await saveModuleQuizAnswer({
-        sessionCode: getParticipantSessionCode(),
-        moduleId, questionIdx: qIdx,
-        collaborateur: pName.trim(),
-        answerIdx: 0, isCorrect: true,
-      })
-      setSaving(false)
-      setIsCorrect(true)
-      setAnswered(true)
+      try {
+        await saveModuleQuizAnswer({
+          sessionCode: getParticipantSessionCode(),
+          moduleId, questionIdx: qIdx,
+          collaborateur: pName.trim(),
+          answerIdx: 0, isCorrect: true,
+        })
+        setIsCorrect(true)
+        setAnswered(true)
+      } catch { /* best-effort */ } finally {
+        setSaving(false)
+      }
     }
   }
 
@@ -777,15 +795,18 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
     if (!posVal || !negVal || saving) return
     setSaving(true)
     const ok = posVal === q.correctPos && negVal === q.correctNeg
-    await saveModuleQuizAnswer({
-      sessionCode: getParticipantSessionCode(),
-      moduleId, questionIdx: qIdx,
-      collaborateur: pName.trim(),
-      answerIdx: 0, isCorrect: ok,
-    })
-    setIsCorrect(ok)
-    setAnswered(true)
-    setSaving(false)
+    try {
+      await saveModuleQuizAnswer({
+        sessionCode: getParticipantSessionCode(),
+        moduleId, questionIdx: qIdx,
+        collaborateur: pName.trim(),
+        answerIdx: 0, isCorrect: ok,
+      })
+      setIsCorrect(ok)
+      setAnswered(true)
+    } catch { /* best-effort */ } finally {
+      setSaving(false)
+    }
   }
 
   if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
@@ -897,7 +918,7 @@ function QuizQCMAnswer({ pName, q, qIdx, quiz, moduleId }) {
         </div>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 400 }}>
-        {q.options.map((opt, i) => (
+        {(q?.options || []).map((opt, i) => (
           <button key={i} onClick={() => handleAnswer(i)} style={{
             background: OPTION_COLORS[i], border: 'none', borderRadius: 18,
             padding: '22px 24px', display: 'flex', alignItems: 'center', gap: 16,
@@ -938,10 +959,14 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
   useEffect(() => {
     const fetchAnswers = async () => {
       const name = pName || 'Anonyme'
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${moduleId}&collaborateur=eq.${encodeURIComponent(name)}`)
-      const data = rows || []
-      setAnswers(data)
-      setLoading(false)
+      let data = []
+      try {
+        const rows = await sbSelect('quiz_answers', `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${moduleId}&collaborateur=eq.${encodeURIComponent(name)}`)
+        data = rows || []
+        setAnswers(data)
+      } catch { /* best-effort */ } finally {
+        setLoading(false)
+      }
 
       // Sauvegarde module_results avec le score total réel (upsert pour éviter les doublons)
       const totalCorrect = data.filter(r => r.is_correct).length
@@ -1798,7 +1823,7 @@ function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
   // Anime les lignes à l'arrivée
   useEffect(() => {
     setVisibleCount(0)
-    const timers = page.troubles.map((_, i) =>
+    const timers = (page.troubles || []).map((_, i) =>
       setTimeout(() => setVisibleCount(c => Math.max(c, i + 1)), 250 + i * 220)
     )
     return () => timers.forEach(clearTimeout)
@@ -1820,7 +1845,7 @@ function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
   // Stagger des définitions quand phase 2
   useEffect(() => {
     if (troublesPhase !== 2) { setDefVisible(0); return }
-    const timers = page.troubles.map((_, i) =>
+    const timers = (page.troubles || []).map((_, i) =>
       setTimeout(() => setDefVisible(c => Math.max(c, i + 1)), 500 + i * 900)
     )
     return () => timers.forEach(clearTimeout)
@@ -1863,7 +1888,7 @@ function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
 
       {/* Liste */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '20px 16px 0', flex: 1 }}>
-        {page.troubles.map((t, i) => (
+        {(page.troubles || []).map((t, i) => (
           <div key={i} style={{
             display: 'flex', alignItems: 'flex-start', gap: 14,
             background: i < visibleCount ? `${t.color}09` : 'transparent',
@@ -2382,7 +2407,7 @@ function EntreprisePageMobile({ page, pageIndex, total }) {
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
         <div style={{ position: 'relative', paddingLeft: 20 }}>
           <div style={{ position: 'absolute', left: 7, top: 0, bottom: 0, width: 2, background: 'rgba(0,171,233,0.3)' }} />
-          {page.timeline.map((item, i) => (
+          {(page.timeline || []).map((item, i) => (
             <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 18, position: 'relative' }}>
               <div style={{ width: 14, height: 14, borderRadius: '50%', background: i === page.timeline.length - 1 ? '#00abe9' : 'rgba(0,171,233,0.4)', border: '2px solid #00abe9', flexShrink: 0, marginTop: 3 }} />
               <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 14px', flex: 1 }}>
@@ -2405,7 +2430,7 @@ function EntreprisePageMobile({ page, pageIndex, total }) {
         <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {page.points.map((p, i) => (
+          {(page.points || []).map((p, i) => (
             <div key={i} style={{ background: `${accent}12`, border: `1px solid ${accent}35`, borderRadius: 16, padding: '20px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
               <span style={{ fontSize: 32 }}>{p.emoji}</span>
               <div>
@@ -2427,7 +2452,7 @@ function EntreprisePageMobile({ page, pageIndex, total }) {
         <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {page.steps.map((s, i) => (
+          {(page.steps || []).map((s, i) => (
             <div key={i} style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{s.num}</div>
               <span style={{ fontSize: 18 }}>{s.emoji}</span>
@@ -2450,7 +2475,7 @@ function EntreprisePageMobile({ page, pageIndex, total }) {
         <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {page.cases.map((c, i) => (
+          {(page.cases || []).map((c, i) => (
             <div key={i} style={{ background: 'rgba(219,39,119,0.06)', border: '1px solid rgba(219,39,119,0.2)', borderRadius: 16, padding: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                 <span style={{ fontSize: 24 }}>{c.emoji}</span>
@@ -2476,7 +2501,7 @@ function EntreprisePageMobile({ page, pageIndex, total }) {
         <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {page.profils.map((p, i) => (
+          {(page.profils || []).map((p, i) => (
             <div key={i} style={{ background: 'rgba(8,145,178,0.07)', border: '1px solid rgba(8,145,178,0.2)', borderRadius: 12, padding: '14px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(8,145,178,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{p.emoji}</div>
               <div>
@@ -2498,7 +2523,7 @@ function EntreprisePageMobile({ page, pageIndex, total }) {
         <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-          {page.stats.map((s, i) => (
+          {(page.stats || []).map((s, i) => (
             <div key={i} style={{ background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.25)', borderRadius: 14, padding: '16px 12px', textAlign: 'center' }}>
               <div style={{ fontSize: 28, fontWeight: 900, color: '#4ade80', lineHeight: 1, marginBottom: 4 }}>{s.value}</div>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>{s.label}</div>
@@ -2506,7 +2531,7 @@ function EntreprisePageMobile({ page, pageIndex, total }) {
           ))}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {page.points.map((p, i) => (
+          {(page.points || []).map((p, i) => (
             <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'center' }}>
               <span style={{ fontSize: 18 }}>{p.emoji}</span>
               <div>
@@ -2528,7 +2553,7 @@ function EntreprisePageMobile({ page, pageIndex, total }) {
         <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{page.titre}</div>
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>{page.sousTitre}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
-          {page.temoignages.map((t, i) => (
+          {(page.temoignages || []).map((t, i) => (
             <div key={i} style={{ background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.25)', borderRadius: 14, padding: '16px' }}>
               <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', fontStyle: 'italic', marginBottom: 4 }}>{t.quote}</div>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{t.context}</div>
@@ -2811,11 +2836,9 @@ function VentesOpticienMobile({ page, pName }) {
         pName,
         { text: value.trim(), x, y }
       )
-      if (!ok) return
-      setSubmittedValue(value.trim())
-      setSubmitted(true)
+      if (ok) { setSubmittedValue(value.trim()); setSubmitted(true) }
     } catch { /* ignore */ }
-    setSending(false)
+    finally { setSending(false) }
   }
 
   const handleModify = () => { setValue(submittedValue); setSubmitted(false) }
@@ -2877,11 +2900,9 @@ function PromesseInputMobile({ page, pName }) {
         pName,
         { text: text.trim(), x, y }
       )
-      if (!ok) return
-      setSubmittedText(text.trim())
-      setSubmitted(true)
+      if (ok) { setSubmittedText(text.trim()); setSubmitted(true) }
     } catch { /* ignore */ }
-    setSending(false)
+    finally { setSending(false) }
   }
 
   const handleModify = () => {
@@ -2974,11 +2995,9 @@ function PrixInputMobile({ page, pName }) {
         pName,
         { text: value.trim(), x, y }
       )
-      if (!ok) return
-      setSubmittedValue(value.trim())
-      setSubmitted(true)
+      if (ok) { setSubmittedValue(value.trim()); setSubmitted(true) }
     } catch { /* ignore */ }
-    setSending(false)
+    finally { setSending(false) }
   }
 
   const handleModify = () => {
@@ -3068,7 +3087,7 @@ function ForceLPTMobile({ page, pageIndex, total }) {
   const [visible, setVisible] = useState(0)
   useEffect(() => {
     setVisible(0)
-    const timers = page.items.map((_, i) =>
+    const timers = (page.items || []).map((_, i) =>
       setTimeout(() => setVisible(v => Math.max(v, i + 1)), 400 + i * 500)
     )
     return () => timers.forEach(clearTimeout)
@@ -3092,7 +3111,7 @@ function ForceLPTMobile({ page, pageIndex, total }) {
       <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Notre modèle</div>
       <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 24, lineHeight: 1.3 }}>{page.titre}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {page.items.map((item, i) => (
+        {(page.items || []).map((item, i) => (
           <div key={i} style={{
             display: 'flex', alignItems: 'center', gap: 14,
             background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
@@ -3297,13 +3316,10 @@ function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
   const handleSelect = async (idx) => {
     if (sent) return
     setSelected(idx)
-    setSent(true)
-    await mergeRoomSharedField(
-      getParticipantSessionCode(),
-      'prog_zone_responses',
-      pName,
-      idx
-    )
+    try {
+      await mergeRoomSharedField(getParticipantSessionCode(), 'prog_zone_responses', pName, idx)
+      setSent(true)
+    } catch { setSent(false); setSelected(null) }
   }
 
   const bg = 'linear-gradient(160deg, #03112a 0%, #12013a 100%)'
@@ -3346,7 +3362,7 @@ function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
 
       {/* Réponses ABC */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {q.options.map((opt, i) => (
+        {(q?.options || []).map((opt, i) => (
           <button key={i} onClick={() => handleSelect(i)} disabled={sent} style={{
             background: sent ? (selected === i ? 'rgba(124,58,237,0.22)' : 'rgba(255,255,255,0.03)') : 'rgba(255,255,255,0.07)',
             border: `2px solid ${sent && selected === i ? '#7c3aed' : 'rgba(255,255,255,0.1)'}`,
@@ -3389,11 +3405,9 @@ function RetourTerrainMobile({ page, pName }) {
         pName,
         { text: text.trim() }
       )
-      if (!ok) return
-      setSentText(text.trim())
-      setSent(true)
+      if (ok) { setSentText(text.trim()); setSent(true) }
     } catch { /* ignore */ }
-    setSending(false)
+    finally { setSending(false) }
   }
 
   const bg = 'linear-gradient(160deg, #03112a 0%, #12013a 100%)'
@@ -3457,7 +3471,7 @@ function JeuObjectionsMobile({ page, pName, progObjectionIdx, progObjectionRespo
         pName,
         { text: text.trim() }
       )
-      if (!ok) return
+      if (!ok) { setSending(false); return }
       setSentText(text.trim())
       setSent(true)
     } catch { /* ignore */ }
@@ -3551,14 +3565,17 @@ function SAVBrainstormMobile({ page, moduleId, pName }) {
   const handleSubmit = async () => {
     if (!text.trim() || saving) return
     setSaving(true)
-    if (editing) {
-      await updateOpenAnswer({ sessionCode, pageId, participantName: (pName || 'Anonyme').trim(), answer: text.trim() })
-    } else {
-      await insertOpenAnswer({ sessionCode, pageId, participantName: (pName || 'Anonyme').trim(), answer: text.trim() })
+    try {
+      if (editing) {
+        await updateOpenAnswer({ sessionCode, pageId, participantName: (pName || 'Anonyme').trim(), answer: text.trim() })
+      } else {
+        await insertOpenAnswer({ sessionCode, pageId, participantName: (pName || 'Anonyme').trim(), answer: text.trim() })
+      }
+      setSubmitted(true)
+      setEditing(false)
+    } catch { /* best-effort */ } finally {
+      setSaving(false)
     }
-    setSaving(false)
-    setSubmitted(true)
-    setEditing(false)
   }
 
   if (submitted && !editing) return (
@@ -3793,7 +3810,7 @@ function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, e
   )
 }
 
-function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint, rembfrRevealed, entrainementQ, entrainementVfCorrect, entrainementClearTs, entrainementCustomQText }) {
+function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint, rembfrRevealed, entrainementQ, entrainementVfCorrect, entrainementClearTs, entrainementCustomQText }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
@@ -4064,28 +4081,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
     </div>
   )
 
-  if (page.type === 'saisie-interactive') return (
-    <div style={{
-      minHeight: '100dvh',
-      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: '40px 24px', textAlign: 'center',
-    }}>
-      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30}
-        style={{ objectFit: 'contain', opacity: 0.5, marginBottom: 36 }} />
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>
-        Place à la pratique
-      </div>
-      <div style={{ fontSize: 48, marginBottom: 20 }}>📺</div>
-      <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
-        Regardez l'écran
-      </div>
-      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', lineHeight: 1.7 }}>
-        Suivez l'exercice avec le formateur.
-      </div>
-    </div>
-  )
+  if (page.type === 'saisie-interactive') return <SaisieInteractiveMobile page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'entrainement-oral')  return <EntrainementOralMobile pName={pName} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} entrainementCustomQText={entrainementCustomQText} />
 
   // Freins à l'achat — saisie libre
@@ -4142,7 +4138,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
       <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Chiffres clés</div>
       <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 24, lineHeight: 1.3 }}>{page.titre}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {page.stats.map((stat, i) => (
+        {(page.stats || []).map((stat, i) => (
           <div key={i} style={{
             display: 'flex', alignItems: 'center', gap: 14,
             background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
@@ -4232,7 +4228,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, pName, progZoneQ, p
     return <EntreprisePageMobile page={page} pageIndex={pageIndex} total={total} />
 
   // SAV modules (Retraits, Ajustages, RAZ)
-  if (page.type === 'sav-brainstorm') return <SAVBrainstormMobile page={page} moduleId={page.moduleId} pName={pName} />
+  if (page.type === 'sav-brainstorm') return <SAVBrainstormMobile page={page} moduleId={moduleId} pName={pName} />
   if (page.type === 'sav-content') return <SAVContentMobile page={page} pageIndex={pageIndex} total={total} />
 
   // Types de verres — verre progressif
@@ -4933,12 +4929,12 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
                   </div>
                 </div>
               )
-              : isQuiz && quizShowCorrection
+              : isQuiz && quizShowCorrection && (quiz[qIdx]?.type !== 'text-open')
               ? <ParticipantQuizRanking pName={pName} moduleId={activeModule} qIdx={qIdx} />
               : isQuiz
               ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
               : page
-                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} rembfrRevealed={rembfrRevealed} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} entrainementCustomQText={entrainementCustomQText} />
+                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} moduleId={activeModule} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} rembfrRevealed={rembfrRevealed} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} entrainementCustomQText={entrainementCustomQText} />
                 : faqJournee
                   ? <FAQInputMobile journeeId={faqJournee} />
                   : <ParticipantDashboard pName={pName} sessionCode={sessionCode} />
