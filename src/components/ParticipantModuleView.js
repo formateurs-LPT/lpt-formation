@@ -174,35 +174,27 @@ function DashboardScreen({ pName, myEntry, ranking }) {
         </div>
       )}
 
-      {/* Classement */}
-      {ranking.length > 0 && (
-        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16 }}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-            Classement de la semaine
+      {/* Ma position */}
+      {rank != null && ranking.length > 0 && (
+        <div style={{
+          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 16, padding: '24px 16px', textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 18 }}>
+            Ta position cette semaine
           </div>
-          <div style={{ padding: '6px 0' }}>
-            {ranking.map((entry, i) => {
-              const isMe = entry.name === pName
-              const entryLvl = getLevelInfo(entry.points)
-              return (
-                <div key={entry.name} style={{
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px',
-                  background: isMe ? 'rgba(0,171,233,0.1)' : 'transparent',
-                  borderLeft: isMe ? '3px solid #00abe9' : '3px solid transparent',
-                }}>
-                  <span style={{ width: 22, textAlign: 'center', fontSize: i < 3 ? 17 : 12, fontWeight: 800, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
-                    {i < 3 ? MEDALS[i] : `${entry.rank}`}
-                  </span>
-                  <span style={{ flex: 1, fontSize: 14, fontWeight: isMe ? 800 : 500, color: isMe ? '#fff' : 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {isMe ? 'Toi' : entry.name}
-                  </span>
-                  <span style={{ fontSize: 14 }}>{entryLvl.levelDef.icon}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: isMe ? '#00abe9' : 'rgba(255,255,255,0.4)', flexShrink: 0 }}>
-                    {entry.points} pts
-                  </span>
-                </div>
-              )
-            })}
+          {rank <= 3 ? (
+            <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 6 }}>
+              {MEDALS[rank - 1]}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2, marginBottom: 6 }}>
+              <span style={{ fontSize: 58, fontWeight: 900, color: '#00abe9', lineHeight: 1 }}>{rank}</span>
+              <span style={{ fontSize: 22, fontWeight: 700, color: '#00abe9' }}>e</span>
+            </div>
+          )}
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
+            sur {ranking.length} participant{ranking.length > 1 ? 's' : ''}
           </div>
         </div>
       )}
