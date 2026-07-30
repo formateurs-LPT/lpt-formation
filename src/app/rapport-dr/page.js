@@ -28,6 +28,7 @@ function getVerdict(snap) {
   if (!snap) return null
   const app = snap.appreciation
   if (app === 'tres-bon') return 'bon'
+  if (app === 'ca-va-le-faire') return 'bon'
   if (app === 'accompagnement') return 'moyen'
   if (app === 'complique') return 'mauvais'
   // Fallback sur le taux d'acquisition

@@ -118,9 +118,10 @@ function RateBar({ rate }) {
 // ── Fiche formé ───────────────────────────────────────────────────
 
 const APPRECIATIONS = [
-  { key: 'tres-bon',       label: 'Je pense que ça peut être un très bon élément',          solidBg: '#16a34a' },
-  { key: 'accompagnement', label: "Aura vraiment besoin d'accompagnement mais ça ira !",    solidBg: '#d97706' },
-  { key: 'complique',      label: 'Je pense que ça va être très compliqué',                 solidBg: '#dc2626' },
+  { key: 'tres-bon',        label: 'Je pense que ça peut être un très bon élément',          solidBg: '#16a34a' },
+  { key: 'ca-va-le-faire',  label: 'Je pense que ça va le faire',                            solidBg: '#84cc16' },
+  { key: 'accompagnement',  label: "Aura vraiment besoin d'accompagnement mais ça ira !",    solidBg: '#d97706' },
+  { key: 'complique',       label: 'Je pense que ça va être très compliqué',                 solidBg: '#dc2626' },
 ]
 
 const COMMENTAIRE_OPTS = [
@@ -1485,6 +1486,7 @@ function formatDate(dateStr) {
 
 const HIST_APPR_META = {
   'tres-bon':       { label: '🌟 Très bon potentiel', color: '#4ade80' },
+  'ca-va-le-faire': { label: '👍 Ça va le faire',      color: '#a3e635' },
   'accompagnement': { label: '🤝 Accompagnement',     color: '#fbbf24' },
   'complique':      { label: '⚠️ Compliqué',          color: '#f87171' },
 }

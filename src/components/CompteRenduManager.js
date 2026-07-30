@@ -8,6 +8,7 @@ const THEMES_BELGIQUE = ['entreprise','types-verres','pdm','optique','offres','v
 
 const APPRECIATION_META = {
   'tres-bon':       { label: 'Très bon potentiel',                                             bg: '#16a34a', light: '#dcfce7', border: '#bbf7d0', icon: '🌟' },
+  'ca-va-le-faire': { label: 'Ça va le faire',                                                  bg: '#84cc16', light: '#ecfccb', border: '#d9f99d', icon: '👍' },
   'accompagnement': { label: 'Aura besoin d\'accompagnement, mais ça ira !',                   bg: '#d97706', light: '#fef3c7', border: '#fde68a', icon: '🤝' },
   'complique':      { label: 'Ça va être compliqué — accompagnement renforcé nécessaire',      bg: '#dc2626', light: '#fee2e2', border: '#fecaca', icon: '⚠️' },
 }
