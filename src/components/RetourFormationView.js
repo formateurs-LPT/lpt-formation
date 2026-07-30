@@ -134,13 +134,15 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const [assessments, setAssessments]           = useState({})
   const [attitudeStatus, setAttitudeStatus]     = useState(null)
   const [attitudeNote, setAttitudeNote]         = useState('')
+  const [participationStatus, setParticipationStatus] = useState(null)
+  const [participationNote, setParticipationNote]     = useState('')
   const [comprehensionStatus, setComprehensionStatus] = useState(null)
   const [comprehensionNote, setComprehensionNote]     = useState('')
   const [appreciation, setAppreciation]         = useState(null)
   const [commentaireLibre, setCommentaireLibre] = useState('')
   const [saving, setSaving]                     = useState(false)
   const [loading, setLoading]                   = useState(true)
-  const [correcting, setCorrecting]             = useState(null) // 'attitude' | 'comprehension' | 'commentaire'
+  const [correcting, setCorrecting]             = useState(null) // 'attitude' | 'participation' | 'comprehension' | 'commentaire'
   const [mailSentAt, setMailSentAt]             = useState(null)
   // week_date du dernier enregistrement trouvé — peut différer de weekDate si la session a eu lieu une semaine précédente
   const [saveWeekDate, setSaveWeekDate]         = useState(weekDate)
@@ -188,6 +190,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       setAssessments(snap.theme_assessments || {})
       setAttitudeStatus(snap.attitude_status || null)
       setAttitudeNote(snap.attitude_note || '')
+      setParticipationStatus(snap.participation_status || null)
+      setParticipationNote(snap.participation_note || '')
       setComprehensionStatus(snap.comprehension_status || null)
       setComprehensionNote(snap.comprehension_note || '')
       setAppreciation(snap.appreciation || null)
@@ -206,6 +210,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
     theme_assessments: assessments,
     attitude_status: attitudeStatus,
     attitude_note: attitudeNote,
+    participation_status: participationStatus,
+    participation_note: participationNote,
     comprehension_status: comprehensionStatus,
     comprehension_note: comprehensionNote,
     appreciation,
@@ -256,6 +262,19 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
     await saveSnapshot(buildSnap({ attitude_note: val }))
   }
 
+  const handleParticipationStatus = async (key) => {
+    const next = participationStatus === key ? null : key
+    const note = next === 'ras' ? '' : participationNote
+    setParticipationStatus(next)
+    if (next === 'ras') setParticipationNote('')
+    await saveSnapshot(buildSnap({ participation_status: next, participation_note: note }))
+  }
+
+  const handleParticipationNote = async (val) => {
+    setParticipationNote(val)
+    await saveSnapshot(buildSnap({ participation_note: val }))
+  }
+
   const handleComprehensionStatus = async (key) => {
     const next = comprehensionStatus === key ? null : key
     const note = next === 'ras' ? '' : comprehensionNote
@@ -286,6 +305,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
     assessments,
     attitudeStatus,
     attitudeNote,
+    participationStatus,
+    participationNote,
     comprehensionStatus,
     comprehensionNote,
     appreciation,
@@ -327,6 +348,15 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
     try {
       const corrected = await correctWithLT(attitudeNote)
       if (corrected) await handleAttitudeNote(corrected)
+    } catch (e) { console.error('Correction échouée', e) } finally { setCorrecting(null) }
+  }
+
+  const handleCorrectParticipation = async () => {
+    if (!participationNote.trim() || correcting) return
+    setCorrecting('participation')
+    try {
+      const corrected = await correctWithLT(participationNote)
+      if (corrected) await handleParticipationNote(corrected)
     } catch (e) { console.error('Correction échouée', e) } finally { setCorrecting(null) }
   }
 
@@ -654,6 +684,56 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                 {attitudeNote.trim() && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
                     <CorrectButton onClick={handleCorrectAttitude} loading={correcting === 'attitude'} />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Participation */}
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 10 }}>Participation</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              {COMMENTAIRE_OPTS.map(opt => {
+                const active = participationStatus === opt.key
+                return (
+                  <button
+                    key={opt.key}
+                    onClick={() => handleParticipationStatus(opt.key)}
+                    style={{
+                      flex: 1, padding: '9px 6px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                      cursor: 'pointer', transition: 'all .15s',
+                      border: `1.5px solid ${active ? opt.border : '#334155'}`,
+                      background: active ? opt.bg : '#253247',
+                      color: active ? opt.color : '#64748b',
+                      boxShadow: active ? `0 1px 4px ${opt.border}` : 'none',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+            {participationStatus && participationStatus !== 'ras' && (
+              <>
+                <textarea
+                  value={participationNote}
+                  onChange={e => setParticipationNote(e.target.value)}
+                  onBlur={e => handleParticipationNote(e.target.value)}
+                  placeholder="Précisez ce que vous avez observé…"
+                  rows={3}
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 10,
+                    border: '1.5px solid #334155', background: '#0f172a',
+                    fontSize: 13, color: '#f1f5f9', resize: 'vertical',
+                    fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+                  }}
+                  onFocus={e => { e.target.style.borderColor = '#475569' }}
+                  onBlurCapture={e => { e.target.style.borderColor = '#334155' }}
+                />
+                {participationNote.trim() && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+                    <CorrectButton onClick={handleCorrectParticipation} loading={correcting === 'participation'} />
                   </div>
                 )}
               </>
@@ -1462,7 +1542,7 @@ function AutoEvalReadOnly({ snap }) {
       ].map(({ key, label }) => ae[key] ? (
         <div key={key}>
           <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>{label}</div>
-          <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.7, background: '#0f172a', borderRadius: 10, padding: '10px 14px', border: '1px solid #334155' }}>{ae[key]}</div>
+          <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.7, background: '#0f172a', borderRadius: 10, padding: '10px 14px', border: '1px solid #334155', whiteSpace: 'pre-wrap' }}>{ae[key]}</div>
         </div>
       ) : null)}
       {ae.rating && (
@@ -1475,7 +1555,7 @@ function AutoEvalReadOnly({ snap }) {
             </span>
           </div>
           {ae.rating_comment && (
-            <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.7, background: '#0f172a', borderRadius: 10, padding: '10px 14px', border: '1px solid #334155', fontStyle: 'italic', marginTop: 8 }}>
+            <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.7, background: '#0f172a', borderRadius: 10, padding: '10px 14px', border: '1px solid #334155', fontStyle: 'italic', marginTop: 8, whiteSpace: 'pre-wrap' }}>
               « {ae.rating_comment} »
             </div>
           )}
@@ -1502,6 +1582,8 @@ function HistoriqueFiche({ record, autoEvalSnap, onBack }) {
     assessments:        snap.theme_assessments     || {},
     attitudeStatus:     snap.attitude_status       || null,
     attitudeNote:       snap.attitude_note         || '',
+    participationStatus: snap.participation_status || null,
+    participationNote:  snap.participation_note    || '',
     comprehensionStatus: snap.comprehension_status || null,
     comprehensionNote:  snap.comprehension_note    || '',
     appreciation:       snap.appreciation          || null,

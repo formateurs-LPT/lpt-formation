@@ -102,7 +102,7 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode, o
     setSaving(true)
     setError(null)
     try {
-      await sbUpsert('formation_reports', {
+      const saved = await sbUpsert('formation_reports', {
         collaborateur: pName,
         week_date: getWeekDate(),
         session_code: sessionCode || '',
@@ -120,6 +120,7 @@ export default function AutoEvalParticipant({ pName, sharedState, sessionCode, o
         },
         updated_at: new Date().toISOString(),
       }, 'collaborateur,week_date,trainer_name')
+      if (!saved) throw new Error('sbUpsert a échoué (voir console)')
       // Retire ce formé de la liste redo si présent
       const redo = sharedState?.auto_eval_redo_names
       if (Array.isArray(redo) && redo.includes(pName)) {

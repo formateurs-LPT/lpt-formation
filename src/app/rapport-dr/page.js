@@ -49,7 +49,7 @@ function TraineeCard({ row }) {
   const snap = row.stats_snapshot || {}
   const verdict = getVerdict(snap)
   const meta = verdict ? VERDICT_META[verdict] : null
-  const hasComments = snap.commentaire_libre || snap.attitude_note || snap.comprehension_note
+  const hasComments = snap.commentaire_libre || snap.attitude_note || snap.participation_note || snap.comprehension_note
   const magasin = snap.magasin || '—'
   const isMauvais = verdict === 'mauvais'
   const isMoyen   = verdict === 'moyen'
@@ -123,7 +123,7 @@ function TraineeCard({ row }) {
           {snap.commentaire_libre && (
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>Commentaire général</div>
-              <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#fff', border: `1px solid ${expandNoteBorder}`, borderRadius: 10, padding: '10px 14px', fontStyle: 'italic' }}>
+              <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#fff', border: `1px solid ${expandNoteBorder}`, borderRadius: 10, padding: '10px 14px', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
                 « {snap.commentaire_libre} »
               </div>
             </div>
@@ -131,15 +131,23 @@ function TraineeCard({ row }) {
           {snap.attitude_note && (
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>Attitude / comportement</div>
-              <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#fff', border: `1px solid ${expandNoteBorder}`, borderRadius: 10, padding: '10px 14px', fontStyle: 'italic' }}>
+              <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#fff', border: `1px solid ${expandNoteBorder}`, borderRadius: 10, padding: '10px 14px', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
                 « {snap.attitude_note} »
+              </div>
+            </div>
+          )}
+          {snap.participation_note && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>Participation</div>
+              <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#fff', border: `1px solid ${expandNoteBorder}`, borderRadius: 10, padding: '10px 14px', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                « {snap.participation_note} »
               </div>
             </div>
           )}
           {snap.comprehension_note && (
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>Compréhension / acquisition</div>
-              <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#fff', border: `1px solid ${expandNoteBorder}`, borderRadius: 10, padding: '10px 14px', fontStyle: 'italic' }}>
+              <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#fff', border: `1px solid ${expandNoteBorder}`, borderRadius: 10, padding: '10px 14px', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
                 « {snap.comprehension_note} »
               </div>
             </div>

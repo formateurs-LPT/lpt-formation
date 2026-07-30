@@ -80,7 +80,7 @@ function ResponseDetail({ snap }) {
           <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
             {label}
           </div>
-          <div style={{ fontSize: 14, color: '#1e293b', lineHeight: 1.7, background: '#f8fafc', borderRadius: 10, padding: '12px 14px', border: '1px solid #f1f5f9' }}>
+          <div style={{ fontSize: 14, color: '#1e293b', lineHeight: 1.7, background: '#f8fafc', borderRadius: 10, padding: '12px 14px', border: '1px solid #f1f5f9', whiteSpace: 'pre-wrap' }}>
             {value}
           </div>
         </section>
@@ -117,7 +117,7 @@ function ResponseDetail({ snap }) {
             </span>
           </div>
           {ae.rating_comment && (
-            <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#f8fafc', borderRadius: 10, padding: '10px 14px', border: '1px solid #f1f5f9', fontStyle: 'italic' }}>
+            <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, background: '#f8fafc', borderRadius: 10, padding: '10px 14px', border: '1px solid #f1f5f9', fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
               « {ae.rating_comment} »
             </div>
           )}
@@ -235,7 +235,7 @@ function ParticipantRecapModal({ name, snap, onClose }) {
               <div style={{ fontSize: 11, fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
                 💡 Suggestions
               </div>
-              <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 14, padding: '14px 18px', fontSize: 14, color: '#1e293b', lineHeight: 1.7, fontStyle: 'italic' }}>
+              <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 14, padding: '14px 18px', fontSize: 14, color: '#1e293b', lineHeight: 1.7, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
                 « {ae.suggestions} »
               </div>
             </section>
@@ -247,7 +247,7 @@ function ParticipantRecapModal({ name, snap, onClose }) {
               <div style={{ fontSize: 11, fontWeight: 800, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
                 ⭐ Commentaire
               </div>
-              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 14, padding: '14px 18px', fontSize: 14, color: '#1e293b', lineHeight: 1.7, fontStyle: 'italic' }}>
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 14, padding: '14px 18px', fontSize: 14, color: '#1e293b', lineHeight: 1.7, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
                 « {ae.rating_comment} »
               </div>
             </section>
@@ -689,7 +689,7 @@ export default function AutoEvalView({ onBack }) {
                         <Stars value={r.rating} size={15} />
                       </div>
                       {r.comment && (
-                        <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, fontStyle: 'italic' }}>« {r.comment} »</div>
+                        <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>« {r.comment} »</div>
                       )}
                     </div>
                   ))}

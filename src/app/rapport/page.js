@@ -75,6 +75,8 @@ function RapportContent() {
           assessments:         snap.theme_assessments     || {},
           attitudeStatus:      snap.attitude_status       || null,
           attitudeNote:        snap.attitude_note         || '',
+          participationStatus: snap.participation_status  || null,
+          participationNote:   snap.participation_note    || '',
           comprehensionStatus: snap.comprehension_status  || null,
           comprehensionNote:   snap.comprehension_note    || '',
           appreciation:        snap.appreciation          || null,

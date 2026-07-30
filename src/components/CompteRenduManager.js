@@ -84,6 +84,8 @@ export default function CompteRenduManager({ data }) {
     assessments = {},
     attitudeStatus,
     attitudeNote,
+    participationStatus,
+    participationNote,
     comprehensionStatus,
     comprehensionNote,
     appreciation,
@@ -229,7 +231,7 @@ export default function CompteRenduManager({ data }) {
         </div>
 
         {/* ── Observations formateur ── */}
-        {(attitudeStatus || comprehensionStatus) && (
+        {(attitudeStatus || participationStatus || comprehensionStatus) && (
           <div>
             <SectionHead accent="#7c3aed">Observations du formateur</SectionHead>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -247,8 +249,29 @@ export default function CompteRenduManager({ data }) {
                       </span>
                     </div>
                     {attitudeNote && (
-                      <p style={{ margin: 0, fontSize: 13, color: '#475569', lineHeight: 1.7, fontStyle: 'italic' }}>
+                      <p style={{ margin: 0, fontSize: 13, color: '#475569', lineHeight: 1.7, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
                         « {attitudeNote} »
+                      </p>
+                    )}
+                  </div>
+                )
+              })()}
+              {participationStatus && (() => {
+                const m = COMMENTAIRE_META[participationStatus]
+                return (
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: '14px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: participationNote ? 10 : 0 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>Participation</span>
+                      <span style={{
+                        fontSize: 12, fontWeight: 700, padding: '3px 12px', borderRadius: 20,
+                        background: m.bg, color: m.color, border: `1px solid ${m.border}`,
+                      }}>
+                        {m.label}
+                      </span>
+                    </div>
+                    {participationNote && (
+                      <p style={{ margin: 0, fontSize: 13, color: '#475569', lineHeight: 1.7, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                        « {participationNote} »
                       </p>
                     )}
                   </div>
@@ -268,7 +291,7 @@ export default function CompteRenduManager({ data }) {
                       </span>
                     </div>
                     {comprehensionNote && (
-                      <p style={{ margin: 0, fontSize: 13, color: '#475569', lineHeight: 1.7, fontStyle: 'italic' }}>
+                      <p style={{ margin: 0, fontSize: 13, color: '#475569', lineHeight: 1.7, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
                         « {comprehensionNote} »
                       </p>
                     )}
@@ -373,7 +396,7 @@ export default function CompteRenduManager({ data }) {
               background: '#f8fafc', border: '1px solid #e2e8f0', borderLeft: '3px solid #0f172a',
               borderRadius: 14, padding: '16px 20px',
             }}>
-              <p style={{ margin: 0, fontSize: 14, color: '#1e293b', lineHeight: 1.8, fontStyle: 'italic' }}>
+              <p style={{ margin: 0, fontSize: 14, color: '#1e293b', lineHeight: 1.8, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
                 « {commentaireLibre} »
               </p>
               <div style={{ marginTop: 10, fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>

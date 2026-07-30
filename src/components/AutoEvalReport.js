@@ -82,7 +82,7 @@ function Quote({ text, name }) {
       background: '#253247', border: '1px solid #334155',
       borderRadius: 12, padding: '14px 16px', marginBottom: 10,
     }}>
-      <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.7, fontStyle: 'italic' }}>
+      <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.7, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
         « {text} »
       </div>
       {name && (
@@ -299,7 +299,7 @@ export default function AutoEvalReport({ responses, entrees, category, weekDate,
                       <Stars value={r.rating} size={14} />
                     </div>
                     {r.comment && (
-                      <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.6, fontStyle: 'italic' }}>« {r.comment} »</div>
+                      <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.6, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>« {r.comment} »</div>
                     )}
                   </div>
                 ))}
