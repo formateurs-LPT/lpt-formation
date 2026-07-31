@@ -386,7 +386,7 @@ function TVQuizTextOpen({ question, qIdx, total, moduleLabel, sessionCode, modul
               fontSize: 16, color: 'rgba(255,255,255,0.8)',
             }}>
               <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 2 }}>{a.participant_name}</span>
-              {a.answer}
+              {question?.type === 'text-open-multi' ? (a.answer || '').split('||').map(s => s.trim()).filter(Boolean).join(' // ') : a.answer}
             </div>
           ))}
         </div>
@@ -540,7 +540,7 @@ function TVQuizMultiQuestion({ question, qIdx, total, moduleLabel }) {
 function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode, moduleId }) {
   const type = question.type || 'qcm'
 
-  if (type === 'text-open') {
+  if (type === 'text-open' || type === 'text-open-multi') {
     return <TVQuizTextOpen question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} moduleId={moduleId} />
   }
   if (type === 'ordonnance-fill') {
@@ -7108,6 +7108,111 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, sho
   )
 }
 
+// ── TV Correction — questions texte libre (réponses validées par le formateur) ──
+function TVOpenCorrection({ question, qIdx, total, moduleLabel, sessionCode, pageId }) {
+  const [answers, setAnswers] = useState([])
+  const [openAnswers, setOpenAnswers] = useState([])
+
+  useEffect(() => {
+    const load = async () => {
+      const [qa, oa] = await Promise.all([
+        sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}`),
+        fetchOpenAnswers(sessionCode || SESSION_CODE, pageId),
+      ])
+      setAnswers(qa || [])
+      setOpenAnswers(oa || [])
+    }
+    load()
+    const t = setInterval(load, 2000)
+    return () => clearInterval(t)
+  }, [qIdx, sessionCode, pageId])
+
+  const textByName = {}
+  for (const row of openAnswers) textByName[row.participant_name] = row.answer
+
+  const formatAnswer = (name) => {
+    const raw = textByName[name] || ''
+    return question?.type === 'text-open-multi'
+      ? raw.split('||').map(s => s.trim()).filter(Boolean).join(' // ')
+      : raw
+  }
+
+  const correctCount = answers.filter(r => r.is_correct).length
+  const wrongRows = answers.filter(r => !r.is_correct)
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '32px 60px',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={36} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>{moduleLabel}</span>
+        </div>
+        <div style={{
+          background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)',
+          borderRadius: 20, padding: '6px 22px',
+          fontSize: 13, fontWeight: 700, color: '#4ade80', letterSpacing: 1.5, textTransform: 'uppercase',
+        }}>✓ Correction — Question {qIdx + 1} / {total}</div>
+      </div>
+
+      {/* Stats globales */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginBottom: 24 }}>
+        <div style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 18, padding: '14px 36px', textAlign: 'center' }}>
+          <div style={{ fontSize: 48, fontWeight: 900, color: '#4ade80' }}>{correctCount}</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4 }}>bonne{correctCount > 1 ? 's' : ''} réponse{correctCount > 1 ? 's' : ''}</div>
+        </div>
+        <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 18, padding: '14px 36px', textAlign: 'center' }}>
+          <div style={{ fontSize: 48, fontWeight: 900, color: '#f87171' }}>{wrongRows.length}</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4 }}>mauvaise{wrongRows.length > 1 ? 's' : ''} réponse{wrongRows.length > 1 ? 's' : ''}</div>
+        </div>
+      </div>
+
+      {/* Question */}
+      <div style={{
+        fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.55)', textAlign: 'center',
+        marginBottom: 14, lineHeight: 1.35, maxWidth: 900, alignSelf: 'center',
+      }}>{question?.question}</div>
+
+      {/* Bonne réponse en grand */}
+      <div style={{
+        background: 'rgba(34,197,94,0.1)', border: '2px solid #4ade80', borderRadius: 20,
+        padding: '18px 32px', margin: '0 auto 24px', maxWidth: 900, textAlign: 'center',
+        boxShadow: '0 0 32px rgba(74,222,128,0.2)',
+      }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>✓ Bonne réponse</div>
+        <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1.35 }}>{question?.hint}</div>
+      </div>
+
+      {/* Mauvaises réponses, anonymes */}
+      {wrongRows.length > 0 ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 800, alignSelf: 'center', width: '100%', overflowY: 'auto' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4, textAlign: 'center' }}>
+            Réponses à corriger
+          </div>
+          {wrongRows.map((row, i) => (
+            <div key={i} style={{
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)',
+              borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12,
+            }}>
+              <span style={{ fontSize: 18 }}>✗</span>
+              <span style={{ fontSize: 16, color: '#fff' }}>{formatAnswer(row.collaborateur)}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', color: '#4ade80', fontSize: 18, fontWeight: 700, marginTop: 16 }}>
+          🎉 Tout le monde a bon !
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Phrases d'humour podium (top 5 uniquement) ───────────────────
 const PHRASES_P1 = [
   "[Prénom] voit tout et répond juste — même son opticien prend des notes.",
@@ -8328,23 +8433,32 @@ export default function TVView() {
         ) : isQuiz && quizQuestion ? (
           quizInterstitialPhase
             ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} skipSignal={sharedState?.quiz_podium_skip} moduleId={activeModule} />
-            : sharedState?.quiz_show_correction && quizQuestion?.type !== 'text-open'
-              ? <TVQuizCorrection
+            : sharedState?.quiz_show_correction && (quizQuestion?.type === 'text-open' || quizQuestion?.type === 'text-open-multi')
+              ? <TVOpenCorrection
                   question={quizQuestion}
                   qIdx={modulePage - 100}
                   total={moduleData.quiz.length}
                   moduleLabel={moduleData?.label || ''}
                   sessionCode={sessionCode}
-                  showOrdo={!!sharedState?.quiz_ordo_show}
+                  pageId={`${activeModule}:${modulePage - 100}`}
                 />
-              : <TVQuizQuestion
-                  question={quizQuestion}
-                  qIdx={modulePage - 100}
-                  total={moduleData.quiz.length}
-                  moduleLabel={moduleData?.label || ''}
-                  sessionCode={sessionCode}
-                  moduleId={activeModule}
-                />
+              : sharedState?.quiz_show_correction && quizQuestion?.type !== 'text-open' && quizQuestion?.type !== 'text-open-multi'
+                ? <TVQuizCorrection
+                    question={quizQuestion}
+                    qIdx={modulePage - 100}
+                    total={moduleData.quiz.length}
+                    moduleLabel={moduleData?.label || ''}
+                    sessionCode={sessionCode}
+                    showOrdo={!!sharedState?.quiz_ordo_show}
+                  />
+                : <TVQuizQuestion
+                    question={quizQuestion}
+                    qIdx={modulePage - 100}
+                    total={moduleData.quiz.length}
+                    moduleLabel={moduleData?.label || ''}
+                    sessionCode={sessionCode}
+                    moduleId={activeModule}
+                  />
         ) : isPdmAnimation ? (
           <TVPdmAnimation step={pdmAnimStep} />
         ) : page ? (

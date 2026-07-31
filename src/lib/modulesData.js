@@ -472,19 +472,29 @@ export const ENTREPRISE_QUIZ = [
     autoCorrect: ['10'],
   },
   {
-    type: 'text-open',
-    question: 'Citez les 5 éléments qui font la force de Lunettes Pour Tous.',
-    hint: 'Stocks dans chaque magasin · Machines à la pointe · Volume de ventes conséquent · Propre marque · 0 intermédiaire',
+    type: 'text-open-multi',
+    fields: 5,
+    question: 'Quels sont les 5 éléments qui permettent à lunettes pour tous de faire des lunettes de qualité en un temps record',
+    hint: "Les stocks · Pas d'intermédiaire · Notre propre marque · Des machines à la pointe de la technologie · Un volume de vente conséquent",
+    autoCorrectEach: [
+      ['stock'],
+      ['intermédiaire', 'intermediaire'],
+      ['propre marque', 'marque'],
+      ['machine'],
+      ['volume'],
+    ],
   },
   {
     type: 'text-open',
     question: 'Où se trouve le laboratoire progressif unique au monde de Lunettes Pour Tous ?',
     hint: 'Paris Châtelet',
-    autoCorrect: ['paris', 'chatelet', 'châtelet'],
+    // Liste blanche de réponses exactes (accents/casse normalisés) — évite qu'un autre
+    // magasin parisien (ex: "Paris Beauchamps") soit validé automatiquement à tort.
+    autoCorrectExact: ['paris chatelet', 'chatelet', 'paris', 'dans paris'],
   },
   {
     type: 'text-open',
-    question: 'Quel est le délai de fabrication pour un verre complexe (progressif) d\'un client parisien ?',
+    question: 'Quel est le délai de fabrication pour un verre complexe (progressif) d\'un client parisien, grâce à notre laboratoire progressif ?',
     hint: 'Dans la journée — (Rappel : pour les unifocaux, le délai est de 10 min à Paris comme partout en France)',
     autoCorrect: ['journée', 'journee', 'jour même', 'jour meme'],
   },

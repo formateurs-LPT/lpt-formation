@@ -1326,17 +1326,27 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
     setValidated({})
     autoValidatedRef.current = new Set()
 
+    const stripAccents = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
     const autoValidate = (deduped) => {
-      const kws    = q?.autoCorrect    // OR : n'importe quel mot suffit
-      const kwsAll = q?.autoCorrectAll // AND : tous les mots doivent être présents
-      if (!kws?.length && !kwsAll?.length) return
+      const kws      = q?.autoCorrect      // OR : n'importe quel mot suffit
+      const kwsAll   = q?.autoCorrectAll   // AND : tous les mots doivent être présents
+      const kwsExact = q?.autoCorrectExact // liste blanche de réponses exactes (whole-answer)
+      const kwsEach  = q?.autoCorrectEach  // text-open-multi : un groupe de mots-clés par case attendue
+      if (!kws?.length && !kwsAll?.length && !kwsExact?.length && !kwsEach?.length) return
       for (const row of deduped) {
         const name = row.participant_name
         if (autoValidatedRef.current.has(name)) continue
-        const text = (row.answer || '').trim().toLowerCase()
-        const matchOr  = kws?.length    && kws.some(kw  => text.includes(kw.toLowerCase()))
-        const matchAnd = kwsAll?.length && kwsAll.every(kw => text.includes(kw.toLowerCase()))
-        if (matchOr || matchAnd) {
+        const raw  = (row.answer || '').trim()
+        const text = stripAccents(raw.toLowerCase())
+        const matchOr    = kws?.length    && kws.some(kw  => text.includes(stripAccents(kw.toLowerCase())))
+        const matchAnd   = kwsAll?.length && kwsAll.every(kw => text.includes(stripAccents(kw.toLowerCase())))
+        const matchExact = kwsExact?.length && kwsExact.some(kw => text === stripAccents(kw.toLowerCase()))
+        const matchEach  = kwsEach?.length && (() => {
+          const parts = raw.split('||').map(p => stripAccents(p.trim().toLowerCase())).filter(Boolean)
+          return kwsEach.every(group => group.some(kw => parts.some(p => p.includes(stripAccents(kw.toLowerCase())))))
+        })()
+        if (matchOr || matchAnd || matchExact || matchEach) {
           autoValidatedRef.current.add(name)
           setValidating(v => ({ ...v, [name]: true }))
           saveModuleQuizAnswer({ moduleId: 'entreprise', questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
@@ -1380,6 +1390,15 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
     finally {
       setValidating(v => ({ ...v, [row.participant_name]: false }))
     }
+  }
+
+  const formatAnswer = (answer) => {
+    if (q?.type !== 'text-open-multi') return answer
+    return (answer || '').split('||').map(s => s.trim()).filter(Boolean).join(' // ')
+  }
+
+  const handleShowCorrection = async () => {
+    await setSharedState({ quiz_show_correction: true }).catch(() => {})
   }
 
   return (
@@ -1440,27 +1459,21 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length], marginBottom: 3 }}>{row.participant_name}</div>
-                <div style={{ fontSize: 15, color: '#fff', lineHeight: 1.4 }}>{row.answer}</div>
+                <div style={{ fontSize: 15, color: '#fff', lineHeight: 1.4 }}>{formatAnswer(row.answer)}</div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                {status ? (
-                  <div style={{ fontSize: 22, fontWeight: 800, color: status === 'correct' ? '#4ade80' : '#f87171' }}>
-                    {status === 'correct' ? '✓' : '✗'}
-                  </div>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => handleValidate(row, true)}
-                      disabled={!!isValidating}
-                      style={{ width: 38, height: 38, borderRadius: 10, border: 'none', background: 'rgba(34,197,94,0.18)', color: '#4ade80', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isValidating ? 0.5 : 1, fontFamily: 'inherit' }}
-                    >✓</button>
-                    <button
-                      onClick={() => handleValidate(row, false)}
-                      disabled={!!isValidating}
-                      style={{ width: 38, height: 38, borderRadius: 10, border: 'none', background: 'rgba(239,68,68,0.18)', color: '#f87171', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isValidating ? 0.5 : 1, fontFamily: 'inherit' }}
-                    >✗</button>
-                  </>
-                )}
+                <button
+                  onClick={() => handleValidate(row, true)}
+                  disabled={!!isValidating}
+                  title="Marquer correct"
+                  style={{ width: 38, height: 38, borderRadius: 10, border: 'none', background: status === 'correct' ? '#16a34a' : 'rgba(34,197,94,0.18)', color: status === 'correct' ? '#fff' : '#4ade80', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isValidating ? 0.5 : 1, fontFamily: 'inherit', transition: 'background .15s' }}
+                >✓</button>
+                <button
+                  onClick={() => handleValidate(row, false)}
+                  disabled={!!isValidating}
+                  title="Marquer faux"
+                  style={{ width: 38, height: 38, borderRadius: 10, border: 'none', background: status === 'wrong' ? '#dc2626' : 'rgba(239,68,68,0.18)', color: status === 'wrong' ? '#fff' : '#f87171', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isValidating ? 0.5 : 1, fontFamily: 'inherit', transition: 'background .15s' }}
+                >✗</button>
               </div>
             </div>
           )
@@ -1474,7 +1487,12 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
       )}
 
       {/* Navigation */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 28 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 28 }}>
+        {openAnswers.length > 0 && (
+          <button onClick={handleShowCorrection} style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', padding: '14px 28px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            🎯 Voir la correction
+          </button>
+        )}
         {isLast ? (
           <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 40px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>
             ✓ Voir les résultats

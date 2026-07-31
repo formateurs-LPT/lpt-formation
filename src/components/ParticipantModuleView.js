@@ -504,6 +504,106 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
   )
 }
 
+// ── Quiz texte libre à plusieurs cases (ex: "citez les 5 éléments") ──
+function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
+  const fieldsCount = q.fields || 5
+  const [values, setValues] = useState(Array(fieldsCount).fill(''))
+  const [submitted, setSubmitted] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [validated, setValidated] = useState(null) // null | true | false
+
+  useEffect(() => {
+    if (!submitted) return
+    const poll = async () => {
+      const rows = await sbSelect(
+        'quiz_answers',
+        `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${encodeURIComponent(moduleId)}&question_idx=eq.${qIdx}&collaborateur=eq.${encodeURIComponent(pName.trim())}`
+      )
+      if (rows && rows.length > 0) setValidated(rows[0].is_correct)
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [submitted, qIdx, moduleId, pName])
+
+  const setField = (i, val) => setValues(vs => vs.map((v, idx) => idx === i ? val : v))
+  const allFilled = values.every(v => v.trim())
+
+  const handleSubmit = async () => {
+    if (!allFilled || saving) return
+    setSaving(true)
+    try {
+      await insertOpenAnswer({
+        sessionCode: getParticipantSessionCode(),
+        pageId: `${moduleId}:${qIdx}`,
+        participantName: pName.trim(),
+        answer: values.map(v => v.trim()).join('||'),
+      })
+      setSubmitted(true)
+    } catch { /* best-effort */ } finally {
+      setSaving(false)
+    }
+  }
+
+  if (validated !== null) return <QuizResultScreen isCorrect={validated} />
+
+  if (submitted) {
+    return (
+      <div style={{
+        minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: '40px 24px', textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>✍️</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Réponse envoyée !</div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>En attente de la validation du formateur…</div>
+        <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
+        <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+    }}>
+      <div style={{
+        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
+      }}>Question {qIdx + 1}</div>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 24, textAlign: 'center' }}>
+        Regardez la question sur l&apos;écran<br />et remplissez les {fieldsCount} cases
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 400, marginBottom: 24 }}>
+        {values.map((val, i) => (
+          <input
+            key={i}
+            value={val}
+            onChange={e => setField(i, e.target.value)}
+            placeholder={`Élément ${i + 1}`}
+            style={{
+              width: '100%', padding: '14px 16px', borderRadius: 14,
+              border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)',
+              color: '#fff', fontSize: 15, fontFamily: 'inherit', outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        ))}
+      </div>
+      <button onClick={handleSubmit} disabled={!allFilled || saving} style={{
+        background: allFilled ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
+        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
+        fontSize: 16, fontWeight: 700, cursor: allFilled ? 'pointer' : 'default',
+        fontFamily: 'inherit', width: '100%', maxWidth: 400,
+      }}>
+        {saving ? 'Envoi…' : '✓ Envoyer'}
+      </button>
+    </div>
+  )
+}
+
 // ── Quiz multi-sélection ──────────────────────────────────────────
 function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
   const [selected, setSelected] = useState([])
@@ -936,6 +1036,7 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
   const q = quiz[qIdx]
   const type = q?.type || 'qcm'
   if (type === 'text-open') return <QuizTextOpen pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
+  if (type === 'text-open-multi') return <QuizTextOpenMulti pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
   if (type === 'qcm-multi') return <QuizMultiSelect pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
   if (type === 'ordonnance-fill') return <QuizOrdonnanceFill pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
   if (type === 'power-selector') return <QuizPowerSelector pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
