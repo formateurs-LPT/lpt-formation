@@ -66,6 +66,10 @@ function RapportContent() {
             `collaborateur=eq.${encodeURIComponent(collaborateur)}&trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc&limit=1`
           )
         }
+        const autoEvalRows = await sbSelect(
+          'formation_reports',
+          `collaborateur=eq.${encodeURIComponent(collaborateur)}&trainer_name=eq.__auto_eval__&order=updated_at.desc&limit=1`
+        )
         const snap = rows?.[0]?.stats_snapshot || {}
         setData({
           collaborateur,
@@ -81,6 +85,7 @@ function RapportContent() {
           comprehensionNote:   snap.comprehension_note    || '',
           appreciation:        snap.appreciation          || null,
           commentaireLibre:    snap.commentaire_libre     || '',
+          autoEval:            autoEvalRows?.[0]?.stats_snapshot?.auto_eval || null,
         })
       } catch (e) {
         console.error('[Rapport] load error', e)

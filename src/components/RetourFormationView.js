@@ -141,6 +141,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const [comprehensionNote, setComprehensionNote]     = useState('')
   const [appreciation, setAppreciation]         = useState(null)
   const [commentaireLibre, setCommentaireLibre] = useState('')
+  const [autoEval, setAutoEval]                 = useState(null)
   const [saving, setSaving]                     = useState(false)
   const [loading, setLoading]                   = useState(true)
   const [correcting, setCorrecting]             = useState(null) // 'attitude' | 'participation' | 'comprehension' | 'commentaire'
@@ -153,12 +154,14 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [moduleRows, reportRow, answerRows] = await Promise.all([
+      const [moduleRows, reportRow, answerRows, autoEvalRow] = await Promise.all([
         sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(name)}`),
         // Charge le rapport le plus récent pour ce formé+formateur, quelle que soit la semaine
         sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc&limit=1`),
         // Fallback : quiz_answers si module_results absent (formé parti avant l'écran de résultats)
         sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(name)}`),
+        // Auto-évaluation la plus récente de ce formé (indépendante du formateur)
+        sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=eq.__auto_eval__&order=updated_at.desc&limit=1`),
       ])
       const byModule = {}
       for (const r of moduleRows || []) {
@@ -198,6 +201,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       setAppreciation(snap.appreciation || null)
       setCommentaireLibre(snap.commentaire_libre || '')
       setMailSentAt(snap.mail_sent_at || null)
+      setAutoEval(autoEvalRow?.[0]?.stats_snapshot?.auto_eval || null)
     } catch (e) {
       console.error('[RetourFormation] loadData', e)
     } finally {
@@ -312,6 +316,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
     comprehensionNote,
     appreciation,
     commentaireLibre,
+    autoEval,
   }
 
   const reportUrl = typeof window !== 'undefined'
@@ -1590,6 +1595,7 @@ function HistoriqueFiche({ record, autoEvalSnap, onBack }) {
     comprehensionNote:  snap.comprehension_note    || '',
     appreciation:       snap.appreciation          || null,
     commentaireLibre:   snap.commentaire_libre     || '',
+    autoEval:           autoEvalSnap?.auto_eval     || null,
   }
 
   return (

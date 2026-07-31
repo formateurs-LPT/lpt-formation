@@ -26,6 +26,22 @@ function computeRate(assessments) {
   return Math.round((score / vals.length) * 100)
 }
 
+function toStars(v) {
+  if (typeof v === 'number') return v
+  if (v === 'maitrise')    return 5
+  if (v === 'en-cours')    return 3
+  if (v === 'notions')     return 2
+  if (v === 'non-compris') return 1
+  return 0
+}
+
+function starColor(n) {
+  if (n >= 5) return '#16a34a'
+  if (n >= 4) return '#65a30d'
+  if (n >= 3) return '#d97706'
+  return '#dc2626'
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
@@ -91,11 +107,18 @@ export default function CompteRenduManager({ data }) {
     comprehensionNote,
     appreciation,
     commentaireLibre,
+    autoEval,
   } = data || {}
 
   const themes = categoryKey === 'belgique' ? THEMES_BELGIQUE : THEMES_FRANCE
   const rate = computeRate(assessments)
   const appMeta = APPRECIATION_META[appreciation]
+
+  const autoEvalThemes = Object.keys(autoEval?.theme_self_assessments || {})
+    .map(t => ({ themeId: t, stars: toStars(autoEval.theme_self_assessments[t]) }))
+    .filter(r => r.stars > 0)
+    .sort((a, b) => a.stars - b.stars)
+  const autoAccomp = autoEval?.accompagnement_themes || []
 
   const maitrise   = themes.filter(t => assessments[t] === 'maitrise')
   const enCours    = themes.filter(t => assessments[t] === 'en-cours')
@@ -230,6 +253,50 @@ export default function CompteRenduManager({ data }) {
             </div>
           )}
         </div>
+
+        {/* ── Auto-évaluation du formé ── */}
+        {(autoEvalThemes.length > 0 || autoAccomp.length > 0) && (
+          <div>
+            <SectionHead accent="#0089ba">Auto-évaluation du formé</SectionHead>
+            {autoEvalThemes.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: autoAccomp.length > 0 ? 18 : 0 }}>
+                {autoEvalThemes.map(({ themeId, stars }) => (
+                  <div key={themeId} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                    padding: '8px 12px', borderRadius: 10, background: '#f8fafc', border: '1px solid #f1f5f9',
+                  }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{MODULE_DATA[themeId]?.label || themeId}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                      <span style={{ fontSize: 13, letterSpacing: 1 }}>
+                        {[1,2,3,4,5].map(s => (
+                          <span key={s} style={{ opacity: s <= stars ? 1 : 0.25, filter: s <= stars ? 'none' : 'grayscale(1)' }}>⭐</span>
+                        ))}
+                      </span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: starColor(stars), minWidth: 24, textAlign: 'right' }}>{stars}/5</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {autoAccomp.length > 0 && (
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#0369a1', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                  👥 Le formé a demandé de l'accompagnement sur
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {autoAccomp.map(t => (
+                    <span key={t} style={{
+                      padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                      background: 'rgba(0,137,186,0.1)', color: '#0089ba', border: '1px solid rgba(0,137,186,0.25)',
+                    }}>
+                      {MODULE_DATA[t]?.label || t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Observations formateur ── */}
         {(attitudeStatus || participationStatus || comprehensionStatus) && (
