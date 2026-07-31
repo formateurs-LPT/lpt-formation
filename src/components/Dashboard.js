@@ -583,6 +583,81 @@ const APP_UPDATES = [
           'Onglet global "Avis formation" multi-semaines sur le dashboard formateur',
         ],
       },
+      {
+        title: 'Quiz — système de correction généralisé partout',
+        accent: '#fbbf24',
+        tag: 'Gros chantier',
+        items: [
+          'Le système "révéler la correction" du quiz Bases de l\'optique (auto-révélation dès que tout le monde a répondu + bouton manuel + stats + liste confidentielle des mauvaises réponses) est maintenant présent sur TOUS les quiz : Offres, PDM, Verre progressif, Types de verres, Montures, Ajustages, Retraits, Quiz J1, Quiz final, Remboursement France / tiers payant',
+          'Fonctionne aussi pour les questions à réponse libre (texte), pas seulement les QCM, partout',
+          'Sur les questions avec ordonnance/visuel, le formateur peut le rediffuser sur le diffuseur pendant la correction',
+          'Nouveaux types de questions réutilisables dans tous les quiz : plusieurs cases à remplir en une fois (ex. "citez les 5 points clés"), et questions "par paires" ligne par ligne (ex. "problème de vue → définition")',
+          'Sur les questions à double sélection (qcm-multi), impossible d\'envoyer sa réponse tant que le bon nombre de cases n\'est pas coché, partout',
+          'Fix : sur le diffuseur, la bonne réponse ne se surlignait jamais pour les questions à double sélection',
+        ],
+      },
+      {
+        title: 'Module Montures',
+        accent: '#00abe9',
+        tag: 'Nouveau',
+        items: [
+          'Nouvelle première page : question ouverte "d\'après vous, les montures sont fabriquées avec quels matériaux ?" — réponses des formés diffusées en direct sur TV, même système que Culture d\'entreprise',
+          'Suppression du quiz de fin de module',
+          'Page injecté : rappel du lien avec les lunettes à 10 € fabriquées en 10 minutes',
+        ],
+      },
+      {
+        title: 'Module Types de verres',
+        accent: '#7c3aed',
+        tag: 'Contenu & fix',
+        items: [
+          'Délais de fabrication (24/48h France vs 9 jours Rodenstock) affichés sur le diffuseur pour le verre progressif',
+          'Questions retravaillées : origine des verres 9 jours, client à recommander en progressif, délai en deux cases (magasins parisiens / autres magasins), vrai-faux presbytie',
+          'Fix : page blanche (plantage) au chargement d\'une des questions retravaillées',
+          'Fix : bonne réponse corrigée sur la question du client myope/astigmate de 28 ans (Faux, pas Vrai)',
+        ],
+      },
+      {
+        title: 'Quiz Jour 1',
+        accent: '#a78bfa',
+        tag: 'Contenu & fix',
+        items: [
+          'Question fondateurs : ne valide que si Paul Morlet ET Xavier Niel sont cités ensemble',
+          'Question "5 points clés" et "4 problèmes de vue" passées aux nouveaux systèmes à cases multiples / par paires',
+          'Question puissances maximales : remplacée par deux roulettes tactiles (positif / négatif) au lieu d\'une réponse texte',
+          'Fix : page blanche (plantage) sur ces nouvelles questions',
+        ],
+      },
+      {
+        title: 'Bases de l\'optique — page "Lire une ordonnance"',
+        accent: '#f472b6',
+        tag: 'Fix & nouveau',
+        items: [
+          'Le téléphone du formé est maintenant parfaitement synchronisé avec le diffuseur (avant, tout apparaissait d\'un coup côté formé sans attendre le formateur)',
+          'Bouton "Expliquer le sens du cylindre et de l\'axe" déplacé — il était caché derrière la barre de navigation',
+          'Nouveau : un rapporteur (0° à 180°) sur le diffuseur suit en direct l\'axe déplacé par le formateur pendant cette démo',
+          'Sens des roulettes de saisie (sphère/cylindre) inversé : le moins en haut, le plus en bas',
+        ],
+      },
+      {
+        title: 'Exercice "saisie interactive" (3 cas)',
+        accent: '#34d399',
+        tag: 'Amélioration',
+        items: [
+          'Une fois la réponse vérifiée, elle est verrouillée (impossible de la modifier) et l\'exercice passe automatiquement au cas suivant après quelques secondes',
+          'Le comptage se fait par cas juste/faux plutôt que par champ, et les messages n\'affichent plus de scores chiffrés',
+          'Mise en page corrigée pour que le bouton reste toujours accessible sans avoir à faire défiler l\'écran (risque de modifier une roulette par erreur en descendant)',
+        ],
+      },
+      {
+        title: 'Questions ouvertes des modules (hors quiz)',
+        accent: '#f59e0b',
+        tag: 'Fix',
+        items: [
+          'Freins à l\'achat, Prix moyen, Promesse, Ventes opticien, Montures/matériaux, Retour terrain et Jeu d\'objections (Verre progressif) : les réponses ne s\'affichent plus automatiquement sur le diffuseur dès que tout le monde a répondu',
+          'Il faut désormais que le formateur clique sur "Afficher les réponses sur TV" pour garder la main sur le bon moment de révélation',
+        ],
+      },
     ],
   },
   {
