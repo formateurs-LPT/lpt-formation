@@ -950,6 +950,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
   const [pointsRankOf, setPointsRankOf] = useState(0)
   const [mailSentMap, setMailSentMap] = useState({}) // { name: dateISO }
   const [weekDateMap, setWeekDateMap] = useState({}) // { name: week_date du dernier rapport }
+  const [reportSnapMap, setReportSnapMap] = useState({}) // { name: stats_snapshot complet } — pour fusionner sans écraser
   const weekDate = getWeekDate()
   const catMeta  = CATEGORY_META[categoryKey] || {}
 
@@ -983,6 +984,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
       }
       setMailSentMap(sentMap)
       setWeekDateMap(wdMap)
+      setReportSnapMap(reportMap)
 
       // Construit byModule pour un formé en combinant module_results + quiz_answers
       const buildByModule = (modRows, ansRows) => {
@@ -1123,6 +1125,30 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
   const handleSendGroup = (group) => {
     window.location.href = buildGroupMailto(group)
     setSentKeys(prev => new Set([...prev, group.emailKey]))
+    const now = new Date().toISOString()
+    setMailSentMap(prev => {
+      const next = { ...prev }
+      for (const e of group.entrees) next[e.fullName || `${e.nom} ${e.prenom}`.trim()] = now
+      return next
+    })
+    // Persiste mail_sent_at en base sans écraser le reste du retour déjà enregistré
+    Promise.all(group.entrees.map(e => {
+      const nm = e.fullName || `${e.nom} ${e.prenom}`.trim()
+      const wd = weekDateMap[nm] || weekDate
+      const snap = reportSnapMap[nm] || {}
+      return sbUpsert(
+        'formation_reports',
+        {
+          collaborateur: nm,
+          week_date: wd,
+          trainer_name: trainerName,
+          status: 'draft',
+          stats_snapshot: { ...snap, mail_sent_at: now },
+          updated_at: now,
+        },
+        'collaborateur,week_date,trainer_name'
+      )
+    })).catch(e => console.error('[RetourFormation] handleSendGroup', e))
   }
 
   useEffect(() => {
@@ -1191,6 +1217,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
               )}
               {sendAllGroups.map(group => {
                 const sent = sentKeys.has(group.emailKey)
+                  || group.entrees.every(e => mailSentMap[e.fullName || `${e.nom} ${e.prenom}`.trim()])
                 const getPrenom = e => e.prenom || (e.fullName || `${e.nom} ${e.prenom}`).trim().split(' ')[0]
                 const prenoms = group.entrees.map(getPrenom)
                 return (
