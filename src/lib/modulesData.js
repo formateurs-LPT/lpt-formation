@@ -182,6 +182,7 @@ export const OPTIQUE_PAGES = [
     sousTitre: 'Travaillons maintenant sur de vraies ordonnances',
     icon: '🔬',
     color: '#00abe9',
+    noAnswerBox: true,
   },
   {
     id: 'saisie-ordo',
@@ -190,6 +191,15 @@ export const OPTIQUE_PAGES = [
     sousTitre: 'Saisissez les corrections dans l\'app',
     icon: '⌨️',
     color: '#00abe9',
+  },
+  {
+    id: 'entrainement-ordo-reel',
+    type: 'pause',
+    titre: 'Entraînement à la lecture d\'ordonnances',
+    sousTitre: 'Le formateur vous fait travailler sur de vraies ordonnances, sur le Back End',
+    icon: '📋',
+    color: '#00abe9',
+    noAnswerBox: true,
   },
   {
     id: 'entrainement-oral',
@@ -384,6 +394,30 @@ export const SAISIE_EXERCISES = [
     og: { sphere:  1.50, cylindre: -0.25, axe: 150 },
     add: 1.50,
   },
+  // ── Round 2 (mêmes principes, nouveaux cas) ──
+  {
+    id: 'ex4', label: 'Cas 4',
+    od: { sphere: -2.00, cylindre: -0.75, axe:  90 },
+    og: { sphere: -1.75, cylindre: -0.50, axe: 160 },
+    add: null,
+  },
+  {
+    id: 'ex5', label: 'Cas 5',
+    od: { sphere:  2.50, cylindre:  0.00, axe:   0 },
+    og: { sphere:  2.75, cylindre: -0.25, axe:  45 },
+    add: null,
+  },
+  {
+    id: 'ex6', label: 'Cas 6',
+    od: { sphere: -0.50, cylindre: -1.25, axe:  60 },
+    og: { sphere: -0.75, cylindre: -1.00, axe: 120 },
+    add: 2.00,
+  },
+]
+
+export const SAISIE_ROUNDS = [
+  { round: 1, caseIndexes: [0, 1, 2] },
+  { round: 2, caseIndexes: [3, 4, 5] },
 ]
 
 // ── Données partagées page 3 ──────────────────────────────────────

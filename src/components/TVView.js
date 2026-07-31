@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE } from '@/lib/modulesData'
+import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, getRoomSharedState, setRoomSharedState } from '@/lib/supabase'
 import { isTrainerAccount } from '@/lib/participantNames'
@@ -2118,14 +2118,65 @@ function TVPrescLine({ eye }) {
   return <span>{parts.join(' ')}</span>
 }
 
+// ── TV Saisie Interactive — phase correction (round 1 ou 2) ───────
+function TVSaisieCorrection({ moduleLabel, round, sessionCode }) {
+  const [results, setResults] = useState([])
+
+  useEffect(() => {
+    const poll = async () => {
+      const rows = await sbSelect('module_results', `module_id=eq.optique-saisie-r${round}`)
+      setResults(rows || [])
+    }
+    poll()
+    const t = setInterval(poll, 2500)
+    return () => clearInterval(t)
+  }, [round, sessionCode])
+
+  const wrongCount = results.filter(r => r.score < r.score_total).length
+  const perfectCount = results.length - wrongCount
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32 }}>
+      <div style={{ position: 'absolute', top: 28, left: 48, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+        <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
+      </div>
+      <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 24px', fontSize: 14, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+        Correction — Round {round}
+      </div>
+      <div style={{ display: 'flex', gap: 40 }}>
+        <div style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 20, padding: '24px 48px', textAlign: 'center' }}>
+          <div style={{ fontSize: 56, fontWeight: 900, color: '#4ade80' }}>{perfectCount}</div>
+          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 6 }}>formé{perfectCount > 1 ? 's' : ''} sans erreur</div>
+        </div>
+        <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 20, padding: '24px 48px', textAlign: 'center' }}>
+          <div style={{ fontSize: 56, fontWeight: 900, color: '#f87171' }}>{wrongCount}</div>
+          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 6 }}>formé{wrongCount > 1 ? 's' : ''} avec au moins une erreur</div>
+        </div>
+      </div>
+      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.3)' }}>La correction détaillée est sur l&apos;écran du formateur</div>
+    </div>
+  )
+}
+
 // ── TV Saisie Interactive (type = saisie-interactive) ─────────────
-function TVSaisieInteractive({ page, pageIndex, total, moduleLabel }) {
+function TVSaisieInteractive({ page, pageIndex, total, moduleLabel, saisieStage, sessionCode }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     setVisible(false)
     const t = setTimeout(() => setVisible(true), 100)
     return () => clearTimeout(t)
   }, [page.id])
+
+  const round = (saisieStage === 'r2-entry' || saisieStage === 'r2-correction') ? 2 : 1
+  const isCorrection = saisieStage === 'r1-correction' || saisieStage === 'r2-correction'
+  const caseIndexes = (SAISIE_ROUNDS.find(r => r.round === round) || SAISIE_ROUNDS[0]).caseIndexes
+  const roundExercises = caseIndexes.map(i => SAISIE_EXERCISES[i])
+
+  if (isCorrection) {
+    return <TVSaisieCorrection moduleLabel={moduleLabel} round={round} sessionCode={sessionCode} />
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
@@ -2155,7 +2206,7 @@ function TVSaisieInteractive({ page, pageIndex, total, moduleLabel }) {
         {/* Badge */}
         <div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)', borderRadius: 20, padding: '5px 18px', fontSize: 13, fontWeight: 700, color: '#00abe9' }}>
-            ⌨️&nbsp; Exercice pratique
+            ⌨️&nbsp; Exercice pratique · Round {round}
           </div>
           <h2 style={{ fontSize: 36, fontWeight: 800, color: '#fff', marginTop: 10, marginBottom: 4 }}>{page.titre}</h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.35)' }}>Saisissez ces corrections depuis votre téléphone</p>
@@ -2163,7 +2214,7 @@ function TVSaisieInteractive({ page, pageIndex, total, moduleLabel }) {
 
         {/* 3 cas côte à côte */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, flex: 1 }}>
-          {SAISIE_EXERCISES.map((ex, i) => (
+          {roundExercises.map((ex, i) => (
             <div key={ex.id} style={{
               background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
               borderTop: '4px solid #00abe9', borderRadius: 20, padding: '28px 28px 24px',
@@ -6281,7 +6332,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, sessionCode, onAmeliProClick }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, saisieStage, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, sessionCode, onAmeliProClick }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -6319,7 +6370,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'offres-pack-plan')   return <TVOffresPackPlan step={offresPackPlanStep} />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} ordoRevealStep={ordoRevealStep} audioUnlocked={audioUnlocked} ordoHeadlightDemo={ordoHeadlightDemo} ordoHeadlightCyl={ordoHeadlightCyl} ordoHeadlightAxe={ordoHeadlightAxe} />
-  if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
+  if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} saisieStage={saisieStage} sessionCode={sessionCode} />
   if (page.type === 'entrainement-oral')  return <TVEntrainementOral  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
 
   // Entreprise module types — tous dispatchés pour éviter le VerreAnime
@@ -8176,6 +8227,7 @@ export default function TVView() {
   const [ordoHeadlightDemo, setOrdoHeadlightDemo] = useState(false)
   const [ordoHeadlightCyl, setOrdoHeadlightCyl]   = useState(0)
   const [ordoHeadlightAxe, setOrdoHeadlightAxe]   = useState(0)
+  const [saisieStage, setSaisieStage]             = useState('r1-entry')
   const [audioUnlocked, setAudioUnlocked]     = useState(false)
   const [freinsResponses, setFreinsResponses]           = useState({})
   const [revealFreins, setRevealFreins]                 = useState(false)
@@ -8249,6 +8301,7 @@ export default function TVView() {
     setOrdoHeadlightDemo(!!sharedState.ordo_headlight_demo)
     setOrdoHeadlightCyl(sharedState.ordo_headlight_cyl ?? 0)
     setOrdoHeadlightAxe(sharedState.ordo_headlight_axe ?? 0)
+    setSaisieStage(sharedState.saisie_stage || 'r1-entry')
     setFreinsResponses(sharedState.freins_responses || {})
     setRevealFreins(!!sharedState.reveal_freins)
     setPrixResponses(sharedState.prix_responses || {})
@@ -8533,6 +8586,7 @@ export default function TVView() {
             ordoHeadlightDemo={ordoHeadlightDemo}
             ordoHeadlightCyl={ordoHeadlightCyl}
             ordoHeadlightAxe={ordoHeadlightAxe}
+            saisieStage={saisieStage}
             audioUnlocked={audioUnlocked}
             freinsResponses={freinsResponses}
             revealFreins={revealFreins}

@@ -2,11 +2,11 @@
 // fix: getActiveSessionCode pour sync TV
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbDelete, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
+import { sbUpdate, sbDelete, sbSelect, getActiveSessionCode, setSharedState, getRoomSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
-import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, OPTIQUE_QUIZ, ENTRAINEMENT_QUESTIONS } from '@/lib/modulesData'
+import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, OPTIQUE_QUIZ, ENTRAINEMENT_QUESTIONS } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import { useIsMobile } from '@/lib/useIsMobile'
@@ -917,11 +917,128 @@ function PrescLine({ eye }) {
 // ── Page 5 : Saisie interactive (vue formateur) ───────────────────
 function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage, quizLaunched, onLaunchQuiz }) {
   const [visible, setVisible] = useState(false)
+  const [stage, setStage] = useState('r1-entry') // r1-entry | r1-correction | r2-entry | r2-correction
+  const [onlineCount, setOnlineCount] = useState(0)
+  const [results, setResults] = useState([]) // module_results rows pour le round courant
+  const autoAdvancedRef = useRef(new Set()) // évite de redéclencher l'auto-passage à la correction
+
   useEffect(() => {
     setVisible(false)
     const t = setTimeout(() => setVisible(true), 100)
     return () => clearTimeout(t)
   }, [page.id])
+
+  useEffect(() => {
+    setSharedState({ saisie_stage: 'r1-entry' }).catch(() => {})
+    return () => { setSharedState({ saisie_stage: 'r1-entry' }).catch(() => {}) }
+  }, [page.id])
+
+  const round = (stage === 'r2-entry' || stage === 'r2-correction') ? 2 : 1
+  const isEntry = stage === 'r1-entry' || stage === 'r2-entry'
+  const caseIndexes = (SAISIE_ROUNDS.find(r => r.round === round) || SAISIE_ROUNDS[0]).caseIndexes
+  const roundExercises = caseIndexes.map(i => SAISIE_EXERCISES[i])
+  const moduleIdRound = `optique-saisie-r${round}`
+
+  const goStage = async (next) => {
+    setStage(next)
+    autoAdvancedRef.current = new Set()
+    await setSharedState({ saisie_stage: next }).catch(() => {})
+  }
+
+  // Poll participants connectés + résultats du round courant
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const [n, rows] = await Promise.all([
+          fetchOnlineParticipantCount(getActiveSessionCode()),
+          sbSelect('module_results', `module_id=eq.${moduleIdRound}`),
+        ])
+        setOnlineCount(n || 0)
+        setResults(rows || [])
+      } catch { /* best-effort */ }
+    }
+    poll()
+    const t = setInterval(poll, 2500)
+    return () => clearInterval(t)
+  }, [moduleIdRound])
+
+  // Auto-passage à la correction dès que tout le monde a fini les 3 cas du round
+  useEffect(() => {
+    if (!isEntry || onlineCount === 0) return
+    if (autoAdvancedRef.current.has(stage)) return
+    if (results.length >= onlineCount) {
+      autoAdvancedRef.current.add(stage)
+      goStage(stage === 'r1-entry' ? 'r1-correction' : 'r2-correction')
+    }
+  }, [results.length, onlineCount, isEntry, stage]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const wrongCount = results.filter(r => r.score < r.score_total).length
+  const perfectCount = results.length - wrongCount
+
+  // ── Phase correction (round 1 ou 2) ──
+  if (!isEntry) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+            <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · Les bases de l&apos;optique</span>
+          </div>
+          <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Quitter</button>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28, padding: '20px 48px' }}>
+          <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 22px', fontSize: 12, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+            Correction — Round {round}
+          </div>
+
+          <div style={{ display: 'flex', gap: 32 }}>
+            <div style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 18, padding: '18px 40px', textAlign: 'center' }}>
+              <div style={{ fontSize: 44, fontWeight: 900, color: '#4ade80' }}>{perfectCount}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4 }}>sans erreur</div>
+            </div>
+            <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 18, padding: '18px 40px', textAlign: 'center' }}>
+              <div style={{ fontSize: 44, fontWeight: 900, color: '#f87171' }}>{wrongCount}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4 }}>avec au moins une erreur</div>
+            </div>
+          </div>
+
+          {/* Détail nominatif — visible uniquement côté formateur */}
+          <div style={{ width: '100%', maxWidth: 560, display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '32vh', overflowY: 'auto' }}>
+            {[...results].sort((a, b) => (a.score < a.score_total ? -1 : 1) - (b.score < b.score_total ? -1 : 1)).map(r => {
+              const ok = r.score >= r.score_total
+              return (
+                <div key={r.collaborateur} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 16px', borderRadius: 10,
+                  background: ok ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+                  border: `1px solid ${ok ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
+                }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{r.collaborateur}</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: ok ? '#4ade80' : '#f87171' }}>{r.score} / {r.score_total}</span>
+                </div>
+              )
+            })}
+            {results.length === 0 && (
+              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>Aucune réponse reçue.</div>
+            )}
+          </div>
+
+          <button
+            onClick={() => stage === 'r1-correction' ? goStage('r2-entry') : onNext()}
+            style={{
+              background: 'linear-gradient(135deg, #0089ba, #00abe9)', border: 'none', color: '#fff',
+              padding: '16px 44px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 6px 24px rgba(0,171,233,0.45)',
+            }}
+          >
+            {stage === 'r1-correction' ? 'Round 2 →' : 'Suivant →'}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{
@@ -960,7 +1077,7 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
         {/* Titre */}
         <div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)', borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-            <span style={{ fontSize: 15 }}>⌨️</span> Exercice pratique
+            <span style={{ fontSize: 15 }}>⌨️</span> Exercice pratique · Round {round}
           </div>
           <h1 style={{ fontSize: 30, fontWeight: 800, color: '#fff', lineHeight: 1.1, margin: 0 }}>{page.titre}</h1>
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 6 }}>
@@ -970,7 +1087,7 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
 
         {/* 3 cas exercice */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
-          {SAISIE_EXERCISES.map((ex, i) => (
+          {roundExercises.map((ex, i) => (
             <div key={ex.id} style={{
               background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)',
               borderRadius: 20, padding: '24px 24px 20px', display: 'flex', flexDirection: 'column', gap: 16,
@@ -1016,14 +1133,30 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
           ))}
         </div>
 
-        {/* Instruction */}
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 10, alignSelf: 'flex-start',
-          background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)',
-          borderRadius: 30, padding: '12px 24px',
-        }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'optiqueHalo 1.5s ease-in-out infinite' }} />
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>Les participants saisissent en ce moment sur leur téléphone</span>
+        {/* Instruction + progression live */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)',
+            borderRadius: 30, padding: '12px 24px',
+          }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'optiqueHalo 1.5s ease-in-out infinite' }} />
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>
+              {results.length} / {onlineCount || '?'} formé{results.length > 1 ? 's' : ''} ont terminé les 3 cas
+            </span>
+          </div>
+          {results.length > 0 && (
+            <button
+              onClick={() => goStage(stage === 'r1-entry' ? 'r1-correction' : 'r2-correction')}
+              style={{
+                background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.4)',
+                color: '#fbbf24', padding: '10px 20px', borderRadius: 20,
+                fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              Voir la correction maintenant →
+            </button>
+          )}
         </div>
       </div>
 

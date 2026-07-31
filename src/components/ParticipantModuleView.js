@@ -4,7 +4,7 @@ import Image from 'next/image'
 import LPTSaleApp from '@/components/LPTSaleApp'
 import QuestionBubble from '@/components/QuestionBubble'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, ENTRAINEMENT_QUESTIONS } from '@/lib/modulesData'
+import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, ENTRAINEMENT_QUESTIONS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbUpsert, sbSelect, sbDelete, getParticipantSessionCode, ensureSession, getSharedState, getRoomSharedState, setSharedState, setRoomSharedState, insertOpenAnswer, updateOpenAnswer, setParticipantPage } from '@/lib/supabase'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
@@ -1818,7 +1818,8 @@ function PauseMobile({ page, pageIndex, total, pName }) {
           )}
         </div>
 
-        {/* Zone de réponse */}
+        {/* Zone de réponse — masquée sur les pages sans question réelle */}
+        {!page.noAnswerBox && (
         <div style={{ width: '100%', maxWidth: 420 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
             Votre réponse
@@ -1862,6 +1863,7 @@ function PauseMobile({ page, pageIndex, total, pName }) {
             {sent ? '✓ Envoyée !' : sendError ? '✗ Erreur — réessayez' : sending ? '…' : 'Envoyer'}
           </button>
         </div>
+        )}
       </div>
     </div>
   )
@@ -2233,32 +2235,54 @@ function AxeNumpad({ currentValue, onConfirm, onClose }) {
 }
 
 
-function SaisieInteractiveMobile({ page, pageIndex, total }) {
+const SAISIE_WRONG_MSG = "Ton client ne verra rien avec les corrections que tu as entrées !"
+
+function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
   const initIdx = () => ({
     od: { sph: SPH_ZERO, cyl: CYL_ZERO, axe: AXE_ZERO },
     og: { sph: SPH_ZERO, cyl: CYL_ZERO, axe: AXE_ZERO },
     add: ADD_ZERO,
   })
 
-  const [caseIdx, setCaseIdx] = useState(0)
+  const [stage, setStage] = useState('r1-entry')
+  const round = (stage === 'r2-entry' || stage === 'r2-correction' || stage === 'done') ? 2 : 1
+  const caseIndexes = (SAISIE_ROUNDS.find(r => r.round === round) || SAISIE_ROUNDS[0]).caseIndexes
+
+  const [localCaseIdx, setLocalCaseIdx] = useState(0)
   const [idx, setIdx] = useState(initIdx)
   const [showResult, setShowResult] = useState(false)
   const [results, setResults] = useState(null)
   const [numpadEye, setNumpadEye] = useState(null) // null | 'od' | 'og'
-  const [completed, setCompleted] = useState([false, false, false])
+  const [roundTally, setRoundTally] = useState({ correct: 0, total: 0 })
+  const [roundDone, setRoundDone] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
-  const ex = SAISIE_EXERCISES[caseIdx]
+  // Poll l'étape globale pilotée par le formateur (round + correction en cours)
+  useEffect(() => {
+    let cancelled = false
+    const poll = async () => {
+      try {
+        const state = await getRoomSharedState(getParticipantSessionCode())
+        if (!cancelled) setStage(state?.saisie_stage || 'r1-entry')
+      } catch { /* best-effort */ }
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => { cancelled = true; clearInterval(t) }
+  }, [])
 
-  const resetAll = () => { setIdx(initIdx()); setShowResult(false); setResults(null) }
-  const handleCaseChange = i => {
-    const isUnlocked = i === 0 || completed[i - 1]
-    if (!isUnlocked) return
-    setCaseIdx(i); resetAll()
-  }
-  const goToNextCase = () => {
-    const next = caseIdx + 1
-    if (next < SAISIE_EXERCISES.length) { setCaseIdx(next); resetAll() }
-  }
+  // Nouveau round → on repart de zéro sur les 3 nouveaux cas
+  useEffect(() => {
+    setLocalCaseIdx(0)
+    setIdx(initIdx())
+    setShowResult(false)
+    setResults(null)
+    setRoundTally({ correct: 0, total: 0 })
+    setRoundDone(false)
+  }, [round]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const ex = SAISIE_EXERCISES[caseIndexes[localCaseIdx]]
+  const isLastCase = localCaseIdx === caseIndexes.length - 1
 
   const setEye = (eye, field, val) => {
     setIdx(prev => ({ ...prev, [eye]: { ...prev[eye], [field]: val } }))
@@ -2283,30 +2307,69 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
         cyl: near(CYL_VALS[idx.og.cyl].val, ex.og.cylindre),
         axe: AXE_VALS[idx.og.axe].val === ex.og.axe,
       },
+      // Une addition saisie alors qu'il n'y en a pas sur le cas est une erreur (comparaison à 0)
       add: near(ADD_VALS[idx.add].val, ex.add ?? 0),
     }
     setResults(r)
     setShowResult(true)
-    const fields = [r.od.sph, r.od.cyl, r.od.axe, r.og.sph, r.og.cyl, r.og.axe, ...(ex.add != null ? [r.add] : [])]
-    if (fields.every(Boolean)) {
-      setCompleted(prev => prev.map((c, i) => i === caseIdx ? true : c))
-    }
   }
 
   const hasAdd = ex.add != null
-  const totalFields = hasAdd ? 7 : 6
+  const totalFields = 7 // OD sph/cyl/axe + OG sph/cyl/axe + add (l'add compte toujours, y compris "doit rester à 0")
   const correctCount = results
     ? [results.od.sph, results.od.cyl, results.od.axe,
-       results.og.sph, results.og.cyl, results.og.axe,
-       ...(hasAdd ? [results.add] : [])].filter(Boolean).length
+       results.og.sph, results.og.cyl, results.og.axe, results.add].filter(Boolean).length
     : 0
   const perfect = showResult && correctCount === totalFields
+
+  const handleContinue = async () => {
+    if (submitting) return
+    const newTally = { correct: roundTally.correct + correctCount, total: roundTally.total + totalFields }
+    if (!isLastCase) {
+      setRoundTally(newTally)
+      setLocalCaseIdx(i => i + 1)
+      setIdx(initIdx())
+      setShowResult(false)
+      setResults(null)
+      return
+    }
+    setSubmitting(true)
+    try {
+      const name = (pName || 'Anonyme').trim()
+      await sbUpsert('module_results', {
+        collaborateur: name,
+        pin: generatePin(name),
+        week_date: new Date().toISOString().slice(0, 10),
+        module_id: `${moduleId || 'optique'}-saisie-r${round}`,
+        score: newTally.correct,
+        score_total: newTally.total,
+        xp: newTally.correct * 10,
+        completed_at: new Date().toISOString(),
+      }, 'collaborateur,module_id,week_date')
+    } catch (e) { console.error('[SaisieInteractive] submit', e) }
+    setRoundTally(newTally)
+    setRoundDone(true)
+    setSubmitting(false)
+  }
 
   // Labels de la bonne réponse (pour feedback)
   const corrLabel = {
     od: { sph: SPH_VALS[findSphIdx(ex.od.sphere)]?.label || '', cyl: CYL_VALS[findCylIdx(ex.od.cylindre)]?.label || '', axe: `${ex.od.axe}°` },
     og: { sph: SPH_VALS[findSphIdx(ex.og.sphere)]?.label || '', cyl: CYL_VALS[findCylIdx(ex.og.cylindre)]?.label || '', axe: `${ex.og.axe}°` },
-    add: ADD_VALS[Math.round((ex.add ?? 0) / 0.25)]?.label || '',
+    add: ADD_VALS[Math.round((ex.add ?? 0) / 0.25)]?.label || '0,00',
+  }
+
+  // ── Écran d'attente une fois les 3 cas du round envoyés ──
+  if (roundDone) {
+    return (
+      <div style={{ minHeight: '100dvh', background: APP_BG, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center', fontFamily: 'inherit' }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: APP_DARK, marginBottom: 10 }}>Cas envoyés !</div>
+        <div style={{ fontSize: 14, color: '#666' }}>En attente des autres formés…</div>
+        <div style={{ marginTop: 24, width: 32, height: 32, border: `3px solid ${APP_GOLD}33`, borderTop: `3px solid ${APP_GOLD}`, borderRadius: '50%', animation: 'saisieSpin 1s linear infinite' }} />
+        <style>{`@keyframes saisieSpin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )
   }
 
   return (
@@ -2326,26 +2389,25 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
       {/* ── Corps scrollable ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 0' }}>
 
-        {/* Sélecteur de cas */}
+        {/* Progression des 3 cas du round */}
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 8 }}>Quel cas traitez-vous ?</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 8 }}>
+            Round {round} — Cas {localCaseIdx + 1} / {caseIndexes.length}
+          </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            {SAISIE_EXERCISES.map((e, i) => {
-              const isUnlocked = i === 0 || completed[i - 1]
-              const isDone     = completed[i]
-              const isActive   = i === caseIdx
+            {caseIndexes.map((globalI, i) => {
+              const isDone   = i < localCaseIdx
+              const isActive = i === localCaseIdx
               return (
-                <button key={e.id} onPointerDown={() => handleCaseChange(i)} style={{
-                  flex: 1, padding: '10px 4px', borderRadius: 10,
-                  border: `2px solid ${isActive ? APP_GOLD : isDone ? '#22c55e' : isUnlocked ? '#ccc9de' : '#e5e2ef'}`,
+                <div key={globalI} style={{
+                  flex: 1, padding: '10px 4px', borderRadius: 10, textAlign: 'center',
+                  border: `2px solid ${isActive ? APP_GOLD : isDone ? '#22c55e' : '#e5e2ef'}`,
                   background: isActive ? APP_GOLD : isDone ? '#f0fdf4' : '#fff',
-                  color: isActive ? '#fff' : isDone ? '#16a34a' : isUnlocked ? '#555' : '#ccc',
-                  fontSize: 12, fontWeight: 700, cursor: isUnlocked ? 'pointer' : 'default',
-                  fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                  color: isActive ? '#fff' : isDone ? '#16a34a' : '#aaa',
+                  fontSize: 12, fontWeight: 700,
                 }}>
-                  {isDone && !isActive ? '✓ ' : ''}{e.label}{!isUnlocked ? ' 🔒' : ''}
-                </button>
+                  {isDone ? '✓ ' : ''}{SAISIE_EXERCISES[globalI].label}
+                </div>
               )
             })}
           </div>
@@ -2397,14 +2459,14 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
             </div>
           </div>
 
-          {/* Add */}
+          {/* Add — toujours modifiable, même quand le cas n'en a pas (une valeur saisie à tort compte faux) */}
           <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 12, alignItems: 'center' }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: hasAdd ? '#555' : '#aaa' }}>Add</div>
-            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${hasAdd ? APP_GOLD + '88' : '#ddd9ec'}`, overflow: 'hidden', opacity: hasAdd ? 1 : 0.4 }}>
-              <WheelPicker values={ADD_VALS} selectedIdx={idx.add} onChange={hasAdd ? setAdd : () => {}} showResult={showResult && hasAdd} isCorrect={results?.add} correctLabel={corrLabel.add} />
+            <div style={{ fontSize: 13, fontWeight: 500, color: hasAdd ? '#555' : '#aaa' }}>Add{!hasAdd ? ' (aucune)' : ''}</div>
+            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${hasAdd ? APP_GOLD + '88' : '#ddd9ec'}`, overflow: 'hidden' }}>
+              <WheelPicker values={ADD_VALS} selectedIdx={idx.add} onChange={setAdd} showResult={showResult} isCorrect={results?.add} correctLabel={corrLabel.add} />
             </div>
-            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${hasAdd ? APP_GOLD + '88' : '#ddd9ec'}`, overflow: 'hidden', opacity: hasAdd ? 1 : 0.4 }}>
-              <WheelPicker values={ADD_VALS} selectedIdx={idx.add} onChange={hasAdd ? setAdd : () => {}} showResult={showResult && hasAdd} isCorrect={results?.add} correctLabel={corrLabel.add} />
+            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${hasAdd ? APP_GOLD + '88' : '#ddd9ec'}`, overflow: 'hidden' }}>
+              <WheelPicker values={ADD_VALS} selectedIdx={idx.add} onChange={setAdd} showResult={showResult} isCorrect={results?.add} correctLabel={corrLabel.add} />
             </div>
           </div>
         </div>
@@ -2417,13 +2479,13 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
             border: `1px solid ${perfect ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.3)'}`,
             display: 'flex', alignItems: 'center', gap: 14,
           }}>
-            <span style={{ fontSize: 28 }}>{perfect ? '🎉' : '💡'}</span>
+            <span style={{ fontSize: 28 }}>{perfect ? '🎉' : '😬'}</span>
             <div>
               <div style={{ fontSize: 15, fontWeight: 800, color: perfect ? '#16a34a' : '#dc2626' }}>
-                {perfect ? 'Parfait !' : `${correctCount} / ${totalFields}`}
+                {perfect ? "C'est juste !" : `${correctCount} / ${totalFields}`}
               </div>
               <div style={{ fontSize: 12, color: '#555' }}>
-                {perfect ? 'Toutes les corrections sont correctes !' : 'Cases en rouge → bonne valeur affichée.'}
+                {perfect ? 'Toutes les corrections sont correctes.' : SAISIE_WRONG_MSG}
               </div>
             </div>
           </div>
@@ -2441,28 +2503,15 @@ function SaisieInteractiveMobile({ page, pageIndex, total }) {
             letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent',
           }}>VÉRIFIER</button>
         )}
-        {showResult && !perfect && (
-          <button onPointerDown={resetAll} style={{
+        {showResult && (
+          <button onPointerDown={handleContinue} disabled={submitting} style={{
             width: '100%', padding: '16px', borderRadius: 12,
-            background: '#6b5fa6', border: 'none', color: '#fff',
-            fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
-            letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent',
-          }}>↩ RÉESSAYER</button>
-        )}
-        {showResult && perfect && caseIdx < SAISIE_EXERCISES.length - 1 && (
-          <button onPointerDown={goToNextCase} style={{
-            width: '100%', padding: '16px', borderRadius: 12,
-            background: APP_GOLD, border: 'none', color: '#fff',
-            fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
-            letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent',
-          }}>CAS {caseIdx + 2} →</button>
-        )}
-        {showResult && perfect && caseIdx === SAISIE_EXERCISES.length - 1 && (
-          <div style={{
-            width: '100%', padding: '16px', borderRadius: 12, boxSizing: 'border-box',
-            background: 'linear-gradient(135deg, #16a34a, #22c55e)', textAlign: 'center',
-            fontSize: 14, fontWeight: 800, color: '#fff', letterSpacing: 0.5,
-          }}>🎉 EXERCICE TERMINÉ !</div>
+            background: perfect ? APP_GOLD : '#6b5fa6', border: 'none', color: '#fff',
+            fontSize: 14, fontWeight: 800, cursor: submitting ? 'default' : 'pointer', fontFamily: 'inherit',
+            letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent', opacity: submitting ? 0.6 : 1,
+          }}>
+            {submitting ? '…' : isLastCase ? "TERMINER L'EXERCICE" : `CAS ${localCaseIdx + 2} →`}
+          </button>
         )}
       </div>
 
@@ -4184,7 +4233,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
     </div>
   )
 
-  if (page.type === 'saisie-interactive') return <SaisieInteractiveMobile page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'saisie-interactive') return <SaisieInteractiveMobile page={page} pageIndex={pageIndex} total={total} pName={pName} moduleId={moduleId} />
   if (page.type === 'entrainement-oral')  return <EntrainementOralMobile pName={pName} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} entrainementCustomQText={entrainementCustomQText} />
 
   // Freins à l'achat — saisie libre
