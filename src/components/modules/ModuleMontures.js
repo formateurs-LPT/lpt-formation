@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, fetchOpenAnswers, setSharedState } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, fetchOpenAnswers, setSharedState, getRoomSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { NextPagePreview } from '@/lib/trainerPreview'
@@ -65,6 +65,7 @@ const INJECTE_NOTES = [
   { icon: '🎨', title: 'Moins de motifs', text: "Pas découpé dans une plaque — couleur uniforme, pas de veinage ni motif dans la masse. Moins de personnalisation." },
   { icon: '❄️', title: 'Ajustable à froid', text: "Les branches se règlent mais avec moins de liberté que le métal. Pas de plaquettes réglables sur la plupart des modèles." },
   { icon: '🎯', title: 'Cible client', text: "Budget serré, enfants, personnes qui changent souvent ou cassent régulièrement. Argument : rapport qualité/prix imbattable." },
+  { icon: '⚡', title: 'Lien avec le 10 € / 10 min', text: "C'est avec ces montures injectées que nous pouvons proposer des lunettes à 10 € fabriquées en 10 minutes." },
 ]
 
 // ─── Config pages ──────────────────────────────────────────────
@@ -74,6 +75,124 @@ const PAGES_META = [
   { type: 'injecte', title: 'Plastique injecté', subtitle: 'moulé industriel',   color: '#4ade80', frames: INJECTE_FRAMES, infos: INJECTE_INFOS, notes: INJECTE_NOTES },
 ]
 const TOTAL_PAGES = PAGES_META.length
+
+// ─── Page ouverte : matériaux devinés par les formés ─────────
+function MaterialsIntroPage({ onBack, onNext }) {
+  const [responses, setResponses] = useState({})
+  const [revealed, setRevealed] = useState(false)
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const state = await getRoomSharedState(getActiveSessionCode())
+        setResponses(state?.montures_materiaux_responses || {})
+      } catch { /* ignore */ }
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [])
+
+  const entries = Object.entries(responses)
+
+  const clearAll = () => {
+    setSharedState({ montures_materiaux_responses: {} }).catch(() => {})
+    setResponses({})
+  }
+
+  const handleReveal = () => { setRevealed(true); setSharedState({ reveal_montures_materiaux: true }).catch(() => {}) }
+  const clearReveal = () => { setRevealed(false); setSharedState({ reveal_montures_materiaux: false }).catch(() => {}) }
+  const handleNext = () => { clearReveal(); onNext() }
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '24px clamp(14px, 4vw, 48px) 40px',
+    }}>
+      {/* Topbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Connaissances Montures · Question ouverte</span>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={clearAll} style={{
+            background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+            color: '#f87171', borderRadius: 20, padding: '6px 16px',
+            fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}>🗑 Effacer les réponses</button>
+          <button onClick={onBack} style={{
+            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)',
+            padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}>✕ Quitter</button>
+        </div>
+      </div>
+
+      {/* Question */}
+      <div style={{ marginBottom: 36 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+          Question ouverte · En direct
+        </div>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1.35, maxWidth: 720 }}>
+          D&apos;après vous, les montures sont fabriquées avec quels matériaux ?
+        </h1>
+      </div>
+
+      {/* Réponses */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '48vh', overflowY: 'auto', paddingRight: 4, flex: 1 }}>
+        {entries.length === 0 ? (
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, fontStyle: 'italic', padding: '12px 0' }}>
+            En attente des réponses des participants…
+          </div>
+        ) : entries.map(([pName, resp], i) => (
+          <div key={pName} style={{
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            borderLeft: `3px solid ${BUBBLE_COLORS[i % BUBBLE_COLORS.length]}`,
+            borderRadius: 12, padding: '12px 18px',
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 700, minWidth: 80, paddingTop: 2, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length] }}>{pName}</span>
+            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{resp.text}</span>
+          </div>
+        ))}
+      </div>
+
+      {entries.length > 0 && (
+        <div style={{ marginTop: 16, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
+          {entries.length} réponse{entries.length > 1 ? 's' : ''} reçue{entries.length > 1 ? 's' : ''}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        {!revealed ? (
+          <button onClick={handleReveal} disabled={entries.length === 0} style={{
+            background: entries.length > 0 ? 'linear-gradient(135deg, #00abe9, #0089ba)' : 'rgba(255,255,255,0.08)',
+            border: 'none', borderRadius: 14, padding: '14px 28px',
+            color: '#fff', fontSize: 15, fontWeight: 800,
+            cursor: entries.length > 0 ? 'pointer' : 'default',
+            fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 10,
+            boxShadow: entries.length > 0 ? '0 4px 20px rgba(0,171,233,0.35)' : 'none',
+          }}>📺 Afficher les réponses sur TV</button>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ background: 'rgba(0,171,233,0.12)', border: '1.5px solid rgba(0,171,233,0.4)', borderRadius: 14, padding: '12px 22px', color: '#00abe9', fontSize: 14, fontWeight: 700 }}>
+              ✅ Réponses affichées sur le diffuseur
+            </div>
+            <button onClick={clearReveal} style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '10px 16px', color: '#f87171', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Masquer</button>
+          </div>
+        )}
+        <button onClick={handleNext} style={{
+          background: 'linear-gradient(135deg, #00abe9, #0089ba)', border: 'none', color: '#fff',
+          padding: '11px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          boxShadow: '0 5px 20px rgba(0,171,233,0.4)',
+        }}>Suivant →</button>
+      </div>
+    </div>
+  )
+}
 
 // ─── Composant page générique (formateur) ────────────────────
 function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage, onTerminate, quizLaunched, onLaunchQuiz, priceRevealed, onRevealPrice }) {
@@ -527,7 +646,7 @@ export default function ModuleMontures({ pName, onBack, onTerminate }) {
   }
 
   const handleNext = async () => {
-    if (page >= TOTAL_PAGES - 1) return
+    if (page >= TOTAL_PAGES) return
     const next = page + 1
     await sbUpdate('sessions', { active_module: 'montures', module_page: next }, 'code=eq.' + getActiveSessionCode())
     setPriceRevealed(false)
@@ -546,7 +665,7 @@ export default function ModuleMontures({ pName, onBack, onTerminate }) {
 
   const handleBack = async () => {
     try {
-      await setSharedState({ montures_prix_revealed: false }).catch(() => {})
+      await setSharedState({ montures_prix_revealed: false, reveal_montures_materiaux: false }).catch(() => {})
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
     } catch { /* best-effort */ }
     onBack()
@@ -573,7 +692,7 @@ export default function ModuleMontures({ pName, onBack, onTerminate }) {
 
   const handleTerminateModule = async () => {
     try {
-      await setSharedState({ montures_prix_revealed: false }).catch(() => {})
+      await setSharedState({ montures_prix_revealed: false, reveal_montures_materiaux: false }).catch(() => {})
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
     } catch { /* best-effort */ }
     ;(onTerminate ?? onBack)()
@@ -594,19 +713,24 @@ export default function ModuleMontures({ pName, onBack, onTerminate }) {
     )
   }
 
-  const nextMeta = page < TOTAL_PAGES - 1 ? PAGES_META[page + 1] : null
+  if (page === 0) {
+    return <MaterialsIntroPage onBack={handleBack} onNext={handleNext} />
+  }
+
+  const meta = PAGES_META[page - 1]
+  const nextMeta = page < TOTAL_PAGES ? PAGES_META[page] : null
   const nextPage = nextMeta ? { type: `montures-${nextMeta.type}`, color: nextMeta.color, label: nextMeta.title } : null
 
   return (
     <MonturePage
-      meta={PAGES_META[page]}
+      meta={meta}
       onBack={handleBack}
       onPrev={handlePrev}
       onNext={handleNext}
-      isFirst={page === 0}
-      isLast={page >= TOTAL_PAGES - 1}
-      pageIndex={page}
-      total={TOTAL_PAGES}
+      isFirst={false}
+      isLast={page >= TOTAL_PAGES}
+      pageIndex={page - 1}
+      total={PAGES_META.length}
       nextPage={nextPage}
       onTerminate={handleTerminateModule}
       quizLaunched={quizLaunched}

@@ -578,18 +578,22 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 400, marginBottom: 24 }}>
         {values.map((val, i) => (
-          <input
-            key={i}
-            value={val}
-            onChange={e => setField(i, e.target.value)}
-            placeholder={`Élément ${i + 1}`}
-            style={{
-              width: '100%', padding: '14px 16px', borderRadius: 14,
-              border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)',
-              color: '#fff', fontSize: 15, fontFamily: 'inherit', outline: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
+          <div key={i}>
+            {q.fieldLabels?.[i] && (
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>{q.fieldLabels[i]}</div>
+            )}
+            <input
+              value={val}
+              onChange={e => setField(i, e.target.value)}
+              placeholder={q.fieldLabels?.[i] || `Élément ${i + 1}`}
+              style={{
+                width: '100%', padding: '14px 16px', borderRadius: 14,
+                border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)',
+                color: '#fff', fontSize: 15, fontFamily: 'inherit', outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
         ))}
       </div>
       <button onClick={handleSubmit} disabled={!allFilled || saving} style={{
@@ -3139,6 +3143,119 @@ function PromesseInputMobile({ page, pName }) {
   )
 }
 
+// ── Montures : matériaux — saisie libre participant ────────────────
+function MonturesMateriauxMobile({ page, pName }) {
+  const [text, setText]               = useState('')
+  const [submitted, setSubmitted]     = useState(false)
+  const [submittedText, setSubmittedText] = useState('')
+  const [sending, setSending]         = useState(false)
+  const [saveError, setSaveError]     = useState(false)
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return
+    setSending(true)
+    setSaveError(false)
+    try {
+      const x = Math.floor(Math.random() * 65) + 3
+      const y = Math.floor(Math.random() * 38) + 42
+      const ok = await mergeRoomSharedField(
+        getParticipantSessionCode(),
+        'montures_materiaux_responses',
+        pName,
+        { text: text.trim(), x, y }
+      )
+      if (!ok) {
+        setSaveError(true)
+        return
+      }
+      setSubmittedText(text.trim())
+      setSubmitted(true)
+    } catch {
+      setSaveError(true)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const handleModify = () => {
+    setText(submittedText)
+    setSubmitted(false)
+  }
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '52px 24px 40px',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38}
+        style={{ objectFit: 'contain', marginBottom: 36 }} />
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
+        Question ouverte
+      </div>
+      <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.45, marginBottom: 32 }}>
+        {page.titre}
+      </h2>
+
+      {submitted ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{
+            background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)',
+            borderRadius: 16, padding: '16px 20px',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#4ade80', marginBottom: 8 }}>✓ Réponse envoyée</div>
+            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{submittedText}</div>
+          </div>
+          <button onClick={handleModify} style={{
+            background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.3)',
+            color: '#00abe9', borderRadius: 14, padding: '14px',
+            fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}>✏️ Modifier ma réponse</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Tapez votre réponse ici…"
+            rows={5}
+            style={{
+              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 16, padding: '16px', color: '#fff', fontSize: 16,
+              fontFamily: 'inherit', resize: 'none', outline: 'none', lineHeight: 1.5,
+              WebkitAppearance: 'none',
+            }}
+          />
+          {saveError && (
+            <div style={{
+              background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
+              borderRadius: 12, padding: '12px 16px', fontSize: 14, color: '#fca5a5', textAlign: 'center',
+            }}>
+              Enregistrement impossible. Réessayez ou prévenez le formateur.
+            </div>
+          )}
+          <button
+            onClick={handleSend}
+            disabled={!text.trim() || sending}
+            style={{
+              background: text.trim() ? '#00abe9' : 'rgba(255,255,255,0.1)',
+              border: 'none', borderRadius: 14, padding: '16px',
+              fontSize: 16, fontWeight: 700, color: '#fff',
+              cursor: text.trim() ? 'pointer' : 'default',
+              fontFamily: 'inherit', transition: 'background .2s',
+              opacity: sending ? 0.7 : 1,
+            }}
+          >
+            {sending ? 'Envoi en cours…' : 'Envoyer ma réponse →'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Prix moyen — saisie numérique participant ─────────────────────
 function PrixInputMobile({ page, pName }) {
   const [value, setValue]              = useState('')
@@ -4249,6 +4366,9 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
 
   // Freins à l'achat — saisie libre
   if (page.type === 'freins') return <FreinsInputMobile page={page} pName={pName || 'Anonyme'} />
+
+  // Montures : matériaux — saisie libre
+  if (page.type === 'montures-materiaux') return <MonturesMateriauxMobile page={page} pName={pName || 'Anonyme'} />
 
   // Prix moyen — saisie numérique
   if (page.type === 'prix') return <PrixInputMobile page={page} pName={pName || 'Anonyme'} />

@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { ENTREPRISE_PAGES as PAGES, ENTREPRISE_QUIZ } from '@/lib/modulesData'
 import ZeroInterChain from '@/components/ZeroInterChain'
 
@@ -1314,17 +1315,34 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
   const [openAnswers, setOpenAnswers] = useState([])
   const [validating, setValidating] = useState({})
   const [validated, setValidated] = useState({})
+  const [connectedCount, setConnectedCount] = useState(0)
   const autoValidatedRef = useRef(new Set())
+  const autoRevealedRef = useRef(false)
 
   const q = ENTREPRISE_QUIZ[quizQ]
   const isLast = quizQ >= ENTREPRISE_QUIZ.length - 1
   const pageId = `entreprise:${quizQ}`
 
   useEffect(() => {
+    const poll = async () => setConnectedCount(await fetchOnlineParticipantCount(getActiveSessionCode()))
+    poll()
+    const t = setInterval(poll, 5000)
+    return () => clearInterval(t)
+  }, [])
+
+  useEffect(() => {
+    if (!autoRevealedRef.current && connectedCount > 0 && openAnswers.length >= connectedCount) {
+      autoRevealedRef.current = true
+      setSharedState({ quiz_show_correction: true }).catch(() => {})
+    }
+  }, [openAnswers.length, connectedCount])
+
+  useEffect(() => {
     setOpenAnswers([])
     setValidating({})
     setValidated({})
     autoValidatedRef.current = new Set()
+    autoRevealedRef.current = false
 
     const stripAccents = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 

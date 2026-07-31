@@ -6347,7 +6347,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, saisieStage, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, sessionCode, onAmeliProClick }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, saisieStage, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, monturesMateriauxResponses, revealMonturesMateriaux, sessionCode, onAmeliProClick }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -6403,6 +6403,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
     </div>
   )
   if (page.type === 'freins')     return <TVEntrepriseFreins   page={page} pageIndex={pageIndex} total={total} freinsResponses={freinsResponses} revealFreins={revealFreins} sessionCode={sessionCode} />
+  if (page.type === 'montures-materiaux') return <TVEntrepriseFreins page={page} pageIndex={pageIndex} total={total} freinsResponses={monturesMateriauxResponses} revealFreins={revealMonturesMateriaux} sessionCode={sessionCode} />
   if (page.type === 'prix')       return <TVEntreprisePrix     page={page} pageIndex={pageIndex} total={total} prixResponses={prixResponses} revealPrix={revealPrix} sessionCode={sessionCode} />
   if (page.type === 'video-lpt')  return <TVVideoLPT audioUnlocked={audioUnlocked} />
   if (page.type === 'ventes-opticien') return <TVEntrepriseVentesOpticien page={page} pageIndex={pageIndex} total={total} ventesResponses={ventesResponses} revealVentes={revealVentes} sessionCode={sessionCode} />
@@ -8288,6 +8289,8 @@ export default function TVView() {
   const [tiersPayantRevealed, setTiersPayantRevealed]     = useState(false)
   const [brainstormRevealed, setBrainstormRevealed]       = useState(false)
   const [monturesPrixRevealed, setMonturesPrixRevealed]   = useState(false)
+  const [monturesMateriauxResponses, setMonturesMateriauxResponses] = useState({})
+  const [revealMonturesMateriaux, setRevealMonturesMateriaux]       = useState(false)
 
   const handleAmeliProClick = async () => {
     try { await setRoomSharedState({ rembfr_amelipro_clicked: true }, sessionCode) } catch {}
@@ -8350,6 +8353,8 @@ export default function TVView() {
     setTiersPayantRevealed(!!sharedState.tiers_payant_revealed)
     setBrainstormRevealed(!!sharedState.brainstorm_revealed)
     setMonturesPrixRevealed(!!sharedState.montures_prix_revealed)
+    setMonturesMateriauxResponses(sharedState.montures_materiaux_responses || {})
+    setRevealMonturesMateriaux(!!sharedState.reveal_montures_materiaux)
   }, [sharedState])
 
   const moduleData = MODULE_DATA[activeModule] || null
@@ -8637,6 +8642,8 @@ export default function TVView() {
             lptsPecScenario={lptsPecScenario}
             brainstormRevealed={brainstormRevealed}
             monturesPrixRevealed={monturesPrixRevealed}
+            monturesMateriauxResponses={monturesMateriauxResponses}
+            revealMonturesMateriaux={revealMonturesMateriaux}
             sessionCode={sessionCode}
             onAmeliProClick={handleAmeliProClick}
           />

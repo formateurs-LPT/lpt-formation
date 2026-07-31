@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import TrainerAvatar from '@/components/TrainerAvatar'
@@ -536,8 +537,15 @@ function ContentPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pag
   )
 }
 
-// ── Quiz Controller (vue formateur) ──────────────────────────────
+// ── Quiz Controller (vue formateur) — switcher par type ──────────
 function QuizController({ quizQ, onNext, onEnd, onBack }) {
+  const q = TYPES_VERRES_QUIZ[quizQ]
+  if (q.type === 'text-open') return <TextOpenController quizQ={quizQ} onNext={onNext} onEnd={onEnd} onBack={onBack} />
+  return <MCQController quizQ={quizQ} onNext={onNext} onEnd={onEnd} onBack={onBack} />
+}
+
+// ── Contrôleur questions texte libre ──────────────────────────────
+function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
   const [openAnswers, setOpenAnswers] = useState([])
   const [validating, setValidating] = useState({})
   const [validated, setValidated] = useState({})
@@ -563,18 +571,24 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
 
   // Auto-validation
   useEffect(() => {
-    const kws    = q?.autoCorrect
-    const kwsAll = q?.autoCorrectAll
-    const kwsNot = q?.autoCorrectNot
-    if (!kws?.length && !kwsAll?.length) return
+    const kws     = q?.autoCorrect
+    const kwsAll  = q?.autoCorrectAll
+    const kwsNot  = q?.autoCorrectNot
+    const kwsEach = q?.autoCorrectEach // text-open-multi : un groupe de mots-clés par case attendue
+    if (!kws?.length && !kwsAll?.length && !kwsEach?.length) return
     openAnswers.forEach(row => {
       const name = row.participant_name
       if (autoValidatedRef.current.has(name)) return
-      const text = (row.answer || '').trim().toLowerCase()
+      const raw  = (row.answer || '').trim()
+      const text = raw.toLowerCase()
       const matchOr  = kws?.length    && kws.some(kw  => text.includes(kw.toLowerCase()))
       const matchAnd = kwsAll?.length && kwsAll.every(kw => text.includes(kw.toLowerCase()))
       const blocked  = kwsNot?.length && kwsNot.some(kw => text.includes(kw.toLowerCase()))
-      if ((matchOr || matchAnd) && !blocked) {
+      const matchEach = kwsEach?.length && (() => {
+        const parts = raw.split('||').map(p => p.trim().toLowerCase()).filter(Boolean)
+        return kwsEach.every(group => group.some(kw => parts.some(p => p.includes(kw.toLowerCase()))))
+      })()
+      if ((matchOr || matchAnd || matchEach) && !blocked) {
         autoValidatedRef.current.add(name)
         saveModuleQuizAnswer({ sessionCode: getActiveSessionCode(), moduleId: 'types-verres', questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
           .then(() => setValidated(v => ({ ...v, [name]: 'correct' })))
@@ -582,6 +596,11 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
       }
     })
   }, [openAnswers, q, quizQ])
+
+  const formatAnswer = (answer) => {
+    if (q?.type !== 'text-open-multi') return answer
+    return (answer || '').split('||').map(s => s.trim()).filter(Boolean).join(' // ')
+  }
 
   const handleValidate = async (row, isCorrect) => {
     if (validating[row.participant_name]) return
@@ -651,7 +670,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length], marginBottom: 3 }}>{row.participant_name}</div>
-                <div style={{ fontSize: 15, color: '#fff', lineHeight: 1.4 }}>{row.answer}</div>
+                <div style={{ fontSize: 15, color: '#fff', lineHeight: 1.4 }}>{formatAnswer(row.answer)}</div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                 {status ? (
@@ -684,6 +703,184 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
           <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 40px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Voir les résultats</button>
         ) : (
           <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #0089ba, #00abe9)', border: 'none', color: '#fff', padding: '14px 40px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,171,233,0.45)' }}>Question suivante →</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Contrôleur QCM (vrai / faux) ──────────────────────────────────
+function MCQController({ quizQ, onNext, onEnd, onBack }) {
+  const [liveAnswers, setLiveAnswers] = useState([])
+  const [connectedCount, setConnectedCount] = useState(0)
+  const [correctionPhase, setCorrectionPhase] = useState(false)
+  const q = TYPES_VERRES_QUIZ[quizQ]
+  const isLast = quizQ >= TYPES_VERRES_QUIZ.length - 1
+
+  useEffect(() => { setCorrectionPhase(false) }, [quizQ])
+
+  useEffect(() => {
+    const poll = async () => {
+      const rows = await fetchTrainerQuizAnswers(
+        `session_code=eq.${getActiveSessionCode()}&module_id=eq.types-verres&question_idx=eq.${quizQ}`
+      )
+      setLiveAnswers(rows || [])
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [quizQ])
+
+  useEffect(() => {
+    const poll = async () => setConnectedCount(await fetchOnlineParticipantCount(getActiveSessionCode()))
+    poll()
+    const t = setInterval(poll, 5000)
+    return () => clearInterval(t)
+  }, [])
+
+  useEffect(() => {
+    if (!correctionPhase && connectedCount > 0 && liveAnswers.length >= connectedCount) {
+      setCorrectionPhase(true)
+      setSharedState({ quiz_show_correction: true }).catch(() => {})
+    }
+  }, [liveAnswers.length, connectedCount, correctionPhase])
+
+  const handleRevealNow = async () => {
+    setCorrectionPhase(true)
+    await setSharedState({ quiz_show_correction: true }).catch(() => {})
+  }
+
+  const handleNextQ = async () => {
+    setCorrectionPhase(false)
+    await onNext()
+  }
+
+  const total = liveAnswers.length
+  const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+  const wrongAnswerers = liveAnswers.filter(r => !r.is_correct)
+  const correctCount = liveAnswers.filter(r => r.is_correct).length
+
+  const headerLogo = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+      <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz · Types de verres — Vue formateur</span>
+    </div>
+  )
+  const btnTerminer = <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Terminer</button>
+
+  if (correctionPhase) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          {headerLogo}
+          <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 20, padding: '6px 20px', fontSize: 13, fontWeight: 700, color: '#4ade80' }}>
+            ✓ Correction — Q{quizQ + 1} / {TYPES_VERRES_QUIZ.length}
+          </div>
+          {btnTerminer}
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }}>
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+            <div style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 16, padding: '10px 28px', textAlign: 'center' }}>
+              <div style={{ fontSize: 38, fontWeight: 900, color: '#4ade80' }}>{correctCount}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>bonne{correctCount !== 1 ? 's' : ''} réponse{correctCount !== 1 ? 's' : ''}</div>
+            </div>
+            <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 16, padding: '10px 28px', textAlign: 'center' }}>
+              <div style={{ fontSize: 38, fontWeight: 900, color: '#f87171' }}>{wrongAnswerers.length}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>mauvaise{wrongAnswerers.length !== 1 ? 's' : ''} réponse{wrongAnswerers.length !== 1 ? 's' : ''}</div>
+            </div>
+          </div>
+
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.35, maxWidth: 700, alignSelf: 'center' }}>
+            {q.question}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 16, padding: '12px 24px', alignSelf: 'center', maxWidth: 640, width: '100%' }}>
+            <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: '#052e16', flexShrink: 0 }}>
+              {'AB'[q.correct]}
+            </div>
+            <span style={{ fontSize: 16, fontWeight: 700, color: '#4ade80' }}>{q.options[q.correct]}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', background: 'rgba(34,197,94,0.2)', padding: '2px 10px', borderRadius: 20, flexShrink: 0 }}>✓ Bonne réponse</span>
+          </div>
+
+          {wrongAnswerers.length > 0 && (
+            <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 16, padding: '14px 20px', maxWidth: 640, alignSelf: 'center', width: '100%' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,100,80,0.7)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
+                🔒 Confidentiel — visible uniquement ici
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {wrongAnswerers.map(r => (
+                  <div key={r.collaborateur} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14 }}>
+                    <span style={{ color: '#f87171', fontWeight: 600 }}>{r.collaborateur}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>→</span>
+                    <span style={{ color: 'rgba(255,255,255,0.5)' }}>
+                      {r.answer_idx != null ? `${'AB'[r.answer_idx]} — ${q.options[r.answer_idx]}` : '?'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          {isLast ? (
+            <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Terminer le quiz</button>
+          ) : (
+            <button onClick={handleNextQ} style={{ background: 'linear-gradient(135deg, #0089ba, #00abe9)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,171,233,0.45)' }}>Question suivante →</button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+        {headerLogo}
+        {btnTerminer}
+      </div>
+
+      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 24px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+          Question {quizQ + 1} / {TYPES_VERRES_QUIZ.length}
+        </div>
+      </div>
+
+      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', textAlign: 'center', marginBottom: 36, lineHeight: 1.3, maxWidth: 800, alignSelf: 'center' }}>{q.question}</div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, maxWidth: 560, alignSelf: 'center', width: '100%' }}>
+        {q.options.map((opt, i) => {
+          const count = counts[i]
+          const pct = total > 0 ? (count / total) * 100 : 0
+          return (
+            <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '14px 18px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: OPTION_COLORS[i], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff' }}>{'AB'[i]}</div>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{opt}</span>
+                </div>
+                <span style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{count}<span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500, marginLeft: 4 }}>vote{count > 1 ? 's' : ''}</span></span>
+              </div>
+              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{ height: '100%', borderRadius: 4, width: `${pct}%`, background: OPTION_COLORS[i], transition: 'width .5s ease' }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28 }}>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
+          <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginRight: 6 }}>{total}</span>
+          {connectedCount > 0
+            ? <><span style={{ color: 'rgba(255,255,255,0.5)' }}>/ {connectedCount}</span> ont répondu</>
+            : (total !== 1 ? 'participants ont répondu' : 'participant a répondu')
+          }
+        </div>
+        {total > 0 && (
+          <button onClick={handleRevealNow} style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.35)', color: '#4ade80', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Révéler les réponses →</button>
         )}
       </div>
     </div>
