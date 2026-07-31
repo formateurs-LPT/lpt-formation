@@ -608,6 +608,121 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
   )
 }
 
+// ── Quiz texte libre — paires (problème / définition) ─────────────
+function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
+  const pairsCount = q.pairs || 4
+  const [labelLeft, labelRight] = q.pairLabels || ['Élément', 'Détail']
+  const [rows, setRows] = useState(Array.from({ length: pairsCount }, () => ['', '']))
+  const [submitted, setSubmitted] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [validated, setValidated] = useState(null)
+
+  useEffect(() => {
+    if (!submitted) return
+    const poll = async () => {
+      const rows = await sbSelect(
+        'quiz_answers',
+        `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${encodeURIComponent(moduleId)}&question_idx=eq.${qIdx}&collaborateur=eq.${encodeURIComponent(pName.trim())}`
+      )
+      if (rows && rows.length > 0) setValidated(rows[0].is_correct)
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [submitted, qIdx, moduleId, pName])
+
+  const setCell = (rowIdx, colIdx, val) => setRows(rs => rs.map((r, i) => i === rowIdx ? (colIdx === 0 ? [val, r[1]] : [r[0], val]) : r))
+  const allFilled = rows.every(r => r[0].trim() && r[1].trim())
+
+  const handleSubmit = async () => {
+    if (!allFilled || saving) return
+    setSaving(true)
+    try {
+      await insertOpenAnswer({
+        sessionCode: getParticipantSessionCode(),
+        pageId: `${moduleId}:${qIdx}`,
+        participantName: pName.trim(),
+        answer: rows.flatMap(r => [r[0].trim(), r[1].trim()]).join('||'),
+      })
+      setSubmitted(true)
+    } catch { /* best-effort */ } finally {
+      setSaving(false)
+    }
+  }
+
+  if (validated !== null) return <QuizResultScreen isCorrect={validated} />
+
+  if (submitted) {
+    return (
+      <div style={{
+        minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: '40px 24px', textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>✍️</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Réponse envoyée !</div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>En attente de la validation du formateur…</div>
+        <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
+        <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+    }}>
+      <div style={{
+        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
+        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
+        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16,
+      }}>Question {qIdx + 1}</div>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 20, textAlign: 'center' }}>
+        Regardez la question sur l&apos;écran<br />et remplissez les {pairsCount} lignes
+      </div>
+      <div style={{ display: 'flex', gap: 8, width: '100%', maxWidth: 420, marginBottom: 6 }}>
+        <div style={{ flex: 1, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{labelLeft}</div>
+        <div style={{ flex: 1, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{labelRight}</div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 420, marginBottom: 24 }}>
+        {rows.map((r, i) => (
+          <div key={i} style={{ display: 'flex', gap: 8 }}>
+            <input
+              value={r[0]}
+              onChange={e => setCell(i, 0, e.target.value)}
+              placeholder={`${labelLeft} ${i + 1}`}
+              style={{
+                flex: 1, padding: '13px 14px', borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)',
+                color: '#fff', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', minWidth: 0,
+              }}
+            />
+            <input
+              value={r[1]}
+              onChange={e => setCell(i, 1, e.target.value)}
+              placeholder={`${labelRight} ${i + 1}`}
+              style={{
+                flex: 1, padding: '13px 14px', borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)',
+                color: '#fff', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', minWidth: 0,
+              }}
+            />
+          </div>
+        ))}
+      </div>
+      <button onClick={handleSubmit} disabled={!allFilled || saving} style={{
+        background: allFilled ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
+        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
+        fontSize: 16, fontWeight: 700, cursor: allFilled ? 'pointer' : 'default',
+        fontFamily: 'inherit', width: '100%', maxWidth: 400,
+      }}>
+        {saving ? 'Envoi…' : '✓ Envoyer'}
+      </button>
+    </div>
+  )
+}
+
 // ── Quiz multi-sélection ──────────────────────────────────────────
 function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
   const [selected, setSelected] = useState([])
@@ -1049,6 +1164,7 @@ function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
   const type = q?.type || 'qcm'
   if (type === 'text-open') return <QuizTextOpen pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
   if (type === 'text-open-multi') return <QuizTextOpenMulti pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
+  if (type === 'text-open-pairs') return <QuizTextOpenPairs pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
   if (type === 'qcm-multi') return <QuizMultiSelect pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
   if (type === 'ordonnance-fill') return <QuizOrdonnanceFill pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
   if (type === 'power-selector') return <QuizPowerSelector pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />

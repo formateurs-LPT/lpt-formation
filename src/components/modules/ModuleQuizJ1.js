@@ -106,11 +106,27 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
       for (const row of rows) {
         const name = row.participant_name
         if (autoValidatedRef.current.has(name)) continue
-        const text = (row.answer || '').trim().toLowerCase()
+        const raw  = row.answer || ''
+        const text = raw.trim().toLowerCase()
         const matchOr    = q.autoCorrect?.length     && q.autoCorrect.some(kw => text.includes(kw.toLowerCase()))
         const matchAnd   = q.autoCorrectAll?.length   && q.autoCorrectAll.every(kw => text.includes(kw.toLowerCase()))
         const matchAllOr = q.autoCorrectAllOr?.length && q.autoCorrectAllOr.every(group => group.some(kw => text.includes(kw.toLowerCase())))
-        if (matchOr || matchAnd || matchAllOr) {
+        const matchEach  = q.autoCorrectEach?.length && (() => {
+          const parts = raw.split('||').map(p => p.trim().toLowerCase()).filter(Boolean)
+          return q.autoCorrectEach.every(group => group.some(kw => parts.some(p => p.includes(kw.toLowerCase()))))
+        })()
+        const matchPairs = q.answerPairs?.length && (() => {
+          const parts = raw.split('||').map(p => p.trim().toLowerCase())
+          const submittedPairs = []
+          for (let i = 0; i < parts.length; i += 2) submittedPairs.push([parts[i] || '', parts[i + 1] || ''])
+          return q.answerPairs.every(canon =>
+            submittedPairs.some(([left, right]) =>
+              canon.keys.some(k => left.includes(k.toLowerCase())) &&
+              canon.defKeys.some(k => right.includes(k.toLowerCase()))
+            )
+          )
+        })()
+        if (matchOr || matchAnd || matchAllOr || matchEach || matchPairs) {
           autoValidatedRef.current.add(name)
           saveModuleQuizAnswer({
             sessionCode: code,
@@ -152,6 +168,20 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
   }
 
   const correctCount = Object.values(validations).filter(Boolean).length
+
+  const formatAnswer = (answer) => {
+    if (!answer) return '—'
+    if (q?.type === 'text-open-pairs') {
+      const parts = answer.split('||').map(s => s.trim())
+      const pairs = []
+      for (let i = 0; i < parts.length; i += 2) pairs.push(`${parts[i] || '—'} → ${parts[i + 1] || '—'}`)
+      return pairs.join('  //  ')
+    }
+    if (q?.type === 'text-open-multi') {
+      return answer.split('||').map(s => s.trim()).filter(Boolean).join(' // ')
+    }
+    return answer
+  }
 
   const bg = { minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 40px' }
 
@@ -199,7 +229,7 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>{row.participant_name}</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>{row.answer || '—'}</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>{formatAnswer(row.answer)}</div>
                 </div>
                 {status === undefined && (
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>

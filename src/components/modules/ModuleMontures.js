@@ -1,11 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, fetchOpenAnswers, setSharedState, getRoomSharedState } from '@/lib/supabase'
-import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
-import { saveModuleQuizAnswer } from '@/lib/formationSave'
+import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState } from '@/lib/supabase'
 import { NextPagePreview } from '@/lib/trainerPreview'
-import { MONTURES_QUIZ } from '@/lib/modulesData'
 import { useIsMobile } from '@/lib/useIsMobile'
 
 const BUBBLE_COLORS = ['#00abe9', '#4ade80', '#f59e0b', '#a78bfa', '#f472b6', '#34d399']
@@ -195,7 +192,7 @@ function MaterialsIntroPage({ onBack, onNext }) {
 }
 
 // ─── Composant page générique (formateur) ────────────────────
-function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage, onTerminate, quizLaunched, onLaunchQuiz, priceRevealed, onRevealPrice }) {
+function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage, onTerminate, priceRevealed, onRevealPrice }) {
   const isMobile = useIsMobile()
   const [step, setStep] = useState(0)
   const [notesOpen, setNotesOpen] = useState(true)
@@ -335,18 +332,9 @@ function MonturePage({ meta, onBack, onPrev, onNext, isFirst, isLast, pageIndex,
           </button>
 
           {isLast ? (
-            quizLaunched ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>Quiz envoyé</span>
-                <button onClick={onTerminate} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '11px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(34,197,94,0.4)' }}>
-                  Terminer
-                </button>
-              </div>
-            ) : (
-              <button onClick={onLaunchQuiz} style={{ background: 'linear-gradient(135deg, #7c3aed, #9f67fa)', border: 'none', color: '#fff', padding: '11px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(124,58,237,0.5)' }}>
-                Lancer le quiz →
-              </button>
-            )
+            <button onClick={onTerminate} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '11px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(34,197,94,0.4)' }}>
+              Terminer
+            </button>
           ) : (
             <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)`, border: 'none', color: '#fff', padding: '11px 28px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 5px 20px ${color}40` }}>
               Suivant →
@@ -406,232 +394,10 @@ function Lobby({ onStart, onBack }) {
   )
 }
 
-// ─── Quiz Controller ──────────────────────────────────────────
-function QuizController({ quizQ, onNext, onEnd, onBack }) {
-  const [openAnswers, setOpenAnswers] = useState([])
-  const [validating, setValidating] = useState({})
-  const [validated, setValidated] = useState({})
-
-  const q = MONTURES_QUIZ[quizQ]
-  const isLast = quizQ >= MONTURES_QUIZ.length - 1
-  const pageId = `montures:${quizQ}`
-
-  useEffect(() => {
-    setOpenAnswers([])
-    setValidating({})
-    setValidated({})
-    const poll = async () => {
-      const rows = await fetchOpenAnswers(getActiveSessionCode(), pageId)
-      setOpenAnswers(rows || [])
-    }
-    poll()
-    const t = setInterval(poll, 2000)
-    return () => clearInterval(t)
-  }, [quizQ, pageId])
-
-  const handleValidate = async (row, isCorrect) => {
-    if (validating[row.participant_name]) return
-    setValidating(v => ({ ...v, [row.participant_name]: true }))
-    try {
-      await saveModuleQuizAnswer({
-        moduleId: 'montures',
-        questionIdx: quizQ,
-        collaborateur: row.participant_name,
-        answerIdx: 0,
-        isCorrect,
-      })
-      setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
-    } catch { /* best-effort */ } finally {
-      setValidating(v => ({ ...v, [row.participant_name]: false }))
-    }
-  }
-
-  const handleShowCorrection = async () => {
-    await setSharedState({ quiz_show_correction: true }).catch(() => {})
-  }
-
-  return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 40px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
-          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz · Montures — Vue formateur</span>
-        </div>
-        <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Terminer</button>
-      </div>
-
-      <div style={{ textAlign: 'center', marginBottom: 20 }}>
-        <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 24px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-          Question {quizQ + 1} / {MONTURES_QUIZ.length}
-        </div>
-      </div>
-
-      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.3, maxWidth: 800, margin: '0 auto 14px' }}>
-        {q.question}
-      </div>
-
-      <div style={{ textAlign: 'center', marginBottom: 28 }}>
-        <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.2)', borderRadius: 12, padding: '8px 22px', fontSize: 12, color: 'rgba(0,171,233,0.7)', fontStyle: 'italic' }}>
-          Réponse attendue : {q.hint}
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 820, margin: '0 auto', maxHeight: '45vh', overflowY: 'auto', paddingRight: 4 }}>
-        {openAnswers.length === 0 ? (
-          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, fontStyle: 'italic', padding: '20px', textAlign: 'center' }}>
-            En attente des réponses des participants…
-          </div>
-        ) : openAnswers.map((row, i) => {
-          const status = validated[row.participant_name]
-          const isValidating = validating[row.participant_name]
-          return (
-            <div key={row.participant_name} style={{
-              background: status === 'correct' ? 'rgba(34,197,94,0.08)' : status === 'wrong' ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${status === 'correct' ? 'rgba(34,197,94,0.3)' : status === 'wrong' ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.08)'}`,
-              borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14,
-            }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, background: `${BUBBLE_COLORS[i % BUBBLE_COLORS.length]}22`, border: `2px solid ${BUBBLE_COLORS[i % BUBBLE_COLORS.length]}60`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length] }}>
-                {row.participant_name?.charAt(0)?.toUpperCase() || '?'}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length], marginBottom: 3 }}>{row.participant_name}</div>
-                <div style={{ fontSize: 15, color: '#fff', lineHeight: 1.4 }}>{row.answer}</div>
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                {status ? (
-                  <div style={{ fontSize: 22, fontWeight: 800, color: status === 'correct' ? '#4ade80' : '#f87171' }}>{status === 'correct' ? '✓' : '✗'}</div>
-                ) : (
-                  <>
-                    <button onClick={() => handleValidate(row, true)} disabled={!!isValidating} style={{ width: 38, height: 38, borderRadius: 10, border: 'none', background: 'rgba(34,197,94,0.18)', color: '#4ade80', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isValidating ? 0.5 : 1, fontFamily: 'inherit' }}>✓</button>
-                    <button onClick={() => handleValidate(row, false)} disabled={!!isValidating} style={{ width: 38, height: 38, borderRadius: 10, border: 'none', background: 'rgba(239,68,68,0.18)', color: '#f87171', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isValidating ? 0.5 : 1, fontFamily: 'inherit' }}>✗</button>
-                  </>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {openAnswers.length > 0 && (
-        <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 10 }}>
-          {openAnswers.length} réponse{openAnswers.length > 1 ? 's' : ''} reçue{openAnswers.length > 1 ? 's' : ''}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 28 }}>
-        {openAnswers.length > 0 && (
-          <button onClick={handleShowCorrection} style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', padding: '14px 28px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-            🎯 Voir la correction
-          </button>
-        )}
-        {isLast ? (
-          <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 40px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Voir les résultats</button>
-        ) : (
-          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #0089ba, #00abe9)', border: 'none', color: '#fff', padding: '14px 40px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,171,233,0.45)' }}>Question suivante →</button>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ─── Group Results View ───────────────────────────────────────
-function GroupResultsView({ onTerminate }) {
-  const [answers, setAnswers] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchAnswers = async () => {
-      const rows = await fetchTrainerQuizAnswers(
-        `session_code=eq.${getActiveSessionCode()}&module_id=eq.montures`
-      )
-      setAnswers(rows || [])
-      setLoading(false)
-    }
-    fetchAnswers()
-  }, [])
-
-  const participantNames = [...new Set((answers || []).map(r => r.collaborateur))]
-  const participantCount = participantNames.length
-
-  const questionStats = MONTURES_QUIZ.map((q, idx) => {
-    const qAnswers = answers.filter(r => r.question_idx === idx)
-    const wrongCount = qAnswers.filter(r => !r.is_correct).length
-    const total = qAnswers.length
-    const pctWrong = total > 0 ? Math.round((wrongCount / total) * 100) : 0
-    return { idx, question: q.question, pctWrong, total }
-  }).sort((a, b) => b.pctWrong - a.pctWrong)
-
-  const getPriority = (pct) => {
-    if (pct >= 50) return { icon: '🔴', label: 'À retravailler en priorité', color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)' }
-    if (pct >= 25) return { icon: '🟡', label: 'À consolider', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)' }
-    return { icon: '🟢', label: 'Bien maîtrisé', color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)' }
-  }
-
-  return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
-          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Bilan du quiz · Montures</span>
-        </div>
-        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
-          <span style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginRight: 6 }}>{participantCount}</span>
-          participant{participantCount !== 1 ? 's' : ''}
-        </div>
-      </div>
-
-      <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.35)', borderRadius: 20, padding: '6px 24px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 12 }}>Résultats du groupe</div>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Points à retravailler</h1>
-        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>Trié par taux d'erreur décroissant</p>
-      </div>
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 760, alignSelf: 'center', width: '100%' }}>
-        {loading ? (
-          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 15, padding: 40 }}>Chargement…</div>
-        ) : questionStats.map((stat) => {
-          const priority = getPriority(stat.pctWrong)
-          return (
-            <div key={stat.idx} style={{ background: priority.bg, border: `1px solid ${priority.border}`, borderRadius: 18, padding: '18px 22px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                <div style={{ flex: 1, marginRight: 20 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontSize: 16 }}>{priority.icon}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: priority.color, textTransform: 'uppercase', letterSpacing: 1 }}>{priority.label}</span>
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>
-                    Q{stat.idx + 1} — {stat.question}
-                  </div>
-                </div>
-                <div style={{ fontSize: 40, fontWeight: 800, color: priority.color, lineHeight: 1, flexShrink: 0 }}>
-                  {stat.pctWrong}%
-                  <div style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.4)', textAlign: 'right' }}>d'erreurs</div>
-                </div>
-              </div>
-              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{ height: '100%', borderRadius: 4, width: `${stat.pctWrong}%`, background: priority.color, transition: 'width .8s ease' }} />
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32 }}>
-        <button onClick={onTerminate} style={{ background: 'linear-gradient(135deg, #dc2626, #ef4444)', border: 'none', color: '#fff', padding: '14px 42px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(220,38,38,0.4)' }}>✓ Terminer le module</button>
-      </div>
-    </div>
-  )
-}
-
 // ─── Composant principal ──────────────────────────────────────
 export default function ModuleMontures({ pName, onBack, onTerminate }) {
   const [started, setStarted] = useState(false)
   const [page, setPage] = useState(0)
-  const [quizLaunched, setQuizLaunched] = useState(false)
-  const [quizQ, setQuizQ] = useState(0)
-  const [showGroupResults, setShowGroupResults] = useState(false)
   const [priceRevealed, setPriceRevealed] = useState(false)
 
   const handleStart = async () => {
@@ -671,25 +437,6 @@ export default function ModuleMontures({ pName, onBack, onTerminate }) {
     onBack()
   }
 
-  const handleLaunchQuiz = async () => {
-    await setSharedState({ quiz_show_correction: false, montures_prix_revealed: false }).catch(() => {})
-    await sbUpdate('sessions', { active_module: 'montures', module_page: 100 }, 'code=eq.' + getActiveSessionCode())
-    setQuizQ(0)
-    setQuizLaunched(true)
-  }
-
-  const handleNextQuestion = async () => {
-    const next = quizQ + 1
-    await setSharedState({ quiz_show_correction: false }).catch(() => {})
-    await sbUpdate('sessions', { active_module: 'montures', module_page: 100 + next }, 'code=eq.' + getActiveSessionCode())
-    setQuizQ(next)
-  }
-
-  const handleEndQuiz = async () => {
-    try { await sbUpdate('sessions', { active_module: 'montures', module_page: 200 }, 'code=eq.' + getActiveSessionCode()) } catch { /* best-effort */ }
-    setShowGroupResults(true)
-  }
-
   const handleTerminateModule = async () => {
     try {
       await setSharedState({ montures_prix_revealed: false, reveal_montures_materiaux: false }).catch(() => {})
@@ -699,19 +446,6 @@ export default function ModuleMontures({ pName, onBack, onTerminate }) {
   }
 
   if (!started) return <Lobby onStart={handleStart} onBack={handleBack} />
-
-  if (showGroupResults) return <GroupResultsView onTerminate={handleTerminateModule} />
-
-  if (quizLaunched) {
-    return (
-      <QuizController
-        quizQ={quizQ}
-        onNext={handleNextQuestion}
-        onEnd={handleEndQuiz}
-        onBack={handleEndQuiz}
-      />
-    )
-  }
 
   if (page === 0) {
     return <MaterialsIntroPage onBack={handleBack} onNext={handleNext} />
@@ -733,8 +467,6 @@ export default function ModuleMontures({ pName, onBack, onTerminate }) {
       total={PAGES_META.length}
       nextPage={nextPage}
       onTerminate={handleTerminateModule}
-      quizLaunched={quizLaunched}
-      onLaunchQuiz={handleLaunchQuiz}
       priceRevealed={priceRevealed}
       onRevealPrice={handleRevealPrice}
     />

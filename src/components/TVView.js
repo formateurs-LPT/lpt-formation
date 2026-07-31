@@ -541,7 +541,7 @@ function TVQuizMultiQuestion({ question, qIdx, total, moduleLabel }) {
 function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode, moduleId }) {
   const type = question.type || 'qcm'
 
-  if (type === 'text-open' || type === 'text-open-multi') {
+  if (type === 'text-open' || type === 'text-open-multi' || type === 'text-open-pairs') {
     return <TVQuizTextOpen question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} moduleId={moduleId} />
   }
   if (type === 'ordonnance-fill') {
@@ -7239,6 +7239,12 @@ function TVOpenCorrection({ question, qIdx, total, moduleLabel, sessionCode, pag
 
   const formatAnswer = (name) => {
     const raw = textByName[name] || ''
+    if (question?.type === 'text-open-pairs') {
+      const parts = raw.split('||').map(s => s.trim())
+      const pairs = []
+      for (let i = 0; i < parts.length; i += 2) pairs.push(`${parts[i] || '—'} → ${parts[i + 1] || '—'}`)
+      return pairs.join('  //  ')
+    }
     return question?.type === 'text-open-multi'
       ? raw.split('||').map(s => s.trim()).filter(Boolean).join(' // ')
       : raw
@@ -8564,7 +8570,7 @@ export default function TVView() {
         ) : isQuiz && quizQuestion ? (
           quizInterstitialPhase
             ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} skipSignal={sharedState?.quiz_podium_skip} moduleId={activeModule} />
-            : sharedState?.quiz_show_correction && (quizQuestion?.type === 'text-open' || quizQuestion?.type === 'text-open-multi')
+            : sharedState?.quiz_show_correction && (quizQuestion?.type === 'text-open' || quizQuestion?.type === 'text-open-multi' || quizQuestion?.type === 'text-open-pairs')
               ? <TVOpenCorrection
                   question={quizQuestion}
                   qIdx={modulePage - 100}
@@ -8573,7 +8579,7 @@ export default function TVView() {
                   sessionCode={sessionCode}
                   pageId={`${activeModule}:${modulePage - 100}`}
                 />
-              : sharedState?.quiz_show_correction && quizQuestion?.type !== 'text-open' && quizQuestion?.type !== 'text-open-multi'
+              : sharedState?.quiz_show_correction && quizQuestion?.type !== 'text-open' && quizQuestion?.type !== 'text-open-multi' && quizQuestion?.type !== 'text-open-pairs'
                 ? <TVQuizCorrection
                     question={quizQuestion}
                     qIdx={modulePage - 100}

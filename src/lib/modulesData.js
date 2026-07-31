@@ -1204,7 +1204,7 @@ export const MODULE_DATA = {
   'entreprise':       { pages: ENTREPRISE_PAGES,         quiz: ENTREPRISE_QUIZ,    label: "Présentation de l'entreprise", sub: 'Mission · Histoire · Culture LPT' },
   'verre-progressif': { pages: PROGRESSIF_PAGES,         quiz: PROGRESSIF_QUIZ,    label: 'Le Verre Progressif',          sub: 'Anatomie · Vente · Objections · Quiz J+14' },
   'trame-accueil':    { pages: TRAME_ACCUEIL_PAGES,      quiz: [],                 label: "Trame d'accueil",              sub: 'Bonjour · Concept · Examen de vue' },
-  'montures':         { pages: [{ id: 'materiaux', type: 'montures-materiaux', titre: "D'après vous, les montures sont fabriquées avec quels matériaux ?" }, { id: 'acetate', type: 'montures-acetate' }, { id: 'metal', type: 'montures-metal' }, { id: 'injecte', type: 'montures-injecte' }], quiz: MONTURES_QUIZ, label: 'Connaissances Montures', sub: 'Acétate · Métal · Injecté' },
+  'montures':         { pages: [{ id: 'materiaux', type: 'montures-materiaux', titre: "D'après vous, les montures sont fabriquées avec quels matériaux ?" }, { id: 'acetate', type: 'montures-acetate' }, { id: 'metal', type: 'montures-metal' }, { id: 'injecte', type: 'montures-injecte' }], quiz: [], label: 'Connaissances Montures', sub: 'Acétate · Métal · Injecté' },
   'retraits':         { pages: RETRAITS_PAGES,   quiz: RETRAITS_QUIZ,   label: 'Les Retraits',      sub: 'SMS · Recherche · Essayage · Signature' },
   'ajustages':        { pages: AJUSTAGES_PAGES,  quiz: AJUSTAGES_QUIZ,  label: 'Les Ajustages',     sub: 'Confort · Acétate · Métal · Règles d\'or' },
   'raz':              { pages: RAZ_PAGES,        quiz: RAZ_QUIZ,        label: 'Les RAZ',            sub: 'Recommandes · Process · Dernier recours' },

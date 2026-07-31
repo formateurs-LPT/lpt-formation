@@ -11,6 +11,11 @@
 //                   cylInParens : affiche le cyl entre parenthèses dans la colonne sph
 // qcm-ordonnance : ordonnance + options[] + correct — ordonnance affichée TV, QCM sur tél
 //                  hideOrdoLabels, cylInParens, ordoLabel (texte au-dessus de l'ordonnance)
+// text-open-multi : fields (nb de cases), fieldLabels (optionnel)
+//                   autoCorrectEach : un groupe de mots-clés par case attendue (ordre = ordre des cases)
+// text-open-pairs : pairs (nb de lignes), pairLabels [gauche, droite]
+//                   answerPairs : [{ keys, defKeys }] — ordre des lignes libre pour le formé,
+//                   chaque paire canonique doit être retrouvée sur UNE ligne (keys à gauche, defKeys à droite)
 export const QUIZ_J1 = [
   // Q1 — année de création
   {
@@ -19,33 +24,47 @@ export const QUIZ_J1 = [
     hint: '2014',
     autoCorrect: ['2014'],
   },
-  // Q2 — fondateur
+  // Q2 — fondateurs
   {
     type: 'text-open',
-    question: 'Qui a fondé Lunettes Pour Tous avec le soutien de Xavier Niel ?',
-    hint: 'Paul Morlet',
-    autoCorrect: ['paul morlet'],
+    question: 'Qui a fondé Lunettes Pour Tous ?',
+    hint: 'Paul Morlet et Xavier Niel',
+    autoCorrectAll: ['paul morlet', 'xavier niel'],
   },
   // Q3 — différenciateur
   {
     type: 'text-open',
-    question: 'Quel élément nous différencie totalement de la concurrence ?',
+    question: "Quel élément (en dehors du prix) fait que l'offre de lunettes pour tous est unique ?",
     hint: 'La fabrication sur place en 10 minutes',
     autoCorrect: ['10 min', '10min'],
   },
-  // Q4 — 5 piliers
+  // Q4 — 5 piliers (5 encadrés)
   {
-    type: 'text-open',
+    type: 'text-open-multi',
+    fields: 5,
     question: 'Quels sont les 5 points clés qui permettent de remplir la promesse Lunettes Pour Tous ?',
     hint: 'Examen de vue gratuit · Fabrication sur place · 10 minutes · Prix bas · 0 € reste à charge',
-    autoCorrectAll: ['examen', 'fabrication', '10 min', 'prix', 'reste'],
+    autoCorrectEach: [
+      ['examen'],
+      ['fabrication'],
+      ['10 min', '10min'],
+      ['prix'],
+      ['reste'],
+    ],
   },
-  // Q5 — 4 problèmes de vue
+  // Q5 — 4 problèmes de vue (8 encadrés : problème / définition, par ligne)
   {
-    type: 'text-open',
+    type: 'text-open-pairs',
+    pairs: 4,
+    pairLabels: ['Problème de vue', 'Définition'],
     question: 'Citez les 4 problèmes de vue et leur définition.',
-    hint: 'Myope (flou de loin) · Hypermétrope (flou à toute distance) · Astigmate (déformé à toute distance) · Presbyte (flou de près)',
-    autoCorrectAll: ['myope', 'hyperm', 'astigm', 'presbyt'],
+    hint: 'Myope → Flou de loin · Hypermétrope → Flou à toutes distances · Astigmate → Déformé à toutes distances · Presbyte → Flou de près (à partir de 45 ans en moyenne)',
+    answerPairs: [
+      { keys: ['myop'], defKeys: ['flou de loin'] },
+      { keys: ['hyperm'], defKeys: ['flou à toute', 'flou a toute'] },
+      { keys: ['astigm'], defKeys: ['déform', 'deform'] },
+      { keys: ['presbyt'], defKeys: ['flou de près', 'flou de pres', 'floue de près', 'floue de pres', 'vision floue'] },
+    ],
   },
   // Q6 — qcm multi-sélection
   {
