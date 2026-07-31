@@ -781,6 +781,40 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
 }
 
 // ── TV Ordonnance (type = ordonnance) ────────────────────────────
+// ── Rapporteur d'axe — suit en direct le curseur du formateur ─────────
+function AxisProtractor({ axe = 0 }) {
+  const cx = 140, cy = 140, R = 112
+  const rad = (axe * Math.PI) / 180
+  const needleX = cx + R * Math.cos(rad)
+  const needleY = cy - R * Math.sin(rad)
+  const ticks = [0, 30, 60, 90, 120, 150, 180]
+
+  return (
+    <svg width={280} height={168} viewBox="0 0 280 168">
+      {/* Arc du rapporteur */}
+      <path d={`M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R} ${cy}`} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} />
+      {/* Ligne de base */}
+      <line x1={cx - R - 8} y1={cy} x2={cx + R + 8} y2={cy} stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} />
+      {/* Graduations */}
+      {ticks.map(t => {
+        const r = (t * Math.PI) / 180
+        const x1 = cx + (R - 8) * Math.cos(r), y1 = cy - (R - 8) * Math.sin(r)
+        const x2 = cx + (R + 8) * Math.cos(r), y2 = cy - (R + 8) * Math.sin(r)
+        const lx = cx + (R + 24) * Math.cos(r), ly = cy - (R + 24) * Math.sin(r)
+        return (
+          <g key={t}>
+            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+            <text x={lx} y={ly} fill="rgba(255,255,255,0.45)" fontSize={12} fontWeight={700} textAnchor="middle" dominantBaseline="middle">{t}°</text>
+          </g>
+        )
+      })}
+      {/* Aiguille */}
+      <line x1={cx} y1={cy} x2={needleX} y2={needleY} stroke="#fb923c" strokeWidth={4} strokeLinecap="round" style={{ transition: 'x2 0.15s linear, y2 0.15s linear' }} />
+      <circle cx={cx} cy={cy} r={7} fill="#fb923c" />
+    </svg>
+  )
+}
+
 function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRevealStep, audioUnlocked, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe }) {
   const videoRef = useRef(null)
 
@@ -828,9 +862,10 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
                 {(ordoHeadlightCyl || 0).toFixed(2).replace('.', ',')}
               </div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '18px 28px', minWidth: 200 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#fb923c', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>Axe</div>
-              <div style={{ fontSize: 40, fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
+            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '14px 20px 4px', minWidth: 200, textAlign: 'center' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#fb923c', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>Axe</div>
+              <AxisProtractor axe={ordoHeadlightAxe || 0} />
+              <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums', marginTop: -8 }}>
                 {ordoHeadlightAxe || 0}°
               </div>
             </div>
@@ -1906,9 +1941,9 @@ function TVPause({ page, pageIndex, total, moduleLabel, sessionCode }) {
         </div>
       </div>
 
-      {/* Corps : question + réponses */}
+      {/* Corps : question (+ réponses si la page en collecte) */}
       <div style={{
-        flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr',
+        flex: 1, display: 'grid', gridTemplateColumns: page.noAnswerBox ? '1fr' : '3fr 2fr',
         gap: 0, padding: '0 0 0 0',
         opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)',
         transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
@@ -1918,7 +1953,7 @@ function TVPause({ page, pageIndex, total, moduleLabel, sessionCode }) {
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           gap: 28, padding: '40px 48px',
-          borderRight: '1px solid rgba(255,255,255,0.07)',
+          borderRight: page.noAnswerBox ? 'none' : '1px solid rgba(255,255,255,0.07)',
         }}>
           {page.icon && (
             <div style={{
@@ -1935,17 +1970,19 @@ function TVPause({ page, pageIndex, total, moduleLabel, sessionCode }) {
               {page.titre}
             </h1>
             {page.sousTitre && (
-              <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.5)', fontWeight: 400 }}>
+              <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.5)', fontWeight: 400, maxWidth: 700 }}>
                 {page.sousTitre}
               </p>
             )}
           </div>
         </div>
 
-        {/* Réponses */}
-        <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column' }}>
-          <OpenAnswersFeed sessionCode={sessionCode} pageId={page.id} />
-        </div>
+        {/* Réponses — seulement pour les pages qui en collectent */}
+        {!page.noAnswerBox && (
+          <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column' }}>
+            <OpenAnswersFeed sessionCode={sessionCode} pageId={page.id} />
+          </div>
+        )}
       </div>
     </div>
   )

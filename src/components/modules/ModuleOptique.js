@@ -695,12 +695,13 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
 
       {/* Bouton + panneau "expliquer le sens du cylindre et de l'axe" — dispo dès que cylindre/axe sont révélés */}
       {revealStep >= 2 && !headlightDemo && (
-        <div style={{ position: 'fixed', bottom: 90, left: 48, zIndex: 60 }}>
+        <div style={{ position: 'fixed', top: 90, right: 32, zIndex: 60 }}>
           <button onClick={openHeadlightDemo} style={{
-            background: 'rgba(192,132,252,0.15)', border: '1px solid rgba(192,132,252,0.5)',
+            background: 'rgba(192,132,252,0.18)', border: '1px solid rgba(192,132,252,0.5)',
             color: '#c084fc', padding: '12px 22px', borderRadius: 14,
             fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', gap: 8,
+            boxShadow: '0 6px 20px rgba(192,132,252,0.25)',
           }}>
             🔦 Expliquer le sens du cylindre et de l&apos;axe
           </button>
