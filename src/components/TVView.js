@@ -6252,7 +6252,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
     return () => clearInterval(t)
   }, [])
 
-  const LW = 650, LH = 433
+  const LW = 520, LH = 347
   const GAP = 50
 
   const geo = _PG_GEO
@@ -6261,14 +6261,14 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100vh', overflow: 'hidden',
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
       display: 'flex', flexDirection: 'column',
     }}>
       {/* Topbar */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '18px 40px', flexShrink: 0,
+        padding: '14px 40px', flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
@@ -6290,13 +6290,13 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
       </div>
 
       {/* Phrase */}
-      <div style={{ padding: '0 40px 8px', flexShrink: 0, opacity: entered ? 1 : 0, transition: 'opacity .6s ease .15s' }}>
+      <div style={{ padding: '0 40px 6px', flexShrink: 0, opacity: entered ? 1 : 0, transition: 'opacity .6s ease .15s' }}>
         <div style={{
           display: 'inline-block',
           background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.3)',
-          borderRadius: 10, padding: '9px 18px',
+          borderRadius: 10, padding: '7px 18px',
         }}>
-          <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
+          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
             Pense pour les presbytes — une seule paire pour voir a toutes les distances.
           </span>
         </div>
@@ -6304,8 +6304,8 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
 
       {/* Contenu principal : oeil · verre · scenarios */}
       <div style={{
-        flex: 1, display: 'flex', alignItems: 'center',
-        padding: '8px 40px 20px', gap: GAP,
+        flex: '1 1 auto', minHeight: 0, display: 'flex', alignItems: 'center',
+        padding: '4px 40px', gap: GAP,
         opacity: entered ? 1 : 0, transition: 'opacity .8s ease .2s',
       }}>
 
@@ -6367,16 +6367,16 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
       </div>
 
       {/* Délais de fabrication */}
-      <div style={{ padding: '0 40px 28px', flexShrink: 0, opacity: entered ? 1 : 0, transition: 'opacity .8s ease .3s' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>Délais de fabrication</div>
+      <div style={{ padding: '4px 40px 18px', flexShrink: 0, opacity: entered ? 1 : 0, transition: 'opacity .8s ease .3s' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>Délais de fabrication</div>
         <div style={{ display: 'flex', gap: 16 }}>
-          <div style={{ flex: 1, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 14, padding: '16px 22px' }}>
-            <div style={{ fontSize: 24, fontWeight: 900, color: '#4ade80', marginBottom: 4 }}>24 / 48h</div>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>Verres origine France — Fabriqués à Paris</div>
+          <div style={{ flex: 1, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 14, padding: '10px 20px' }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#4ade80', marginBottom: 2 }}>24 / 48h</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.35 }}>Verres origine France — Fabriqués à Paris</div>
           </div>
-          <div style={{ flex: 1, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 14, padding: '16px 22px' }}>
-            <div style={{ fontSize: 24, fontWeight: 900, color: '#fbbf24', marginBottom: 4 }}>9 jours</div>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>Verres Rodenstock — Fabriqués en Allemagne</div>
+          <div style={{ flex: 1, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 14, padding: '10px 20px' }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#fbbf24', marginBottom: 2 }}>9 jours</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.35 }}>Verres Rodenstock — Fabriqués en Allemagne</div>
           </div>
         </div>
       </div>
