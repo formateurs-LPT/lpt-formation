@@ -1542,7 +1542,7 @@ function OrdonnanceDisplay({ ordonnance, hideLabels }) {
               <td style={cell}>{data.sph || '—'}</td>
               {hasCyl && <td style={cell}>{data.cyl || 'Plan'}</td>}
               {hasCyl && <td style={cell}>{data.axe || '—'}</td>}
-              {hasAdd && <td style={{ ...cell, color: '#4ade80' }}>{data.add || '—'}</td>}
+              {hasAdd && <td style={hideLabels ? cell : { ...cell, color: '#4ade80' }}>{hideLabels ? `Add ${data.add || '—'}` : (data.add || '—')}</td>}
             </tr>
           ))}
         </tbody>

@@ -611,13 +611,16 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
   const [isCorrect, setIsCorrect] = useState(null)
   const [saving, setSaving] = useState(false)
 
+  const requiredCount = q?.correct?.length || 2
+  const readyToSubmit = selected.length === requiredCount
+
   const toggle = (i) => {
     if (answered) return
     setSelected(s => s.includes(i) ? s.filter(x => x !== i) : [...s, i])
   }
 
   const handleSubmit = async () => {
-    if (selected.length === 0 || saving || answered) return
+    if (!readyToSubmit || saving || answered) return
     if (!q?.correct) return
     setSaving(true)
     try {
@@ -678,10 +681,15 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
           )
         })}
       </div>
-      <button onClick={handleSubmit} disabled={selected.length === 0 || saving} style={{
-        background: selected.length > 0 ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
+      {!readyToSubmit && (
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 10, textAlign: 'center' }}>
+          Sélectionnez {requiredCount} réponse{requiredCount > 1 ? 's' : ''} ({selected.length} / {requiredCount})
+        </div>
+      )}
+      <button onClick={handleSubmit} disabled={!readyToSubmit || saving} style={{
+        background: readyToSubmit ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
         border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
-        fontSize: 16, fontWeight: 700, cursor: selected.length > 0 ? 'pointer' : 'default',
+        fontSize: 16, fontWeight: 700, cursor: readyToSubmit ? 'pointer' : 'default',
         fontFamily: 'inherit', width: '100%', maxWidth: 400,
       }}>
         {saving ? 'Envoi…' : '✓ Valider ma sélection'}
@@ -1792,7 +1800,7 @@ function PauseMobile({ page, pageIndex, total, pName }) {
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        gap: 24, padding: '32px 24px 24px',
+        gap: 24, padding: '32px 16px 24px',
         opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)',
         transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
       }}>
@@ -1807,12 +1815,15 @@ function PauseMobile({ page, pageIndex, total, pName }) {
           </div>
         )}
 
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', lineHeight: 1.25, marginBottom: 8 }}>
+        <div style={{ textAlign: 'center', width: '100%', maxWidth: 340 }}>
+          <div style={{
+            fontSize: (page.titre || '').length > 28 ? 19 : 22, fontWeight: 900, color: '#fff',
+            lineHeight: 1.3, marginBottom: 8, overflowWrap: 'break-word', wordBreak: 'normal',
+          }}>
             {page.titre}
           </div>
           {page.sousTitre && (
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: 400, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: 400, lineHeight: 1.5, overflowWrap: 'break-word' }}>
               {page.sousTitre}
             </div>
           )}

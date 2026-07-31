@@ -249,7 +249,7 @@ export const OPTIQUE_QUIZ = [
   // Q5 — texte libre, auto-valide si contient "0,25" ou "0.25"
   {
     type: 'text-open',
-    question: 'Les corrections évoluent :',
+    question: 'Les corrections évoluent de combien en combien ?',
     hint: 'de 0,25 en 0,25',
     autoCorrect: ['0,25', '0.25'],
   },
@@ -268,7 +268,7 @@ export const OPTIQUE_QUIZ = [
   },
   // Q8
   {
-    question: 'A quoi correspond la colonne « Add » ?',
+    question: 'A quoi correspond l\'indication « Add » ?',
     options: ['La presbytie', "L'astigmatisme", 'La myopie', "L'hypermétropie"],
     correct: 0,
   },
@@ -313,7 +313,7 @@ export const OPTIQUE_QUIZ = [
   // Q13
   {
     question: "Sur une ordonnance, l'axe est exprimé en :",
-    options: ['Millimètre', 'Degré', 'Pourcentage'],
+    options: ['Millimètre', 'Degrés', 'Pourcentage'],
     correct: 1,
   },
   // Q14 — labels masqués, cylindre entre parenthèses

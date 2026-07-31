@@ -308,7 +308,7 @@ function TVOrdonnanceDisplay({ ordonnance, hideLabels, cylInParens, hideNonAddHe
                 <td style={cellStyle}>{data.sph || '—'}</td>
                 {hasCyl && <td style={cellStyle}>{data.cyl || 'Plan'}</td>}
                 {hasCyl && <td style={cellStyle}>{data.axe || '—'}</td>}
-                {hasAdd && <td style={cellStyle}>{data.add || '—'}</td>}
+                {hasAdd && <td style={cellStyle}>{hideLabels ? `Add ${data.add || '—'}` : (data.add || '—')}</td>}
               </tr>
             ))}
           </tbody>
@@ -6326,6 +6326,21 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
               </div>
             )
           })}
+        </div>
+      </div>
+
+      {/* Délais de fabrication */}
+      <div style={{ padding: '0 40px 28px', flexShrink: 0, opacity: entered ? 1 : 0, transition: 'opacity .8s ease .3s' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>Délais de fabrication</div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ flex: 1, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 14, padding: '16px 22px' }}>
+            <div style={{ fontSize: 24, fontWeight: 900, color: '#4ade80', marginBottom: 4 }}>24 / 48h</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>Verres origine France — Fabriqués à Paris</div>
+          </div>
+          <div style={{ flex: 1, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 14, padding: '16px 22px' }}>
+            <div style={{ fontSize: 24, fontWeight: 900, color: '#fbbf24', marginBottom: 4 }}>9 jours</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>Verres Rodenstock — Fabriqués en Allemagne</div>
+          </div>
         </div>
       </div>
     </div>
