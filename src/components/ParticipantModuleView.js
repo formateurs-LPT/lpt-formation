@@ -950,8 +950,12 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
   const [cardsVisible, setCardsVisible] = useState(false)
 
   useEffect(() => {
-    const fetchAnswers = async () => {
-      const name = pName || 'Anonyme'
+    const name = pName || 'Anonyme'
+    let lastCorrect = -1
+
+    // Certaines questions (texte libre) ne sont validées par le formateur qu'après coup —
+    // on re-sync tant que l'écran est ouvert pour que le score converge vers le vrai total.
+    const sync = async () => {
       let data = []
       try {
         const rows = await sbSelect('quiz_answers', `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${moduleId}&collaborateur=eq.${encodeURIComponent(name)}`)
@@ -961,8 +965,11 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
         setLoading(false)
       }
 
-      // Sauvegarde module_results avec le score total réel (upsert pour éviter les doublons)
       const totalCorrect = data.filter(r => r.is_correct).length
+      if (totalCorrect === lastCorrect) return
+      lastCorrect = totalCorrect
+
+      // Sauvegarde module_results avec le score total réel (upsert pour éviter les doublons)
       const totalQ = quiz.length
       const earnedXP = totalCorrect * 50
       try {
@@ -978,8 +985,10 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
         }, 'collaborateur,module_id,week_date')
       } catch (e) { console.error(e) }
     }
-    fetchAnswers()
-  }, [pName])
+    sync()
+    const t = setInterval(sync, 3000)
+    return () => clearInterval(t)
+  }, [pName, moduleId, quiz.length])
 
   const answerMap = {}
   answers.forEach(row => { answerMap[row.question_idx] = row })

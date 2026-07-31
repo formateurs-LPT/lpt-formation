@@ -7147,12 +7147,12 @@ function pickPhrase(pool, firstName) {
 }
 
 // ── TV Quiz Podium interstitiel (toutes les 5 questions) ──────────
-function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal }) {
+function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal, moduleId }) {
   const [top3, setTop3] = useState([])
   const phraseRef = useRef(null)
 
   useEffect(() => {
-    sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}`).then(rows => {
+    sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}${moduleId ? `&module_id=eq.${moduleId}` : ''}`).then(rows => {
       const grouped = {}
       ;(rows || []).filter(r => r.question_idx < qIdx && !isTrainerAccount(r.collaborateur)).forEach(r => {
         if (!grouped[r.collaborateur]) grouped[r.collaborateur] = 0
@@ -7168,7 +7168,7 @@ function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal }) {
         phraseRef.current = pickPhrase(PHRASES_TOP5, firstName)
       }
     }).catch(() => {})
-  }, [qIdx, sessionCode])
+  }, [qIdx, sessionCode, moduleId])
 
   useEffect(() => {
     if (skipSignal) onDone()
@@ -7290,13 +7290,13 @@ function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal }) {
 }
 
 // ── TV Quiz Final Podium ──────────────────────────────────────────
-function TVQuizFinalPodium({ quiz, sessionCode }) {
+function TVQuizFinalPodium({ quiz, sessionCode, moduleId = 'quiz-final' }) {
   const [top3, setTop3] = useState([])
   const [ready, setReady] = useState(false)
   const phraseRef = useRef(null)
 
   useEffect(() => {
-    sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}`).then(rows => {
+    sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&module_id=eq.${moduleId}`).then(rows => {
       const grouped = {}
       ;(rows || []).filter(r => !isTrainerAccount(r.collaborateur)).forEach(r => {
         if (!grouped[r.collaborateur]) grouped[r.collaborateur] = 0
@@ -7313,7 +7313,7 @@ function TVQuizFinalPodium({ quiz, sessionCode }) {
       }
       setTimeout(() => setReady(true), 400)
     }).catch(() => { setTimeout(() => setReady(true), 400) })
-  }, [sessionCode])
+  }, [sessionCode, moduleId])
 
   const slots = [top3[1], top3[0], top3[2]]
   const stepH = [220, 300, 170]
@@ -8321,13 +8321,13 @@ export default function TVView() {
           finalEndedPhase
             ? <WelcomeScreen />
             : finalPodiumPhase
-              ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} sessionCode={sessionCode} />
+              ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} sessionCode={sessionCode} moduleId={activeModule} />
               : rateRevealPhase
                 ? <TVQuizRateReveal sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
                 : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} sessionCode={sessionCode} />
         ) : isQuiz && quizQuestion ? (
           quizInterstitialPhase
-            ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} skipSignal={sharedState?.quiz_podium_skip} />
+            ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} skipSignal={sharedState?.quiz_podium_skip} moduleId={activeModule} />
             : sharedState?.quiz_show_correction && quizQuestion?.type !== 'text-open'
               ? <TVQuizCorrection
                   question={quizQuestion}

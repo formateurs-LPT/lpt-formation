@@ -27,14 +27,9 @@ export const QUIZ_FINAL_QUESTIONS = [
     correct: 3,
   },
   {
+    type: 'text-open',
     question: "Qui sont les fondateurs de Lunettes Pour Tous ?",
-    options: [
-      "Paul Morlet & Xavier Niel",
-      "Pierre Dupont & Xavier Niel",
-      "Paul Morlet & Bernard Arnault",
-      "Xavier Niel & Arnaud Montebourg",
-    ],
-    correct: 0,
+    hint: "Paul Morlet & Xavier Niel",
   },
   // ── Le concept ───────────────────────────────────────────────────
   {
@@ -43,25 +38,15 @@ export const QUIZ_FINAL_QUESTIONS = [
     correct: 0,
   },
   {
-    question: "La promesse des 10 minutes est valable :",
-    options: [
-      "Seulement avec ordonnance",
-      "Seulement sans ordonnance",
-      "Uniquement pour les unifocaux sans correction forte",
-      "Avec ou sans ordonnance",
-    ],
-    correct: 3,
+    type: 'text-open',
+    question: "La promesse des 10 minutes est valable dans quels cas ?",
+    hint: "Avec ou sans ordonnance",
   },
   // ── Troubles visuels ─────────────────────────────────────────────
   {
-    question: "La myopie affecte principalement :",
-    options: [
-      "La vision de loin",
-      "La vision de près",
-      "La perception des couleurs",
-      "La vision nocturne uniquement",
-    ],
-    correct: 0,
+    type: 'text-open',
+    question: "La myopie affecte principalement quelle vision ?",
+    hint: "La vision de loin",
   },
   {
     question: "La presbytie est un trouble visuel lié à :",
@@ -107,6 +92,7 @@ export const QUIZ_FINAL_QUESTIONS = [
   {
     type: 'qcm-ordonnance',
     question: "Quelles corrections sont indiquées sur cette ordonnance ?",
+    hideLabels: true,
     ordonnance: {
       od: { sph: '-2,50', cyl: '-0,75', axe: '170°' },
       og: { sph: '-2,00', cyl: '-0,50', axe: '010°' },
@@ -194,9 +180,9 @@ export const QUIZ_FINAL_QUESTIONS = [
     correct: 1,
   },
   {
+    type: 'text-open',
     question: "Un verre progressif possède combien de zones de vision ?",
-    options: ["1 — une zone unique", "2 — loin et près", "3 — loin, intermédiaire et près", "4 — loin, intermédiaire, près et nocturne"],
-    correct: 2,
+    hint: "3 — loin, intermédiaire et près",
   },
   // ── Remboursement ────────────────────────────────────────────────
   {
@@ -256,25 +242,15 @@ export const QUIZ_FINAL_QUESTIONS = [
     correct: 1,
   },
   {
-    question: "Comment Lunettes Pour Tous peut-il proposer des lunettes à partir de 10 € ?",
-    options: [
-      "Des verres de moindre qualité importés",
-      "Des subventions de l'État",
-      "Un réseau de production exclusivement en Asie",
-      "Zéro intermédiaire — achat direct fournisseurs et fabrication sur place",
-    ],
-    correct: 3,
+    type: 'text-open',
+    question: "Quels sont les 5 éléments qui nous permettent de faire des lunettes accessibles, en un temps record ?",
+    hint: "Zéro intermédiaire, achat direct fournisseurs, fabrication sur place, large choix de montures, examen de vue gratuit et sans rendez-vous",
   },
   // ── Questions texte libre ─────────────────────────────────────────────
   {
     type: 'text-open',
-    question: "Qui a fondé Lunettes Pour Tous ?",
-    hint: "Paul Morlet & Xavier Niel (en 2014)",
-  },
-  {
-    type: 'text-open',
-    question: "Quels sont les 5 éléments qui nous permettent de faire des lunettes accessibles, en un temps record ?",
-    hint: "Zéro intermédiaire, achat direct fournisseurs, fabrication sur place, large choix de montures, examen de vue gratuit et sans rendez-vous",
+    question: "Combien de temps dure la garantie adaptation sur les verres progressifs chez Lunettes Pour Tous ?",
+    hint: "100 jours (satisfait ou échangé)",
   },
   {
     type: 'text-open',
