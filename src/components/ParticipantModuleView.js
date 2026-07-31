@@ -888,7 +888,7 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
   const colLabels = ['Sph', ...(hasCyl ? ['Cyl', 'Axe'] : []), 'Add']
 
   return (
-    <div style={{ minHeight: '100dvh', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
+    <div style={{ height: '100dvh', overflow: 'hidden', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
       {/* Header doré */}
       <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={52} height={18} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
@@ -897,7 +897,7 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
       </div>
 
       {/* Corps scrollable */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 12px 8px' }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 12px 8px' }}>
         <div style={{ fontSize: 12, color: '#666', fontWeight: 600, textAlign: 'center', marginBottom: 14 }}>
           Regardez l&apos;ordonnance sur l&apos;écran et saisissez les valeurs
         </div>
@@ -999,7 +999,7 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
   if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
 
   return (
-    <div style={{ minHeight: '100dvh', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
+    <div style={{ height: '100dvh', overflow: 'hidden', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
       {/* Header doré */}
       <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={52} height={18} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
@@ -1007,7 +1007,7 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
         <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#fff' }}>Q{qIdx + 1}</div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '28px 20px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '28px 20px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{ fontSize: 12, color: '#666', fontWeight: 600, textAlign: 'center', marginBottom: 28 }}>
           Regardez la question sur l&apos;écran<br />et faites défiler les roulettes
         </div>
@@ -2372,12 +2372,12 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
   const isLastCase = localCaseIdx === caseIndexes.length - 1
 
   const setEye = (eye, field, val) => {
+    if (showResult) return // verrouillé après vérification, aucune modification possible
     setIdx(prev => ({ ...prev, [eye]: { ...prev[eye], [field]: val } }))
-    if (showResult) { setShowResult(false); setResults(null) }
   }
   const setAdd = val => {
+    if (showResult) return
     setIdx(prev => ({ ...prev, add: val }))
-    if (showResult) { setShowResult(false); setResults(null) }
   }
 
   const near = (a, b) => Math.abs(a - b) < 0.001
@@ -2411,7 +2411,8 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
 
   const handleContinue = async () => {
     if (submitting) return
-    const newTally = { correct: roundTally.correct + correctCount, total: roundTally.total + totalFields }
+    // On compte par CAS (juste ou faux), pas par champ
+    const newTally = { correct: roundTally.correct + (perfect ? 1 : 0), total: roundTally.total + 1 }
     if (!isLastCase) {
       setRoundTally(newTally)
       setLocalCaseIdx(i => i + 1)
@@ -2439,6 +2440,14 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
     setSubmitting(false)
   }
 
+  // Une fois la réponse vérifiée, on verrouille et on enchaîne automatiquement sur le cas suivant
+  useEffect(() => {
+    if (!showResult) return
+    const t = setTimeout(() => { handleContinue() }, 1800)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showResult])
+
   // Labels de la bonne réponse (pour feedback)
   const corrLabel = {
     od: { sph: SPH_VALS[findSphIdx(ex.od.sphere)]?.label || '', cyl: CYL_VALS[findCylIdx(ex.od.cylindre)]?.label || '', axe: `${ex.od.axe}°` },
@@ -2460,7 +2469,7 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
+    <div style={{ height: '100dvh', overflow: 'hidden', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
 
       {/* ── Header doré ── */}
       <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
@@ -2474,7 +2483,7 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
       </div>
 
       {/* ── Corps scrollable ── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 0' }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 16px 0' }}>
 
         {/* Progression des 3 cas du round */}
         <div style={{ marginBottom: 16 }}>
@@ -2569,7 +2578,7 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
             <span style={{ fontSize: 28 }}>{perfect ? '🎉' : '😬'}</span>
             <div>
               <div style={{ fontSize: 15, fontWeight: 800, color: perfect ? '#16a34a' : '#dc2626' }}>
-                {perfect ? "C'est juste !" : `${correctCount} / ${totalFields}`}
+                {perfect ? "C'est juste !" : "Pas tout à fait !"}
               </div>
               <div style={{ fontSize: 12, color: '#555' }}>
                 {perfect ? 'Toutes les corrections sont correctes.' : SAISIE_WRONG_MSG}
@@ -2582,23 +2591,22 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
 
       {/* ── Bouton bas ── */}
       <div style={{ padding: '12px 14px 36px', background: APP_BG, flexShrink: 0 }}>
-        {!showResult && (
+        {!showResult ? (
           <button onPointerDown={verify} style={{
             width: '100%', padding: '16px', borderRadius: 12,
             background: APP_DARK, border: 'none', color: '#fff',
             fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
             letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent',
           }}>VÉRIFIER</button>
-        )}
-        {showResult && (
-          <button onPointerDown={handleContinue} disabled={submitting} style={{
+        ) : (
+          <div style={{
             width: '100%', padding: '16px', borderRadius: 12,
-            background: perfect ? APP_GOLD : '#6b5fa6', border: 'none', color: '#fff',
-            fontSize: 14, fontWeight: 800, cursor: submitting ? 'default' : 'pointer', fontFamily: 'inherit',
-            letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent', opacity: submitting ? 0.6 : 1,
+            background: perfect ? APP_GOLD : '#6b5fa6', color: '#fff',
+            fontSize: 14, fontWeight: 800, fontFamily: 'inherit',
+            letterSpacing: 0.5, textAlign: 'center', opacity: 0.85,
           }}>
-            {submitting ? '…' : isLastCase ? "TERMINER L'EXERCICE" : `CAS ${localCaseIdx + 2} →`}
-          </button>
+            {submitting ? '…' : isLastCase ? "Envoi en cours…" : 'Cas suivant…'}
+          </div>
         )}
       </div>
 

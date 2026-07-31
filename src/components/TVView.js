@@ -2192,7 +2192,6 @@ function TVSaisieCorrection({ moduleLabel, round, sessionCode }) {
           <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 6 }}>formé{wrongCount > 1 ? 's' : ''} avec au moins une erreur</div>
         </div>
       </div>
-      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.3)' }}>La correction détaillée est sur l&apos;écran du formateur</div>
     </div>
   )
 }

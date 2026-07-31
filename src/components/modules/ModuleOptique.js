@@ -1017,7 +1017,9 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
                   border: `1px solid ${ok ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
                 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{r.collaborateur}</span>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: ok ? '#4ade80' : '#f87171' }}>{r.score} / {r.score_total}</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: ok ? '#4ade80' : '#f87171' }}>
+                    {ok ? 'Aucune erreur' : `${r.score_total - r.score} cas mal saisi${r.score_total - r.score > 1 ? 's' : ''}`}
+                  </span>
                 </div>
               )
             })}
