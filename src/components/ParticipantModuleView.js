@@ -826,7 +826,6 @@ function parseOrdoVal(str) {
 function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
   if (!q?.ordonnance?.od || !q?.ordonnance?.og) return null
   const hasCyl = !!(q.ordonnance.od.cyl || q.ordonnance.og.cyl)
-  const hasAdd = !!(q.ordonnance.od.add || q.ordonnance.og.add)
 
   const initIdx = () => ({
     od: { sph: SPH_ZERO, cyl: CYL_ZERO, axe: AXE_ZERO, add: ADD_ZERO },
@@ -848,6 +847,7 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
   const near = (a, b) => Math.abs(a - b) < 0.001
 
   const verify = async () => {
+    if (saving) return
     const od = q.ordonnance.od
     const og = q.ordonnance.og
     const r = {
@@ -855,39 +855,32 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
         sph: near(SPH_VALS[idx.od.sph].val, parseOrdoVal(od.sph) ?? 0),
         cyl: !hasCyl || near(CYL_VALS[idx.od.cyl].val, parseOrdoVal(od.cyl) ?? 0),
         axe: !hasCyl || AXE_VALS[idx.od.axe].val === (parseInt(od.axe) || 0),
-        add: !hasAdd || near(ADD_VALS[idx.od.add].val, parseOrdoVal(od.add) ?? 0),
+        add: near(ADD_VALS[idx.od.add].val, parseOrdoVal(od.add) ?? 0),
       },
       og: {
         sph: near(SPH_VALS[idx.og.sph].val, parseOrdoVal(og.sph) ?? 0),
         cyl: !hasCyl || near(CYL_VALS[idx.og.cyl].val, parseOrdoVal(og.cyl) ?? 0),
         axe: !hasCyl || AXE_VALS[idx.og.axe].val === (parseInt(og.axe) || 0),
-        add: !hasAdd || near(ADD_VALS[idx.og.add].val, parseOrdoVal(og.add) ?? 0),
+        add: near(ADD_VALS[idx.og.add].val, parseOrdoVal(og.add) ?? 0),
       },
     }
     setResults(r)
     setShowResult(true)
     const fields = [r.od.sph, r.od.cyl, r.od.axe, r.od.add, r.og.sph, r.og.cyl, r.og.axe, r.og.add]
     const perfect = fields.every(Boolean)
-    if (perfect && !saving) {
-      setSaving(true)
-      try {
-        await saveModuleQuizAnswer({
-          sessionCode: getParticipantSessionCode(),
-          moduleId, questionIdx: qIdx,
-          collaborateur: pName.trim(),
-          answerIdx: 0, isCorrect: true,
-        })
-        setIsCorrect(true)
-        setAnswered(true)
-      } catch { /* best-effort */ } finally {
-        setSaving(false)
-      }
+    setSaving(true)
+    try {
+      await saveModuleQuizAnswer({
+        sessionCode: getParticipantSessionCode(),
+        moduleId, questionIdx: qIdx,
+        collaborateur: pName.trim(),
+        answerIdx: 0, isCorrect: perfect,
+      })
+      setIsCorrect(perfect)
+      setAnswered(true)
+    } catch { /* best-effort */ } finally {
+      setSaving(false)
     }
-  }
-
-  const handleWrongRetry = () => {
-    setShowResult(false)
-    setResults(null)
   }
 
   if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
@@ -897,17 +890,17 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
       sph: SPH_VALS[findSphIdx(parseOrdoVal(q.ordonnance.od.sph) ?? 0)]?.label || '',
       cyl: hasCyl ? CYL_VALS[findCylIdx(parseOrdoVal(q.ordonnance.od.cyl) ?? 0)]?.label || '' : '',
       axe: hasCyl ? `${parseInt(q.ordonnance.od.axe) || 0}°` : '',
-      add: hasAdd ? ADD_VALS[Math.max(0, Math.min(16, Math.round((parseOrdoVal(q.ordonnance.od.add) ?? 0) / 0.25)))]?.label || '' : '',
+      add: ADD_VALS[Math.max(0, Math.min(16, Math.round((parseOrdoVal(q.ordonnance.od.add) ?? 0) / 0.25)))]?.label || '',
     },
     og: {
       sph: SPH_VALS[findSphIdx(parseOrdoVal(q.ordonnance.og.sph) ?? 0)]?.label || '',
       cyl: hasCyl ? CYL_VALS[findCylIdx(parseOrdoVal(q.ordonnance.og.cyl) ?? 0)]?.label || '' : '',
       axe: hasCyl ? `${parseInt(q.ordonnance.og.axe) || 0}°` : '',
-      add: hasAdd ? ADD_VALS[Math.max(0, Math.min(16, Math.round((parseOrdoVal(q.ordonnance.og.add) ?? 0) / 0.25)))]?.label || '' : '',
+      add: ADD_VALS[Math.max(0, Math.min(16, Math.round((parseOrdoVal(q.ordonnance.og.add) ?? 0) / 0.25)))]?.label || '',
     },
   }
 
-  const colLabels = ['Sph', ...(hasCyl ? ['Cyl', 'Axe'] : []), ...(hasAdd ? ['Add'] : [])]
+  const colLabels = ['Sph', ...(hasCyl ? ['Cyl', 'Axe'] : []), 'Add']
 
   return (
     <div style={{ minHeight: '100dvh', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
@@ -937,7 +930,7 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
             { key: 'sph', vals: SPH_VALS, curIdx: idx[eye].sph, isCorr: results?.[eye]?.sph, corrLbl: corrLabel[eye].sph, show: true },
             { key: 'cyl', vals: CYL_VALS, curIdx: idx[eye].cyl, isCorr: results?.[eye]?.cyl, corrLbl: corrLabel[eye].cyl, show: hasCyl },
             { key: 'axe', vals: AXE_VALS, curIdx: idx[eye].axe, isCorr: results?.[eye]?.axe, corrLbl: corrLabel[eye].axe, show: hasCyl, circular: true },
-            { key: 'add', vals: ADD_VALS, curIdx: idx[eye].add, isCorr: results?.[eye]?.add, corrLbl: corrLabel[eye].add, show: hasAdd },
+            { key: 'add', vals: ADD_VALS, curIdx: idx[eye].add, isCorr: results?.[eye]?.add, corrLbl: corrLabel[eye].add, show: true },
           ].filter(f => f.show)
 
           return (
@@ -963,17 +956,8 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
 
       {/* Footer */}
       <div style={{ padding: '12px 14px 36px', background: APP_BG, flexShrink: 0, borderTop: `1px solid ${APP_GOLD}33` }}>
-        {showResult && results && !answered && (
-          <div style={{ textAlign: 'center', marginBottom: 12 }}>
-            {[results.od.sph, results.od.cyl, results.od.axe, results.od.add, results.og.sph, results.og.cyl, results.og.axe, results.og.add].every(Boolean) ? (
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#22c55e' }}>✓ Parfait, enregistrement…</div>
-            ) : (
-              <div style={{ fontSize: 14, color: '#ef4444', fontWeight: 600 }}>Certaines valeurs sont incorrectes. Réessayez !</div>
-            )}
-          </div>
-        )}
         <button
-          onClick={showResult && !answered ? handleWrongRetry : verify}
+          onClick={verify}
           disabled={saving}
           style={{
             width: '100%', padding: '16px', borderRadius: 14,
@@ -983,38 +967,36 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
             fontFamily: 'inherit', letterSpacing: 0.5,
           }}
         >
-          {saving ? 'Enregistrement…' : showResult && !answered ? '↺ Réessayer' : '✓ Vérifier'}
+          {saving ? 'Enregistrement…' : '✓ Valider'}
         </button>
       </div>
     </div>
   )
 }
 
-// ── Quiz sélecteur de puissances ─────────────────────────────────
-function genPosOpts() {
-  const opts = []
-  for (let v = 25; v <= 725; v += 25) opts.push(`+${(v / 100).toFixed(2).replace('.', ',')}`)
-  return opts
-}
-function genNegOpts() {
-  const opts = []
-  for (let v = 25; v <= 800; v += 25) opts.push(`-${(v / 100).toFixed(2).replace('.', ',')}`)
-  return opts
-}
-const POS_OPTS = genPosOpts()
-const NEG_OPTS = genNegOpts()
+// ── Quiz sélecteur de puissances (roulettes, comme la saisie d'ordonnance) ──
+const SPH_POS_MAX_VALS = Array.from({ length: 33 }, (_, i) => {
+  const v = parseFloat((i * 0.25).toFixed(3))
+  return { val: v, label: v > 0.001 ? `+${v.toFixed(2).replace('.', ',')}` : '0,00' }
+})
+const SPH_NEG_MAX_VALS = Array.from({ length: 33 }, (_, i) => {
+  const v = parseFloat((-i * 0.25).toFixed(3))
+  return { val: v, label: v < -0.001 ? `−${Math.abs(v).toFixed(2).replace('.', ',')}` : '0,00' }
+})
 
 function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
-  const [posVal, setPosVal] = useState('')
-  const [negVal, setNegVal] = useState('')
+  const [posIdx, setPosIdx] = useState(0)
+  const [negIdx, setNegIdx] = useState(0)
   const [answered, setAnswered] = useState(false)
   const [isCorrect, setIsCorrect] = useState(null)
   const [saving, setSaving] = useState(false)
 
+  const near = (a, b) => Math.abs(a - b) < 0.001
+
   const handleSubmit = async () => {
-    if (!posVal || !negVal || saving) return
+    if (saving) return
     setSaving(true)
-    const ok = posVal === q.correctPos && negVal === q.correctNeg
+    const ok = near(SPH_POS_MAX_VALS[posIdx].val, q.correctPosVal) && near(SPH_NEG_MAX_VALS[negIdx].val, q.correctNegVal)
     try {
       await saveModuleQuizAnswer({
         sessionCode: getParticipantSessionCode(),
@@ -1031,52 +1013,52 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
 
   if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
 
-  const selectStyle = {
-    flex: 1, padding: '14px 10px', borderRadius: 14,
-    background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.2)',
-    color: '#fff', fontSize: 20, fontWeight: 800,
-    fontFamily: 'inherit', outline: 'none', appearance: 'none', textAlign: 'center',
-  }
-
   return (
-    <div style={{
-      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-    }}>
-      <div style={{
-        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
-        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
-        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
-      }}>Question {qIdx + 1}</div>
-      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 32, textAlign: 'center' }}>
-        Regardez la question sur l&apos;écran<br />et choisissez les valeurs
+    <div style={{ minHeight: '100dvh', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
+      {/* Header doré */}
+      <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={52} height={18} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+        <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' }}>Puissances maximales</span>
+        <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#fff' }}>Q{qIdx + 1}</div>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, width: '100%', maxWidth: 360, marginBottom: 12 }}>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Positif max</div>
-          <select value={posVal} onChange={e => setPosVal(e.target.value)} style={selectStyle}>
-            <option value="">— +</option>
-            {POS_OPTS.map(o => <option key={o} value={o} style={{ background: '#0d1f3c' }}>{o}</option>)}
-          </select>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '28px 20px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ fontSize: 12, color: '#666', fontWeight: 600, textAlign: 'center', marginBottom: 28 }}>
+          Regardez la question sur l&apos;écran<br />et faites défiler les roulettes
         </div>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Négatif max</div>
-          <select value={negVal} onChange={e => setNegVal(e.target.value)} style={selectStyle}>
-            <option value="">— -</option>
-            {NEG_OPTS.map(o => <option key={o} value={o} style={{ background: '#0d1f3c' }}>{o}</option>)}
-          </select>
+
+        <div style={{ display: 'flex', gap: 16, width: '100%', maxWidth: 360 }}>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Positif max</div>
+            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
+              <WheelPicker values={SPH_POS_MAX_VALS} selectedIdx={posIdx} onChange={setPosIdx} showResult={false} />
+            </div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#dc2626', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Négatif max</div>
+            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
+              <WheelPicker values={SPH_NEG_MAX_VALS} selectedIdx={negIdx} onChange={setNegIdx} showResult={false} />
+            </div>
+          </div>
         </div>
       </div>
 
-      <button onClick={handleSubmit} disabled={!posVal || !negVal || saving} style={{
-        background: (posVal && negVal) ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
-        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
-        fontSize: 16, fontWeight: 700, cursor: (posVal && negVal) ? 'pointer' : 'default',
-        fontFamily: 'inherit', width: '100%', maxWidth: 360, marginTop: 16,
-      }}>
-        {saving ? 'Envoi…' : '✓ Valider'}
-      </button>
+      {/* Footer */}
+      <div style={{ padding: '12px 14px 36px', background: APP_BG, flexShrink: 0, borderTop: `1px solid ${APP_GOLD}33` }}>
+        <button
+          onClick={handleSubmit}
+          disabled={saving}
+          style={{
+            width: '100%', padding: '16px', borderRadius: 14,
+            background: saving ? '#ccc' : APP_GOLD,
+            border: 'none', color: '#fff',
+            fontSize: 16, fontWeight: 800, cursor: saving ? 'default' : 'pointer',
+            fontFamily: 'inherit', letterSpacing: 0.5,
+          }}
+        >
+          {saving ? 'Enregistrement…' : '✓ Valider'}
+        </button>
+      </div>
     </div>
   )
 }

@@ -149,12 +149,13 @@ export const QUIZ_J1 = [
     correct: 2,
     hideOrdoLabels: true,
   },
-  // Q14 — puissances maximales (texte libre) — classement après Q14 (était Q15)
+  // Q14 — puissance maximale de sphère (roulettes positif/négatif) — classement après Q14 (était Q15)
   {
-    type: 'text-open',
-    question: 'Quelles sont les puissances maximales fabriquées en 10 minutes chez Lunettes Pour Tous ? (positif et négatif)',
+    type: 'power-selector',
+    question: 'Quelle est la puissance maximale de sphère fabriquée en 10 minutes chez Lunettes Pour Tous ? (positif et négatif)',
     hint: '+7,25 (positif) · −8,00 (négatif)',
-    autoCorrectAll: ['7,25', '8,0'],
+    correctPosVal: 7.25,
+    correctNegVal: -8,
   },
   // Q15 — signification de Plan — classement après Q15
   {
@@ -162,12 +163,17 @@ export const QUIZ_J1 = [
     options: ['Myope', 'Presbyte', 'Astigmate', 'Ni myope ni hypermétrope'],
     correct: 3,
   },
-  // Q16 — catégories de montures
+  // Q16 — catégories de montures (3 encadrés, ordre libre)
   {
-    type: 'text-open',
+    type: 'text-open-multi',
+    fields: 3,
     question: 'Citez les trois catégories de montures disponibles chez Lunettes Pour Tous.',
     hint: 'Acétate · Métal · Injecté',
-    autoCorrectAllOr: [['acétate', 'acetate'], ['métal', 'metal'], ['inject', 'plastique']],
+    autoCorrectEach: [
+      ['acétate', 'acetate'],
+      ['métal', 'metal', 'métallique', 'metallique'],
+      ['inject'],
+    ],
   },
   // Q17 — qcm + ordonnance TV
   {

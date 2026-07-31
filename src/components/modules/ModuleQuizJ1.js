@@ -60,13 +60,13 @@ function OrdoPreview({ q }) {
   if (!ord) return null
   return (
     <div style={{ alignSelf: 'center', textAlign: 'center', marginBottom: 16 }}>
-      {q.ordoLabel && (
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#4ade80', marginBottom: 6 }}>{q.ordoLabel}</div>
-      )}
       <div style={{
         background: 'rgba(0,171,233,0.06)', border: '1px solid rgba(0,171,233,0.2)',
         borderRadius: 12, padding: '12px 28px', display: 'inline-block',
       }}>
+        {q.ordoLabel && (
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#4ade80', marginBottom: 8 }}>{q.ordoLabel}</div>
+        )}
         {['od', 'og'].map(eye => {
           const d = ord[eye]
           let right = d.sph || '—'
@@ -383,7 +383,7 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
               fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
             }}>{ordoShown ? '📋 Ordonnance affichée sur TV' : '📋 Réafficher l\'ordonnance sur TV'}</button>
           )}
-          {hasOptions && total > 0 && (
+          {total > 0 && (
             <button onClick={handleShowCorrection} style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', padding: '14px 24px', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
             🎯 Voir la correction
           </button>

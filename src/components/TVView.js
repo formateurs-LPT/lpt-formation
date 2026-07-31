@@ -7114,11 +7114,12 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, sho
     return () => clearInterval(t)
   }, [qIdx, sessionCode])
 
-  if (!question?.options) return null
+  if (!question) return null
   const total_answers = answers.length
   const correct_count = answers.filter(r => r.is_correct).length
   const wrong_count   = total_answers - correct_count
-  const counts = question.options.map((_, i) => answers.filter(r => r.answer_idx === i).length)
+  const counts = question.options ? question.options.map((_, i) => answers.filter(r => r.answer_idx === i).length) : []
+  const showOrdonnance = question.ordonnance && (showOrdo || question.type === 'ordonnance-fill' || question.type === 'qcm-ordonnance')
 
   const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -7166,51 +7167,67 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, sho
         marginBottom: 16, lineHeight: 1.35, maxWidth: 860, alignSelf: 'center',
       }}>{question.question}</div>
 
-      {/* Ordonnance — ré-affichée si le formateur le demande */}
-      {showOrdo && question.ordonnance && (
-        <TVOrdonnanceDisplay ordonnance={question.ordonnance} />
+      {/* Ordonnance — ré-affichée si le formateur le demande (ou déjà visible pour une saisie d'ordonnance) */}
+      {showOrdonnance && (
+        <TVOrdonnanceDisplay ordonnance={question.ordonnance} hideLabels={question.hideOrdoLabels} cylInParens={question.cylInParens} hideNonAddHeaders={question.hideNonAddHeaders} topLabel={question.ordoLabel} />
       )}
 
       {/* Options */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 800, alignSelf: 'center', width: '100%' }}>
-        {question.options.map((opt, i) => {
-          const isCorrect = Array.isArray(question.correct) ? question.correct.includes(i) : i === question.correct
-          const count = counts[i]
-          const pct = total_answers > 0 ? (count / total_answers) * 100 : 0
-          return (
-            <div key={i} style={{
-              background: isCorrect ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
-              border: `2px solid ${isCorrect ? '#4ade80' : 'rgba(255,255,255,0.08)'}`,
-              borderRadius: 16, padding: '12px 18px',
-              boxShadow: isCorrect ? '0 0 24px rgba(74,222,128,0.2)' : 'none',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                    background: isCorrect ? '#4ade80' : OPTION_COLORS[i],
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 15, fontWeight: 800, color: isCorrect ? '#052e16' : '#fff',
-                  }}>{'ABCD'[i]}</div>
-                  <span style={{ fontSize: 16, fontWeight: isCorrect ? 800 : 500, color: isCorrect ? '#4ade80' : '#fff' }}>{opt}</span>
-                  {isCorrect && <span style={{ fontSize: 12, color: '#4ade80', fontWeight: 700, background: 'rgba(34,197,94,0.15)', padding: '2px 12px', borderRadius: 20 }}>✓ Bonne réponse</span>}
+      {question.options && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 800, alignSelf: 'center', width: '100%' }}>
+          {question.options.map((opt, i) => {
+            const isCorrect = Array.isArray(question.correct) ? question.correct.includes(i) : i === question.correct
+            const count = counts[i]
+            const pct = total_answers > 0 ? (count / total_answers) * 100 : 0
+            return (
+              <div key={i} style={{
+                background: isCorrect ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
+                border: `2px solid ${isCorrect ? '#4ade80' : 'rgba(255,255,255,0.08)'}`,
+                borderRadius: 16, padding: '12px 18px',
+                boxShadow: isCorrect ? '0 0 24px rgba(74,222,128,0.2)' : 'none',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                      background: isCorrect ? '#4ade80' : OPTION_COLORS[i],
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 15, fontWeight: 800, color: isCorrect ? '#052e16' : '#fff',
+                    }}>{'ABCD'[i]}</div>
+                    <span style={{ fontSize: 16, fontWeight: isCorrect ? 800 : 500, color: isCorrect ? '#4ade80' : '#fff' }}>{opt}</span>
+                    {isCorrect && <span style={{ fontSize: 12, color: '#4ade80', fontWeight: 700, background: 'rgba(34,197,94,0.15)', padding: '2px 12px', borderRadius: 20 }}>✓ Bonne réponse</span>}
+                  </div>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: isCorrect ? '#4ade80' : 'rgba(255,255,255,0.6)' }}>
+                    {count} <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>vote{count > 1 ? 's' : ''}</span>
+                  </span>
                 </div>
-                <span style={{ fontSize: 20, fontWeight: 800, color: isCorrect ? '#4ade80' : 'rgba(255,255,255,0.6)' }}>
-                  {count} <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>vote{count > 1 ? 's' : ''}</span>
-                </span>
+                <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%', borderRadius: 4,
+                    width: `${pct}%`,
+                    background: isCorrect ? '#4ade80' : OPTION_COLORS[i],
+                    transition: 'width .5s ease',
+                  }} />
+                </div>
               </div>
-              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%', borderRadius: 4,
-                  width: `${pct}%`,
-                  background: isCorrect ? '#4ade80' : OPTION_COLORS[i],
-                  transition: 'width .5s ease',
-                }} />
-              </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Puissances max (power-selector) — pas d'options, on affiche juste la bonne réponse */}
+      {!question.options && question.type === 'power-selector' && (
+        <div style={{ display: 'flex', gap: 20, justifyContent: 'center' }}>
+          <div style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 16, padding: '14px 32px', textAlign: 'center' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>Positif max</div>
+            <div style={{ fontSize: 30, fontWeight: 900, color: '#fff' }}>+{question.correctPosVal?.toFixed(2).replace('.', ',')}</div>
+          </div>
+          <div style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 16, padding: '14px 32px', textAlign: 'center' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>Négatif max</div>
+            <div style={{ fontSize: 30, fontWeight: 900, color: '#fff' }}>−{Math.abs(question.correctNegVal ?? 0).toFixed(2).replace('.', ',')}</div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
