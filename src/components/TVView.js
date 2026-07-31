@@ -2442,8 +2442,7 @@ function TVEntrepriseFreins({ page, pageIndex, total, freinsResponses, revealFre
     const poll = () => sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`).then(r => setParticipantCount((r || []).length)).catch(() => {})
     poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
   }, [sessionCode])
-  const allAnswered = participantCount > 0 && entries.length >= participantCount
-  const shouldShow = revealFreins || allAnswered
+  const shouldShow = !!revealFreins
 
   return (
     <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!shouldShow} answerCount={entries.length} participantCount={participantCount}>
@@ -2479,8 +2478,7 @@ function TVEntreprisePrix({ page, pageIndex, total, prixResponses, revealPrix, s
     const poll = () => sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`).then(r => setParticipantCount((r || []).length)).catch(() => {})
     poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
   }, [sessionCode])
-  const allAnswered = participantCount > 0 && entries.length >= participantCount
-  const shouldShow = revealPrix || allAnswered
+  const shouldShow = !!revealPrix
 
   const prixBanner = revealPrix ? (
     <div style={{
@@ -2532,8 +2530,7 @@ function TVEntreprisePromesse({ page, pageIndex, total, promesseResponses, revea
     const poll = () => sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`).then(r => setParticipantCount((r || []).length)).catch(() => {})
     poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
   }, [sessionCode])
-  const allAnswered = participantCount > 0 && entries.length >= participantCount
-  const shouldShow = revealPromesse || allAnswered
+  const shouldShow = !!revealPromesse
 
   return (
     <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!shouldShow} answerCount={entries.length} participantCount={participantCount}>
@@ -2565,8 +2562,7 @@ function TVEntrepriseVentesOpticien({ page, pageIndex, total, ventesResponses, r
     const poll = () => sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`).then(r => setParticipantCount((r || []).length)).catch(() => {})
     poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
   }, [sessionCode])
-  const allAnswered = participantCount > 0 && entries.length >= participantCount
-  const shouldShow = revealVentes || allAnswered
+  const shouldShow = !!revealVentes
 
   const ventesBanner = revealVentes ? (
     <div style={{
@@ -3564,7 +3560,7 @@ function TVProgressifZoneInteractif({ page, pageIndex, total, progZoneQ, progZon
 }
 
 // ── TV Progressif : retour terrain (bulles) ───────────────────────
-function TVProgressifRetourTerrain({ page, pageIndex, total, progRetourResponses, sessionCode }) {
+function TVProgressifRetourTerrain({ page, pageIndex, total, progRetourResponses, progRetourRevealed, sessionCode }) {
   const entries = Object.entries(progRetourResponses || {})
   const [participantCount, setParticipantCount] = useState(0)
   useEffect(() => {
@@ -3572,10 +3568,9 @@ function TVProgressifRetourTerrain({ page, pageIndex, total, progRetourResponses
     const poll = () => sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`).then(r => setParticipantCount((r || []).length)).catch(() => {})
     poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
   }, [sessionCode])
-  const allAnswered = participantCount > 0 && entries.length >= participantCount
   return (
     <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent="#7c3aed"
-      waiting={!allAnswered} answerCount={entries.length} participantCount={participantCount}
+      waiting={!progRetourRevealed} answerCount={entries.length} participantCount={participantCount}
       moduleLabel="Le Verre Progressif"
     >
       {entries.map(([name, resp], idx) => (
@@ -3593,7 +3588,7 @@ function TVProgressifRetourTerrain({ page, pageIndex, total, progRetourResponses
 }
 
 // ── TV Progressif : jeu d'objections ────────────────────────────
-function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, progObjectionResponses, progBestAnswer, sessionCode }) {
+function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, progObjectionResponses, progObjectionRevealed, progBestAnswer, sessionCode }) {
   const objection = progObjectionIdx !== null && progObjectionIdx !== undefined ? page.objections[progObjectionIdx] : null
   const entries = Object.entries(progObjectionResponses || {})
   const [participantCount, setParticipantCount] = useState(0)
@@ -3602,7 +3597,6 @@ function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, p
     const poll = () => sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`).then(r => setParticipantCount((r || []).length)).catch(() => {})
     poll(); const t = setInterval(poll, 5000); return () => clearInterval(t)
   }, [sessionCode])
-  const allAnswered = participantCount > 0 && entries.length >= participantCount
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #12013a 55%, #0d0a3a 100%)', display: 'flex', flexDirection: 'column', padding: '32px 56px' }}>
@@ -3624,7 +3618,7 @@ function TVProgressifJeuObjections({ page, pageIndex, total, progObjectionIdx, p
           </div>
 
           {/* Réponses */}
-          {!allAnswered ? (
+          {!progObjectionRevealed ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, opacity: 0.8 }}>
               <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>En attente des réponses sur les téléphones…</div>
               {participantCount > 0 && (
@@ -4560,7 +4554,6 @@ function TVSAVBrainstorm({ page, sessionCode, brainstormRevealed }) {
     const t = setInterval(poll, 2000)
     return () => clearInterval(t)
   }, [pageId, sessionCode])
-  const allAnswered = participantCount > 0 && answers.length >= participantCount
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '48px 72px' }}>
@@ -4568,7 +4561,7 @@ function TVSAVBrainstorm({ page, sessionCode, brainstormRevealed }) {
         <div style={{ display: 'inline-block', background: `${page.color}20`, border: `1px solid ${page.color}50`, borderRadius: 24, padding: '6px 24px', fontSize: 13, fontWeight: 700, color: page.color, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 20 }}>💬 Brainstorm</div>
         <div style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1.2, whiteSpace: 'pre-line' }}>{page.question}</div>
       </div>
-      {(!brainstormRevealed || !allAnswered) ? (
+      {!brainstormRevealed ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
           <div style={{ fontSize: 64 }}>📱</div>
           <div style={{ fontSize: 28, fontWeight: 700, color: '#fff' }}>
@@ -4577,7 +4570,7 @@ function TVSAVBrainstorm({ page, sessionCode, brainstormRevealed }) {
               : answers.length === 0 ? 'En attente des réponses…' : `${answers.length} réponse${answers.length > 1 ? 's' : ''} reçue${answers.length > 1 ? 's' : ''}`}
           </div>
           <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic' }}>
-            {allAnswered ? 'Le formateur révèlera les réponses au bon moment' : 'Les participants tapent leur réponse sur leur téléphone'}
+            Le formateur révèlera les réponses au bon moment
           </div>
           {answers.length > 0 && (
             <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
@@ -4606,7 +4599,7 @@ function TVSAVBrainstorm({ page, sessionCode, brainstormRevealed }) {
           ))}
         </div>
       )}
-      {brainstormRevealed && allAnswered && answers.length > 0 && <div style={{ textAlign: 'center', marginTop: 16, fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>{answers.length} réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''}</div>}
+      {brainstormRevealed && answers.length > 0 && <div style={{ textAlign: 'center', marginTop: 16, fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>{answers.length} réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''}</div>}
       <style>{`@keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }`}</style>
     </div>
   )
@@ -6384,7 +6377,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, saisieStage, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, monturesMateriauxResponses, revealMonturesMateriaux, sessionCode, onAmeliProClick }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, saisieStage, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progRetourRevealed, progObjectionIdx, progObjectionResponses, progObjectionRevealed, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, monturesMateriauxResponses, revealMonturesMateriaux, sessionCode, onAmeliProClick }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -6462,8 +6455,8 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   // Progressif module types
   if (page.type === 'progressif-anatomie') return <TVProgressifAnatomie      page={page} pageIndex={pageIndex} total={total} progAnatomieReveal={progAnatomieReveal} />
   if (page.type === 'zone-interactif')     return <TVProgressifZoneInteractif page={page} pageIndex={pageIndex} total={total} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progZoneShowCorrect={progZoneShowCorrect} />
-  if (page.type === 'prog-retour')         return <TVProgressifRetourTerrain  page={page} pageIndex={pageIndex} total={total} progRetourResponses={progRetourResponses} sessionCode={sessionCode} />
-  if (page.type === 'prog-objections')     return <TVProgressifJeuObjections  page={page} pageIndex={pageIndex} total={total} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} progBestAnswer={progBestAnswer} sessionCode={sessionCode} />
+  if (page.type === 'prog-retour')         return <TVProgressifRetourTerrain  page={page} pageIndex={pageIndex} total={total} progRetourResponses={progRetourResponses} progRetourRevealed={progRetourRevealed} sessionCode={sessionCode} />
+  if (page.type === 'prog-objections')     return <TVProgressifJeuObjections  page={page} pageIndex={pageIndex} total={total} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} progObjectionRevealed={progObjectionRevealed} progBestAnswer={progBestAnswer} sessionCode={sessionCode} />
 
   // Types de verres
   if (page.type === 'unifocal')  return <TVTypesVerresUnifocal  pageIndex={pageIndex} total={total} />
@@ -8317,8 +8310,10 @@ export default function TVView() {
   const [progZoneResponses, setProgZoneResponses]       = useState({})
   const [progZoneShowCorrect, setProgZoneShowCorrect]   = useState(false)
   const [progRetourResponses, setProgRetourResponses]   = useState({})
+  const [progRetourRevealed, setProgRetourRevealed]     = useState(false)
   const [progObjectionIdx, setProgObjectionIdx]         = useState(null)
   const [progObjectionResponses, setProgObjectionResponses] = useState({})
+  const [progObjectionRevealed, setProgObjectionRevealed] = useState(false)
   const [progBestAnswer, setProgBestAnswer]             = useState(null)
   const [progAnatomieReveal, setProgAnatomieReveal]     = useState([])
 
@@ -8380,8 +8375,10 @@ export default function TVView() {
     setProgZoneResponses(sharedState.prog_zone_responses || {})
     setProgZoneShowCorrect(!!sharedState.prog_zone_show_correct)
     setProgRetourResponses(sharedState.prog_retour_responses || {})
+    setProgRetourRevealed(!!sharedState.prog_retour_revealed)
     setProgObjectionIdx(sharedState.prog_objection_idx ?? null)
     setProgObjectionResponses(sharedState.prog_objection_responses || {})
+    setProgObjectionRevealed(!!sharedState.prog_objection_revealed)
     setProgBestAnswer(sharedState.prog_best_answer || null)
     setProgAnatomieReveal(sharedState.prog_anatomie_reveal || [])
     const fj = sharedState.faq_journee || null
@@ -8667,8 +8664,10 @@ export default function TVView() {
             progZoneResponses={progZoneResponses}
             progZoneShowCorrect={progZoneShowCorrect}
             progRetourResponses={progRetourResponses}
+            progRetourRevealed={progRetourRevealed}
             progObjectionIdx={progObjectionIdx}
             progObjectionResponses={progObjectionResponses}
+            progObjectionRevealed={progObjectionRevealed}
             progBestAnswer={progBestAnswer}
             progAnatomieReveal={progAnatomieReveal}
             trameStep={trameStep}

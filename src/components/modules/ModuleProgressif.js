@@ -459,6 +459,13 @@ function ZoneInteractifPage({ page, pName, onPrev, onNext, onBack, isFirst, page
 // ── Page Retour Terrain (formateur) ──────────────────────────────
 function RetourTerrainPage({ page, pName, onPrev, onNext, onBack, isFirst, pageIndex, total }) {
   const [responses, setResponses] = useState({})
+  const [revealed, setRevealed] = useState(false)
+
+  useEffect(() => {
+    setRevealed(false)
+    setSharedState({ prog_retour_revealed: false }).catch(() => {})
+    return () => { setSharedState({ prog_retour_revealed: false }).catch(() => {}) }
+  }, [])
 
   useEffect(() => {
     const poll = async () => {
@@ -475,6 +482,12 @@ function RetourTerrainPage({ page, pName, onPrev, onNext, onBack, isFirst, pageI
   const clearResponses = async () => {
     await setSharedState({ prog_retour_responses: {} })
     setResponses({})
+  }
+
+  const toggleReveal = async () => {
+    const next = !revealed
+    setRevealed(next)
+    await setSharedState({ prog_retour_revealed: next }).catch(() => {})
   }
 
   const entries = Object.entries(responses)
@@ -503,6 +516,15 @@ function RetourTerrainPage({ page, pName, onPrev, onNext, onBack, isFirst, pageI
               <button onClick={clearResponses} style={{ background: 'rgba(255,80,80,0.1)', border: '1px solid rgba(255,80,80,0.25)', color: '#ff6b6b', padding: '8px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Effacer</button>
             )}
           </div>
+
+          <button onClick={toggleReveal} disabled={entries.length === 0} style={{
+            marginTop: 16,
+            background: revealed ? 'rgba(34,197,94,0.15)' : entries.length > 0 ? `linear-gradient(135deg, ${ACCENT}, #9f67fa)` : 'rgba(255,255,255,0.06)',
+            border: revealed ? '1px solid rgba(34,197,94,0.4)' : 'none',
+            color: revealed ? '#4ade80' : '#fff',
+            padding: '12px 22px', borderRadius: 12, fontSize: 13, fontWeight: 700,
+            cursor: entries.length > 0 ? 'pointer' : 'default', fontFamily: 'inherit',
+          }}>{revealed ? '✅ Réponses affichées sur TV' : '📺 Afficher les réponses sur TV'}</button>
         </div>
 
         {/* Droite: réponses */}
@@ -534,12 +556,14 @@ function JeuObjectionsPage({ page, pName, onPrev, onNext, onBack, isFirst, isLas
   const [activeObj, setActiveObj] = useState(null) // null | 0-4
   const [responses, setResponses] = useState({})
   const [bestAnswer, setBestAnswer] = useState(null)
+  const [revealed, setRevealed] = useState(false)
 
   const launchObjection = async (idx) => {
     setActiveObj(idx)
     setResponses({})
     setBestAnswer(null)
-    await setSharedState({ prog_objection_idx: idx, prog_objection_responses: {}, prog_best_answer: null })
+    setRevealed(false)
+    await setSharedState({ prog_objection_idx: idx, prog_objection_responses: {}, prog_best_answer: null, prog_objection_revealed: false })
   }
 
   const highlightBest = async (name) => {
@@ -547,11 +571,18 @@ function JeuObjectionsPage({ page, pName, onPrev, onNext, onBack, isFirst, isLas
     await setSharedState({ prog_best_answer: name })
   }
 
+  const toggleReveal = async () => {
+    const next = !revealed
+    setRevealed(next)
+    await setSharedState({ prog_objection_revealed: next }).catch(() => {})
+  }
+
   const clearObjection = async () => {
     setActiveObj(null)
     setResponses({})
     setBestAnswer(null)
-    await setSharedState({ prog_objection_idx: null, prog_objection_responses: {}, prog_best_answer: null })
+    setRevealed(false)
+    await setSharedState({ prog_objection_idx: null, prog_objection_responses: {}, prog_best_answer: null, prog_objection_revealed: false })
   }
 
   useEffect(() => {
@@ -603,9 +634,18 @@ function JeuObjectionsPage({ page, pName, onPrev, onNext, onBack, isFirst, isLas
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.4 }}>"{page.objections[activeObj]}"</div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 10 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>{entries.length} réponse{entries.length !== 1 ? 's' : ''}</div>
-                <button onClick={clearObjection} style={{ background: 'rgba(255,80,80,0.1)', border: '1px solid rgba(255,80,80,0.25)', color: '#ff6b6b', padding: '6px 14px', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Changer</button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={toggleReveal} disabled={entries.length === 0} style={{
+                    background: revealed ? 'rgba(34,197,94,0.15)' : entries.length > 0 ? `${ACCENT}25` : 'rgba(255,255,255,0.06)',
+                    border: revealed ? '1px solid rgba(34,197,94,0.4)' : `1px solid ${ACCENT}50`,
+                    color: revealed ? '#4ade80' : '#fff',
+                    padding: '6px 14px', borderRadius: 8, fontSize: 11, fontWeight: 700,
+                    cursor: entries.length > 0 ? 'pointer' : 'default', fontFamily: 'inherit',
+                  }}>{revealed ? '✅ Affichées sur TV' : '📺 Afficher sur TV'}</button>
+                  <button onClick={clearObjection} style={{ background: 'rgba(255,80,80,0.1)', border: '1px solid rgba(255,80,80,0.25)', color: '#ff6b6b', padding: '6px 14px', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Changer</button>
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 'calc(100vh - 420px)', overflowY: 'auto' }}>
@@ -974,7 +1014,7 @@ export default function ModuleProgressif({ pName, onBack }) {
   const handleTerminate = async () => {
     try {
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
-      await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_retour_responses: {}, prog_objection_idx: null, prog_objection_responses: {}, prog_best_answer: null }).catch(() => {})
+      await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_retour_responses: {}, prog_retour_revealed: false, prog_objection_idx: null, prog_objection_responses: {}, prog_objection_revealed: false, prog_best_answer: null }).catch(() => {})
     } catch { /* best-effort */ }
     onBack()
   }
@@ -982,7 +1022,7 @@ export default function ModuleProgressif({ pName, onBack }) {
   const handleBack = async () => {
     try {
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
-      await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_retour_responses: {}, prog_objection_idx: null, prog_objection_responses: {}, prog_best_answer: null }).catch(() => {})
+      await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_retour_responses: {}, prog_retour_revealed: false, prog_objection_idx: null, prog_objection_responses: {}, prog_objection_revealed: false, prog_best_answer: null }).catch(() => {})
     } catch { /* best-effort */ }
     onBack()
   }
@@ -1011,9 +1051,9 @@ export default function ModuleProgressif({ pName, onBack }) {
     }
     // Vide les réponses textuelles en quittant les pages interactives (réduit l'egress)
     if (page.type === 'prog-retour') {
-      await setSharedState({ prog_retour_responses: {} })
+      await setSharedState({ prog_retour_responses: {}, prog_retour_revealed: false })
     } else if (page.type === 'prog-objections') {
-      await setSharedState({ prog_objection_responses: {}, prog_best_answer: null, prog_objection_idx: null })
+      await setSharedState({ prog_objection_responses: {}, prog_best_answer: null, prog_objection_idx: null, prog_objection_revealed: false })
     }
     setPageIndex(i => i + 1)
   }
