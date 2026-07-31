@@ -434,6 +434,102 @@ function SessionsHistoryView({ onBack, onToast }) {
 // ── Changelog data ───────────────────────────────────────────────
 const APP_UPDATES = [
   {
+    id: '2026-07-31',
+    date: '13 → 31 juillet 2026',
+    title: 'Récap complet — nouveautés de l\'app pendant tes vacances',
+    tag: 'Gros récap',
+    tagColor: '#fbbf24',
+    sections: [
+      {
+        title: 'Retour de formation — refonte complète',
+        accent: '#818cf8',
+        tag: 'Nouveau',
+        items: [
+          'Nouvel onglet "Retour de formation" sur le dashboard : une fiche de suivi par collaborateur, par semaine',
+          'Évaluation des thèmes sur 4 niveaux (Pas compris / Notions / En cours / Maîtrisé) avec calcul automatique du taux d\'acquisition',
+          'Commentaires formateur : Attitude générale, Participation (tout nouveau), Compréhension des contenus — chacun avec statut RAS / Peut mieux faire / Attention + note libre',
+          'Appréciation globale à 4 niveaux : Très bon élément / Ça va le faire (tout nouveau) / Accompagnement / Compliqué',
+          '"Mot du formateur" en texte libre + bouton correcteur d\'orthographe sur toutes les zones de texte',
+          'Compte rendu manager visuel avec lien partageable, envoi par email (individuel ou "Tout envoyer" groupé par manager) et suivi d\'envoi',
+          'Onglet "Historique" pour retrouver les formations passées',
+          'Rapports Directeurs Régionaux (Bryan / Sarah / Alexandre) intégrés directement dans Retour de formation',
+        ],
+      },
+      {
+        title: 'Auto-évaluation des formés',
+        accent: '#10b981',
+        tag: 'Nouveau module',
+        items: [
+          'Questionnaire de fin de formation rempli par le formé lui-même : niveau par thème en étoiles, thèmes où il souhaite être accompagné, suggestions libres',
+          'Avis sur la formation type Google (étoiles + commentaire), moyenne visible sur le dashboard',
+          'Le formateur lance le questionnaire formé par formé (plus d\'envoi groupé) et peut le renvoyer individuellement en cas de besoin',
+          'Vue formateur : filtrage par catégorie, récap par formé, compte rendu de synthèse global',
+        ],
+      },
+      {
+        title: 'Nouveaux modules de formation',
+        accent: '#00abe9',
+        tag: 'Contenu',
+        items: [
+          'LPT Santé (nouveau module Journée 3 France) avec animations tiers payant et prise en charge',
+          'Parcours remboursés (Le Suprême, 1=1, 100% Santé) + Remboursement optique France',
+          'Mutuelles et INAMI côté Belgique',
+          'Journée 4 SAV complète : Retraits, Ajustages, RAZ',
+          'Entraînement oral sur le module Bases de l\'optique',
+          'Fiche récap Belgique (8 modules) + Journée 4 terrain Belgique',
+          'Atelier "prise en charge" — simulation de l\'app de vente en magasin (tuile "Nouveau · Test")',
+        ],
+      },
+      {
+        title: 'Quiz & mini-jeux',
+        accent: '#a78bfa',
+        tag: 'Interactif',
+        items: [
+          'Quiz Jour 1 refondu (21 questions, nouveaux types de questions)',
+          'Quiz final refondu (30 questions, ordonnances visuelles, questions à choix multiples)',
+          'Quiz culture d\'entreprise et quiz tiers payant, en texte libre avec validation formateur',
+          'Quiz "réponses libres" générique : le formateur pose une question à l\'oral, les formés répondent sur mobile, correction en direct',
+          'Jeu de questions entre formés (peer quiz) en Journée 2',
+          'Mini-jeux : débrief collectif (observateurs + TV anonyme), tirage au sort du vendeur sans répétition',
+        ],
+      },
+      {
+        title: 'Diffuseur TV & salle',
+        accent: '#f472b6',
+        tag: 'Amélioration',
+        items: [
+          'Bouton QR flottant fiable sur toutes les pages formateur',
+          'Outil annotation (stylo/gomme) directement sur l\'écran diffuseur',
+          'Bulle de questions des formés : anonyme sur TV, gérable question par question côté formateur',
+          'Alertes distraction (messages humoristiques aléatoires) et suivi de présence des formés en temps réel',
+        ],
+      },
+      {
+        title: 'Sonnette connectée',
+        accent: '#f59e0b',
+        tag: 'Nouveau',
+        items: [
+          'Page d\'arrivée des participants + moniteur formateur en temps réel',
+          'Onglet Historique avec heure d\'arrivée',
+          'Bouton sourdine (le réglage reste en mémoire d\'une session à l\'autre)',
+        ],
+      },
+      {
+        title: 'Mobile, PWA & dashboard',
+        accent: '#4ade80',
+        tag: 'Confort',
+        items: [
+          'Ajout de l\'app sur l\'écran d\'accueil iPhone (icône + bannière plein écran)',
+          'Mode portrait plein écran et boutons tactiles repositionnés sur mobile',
+          'Dark mode complet sur tout le dashboard',
+          'Catégorie Belgique désormais distincte de Visio Province dans les entrées',
+          'Fiches pratiques France/Belgique : export PDF propre + bouton Partager (email direct aux formés)',
+          'Idées : stockage partagé Supabase (visible par tous les formateurs), votes, validation, onglet "Idées faites"',
+        ],
+      },
+    ],
+  },
+  {
     id: '2026-07-02',
     date: '2 juillet 2026',
     title: 'Animation 0 intermédiaire · Offres Classique · Mises à jour contenu',
@@ -1673,6 +1769,8 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
 
         </div>
+
+        <AppUpdatesWidget />
 
         {/* Planning + Shortcuts + Fiches */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
