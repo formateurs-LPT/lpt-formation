@@ -10,6 +10,7 @@ import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, OPTIQU
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import { useIsMobile } from '@/lib/useIsMobile'
+import { HeadlightVision } from '@/lib/headlightVision'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -491,15 +492,19 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNex
 
 // ── Page 3 : Lire une ordonnance ─────────────────────────────────
 function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
-  const [revealStep, setRevealStep] = useState(1) // 1=sphère, 2=cylindre+axe, 3=addition
+  const [revealStep, setRevealStep] = useState(0) // 0=tableau vide, 1=+sphère, 2=+cylindre+axe, 3=+addition
   const [playing, setPlaying] = useState(false)
+  const [headlightDemo, setHeadlightDemo] = useState(false)
+  const [headlightCyl, setHeadlightCyl] = useState(0)
+  const [headlightAxe, setHeadlightAxe] = useState(0)
   const videoPreviewRef = useRef(null)
 
   useEffect(() => {
-    setRevealStep(1)
+    setRevealStep(0)
     setPlaying(true)
-    setSharedState({ ordo_playing: true, ordo_reveal_step: 1 }).catch(() => {})
-    return () => { setSharedState({ ordo_playing: false }).catch(() => {}) }
+    setHeadlightDemo(false)
+    setSharedState({ ordo_playing: true, ordo_reveal_step: 0, ordo_headlight_demo: false }).catch(() => {})
+    return () => { setSharedState({ ordo_playing: false, ordo_headlight_demo: false }).catch(() => {}) }
   }, [page.id])
 
   useEffect(() => {
@@ -525,9 +530,31 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
     else onNext()
   }
 
-  // revealStep 1 = sphère seule, 2 = +cylindre+axe, 3 = +addition
+  const openHeadlightDemo = () => {
+    setHeadlightDemo(true)
+    setHeadlightCyl(0)
+    setHeadlightAxe(0)
+    setSharedState({ ordo_headlight_demo: true, ordo_headlight_cyl: 0, ordo_headlight_axe: 0 }).catch(() => {})
+  }
+
+  const closeHeadlightDemo = () => {
+    setHeadlightDemo(false)
+    setSharedState({ ordo_headlight_demo: false }).catch(() => {})
+  }
+
+  const handleHeadlightCyl = (val) => {
+    setHeadlightCyl(val)
+    setSharedState({ ordo_headlight_cyl: val }).catch(() => {})
+  }
+
+  const handleHeadlightAxe = (val) => {
+    setHeadlightAxe(val)
+    setSharedState({ ordo_headlight_axe: val }).catch(() => {})
+  }
+
+  // revealStep 0 = tableau vide, 1 = +sphère, 2 = +cylindre+axe, 3 = +addition
   const showCard = (i) => i === 0 ? revealStep >= 1 : revealStep >= 2
-  const showTable = revealStep >= 1
+  const showTable = true
   const showCell = (row, col) => col === 0 ? revealStep >= 1 : revealStep >= 2
   const showAdd = revealStep >= 3
 
@@ -663,8 +690,73 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
       <TrainerNav
         onBack={onBack} onPrev={onPrev} onNext={handleNextReveal}
         isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} nextPage={nextPage}
-        nextLabel={revealStep === 1 ? 'Cylindre & Axe →' : revealStep === 2 ? 'Addition →' : 'Suivant →'}
+        nextLabel={revealStep === 0 ? 'Sphère →' : revealStep === 1 ? 'Cylindre & Axe →' : revealStep === 2 ? 'Addition →' : 'Suivant →'}
       />
+
+      {/* Bouton + panneau "expliquer le sens du cylindre et de l'axe" — dispo dès que cylindre/axe sont révélés */}
+      {revealStep >= 2 && !headlightDemo && (
+        <div style={{ position: 'fixed', bottom: 90, left: 48, zIndex: 60 }}>
+          <button onClick={openHeadlightDemo} style={{
+            background: 'rgba(192,132,252,0.15)', border: '1px solid rgba(192,132,252,0.5)',
+            color: '#c084fc', padding: '12px 22px', borderRadius: 14,
+            fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            🔦 Expliquer le sens du cylindre et de l&apos;axe
+          </button>
+        </div>
+      )}
+
+      {headlightDemo && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(3,17,42,0.96)', backdropFilter: 'blur(6px)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 36,
+          padding: '40px 24px',
+        }}>
+          <button onClick={closeHeadlightDemo} style={{
+            position: 'absolute', top: 28, right: 32,
+            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+            color: 'rgba(255,255,255,0.6)', width: 40, height: 40, borderRadius: 12,
+            fontSize: 18, cursor: 'pointer', fontFamily: 'inherit',
+          }}>✕</button>
+
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#c084fc', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+            Diffusé en direct sur le diffuseur
+          </div>
+
+          <HeadlightVision cyl={headlightCyl} axe={headlightAxe} size={260} label="Aperçu formé" />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, width: '100%', maxWidth: 480 }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#c084fc' }}>Cylindre</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
+                  {headlightCyl.toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+              <input
+                type="range" min={0} max={4} step={0.25}
+                value={headlightCyl}
+                onChange={e => handleHeadlightCyl(parseFloat(e.target.value))}
+                style={{ width: '100%', accentColor: '#c084fc' }}
+              />
+            </div>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#fb923c' }}>Axe</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>{headlightAxe}°</span>
+              </div>
+              <input
+                type="range" min={0} max={180} step={5}
+                value={headlightAxe}
+                onChange={e => handleHeadlightAxe(parseInt(e.target.value, 10))}
+                style={{ width: '100%', accentColor: '#fb923c' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bulle avatar opticien ordonnance */}
       <div style={{

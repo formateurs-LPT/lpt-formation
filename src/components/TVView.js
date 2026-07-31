@@ -9,6 +9,7 @@ import { isTrainerAccount } from '@/lib/participantNames'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
 import { PDMAnimationSVG } from '@/lib/pdmAnimationSvg'
+import { HeadlightVision } from '@/lib/headlightVision'
 import { TVPeerQuizScreen } from '@/components/PeerQuizGame'
 import { TVFreeQuizScreen } from '@/components/FreeQuizGame'
 
@@ -780,7 +781,7 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
 }
 
 // ── TV Ordonnance (type = ordonnance) ────────────────────────────
-function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRevealStep, audioUnlocked }) {
+function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRevealStep, audioUnlocked, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe }) {
   const videoRef = useRef(null)
 
   // Contrôle play/pause — attend que l'audio soit débloqué
@@ -795,10 +796,49 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
   }, [ordoPlaying, audioUnlocked])
 
   // Visibilité pilotée par le formateur (revealStep sync via sharedState)
+  // revealStep : 0 = tableau vide, 1 = +sphère, 2 = +cylindre/axe, 3 = +addition
   const showCard = (i) => i === 0 ? ordoRevealStep >= 1 : ordoRevealStep >= 2
-  const showTable = ordoRevealStep >= 1
+  const showTable = true
   const showCell = (col) => col === 0 ? ordoRevealStep >= 1 : ordoRevealStep >= 2
   const showAdd = ordoRevealStep >= 3
+
+  if (ordoHeadlightDemo) {
+    return (
+      <div style={{
+        minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 40,
+        padding: '40px 60px',
+      }}>
+        <div style={{ position: 'absolute', top: 32, left: 56, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Module · {moduleLabel}</span>
+        </div>
+        <div style={{
+          display: 'inline-block', background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)',
+          borderRadius: 20, padding: '5px 18px', fontSize: 13, fontWeight: 700, color: '#00abe9',
+          textTransform: 'uppercase', letterSpacing: 1.5,
+        }}>Pourquoi cylindre et axe vont ensemble</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 64 }}>
+          <HeadlightVision cyl={ordoHeadlightCyl || 0} axe={ordoHeadlightAxe || 0} size={340} label="Ce que voit le formé" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '18px 28px', minWidth: 200 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#c084fc', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>Cylindre</div>
+              <div style={{ fontSize: 40, fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
+                {(ordoHeadlightCyl || 0).toFixed(2).replace('.', ',')}
+              </div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '18px 28px', minWidth: 200 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#fb923c', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>Axe</div>
+              <div style={{ fontSize: 40, fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
+                {ordoHeadlightAxe || 0}°
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -6241,7 +6281,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, sessionCode, onAmeliProClick }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progObjectionIdx, progObjectionResponses, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, sessionCode, onAmeliProClick }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -6278,7 +6318,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'offres-progressif-11') return <TVOffresProgressif11 />
   if (page.type === 'offres-pack-plan')   return <TVOffresPackPlan step={offresPackPlanStep} />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} ordoRevealStep={ordoRevealStep} audioUnlocked={audioUnlocked} />
+  if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} ordoRevealStep={ordoRevealStep} audioUnlocked={audioUnlocked} ordoHeadlightDemo={ordoHeadlightDemo} ordoHeadlightCyl={ordoHeadlightCyl} ordoHeadlightAxe={ordoHeadlightAxe} />
   if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'entrainement-oral')  return <TVEntrainementOral  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
 
@@ -7857,6 +7897,18 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSele
             </div>
           </div>
 
+          {sel.visionDemo === 'astigmate' && (
+            <div style={{
+              display: 'flex', gap: 48, alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 24, padding: '24px 40px', maxWidth: 900,
+            }}>
+              <HeadlightVision cyl={0} axe={0} size={180} label="Vision normale" sublabel="Point net" />
+              <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.25)' }}>→</div>
+              <HeadlightVision cyl={3} axe={30} size={180} label="Vision astigmate" sublabel="Point déformé en ovale" />
+            </div>
+          )}
+
           <div style={{ display: 'flex', gap: 28 }}>
             {(page.troubles || []).map((t, i) => i !== troublesSelected && (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.25 }}>
@@ -8120,7 +8172,10 @@ export default function TVView() {
   const [opticienPlaying, setOpticienPlaying]   = useState(false)
   const [troublesSelected, setTroublesSelected] = useState(null)
   const [ordoPlaying, setOrdoPlaying]         = useState(false)
-  const [ordoRevealStep, setOrdoRevealStep]   = useState(1)
+  const [ordoRevealStep, setOrdoRevealStep]   = useState(0)
+  const [ordoHeadlightDemo, setOrdoHeadlightDemo] = useState(false)
+  const [ordoHeadlightCyl, setOrdoHeadlightCyl]   = useState(0)
+  const [ordoHeadlightAxe, setOrdoHeadlightAxe]   = useState(0)
   const [audioUnlocked, setAudioUnlocked]     = useState(false)
   const [freinsResponses, setFreinsResponses]           = useState({})
   const [revealFreins, setRevealFreins]                 = useState(false)
@@ -8190,7 +8245,10 @@ export default function TVView() {
     setOpticienPlaying(!!sharedState.opticien_playing)
     setTroublesSelected(sharedState.troubles_selected ?? null)
     setOrdoPlaying(!!sharedState.ordo_playing)
-    setOrdoRevealStep(sharedState.ordo_reveal_step ?? 1)
+    setOrdoRevealStep(sharedState.ordo_reveal_step ?? 0)
+    setOrdoHeadlightDemo(!!sharedState.ordo_headlight_demo)
+    setOrdoHeadlightCyl(sharedState.ordo_headlight_cyl ?? 0)
+    setOrdoHeadlightAxe(sharedState.ordo_headlight_axe ?? 0)
     setFreinsResponses(sharedState.freins_responses || {})
     setRevealFreins(!!sharedState.reveal_freins)
     setPrixResponses(sharedState.prix_responses || {})
@@ -8472,6 +8530,9 @@ export default function TVView() {
             troublesSelected={troublesSelected}
             ordoPlaying={ordoPlaying}
             ordoRevealStep={ordoRevealStep}
+            ordoHeadlightDemo={ordoHeadlightDemo}
+            ordoHeadlightCyl={ordoHeadlightCyl}
+            ordoHeadlightAxe={ordoHeadlightAxe}
             audioUnlocked={audioUnlocked}
             freinsResponses={freinsResponses}
             revealFreins={revealFreins}

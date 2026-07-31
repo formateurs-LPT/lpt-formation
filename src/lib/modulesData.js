@@ -152,7 +152,7 @@ export const OPTIQUE_PAGES = [
     troubles: [
       { num: '01', nom: 'Myope',        def: 'Voit bien de près, flou de loin.',                                     color: '#00abe9', video: '/assets/opticien-videos/myopie.mp4' },
       { num: '02', nom: 'Hypermétrope', def: 'Flou à toutes distances, force constamment pour voir net.',             color: '#7c3aed', video: '/assets/opticien-videos/hypermetropie.mp4' },
-      { num: '03', nom: 'Astigmate',    def: 'Vision déformée à toutes distances.',                                   color: '#f59e0b', video: '/assets/opticien-videos/astigmate.mp4' },
+      { num: '03', nom: 'Astigmate',    def: 'Vision déformée à toutes distances.',                                   color: '#f59e0b', video: '/assets/opticien-videos/astigmate.mp4', visionDemo: 'astigmate' },
       { num: '04', nom: 'Presbyte',     def: 'Vision floue de près à partir de 40-45 ans.',                          color: '#22c55e', video: '/assets/opticien-videos/presbytie.mp4' },
     ],
     avatarScript: "On porte des lunettes pour corriger un trouble visuel. Il en existe 4 principaux : myopie, hypermétropie, astigmatisme et presbytie. Chacun affecte la vision différemment — et chacun a sa correction adaptée.",
