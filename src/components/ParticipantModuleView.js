@@ -1444,18 +1444,12 @@ function CorrectionScaleMobile({ page, pageIndex, total }) {
 }
 
 // ── Ordonnance — vue téléphone ────────────────────────────────────
-function OrdonnanceMobile({ page, pageIndex, total }) {
-  const [step, setStep] = useState(0)
-
-  useEffect(() => {
-    setStep(0)
-    const T = [400, 1000, 1600, 2800, 3200, 3500, 3800, 4200, 4500, 4800, 5300]
-    const timers = T.map((t, i) => setTimeout(() => setStep(s => Math.max(s, i + 1)), t))
-    return () => timers.forEach(clearTimeout)
-  }, [page.id])
-
-  const show = (n) => step >= n
-  const cellVis = (row, col) => show(row === 0 ? 5 + col : 8 + col)
+function OrdonnanceMobile({ page, pageIndex, total, ordoRevealStep }) {
+  // Synchronisé avec le diffuseur : 0=tableau vide (juste les titres), 1=+sphère, 2=+cylindre+axe, 3=+addition
+  const revealStep = ordoRevealStep ?? 0
+  const showCard = (i) => i === 0 ? revealStep >= 1 : revealStep >= 2
+  const cellVis = (row, col) => col === 0 ? revealStep >= 1 : revealStep >= 2
+  const showAdd = revealStep >= 3
 
   return (
     <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
@@ -1486,8 +1480,8 @@ function OrdonnanceMobile({ page, pageIndex, total }) {
               background: `${col.color}0d`, border: `1px solid ${col.color}25`,
               borderLeft: `4px solid ${col.color}`, borderRadius: 14,
               padding: '14px 16px',
-              opacity: show(i + 1) ? 1 : 0,
-              transform: show(i + 1) ? 'translateY(0)' : 'translateY(12px)',
+              opacity: showCard(i) ? 1 : 0,
+              transform: showCard(i) ? 'translateY(0)' : 'translateY(12px)',
               transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
             }}>
               <div style={{ minWidth: 64, flexShrink: 0, fontSize: 10, fontWeight: 800, color: col.color, textTransform: 'uppercase', letterSpacing: 1 }}>
@@ -1501,13 +1495,8 @@ function OrdonnanceMobile({ page, pageIndex, total }) {
           ))}
         </div>
 
-        {/* Phase 2 — Table */}
-        <div style={{
-          opacity: show(4) ? 1 : 0,
-          transform: show(4) ? 'translateY(0)' : 'translateY(12px)',
-          transition: 'all 0.5s ease',
-          marginTop: 8,
-        }}>
+        {/* Phase 2 — Table (les titres de colonnes sont toujours visibles, seules les valeurs se dévoilent) */}
+        <div style={{ marginTop: 8 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
             Exemple d&apos;ordonnance
           </div>
@@ -1555,7 +1544,7 @@ function OrdonnanceMobile({ page, pageIndex, total }) {
             marginTop: 10, display: 'flex', alignItems: 'center', gap: 12,
             padding: '12px 16px',
             background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 12,
-            opacity: show(11) ? 1 : 0, transform: show(11) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s ease',
+            opacity: showAdd ? 1 : 0, transform: showAdd ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s ease',
           }}>
             <div style={{ fontSize: 10, fontWeight: 800, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 1.5 }}>Addition</div>
             <div style={{ fontSize: 18, fontWeight: 800, color: '#4ade80', fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.add}</div>
@@ -2146,14 +2135,14 @@ const APP_GOLD = '#c8a52a'
 const APP_BG   = '#eae7f0'
 const APP_DARK = '#2a2840'
 
-// ── Tableaux de valeurs (ordonnés : drag-up = négatif/moins, drag-down = positif/plus) ──
+// ── Tableaux de valeurs (ordonnés : moins en haut, plus en bas) ──
 const SPH_VALS = Array.from({ length: 65 }, (_, i) => {
-  const v = parseFloat((8 - i * 0.25).toFixed(3))
+  const v = parseFloat((-8 + i * 0.25).toFixed(3))
   const a = Math.abs(v).toFixed(2).replace('.', ',')
   return { val: v, label: v > 0.001 ? `+${a}` : v < -0.001 ? `−${a}` : '0,00' }
 })
 const CYL_VALS = Array.from({ length: 65 }, (_, i) => {
-  const v = parseFloat((8 - i * 0.25).toFixed(3))
+  const v = parseFloat((-8 + i * 0.25).toFixed(3))
   const a = Math.abs(v).toFixed(2).replace('.', ',')
   return { val: v, label: v > 0.001 ? `+${a}` : v < -0.001 ? `−${a}` : '0,00' }
 })
@@ -2164,13 +2153,13 @@ const ADD_VALS = Array.from({ length: 17 }, (_, i) => {
 })
 
 // Index "zéro" dans chaque tableau
-const SPH_ZERO = 32   // 8 - 32*0.25 = 0.00
-const CYL_ZERO = 32   // 8 - 32*0.25 = 0.00
+const SPH_ZERO = 32   // -8 + 32*0.25 = 0.00
+const CYL_ZERO = 32   // -8 + 32*0.25 = 0.00
 const AXE_ZERO = 0    // 0°
 const ADD_ZERO = 0    // 0.00
 
-const findSphIdx = v => Math.max(0, Math.min(64, Math.round((8 - v) / 0.25)))
-const findCylIdx = v => Math.max(0, Math.min(64, Math.round((8 - v) / 0.25)))
+const findSphIdx = v => Math.max(0, Math.min(64, Math.round((v + 8) / 0.25)))
+const findCylIdx = v => Math.max(0, Math.min(64, Math.round((v + 8) / 0.25)))
 const findAxeIdx = v => Math.max(0, Math.min(180, Math.round(v)))
 
 // ── WheelPicker (roulette tactile) ────────────────────────────────
@@ -4188,7 +4177,7 @@ function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, e
   )
 }
 
-function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint, rembfrRevealed, entrainementQ, entrainementVfCorrect, entrainementClearTs, entrainementCustomQText }) {
+function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint, rembfrRevealed, entrainementQ, entrainementVfCorrect, entrainementClearTs, entrainementCustomQText, ordoRevealStep }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
@@ -4207,7 +4196,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
   if (page.type === 'troubles-intro')    return <TroublesIntroMobile      page={page} pageIndex={pageIndex} total={total} />
   if (page.type === 'troubles-list')    return <TroublesListMobile       page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'correction-scale') return <CorrectionScaleMobile    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'ordonnance')        return <OrdonnanceMobile         page={page} pageIndex={pageIndex} total={total} />
+  if (page.type === 'ordonnance')        return <OrdonnanceMobile         page={page} pageIndex={pageIndex} total={total} ordoRevealStep={ordoRevealStep} />
   if (page.type === 'pause')             return <PauseMobile              page={page} pageIndex={pageIndex} total={total} pName={pName} />
   if (page.type === 'parcours-tiers-payant') return <PauseMobile          page={page} pageIndex={pageIndex} total={total} pName={pName} />
   if (page.type === 'tiers-payant-explication') return (
@@ -5198,6 +5187,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const [entrainementVfCorrect, setEntrainementVfCorrect] = useState(null)
   const [entrainementClearTs, setEntrainementClearTs]     = useState(null)
   const [entrainementCustomQText, setEntrainementCustomQText] = useState(null)
+  const [ordoRevealStep, setOrdoRevealStep]       = useState(0)
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
@@ -5216,6 +5206,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     setEntrainementVfCorrect(sharedState.entrainement_vf_correct ?? null)
     setEntrainementClearTs(sharedState.entrainement_clear_ts ?? null)
     setEntrainementCustomQText(sharedState.entrainement_custom_q_text ?? null)
+    setOrdoRevealStep(sharedState.ordo_reveal_step ?? 0)
     // Force-disconnect déclenché par le formateur
     // Ignoré si le formé s'est reconnecté après le kick (joined_at > kickTimestamp)
     const kickTimestamp = Number(sharedState.forced_disconnects?.[pName]) || 0
@@ -5315,7 +5306,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
               : isQuiz
               ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
               : page
-                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} moduleId={activeModule} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} rembfrRevealed={rembfrRevealed} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} entrainementCustomQText={entrainementCustomQText} />
+                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} moduleId={activeModule} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} rembfrRevealed={rembfrRevealed} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} entrainementCustomQText={entrainementCustomQText} ordoRevealStep={ordoRevealStep} />
                 : faqJournee
                   ? <FAQInputMobile journeeId={faqJournee} />
                   : <ParticipantDashboard pName={pName} sessionCode={sessionCode} />
