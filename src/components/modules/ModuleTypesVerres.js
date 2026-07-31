@@ -540,7 +540,9 @@ function ContentPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pag
 // ── Quiz Controller (vue formateur) — switcher par type ──────────
 function QuizController({ quizQ, onNext, onEnd, onBack }) {
   const q = TYPES_VERRES_QUIZ[quizQ]
-  if (q.type === 'text-open') return <TextOpenController quizQ={quizQ} onNext={onNext} onEnd={onEnd} onBack={onBack} />
+  if (q.type === 'text-open' || q.type === 'text-open-multi' || q.type === 'text-open-pairs') {
+    return <TextOpenController quizQ={quizQ} onNext={onNext} onEnd={onEnd} onBack={onBack} />
+  }
   return <MCQController quizQ={quizQ} onNext={onNext} onEnd={onEnd} onBack={onBack} />
 }
 

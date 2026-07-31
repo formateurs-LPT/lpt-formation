@@ -600,7 +600,7 @@ export default function ModuleQuizJ1({ pName, onBack }) {
   return (
     <>
       <style>{STYLES}</style>
-      {type === 'text-open' ? (
+      {(type === 'text-open' || type === 'text-open-multi' || type === 'text-open-pairs') ? (
         <TextOpenController quizQ={quizQ} isLast={isLast} onNext={handleNextQuestion} onEnd={handleEndQuiz} />
       ) : (
         <StandardController quizQ={quizQ} isLast={isLast} onNext={handleNextQuestion} onEnd={handleEndQuiz} />
