@@ -264,23 +264,8 @@ function ParticipantModuleLobby({ moduleLabel, moduleSub }) {
     }}>
       <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={140} height={52}
         style={{ objectFit: 'contain', marginBottom: 40 }} />
-      <div style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>
-        Module de formation
-      </div>
-      <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', lineHeight: 1.2, marginBottom: 12 }}>
+      <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>
         {moduleLabel}
-      </div>
-      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 40, lineHeight: 1.6 }}>
-        {moduleSub}
-      </p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 8, height: 8, borderRadius: '50%', background: '#00abe9',
-          animation: 'waitDot 1.4s ease-in-out infinite',
-        }} />
-        <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
-          Démarrage imminent…
-        </span>
       </div>
     </div>
   )
