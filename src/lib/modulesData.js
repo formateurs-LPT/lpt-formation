@@ -46,7 +46,7 @@ export const TYPES_VERRES_QUIZ = [
   {
     question: 'Un client myope et astigmate de 28 ans peut avoir des verres progressifs.',
     options: ['Vrai', 'Faux'],
-    correct: 0,
+    correct: 1,
   },
 ]
 
