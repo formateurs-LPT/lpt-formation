@@ -7173,7 +7173,7 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, sho
       {/* Options */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 800, alignSelf: 'center', width: '100%' }}>
         {question.options.map((opt, i) => {
-          const isCorrect = i === question.correct
+          const isCorrect = Array.isArray(question.correct) ? question.correct.includes(i) : i === question.correct
           const count = counts[i]
           const pct = total_answers > 0 ? (count / total_answers) * 100 : 0
           return (

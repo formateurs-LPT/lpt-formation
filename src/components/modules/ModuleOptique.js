@@ -1612,6 +1612,10 @@ function TextOpenControllerOptique({ quizQ, isLast, onNext, onEnd, onBack }) {
     }
   }
 
+  const handleShowCorrection = async () => {
+    await setSharedState({ quiz_show_correction: true }).catch(() => {})
+  }
+
   const bg = { minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 40px' }
 
   return (
@@ -1669,7 +1673,12 @@ function TextOpenControllerOptique({ quizQ, isLast, onNext, onEnd, onBack }) {
         })}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 28, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        {openAnswers.length > 0 && (
+          <button onClick={handleShowCorrection} style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', padding: '14px 28px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            🎯 Voir la correction
+          </button>
+        )}
         {isLast ? (
           <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓ Terminer le quiz</button>
         ) : (

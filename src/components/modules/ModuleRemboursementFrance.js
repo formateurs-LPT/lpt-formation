@@ -674,11 +674,16 @@ function RembfrTextOpenController({ quizQ, onNext, onEnd, onBack }) {
         })}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
+        {openAnswers.length > 0 && (
+          <button onClick={() => setSharedState({ quiz_show_correction: true }).catch(() => {})} style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', padding: '14px 28px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            🎯 Voir la correction
+          </button>
+        )}
         {isLast ? (
           <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Terminer le quiz</button>
         ) : (
-          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #0070a0, #0089ba)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,137,186,0.4)' }}>Question suivante →</button>
+          <button onClick={async () => { await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{ background: 'linear-gradient(135deg, #0070a0, #0089ba)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,137,186,0.4)' }}>Question suivante →</button>
         )}
       </div>
     </div>
@@ -751,11 +756,16 @@ function RembfrMCQController({ quizQ, onNext, onEnd, onBack }) {
           <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginRight: 6 }}>{total}</span>
           participant{total !== 1 ? 's' : ''} {total !== 1 ? 'ont' : 'a'} répondu
         </div>
-        {isLast ? (
-          <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Terminer le quiz</button>
-        ) : (
-          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #0070a0, #0089ba)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,137,186,0.4)' }}>Question suivante →</button>
-        )}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          {total > 0 && (
+            <button onClick={() => setSharedState({ quiz_show_correction: true }).catch(() => {})} style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Révéler les réponses →</button>
+          )}
+          {isLast ? (
+            <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Terminer le quiz</button>
+          ) : (
+            <button onClick={async () => { await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{ background: 'linear-gradient(135deg, #0070a0, #0089ba)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,137,186,0.4)' }}>Question suivante →</button>
+          )}
+        </div>
       </div>
     </div>
   )

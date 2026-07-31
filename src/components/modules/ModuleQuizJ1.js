@@ -215,11 +215,16 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
         })}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        {answers.length > 0 && (
+          <button onClick={() => setSharedState({ quiz_show_correction: true }).catch(() => {})} style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', padding: '14px 28px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            🎯 Voir la correction
+          </button>
+        )}
         {isLast ? (
           <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓ Terminer le quiz</button>
         ) : (
-          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #0070a8, #00abe9)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Question suivante →</button>
+          <button onClick={async () => { await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{ background: 'linear-gradient(135deg, #0070a8, #00abe9)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Question suivante →</button>
         )}
       </div>
     </div>
@@ -231,6 +236,9 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
   const q = QUIZ_J1[quizQ]
   const type = q.type || 'qcm'
   const [liveAnswers, setLiveAnswers] = useState([])
+  const [ordoShown, setOrdoShown] = useState(false)
+
+  useEffect(() => { setOrdoShown(false) }, [quizQ])
 
   useEffect(() => {
     const code = getActiveSessionCode()
@@ -251,6 +259,15 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
   const hasOptions = !!q.options
   const counts = hasOptions ? q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length) : []
   const correctIdx = hasOptions && !Array.isArray(q.correct) ? q.correct : null
+
+  const handleShowCorrection = async () => {
+    await setSharedState({ quiz_show_correction: true }).catch(() => {})
+  }
+  const handleToggleOrdo = async () => {
+    const next = !ordoShown
+    setOrdoShown(next)
+    await setSharedState({ quiz_ordo_show: next }).catch(() => {})
+  }
 
   const bg = { minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }
 
@@ -328,11 +345,25 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
           <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginRight: 4 }}>{total}</span>
           réponse{total > 1 ? 's' : ''}
         </div>
-        {isLast ? (
-          <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓ Terminer le quiz</button>
-        ) : (
-          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #0070a8, #00abe9)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Question suivante →</button>
-        )}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          {q.ordonnance && (
+            <button onClick={handleToggleOrdo} style={{
+              background: ordoShown ? 'rgba(0,171,233,0.25)' : 'rgba(0,171,233,0.1)',
+              border: '1px solid rgba(0,171,233,0.4)', color: '#00abe9', padding: '10px 18px', borderRadius: 12,
+              fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}>{ordoShown ? '📋 Ordonnance affichée sur TV' : '📋 Réafficher l\'ordonnance sur TV'}</button>
+          )}
+          {hasOptions && total > 0 && (
+            <button onClick={handleShowCorrection} style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', padding: '14px 24px', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+            🎯 Voir la correction
+          </button>
+          )}
+          {isLast ? (
+            <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓ Terminer le quiz</button>
+          ) : (
+            <button onClick={async () => { await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false }).catch(() => {}); onNext() }} style={{ background: 'linear-gradient(135deg, #0070a8, #00abe9)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Question suivante →</button>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -460,10 +491,10 @@ export default function ModuleQuizJ1({ pName, onBack }) {
   const handleNextQuestion = async () => {
     const next = quizQ + 1
     if (next % 5 === 0 && next < QUIZ_J1.length) {
-      await setSharedState({ quiz_show_correction: false, quiz_interstitial_q: next }).catch(() => {})
+      await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false, quiz_interstitial_q: next }).catch(() => {})
       setQuizInterstitial(true)
     } else {
-      await setSharedState({ quiz_show_correction: false, quiz_interstitial_q: null }).catch(() => {})
+      await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false, quiz_interstitial_q: null }).catch(() => {})
     }
     await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 100 + next }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(next)

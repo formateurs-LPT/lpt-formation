@@ -22,6 +22,38 @@ const STYLES = `
 `
 
 // ── Contrôleur questions texte libre ─────────────────────────────
+function OrdoPreview({ q }) {
+  const ord = q.ordonnance
+  if (!ord) return null
+  return (
+    <div style={{ alignSelf: 'center', textAlign: 'center', marginBottom: 16 }}>
+      {q.ordoLabel && (
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#4ade80', marginBottom: 6 }}>{q.ordoLabel}</div>
+      )}
+      <div style={{
+        background: 'rgba(201,162,39,0.06)', border: '1px solid rgba(201,162,39,0.25)',
+        borderRadius: 12, padding: '12px 28px', display: 'inline-block',
+      }}>
+        {['od', 'og'].map(eye => {
+          const d = ord[eye]
+          let right = d.sph || '—'
+          if (d.cyl) {
+            if (q.cylInParens) right += ` (${d.cyl})  ${d.axe}°`
+            else right += `  ${d.cyl}  ${d.axe}°`
+          }
+          if (d.add) right += `  Add ${d.add}`
+          return (
+            <div key={eye} style={{ fontSize: 18, color: '#fff', fontFamily: 'monospace', marginBottom: eye === 'od' ? 6 : 0 }}>
+              <span style={{ color: '#c9a227', fontWeight: 800, marginRight: 16 }}>{eye.toUpperCase()}</span>
+              {right}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
   const q = QUIZ_FINAL_QUESTIONS[quizQ]
   const [answers, setAnswers] = useState([])
@@ -132,7 +164,14 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
       </div>
 
       {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+        {answers.length > 0 && (
+          <button onClick={() => setSharedState({ quiz_show_correction: true }).catch(() => {})} style={{
+            background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)',
+            color: '#fbbf24', padding: '14px 28px', borderRadius: 14,
+            fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          }}>🎯 Voir la correction</button>
+        )}
         {isLast ? (
           <button onClick={onEnd} style={{
             background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none',
@@ -141,7 +180,7 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
             boxShadow: '0 6px 24px rgba(34,197,94,0.4)',
           }}>✓ Terminer le quiz</button>
         ) : (
-          <button onClick={onNext} style={{
+          <button onClick={async () => { await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{
             background: 'linear-gradient(135deg, #c9a227, #e0b830)', border: 'none',
             color: '#fff', padding: '14px 36px', borderRadius: 14,
             fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
@@ -156,8 +195,11 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
 // ── Quiz Controller (vue formateur) ───────────────────────────────
 function QuizController({ quizQ, onNext, onEnd, onBack }) {
   const [liveAnswers, setLiveAnswers] = useState([])
+  const [ordoShown, setOrdoShown] = useState(false)
   const q = QUIZ_FINAL_QUESTIONS[quizQ]
   const isLast = quizQ >= QUIZ_FINAL_QUESTIONS.length - 1
+
+  useEffect(() => { setOrdoShown(false) }, [quizQ])
 
   useEffect(() => {
     const poll = async () => {
@@ -170,6 +212,12 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
     const t = setInterval(poll, 1500)
     return () => clearInterval(t)
   }, [quizQ])
+
+  const handleToggleOrdo = async () => {
+    const next = !ordoShown
+    setOrdoShown(next)
+    await setSharedState({ quiz_ordo_show: next }).catch(() => {})
+  }
 
   const total = liveAnswers.length
   const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
@@ -209,6 +257,8 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
         fontSize: 24, fontWeight: 800, color: '#fff', textAlign: 'center',
         marginBottom: 36, lineHeight: 1.3, maxWidth: 800, alignSelf: 'center',
       }}>{q.question}</div>
+
+      <OrdoPreview q={q} />
 
       {/* Barres réponses en direct */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, maxWidth: 720, alignSelf: 'center', width: '100%' }}>
@@ -260,21 +310,37 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
           <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginRight: 6 }}>{total}</span>
           participant{total !== 1 ? 's' : ''} {total !== 1 ? 'ont' : 'a'} répondu
         </div>
-        {isLast ? (
-          <button onClick={onEnd} style={{
-            background: 'linear-gradient(135deg, #16a34a, #22c55e)',
-            border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
-            fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            boxShadow: '0 6px 24px rgba(34,197,94,0.4)',
-          }}>✓ Terminer le quiz</button>
-        ) : (
-          <button onClick={onNext} style={{
-            background: 'linear-gradient(135deg, #c9a227, #e0b830)',
-            border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
-            fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            boxShadow: '0 6px 24px rgba(201,162,39,0.45)',
-          }}>Question suivante →</button>
-        )}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          {q.ordonnance && (
+            <button onClick={handleToggleOrdo} style={{
+              background: ordoShown ? 'rgba(201,162,39,0.25)' : 'rgba(201,162,39,0.1)',
+              border: '1px solid rgba(201,162,39,0.4)', color: '#c9a227', padding: '10px 18px', borderRadius: 12,
+              fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}>{ordoShown ? '📋 Ordonnance affichée sur TV' : '📋 Réafficher l\'ordonnance sur TV'}</button>
+          )}
+          {total > 0 && (
+            <button onClick={() => setSharedState({ quiz_show_correction: true }).catch(() => {})} style={{
+              background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)',
+              color: '#fbbf24', padding: '12px 24px', borderRadius: 12,
+              fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}>Révéler les réponses →</button>
+          )}
+          {isLast ? (
+            <button onClick={onEnd} style={{
+              background: 'linear-gradient(135deg, #16a34a, #22c55e)',
+              border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
+              fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 6px 24px rgba(34,197,94,0.4)',
+            }}>✓ Terminer le quiz</button>
+          ) : (
+            <button onClick={async () => { await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false }).catch(() => {}); onNext() }} style={{
+              background: 'linear-gradient(135deg, #c9a227, #e0b830)',
+              border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
+              fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 6px 24px rgba(201,162,39,0.45)',
+            }}>Question suivante →</button>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -500,7 +566,7 @@ export default function ModuleQuizFinal({ pName, onBack }) {
 
   const handleNextQuestion = async () => {
     const next = quizQ + 1
-    await setSharedState({ quiz_show_correction: false }).catch(() => {})
+    await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false }).catch(() => {})
     await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 100 + next }, `code=eq.${getActiveSessionCode()}`)
     if (next % 5 === 0 && next < QUIZ_FINAL_QUESTIONS.length) {
       await setSharedState({ quiz_interstitial_q: next }).catch(() => {})

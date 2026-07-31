@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import TrainerAvatar from '@/components/TrainerAvatar'
 import { PROGRESSIF_PAGES, PROGRESSIF_QUIZ } from '@/lib/modulesData'
@@ -655,8 +656,12 @@ function JeuObjectionsPage({ page, pName, onPrev, onNext, onBack, isFirst, isLas
 // ── Quiz Controller ───────────────────────────────────────────────
 function QuizController({ quizQ, onNext, onEnd, onBack }) {
   const [liveAnswers, setLiveAnswers] = useState([])
+  const [connectedCount, setConnectedCount] = useState(0)
+  const [correctionPhase, setCorrectionPhase] = useState(false)
   const q = PROGRESSIF_QUIZ[quizQ]
   const isLast = quizQ >= PROGRESSIF_QUIZ.length - 1
+
+  useEffect(() => { setCorrectionPhase(false) }, [quizQ])
 
   useEffect(() => {
     const poll = async () => {
@@ -670,18 +675,114 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
     return () => clearInterval(t)
   }, [quizQ])
 
+  useEffect(() => {
+    const poll = async () => setConnectedCount(await fetchOnlineParticipantCount(getActiveSessionCode()))
+    poll()
+    const t = setInterval(poll, 5000)
+    return () => clearInterval(t)
+  }, [])
+
+  useEffect(() => {
+    if (!correctionPhase && connectedCount > 0 && liveAnswers.length >= connectedCount) {
+      setCorrectionPhase(true)
+      setSharedState({ quiz_show_correction: true }).catch(() => {})
+    }
+  }, [liveAnswers.length, connectedCount, correctionPhase])
+
+  const handleRevealNow = async () => {
+    setCorrectionPhase(true)
+    await setSharedState({ quiz_show_correction: true }).catch(() => {})
+  }
+
+  const handleNextQ = async () => {
+    setCorrectionPhase(false)
+    await onNext()
+  }
+
   const total = liveAnswers.length
   const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+  const wrongAnswerers = liveAnswers.filter(r => !r.is_correct)
+  const correctCount = liveAnswers.filter(r => r.is_correct).length
+
+  const headerLogo = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+      <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz final · Le Verre Progressif</span>
+    </div>
+  )
+  const btnTerminer = <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Terminer</button>
+
+  if (correctionPhase) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #12013a 55%, #0d0a3a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          {headerLogo}
+          <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 20, padding: '6px 20px', fontSize: 13, fontWeight: 700, color: '#4ade80' }}>
+            ✓ Correction — Q{quizQ + 1} / {PROGRESSIF_QUIZ.length}
+          </div>
+          {btnTerminer}
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }}>
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+            <div style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 16, padding: '10px 28px', textAlign: 'center' }}>
+              <div style={{ fontSize: 38, fontWeight: 900, color: '#4ade80' }}>{correctCount}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>bonne{correctCount !== 1 ? 's' : ''} réponse{correctCount !== 1 ? 's' : ''}</div>
+            </div>
+            <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 16, padding: '10px 28px', textAlign: 'center' }}>
+              <div style={{ fontSize: 38, fontWeight: 900, color: '#f87171' }}>{wrongAnswerers.length}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>mauvaise{wrongAnswerers.length !== 1 ? 's' : ''} réponse{wrongAnswerers.length !== 1 ? 's' : ''}</div>
+            </div>
+          </div>
+
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.35, maxWidth: 700, alignSelf: 'center' }}>
+            {q.question}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 16, padding: '12px 24px', alignSelf: 'center', maxWidth: 640, width: '100%' }}>
+            <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: '#052e16', flexShrink: 0 }}>
+              {'ABCD'[q.correct]}
+            </div>
+            <span style={{ fontSize: 16, fontWeight: 700, color: '#4ade80' }}>{q.options[q.correct]}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', background: 'rgba(34,197,94,0.2)', padding: '2px 10px', borderRadius: 20, flexShrink: 0 }}>✓ Bonne réponse</span>
+          </div>
+
+          {wrongAnswerers.length > 0 && (
+            <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 16, padding: '14px 20px', maxWidth: 640, alignSelf: 'center', width: '100%' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,100,80,0.7)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
+                🔒 Confidentiel — visible uniquement ici
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {wrongAnswerers.map(r => (
+                  <div key={r.collaborateur} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14 }}>
+                    <span style={{ color: '#f87171', fontWeight: 600 }}>{r.collaborateur}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>→</span>
+                    <span style={{ color: 'rgba(255,255,255,0.5)' }}>
+                      {r.answer_idx != null ? `${'ABCD'[r.answer_idx]} — ${q.options[r.answer_idx]}` : '?'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          {isLast
+            ? <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Terminer le quiz</button>
+            : <button onClick={handleNextQ} style={{ background: `linear-gradient(135deg, ${ACCENT}, #9f67fa)`, border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 6px 24px ${ACCENT}45` }}>Question suivante →</button>
+          }
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #12013a 55%, #0d0a3a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
-          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz final · Le Verre Progressif</span>
-        </div>
-        <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Terminer</button>
+        {headerLogo}
+        {btnTerminer}
       </div>
 
       <div style={{ textAlign: 'center', marginBottom: 16 }}>
@@ -695,20 +796,18 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, maxWidth: 720, alignSelf: 'center', width: '100%' }}>
         {q.options.map((opt, i) => {
           const count = counts[i]
-          const isCorrect = i === q.correct
           const pct = total > 0 ? (count / total) * 100 : 0
           return (
-            <div key={i} style={{ background: isCorrect ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)', border: `1px solid ${isCorrect ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 16, padding: '14px 18px' }}>
+            <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '14px 18px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: OPTION_COLORS[i % 4], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff' }}>{'ABCD'[i]}</div>
                   <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{opt}</span>
-                  {isCorrect && <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, background: 'rgba(34,197,94,0.15)', padding: '2px 10px', borderRadius: 20 }}>✓ Bonne réponse</span>}
                 </div>
-                <span style={{ fontSize: 22, fontWeight: 800, color: isCorrect ? '#4ade80' : '#fff' }}>{count}<span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500, marginLeft: 4 }}>vote{count > 1 ? 's' : ''}</span></span>
+                <span style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{count}<span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500, marginLeft: 4 }}>vote{count > 1 ? 's' : ''}</span></span>
               </div>
               <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{ height: '100%', borderRadius: 4, width: `${pct}%`, background: isCorrect ? '#4ade80' : OPTION_COLORS[i % 4], transition: 'width .5s ease' }} />
+                <div style={{ height: '100%', borderRadius: 4, width: `${pct}%`, background: OPTION_COLORS[i % 4], transition: 'width .5s ease' }} />
               </div>
             </div>
           )
@@ -718,12 +817,14 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28 }}>
         <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
           <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginRight: 6 }}>{total}</span>
-          participant{total !== 1 ? 's' : ''} {total !== 1 ? 'ont' : 'a'} répondu
+          {connectedCount > 0
+            ? <><span style={{ color: 'rgba(255,255,255,0.5)' }}>/ {connectedCount}</span> ont répondu</>
+            : (total !== 1 ? 'participants ont répondu' : 'participant a répondu')
+          }
         </div>
-        {isLast
-          ? <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Terminer le quiz</button>
-          : <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${ACCENT}, #9f67fa)`, border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 6px 24px ${ACCENT}45` }}>Question suivante →</button>
-        }
+        {total > 0 && (
+          <button onClick={handleRevealNow} style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.35)', color: '#4ade80', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Révéler les réponses →</button>
+        )}
       </div>
     </div>
   )
