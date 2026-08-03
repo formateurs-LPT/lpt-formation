@@ -11,6 +11,7 @@ import { TRAINER_AVATARS } from '@/lib/constants'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import { useIsMobile } from '@/lib/useIsMobile'
 import { HeadlightVision } from '@/lib/headlightVision'
+import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -435,16 +436,31 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
   const [headlightDemo, setHeadlightDemo] = useState(false)
   const [headlightCyl, setHeadlightCyl] = useState(0)
   const [headlightAxe, setHeadlightAxe] = useState(0)
+  const syncedRef = useRef(false)
+
+  // Garantit que le code de salle est bien résolu (recherche live en base) avant la
+  // toute première écriture partagée — sinon le reset ci-dessous peut cibler la
+  // mauvaise salle (ou aucune), laissant l'animation "coincée" affichée sur le
+  // diffuseur depuis un essai précédent tant qu'on n'a pas quitté/relancé le module.
+  const syncAndWrite = async (data) => {
+    if (!syncedRef.current) {
+      await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName), pName)
+      syncedRef.current = true
+    }
+    return setSharedState(data)
+  }
 
   useEffect(() => {
     setRevealStep(0)
     setHeadlightDemo(false)
-    setSharedState({ ordo_playing: true, ordo_reveal_step: 0, ordo_headlight_demo: false }).catch(() => {})
+    syncAndWrite({ ordo_playing: true, ordo_reveal_step: 0, ordo_headlight_demo: false }).catch(() => {})
     return () => { setSharedState({ ordo_playing: false, ordo_headlight_demo: false }).catch(() => {}) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page.id])
 
   useEffect(() => {
-    setSharedState({ ordo_reveal_step: revealStep }).catch(() => {})
+    syncAndWrite({ ordo_reveal_step: revealStep }).catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revealStep])
 
   const handleNextReveal = () => {
@@ -456,22 +472,22 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
     setHeadlightDemo(true)
     setHeadlightCyl(0)
     setHeadlightAxe(0)
-    setSharedState({ ordo_headlight_demo: true, ordo_headlight_cyl: 0, ordo_headlight_axe: 0 }).catch(() => {})
+    syncAndWrite({ ordo_headlight_demo: true, ordo_headlight_cyl: 0, ordo_headlight_axe: 0 }).catch(() => {})
   }
 
   const closeHeadlightDemo = () => {
     setHeadlightDemo(false)
-    setSharedState({ ordo_headlight_demo: false }).catch(() => {})
+    syncAndWrite({ ordo_headlight_demo: false }).catch(() => {})
   }
 
   const handleHeadlightCyl = (val) => {
     setHeadlightCyl(val)
-    setSharedState({ ordo_headlight_cyl: val }).catch(() => {})
+    syncAndWrite({ ordo_headlight_cyl: val }).catch(() => {})
   }
 
   const handleHeadlightAxe = (val) => {
     setHeadlightAxe(val)
-    setSharedState({ ordo_headlight_axe: val }).catch(() => {})
+    syncAndWrite({ ordo_headlight_axe: val }).catch(() => {})
   }
 
   // revealStep 0 = tableau vide, 1 = +sphère, 2 = +cylindre+axe, 3 = +addition
@@ -638,22 +654,16 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
           display: 'flex', flexDirection: 'column',
           overflowY: 'auto',
         }}>
-          {/* Bouton fermer — en flux normal, tout en haut du panneau : toujours visible sans dépendre du positionnement fixe */}
+          {/* Bandeau info — pas de bouton ici, le bouton fermer est le rond flottant en bas à droite */}
           <div style={{
             flexShrink: 0, position: 'sticky', top: 0, zIndex: 1,
             background: 'rgba(3,17,42,0.98)', borderBottom: '1px solid rgba(255,255,255,0.1)',
             padding: isMobile ? '14px 16px' : '18px 32px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#c084fc', textTransform: 'uppercase', letterSpacing: 1.5 }}>
               Diffusé en direct sur le diffuseur
             </div>
-            <button onClick={closeHeadlightDemo} style={{
-              background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.4)',
-              color: '#ff6b6b', padding: isMobile ? '12px 18px' : '10px 20px', borderRadius: 12,
-              fontSize: isMobile ? 14 : 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
-            }}>✕ Fermer</button>
           </div>
 
           <div style={{
@@ -692,6 +702,28 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
             </div>
           </div>
         </div>
+      )}
+
+      {/* Bouton flottant "fermer l'animation" — bas droite, en miroir de 💡 idées / ❓ questions (bas gauche) */}
+      {headlightDemo && (
+        <button
+          onClick={closeHeadlightDemo}
+          title="Fermer l'animation sur le diffuseur"
+          style={{
+            position: 'fixed',
+            bottom: isMobile ? 90 : 28,
+            right: isMobile ? 14 : 28,
+            zIndex: 950,
+            width: isMobile ? 48 : 52, height: isMobile ? 48 : 52, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #dc2626, #ef4444)',
+            border: 'none', cursor: 'pointer', color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, fontWeight: 800, boxShadow: '0 4px 18px rgba(239,68,68,0.5)',
+            transition: 'transform .15s, box-shadow .15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
+        >✕</button>
       )}
 
     </div>
