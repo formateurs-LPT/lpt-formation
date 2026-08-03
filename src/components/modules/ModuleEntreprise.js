@@ -11,44 +11,6 @@ import ZeroInterChain from '@/components/ZeroInterChain'
 const PAUL_AVATAR = '/assets/avatar_paul.png'
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
-// ── Avatar Paul ───────────────────────────────────────────────────
-function PaulBubble({ script }) {
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    setVisible(false)
-    const t = setTimeout(() => setVisible(true), 600)
-    return () => clearTimeout(t)
-  }, [script])
-
-  if (!script) return null
-  return (
-    <div style={{
-      position: 'fixed', bottom: 0, right: 0, zIndex: 50,
-      display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
-      padding: '0 28px 28px 0',
-      opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)',
-      transition: 'all .5s ease', pointerEvents: 'none',
-    }}>
-      <div style={{
-        background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(20px)',
-        borderRadius: '18px 18px 4px 18px', padding: '14px 18px',
-        maxWidth: 280, boxShadow: '0 12px 48px rgba(0,0,0,0.25)',
-        marginBottom: 12,
-      }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#0a2a5c', marginBottom: 6 }}>Paul Morlet · Fondateur LPT</div>
-        <p style={{ fontSize: 13, color: '#1a1a2e', lineHeight: 1.55, margin: 0 }}>{script}</p>
-      </div>
-      <div style={{
-        width: 64, height: 64, borderRadius: '50%', overflow: 'hidden',
-        border: '3px solid rgba(0,171,233,0.6)',
-        boxShadow: '0 4px 20px rgba(0,171,233,0.4)',
-      }}>
-        <Image src={PAUL_AVATAR} alt="Paul Morlet" width={64} height={64} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
-      </div>
-    </div>
-  )
-}
-
 // ── Nav formateur ─────────────────────────────────────────────────
 const PAGE_TYPE_LABEL = {
   'naissance':      { label: 'Présentation', icon: '🏢' },
@@ -983,7 +945,6 @@ function EntreprisePage({ page, navProps }) {
             </div>
           </div>
         </div>
-        <PaulBubble script={page.avatarScript} />
         <TrainerNav {...navProps} />
       </div>
     )
@@ -1013,7 +974,6 @@ function EntreprisePage({ page, navProps }) {
             borderRadius: 20, padding: '10px 28px', fontSize: 15, fontWeight: 700, color: '#00abe9', fontStyle: 'italic',
           }}>Et si on pouvait faire autrement ?</div>
         </div>
-        <PaulBubble script={page.avatarScript} />
         <TrainerNav {...navProps} />
       </div>
     )
@@ -1049,7 +1009,6 @@ function EntreprisePage({ page, navProps }) {
             </div>
           ))}
         </div>
-        <PaulBubble script={page.avatarScript} />
         <TrainerNav {...navProps} />
       </div>
     )
@@ -1073,7 +1032,6 @@ function EntreprisePage({ page, navProps }) {
             </div>
           ))}
         </div>
-        <PaulBubble script={page.avatarScript} />
         <TrainerNav {...navProps} />
       </div>
     )
@@ -1104,7 +1062,6 @@ function EntreprisePage({ page, navProps }) {
             </div>
           ))}
         </div>
-        <PaulBubble script={page.avatarScript} />
         <TrainerNav {...navProps} />
       </div>
     )
@@ -1133,7 +1090,6 @@ function EntreprisePage({ page, navProps }) {
             </div>
           ))}
         </div>
-        <PaulBubble script={page.avatarScript} />
         <TrainerNav {...navProps} />
       </div>
     )
@@ -1172,7 +1128,6 @@ function EntreprisePage({ page, navProps }) {
             "Tu ne vends pas seulement des lunettes. Tu aides les gens à retrouver leur autonomie."
           </div>
         </div>
-        <PaulBubble script={page.avatarScript} />
         <TrainerNav {...navProps} />
       </div>
     )
@@ -1209,7 +1164,6 @@ function EntreprisePage({ page, navProps }) {
             "Peu importe d'où tu viens. Ce qui compte, c'est ce que tu vas construire ici."
           </div>
         </div>
-        <PaulBubble script={page.avatarScript} />
         <TrainerNav {...navProps} />
       </div>
     )
@@ -1246,7 +1200,6 @@ function EntreprisePage({ page, navProps }) {
             </div>
           ))}
         </div>
-        <PaulBubble script={page.avatarScript} />
         <TrainerNav {...navProps} />
       </div>
     )
@@ -1279,7 +1232,6 @@ function EntreprisePage({ page, navProps }) {
             Tu participes à rendre la vue accessible à tous.
           </div>
         </div>
-        <PaulBubble script={page.avatarScript} />
         <TrainerNav {...navProps} />
       </div>
     )
@@ -1304,7 +1256,6 @@ function EntreprisePage({ page, navProps }) {
           </div>
         ))}
       </div>
-      <PaulBubble script={page.avatarScript} />
       <TrainerNav {...navProps} />
     </div>
   )

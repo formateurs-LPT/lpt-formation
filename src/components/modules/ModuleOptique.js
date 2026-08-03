@@ -31,66 +31,6 @@ const STYLES = `
   .frise-chips::-webkit-scrollbar { display: none; }
 `
 
-// ── Avatar formateur ──────────────────────────────────────────────
-function AvatarBubble({ script, trainerAvatar, pName }) {
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    setVisible(false)
-    const t = setTimeout(() => setVisible(true), 800)
-    return () => clearTimeout(t)
-  }, [script])
-
-  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Formateur'
-
-  return (
-    <div style={{
-      position: 'fixed', bottom: 0, right: 0, zIndex: 50,
-      display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
-      padding: '0 28px 28px 0',
-      opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)',
-      transition: 'all .5s ease', pointerEvents: 'none',
-    }}>
-      <div style={{
-        background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(20px)',
-        borderRadius: '18px 18px 4px 18px', padding: '14px 18px',
-        maxWidth: 280, boxShadow: '0 12px 48px rgba(0,0,0,0.25)',
-        fontSize: 13, color: '#0f172a', lineHeight: 1.6, fontWeight: 500,
-        marginBottom: 12,
-      }}>{script}</div>
-
-      <div style={{
-        background: 'rgba(10,42,92,0.75)', backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(0,171,233,0.3)', borderRadius: 20,
-        padding: '12px 18px 12px 12px',
-        display: 'flex', alignItems: 'center', gap: 14,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-      }}>
-        <div style={{
-          width: 80, height: 80, borderRadius: 16, overflow: 'hidden', flexShrink: 0,
-          border: '2.5px solid #00abe9',
-          boxShadow: '0 0 0 4px rgba(0,171,233,0.2)',
-          animation: 'optiqueAvatar 2.5s ease-in-out infinite',
-        }}>
-          <Image src={trainerAvatar} alt={cap(pName)} width={80} height={80}
-            style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
-        </div>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{cap(pName)}</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Formateur · LPT</div>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6,
-            background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.3)',
-            borderRadius: 20, padding: '3px 10px',
-          }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00abe9', animation: 'optiqueHalo 1.5s ease-in-out infinite' }} />
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', letterSpacing: .5 }}>EN DIRECT</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── NavBar partagée (formateur) ───────────────────────────────────
 function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, quizLaunched, onLaunchQuiz, nextLabel, nextPage }) {
   const isMobile = useIsMobile()
@@ -222,7 +162,6 @@ function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext,
       </div>
 
       <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} nextPage={nextPage} />
-      <AvatarBubble script="Commencez par poser cette question à vos collaborateurs avant de dévoiler les réponses." trainerAvatar={trainerAvatar} pName={pName} />
     </div>
   )
 }
@@ -485,7 +424,6 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNex
       {/* Navigation */}
       <TrainerNav onBack={onBack} onPrev={onPrev} onNext={onNext} isFirst={isFirst} isLast={isLast} pageIndex={pageIndex} total={total} nextPage={nextPage} />
 
-      <AvatarBubble script={page.avatarScript} trainerAvatar={trainerAvatar} pName={pName} />
     </div>
   )
 }
@@ -493,15 +431,12 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNex
 // ── Page 3 : Lire une ordonnance ─────────────────────────────────
 function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
   const [revealStep, setRevealStep] = useState(0) // 0=tableau vide, 1=+sphère, 2=+cylindre+axe, 3=+addition
-  const [playing, setPlaying] = useState(false)
   const [headlightDemo, setHeadlightDemo] = useState(false)
   const [headlightCyl, setHeadlightCyl] = useState(0)
   const [headlightAxe, setHeadlightAxe] = useState(0)
-  const videoPreviewRef = useRef(null)
 
   useEffect(() => {
     setRevealStep(0)
-    setPlaying(true)
     setHeadlightDemo(false)
     setSharedState({ ordo_playing: true, ordo_reveal_step: 0, ordo_headlight_demo: false }).catch(() => {})
     return () => { setSharedState({ ordo_playing: false, ordo_headlight_demo: false }).catch(() => {}) }
@@ -510,20 +445,6 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
   useEffect(() => {
     setSharedState({ ordo_reveal_step: revealStep }).catch(() => {})
   }, [revealStep])
-
-  useEffect(() => {
-    const v = videoPreviewRef.current
-    if (!v) return
-    v.muted = true
-    if (playing) v.play().catch(() => {})
-    else v.pause()
-  }, [playing])
-
-  const togglePlay = () => {
-    const next = !playing
-    setPlaying(next)
-    setSharedState({ ordo_playing: next }).catch(() => {})
-  }
 
   const handleNextReveal = () => {
     if (revealStep < 3) setRevealStep(r => r + 1)
@@ -713,13 +634,14 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
           position: 'fixed', inset: 0, zIndex: 200,
           background: 'rgba(3,17,42,0.96)', backdropFilter: 'blur(6px)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 36,
-          padding: '40px 24px',
+          padding: '80px 24px 40px', overflowY: 'auto',
         }}>
           <button onClick={closeHeadlightDemo} style={{
-            position: 'absolute', top: 28, right: 32,
-            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-            color: 'rgba(255,255,255,0.6)', width: 40, height: 40, borderRadius: 12,
-            fontSize: 18, cursor: 'pointer', fontFamily: 'inherit',
+            position: 'fixed', top: 16, right: 16, zIndex: 250,
+            background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+            color: '#fff', width: 44, height: 44, borderRadius: 12,
+            fontSize: 20, cursor: 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>✕</button>
 
           <div style={{ fontSize: 13, fontWeight: 700, color: '#c084fc', textTransform: 'uppercase', letterSpacing: 1.5 }}>
@@ -759,56 +681,6 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
         </div>
       )}
 
-      {/* Bulle avatar opticien ordonnance */}
-      <div style={{
-        position: 'fixed', bottom: 80, right: 28, zIndex: 50,
-        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10,
-      }}>
-        <div style={{
-          background: 'rgba(10,42,92,0.85)', backdropFilter: 'blur(20px)',
-          border: `1px solid ${playing ? 'rgba(34,197,94,0.4)' : 'rgba(0,171,233,0.3)'}`,
-          borderRadius: 20, padding: '12px 14px',
-          display: 'flex', alignItems: 'center', gap: 14,
-          boxShadow: `0 8px 32px ${playing ? 'rgba(34,197,94,0.3)' : 'rgba(0,0,0,0.4)'}`,
-          transition: 'border-color .3s, box-shadow .3s',
-        }}>
-          {/* Miniature vidéo (muet) */}
-          <div style={{
-            width: 72, height: 72, borderRadius: 14, overflow: 'hidden', flexShrink: 0,
-            border: `2px solid ${playing ? 'rgba(34,197,94,0.6)' : 'rgba(0,171,233,0.4)'}`,
-          }}>
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-            <video
-              ref={videoPreviewRef}
-              src="/assets/LectureOrdoAudioOK.mp4"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              playsInline
-              preload="auto"
-              muted
-            />
-          </div>
-          {/* Infos + bouton */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Opticien</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Lecture ordonnance</div>
-            <button
-              onClick={togglePlay}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                background: playing ? 'rgba(34,197,94,0.2)' : 'rgba(0,171,233,0.2)',
-                border: `1px solid ${playing ? 'rgba(34,197,94,0.5)' : 'rgba(0,171,233,0.5)'}`,
-                borderRadius: 20, padding: '5px 12px',
-                fontSize: 12, fontWeight: 700,
-                color: playing ? '#4ade80' : '#00abe9',
-                cursor: 'pointer', fontFamily: 'inherit',
-                transition: 'all .2s',
-              }}
-            >
-              {playing ? '⏸ Pause' : '▶ Lecture'}
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

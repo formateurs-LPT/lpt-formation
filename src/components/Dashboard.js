@@ -251,19 +251,21 @@ function SessionsHistoryView({ onBack, onToast }) {
     const roomCode = getRuntimeSessionCode('trainer') || SESSION_CODE
     const enc = encodeURIComponent(roomCode)
     const filter = `session_code=eq.${enc}`
-    const [participants, answers, quizResults, scenarioResponses, moduleResults] = await Promise.all([
+    const [participants, answers, quizResults, scenarioResponses, moduleResults, openAnswers] = await Promise.all([
       sbSelect('participants', filter),
       sbSelect('quiz_answers', filter),
       sbSelect('quiz_results', filter),
       sbSelect('scenario_responses', filter),
       sbSelect('module_results', filter),
+      sbSelect('open_answers', filter),
     ])
     const total =
       (participants?.length || 0) +
       (answers?.length || 0) +
       (quizResults?.length || 0) +
       (scenarioResponses?.length || 0) +
-      (moduleResults?.length || 0)
+      (moduleResults?.length || 0) +
+      (openAnswers?.length || 0)
     if (total === 0) {
       onToast('Aucune donnée à enregistrer'); return
     }
@@ -278,6 +280,7 @@ function SessionsHistoryView({ onBack, onToast }) {
         scores: quizResults || [],
         answers: answers || [],
         module_results: moduleResults || [],
+        open_answers: openAnswers || [],
       },
       scenarioResponses: scenarioResponses || [],
     })
@@ -287,6 +290,7 @@ function SessionsHistoryView({ onBack, onToast }) {
       sbDelete('quiz_results', filter),
       sbDelete('scenario_responses', filter),
       sbDelete('module_results', filter),
+      sbDelete('open_answers', filter),
     ])
     onToast('Session clôturée ✓')
     load()

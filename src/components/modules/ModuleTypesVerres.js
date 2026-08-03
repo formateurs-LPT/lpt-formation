@@ -56,72 +56,6 @@ function VerreAnime({ color }) {
   )
 }
 
-// ── Présentateur (avatar + bulle) ────────────────────────────────
-function AvatarBubble({ script, pName }) {
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    setVisible(false)
-    const t = setTimeout(() => setVisible(true), 700)
-    return () => clearTimeout(t)
-  }, [script])
-
-  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Formateur'
-
-  return (
-    <div style={{
-      position: 'fixed', bottom: 0, right: 0, zIndex: 50,
-      display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
-      padding: '0 28px 28px 0',
-      opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)',
-      transition: 'all .5s ease', pointerEvents: 'none',
-    }}>
-      {/* Bulle script */}
-      <div style={{
-        background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(20px)',
-        borderRadius: '18px 18px 4px 18px', padding: '14px 18px',
-        maxWidth: 280, boxShadow: '0 12px 48px rgba(0,0,0,0.25)',
-        fontSize: 13, color: '#0f172a', lineHeight: 1.6, fontWeight: 500,
-        marginBottom: 12,
-      }}>
-        {script}
-      </div>
-
-      {/* Carte présentateur */}
-      <div style={{
-        background: 'rgba(10,42,92,0.75)', backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(0,171,233,0.3)', borderRadius: 20,
-        padding: '12px 18px 12px 12px',
-        display: 'flex', alignItems: 'center', gap: 14,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-      }}>
-        {/* Avatar — futur slot HeyGen */}
-        <div style={{
-          width: 80, height: 80, borderRadius: 16, overflow: 'hidden', flexShrink: 0,
-          border: '2.5px solid #00abe9',
-          boxShadow: '0 0 0 4px rgba(0,171,233,0.2)',
-          animation: 'avatarPulse 2.5s ease-in-out infinite',
-        }}>
-          <TrainerAvatar pName={pName} size={80} alt={cap(pName)} />
-        </div>
-        {/* Nom + rôle */}
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{cap(pName)}</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Formateur · LPT</div>
-          {/* Badge LIVE futur */}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6,
-            background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.3)',
-            borderRadius: 20, padding: '3px 10px',
-          }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00abe9', animation: 'haloPulse 1.5s ease-in-out infinite' }} />
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#00abe9', letterSpacing: .5 }}>EN DIRECT</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── Lens progressif annotée (PNG + labels) ───────────────────────
 const PROG_ZONES_TRAINER = [
   { color: '#a78bfa', label: 'Vision de loin',       sub: 'Myopie · Hypermétropie · Astigmatisme' },
@@ -358,7 +292,6 @@ function ContentPageProgressif({ page, pName, onPrev, onNext, onBack, isFirst, i
         </div>
       </div>
 
-      <AvatarBubble script={page.avatarScript} pName={pName} />
     </div>
   )
 }
@@ -532,7 +465,6 @@ function ContentPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pag
         </div>
       </div>
 
-      <AvatarBubble script={page.avatarScript} pName={pName} />
     </div>
   )
 }

@@ -782,29 +782,30 @@ function TVCorrectionScale({ page, pageIndex, total, moduleLabel }) {
 
 // ── TV Ordonnance (type = ordonnance) ────────────────────────────
 // ── Rapporteur d'axe — suit en direct le curseur du formateur ─────────
+// Convention optique : 0° à gauche, 180° à droite (en passant par le haut, 90° au sommet).
 function AxisProtractor({ axe = 0 }) {
-  const cx = 140, cy = 140, R = 112
+  const cx = 200, cy = 190, R = 150
   const rad = (axe * Math.PI) / 180
-  const needleX = cx + R * Math.cos(rad)
+  const needleX = cx - R * Math.cos(rad)
   const needleY = cy - R * Math.sin(rad)
-  const ticks = [0, 30, 60, 90, 120, 150, 180]
+  const ticks = Array.from({ length: 19 }, (_, i) => i * 10) // 0°, 10°, 20°, … 180°
 
   return (
-    <svg width={280} height={168} viewBox="0 0 280 168">
-      {/* Arc du rapporteur */}
-      <path d={`M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R} ${cy}`} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} />
+    <svg width={400} height={220} viewBox="0 0 400 220">
+      {/* Arc du rapporteur — demi-cercle supérieur */}
+      <path d={`M ${cx - R} ${cy} A ${R} ${R} 0 0 0 ${cx + R} ${cy}`} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} />
       {/* Ligne de base */}
       <line x1={cx - R - 8} y1={cy} x2={cx + R + 8} y2={cy} stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} />
-      {/* Graduations */}
+      {/* Graduations tous les 10° */}
       {ticks.map(t => {
         const r = (t * Math.PI) / 180
-        const x1 = cx + (R - 8) * Math.cos(r), y1 = cy - (R - 8) * Math.sin(r)
-        const x2 = cx + (R + 8) * Math.cos(r), y2 = cy - (R + 8) * Math.sin(r)
-        const lx = cx + (R + 24) * Math.cos(r), ly = cy - (R + 24) * Math.sin(r)
+        const x1 = cx - (R - 8) * Math.cos(r), y1 = cy - (R - 8) * Math.sin(r)
+        const x2 = cx - (R + 8) * Math.cos(r), y2 = cy - (R + 8) * Math.sin(r)
+        const lx = cx - (R + 28) * Math.cos(r), ly = cy - (R + 28) * Math.sin(r)
         return (
           <g key={t}>
-            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
-            <text x={lx} y={ly} fill="rgba(255,255,255,0.45)" fontSize={12} fontWeight={700} textAnchor="middle" dominantBaseline="middle">{t}°</text>
+            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.45)" strokeWidth={2} />
+            <text x={lx} y={ly} fill="rgba(255,255,255,0.6)" fontSize={14} fontWeight={700} textAnchor="middle" dominantBaseline="middle">{t}°</text>
           </g>
         )
       })}
@@ -862,7 +863,7 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
                 {(ordoHeadlightCyl || 0).toFixed(2).replace('.', ',')}
               </div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '14px 20px 4px', minWidth: 200, textAlign: 'center' }}>
+            <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '14px 20px 4px', minWidth: 440, textAlign: 'center' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#fb923c', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>Axe</div>
               <AxisProtractor axe={ordoHeadlightAxe || 0} />
               <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums', marginTop: -8 }}>

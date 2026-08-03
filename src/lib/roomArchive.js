@@ -11,7 +11,7 @@ export async function archiveAndPurgeRoom(roomCode, { trainerName } = {}) {
   const enc = encodeURIComponent(code)
   const filter = `session_code=eq.${enc}`
 
-  const [sessionRows, participants, quizResults, quizAnswers, scenarioResponses, moduleResults, roomState] =
+  const [sessionRows, participants, quizResults, quizAnswers, scenarioResponses, moduleResults, openAnswers, roomState] =
     await Promise.all([
       sbSelect('sessions', `code=eq.${enc}&limit=1`),
       sbSelect('participants', filter),
@@ -19,6 +19,7 @@ export async function archiveAndPurgeRoom(roomCode, { trainerName } = {}) {
       sbSelect('quiz_answers', filter),
       sbSelect('scenario_responses', filter),
       sbSelect('module_results', filter),
+      sbSelect('open_answers', filter),
       getRoomSharedState(code),
     ])
 
@@ -28,7 +29,8 @@ export async function archiveAndPurgeRoom(roomCode, { trainerName } = {}) {
     (quizResults?.length || 0) +
     (quizAnswers?.length || 0) +
     (scenarioResponses?.length || 0) +
-    (moduleResults?.length || 0)
+    (moduleResults?.length || 0) +
+    (openAnswers?.length || 0)
   const hasRelationalData = count > 0
 
   const hasRoomState = roomState && Object.keys(roomState).length > 0
@@ -55,6 +57,7 @@ export async function archiveAndPurgeRoom(roomCode, { trainerName } = {}) {
         scores: quizResults || [],
         answers: quizAnswers || [],
         module_results: moduleResults || [],
+        open_answers: openAnswers || [],
         room_state: hasRoomState ? roomState : null,
       },
       scenarioResponses: scenarioResponses || [],
@@ -67,6 +70,7 @@ export async function archiveAndPurgeRoom(roomCode, { trainerName } = {}) {
     sbDelete('quiz_answers', filter),
     sbDelete('scenario_responses', filter),
     sbDelete('module_results', filter),
+    sbDelete('open_answers', filter),
     deleteTrainerStateByKey(code),
   ])
 

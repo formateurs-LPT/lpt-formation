@@ -12,7 +12,7 @@ import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName, isTrainerAccount } from '@/lib/participantNames'
 import { mergeRoomSharedField } from '@/lib/roomSharedState'
-import { getLevelInfo, getRankMessage } from '@/lib/scoring'
+import { getLevelInfo, getRankMessage, fetchParticipantRanking } from '@/lib/scoring'
 import { canParticipantJoinSession, getCategoryJoinDeniedMessage } from '@/lib/formationCategories'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -140,6 +140,7 @@ function DashboardScreen({ pName, myEntry, ranking }) {
         <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', textAlign: 'center', margin: 0 }}>
           Bonjour, {firstName} 👋
         </h2>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>{pName}</div>
       </div>
 
       {/* Carte niveau + points */}
@@ -202,7 +203,12 @@ function DashboardScreen({ pName, myEntry, ranking }) {
   )
 }
 
-function ParticipantDashboard({ pName, sessionCode }) {
+/**
+ * Charge le classement complet (quiz + hors quiz, voir buildParticipantRanking) et
+ * expose systématiquement une entrée pour pName (0 pt par défaut si pas encore répondu).
+ * Partagé entre l'écran d'accueil formé et le bouton "Mon profil" accessible à tout moment.
+ */
+function useParticipantRanking(pName, sessionCode, { pollMs = 12000 } = {}) {
   const [loadState, setLoadState] = useState('loading')
   const [ranking, setRanking] = useState([])
 
@@ -211,44 +217,38 @@ function ParticipantDashboard({ pName, sessionCode }) {
     let cancelled = false
     const load = async () => {
       try {
-        const [anyRows, correctRows] = await Promise.all([
-          sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(sessionCode)}&collaborateur=eq.${encodeURIComponent(pName)}&limit=1`),
-          sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(sessionCode)}&is_correct=eq.true`),
+        const nameFilter = `session_code=eq.${encodeURIComponent(sessionCode)}&collaborateur=eq.${encodeURIComponent(pName)}&limit=1`
+        const nameFilterOA = `session_code=eq.${encodeURIComponent(sessionCode)}&participant_name=eq.${encodeURIComponent(pName)}&limit=1`
+        const [quizRows, moduleRows, openRows, withRanks] = await Promise.all([
+          sbSelect('quiz_answers', nameFilter),
+          sbSelect('module_results', nameFilter),
+          sbSelect('open_answers', nameFilterOA),
+          fetchParticipantRanking(sessionCode),
         ])
         if (cancelled) return
-        const seen = new Set()
-        const counts = {}
-        for (const r of (correctRows || [])) {
-          if (isTrainerAccount(r.collaborateur)) continue
-          const key = `${r.collaborateur}|${r.module_id}|${r.question_idx}`
-          if (seen.has(key)) continue
-          seen.add(key)
-          counts[r.collaborateur] = (counts[r.collaborateur] || 0) + 1
-        }
-        const sorted = Object.entries(counts)
-          .map(([name, cnt]) => ({ name, points: cnt * 10 }))
-          .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
-        let rk = 1
-        const withRanks = sorted.map((entry, i) => {
-          if (i > 0 && entry.points !== sorted[i - 1].points) rk = i + 1
-          return { ...entry, rank: rk }
-        })
-        if (!withRanks.find(r => r.name === pName)) {
-          withRanks.push({ name: pName, points: 0, rank: withRanks.length + 1 })
-        }
-        setRanking(withRanks)
-        setLoadState((anyRows || []).length === 0 ? 'welcome' : 'dashboard')
+        const hasAnyActivity = (quizRows?.length || 0) + (moduleRows?.length || 0) + (openRows?.length || 0) > 0
+        const final = withRanks.find(r => r.name === pName)
+          ? withRanks
+          : [...withRanks, { name: pName, correct: 0, points: 0, rank: withRanks.length + 1 }]
+        setRanking(final)
+        setLoadState(hasAnyActivity ? 'dashboard' : 'welcome')
       } catch {
         if (!cancelled) setLoadState('welcome')
       }
     }
     load()
-    const t = setInterval(load, 12000)
+    const t = setInterval(load, pollMs)
     return () => { cancelled = true; clearInterval(t) }
-  }, [pName, sessionCode])
+  }, [pName, sessionCode, pollMs])
+
+  const myEntry = ranking.find(r => r.name === pName)
+  return { loadState, ranking, myEntry }
+}
+
+function ParticipantDashboard({ pName, sessionCode }) {
+  const { loadState, ranking, myEntry } = useParticipantRanking(pName, sessionCode)
 
   if (loadState === 'loading') return <WaitingScreen />
-  const myEntry = ranking.find(r => r.name === pName)
   if (loadState === 'welcome') return <WelcomeScreenFirst pName={pName} />
   return <DashboardScreen pName={pName} myEntry={myEntry} ranking={ranking} />
 }
@@ -1166,8 +1166,9 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
       lastCorrect = totalCorrect
 
       // Sauvegarde module_results avec le score total réel (upsert pour éviter les doublons)
+      // Règle unique de scoring : 10 points par bonne réponse (quiz ou hors quiz)
       const totalQ = quiz.length
-      const earnedXP = totalCorrect * 50
+      const earnedXP = totalCorrect * 10
       try {
         await sbUpsert('module_results', {
           collaborateur: name,
@@ -1190,7 +1191,7 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
   answers.forEach(row => { answerMap[row.question_idx] = row })
   const total = quiz.length
   const correct = answers.filter(r => r.is_correct).length
-  const xp = correct * 50
+  const xp = correct * 10
 
   // Animate score
   useEffect(() => {
@@ -4645,134 +4646,58 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
     </div>
   )
 
+  // Par défaut, le tel n'a rien de spécifique à afficher pour cette page (le contenu
+  // détaillé — points, animations… — est réservé à l'écran diffuseur). On évite donc
+  // toute illustration/avatar décoratifs sans rapport avec le module, et on se contente
+  // d'indiquer clairement de suivre le diffuseur et le formateur.
   return (
     <div style={{
       minHeight: '100dvh',
-      background: `linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, ${page.color}15 100%)`,
+      background: `linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, ${page.color || '#00abe9'}15 100%)`,
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      position: 'relative', overflow: 'hidden',
-      padding: '100px 24px 120px',
+      padding: '40px 24px', textAlign: 'center',
     }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={110} height={42}
+        style={{ objectFit: 'contain', marginBottom: 40 }} />
 
-      {/* Indicateur page en haut */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0,
-        padding: '20px 24px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28}
-          style={{ objectFit: 'contain', opacity: 0.7 }} />
-        <div style={{ display: 'flex', gap: 6 }}>
+      <div key={key} style={{ animation: 'fadeSlideUp .5s ease forwards' }}>
+        <div style={{
+          display: 'inline-block',
+          background: `${page.color || '#00abe9'}20`, border: `1px solid ${page.color || '#00abe9'}40`,
+          borderRadius: 20, padding: '3px 14px',
+          fontSize: 10, fontWeight: 700, color: page.color || '#00abe9',
+          textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 12,
+        }}>{moduleLabel || 'Formation LPT'}</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.3, marginBottom: 10 }}>
+          {page.titre}
+        </div>
+        <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 300, marginBottom: 36 }}>
+          Regardez l&apos;écran de diffusion et suivez le formateur
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{
+            width: 7, height: 7, borderRadius: '50%', background: page.color || '#00abe9',
+            animation: `waitDot 1.4s ease-in-out ${i * 0.25}s infinite`,
+          }} />
+        ))}
+      </div>
+
+      {total > 1 && (
+        <div style={{ display: 'flex', gap: 6, marginTop: 32 }}>
           {Array(total).fill(0).map((_, i) => (
             <div key={i} style={{
               height: 4, borderRadius: 2,
               width: i === pageIndex ? 20 : 4,
-              background: i === pageIndex ? page.color : 'rgba(255,255,255,0.2)',
+              background: i === pageIndex ? (page.color || '#00abe9') : 'rgba(255,255,255,0.2)',
               transition: 'all .4s ease',
             }} />
           ))}
         </div>
-      </div>
-
-      {/* Titre animé */}
-      <div key={key} style={{
-        textAlign: 'center', marginBottom: 40,
-        animation: 'fadeSlideUp .5s ease forwards',
-      }}>
-        <div style={{
-          display: 'inline-block',
-          background: `${page.color}20`, border: `1px solid ${page.color}40`,
-          borderRadius: 20, padding: '3px 14px',
-          fontSize: 10, fontWeight: 700, color: page.color,
-          textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 10,
-        }}>{moduleLabel || 'Formation LPT'}</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
-          {page.titre}
-        </div>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>
-          {page.sousTitre}
-        </div>
-      </div>
-
-      {/* Illustration — centré */}
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {/* Halo */}
-        <div style={{
-          position: 'absolute',
-          width: 320, height: 320, borderRadius: '50%',
-          background: `radial-gradient(circle, ${page.color}30 0%, transparent 70%)`,
-          animation: 'haloBreath 3.5s ease-in-out infinite',
-        }} />
-        {page.image ? (
-          /* Photo module */
-          <div style={{ animation: 'verreFloat 4s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
-            <Image
-              src={page.image}
-              alt="Illustration"
-              width={260}
-              height={260}
-              style={{
-                objectFit: 'contain',
-                borderRadius: 20,
-                boxShadow: `0 0 40px ${page.color}60, 0 16px 32px rgba(0,0,0,0.4)`,
-              }}
-              priority
-            />
-          </div>
-        ) : page.icon ? (
-          /* Emoji module */
-          <div style={{
-            width: 220, height: 220, borderRadius: '50%',
-            background: `${page.color}18`, border: `2px solid ${page.color}35`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            animation: 'verreFloat 4s ease-in-out infinite',
-            position: 'relative', zIndex: 1,
-          }}>
-            <span style={{ fontSize: 100, lineHeight: 1 }}>{page.icon}</span>
-          </div>
-        ) : (
-          /* Verre par défaut */
-          <div style={{ animation: 'verreFloat 4s ease-in-out infinite', position: 'relative', zIndex: 1 }}>
-            <Image
-              src="/assets/verre-unifocal-2.png"
-              alt="Verre"
-              width={260}
-              height={260}
-              style={{
-                objectFit: 'contain',
-                filter: `drop-shadow(0 0 40px ${page.color}80) drop-shadow(0 16px 32px rgba(0,0,0,0.4))`,
-              }}
-              priority
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Avatar formateur — bas de l'écran */}
-      <div style={{
-        position: 'absolute', bottom: 24, right: 20,
-        display: 'flex', alignItems: 'center', gap: 10,
-        background: 'rgba(10,42,92,0.85)', backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(0,171,233,0.25)', borderRadius: 16,
-        padding: '8px 14px 8px 8px',
-      }}>
-        <div style={{
-          width: 44, height: 44, borderRadius: 12, overflow: 'hidden', flexShrink: 0,
-          animation: 'avatarGlow 2.5s ease-in-out infinite',
-        }}>
-          <Image src="/assets/avatar_kevin.png" alt="Kevin"
-            width={44} height={44} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
-        </div>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Kevin</div>
-          <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>Formateur · LPT</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#00abe9', animation: 'haloBreath 1.5s ease-in-out infinite' }} />
-            <span style={{ fontSize: 8, fontWeight: 700, color: '#00abe9', letterSpacing: .5 }}>EN DIRECT</span>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -5112,6 +5037,60 @@ function TestResetButton({ pName }) {
   )
 }
 
+// ── Bouton "Mon profil" — accessible à tout moment (score temps réel, classement, niveau) ──
+function ParticipantProfileContent({ pName, sessionCode }) {
+  const { loadState, ranking, myEntry } = useParticipantRanking(pName, sessionCode, { pollMs: 6000 })
+  if (loadState === 'loading') return <WaitingScreen />
+  if (loadState === 'welcome') return <WelcomeScreenFirst pName={pName} />
+  return <DashboardScreen pName={pName} myEntry={myEntry} ranking={ranking} />
+}
+
+function ParticipantProfileButton({ pName, sessionCode }) {
+  const [open, setOpen] = useState(false)
+  if (!pName || !sessionCode) return null
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        title="Mon profil"
+        style={{
+          position: 'fixed', bottom: 14, right: 14, zIndex: 850,
+          width: 48, height: 48, borderRadius: '50%',
+          background: 'linear-gradient(135deg, #00abe9, #0089ba)',
+          border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 20, boxShadow: '0 4px 18px rgba(0,171,233,0.45)',
+        }}
+      >👤</button>
+
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1500,
+            background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+            overflowY: 'auto',
+          }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ position: 'relative', minHeight: '100dvh' }}>
+            <button
+              onClick={() => setOpen(false)}
+              style={{
+                position: 'fixed', top: 14, right: 14, zIndex: 1600,
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.2)',
+                color: '#fff', fontSize: 16, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >✕</button>
+            <ParticipantProfileContent pName={pName} sessionCode={sessionCode} />
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp, onDisconnect }) {
   const sessionCode = getParticipantSessionCode()
   const [sessionEnded, setSessionEnded] = useState(false)
@@ -5279,6 +5258,10 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
       {/* Bouton reset test — visible uniquement pour le compte test Quentin Bahougne */}
       {['bahougne', 'dupuy', 'duchemin', 'huchet'].some(n => pName?.toLowerCase().includes(n)) && (
         <TestResetButton pName={pName} />
+      )}
+      {/* Mon profil — score temps réel, classement, niveau — accessible à tout moment */}
+      {!sessionEnded && activeModule !== 'atelier-pec' && (
+        <ParticipantProfileButton pName={pName} sessionCode={sessionCode} />
       )}
       {/* Bulle question — discrète, visible sur toutes les pages de module */}
       {activeModule && !isLobby && !isResults && !sessionEnded && (

@@ -82,43 +82,6 @@ function VerreProgressifSchema({ highlight, small }) {
   )
 }
 
-// ── Avatar bulle ────────────────────────────────────────────────
-function AvatarBubble({ script, pName }) {
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    setVisible(false)
-    const t = setTimeout(() => setVisible(true), 700)
-    return () => clearTimeout(t)
-  }, [script])
-  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Formateur'
-  return (
-    <div style={{
-      position: 'fixed', bottom: 0, right: 0, zIndex: 50,
-      display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
-      padding: '0 28px 28px 0',
-      opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)',
-      transition: 'all .5s ease', pointerEvents: 'none',
-    }}>
-      <div style={{ background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(20px)', borderRadius: '18px 18px 4px 18px', padding: '14px 18px', maxWidth: 280, boxShadow: '0 12px 48px rgba(0,0,0,0.25)', fontSize: 13, color: '#0f172a', lineHeight: 1.6, fontWeight: 500, marginBottom: 12 }}>
-        {script}
-      </div>
-      <div style={{ background: 'rgba(10,42,92,0.75)', backdropFilter: 'blur(20px)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 20, padding: '12px 18px 12px 12px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-        <div style={{ width: 80, height: 80, borderRadius: 16, overflow: 'hidden', flexShrink: 0, border: `2.5px solid ${ACCENT}`, boxShadow: `0 0 0 4px rgba(124,58,237,0.2)`, animation: 'progPulse 2.5s ease-in-out infinite' }}>
-          <TrainerAvatar pName={pName} size={80} alt={cap(pName)} />
-        </div>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{cap(pName)}</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Formateur · LPT</div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6, background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 20, padding: '3px 10px' }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: ACCENT, animation: 'progHalo 1.5s ease-in-out infinite' }} />
-            <span style={{ fontSize: 10, fontWeight: 700, color: ACCENT, letterSpacing: .5 }}>EN DIRECT</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── Shell commun pour les pages formateur ──────────────────────────
 function PageShell({ children, pageIndex, total, onBack }) {
   return (
@@ -200,7 +163,6 @@ function CoursPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pageI
           )}
         </div>
       </div>
-      <AvatarBubble script={page.avatarScript} pName={pName} />
     </PageShell>
   )
 }
@@ -315,7 +277,6 @@ function AnatomieTrainerPage({ page, pName, onPrev, onNext, onBack, isFirst, isL
           )}
         </div>
       </div>
-      <AvatarBubble script={page.avatarScript} pName={pName} />
     </PageShell>
   )
 }
@@ -546,7 +507,6 @@ function RetourTerrainPage({ page, pName, onPrev, onNext, onBack, isFirst, pageI
         <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← Précédent</button>
         <button onClick={onNext} style={{ background: `linear-gradient(135deg, ${ACCENT}, #9f67fa)`, border: 'none', color: '#fff', padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: `0 6px 24px ${ACCENT}50`, fontFamily: 'inherit' }}>Suivant →</button>
       </div>
-      <AvatarBubble script={page.avatarScript || "Partagez ce que vous avez vécu en magasin. Chaque expérience est précieuse pour le groupe."} pName={pName} />
     </PageShell>
   )
 }
