@@ -84,7 +84,7 @@ export default function NotesWidget({ pName }) {
           <p style={{ fontSize: 12, color: 'rgba(255,255,255,.3)', padding: '6px 0' }}>Aucune note pour l'instant…</p>
         ) : notes.map((note, i) => (
           <div key={note.id || i} className="note-card">
-            <TrainerAvatar name={authorKey(note.author)} size={32} />
+            <TrainerAvatar pName={authorKey(note.author)} size={32} />
             <div className="note-body">
               <div className="note-meta">
                 <span className="note-author">{note.author}</span>

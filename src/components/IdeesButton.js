@@ -1,10 +1,18 @@
 'use client'
 import { useState } from 'react'
-import { sbSelect, getActiveSessionCode, getWeeklySharedState, setWeeklySharedState } from '@/lib/supabase'
+import {
+  sbSelect, sbUpsert, sbUpdateIfMatch, getActiveSessionCode,
+  getWeeklySharedState, TRAINER_STATE_WEEKLY_KEY,
+} from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
 import { useIsMobile } from '@/lib/useIsMobile'
 
 // ── Lecture / écriture Supabase ───────────────────────────────────
+// Plusieurs formateurs peuvent voter/ajouter/supprimer des idées en même temps sur le
+// même trainer_state (__weekly__). Un simple lire-modifier-écrire perdrait silencieusement
+// la modification de l'un si les deux écrivent dans la même fenêtre de quelques centaines
+// de ms : on utilise donc un verrou optimiste sur `updated_at` (comparer-et-échanger),
+// avec relecture + nouvelle tentative en cas de collision.
 
 export async function loadIdeesFromSupabase() {
   try {
@@ -15,23 +23,57 @@ export async function loadIdeesFromSupabase() {
   }
 }
 
-async function writeIdees(idees) {
-  await setWeeklySharedState({ lpt_idees: idees })
+async function readWeeklyRowRaw() {
+  const rows = await sbSelect('trainer_state', `trainer=eq.${encodeURIComponent(TRAINER_STATE_WEEKLY_KEY)}`)
+  const row = rows?.[0]
+  let state = row?.state ?? {}
+  if (typeof state === 'string') {
+    try { state = JSON.parse(state) } catch { state = {} }
+  }
+  if (!state || typeof state !== 'object') state = {}
+  return {
+    fullState: state,
+    idees: Array.isArray(state.lpt_idees) ? state.lpt_idees : [],
+    updatedAt: row?.updated_at || null,
+  }
+}
+
+/** Applique mutateFn(idees) -> nouvellesIdees, avec verrou optimiste + réessais */
+async function mutateIdees(mutateFn) {
+  const MAX_ATTEMPTS = 6
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const { fullState, idees, updatedAt } = await readWeeklyRowRaw()
+    const nextIdees = mutateFn(idees)
+    const nextState = { ...fullState, lpt_idees: nextIdees }
+    const now = new Date().toISOString()
+
+    if (!updatedAt) {
+      // Pas encore de ligne __weekly__ — création, pas de concurrence possible ici
+      await sbUpsert('trainer_state', { trainer: TRAINER_STATE_WEEKLY_KEY, state: nextState, updated_at: now }, 'trainer')
+      return
+    }
+
+    const wrote = await sbUpdateIfMatch(
+      'trainer_state',
+      { state: nextState, updated_at: now },
+      `trainer=eq.${encodeURIComponent(TRAINER_STATE_WEEKLY_KEY)}&updated_at=eq.${encodeURIComponent(updatedAt)}`
+    )
+    if (wrote) return
+    // Quelqu'un d'autre a écrit entre la lecture et l'écriture → on relit et on réessaie
+  }
+  console.error('[IdeesButton] mutateIdees: échec après plusieurs tentatives (collisions répétées)')
 }
 
 export async function deleteIdee(id) {
-  const idees = await loadIdeesFromSupabase()
-  await writeIdees(idees.filter(i => i.id !== id))
+  await mutateIdees(idees => idees.filter(i => i.id !== id))
 }
 
 export async function updateIdee(id, updates) {
-  const idees = await loadIdeesFromSupabase()
-  await writeIdees(idees.map(i => i.id === id ? { ...i, ...updates } : i))
+  await mutateIdees(idees => idees.map(i => i.id === id ? { ...i, ...updates } : i))
 }
 
 export async function voteIdee(id, pName, vote) {
-  const idees = await loadIdeesFromSupabase()
-  const updated = idees.map(i => {
+  await mutateIdees(idees => idees.map(i => {
     if (i.id !== id) return i
     const votes = { ok: [...(i.votes?.ok || [])], pas_ok: [...(i.votes?.pas_ok || [])] }
     const opposite = vote === 'ok' ? 'pas_ok' : 'ok'
@@ -40,16 +82,14 @@ export async function voteIdee(id, pName, vote) {
       ? votes[vote].filter(n => n !== pName)
       : [...votes[vote], pName]
     return { ...i, votes }
-  })
-  await writeIdees(updated)
+  }))
 }
 
 export async function clearAllIdees() {
-  await writeIdees([])
+  await mutateIdees(() => [])
 }
 
 export async function addIdee({ text, moduleLabel, moduleId, auteur }) {
-  const current = await loadIdeesFromSupabase()
   const newIdee = {
     id: Date.now().toString(),
     text: text.trim(),
@@ -59,7 +99,7 @@ export async function addIdee({ text, moduleLabel, moduleId, auteur }) {
     auteur: auteur || 'Formateur',
     timestamp: new Date().toISOString(),
   }
-  await writeIdees([...current, newIdee])
+  await mutateIdees(idees => [...idees, newIdee])
 }
 
 // ── Composant bouton flottant ─────────────────────────────────────
@@ -111,8 +151,7 @@ export default function IdeesButton({ moduleId, pName }) {
         timestamp: new Date().toISOString(),
       }
 
-      const current = await loadIdeesFromSupabase()
-      await writeIdees([...current, newIdee])
+      await mutateIdees(idees => [...idees, newIdee])
 
       setText('')
       setSaved(true)

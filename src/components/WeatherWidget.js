@@ -67,7 +67,7 @@ export default function WeatherWidget({ pName, onToast }) {
               background: isMe ? 'rgba(0,171,233,.1)' : 'rgba(255,255,255,.04)',
               border: `1px solid ${isMe ? 'rgba(0,171,233,.25)' : 'transparent'}`
             }}>
-              <TrainerAvatar name={t} size={28} />
+              <TrainerAvatar pName={t} size={28} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{t.charAt(0).toUpperCase() + t.slice(1)}</span>

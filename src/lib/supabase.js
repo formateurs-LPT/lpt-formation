@@ -221,6 +221,23 @@ export async function sbUpdate(table, data, filter) {
   return r.ok
 }
 
+/** PATCH conditionnel : retourne true seulement si au moins une ligne correspondait au filtre
+ *  (sert de verrou optimiste — si personne n'a écrit entre-temps sur la même ligne) */
+export async function sbUpdateIfMatch(table, data, filter) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${filter}`, {
+    method: 'PATCH',
+    headers: { ...sbHeaders(), Prefer: 'return=representation' },
+    body: JSON.stringify(data),
+  })
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}))
+    console.error('[sbUpdateIfMatch]', table, r.status, err?.message || err?.code || err)
+    return false
+  }
+  const rows = await r.json().catch(() => [])
+  return Array.isArray(rows) && rows.length > 0
+}
+
 export async function sbDelete(table, filter) {
   const r = await fetch(`${SB_URL}/rest/v1/${table}?${filter}`, {
     method: 'DELETE',
