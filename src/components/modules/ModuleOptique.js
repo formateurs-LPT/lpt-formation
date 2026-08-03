@@ -2125,7 +2125,7 @@ function Lobby({ onStart, onBack }) {
 }
 
 // ── Composant principal ───────────────────────────────────────────
-export default function ModuleOptique({ pName, onBack }) {
+export default function ModuleOptique({ pName, onBack, onTerminate }) {
   const [started, setStarted] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
   const [quizLaunched, setQuizLaunched] = useState(false)
@@ -2204,7 +2204,7 @@ export default function ModuleOptique({ pName, onBack }) {
       await setSharedState({ quiz_final_phase: null })
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     } catch { /* best-effort */ }
-    onBack()
+    ;(onTerminate ?? onBack)()
   }
 
   if (!started) return (

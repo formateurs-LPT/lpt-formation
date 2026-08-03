@@ -395,7 +395,7 @@ export default function Page() {
     }
   }
 
-  const tvBackToQr = async () => {
+  const tvBackToQr = async (retriesLeft = 2) => {
     try {
       const code = getActiveSessionCode()
       if (isDynamicRoomCode(code)) {
@@ -407,6 +407,11 @@ export default function Page() {
       }
     } catch (e) {
       console.warn('tvBackToQr', e)
+      // Sans ce reset, le formé reste bloqué sur la page du module quitté — on retente
+      // avant d'abandonner (coupure réseau ponctuelle plutôt qu'erreur permanente).
+      if (retriesLeft > 0) {
+        setTimeout(() => tvBackToQr(retriesLeft - 1), 1000)
+      }
     }
   }
 

@@ -207,13 +207,13 @@ function ParticipantDashboard({ pName, sessionCode }) {
   const [ranking, setRanking] = useState([])
 
   useEffect(() => {
-    if (!pName) return
+    if (!pName || !sessionCode) return
     let cancelled = false
     const load = async () => {
       try {
         const [anyRows, correctRows] = await Promise.all([
-          sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(pName)}&limit=1`),
-          sbSelect('quiz_answers', `is_correct=eq.true`),
+          sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(sessionCode)}&collaborateur=eq.${encodeURIComponent(pName)}&limit=1`),
+          sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(sessionCode)}&is_correct=eq.true`),
         ])
         if (cancelled) return
         const seen = new Set()
@@ -245,7 +245,7 @@ function ParticipantDashboard({ pName, sessionCode }) {
     load()
     const t = setInterval(load, 12000)
     return () => { cancelled = true; clearInterval(t) }
-  }, [pName])
+  }, [pName, sessionCode])
 
   if (loadState === 'loading') return <WaitingScreen />
   const myEntry = ranking.find(r => r.name === pName)

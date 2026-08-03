@@ -857,7 +857,7 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
 
   const handleTerminate = async () => {
     try { await Promise.all([sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()), resetShared()]) } catch { /* best-effort */ }
-    ;(onTerminate ?? onBack)()
+    onBack()
   }
 
   const handleStartQuiz = async () => {

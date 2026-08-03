@@ -260,7 +260,7 @@ export default function ModuleLptSante({ pName, onBack }) {
 
   const handleTerminate = async () => {
     try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()) } catch { /* best-effort */ }
-    ;(onTerminate ?? onBack)()
+    onBack()
   }
 
   if (!started) {

@@ -70,7 +70,7 @@ export default function ModuleTrameAccueil({ pName, onBack }) {
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
       await setSharedState({ trame_step: null }).catch(() => {})
     } catch { /* best-effort */ }
-    ;(onTerminate ?? onBack)()
+    onBack()
   }
 
   if (!started) {

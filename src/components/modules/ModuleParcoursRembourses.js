@@ -167,7 +167,7 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
 
   const handleTerminate = async () => {
     try { await Promise.all([sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()), setSharedState({ parcours_revealed: [], tiers_payant_revealed: false })]) } catch { /* best-effort */ }
-    ;(onTerminate ?? onBack)()
+    onBack()
   }
 
   if (!started) {
