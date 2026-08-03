@@ -430,6 +430,7 @@ function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNex
 
 // ── Page 3 : Lire une ordonnance ─────────────────────────────────
 function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
+  const isMobile = useIsMobile()
   const [revealStep, setRevealStep] = useState(0) // 0=tableau vide, 1=+sphère, 2=+cylindre+axe, 3=+addition
   const [headlightDemo, setHeadlightDemo] = useState(false)
   const [headlightCyl, setHeadlightCyl] = useState(0)
@@ -508,17 +509,33 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
       </div>
 
       {/* Zone principale */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px 48px 100px', gap: 28 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: isMobile ? '16px 16px 100px' : '16px 48px 100px', gap: 28 }}>
 
         {/* Titre */}
-        <div>
-          <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)', borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Les bases de l&apos;optique</div>
-          <h1 style={{ fontSize: 30, fontWeight: 800, color: '#fff', lineHeight: 1.1, margin: 0 }}>{page.titre}</h1>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 6 }}>{page.sousTitre}</p>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)', borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Les bases de l&apos;optique</div>
+            <h1 style={{ fontSize: 30, fontWeight: 800, color: '#fff', lineHeight: 1.1, margin: 0 }}>{page.titre}</h1>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 6 }}>{page.sousTitre}</p>
+          </div>
+
+          {/* Bouton "expliquer le sens du cylindre et de l'axe" — en flux normal, toujours visible */}
+          {revealStep >= 2 && !headlightDemo && (
+            <button onClick={openHeadlightDemo} style={{
+              background: 'rgba(192,132,252,0.18)', border: '1px solid rgba(192,132,252,0.5)',
+              color: '#c084fc', padding: isMobile ? '14px 18px' : '12px 22px', borderRadius: 14,
+              fontSize: isMobile ? 14 : 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+              width: isMobile ? '100%' : 'auto', justifyContent: 'center',
+              boxShadow: '0 6px 20px rgba(192,132,252,0.25)',
+            }}>
+              🔦 {isMobile ? 'Expliquer l’axe' : 'Expliquer le sens du cylindre et de l’axe'}
+            </button>
+          )}
         </div>
 
         {/* Phase 1 — 3 cartes colonnes */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? 12 : 18 }}>
           {ORD_COLS.map((col, i) => (
             <div key={col.key} style={{
               background: `${col.color}0d`, border: `1px solid ${col.color}28`,
@@ -614,68 +631,64 @@ function OrdonnancePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, is
         nextLabel={revealStep === 0 ? 'Sphère →' : revealStep === 1 ? 'Cylindre & Axe →' : revealStep === 2 ? 'Addition →' : 'Suivant →'}
       />
 
-      {/* Bouton + panneau "expliquer le sens du cylindre et de l'axe" — dispo dès que cylindre/axe sont révélés */}
-      {revealStep >= 2 && !headlightDemo && (
-        <div style={{ position: 'fixed', top: 90, right: 32, zIndex: 60 }}>
-          <button onClick={openHeadlightDemo} style={{
-            background: 'rgba(192,132,252,0.18)', border: '1px solid rgba(192,132,252,0.5)',
-            color: '#c084fc', padding: '12px 22px', borderRadius: 14,
-            fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            display: 'flex', alignItems: 'center', gap: 8,
-            boxShadow: '0 6px 20px rgba(192,132,252,0.25)',
-          }}>
-            🔦 Expliquer le sens du cylindre et de l&apos;axe
-          </button>
-        </div>
-      )}
-
       {headlightDemo && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 200,
-          background: 'rgba(3,17,42,0.96)', backdropFilter: 'blur(6px)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 36,
-          padding: '80px 24px 40px', overflowY: 'auto',
+          background: 'rgba(3,17,42,0.98)',
+          display: 'flex', flexDirection: 'column',
+          overflowY: 'auto',
         }}>
-          <button onClick={closeHeadlightDemo} style={{
-            position: 'fixed', top: 16, right: 16, zIndex: 250,
-            background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-            color: '#fff', width: 44, height: 44, borderRadius: 12,
-            fontSize: 20, cursor: 'pointer', fontFamily: 'inherit',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>✕</button>
-
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#c084fc', textTransform: 'uppercase', letterSpacing: 1.5 }}>
-            Diffusé en direct sur le diffuseur
+          {/* Bouton fermer — en flux normal, tout en haut du panneau : toujours visible sans dépendre du positionnement fixe */}
+          <div style={{
+            flexShrink: 0, position: 'sticky', top: 0, zIndex: 1,
+            background: 'rgba(3,17,42,0.98)', borderBottom: '1px solid rgba(255,255,255,0.1)',
+            padding: isMobile ? '14px 16px' : '18px 32px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#c084fc', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              Diffusé en direct sur le diffuseur
+            </div>
+            <button onClick={closeHeadlightDemo} style={{
+              background: 'rgba(255,80,80,0.15)', border: '1px solid rgba(255,80,80,0.4)',
+              color: '#ff6b6b', padding: isMobile ? '12px 18px' : '10px 20px', borderRadius: 12,
+              fontSize: isMobile ? 14 : 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+            }}>✕ Fermer</button>
           </div>
 
-          <HeadlightVision cyl={headlightCyl} axe={headlightAxe} size={260} label="Aperçu formé" />
+          <div style={{
+            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 36,
+            padding: isMobile ? '32px 20px 40px' : '40px 24px',
+          }}>
+            <HeadlightVision cyl={headlightCyl} axe={headlightAxe} size={isMobile ? 200 : 260} label="Aperçu formé" />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, width: '100%', maxWidth: 480 }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#c084fc' }}>Cylindre</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
-                  {headlightCyl.toFixed(2).replace('.', ',')}
-                </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24, width: '100%', maxWidth: 480 }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#c084fc' }}>Cylindre</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
+                    {headlightCyl.toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+                <input
+                  type="range" min={0} max={4} step={0.25}
+                  value={headlightCyl}
+                  onChange={e => handleHeadlightCyl(parseFloat(e.target.value))}
+                  style={{ width: '100%', accentColor: '#c084fc' }}
+                />
               </div>
-              <input
-                type="range" min={0} max={4} step={0.25}
-                value={headlightCyl}
-                onChange={e => handleHeadlightCyl(parseFloat(e.target.value))}
-                style={{ width: '100%', accentColor: '#c084fc' }}
-              />
-            </div>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#fb923c' }}>Axe</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>{headlightAxe}°</span>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#fb923c' }}>Axe</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>{headlightAxe}°</span>
+                </div>
+                <input
+                  type="range" min={0} max={180} step={5}
+                  value={headlightAxe}
+                  onChange={e => handleHeadlightAxe(parseInt(e.target.value, 10))}
+                  style={{ width: '100%', accentColor: '#fb923c' }}
+                />
               </div>
-              <input
-                type="range" min={0} max={180} step={5}
-                value={headlightAxe}
-                onChange={e => handleHeadlightAxe(parseInt(e.target.value, 10))}
-                style={{ width: '100%', accentColor: '#fb923c' }}
-              />
             </div>
           </div>
         </div>
