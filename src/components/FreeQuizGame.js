@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import {
   sbSelect, setSharedState, getSharedState,
-  gradeOpenAnswer, insertOpenAnswer, getParticipantSessionCode,
+  gradeOpenAnswer, insertOpenAnswer, getParticipantSessionCode, getActiveSessionCode,
 } from '@/lib/supabase'
 
 // ── TV — Écran diffuseur ──────────────────────────────────────────
@@ -17,7 +17,7 @@ export function TVFreeQuizScreen({ sharedState }) {
     const poll = async () => {
       const data = await sbSelect(
         'open_answers',
-        `page_id=eq.${encodeURIComponent(pageId)}&order=created_at.asc&limit=60`
+        `page_id=eq.${encodeURIComponent(pageId)}&session_code=eq.${encodeURIComponent(getActiveSessionCode())}&order=created_at.asc&limit=60`
       )
       setAnswers(data || [])
     }
@@ -139,7 +139,7 @@ export function FreeQuizParticipant({ sharedState, pName }) {
     const poll = async () => {
       const rows = await sbSelect(
         'open_answers',
-        `page_id=eq.${encodeURIComponent(pageId)}&participant_name=eq.${encodeURIComponent(pName)}&order=created_at.desc&limit=1`
+        `page_id=eq.${encodeURIComponent(pageId)}&participant_name=eq.${encodeURIComponent(pName)}&session_code=eq.${encodeURIComponent(getParticipantSessionCode())}&order=created_at.desc&limit=1`
       )
       const row = rows?.[0]
       if (row && row.is_correct !== null && row.is_correct !== undefined) {
@@ -301,7 +301,7 @@ export default function FreeQuizTrainer({ onBack }) {
     const poll = async () => {
       const data = await sbSelect(
         'open_answers',
-        `page_id=eq.${encodeURIComponent(pageId)}&order=created_at.asc&limit=60`
+        `page_id=eq.${encodeURIComponent(pageId)}&session_code=eq.${encodeURIComponent(getActiveSessionCode())}&order=created_at.asc&limit=60`
       )
       setAnswers(data || [])
     }

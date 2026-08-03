@@ -417,7 +417,16 @@ export default function Page() {
 
   const handleBackToDashboard = () => { setView('dashboard'); tvBackToQr() }
   const handleBackToModules = () => { setView(moduleReturnTo); tvBackToQr() }
-  const handleTerminateToJournee1 = () => { setReturnJournee('journee1'); setView('onboarding-modules'); tvBackToQr() }
+  const handleTerminateToJournee1 = () => {
+    if (moduleReturnTo === 'onboarding-modules-belgique') {
+      setReturnJourneeBelgique('journee1')
+      setView('onboarding-modules-belgique')
+    } else {
+      setReturnJournee('journee1')
+      setView('onboarding-modules')
+    }
+    tvBackToQr()
+  }
   const handleTerminateToJournee4 = () => {
     if (moduleReturnTo === 'onboarding-modules-belgique') {
       setReturnJourneeBelgique('journee4')

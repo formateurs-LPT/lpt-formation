@@ -565,8 +565,8 @@ export default function EntreesView({ onBack, onToast, pName }) {
       }
 
       // Ajouter une ligne dans session_history
-      await insertSessionHistory({
-        sessionCode: getActiveSessionCode,
+      const historyOk = await insertSessionHistory({
+        sessionCode: getActiveSessionCode(),
         sessionDate: weekDate,
         trainerName: pName || localStorage.getItem('trainer_name') || 'Formateur',
         participants: [],
@@ -579,6 +579,10 @@ export default function EntreesView({ onBack, onToast, pName }) {
         },
         scenarioResponses: [],
       })
+      if (!historyOk) {
+        onToast('Erreur : archivage impossible, la liste n\'a pas été vidée')
+        return
+      }
 
       // Vider localStorage + Supabase shared state
       localStorage.removeItem('entrees_data')

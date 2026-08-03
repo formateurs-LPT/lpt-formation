@@ -120,8 +120,12 @@ function QrModal({ url, onClose }) {
 export default function FicheSAV() {
   const [showQr, setShowQr] = useState(false)
   const [ficheUrl, setFicheUrl] = useState('')
+  const [isTrainer, setIsTrainer] = useState(false)
 
-  useEffect(() => { setFicheUrl(window.location.origin + '/fiche-sav') }, [])
+  useEffect(() => {
+    setFicheUrl(window.location.origin + '/fiche-sav')
+    setIsTrainer(!!localStorage.getItem('trainer_name'))
+  }, [])
 
   return (
     <>
@@ -170,11 +174,13 @@ export default function FicheSAV() {
           </div>
 
           <div className="no-print" style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-            <button onClick={() => setShowQr(true)} style={{ background: `${GOLD}18`, border: `1px solid ${GOLD}60`, color: GOLD, fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-              onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}35` }}
-              onMouseLeave={e => { e.currentTarget.style.background = `${GOLD}18` }}>
-              ⬜ QR Code
-            </button>
+            {isTrainer && (
+              <button onClick={() => setShowQr(true)} style={{ background: `${GOLD}18`, border: `1px solid ${GOLD}60`, color: GOLD, fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}35` }}
+                onMouseLeave={e => { e.currentTarget.style.background = `${GOLD}18` }}>
+                ⬜ QR Code
+              </button>
+            )}
             <button onClick={() => window.print()} style={{ background: `${RED}18`, border: `1px solid ${RED}60`, color: RED, fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
               onMouseEnter={e => { e.currentTarget.style.background = `${RED}35` }}
               onMouseLeave={e => { e.currentTarget.style.background = `${RED}18` }}>
@@ -335,7 +341,7 @@ export default function FicheSAV() {
             </div>
 
             {/* Règle d'or */}
-            <div style={{ background: `${PURPLE}10`, border: `1px solid ${PURPLE}40`, borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+            <div className="print-card" style={{ background: `${PURPLE}10`, border: `1px solid ${PURPLE}40`, borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
               <span style={{ fontSize: 22, flexShrink: 0 }}>✅</span>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: PURPLE, marginBottom: 4 }}>Toujours valider avec le client</div>
@@ -397,7 +403,7 @@ export default function FicheSAV() {
             </div>
 
             {/* Règle d'or */}
-            <div style={{ background: `${RED}10`, border: `1px solid ${RED}40`, borderRadius: 12, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <div className="print-card" style={{ background: `${RED}10`, border: `1px solid ${RED}40`, borderRadius: 12, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
               <span style={{ fontSize: 22, flexShrink: 0 }}>⚠️</span>
               <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.6 }}>
                 <strong style={{ color: RED }}>Règle d'or — Même quand on a trouvé le problème, vérifier les autres étapes.</strong><br />

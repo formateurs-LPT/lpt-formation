@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { sbSelect, sbUpsert, getSharedState } from '@/lib/supabase'
+import { sbSelect, sbUpsert, getSharedState, getActiveSessionCode } from '@/lib/supabase'
 import { getLevelInfo } from '@/lib/scoring'
 import { classifyMagasin } from '@/lib/formationCategories'
 import { MODULE_DATA } from '@/lib/modulesData'
@@ -154,12 +154,13 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
+      const sessionCode = getActiveSessionCode()
       const [moduleRows, reportRow, answerRows, autoEvalRow] = await Promise.all([
-        sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(name)}`),
+        sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(name)}&session_code=eq.${encodeURIComponent(sessionCode)}`),
         // Charge le rapport le plus récent pour ce formé+formateur, quelle que soit la semaine
         sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc&limit=1`),
         // Fallback : quiz_answers si module_results absent (formé parti avant l'écran de résultats)
-        sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(name)}`),
+        sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(name)}&session_code=eq.${encodeURIComponent(sessionCode)}`),
         // Auto-évaluation la plus récente de ce formé (indépendante du formateur)
         sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=eq.__auto_eval__&order=updated_at.desc&limit=1`),
       ])
@@ -961,12 +962,13 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
     const names = filtered.map(e => e.fullName || `${e.nom} ${e.prenom}`.trim())
 
     const computeRanks = async () => {
+      const sessionCode = getActiveSessionCode()
       const [reportsRows, ...rawArrays] = await Promise.all([
         // Charge tous les rapports pour ce formateur, triés du plus récent au plus ancien
         sbSelect('formation_reports', `trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc`),
-        ...names.map(n => sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(n)}`)),
+        ...names.map(n => sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(n)}&session_code=eq.${encodeURIComponent(sessionCode)}`)),
         // Fallback : quiz_answers si module_results absent (formé parti avant l'écran de résultats)
-        ...names.map(n => sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(n)}`)),
+        ...names.map(n => sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(n)}&session_code=eq.${encodeURIComponent(sessionCode)}`)),
       ])
       const quizArrays  = rawArrays.slice(0, names.length)
       const answerArrays = rawArrays.slice(names.length)
@@ -1132,10 +1134,16 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
       return next
     })
     // Persiste mail_sent_at en base sans écraser le reste du retour déjà enregistré
-    Promise.all(group.entrees.map(e => {
+    // Relit le stats_snapshot juste avant l'envoi (reportSnapMap peut être périmé si le
+    // retour a été modifié depuis le chargement de la liste) pour ne pas écraser une saisie récente
+    Promise.all(group.entrees.map(async (e) => {
       const nm = e.fullName || `${e.nom} ${e.prenom}`.trim()
       const wd = weekDateMap[nm] || weekDate
-      const snap = reportSnapMap[nm] || {}
+      const freshRows = await sbSelect(
+        'formation_reports',
+        `collaborateur=eq.${encodeURIComponent(nm)}&week_date=eq.${encodeURIComponent(wd)}&trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc&limit=1`
+      )
+      const snap = freshRows?.[0]?.stats_snapshot || reportSnapMap[nm] || {}
       return sbUpsert(
         'formation_reports',
         {

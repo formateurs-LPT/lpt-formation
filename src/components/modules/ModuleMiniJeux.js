@@ -467,6 +467,7 @@ export default function ModuleMiniJeux({ pName, onBack }) {
   const [reel2State, setReel2]    = useState('idle')
   const [reelTState, setReelT]    = useState('idle')
   const vendeurPoolRef = useRef([]) // participants qui n'ont pas encore été vendeur ce cycle
+  const clientPoolRef = useRef([]) // participants qui n'ont pas encore été client ce cycle
 
   const activeParticipants = useMemo(
     () => participants.filter(p => !excluded.has(p)),
@@ -518,6 +519,7 @@ export default function ModuleMiniJeux({ pName, onBack }) {
     setView('game')
     setPhase('idle')
     vendeurPoolRef.current = [...active] // initialise le pool : tout le monde peut être vendeur
+    clientPoolRef.current = [...active] // initialise le pool : tout le monde peut être client
     // TV affiche les roues en attente (sans spin)
     await setSharedState({ minijeu_phase: 'game_ready', minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null }).catch(() => {})
   }
@@ -538,9 +540,16 @@ export default function ModuleMiniJeux({ pName, onBack }) {
     const p1 = pool[vendeurIdx]
     vendeurPoolRef.current = pool.filter((_, i) => i !== vendeurIdx)
 
-    // Client : n'importe qui sauf le vendeur
-    const clientCandidates = active.filter(p => p !== p1)
-    const p2 = clientCandidates[Math.floor(Math.random() * clientCandidates.length)]
+    // Client : pool tournant (sans répétition ce cycle), en excluant le vendeur de ce tour
+    let clientPool = clientPoolRef.current.filter(p => active.includes(p) && p !== p1)
+    if (clientPool.length === 0) {
+      // Tout le monde est passé (ou seul candidat restant était le vendeur) → nouveau cycle
+      clientPoolRef.current = [...active]
+      clientPool = active.filter(p => p !== p1)
+    }
+    const clientIdx = Math.floor(Math.random() * clientPool.length)
+    const p2 = clientPool[clientIdx]
+    clientPoolRef.current = clientPoolRef.current.filter(p => p !== p2)
     const t  = THEMES[Math.floor(Math.random() * THEMES.length)]
 
     setPhase('spinning')

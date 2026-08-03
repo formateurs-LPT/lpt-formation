@@ -108,8 +108,12 @@ export default function FichePratique() {
   const [showQr,    setShowQr]    = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [ficheUrl,  setFicheUrl]  = useState('')
+  const [isTrainer, setIsTrainer] = useState(false)
 
-  useEffect(() => { setFicheUrl(window.location.origin + '/fiche-pratique') }, [])
+  useEffect(() => {
+    setFicheUrl(window.location.origin + '/fiche-pratique')
+    setIsTrainer(!!localStorage.getItem('trainer_name'))
+  }, [])
 
   return (
     <>
@@ -160,16 +164,20 @@ export default function FichePratique() {
           </div>
 
           <div className="no-print" style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-            <button onClick={() => setShowQr(true)} style={{ background: `${GOLD}18`, border: `1px solid ${GOLD}60`, color: GOLD, fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .2s' }}
-              onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}35` }}
-              onMouseLeave={e => { e.currentTarget.style.background = `${GOLD}18` }}>
-              ⬜ QR Code
-            </button>
-            <button onClick={() => setShowShare(true)} style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', color: '#22c55e', fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .2s' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.25)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.12)' }}>
-              📧 Partager
-            </button>
+            {isTrainer && (
+              <>
+                <button onClick={() => setShowQr(true)} style={{ background: `${GOLD}18`, border: `1px solid ${GOLD}60`, color: GOLD, fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .2s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}35` }}
+                  onMouseLeave={e => { e.currentTarget.style.background = `${GOLD}18` }}>
+                  ⬜ QR Code
+                </button>
+                <button onClick={() => setShowShare(true)} style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', color: '#22c55e', fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .2s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.25)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.12)' }}>
+                  📧 Partager
+                </button>
+              </>
+            )}
             <button onClick={() => window.print()} style={{ background: `${BLUE}18`, border: `1px solid ${BLUE}60`, color: BLUE_L, fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .2s' }}
               onMouseEnter={e => { e.currentTarget.style.background = `${BLUE}35` }}
               onMouseLeave={e => { e.currentTarget.style.background = `${BLUE}18` }}>
@@ -219,7 +227,7 @@ export default function FichePratique() {
             </div>
 
             {/* La promesse 10 min */}
-            <div style={{ background: `linear-gradient(135deg, ${BLUE}30 0%, ${BLUE}10 100%)`, border: `2px solid ${BLUE}`, borderRadius: 20, padding: '28px 28px', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
+            <div className="print-card" style={{ background: `linear-gradient(135deg, ${BLUE}30 0%, ${BLUE}10 100%)`, border: `2px solid ${BLUE}`, borderRadius: 20, padding: '28px 28px', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: '50%', background: `${BLUE}15`, pointerEvents: 'none' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
                 <div style={{ flexShrink: 0, width: 100, height: 100, borderRadius: 24, background: `linear-gradient(135deg, ${BLUE}, ${BLUE_L})`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: `0 8px 32px ${BLUE}60` }}>
@@ -257,7 +265,7 @@ export default function FichePratique() {
             </div>
 
             {/* Labo progressif Châtelet */}
-            <div style={{ background: `linear-gradient(135deg, ${PURPLE}18 0%, ${PURPLE}08 100%)`, border: `2px solid ${PURPLE}`, borderRadius: 18, overflow: 'hidden' }}>
+            <div className="print-card" style={{ background: `linear-gradient(135deg, ${PURPLE}18 0%, ${PURPLE}08 100%)`, border: `2px solid ${PURPLE}`, borderRadius: 18, overflow: 'hidden' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className="print-labo-img" src="/assets/labo-progressif-chatelet.jpg" alt="Laboratoire progressif Paris Châtelet" style={{ width: '100%', height: 220, objectFit: 'cover', objectPosition: 'center 40%', display: 'block' }} />
               <div style={{ padding: '20px 24px' }}>

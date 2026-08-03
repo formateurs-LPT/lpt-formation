@@ -266,7 +266,7 @@ function ParticipantRecapModal({ name, snap, onClose }) {
             </section>
           )}
 
-          {!ae.suggestions && !ae.rating_comment && accomp.length === 0 && maitrise.length === 0 && enCours.length === 0 && notions.length === 0 && nonCompris.length === 0 && (
+          {!ae.suggestions && !ae.rating_comment && accomp.length === 0 && rated.length === 0 && (
             <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8', fontSize: 13 }}>Aucune donnée disponible.</div>
           )}
 
@@ -297,8 +297,9 @@ export default function AutoEvalView({ onBack }) {
     try {
       const [state, reports] = await Promise.all([
         getSharedState(),
-        // Charge tous les auto-évals, triés du plus récent au plus ancien — pas de filtre week_date
-        sbSelect('formation_reports', `trainer_name=eq.__auto_eval__&order=updated_at.desc`),
+        // Auto-évals de la semaine affichée uniquement — sinon un formé d'une semaine
+        // précédente portant le même nom apparaît à tort comme "déjà fait" cette semaine.
+        sbSelect('formation_reports', `trainer_name=eq.__auto_eval__&week_date=eq.${weekDate}&order=updated_at.desc`),
       ])
       setIsActive(state?.tv_screen === 'auto-eval')
       setEntrees(state?.entrees_data || [])

@@ -8121,7 +8121,7 @@ function FullscreenButton() {
       onMouseLeave={() => setHovered(false)}
       title={isFs ? 'Quitter le plein écran' : 'Plein écran'}
       style={{
-        position: 'fixed', top: 16, right: 16, zIndex: 1000,
+        position: 'fixed', top: 16, right: 16, zIndex: 10000,
         background: hovered ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.35)',
         border: '1px solid rgba(255,255,255,0.2)',
         borderRadius: 10, padding: '8px 12px',
@@ -8468,20 +8468,20 @@ export default function TVView() {
         <FullscreenButton />
         <TVPeerQuizScreen sharedState={sharedState} />
         {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
-        <TVAnnotationCanvas />
+        <TVAnnotationCanvas key="peer-quiz" />
       </>
     )
   }
 
   // Quiz réponses libres — le formateur pose une question, les formés répondent sur leur téléphone
-  if (!loading && sharedState?.tv_screen === 'free-quiz') {
+  if (!loading && !activeModule && sharedState?.tv_screen === 'free-quiz') {
     return (
       <>
         <style>{STYLES}</style>
         <FullscreenButton />
         <TVFreeQuizScreen sharedState={sharedState} />
         {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
-        <TVAnnotationCanvas />
+        <TVAnnotationCanvas key="free-quiz" />
       </>
     )
   }
@@ -8527,7 +8527,7 @@ export default function TVView() {
   }
 
   // tv_screen=module_questions — affichage anonyme des questions formés
-  if (!loading && tvScreen === 'module_questions') {
+  if (!loading && !activeModule && tvScreen === 'module_questions') {
     return (
       <>
         <style>{STYLES}</style>
@@ -8539,7 +8539,7 @@ export default function TVView() {
           singleId={sharedState?.mq_single_id || null}
         />
         {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
-        <TVAnnotationCanvas />
+        <TVAnnotationCanvas key="module-questions" />
       </>
     )
   }
@@ -8559,7 +8559,7 @@ export default function TVView() {
           }
         </div>
         {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
-        <TVAnnotationCanvas />
+        <TVAnnotationCanvas key="no-module" />
       </>
     )
   }
@@ -8697,7 +8697,7 @@ export default function TVView() {
       </div>
 
       {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
-      <TVAnnotationCanvas />
+      <TVAnnotationCanvas key={`module-${activeModule}`} />
     </>
   )
 }
