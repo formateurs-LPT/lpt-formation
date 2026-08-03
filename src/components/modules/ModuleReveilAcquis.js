@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { getSharedState, setSharedState } from '@/lib/supabase'
+import { getSharedState, setSharedState, mutateRoomState } from '@/lib/supabase'
 
 const JOURNEES = [
   {
@@ -69,14 +69,18 @@ function FAQTrainerView({ journee, onBack }) {
   const handleHighlight = async (id) => {
     setLoading(true)
     try {
-      const state = await getSharedState()
-      const qs = state?.[key] || []
-      const isAlreadyHighlighted = qs.find(q => q.id === id)?.highlighted
-      const updated = qs.map(q => ({
-        ...q,
-        highlighted: q.id === id ? !isAlreadyHighlighted : false,
-      }))
-      await setSharedState({ [key]: updated })
+      let updated = []
+      // Verrou optimiste : un autre formateur ou un formé qui envoie une question
+      // en même temps ne doit pas voir sa modification écrasée silencieusement.
+      await mutateRoomState(null, state => {
+        const qs = state?.[key] || []
+        const isAlreadyHighlighted = qs.find(q => q.id === id)?.highlighted
+        updated = qs.map(q => ({
+          ...q,
+          highlighted: q.id === id ? !isAlreadyHighlighted : false,
+        }))
+        return { [key]: updated }
+      })
       setQuestions(updated)
     } finally {
       setLoading(false)
@@ -86,10 +90,12 @@ function FAQTrainerView({ journee, onBack }) {
   const handleTreat = async (id) => {
     setLoading(true)
     try {
-      const state = await getSharedState()
-      const qs = state?.[key] || []
-      const updated = qs.filter(q => q.id !== id)
-      await setSharedState({ [key]: updated })
+      let updated = []
+      await mutateRoomState(null, state => {
+        const qs = state?.[key] || []
+        updated = qs.filter(q => q.id !== id)
+        return { [key]: updated }
+      })
       setQuestions(updated)
     } finally {
       setLoading(false)

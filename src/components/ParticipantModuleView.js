@@ -6,7 +6,7 @@ import QuestionBubble from '@/components/QuestionBubble'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, ENTRAINEMENT_QUESTIONS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbUpsert, sbSelect, sbDelete, getParticipantSessionCode, ensureSession, getSharedState, getRoomSharedState, setSharedState, setRoomSharedState, insertOpenAnswer, updateOpenAnswer, setParticipantPage } from '@/lib/supabase'
+import { sbUpsert, sbSelect, sbDelete, getParticipantSessionCode, ensureSession, getSharedState, getRoomSharedState, setSharedState, setRoomSharedState, mutateRoomState, insertOpenAnswer, updateOpenAnswer, setParticipantPage } from '@/lib/supabase'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
@@ -2857,13 +2857,13 @@ export function FAQInputMobile({ journeeId }) {
     setSending(true)
     try {
       const key = `faq_${journeeId}_q`
-      const state = await getSharedState()
-      const current = state?.[key] || []
       const nom    = typeof window !== 'undefined' ? (localStorage.getItem('participant_name') || '') : ''
       const prenom = typeof window !== 'undefined' ? (localStorage.getItem('participant_prenom') || '') : ''
       const author = [prenom, nom].filter(Boolean).join(' ') || 'Anonyme'
       const newQ = { id: Date.now().toString(), text: trimmed, highlighted: false, author }
-      await setSharedState({ [key]: [...current, newQ] })
+      // Verrou optimiste : plusieurs formés peuvent envoyer une question au même moment,
+      // un simple lire-modifier-écrire perdrait silencieusement l'une des questions.
+      await mutateRoomState(null, state => ({ [key]: [...(state?.[key] || []), newQ] }))
       setText('')
       setCount(c => c + 1)
       setShowNew(false)
@@ -4170,7 +4170,7 @@ function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, e
   )
 }
 
-function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint, rembfrRevealed, entrainementQ, entrainementVfCorrect, entrainementClearTs, entrainementCustomQText, ordoRevealStep }) {
+function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, entrainementQ, entrainementVfCorrect, entrainementClearTs, entrainementCustomQText, ordoRevealStep }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
 
@@ -4237,7 +4237,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
           "Aller sur AMELIPRO pour verifier le dernier remboursement.",
           "Faire le Test Supreme (sauf CSS → 1=1 directement).",
           "Retourner voir le client et adapter le discours.",
-        ].map((txt, i) => (
+        ].slice(0, rembfrDemarcheA || 0).map((txt, i) => (
           <div key={i} style={{
             display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 8,
             padding: '10px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10,
@@ -4246,6 +4246,11 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
             <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.45 }}>{txt}</span>
           </div>
         ))}
+        {!rembfrDemarcheA && (
+          <div style={{ padding: '12px 14px', background: 'rgba(0,137,186,0.06)', border: '1px dashed rgba(0,137,186,0.25)', borderRadius: 10, textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>
+            👀 Le formateur va révéler les étapes une par une…
+          </div>
+        )}
       </div>
 
       {/* Scenario B */}
@@ -4265,7 +4270,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
           "Aller sur AMELIPRO pour verifier le dernier remboursement.",
           "Si ok → inscrire en examen de vue et obtenir ordonnance via LYLEOO.",
           "Faire le Test Supreme avec l'ordonnance (sauf CSS → 1=1).",
-        ].map((txt, i) => (
+        ].slice(0, rembfrDemarcheB || 0).map((txt, i) => (
           <div key={i} style={{
             display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 8,
             padding: '10px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10,
@@ -4274,6 +4279,11 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
             <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.45 }}>{txt}</span>
           </div>
         ))}
+        {!rembfrDemarcheB && (
+          <div style={{ padding: '12px 14px', background: 'rgba(245,158,11,0.06)', border: '1px dashed rgba(245,158,11,0.25)', borderRadius: 10, textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>
+            👀 Le formateur va révéler les étapes une par une…
+          </div>
+        )}
       </div>
 
       {/* Note bas */}
@@ -5176,6 +5186,8 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const [modelePoint, setModelePoint]             = useState(null)
   const [faqJournee, setFaqJournee]               = useState(null)
   const [rembfrRevealed, setRembfrRevealed]       = useState([])
+  const [rembfrDemarcheA, setRembfrDemarcheA]     = useState(0)
+  const [rembfrDemarcheB, setRembfrDemarcheB]     = useState(0)
   const [entrainementQ, setEntrainementQ]           = useState(null)
   const [entrainementVfCorrect, setEntrainementVfCorrect] = useState(null)
   const [entrainementClearTs, setEntrainementClearTs]     = useState(null)
@@ -5195,6 +5207,8 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     setModelePoint(sharedState.modele_point ?? null)
     setFaqJournee(sharedState.faq_journee || null)
     setRembfrRevealed(sharedState.rembfr_revealed || [])
+    setRembfrDemarcheA(sharedState.rembfr_demarche_a ?? 0)
+    setRembfrDemarcheB(sharedState.rembfr_demarche_b ?? 0)
     setEntrainementQ(sharedState.entrainement_q ?? null)
     setEntrainementVfCorrect(sharedState.entrainement_vf_correct ?? null)
     setEntrainementClearTs(sharedState.entrainement_clear_ts ?? null)
@@ -5299,7 +5313,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
               : isQuiz
               ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
               : page
-                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} moduleId={activeModule} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} rembfrRevealed={rembfrRevealed} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} entrainementCustomQText={entrainementCustomQText} ordoRevealStep={ordoRevealStep} />
+                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} moduleId={activeModule} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} rembfrRevealed={rembfrRevealed} rembfrDemarcheA={rembfrDemarcheA} rembfrDemarcheB={rembfrDemarcheB} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} entrainementCustomQText={entrainementCustomQText} ordoRevealStep={ordoRevealStep} />
                 : faqJournee
                   ? <FAQInputMobile journeeId={faqJournee} />
                   : <ParticipantDashboard pName={pName} sessionCode={sessionCode} />

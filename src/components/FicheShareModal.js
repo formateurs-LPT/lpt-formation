@@ -52,8 +52,18 @@ function buildLptEmail(entree) {
   return p[0] + n + '@lunettespourtous.com'
 }
 
-export default function FicheShareModal({ ficheUrl, ficheLabel, allowedGroups, onClose }) {
-  const categories = listFormationCategories().filter(
+// Filtre par poste (ex: fiche SAV → uniquement les Monteur Optique SAV), au lieu du
+// filtre par groupe/lieu de formation utilisé pour les autres fiches.
+function entreeMatchesPoste(entree, posteFilter) {
+  const poste = (entree?.poste || '').trim().toLowerCase()
+  if (!poste) return false
+  return posteFilter.some(p => poste === p.trim().toLowerCase())
+}
+
+export default function FicheShareModal({ ficheUrl, ficheLabel, allowedGroups, posteFilter, emailBody, onClose }) {
+  const byPoste = Array.isArray(posteFilter) && posteFilter.length > 0
+
+  const categories = byPoste ? [] : listFormationCategories().filter(
     c => !allowedGroups || allowedGroups.includes(c.slug)
   )
 
@@ -73,19 +83,19 @@ export default function FicheShareModal({ ficheUrl, ficheLabel, allowedGroups, o
   }, [])
 
   const recipients = entrees
-    .filter(e => entreeMatchesCategory(e, selectedSlug))
+    .filter(e => byPoste ? entreeMatchesPoste(e, posteFilter) : entreeMatchesCategory(e, selectedSlug))
     .map(e => ({ name: entreeDisplayName(e), email: buildLptEmail(e) }))
     .filter(r => r.email)
 
-  const selectedMeta = categories.find(c => c.slug === selectedSlug)
-  const color = GROUP_COLORS[selectedSlug] || BLUE_L
+  const selectedMeta = byPoste ? null : categories.find(c => c.slug === selectedSlug)
+  const color = byPoste ? GREEN : (GROUP_COLORS[selectedSlug] || BLUE_L)
 
   const handleSend = () => {
     if (!recipients.length) return
     const bcc     = recipients.map(r => r.email).join(',')
     const subject = encodeURIComponent(`Ta fiche récapitulative de formation — Lunettes Pour Tous`)
     const body    = encodeURIComponent(
-      `Bonjour,\n\nAprès ces trois jours de formation, il te reste encore plein de choses à découvrir en magasin. Ces trois jours étaient riches en informations, et pour t’aider, voici une fiche récapitulative de la formation. Tu y trouveras l’essentiel des thèmes abordés durant ces trois jours.\n\n➡ ${ficheUrl}\n\nSi tu as la moindre question, n’hésite pas à me contacter sur ce mail.\n\nJe te souhaite une excellente intégration et peut-être à bientôt en magasin !\n\nBonnes ventes à toi !`
+      emailBody || `Bonjour,\n\nAprès ces trois jours de formation, il te reste encore plein de choses à découvrir en magasin. Ces trois jours étaient riches en informations, et pour t’aider, voici une fiche récapitulative de la formation. Tu y trouveras l’essentiel des thèmes abordés durant ces trois jours.\n\n➡ ${ficheUrl}\n\nSi tu as la moindre question, n’hésite pas à me contacter sur ce mail.\n\nJe te souhaite une excellente intégration et peut-être à bientôt en magasin !\n\nBonnes ventes à toi !`
     )
     window.open(`mailto:?bcc=${bcc}&subject=${subject}&body=${body}`)
     setSent(true)
@@ -135,6 +145,7 @@ export default function FicheShareModal({ ficheUrl, ficheLabel, allowedGroups, o
         </div>
 
         {/* Group selector */}
+        {!byPoste && (
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: SUB, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
             Choisir le groupe
@@ -168,11 +179,12 @@ export default function FicheShareModal({ ficheUrl, ficheLabel, allowedGroups, o
             })}
           </div>
         </div>
+        )}
 
         {/* Recipient list */}
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: SUB, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
-            Destinataires — {selectedMeta?.emoji} {selectedMeta?.label}
+            Destinataires — {byPoste ? `🔧 ${ficheLabel || 'SAV'}` : `${selectedMeta?.emoji} ${selectedMeta?.label}`}
           </div>
           {loading ? (
             <div style={{ color: SUB, fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
@@ -180,7 +192,7 @@ export default function FicheShareModal({ ficheUrl, ficheLabel, allowedGroups, o
             </div>
           ) : recipients.length === 0 ? (
             <div style={{ color: SUB, fontSize: 13, textAlign: 'center', padding: '20px 0', lineHeight: 1.6 }}>
-              Aucun collaborateur trouvé pour ce groupe.<br />
+              Aucun collaborateur trouvé {byPoste ? `pour ce poste (${posteFilter.join(', ')})` : 'pour ce groupe'}.<br />
               <span style={{ fontSize: 11, opacity: 0.6 }}>Vérifiez que la liste RH a bien été importée.</span>
             </div>
           ) : (

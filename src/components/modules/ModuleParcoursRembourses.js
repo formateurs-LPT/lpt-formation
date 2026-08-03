@@ -111,6 +111,7 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
   const [pageIndex, setPageIndex] = useState(0)
   const [parcoursRevealed, setParcoursRevealed] = useState([])
   const [tiersPayantRevealed, setTiersPayantRevealed] = useState(false)
+  const [answersRevealed, setAnswersRevealed] = useState(false)
   const [revealing, setRevealing] = useState(false)
   const syncedRef = useRef(false)
 
@@ -138,6 +139,17 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
     }
   }
 
+  const toggleAnswersRevealed = async () => {
+    setRevealing(true)
+    try {
+      const next = !answersRevealed
+      setAnswersRevealed(next)
+      await setSharedState({ tiers_payant_answers_revealed: next })
+    } finally {
+      setRevealing(false)
+    }
+  }
+
   const syncAndWrite = async (data) => {
     if (!syncedRef.current) {
       await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName), pName)
@@ -148,7 +160,7 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
 
   useEffect(() => {
     if (!started) return
-    setSharedState({ parcours_revealed: [], tiers_payant_revealed: false })
+    setSharedState({ parcours_revealed: [], tiers_payant_revealed: false, tiers_payant_answers_revealed: false })
     syncAndWrite({ active_module: MODULE_ID, module_page: 0 })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started])
@@ -161,12 +173,12 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
   }, [pageIndex])
 
   const handleBack = async () => {
-    try { await Promise.all([sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()), setSharedState({ parcours_revealed: [], tiers_payant_revealed: false })]) } catch { /* best-effort */ }
+    try { await Promise.all([sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()), setSharedState({ parcours_revealed: [], tiers_payant_revealed: false, tiers_payant_answers_revealed: false })]) } catch { /* best-effort */ }
     onBack()
   }
 
   const handleTerminate = async () => {
-    try { await Promise.all([sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()), setSharedState({ parcours_revealed: [], tiers_payant_revealed: false })]) } catch { /* best-effort */ }
+    try { await Promise.all([sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()), setSharedState({ parcours_revealed: [], tiers_payant_revealed: false, tiers_payant_answers_revealed: false })]) } catch { /* best-effort */ }
     onBack()
   }
 
@@ -284,6 +296,29 @@ export default function ModuleParcoursRembourses({ pName, onBack }) {
                   </p>
                 </div>
               )}
+            </div>
+
+            <div style={{ marginTop: 16, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 14, padding: '20px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>Réponses des formés</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Par défaut, elles ne s'affichent que quand tout le monde a répondu.</div>
+                </div>
+                <button
+                  onClick={toggleAnswersRevealed}
+                  disabled={revealing}
+                  style={{
+                    padding: '8px 18px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                    cursor: revealing ? 'default' : 'pointer', fontFamily: 'inherit',
+                    transition: 'all .2s', flexShrink: 0,
+                    background: answersRevealed ? 'rgba(74,222,128,0.12)' : 'rgba(245,158,11,0.12)',
+                    border: answersRevealed ? '1px solid rgba(74,222,128,0.35)' : '1px solid rgba(245,158,11,0.35)',
+                    color: answersRevealed ? '#4ade80' : '#f59e0b',
+                  }}
+                >
+                  {answersRevealed ? '✓ Affichées — Masquer' : '👁 Afficher sur TV quand même'}
+                </button>
+              </div>
             </div>
           </div>
         ) : page?.type === 'tiers-payant-explication' ? (

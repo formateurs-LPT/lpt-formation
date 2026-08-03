@@ -359,6 +359,46 @@ export async function setRoomSharedState(patch, roomCode) {
   return result
 }
 
+/**
+ * Mutation d'un état de salle avec verrou optimiste (CAS sur updated_at).
+ * À utiliser quand plusieurs personnes peuvent écrire la même clé en même temps
+ * (ex: questions FAQ soumises par plusieurs formés) : un simple lire-modifier-écrire
+ * perdrait silencieusement une écriture concurrente.
+ * `mutateFn(state)` doit renvoyer un patch (objet) à fusionner dans le state courant.
+ */
+export async function mutateRoomState(roomCode, mutateFn) {
+  const code = (roomCode || resolveRoomStateCode()).trim()
+  if (!code) {
+    console.error('[mutateRoomState] code salle manquant')
+    return null
+  }
+  const MAX_ATTEMPTS = 6
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const rows = await sbSelect('trainer_state', `trainer=eq.${encodeURIComponent(code)}`)
+    const row = rows?.[0]
+    const state = parseTrainerStateRow(row)
+    const updatedAt = row?.updated_at || null
+    const patch = mutateFn(state) || {}
+    const nextState = { ...state, ...patch }
+    const now = new Date().toISOString()
+
+    if (!updatedAt) {
+      // Pas encore de ligne pour cette salle — création, pas de concurrence possible ici
+      return sbUpsert('trainer_state', { trainer: code, state: nextState, updated_at: now }, 'trainer')
+    }
+
+    const wrote = await sbUpdateIfMatch(
+      'trainer_state',
+      { state: nextState, updated_at: now },
+      `trainer=eq.${encodeURIComponent(code)}&updated_at=eq.${encodeURIComponent(updatedAt)}`
+    )
+    if (wrote) return wrote
+    // Quelqu'un d'autre a écrit entre la lecture et l'écriture → on relit et on réessaie
+  }
+  console.error('[mutateRoomState] échec après plusieurs tentatives (collisions répétées)', code)
+  return null
+}
+
 // ── Réponses libres aux questions ouvertes ────────────────────────
 export async function insertOpenAnswer({
   sessionCode,

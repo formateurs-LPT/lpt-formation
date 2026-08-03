@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import FicheShareModal from '@/components/FicheShareModal'
 
 const BLUE_L  = '#00abe9'
 const GOLD    = '#f59e0b'
@@ -119,6 +120,7 @@ function QrModal({ url, onClose }) {
 /* ── Page principale ────────────────────────────────────────── */
 export default function FicheSAV() {
   const [showQr, setShowQr] = useState(false)
+  const [showShare, setShowShare] = useState(false)
   const [ficheUrl, setFicheUrl] = useState('')
   const [isTrainer, setIsTrainer] = useState(false)
 
@@ -130,6 +132,15 @@ export default function FicheSAV() {
   return (
     <>
       {showQr && ficheUrl && <QrModal url={ficheUrl} onClose={() => setShowQr(false)} />}
+      {showShare && ficheUrl && (
+        <FicheShareModal
+          ficheUrl={ficheUrl}
+          ficheLabel="SAV"
+          posteFilter={['Monteur Optique SAV']}
+          emailBody={`Bonjour,\n\nAprès cette journée dédiée au SAV, voici une fiche récapitulative des retraits, ajustages et RAZ. Tu y trouveras l’essentiel des points vus ensemble.\n\n➡ ${ficheUrl}\n\nSi tu as la moindre question, n’hésite pas à me contacter sur ce mail.\n\nBonnes ventes à toi !`}
+          onClose={() => setShowShare(false)}
+        />
+      )}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -175,11 +186,18 @@ export default function FicheSAV() {
 
           <div className="no-print" style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
             {isTrainer && (
-              <button onClick={() => setShowQr(true)} style={{ background: `${GOLD}18`, border: `1px solid ${GOLD}60`, color: GOLD, fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}35` }}
-                onMouseLeave={e => { e.currentTarget.style.background = `${GOLD}18` }}>
-                ⬜ QR Code
-              </button>
+              <>
+                <button onClick={() => setShowQr(true)} style={{ background: `${GOLD}18`, border: `1px solid ${GOLD}60`, color: GOLD, fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}35` }}
+                  onMouseLeave={e => { e.currentTarget.style.background = `${GOLD}18` }}>
+                  ⬜ QR Code
+                </button>
+                <button onClick={() => setShowShare(true)} style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.4)', color: '#22c55e', fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .2s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.25)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.12)' }}>
+                  📧 Envoyer aux SAV
+                </button>
+              </>
             )}
             <button onClick={() => window.print()} style={{ background: `${RED}18`, border: `1px solid ${RED}60`, color: RED, fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
               onMouseEnter={e => { e.currentTarget.style.background = `${RED}35` }}

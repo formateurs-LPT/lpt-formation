@@ -1031,7 +1031,7 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
 }
 
 // ── TV Pause (type = pause) ───────────────────────────────────────
-function OpenAnswersFeed({ sessionCode, pageId }) {
+function OpenAnswersFeed({ sessionCode, pageId, revealed = false }) {
   const [answers, setAnswers] = useState([])
   const [participantCount, setParticipantCount] = useState(0)
   const [knownIds, setKnownIds] = useState(new Set())
@@ -1069,20 +1069,21 @@ function OpenAnswersFeed({ sessionCode, pageId }) {
   }, [sessionCode, pageId])
 
   const allAnswered = participantCount > 0 && answers.length >= participantCount
+  const shouldShow = allAnswered || revealed
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: allAnswered ? '#22c55e' : '#00abe9', animation: 'waitingPulse 1.5s ease-in-out infinite' }} />
-        <span style={{ fontSize: 12, fontWeight: 700, color: allAnswered ? '#22c55e' : '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>
-          {allAnswered ? 'Tout le monde a répondu' : 'En attente des réponses'}
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: shouldShow ? '#22c55e' : '#00abe9', animation: 'waitingPulse 1.5s ease-in-out infinite' }} />
+        <span style={{ fontSize: 12, fontWeight: 700, color: shouldShow ? '#22c55e' : '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+          {allAnswered ? 'Tout le monde a répondu' : revealed ? 'Réponses affichées par le formateur' : 'En attente des réponses'}
         </span>
         {participantCount > 0 && (
           <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginLeft: 4 }}>{answers.length}/{participantCount}</span>
         )}
       </div>
 
-      {!allAnswered ? (
+      {!shouldShow ? (
         <div style={{
           flex: 1, display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', gap: 12,
@@ -5058,7 +5059,7 @@ function TVPartenaOffre({ partenaRevealed }) {
 }
 
 // ── TV Remboursement France — Conditions ─────────────────────────
-function TVTiersPayant({ tiersPayantRevealed, sessionCode, pageId }) {
+function TVTiersPayant({ tiersPayantRevealed, answersRevealed, sessionCode, pageId }) {
   return (
     <div style={{
       minHeight: '100vh', background: '#03112a',
@@ -5108,7 +5109,7 @@ function TVTiersPayant({ tiersPayantRevealed, sessionCode, pageId }) {
 
         {/* Réponses */}
         <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column' }}>
-          <OpenAnswersFeed sessionCode={sessionCode} pageId={pageId} />
+          <OpenAnswersFeed sessionCode={sessionCode} pageId={pageId} revealed={answersRevealed} />
         </div>
       </div>
     </div>
@@ -6376,7 +6377,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, saisieStage, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progRetourRevealed, progObjectionIdx, progObjectionResponses, progObjectionRevealed, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, monturesMateriauxResponses, revealMonturesMateriaux, sessionCode, onAmeliProClick }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, saisieStage, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progRetourRevealed, progObjectionIdx, progObjectionResponses, progObjectionRevealed, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, tiersPayantAnswersRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, monturesMateriauxResponses, revealMonturesMateriaux, sessionCode, onAmeliProClick }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -6392,7 +6393,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'rembfr-demarche')    return <TVRembFrDemarche stepA={rembfrDemarcheA} stepB={rembfrDemarcheB} onAmeliProClick={onAmeliProClick} />
   if (page.type === 'rembfr-supreme')     return <TVRembFrSupreme supremeStep={rembfrSupreme} />
   if (page.type === 'parcours-rembourses-offres') return <TVParcoursOffres parcoursRevealed={parcoursRevealed} />
-  if (page.type === 'parcours-tiers-payant')      return <TVTiersPayant tiersPayantRevealed={tiersPayantRevealed} sessionCode={sessionCode} pageId={page.id} />
+  if (page.type === 'parcours-tiers-payant')      return <TVTiersPayant tiersPayantRevealed={tiersPayantRevealed} answersRevealed={tiersPayantAnswersRevealed} sessionCode={sessionCode} pageId={page.id} />
   if (page.type === 'tiers-payant-explication')   return <TVTiersPayantExplication />
   if (page.type === 'lpt-sante-intro')        return <TVLptSanteIntro        page={page} sessionCode={sessionCode} />
   if (page.type === 'lpt-sante-explication') return <TVLptSanteExplication />
@@ -8327,6 +8328,7 @@ export default function TVView() {
   const [lptsPecScenario, setLptsPecScenario]             = useState(null)
   const [parcoursRevealed, setParcoursRevealed]           = useState([])
   const [tiersPayantRevealed, setTiersPayantRevealed]     = useState(false)
+  const [tiersPayantAnswersRevealed, setTiersPayantAnswersRevealed] = useState(false)
   const [brainstormRevealed, setBrainstormRevealed]       = useState(false)
   const [monturesPrixRevealed, setMonturesPrixRevealed]   = useState(false)
   const [monturesMateriauxResponses, setMonturesMateriauxResponses] = useState({})
@@ -8393,6 +8395,7 @@ export default function TVView() {
     setLptsPecScenario(sharedState.lpts_pec_scenario ?? null)
     setParcoursRevealed(sharedState.parcours_revealed || [])
     setTiersPayantRevealed(!!sharedState.tiers_payant_revealed)
+    setTiersPayantAnswersRevealed(!!sharedState.tiers_payant_answers_revealed)
     setBrainstormRevealed(!!sharedState.brainstorm_revealed)
     setMonturesPrixRevealed(!!sharedState.montures_prix_revealed)
     setMonturesMateriauxResponses(sharedState.montures_materiaux_responses || {})
@@ -8683,6 +8686,7 @@ export default function TVView() {
             rembfrSupreme={rembfrSupreme}
             parcoursRevealed={parcoursRevealed}
             tiersPayantRevealed={tiersPayantRevealed}
+            tiersPayantAnswersRevealed={tiersPayantAnswersRevealed}
             lptsPecScenario={lptsPecScenario}
             brainstormRevealed={brainstormRevealed}
             monturesPrixRevealed={monturesPrixRevealed}
