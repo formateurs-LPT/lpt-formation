@@ -4286,8 +4286,8 @@ function TVMiniJeuGame({ mjPhase, vendeur, client, theme }) {
     const sc = typeof window !== 'undefined'
       ? (localStorage.getItem('participant_session_code') || localStorage.getItem('lpt_session_code') || 'LPT2026')
       : 'LPT2026'
-    import('@/lib/supabase').then(({ sbSelect }) => {
-      sbSelect('participants', `session_code=eq.${sc}&order=joined_at.asc`)
+    import('@/lib/participantPresence').then(({ fetchOnlineParticipantsList }) => {
+      fetchOnlineParticipantsList(sc)
         .then(rows => {
           const names = (rows || []).map(r => r.name || r.participant_name || r.collaborateur).filter(Boolean)
           setParticipants(names.length ? names : ['Participant 1', 'Participant 2', 'Participant 3'])

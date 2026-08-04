@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import Image from 'next/image'
-import { sbSelect, getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
+import { getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
+import { fetchOnlineParticipantsList } from '@/lib/participantPresence'
 
 const THEMES = [
   'Un client qui veut du progressif mais n\'en a jamais porté',
@@ -474,8 +475,11 @@ export default function ModuleMiniJeux({ pName, onBack }) {
     [participants, excluded]
   )
 
+  // Uniquement les formés réellement en ligne au moment du jeu (heartbeat < 90s,
+  // left_at non renseigné) — un compte qui a juste ouvert la session une fois puis
+  // fermé l'onglet ne doit pas rester éligible indéfiniment.
   const loadParticipants = useCallback(async () => {
-    const rows = await sbSelect('participants', `session_code=eq.${getActiveSessionCode()}&order=joined_at.asc`)
+    const rows = await fetchOnlineParticipantsList(getActiveSessionCode())
     setParticipants((rows || []).map(r => r.name || r.participant_name || r.collaborateur).filter(Boolean))
   }, [])
 

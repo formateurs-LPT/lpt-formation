@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { sbSelect, setSharedState, getSharedState } from '@/lib/supabase'
+import { setSharedState, getSharedState } from '@/lib/supabase'
+import { fetchOnlineParticipantsList } from '@/lib/participantPresence'
 
 // ── Utilitaires ───────────────────────────────────────────────────
 
@@ -158,7 +159,7 @@ export function PeerQuizParticipant({ sharedState, pName, sessionCode }) {
     if (phase !== 'playing') return
     const load = async () => {
       try {
-        const rows = await sbSelect('participants', `session_code=eq.${sessionCode}`)
+        const rows = await fetchOnlineParticipantsList(sessionCode)
         setParticipants((rows || []).map(r => r.name || r.participant_name).filter(Boolean))
       } catch {}
     }
@@ -497,7 +498,7 @@ export default function PeerQuizTrainer({ sessionCode, onBack }) {
   const load = useCallback(async () => {
     try {
       const [rows, state] = await Promise.all([
-        sbSelect('participants', `session_code=eq.${sessionCode}`),
+        fetchOnlineParticipantsList(sessionCode),
         getSharedState(sessionCode),
       ])
       setParticipants((rows || []).map(r => r.name || r.participant_name).filter(Boolean))
