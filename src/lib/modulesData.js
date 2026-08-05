@@ -340,7 +340,7 @@ export const OPTIQUE_QUIZ = [
     type: 'text-open',
     question: 'À quoi sert la valeur ADD sur une ordonnance ?',
     hint: 'à calculer la vision de près',
-    autoCorrect: ['vision de près', 'vision de pres'],
+    autoCorrect: ['vision de près', 'vision de pres', 'voir de près', 'voir de pres', 'presbytie'],
   },
   // Q17
   {

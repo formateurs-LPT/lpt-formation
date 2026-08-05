@@ -1318,7 +1318,7 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
         if (matchOr || matchAnd || matchExact || matchEach) {
           autoValidatedRef.current.add(name)
           setValidating(v => ({ ...v, [name]: true }))
-          saveModuleQuizAnswer({ moduleId: 'entreprise', questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
+          saveModuleQuizAnswer({ sessionCode: getActiveSessionCode(), moduleId: 'entreprise', questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
             .then(() => {
               setValidated(v => ({ ...v, [name]: 'correct' }))
               setValidating(v => ({ ...v, [name]: false }))
@@ -1348,6 +1348,7 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
     setValidating(v => ({ ...v, [row.participant_name]: true }))
     try {
       await saveModuleQuizAnswer({
+        sessionCode: getActiveSessionCode(),
         moduleId: 'entreprise',
         questionIdx: quizQ,
         collaborateur: row.participant_name,

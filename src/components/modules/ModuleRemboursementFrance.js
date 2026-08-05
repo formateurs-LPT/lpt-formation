@@ -588,7 +588,7 @@ function RembfrTextOpenController({ quizQ, onNext, onEnd, onBack }) {
         if (kws.some(kw => text.includes(kw.toLowerCase()))) {
           autoValidatedRef.current.add(name)
           setValidating(v => ({ ...v, [name]: true }))
-          saveModuleQuizAnswer({ moduleId: MODULE_ID, questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
+          saveModuleQuizAnswer({ sessionCode: getActiveSessionCode(), moduleId: MODULE_ID, questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
             .then(() => { setValidated(v => ({ ...v, [name]: 'correct' })); setValidating(v => ({ ...v, [name]: false })) })
             .catch(() => { autoValidatedRef.current.delete(name); setValidating(v => ({ ...v, [name]: false })) })
         }
@@ -612,11 +612,23 @@ function RembfrTextOpenController({ quizQ, onNext, onEnd, onBack }) {
     if (validating[row.participant_name]) return
     setValidating(v => ({ ...v, [row.participant_name]: true }))
     try {
-      await saveModuleQuizAnswer({ moduleId: MODULE_ID, questionIdx: quizQ, collaborateur: row.participant_name, answerIdx: 0, isCorrect })
+      await saveModuleQuizAnswer({ sessionCode: getActiveSessionCode(), moduleId: MODULE_ID, questionIdx: quizQ, collaborateur: row.participant_name, answerIdx: 0, isCorrect })
       setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
     } catch { /* best-effort */ } finally {
       setValidating(v => ({ ...v, [row.participant_name]: false }))
     }
+  }
+
+  // Une réponse non validée n'est jamais comptée dans le score final sans avertissement —
+  // on bloque donc l'avancée tant que des réponses reçues n'ont pas été validées ✓/✗.
+  const pendingCount = openAnswers.filter(row => !validated[row.participant_name]).length
+  const confirmSkipPending = () => {
+    if (pendingCount === 0) return true
+    return window.confirm(
+      `${pendingCount} réponse${pendingCount > 1 ? 's' : ''} pas encore validée${pendingCount > 1 ? 's' : ''} ✓/✗.\n\n` +
+      `Si vous continuez maintenant, ${pendingCount > 1 ? 'elles compteront' : 'elle comptera'} comme fausse` +
+      `${pendingCount > 1 ? 's' : ''} — même si la réponse était juste.\n\nContinuer quand même ?`
+    )
   }
 
   return (
@@ -674,16 +686,21 @@ function RembfrTextOpenController({ quizQ, onNext, onEnd, onBack }) {
         })}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, marginTop: 24 }}>
+        {pendingCount > 0 && (
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24', marginRight: 'auto' }}>
+            ⚠️ {pendingCount} réponse{pendingCount > 1 ? 's' : ''} pas encore validée{pendingCount > 1 ? 's' : ''}
+          </div>
+        )}
         {openAnswers.length > 0 && (
           <button onClick={() => setSharedState({ quiz_show_correction: true }).catch(() => {})} style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', padding: '14px 28px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
             🎯 Voir la correction
           </button>
         )}
         {isLast ? (
-          <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Terminer le quiz</button>
+          <button onClick={() => { if (confirmSkipPending()) onEnd() }} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Terminer le quiz</button>
         ) : (
-          <button onClick={async () => { await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{ background: 'linear-gradient(135deg, #0070a0, #0089ba)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,137,186,0.4)' }}>Question suivante →</button>
+          <button onClick={async () => { if (!confirmSkipPending()) return; await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{ background: 'linear-gradient(135deg, #0070a0, #0089ba)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,137,186,0.4)' }}>Question suivante →</button>
         )}
       </div>
     </div>

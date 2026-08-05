@@ -4019,13 +4019,31 @@ function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, e
   const [vfSelected, setVfSelected] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(false)
+  const [validated, setValidated] = useState(null) // null | true | false
 
   useEffect(() => {
     setText('')
     setSubmitted(false)
     setVfSelected(null)
     setSaveError(false)
+    setValidated(null)
   }, [entrainementQ, entrainementClearTs])
+
+  // Poll la validation du formateur — sans ça le formé ne sait jamais si sa réponse était juste
+  useEffect(() => {
+    if (!submitted || entrainementQ == null) return
+    const questionIdx = entrainementQ === -1 ? 199 : 100 + entrainementQ
+    const poll = async () => {
+      const rows = await sbSelect(
+        'quiz_answers',
+        `session_code=eq.${getParticipantSessionCode()}&module_id=eq.optique&question_idx=eq.${questionIdx}&collaborateur=eq.${encodeURIComponent((pName || 'Anonyme').trim())}`
+      )
+      if (rows && rows.length > 0) setValidated(rows[0].is_correct)
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [submitted, entrainementQ, pName])
 
   const q = entrainementQ === -1
     ? { text: entrainementCustomQText || '…', type: 'text' }
@@ -4106,12 +4124,14 @@ function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, e
     )
   }
 
+  if (submitted && validated !== null) return <QuizResultScreen isCorrect={validated} />
+
   if (submitted) {
     return (
       <div style={bg}>
         <div style={{ fontSize: 48, marginBottom: 20 }}>✍️</div>
         <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 10, textAlign: 'center' }}>Réponse envoyée !</div>
-        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center' }}>Le formateur va commenter les réponses.</div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center' }}>En attente de la validation du formateur…</div>
         {q.type === 'vrai-faux' && vfSelected && (
           <div style={{
             marginTop: 24, background: vfSelected === 'VRAI' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
@@ -4120,6 +4140,8 @@ function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, e
             color: vfSelected === 'VRAI' ? '#4ade80' : '#f87171',
           }}>{vfSelected}</div>
         )}
+        <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #00abe9', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
+        <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
@@ -5238,7 +5260,12 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const isQuiz    = !!moduleData && modulePage >= 100 && modulePage < 200
   const qIdx = modulePage - 100
   const page = (!isQuiz && !isResults && !isLobby && moduleData) ? (pages[modulePage] ?? null) : null
-  const quizPodiumActive    = !!sharedState?.quiz_podium_active
+  // Le podium interstitiel (toutes les 5 questions) est piloté par quiz_interstitial_q
+  // (même flag que le diffuseur — qui contient l'index de la prochaine question, module_page
+  // ayant déjà avancé). Si le formateur a avancé au-delà sans clôturer l'interstitiel, on
+  // sort automatiquement (même garde-fou que côté TV) pour ne jamais rester bloqué dessus.
+  const interstitialQ = sharedState?.quiz_interstitial_q
+  const quizPodiumActive    = interstitialQ != null && !(qIdx > interstitialQ)
   const quizShowCorrection  = !!sharedState?.quiz_show_correction
 
   if (sessionEnded) return <SessionEndedScreen />
@@ -5275,22 +5302,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
           : isResults
             ? <PersonalResultsScreen key="results" pName={pName} quiz={quiz} moduleId={activeModule} />
             : isQuiz && quizPodiumActive
-              ? (
-                <div style={{
-                  minHeight: '100dvh',
-                  background: 'linear-gradient(135deg, #020d1f 0%, #071832 50%, #0a2040 100%)',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  padding: '32px 24px', textAlign: 'center',
-                }}>
-                  <div style={{ fontSize: 72, marginBottom: 16 }}>🏆</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
-                    Classement en cours…
-                  </div>
-                  <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)' }}>
-                    La prochaine question arrive dans quelques secondes
-                  </div>
-                </div>
-              )
+              ? <ParticipantQuizRanking pName={pName} moduleId={activeModule} qIdx={interstitialQ - 1} />
               : isQuiz && quizShowCorrection && (quiz[qIdx]?.type !== 'text-open')
               ? <ParticipantQuizRanking pName={pName} moduleId={activeModule} qIdx={qIdx} />
               : isQuiz

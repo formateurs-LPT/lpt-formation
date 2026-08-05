@@ -261,7 +261,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
     if (validating[row.participant_name]) return
     setValidating(v => ({ ...v, [row.participant_name]: true }))
     try {
-      await saveModuleQuizAnswer({ moduleId: 'retraits', questionIdx: quizQ, collaborateur: row.participant_name, answerIdx: 0, isCorrect })
+      await saveModuleQuizAnswer({ sessionCode: getActiveSessionCode(), moduleId: 'retraits', questionIdx: quizQ, collaborateur: row.participant_name, answerIdx: 0, isCorrect })
       setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
     } catch { /* best-effort */ } finally {
       setValidating(v => ({ ...v, [row.participant_name]: false }))
