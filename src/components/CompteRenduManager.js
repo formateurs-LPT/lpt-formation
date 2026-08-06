@@ -42,6 +42,8 @@ function starColor(n) {
   return '#dc2626'
 }
 
+function ordFR(n) { return n === 1 ? 'er' : 'e' }
+
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
@@ -108,6 +110,9 @@ export default function CompteRenduManager({ data }) {
     appreciation,
     commentaireLibre,
     autoEval,
+    pointsRank,
+    pointsRankOf,
+    totalPoints,
   } = data || {}
 
   const themes = categoryKey === 'belgique' ? THEMES_BELGIQUE : THEMES_FRANCE
@@ -232,6 +237,31 @@ export default function CompteRenduManager({ data }) {
             </div>
           ))}
         </div>
+
+        {/* ── Classement de la session (quiz) ── */}
+        {!!pointsRankOf && !!pointsRank && (
+          <div style={{
+            background: pointsRank === 1 ? 'linear-gradient(135deg, #fef9c3, #fde68a)' : '#f8fafc',
+            border: `1.5px solid ${pointsRank === 1 ? '#f59e0b' : '#e2e8f0'}`,
+            borderRadius: 16, padding: '18px 22px',
+            display: 'flex', alignItems: 'center', gap: 18,
+          }}>
+            <span style={{ fontSize: 34, flexShrink: 0 }}>
+              {pointsRank === 1 ? '🏆' : pointsRank === 2 ? '🥈' : pointsRank === 3 ? '🥉' : '📊'}
+            </span>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: pointsRank === 1 ? '#92400e' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                Classement de la session (quiz)
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: pointsRank === 1 ? '#92400e' : '#1e293b' }}>
+                {pointsRank}{ordFR(pointsRank)} sur {pointsRankOf} formé{pointsRankOf > 1 ? 's' : ''}
+              </div>
+              <div style={{ fontSize: 12, color: pointsRank === 1 ? '#92400e' : '#64748b', marginTop: 2 }}>
+                {totalPoints || 0} point{(totalPoints || 0) > 1 ? 's' : ''} cumulé{(totalPoints || 0) > 1 ? 's' : ''} sur l&apos;ensemble des quiz de la formation
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Thèmes par statut ── */}
         <div>

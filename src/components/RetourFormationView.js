@@ -224,6 +224,12 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
     commentaire_libre: commentaireLibre,
     magasin: entree.magasin || '',
     mail_sent_at: mailSentAt,
+    // Classement figé au moment de l'envoi (le stats_snapshot remplace tout à
+    // chaque sauvegarde, donc on le reporte par défaut pour ne pas l'écraser
+    // après un envoi si le formateur retouche la fiche ensuite)
+    points_rank: pointsRank ?? null,
+    points_rank_of: pointsRankOf ?? null,
+    total_points: totalPoints ?? 0,
     ...overrides,
   })
 
@@ -318,6 +324,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
     appreciation,
     commentaireLibre,
     autoEval,
+    pointsRank,
+    pointsRankOf,
+    totalPoints,
   }
 
   const reportUrl = typeof window !== 'undefined'
@@ -1151,7 +1160,13 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
           week_date: wd,
           trainer_name: trainerName,
           status: 'draft',
-          stats_snapshot: { ...snap, mail_sent_at: now },
+          stats_snapshot: {
+            ...snap,
+            mail_sent_at: now,
+            points_rank: pointsRanks[nm] ?? snap.points_rank ?? null,
+            points_rank_of: pointsRankOf || snap.points_rank_of || null,
+            total_points: pointsTotals[nm] ?? snap.total_points ?? 0,
+          },
           updated_at: now,
         },
         'collaborateur,week_date,trainer_name'
@@ -1631,6 +1646,9 @@ function HistoriqueFiche({ record, autoEvalSnap, onBack }) {
     appreciation:       snap.appreciation          || null,
     commentaireLibre:   snap.commentaire_libre     || '',
     autoEval:           autoEvalSnap?.auto_eval     || null,
+    pointsRank:         snap.points_rank            || null,
+    pointsRankOf:       snap.points_rank_of         || null,
+    totalPoints:        snap.total_points           || 0,
   }
 
   return (

@@ -86,6 +86,9 @@ function RapportContent() {
           appreciation:        snap.appreciation          || null,
           commentaireLibre:    snap.commentaire_libre     || '',
           autoEval:            autoEvalRows?.[0]?.stats_snapshot?.auto_eval || null,
+          pointsRank:          snap.points_rank            || null,
+          pointsRankOf:        snap.points_rank_of         || null,
+          totalPoints:         snap.total_points           || 0,
         })
       } catch (e) {
         console.error('[Rapport] load error', e)
