@@ -5248,8 +5248,11 @@ function TVMontageUpgrade({ sessionCode }) {
   const [currentIdx, setCurrentIdx] = useState(null)
   const [status, setStatus]         = useState('picking')
   const [foundIdx, setFoundIdx]     = useState(null)
-  const [fallingIdx, setFallingIdx] = useState(null)
+  const [removedSet, setRemovedSet] = useState(() => new Set())
+  const [fallingSet, setFallingSet] = useState(() => new Set())
   const prevCurrentRef = useRef(null)
+  const prevOrderedRef = useRef(null)
+  const introDoneRef   = useRef(false)
 
   useEffect(() => {
     const poll = async () => {
@@ -5257,13 +5260,41 @@ function TVMontageUpgrade({ sessionCode }) {
         const state = await getRoomSharedState(sessionCode)
         const ordered = state?.montage_up_ordered ?? null
         const current = state?.montage_up_current ?? null
-        setOrderedIdx(ordered)
         setStatus(state?.montage_up_status || 'picking')
         setFoundIdx(state?.montage_up_found_idx ?? null)
+        setOrderedIdx(ordered)
 
-        if (prevCurrentRef.current != null && current != null && current > prevCurrentRef.current) {
-          setFallingIdx(prevCurrentRef.current)
-          setTimeout(() => setFallingIdx(null), 650)
+        // Nouvel exemple : tous les traitements apparaissent, puis ceux en dessous
+        // du choix du client tombent aussitôt (cascade automatique, sans clic)
+        if (ordered != null && prevOrderedRef.current !== ordered) {
+          prevOrderedRef.current = ordered
+          prevCurrentRef.current = ordered
+          introDoneRef.current = ordered === 0
+          setRemovedSet(new Set())
+          setFallingSet(new Set())
+          setCurrentIdx(ordered)
+          if (ordered > 0) {
+            const below = new Set(Array.from({ length: ordered }, (_, i) => i))
+            setTimeout(() => {
+              setFallingSet(below)
+              setTimeout(() => {
+                setRemovedSet(r => new Set([...r, ...below]))
+                setFallingSet(new Set())
+                introDoneRef.current = true
+              }, 650 + ordered * 70)
+            }, 150)
+          }
+          return
+        }
+
+        // Progression normale (« je l'ai pas ») une fois l'intro terminée
+        if (introDoneRef.current && prevCurrentRef.current != null && current != null && current > prevCurrentRef.current) {
+          const leaving = prevCurrentRef.current
+          setFallingSet(f => new Set([...f, leaving]))
+          setTimeout(() => {
+            setRemovedSet(r => new Set([...r, leaving]))
+            setFallingSet(f => { const n = new Set(f); n.delete(leaving); return n })
+          }, 650)
         }
         prevCurrentRef.current = current
         setCurrentIdx(current)
@@ -5313,51 +5344,44 @@ function TVMontageUpgrade({ sessionCode }) {
   }
 
   const orderedLabel = MONTAGE_TRAITEMENTS[orderedIdx]?.label
-  const current = currentIdx != null ? MONTAGE_TRAITEMENTS[currentIdx] : null
-  const upcoming = currentIdx != null ? MONTAGE_TRAITEMENTS.slice(currentIdx + 1) : []
-  const falling = fallingIdx != null ? MONTAGE_TRAITEMENTS[fallingIdx] : null
+  const cards = MONTAGE_TRAITEMENTS
+    .map((t, idx) => ({ ...t, idx }))
+    .filter(c => !removedSet.has(c.idx))
 
   return (
-    <div style={{ minHeight: '100vh', background: '#03112a', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 40px', gap: 12, overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: '#03112a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 40px', gap: 32, overflow: 'hidden' }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 2 }}>
         Le client a commandé : <span style={{ color: '#f59e0b' }}>{orderedLabel}</span>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', width: '100%' }}>
-        {falling && (
-          <div key={`falling-${fallingIdx}`} style={{
-            position: 'absolute',
-            animation: 'cardFallAway .65s cubic-bezier(0.4,0,0.8,0.4) forwards',
-            background: 'rgba(239,68,68,0.08)', border: '2px solid rgba(239,68,68,0.4)',
-            borderRadius: 24, padding: '40px 64px', textAlign: 'center',
-          }}>
-            <div style={{ fontSize: 36, marginBottom: 8, color: '#f87171' }}>✕</div>
-            <div style={{ fontSize: 30, fontWeight: 900, color: 'rgba(255,255,255,0.5)', textDecoration: 'line-through' }}>{falling.label}</div>
-          </div>
-        )}
-        {current && !falling && (
-          <div key={`current-${currentIdx}`} style={{
-            animation: 'cardPopIn .4s cubic-bezier(0.22,1,0.36,1)',
-            background: 'rgba(245,158,11,0.1)', border: '2.5px solid #f59e0b',
-            borderRadius: 28, padding: '48px 72px', textAlign: 'center',
-            boxShadow: '0 0 60px rgba(245,158,11,0.25)',
-          }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 14 }}>Traitement à trouver</div>
-            <h1 style={{ fontSize: 46, fontWeight: 900, color: '#fff', margin: 0 }}>{current.label}</h1>
-          </div>
-        )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, flexWrap: 'wrap', maxWidth: 1300 }}>
+        {cards.map(c => {
+          const isCurrent = c.idx === currentIdx
+          const isFalling = fallingSet.has(c.idx)
+          return (
+            <div key={c.id} style={{
+              animation: isFalling
+                ? `cardFallAway .65s cubic-bezier(0.4,0,0.8,0.4) ${c.idx * 70}ms forwards`
+                : 'cardPopIn .4s cubic-bezier(0.22,1,0.36,1)',
+              background: isCurrent ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.03)',
+              border: isCurrent ? '2.5px solid #f59e0b' : '1px solid rgba(255,255,255,0.12)',
+              borderRadius: isCurrent ? 24 : 16,
+              padding: isCurrent ? '40px 48px' : '20px 24px',
+              textAlign: 'center',
+              boxShadow: isCurrent ? '0 0 50px rgba(245,158,11,0.22)' : 'none',
+              transition: 'all .4s cubic-bezier(0.22,1,0.36,1)',
+              opacity: isCurrent ? 1 : 0.4,
+            }}>
+              {isCurrent && (
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Traitement à trouver</div>
+              )}
+              <div style={{ fontSize: isCurrent ? 32 : 15, fontWeight: isCurrent ? 900 : 700, color: isCurrent ? '#fff' : 'rgba(255,255,255,0.55)' }}>
+                {c.label}
+              </div>
+            </div>
+          )
+        })}
       </div>
-
-      {upcoming.length > 0 && (
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', opacity: 0.35 }}>
-          {upcoming.map(t => (
-            <div key={t.id} style={{
-              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: 12, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
-            }}>{t.label}</div>
-          ))}
-        </div>
-      )}
     </div>
   )
 }
