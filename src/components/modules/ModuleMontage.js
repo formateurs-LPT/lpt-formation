@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
-import { MODULE_DATA } from '@/lib/modulesData'
+import { MODULE_DATA, MONTAGE_TRAITEMENTS } from '@/lib/modulesData'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 
 const MODULE_ID = 'montage'
@@ -11,6 +11,7 @@ const PAGES = MODULE_DATA[MODULE_ID]?.pages || []
 const PAGE_TYPE_LABELS = {
   'montage-question': { icon: '🙋', label: 'Question ouverte' },
   'montage-info':      { icon: '💡', label: 'Explication' },
+  'montage-upgrade':   { icon: '⬆️', label: 'Animation upgrade' },
   'pause':             { icon: '📢', label: 'Message' },
 }
 
@@ -139,6 +140,92 @@ function MontageInfoFormateur({ page }) {
   )
 }
 
+// ── Vue formateur : animation upgrade (gamme de traitements) ────────
+function MontageUpgradeFormateur({ orderedIdx, currentIdx, status, foundIdx, onPick, onHave, onMiss, onReset }) {
+  if (status === 'picking' || orderedIdx == null) {
+    return (
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 6 }}>
+          Étape 1 · Que la client a-t-il commandé ?
+        </div>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 20 }}>L&apos;upgrade, qu&apos;est-ce que c&apos;est ?</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {MONTAGE_TRAITEMENTS.map((t, i) => (
+            <button key={t.id} onClick={() => onPick(i)} style={{
+              textAlign: 'left', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(245,158,11,0.25)',
+              borderRadius: 12, padding: '14px 18px', fontSize: 15, fontWeight: 700, color: '#fff',
+              cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.12)'; e.currentTarget.style.borderColor = 'rgba(245,158,11,0.5)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(245,158,11,0.25)' }}
+            >{t.label}</button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (status === 'found' && foundIdx != null) {
+    const t = MONTAGE_TRAITEMENTS[foundIdx]
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', gap: 16 }}>
+        <div style={{ fontSize: 48 }}>✅</div>
+        <h2 style={{ fontSize: 24, fontWeight: 800, color: '#4ade80', margin: 0 }}>{t?.label}</h2>
+        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', maxWidth: 420 }}>
+          Ce client aura {t?.label} en 10 minutes, promesse tenue ! C&apos;est affiché sur le diffuseur.
+        </p>
+        <button onClick={onReset} style={{
+          marginTop: 8, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+          color: 'rgba(255,255,255,0.6)', padding: '10px 22px', borderRadius: 10,
+          fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+        }}>🔄 Recommencer avec un autre exemple</button>
+      </div>
+    )
+  }
+
+  const current = currentIdx != null ? MONTAGE_TRAITEMENTS[currentIdx] : null
+  const isLastTier = currentIdx === MONTAGE_TRAITEMENTS.length - 1
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 6 }}>
+        Étape 2 · Vous cherchez ce traitement en stock
+      </div>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{current?.label}</h2>
+      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 24 }}>
+        Commandé par le client : {MONTAGE_TRAITEMENTS[orderedIdx]?.label}
+      </div>
+
+      <div style={{ flex: 1 }} />
+
+      <div style={{ display: 'flex', gap: 12 }}>
+        <button onClick={onHave} style={{
+          flex: 1, background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none',
+          color: '#fff', padding: '18px 0', borderRadius: 14, fontSize: 16, fontWeight: 700,
+          cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.35)',
+        }}>✅ Je l&apos;ai</button>
+        <button onClick={onMiss} disabled={isLastTier} style={{
+          flex: 1, background: isLastTier ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg, #b91c1c, #ef4444)',
+          border: isLastTier ? '1px solid rgba(255,255,255,0.1)' : 'none',
+          color: isLastTier ? 'rgba(255,255,255,0.25)' : '#fff', padding: '18px 0', borderRadius: 14,
+          fontSize: 16, fontWeight: 700, cursor: isLastTier ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+          boxShadow: isLastTier ? 'none' : '0 6px 24px rgba(239,68,68,0.35)',
+        }}>❌ Je l&apos;ai pas</button>
+      </div>
+      {isLastTier && (
+        <div style={{ marginTop: 10, fontSize: 12, color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>
+          Dernier niveau de la gamme — toujours disponible.
+        </div>
+      )}
+      <button onClick={onReset} style={{
+        marginTop: 16, alignSelf: 'flex-start',
+        background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)',
+        fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline',
+      }}>Recommencer</button>
+    </div>
+  )
+}
+
 // ── Vue formateur : messages statiques (type 'pause') ───────────────
 function MontagePauseFormateur({ page }) {
   return (
@@ -157,6 +244,10 @@ export default function ModuleMontage({ pName, onBack, onTerminate }) {
   const [pageIndex, setPageIndex] = useState(0)
   const [revealing, setRevealing] = useState(false)
   const [revealedMap, setRevealedMap] = useState({})
+  const [upOrdered, setUpOrdered] = useState(null)
+  const [upCurrent, setUpCurrent] = useState(null)
+  const [upStatus, setUpStatus]   = useState('picking')
+  const [upFound, setUpFound]     = useState(null)
   const syncedRef = useRef(false)
 
   const toggleReveal = async (key, currentlyRevealed) => {
@@ -170,6 +261,28 @@ export default function ModuleMontage({ pName, onBack, onTerminate }) {
     }
   }
 
+  const handleUpPick = async (idx) => {
+    setUpOrdered(idx); setUpCurrent(idx); setUpStatus('searching'); setUpFound(null)
+    await setSharedState({ montage_up_ordered: idx, montage_up_current: idx, montage_up_status: 'searching', montage_up_found_idx: null })
+  }
+
+  const handleUpHave = async () => {
+    setUpStatus('found'); setUpFound(upCurrent)
+    await setSharedState({ montage_up_status: 'found', montage_up_found_idx: upCurrent })
+  }
+
+  const handleUpMiss = async () => {
+    if (upCurrent == null || upCurrent >= MONTAGE_TRAITEMENTS.length - 1) return
+    const next = upCurrent + 1
+    setUpCurrent(next)
+    await setSharedState({ montage_up_current: next })
+  }
+
+  const handleUpReset = async () => {
+    setUpOrdered(null); setUpCurrent(null); setUpStatus('picking'); setUpFound(null)
+    await setSharedState({ montage_up_ordered: null, montage_up_current: null, montage_up_status: 'picking', montage_up_found_idx: null })
+  }
+
   const syncAndWrite = async (data) => {
     if (!syncedRef.current) {
       await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName), pName)
@@ -179,7 +292,7 @@ export default function ModuleMontage({ pName, onBack, onTerminate }) {
   }
 
   const resetShared = () => {
-    const clear = {}
+    const clear = { montage_up_ordered: null, montage_up_current: null, montage_up_status: 'picking', montage_up_found_idx: null }
     for (const p of PAGES) {
       if (p.type === 'montage-question') clear[`montage_revealed__${p.id}`] = false
     }
@@ -190,6 +303,7 @@ export default function ModuleMontage({ pName, onBack, onTerminate }) {
     if (!started) return
     resetShared()
     setRevealedMap({})
+    setUpOrdered(null); setUpCurrent(null); setUpStatus('picking'); setUpFound(null)
     syncAndWrite({ active_module: MODULE_ID, module_page: 0 })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started])
@@ -283,6 +397,11 @@ export default function ModuleMontage({ pName, onBack, onTerminate }) {
           <MontageQuestionFormateur page={page} revealing={revealing} toggleReveal={toggleReveal} revealedMap={revealedMap} />
         ) : page?.type === 'montage-info' ? (
           <MontageInfoFormateur page={page} />
+        ) : page?.type === 'montage-upgrade' ? (
+          <MontageUpgradeFormateur
+            orderedIdx={upOrdered} currentIdx={upCurrent} status={upStatus} foundIdx={upFound}
+            onPick={handleUpPick} onHave={handleUpHave} onMiss={handleUpMiss} onReset={handleUpReset}
+          />
         ) : (
           <MontagePauseFormateur page={page} />
         )}

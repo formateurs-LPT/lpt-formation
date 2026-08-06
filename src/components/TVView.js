@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE } from '@/lib/modulesData'
+import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE, MONTAGE_TRAITEMENTS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, getRoomSharedState, setRoomSharedState } from '@/lib/supabase'
 import { isTrainerAccount } from '@/lib/participantNames'
@@ -195,6 +195,19 @@ const STYLES = `
   @keyframes mjPulse {
     0%, 100% { opacity: 1; }
     50%       { opacity: 0.45; }
+  }
+  @keyframes cardFallAway {
+    0%   { transform: translateY(0) rotate(0deg);   opacity: 1; }
+    100% { transform: translateY(340px) rotate(24deg); opacity: 0; }
+  }
+  @keyframes cardPopIn {
+    0%   { transform: scale(0.85); opacity: 0; }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+  @keyframes successPop {
+    0%   { transform: scale(0.8); opacity: 0; }
+    60%  { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1);   opacity: 1; }
   }
 `
 
@@ -5229,6 +5242,126 @@ function TVMontageInfo({ page }) {
   )
 }
 
+// ── TV Le montage — animation de l'upgrade (gamme de traitements) ───
+function TVMontageUpgrade({ sessionCode }) {
+  const [orderedIdx, setOrderedIdx] = useState(null)
+  const [currentIdx, setCurrentIdx] = useState(null)
+  const [status, setStatus]         = useState('picking')
+  const [foundIdx, setFoundIdx]     = useState(null)
+  const [fallingIdx, setFallingIdx] = useState(null)
+  const prevCurrentRef = useRef(null)
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const state = await getRoomSharedState(sessionCode)
+        const ordered = state?.montage_up_ordered ?? null
+        const current = state?.montage_up_current ?? null
+        setOrderedIdx(ordered)
+        setStatus(state?.montage_up_status || 'picking')
+        setFoundIdx(state?.montage_up_found_idx ?? null)
+
+        if (prevCurrentRef.current != null && current != null && current > prevCurrentRef.current) {
+          setFallingIdx(prevCurrentRef.current)
+          setTimeout(() => setFallingIdx(null), 650)
+        }
+        prevCurrentRef.current = current
+        setCurrentIdx(current)
+      } catch { /* ignore */ }
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [sessionCode])
+
+  if (status === 'picking' || orderedIdx == null) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#03112a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
+        <div style={{ fontSize: 56 }}>⬆️</div>
+        <h1 style={{ fontSize: 34, fontWeight: 900, color: '#fff', textAlign: 'center' }}>L&apos;upgrade, qu&apos;est-ce que c&apos;est ?</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 20, padding: '10px 24px' }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b', animation: 'waitingPulse 1.4s ease-in-out infinite' }} />
+          <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>En attente du choix du formateur…</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (status === 'found' && foundIdx != null) {
+    const t = MONTAGE_TRAITEMENTS[foundIdx]
+    return (
+      <div style={{ minHeight: '100vh', background: '#03112a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28 }}>
+        <div style={{
+          animation: 'successPop .5s cubic-bezier(0.22,1,0.36,1)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20,
+          background: 'rgba(34,197,94,0.08)', border: '2px solid rgba(34,197,94,0.4)',
+          borderRadius: 28, padding: '48px 64px', maxWidth: 720, textAlign: 'center',
+        }}>
+          <div style={{
+            width: 100, height: 100, borderRadius: '50%',
+            background: 'rgba(34,197,94,0.15)', border: '3px solid #4ade80',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 52,
+          }}>✅</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 2 }}>Traitement trouvé</div>
+          <h1 style={{ fontSize: 40, fontWeight: 900, color: '#fff', margin: 0 }}>{t?.label}</h1>
+          <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.75)', fontWeight: 600, lineHeight: 1.5, margin: 0 }}>
+            Ce client aura <span style={{ color: '#4ade80' }}>{t?.label}</span> en 10 minutes, promesse tenue !
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  const orderedLabel = MONTAGE_TRAITEMENTS[orderedIdx]?.label
+  const current = currentIdx != null ? MONTAGE_TRAITEMENTS[currentIdx] : null
+  const upcoming = currentIdx != null ? MONTAGE_TRAITEMENTS.slice(currentIdx + 1) : []
+  const falling = fallingIdx != null ? MONTAGE_TRAITEMENTS[fallingIdx] : null
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#03112a', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 40px', gap: 12, overflow: 'hidden' }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 2 }}>
+        Le client a commandé : <span style={{ color: '#f59e0b' }}>{orderedLabel}</span>
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', width: '100%' }}>
+        {falling && (
+          <div key={`falling-${fallingIdx}`} style={{
+            position: 'absolute',
+            animation: 'cardFallAway .65s cubic-bezier(0.4,0,0.8,0.4) forwards',
+            background: 'rgba(239,68,68,0.08)', border: '2px solid rgba(239,68,68,0.4)',
+            borderRadius: 24, padding: '40px 64px', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 36, marginBottom: 8, color: '#f87171' }}>✕</div>
+            <div style={{ fontSize: 30, fontWeight: 900, color: 'rgba(255,255,255,0.5)', textDecoration: 'line-through' }}>{falling.label}</div>
+          </div>
+        )}
+        {current && !falling && (
+          <div key={`current-${currentIdx}`} style={{
+            animation: 'cardPopIn .4s cubic-bezier(0.22,1,0.36,1)',
+            background: 'rgba(245,158,11,0.1)', border: '2.5px solid #f59e0b',
+            borderRadius: 28, padding: '48px 72px', textAlign: 'center',
+            boxShadow: '0 0 60px rgba(245,158,11,0.25)',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 14 }}>Traitement à trouver</div>
+            <h1 style={{ fontSize: 46, fontWeight: 900, color: '#fff', margin: 0 }}>{current.label}</h1>
+          </div>
+        )}
+      </div>
+
+      {upcoming.length > 0 && (
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', opacity: 0.35 }}>
+          {upcoming.map(t => (
+            <div key={t.id} style={{
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 12, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
+            }}>{t.label}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TVParcoursOffres({ parcoursRevealed }) {
   const revealed = parcoursRevealed || []
 
@@ -6513,6 +6646,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'lpt-sante-pec')         return <TVLptSantePec scenario={lptsPecScenario} />
   if (page.type === 'montage-question')  return <TVMontageQuestion page={page} sessionCode={sessionCode} />
   if (page.type === 'montage-info')      return <TVMontageInfo page={page} />
+  if (page.type === 'montage-upgrade')   return <TVMontageUpgrade sessionCode={sessionCode} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />

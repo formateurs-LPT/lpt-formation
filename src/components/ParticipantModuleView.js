@@ -4228,6 +4228,15 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
   if (page.type === 'lpt-sante-pec')         return <LptSantePecMobile />
   if (page.type === 'montage-question') return <PauseMobile page={page} pageIndex={pageIndex} total={total} pName={pName} />
   if (page.type === 'montage-info')     return <MontageInfoMobile page={page} />
+  if (page.type === 'montage-upgrade') return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 52, marginBottom: 20 }}>⬆️</div>
+      <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Regardez le diffuseur</h2>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 280 }}>
+        Le formateur fait défiler la gamme de traitements en direct sur le grand écran.
+      </p>
+    </div>
+  )
 
   if (page.type === 'rembfr-conditions') {
     const revealed = rembfrRevealed || []

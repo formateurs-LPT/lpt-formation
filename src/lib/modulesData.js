@@ -215,6 +215,15 @@ export const OPTIQUE_PAGES = [
 // Options pour les questions "problèmes de vue" — sélection multiple (au lieu de texte libre)
 export const VISION_MULTI_OPTIONS = ['Myope', 'Hypermétrope', 'Astigmate', 'Presbyte']
 
+// Gamme de traitements — animation "upgrade" du module Le montage (du moins cher au plus cher)
+export const MONTAGE_TRAITEMENTS = [
+  { id: 'basic',       label: 'Basic' },
+  { id: 'premium',     label: 'Premium' },
+  { id: 'dpp',         label: 'Digital Protect Pro' },
+  { id: 'dpp-167',     label: 'Digital Protect Pro 1.67 (aminci)' },
+  { id: 'supreme-dpp', label: 'Suprême Digital Protect Pro' },
+]
+
 export const ENTRAINEMENT_QUESTIONS = [
   { id: 1, text: 'Ce client voit : (sélectionnez les problèmes de vue)', type: 'vision-multi' },
   { id: 2, text: 'De combien est la sphère sur cette ordonnance ?', type: 'text' },
@@ -1249,11 +1258,7 @@ export const MODULE_DATA = {
       { icon: '⬆️', title: "L'upgrade", desc: "Offrir le traitement supérieur si le verre commandé n'est pas en stock." },
       { icon: '🎯', title: 'L\'adaptation de la correction', desc: 'Ajuster légèrement la correction pour rester dans le stock disponible.' },
     ] },
-    { id: 'montage-upgrade', type: 'montage-info', icon: '⬆️', titre: "L'upgrade, qu'est-ce que c'est ?", blocks: [
-      { icon: '💡', title: 'Le principe', desc: "Quand un client a commandé des verres que vous n'avez pas en stock, offrez-lui le traitement au-dessus. S'il n'est pas non plus en stock, offrez celui encore au-dessus." },
-      { icon: '🧪', title: 'Exemple', desc: "Un client a commandé des verres Basic, indisponibles → offrez-lui le traitement Pretium. La promesse est tenue et le client est ravi de l'upgrade." },
-      { icon: '⚡', title: 'Si besoin, allez plus loin', desc: "Pas de Pretium non plus ? Offrez du Digital Protect Pro. La promesse avant tout." },
-    ] },
+    { id: 'montage-upgrade', type: 'montage-upgrade', icon: '⬆️', titre: "L'upgrade, qu'est-ce que c'est ?" },
     { id: 'montage-adaptation', type: 'montage-info', icon: '🎯', titre: 'Adapter la correction', blocks: [
       { icon: '🎯', title: 'Le principe', desc: "Si vous ne pouvez pas upgrader le client faute des verres correspondants, adaptez la correction : retirez 0,25." },
       { icon: '⬆️', title: 'Combinez si besoin', desc: "Appliquez aussi l'upgrade en complément de l'adaptation, si nécessaire." },
