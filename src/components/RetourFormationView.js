@@ -7,6 +7,7 @@ import { MODULE_DATA } from '@/lib/modulesData'
 import CompteRenduManager from './CompteRenduManager'
 import { getManagers } from '@/lib/managersData'
 import { DIRECTEURS } from '@/lib/directeursData'
+import { PUBLIC_ORIGIN } from '@/lib/sessionCode'
 
 // ── Constantes ────────────────────────────────────────────────────
 
@@ -330,7 +331,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   }
 
   const reportUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/rapport/?c=${encodeURIComponent(name)}&w=${saveWeekDate}&t=${encodeURIComponent(trainerName)}&cat=${categoryKey}`
+    ? `${PUBLIC_ORIGIN}/rapport/?c=${encodeURIComponent(name)}&w=${saveWeekDate}&t=${encodeURIComponent(trainerName)}&cat=${categoryKey}`
     : ''
 
   const copyLink = () => {
@@ -1111,7 +1112,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
     const links = group.entrees.map(e => {
       const name = e.fullName || `${e.nom} ${e.prenom}`.trim()
       const wd   = weekDateMap[name] || weekDate
-      const url  = `${window.location.origin}/rapport/?c=${encodeURIComponent(name)}&w=${wd}&t=${encodeURIComponent(trainerName)}&cat=${categoryKey}`
+      const url  = `${PUBLIC_ORIGIN}/rapport/?c=${encodeURIComponent(name)}&w=${wd}&t=${encodeURIComponent(trainerName)}&cat=${categoryKey}`
       return prenoms.length === 1 ? url : `${getPrenom(e)} : ${url}`
     }).join('\n')
 
@@ -1415,7 +1416,7 @@ function CategorySelector({ entrees, onSelect }) {
 
   const getDrUrl = (drKey) => {
     if (typeof window === 'undefined') return ''
-    return `${window.location.origin}/rapport-dr/?dr=${drKey}&w=${weekDate}`
+    return `${PUBLIC_ORIGIN}/rapport-dr/?dr=${drKey}&w=${weekDate}`
   }
 
   const handleMailDR = (drKey) => {

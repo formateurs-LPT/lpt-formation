@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import FicheShareModal from '@/components/FicheShareModal'
+import { PUBLIC_ORIGIN } from '@/lib/sessionCode'
 
 const BLUE_L  = '#00abe9'
 const GOLD    = '#f59e0b'
@@ -125,7 +126,7 @@ export default function FicheSAV() {
   const [isTrainer, setIsTrainer] = useState(false)
 
   useEffect(() => {
-    setFicheUrl(window.location.origin + '/fiche-sav')
+    setFicheUrl(PUBLIC_ORIGIN + '/fiche-sav')
     setIsTrainer(!!localStorage.getItem('trainer_name'))
   }, [])
 

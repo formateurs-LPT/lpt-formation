@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { sbSelect, sbUpsert, sbDelete } from '@/lib/supabase'
+import { PUBLIC_ORIGIN } from '@/lib/sessionCode'
 
 function playDingDong() {
   try {
@@ -142,9 +143,7 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
     setClearing(false)
   }
 
-  const sonnetteUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/sonnette`
-    : '/sonnette'
+  const sonnetteUrl = `${PUBLIC_ORIGIN}/sonnette`
 
   if (!visible) return null
 

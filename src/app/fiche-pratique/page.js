@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import FicheShareModal from '@/components/FicheShareModal'
+import { PUBLIC_ORIGIN } from '@/lib/sessionCode'
 
 const BLUE      = '#0089ba'
 const BLUE_L    = '#00abe9'
@@ -111,7 +112,7 @@ export default function FichePratique() {
   const [isTrainer, setIsTrainer] = useState(false)
 
   useEffect(() => {
-    setFicheUrl(window.location.origin + '/fiche-pratique')
+    setFicheUrl(PUBLIC_ORIGIN + '/fiche-pratique')
     setIsTrainer(!!localStorage.getItem('trainer_name'))
   }, [])
 

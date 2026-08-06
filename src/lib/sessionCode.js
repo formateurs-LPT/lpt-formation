@@ -1,6 +1,16 @@
 export const STORAGE_TRAINER_ROOM = 'lpt_active_room_code'
 export const STORAGE_PARTICIPANT_ROOM = 'lpt_participant_session_code'
 
+/**
+ * Domaine public stable de l'appli — à utiliser pour TOUT lien/QR destiné à
+ * quelqu'un d'autre que le formateur sur son propre appareil (formés, managers,
+ * clients…). Ne jamais utiliser window.location.origin pour ces liens : si le
+ * formateur consulte l'appli depuis une URL de preview/déploiement Vercel, ces
+ * URLs sont protégées par l'authentification Vercel et le destinataire tombe
+ * sur l'écran de connexion Vercel au lieu de l'appli.
+ */
+export const PUBLIC_ORIGIN = 'https://lpt-formation.vercel.app'
+
 /** Code legacy (.env) — coexistence tant que multi-salles en test */
 export function getLegacySessionCode() {
   const raw = process.env.NEXT_PUBLIC_SESSION_CODE ?? ''
@@ -90,11 +100,16 @@ export function buildJoinUrl(code, baseUrl = 'https://lpt-formation.vercel.app')
   return url.toString()
 }
 
-/** Image QR (api.qrserver.com) pointant vers l’URL de join avec code salle */
+/**
+ * Image QR (api.qrserver.com) pointant vers l’URL de join avec code salle.
+ * Pointe toujours vers le domaine de production (jamais window.location.origin) :
+ * si le formateur affiche le diffuseur depuis une URL de preview Vercel
+ * (déploiement de branche, URL par commit…), cette URL est protégée par
+ * Vercel (authentification SSO) et les formés scannant le QR tombaient sur
+ * l'écran de connexion Vercel au lieu de l'appli.
+ */
 export function buildQrImageUrl(roomCode, baseUrl) {
-  const origin = (baseUrl || '').trim()
-    || (typeof window !== 'undefined' ? window.location.origin : '')
-    || 'https://lpt-formation.vercel.app'
+  const origin = (baseUrl || '').trim() || 'https://lpt-formation.vercel.app'
   const joinUrl = buildJoinUrl(roomCode, origin)
   return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=ffffff&bgcolor=0a2a5c&data=${encodeURIComponent(joinUrl)}`
 }

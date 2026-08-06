@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { PUBLIC_ORIGIN } from '@/lib/sessionCode'
 
 const BLUE = '#0089ba'
 const BLUE_LIGHT = '#00abe9'
@@ -140,7 +141,7 @@ export default function FicheAcces() {
   const [isTrainer, setIsTrainer] = useState(false)
 
   useEffect(() => {
-    setFicheUrl(window.location.origin + '/fiche-acces')
+    setFicheUrl(PUBLIC_ORIGIN + '/fiche-acces')
     setIsTrainer(!!localStorage.getItem('trainer_name'))
   }, [])
 
