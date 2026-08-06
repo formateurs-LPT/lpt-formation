@@ -296,7 +296,7 @@ export async function loadRhGuardContext() {
 
 export function filterAnswersForTrainer(answers, participants, entrees) {
   return (answers || []).filter(a =>
-    shouldShowAnswerForTrainer(a.collaborateur, participants, entrees)
+    !isTrainerAccount(a.collaborateur) && shouldShowAnswerForTrainer(a.collaborateur, participants, entrees)
   )
 }
 

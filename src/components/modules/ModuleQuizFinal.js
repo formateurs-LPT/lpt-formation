@@ -5,6 +5,7 @@ import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers } from
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { QUIZ_FINAL_QUESTIONS } from '@/lib/quizFinalData'
+import { TrainerQuizRankingList } from '@/components/TrainerQuizRanking'
 
 // quiz_final_phase values (same mechanism as ModuleOptique):
 // null → TV shows TVGroupResults
@@ -88,6 +89,19 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
   const validatedCount = Object.keys(validations).length
   const correctCount = Object.values(validations).filter(Boolean).length
 
+  // Ce quiz n'a pas d'auto-correction : chaque réponse doit être validée à la main.
+  // Une réponse non validée n'est jamais comptée (ni juste ni fausse) si on avance
+  // sans y toucher — le formé perd le point en silence. On avertit et on bloque.
+  const pendingCount = answers.filter(row => !(row.participant_name in validations)).length
+  const confirmSkipPending = () => {
+    if (pendingCount === 0) return true
+    return window.confirm(
+      `${pendingCount} réponse${pendingCount > 1 ? 's' : ''} pas encore validée${pendingCount > 1 ? 's' : ''} ✓/✗.\n\n` +
+      `Si vous continuez maintenant, ${pendingCount > 1 ? 'elles compteront' : 'elle comptera'} comme fausse` +
+      `${pendingCount > 1 ? 's' : ''} — même si la réponse était juste.\n\nContinuer quand même ?`
+    )
+  }
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -164,7 +178,12 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
       </div>
 
       {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12 }}>
+        {pendingCount > 0 && (
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24', marginRight: 'auto' }}>
+            ⚠️ {pendingCount} réponse{pendingCount > 1 ? 's' : ''} pas encore validée{pendingCount > 1 ? 's' : ''}
+          </div>
+        )}
         {answers.length > 0 && (
           <button onClick={() => setSharedState({ quiz_show_correction: true }).catch(() => {})} style={{
             background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)',
@@ -173,14 +192,14 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
           }}>🎯 Voir la correction</button>
         )}
         {isLast ? (
-          <button onClick={onEnd} style={{
+          <button onClick={() => { if (confirmSkipPending()) onEnd() }} style={{
             background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none',
             color: '#fff', padding: '14px 36px', borderRadius: 14,
             fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
             boxShadow: '0 6px 24px rgba(34,197,94,0.4)',
           }}>✓ Terminer le quiz</button>
         ) : (
-          <button onClick={async () => { await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{
+          <button onClick={async () => { if (!confirmSkipPending()) return; await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{
             background: 'linear-gradient(135deg, #c9a227, #e0b830)', border: 'none',
             color: '#fff', padding: '14px 36px', borderRadius: 14,
             fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
@@ -620,15 +639,16 @@ export default function ModuleQuizFinal({ pName, onBack }) {
         background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32,
       }}>
-        <div style={{ fontSize: 64 }}>🏆</div>
+        <div style={{ fontSize: 48 }}>🏆</div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 10 }}>
-            Podium après {quizQ} questions
+          <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 6 }}>
+            Classement après {quizQ} questions
           </div>
-          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)' }}>
-            Le classement est affiché sur le diffuseur
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>
+            Le podium (top 3) est affiché sur le diffuseur
           </div>
         </div>
+        <TrainerQuizRankingList moduleId={MODULE_ID} qIdx={quizQ - 1} accent="#c9a227" />
         <button onClick={handleContinueInterstitial} style={{
           background: 'linear-gradient(135deg, #c9a227, #e0b830)',
           border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,

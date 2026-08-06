@@ -1272,7 +1272,9 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
           const isCorrect = row ? row.is_correct : null
           const chosenIdx = row ? row.answer_idx : null
           const chosenText = (chosenIdx != null && q.options) ? q.options[chosenIdx] : null
-          const correctText = q.options ? q.options[q.correct] : (q.hint || null)
+          const correctText = q.options
+            ? (Array.isArray(q.correct) ? q.correct.map(i => q.options[i]).filter(Boolean).join(' + ') : q.options[q.correct])
+            : (q.hint || null)
 
           return (
             <div key={idx} style={{

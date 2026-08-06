@@ -13,6 +13,7 @@ import { useIsMobile } from '@/lib/useIsMobile'
 import { HeadlightVision } from '@/lib/headlightVision'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { QuestionsGameTrainerPanel } from '@/components/QuestionsGamePanel'
+import { TrainerQuizRankingList } from '@/components/TrainerQuizRanking'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -1908,15 +1909,16 @@ export default function ModuleOptique({ pName, onBack, onTerminate }) {
             background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32,
           }}>
-            <div style={{ fontSize: 64 }}>🏆</div>
+            <div style={{ fontSize: 48 }}>🏆</div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 10 }}>
-                Podium après {quizQ} questions
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 6 }}>
+                Classement après {quizQ} questions
               </div>
-              <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)' }}>
-                Le classement est affiché sur le diffuseur
+              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>
+                Le podium (top 3) est affiché sur le diffuseur
               </div>
             </div>
+            <TrainerQuizRankingList moduleId="optique" qIdx={quizQ - 1} accent="#7c3aed" />
             <button onClick={handleContinueInterstitial} style={{
               background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
               border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,

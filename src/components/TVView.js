@@ -7735,7 +7735,7 @@ function TVQuizRateReveal({ sessionCode, moduleId, moduleLabel, quiz }) {
   useEffect(() => {
     sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&module_id=eq.${moduleId}`)
       .then(rows => {
-        const data             = rows || []
+        const data             = (rows || []).filter(r => !isTrainerAccount(r.collaborateur))
         const correct          = data.filter(r => r.is_correct).length
         const participants     = new Set(data.map(r => r.collaborateur)).size
         const totalQ           = (quiz || []).length

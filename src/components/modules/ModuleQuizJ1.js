@@ -6,6 +6,7 @@ import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOpenAnswers } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { QUIZ_J1 } from '@/lib/quizJ1Data'
+import { TrainerQuizRankingList } from '@/components/TrainerQuizRanking'
 
 const MODULE_ID = 'quiz-j1'
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -169,6 +170,16 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
 
   const correctCount = Object.values(validations).filter(Boolean).length
 
+  const pendingCount = answers.filter(row => !(row.participant_name in validations)).length
+  const confirmSkipPending = () => {
+    if (pendingCount === 0) return true
+    return window.confirm(
+      `${pendingCount} réponse${pendingCount > 1 ? 's' : ''} pas encore validée${pendingCount > 1 ? 's' : ''} ✓/✗.\n\n` +
+      `Si vous continuez maintenant, ${pendingCount > 1 ? 'elles compteront' : 'elle comptera'} comme fausse` +
+      `${pendingCount > 1 ? 's' : ''} — même si la réponse était juste.\n\nContinuer quand même ?`
+    )
+  }
+
   const formatAnswer = (answer) => {
     if (!answer) return '—'
     if (q?.type === 'text-open-pairs') {
@@ -245,16 +256,21 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
         })}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        {pendingCount > 0 && (
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24', marginRight: 'auto' }}>
+            ⚠️ {pendingCount} réponse{pendingCount > 1 ? 's' : ''} pas encore validée{pendingCount > 1 ? 's' : ''}
+          </div>
+        )}
         {answers.length > 0 && (
           <button onClick={() => setSharedState({ quiz_show_correction: true }).catch(() => {})} style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', padding: '14px 28px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
             🎯 Voir la correction
           </button>
         )}
         {isLast ? (
-          <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓ Terminer le quiz</button>
+          <button onClick={() => { if (confirmSkipPending()) onEnd() }} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓ Terminer le quiz</button>
         ) : (
-          <button onClick={async () => { await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{ background: 'linear-gradient(135deg, #0070a8, #00abe9)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Question suivante →</button>
+          <button onClick={async () => { if (!confirmSkipPending()) return; await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{ background: 'linear-gradient(135deg, #0070a8, #00abe9)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Question suivante →</button>
         )}
       </div>
     </div>
@@ -573,15 +589,16 @@ export default function ModuleQuizJ1({ pName, onBack }) {
         background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28,
       }}>
-        <div style={{ fontSize: 60 }}>🏆</div>
+        <div style={{ fontSize: 44 }}>🏆</div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 6 }}>
             Classement après {quizQ} questions
           </div>
-          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>
-            Le podium s&apos;affiche sur le grand écran
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
+            Le podium (top 3) s&apos;affiche sur le grand écran
           </div>
         </div>
+        <TrainerQuizRankingList moduleId={MODULE_ID} qIdx={quizQ - 1} accent="#00abe9" />
         <button onClick={handleContinueInterstitial} style={{
           background: 'linear-gradient(135deg, #0070a8, #00abe9)',
           border: 'none', color: '#fff', padding: '16px 36px', borderRadius: 14,
