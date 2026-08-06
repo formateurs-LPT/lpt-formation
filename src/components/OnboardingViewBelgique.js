@@ -137,6 +137,12 @@ const JOURNEES_BELGIQUE = (onLaunchModule, onLaunchPeerQuiz) => [
         sub: 'Des lunettes en 10 minutes — upgrade & adaptation',
         onClick: () => onLaunchModule('montage', 'journee4'),
       },
+      {
+        visual: 'emoji', icon: '📦',
+        label: 'Montures Outlet',
+        sub: 'Anticiper les ruptures de stock monture',
+        onClick: () => onLaunchModule('montures-outlet', 'journee4'),
+      },
     ],
   },
 ]

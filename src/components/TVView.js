@@ -5254,6 +5254,99 @@ function TVMontageInfo({ page }) {
   )
 }
 
+// ── TV Montures Outlet — schéma animé Rodenstock → Centre logistique → Magasin ──
+function TVOutletFlow({ variant, titre }) {
+  const isOutlet = variant === 'outlet'
+  const [phase, setPhase] = useState(0)
+  const [loopKey, setLoopKey] = useState(0)
+
+  useEffect(() => {
+    setPhase(0)
+    const T = [
+      setTimeout(() => setPhase(1), 800),
+      setTimeout(() => setPhase(2), 2200),
+      setTimeout(() => setPhase(3), 3400),
+      setTimeout(() => setPhase(4), 4800),
+      setTimeout(() => setLoopKey(k => k + 1), 7200),
+    ]
+    return () => T.forEach(clearTimeout)
+  }, [variant, loopKey])
+
+  const pkgLeft = phase <= 1 ? '9%' : phase <= 2 ? '50%' : '91%'
+  const pkgIcon = phase >= 2 && !isOutlet ? '👓' : '📦'
+  const pkgLabel = phase === 0 ? 'Verres commandés'
+    : phase === 1 ? 'Verres en transit'
+    : phase === 2 ? (isOutlet ? 'Verres seuls (pas de monture)' : 'Monture reçue, paire assemblée')
+    : phase === 3 ? (isOutlet ? 'Envoi des verres seuls' : 'Envoi de la paire complète')
+    : (isOutlet ? 'Verres livrés — monture déjà en boutique' : 'Paire complète livrée ✅')
+
+  const accent = isOutlet ? '#f59e0b' : '#4ade80'
+  const NODE = { textAlign: 'center', width: 150 }
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#03112a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 40px', gap: 8 }}>
+      {titre && <h1 style={{ fontSize: 30, fontWeight: 900, color: '#fff', margin: '0 0 8px', textAlign: 'center' }}>{titre}</h1>}
+
+      <div style={{ position: 'relative', width: '100%', maxWidth: 1100, height: 260 }}>
+        {/* Ligne de connexion */}
+        <div style={{ position: 'absolute', top: 60, left: '9%', right: '9%', height: 3, background: 'rgba(255,255,255,0.12)', borderRadius: 2 }} />
+
+        {/* Nœud Rodenstock */}
+        <div style={{ position: 'absolute', top: 0, left: '9%', transform: 'translateX(-50%)', ...NODE }}>
+          <div style={{ fontSize: 44 }}>🏭</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginTop: 6 }}>Rodenstock</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>Fournisseur</div>
+        </div>
+
+        {/* Nœud Centre logistique */}
+        <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', ...NODE }}>
+          <div style={{ fontSize: 44 }}>🏢</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginTop: 6 }}>Centre logistique</div>
+          <div style={{
+            marginTop: 6, display: 'inline-block', padding: '3px 12px', borderRadius: 20,
+            fontSize: 11, fontWeight: 700,
+            background: isOutlet ? 'rgba(245,158,11,0.15)' : 'rgba(74,222,128,0.15)',
+            border: `1px solid ${isOutlet ? 'rgba(245,158,11,0.4)' : 'rgba(74,222,128,0.4)'}`,
+            color: isOutlet ? '#f59e0b' : '#4ade80',
+          }}>{isOutlet ? '❌ Monture épuisée' : '✅ Monture en stock'}</div>
+        </div>
+
+        {/* Nœud Magasin */}
+        <div style={{ position: 'absolute', top: 0, left: '91%', transform: 'translateX(-50%)', ...NODE }}>
+          <div style={{ fontSize: 44 }}>🏬</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginTop: 6 }}>Magasin</div>
+          {isOutlet && (
+            <div style={{ marginTop: 6, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>👓 Monture déjà ici</div>
+          )}
+        </div>
+
+        {/* Colis animé */}
+        <div style={{
+          position: 'absolute', top: 46, left: pkgLeft, transform: 'translate(-50%, 0)',
+          transition: 'left 1.1s cubic-bezier(0.65,0,0.35,1)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+        }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: '50%',
+            background: `${accent}20`, border: `2.5px solid ${accent}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+            boxShadow: `0 0 24px ${accent}40`,
+          }}>{pkgIcon}</div>
+        </div>
+
+        {/* Label d'étape */}
+        <div style={{ position: 'absolute', top: 170, left: 0, right: 0, textAlign: 'center' }}>
+          <div key={pkgLabel} style={{
+            display: 'inline-block', animation: 'cardPopIn .35s ease',
+            background: `${accent}12`, border: `1px solid ${accent}45`,
+            borderRadius: 20, padding: '10px 24px', fontSize: 15, fontWeight: 700, color: '#fff',
+          }}>{pkgLabel}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── TV Le montage — animation de l'upgrade (gamme de traitements) ───
 function TVMontageUpgrade({ sessionCode }) {
   const [orderedIdx, setOrderedIdx] = useState(null)
@@ -6683,6 +6776,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'montage-question')  return <TVMontageQuestion page={page} sessionCode={sessionCode} />
   if (page.type === 'montage-info')      return <TVMontageInfo page={page} />
   if (page.type === 'montage-upgrade')   return <TVMontageUpgrade sessionCode={sessionCode} />
+  if (page.type === 'outlet-flow')       return <TVOutletFlow variant={page.variant} titre={page.titre} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />

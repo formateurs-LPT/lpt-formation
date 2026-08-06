@@ -38,6 +38,7 @@ import ModuleRetraits from '@/components/modules/ModuleRetraits'
 import ModuleAjustages from '@/components/modules/ModuleAjustages'
 import ModuleRAZ from '@/components/modules/ModuleRAZ'
 import ModuleMontage from '@/components/modules/ModuleMontage'
+import ModuleMonturesOutlet from '@/components/modules/ModuleMonturesOutlet'
 import IdeesButton from '@/components/IdeesButton'
 import TrainerQuestionsPanel from '@/components/TrainerQuestionsPanel'
 import PlanningPage from '@/components/PlanningPage'
@@ -656,6 +657,13 @@ export default function Page() {
       )}
       {view === 'module-montage' && (
         <ModuleMontage
+          pName={pName}
+          onBack={handleBackToModules}
+          onTerminate={handleTerminateToJournee4}
+        />
+      )}
+      {view === 'module-montures-outlet' && (
+        <ModuleMonturesOutlet
           pName={pName}
           onBack={handleBackToModules}
           onTerminate={handleTerminateToJournee4}

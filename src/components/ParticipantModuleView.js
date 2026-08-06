@@ -4243,6 +4243,13 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
       </p>
     </div>
   )
+  if (page.type === 'outlet-flow') return (
+    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 52, marginBottom: 20 }}>{page.icon || '📦'}</div>
+      <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Regardez le diffuseur</h2>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 280 }}>{page.sousTitre}</p>
+    </div>
+  )
 
   if (page.type === 'rembfr-conditions') {
     const revealed = rembfrRevealed || []

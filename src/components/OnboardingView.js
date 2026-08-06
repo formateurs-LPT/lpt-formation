@@ -153,6 +153,12 @@ const JOURNEES = (onLaunchModule, onLaunchPeerQuiz) => [
         sub: 'Des lunettes en 10 minutes — upgrade & adaptation',
         onClick: () => onLaunchModule('montage'),
       },
+      {
+        visual: 'emoji', icon: '📦',
+        label: 'Montures Outlet',
+        sub: 'Anticiper les ruptures de stock monture',
+        onClick: () => onLaunchModule('montures-outlet'),
+      },
     ],
   },
 ]

@@ -1269,6 +1269,25 @@ export const MODULE_DATA = {
       { icon: '🎯', title: 'Les bonnes pratiques', desc: 'Vous les avez, maintenant.' },
     ] },
   ], quiz: [], label: 'Le montage', sub: 'Des lunettes en 10 minutes' },
+  'montures-outlet': { pages: [
+    { id: 'outlet-q1', type: 'montage-question', icon: '📦', titre: "D'après vous, que se passe-t-il si le centre logistique n'a plus la monture demandée par le client en stock ?" },
+    { id: 'outlet-flow-normal', type: 'outlet-flow', variant: 'normal', icon: '✅', titre: 'Le fonctionnement normal', sousTitre: 'Le centre logistique a la monture en stock : il reçoit les verres, monte la paire et nous l\'envoie complète.' },
+    { id: 'outlet-flow-outlet', type: 'outlet-flow', variant: 'outlet', icon: '📤', titre: 'La monture outlet', sousTitre: "Le centre logistique n'a plus la monture : il nous envoie les verres seuls. La monture, elle, est déjà chez nous en magasin." },
+    { id: 'outlet-risque', type: 'montage-info', icon: '⚠️', titre: 'Le risque à éviter', footer: 'Délais rallongés, appels à tous les magasins, client mécontent — à éviter absolument.', blocks: [
+      { icon: '🕐', title: 'Le temps qui passe', desc: "Entre la commande et la réception des verres, du temps s'écoule — et la monture continue de se vendre en magasin." },
+      { icon: '❌', title: 'La dernière monture vendue', desc: "Si on écoule le dernier exemplaire du modèle avant l'arrivée des verres, on se retrouve sans monture pour les monter." },
+      { icon: '📵', title: 'Introuvable ailleurs', desc: "Le centre logistique ne l'a pas non plus — il faut appeler tous les magasins un par un en espérant en trouver une." },
+    ] },
+    { id: 'outlet-solution', type: 'montage-info', icon: '🗂️', titre: "La solution : l'onglet Montures Outlet", blocks: [
+      { icon: '👀', title: 'Surveiller chaque jour', desc: 'Dans le dashboard monteur, l\'onglet « Montures Outlet » liste les commandes concernées — à vérifier tous les jours.' },
+      { icon: '📤', title: 'Déstocker immédiatement', desc: 'Dès qu\'une commande apparaît, prendre la monture dans le stock magasin et la déstocker.' },
+      { icon: '🗃️', title: 'Mettre de côté', desc: 'La ranger dans le bac prévu, avec le bon de fabrication de la commande concernée.' },
+    ] },
+    { id: 'outlet-conclusion', type: 'montage-info', icon: '🔑', titre: 'Résultat', footer: "Quand les verres arrivent, il ne reste qu'à se servir dans le bac outlet.", footerStrong: true, blocks: [
+      { icon: '⚡', title: 'Plus de recherche urgente', desc: 'La monture est déjà de côté, prête à recevoir les verres.' },
+      { icon: '😊', title: "Plus d'attente inutile", desc: 'Le client récupère sa paire dans les délais annoncés.' },
+    ] },
+  ], quiz: [], label: 'Montures Outlet', sub: 'Anticiper les ruptures de stock monture' },
 }
 
 export const MUTUELLES_BELGIQUE = [
