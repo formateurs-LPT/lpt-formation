@@ -5295,12 +5295,12 @@ function TVOutletFlow({ variant, titre }) {
   useEffect(() => {
     setPhase(0)
     const T = [
-      setTimeout(() => setPhase(1), 1400),
-      setTimeout(() => setPhase(2), 3200),
-      setTimeout(() => setPhase(3), 5200),
-      setTimeout(() => setPhase(4), 7400),
-      setTimeout(() => setPhase(5), 9600),
-      setTimeout(() => setLoopKey(k => k + 1), 12800),
+      setTimeout(() => setPhase(1), 1800),
+      setTimeout(() => setPhase(2), 3800),
+      setTimeout(() => setPhase(3), 6300),
+      setTimeout(() => setPhase(4), 8800),
+      setTimeout(() => setPhase(5), 10800),
+      setTimeout(() => setLoopKey(k => k + 1), 14200),
     ]
     return () => T.forEach(clearTimeout)
   }, [variant, loopKey])
@@ -5369,7 +5369,7 @@ function TVOutletFlow({ variant, titre }) {
         {/* Colis animé — enveloppe (verres) ou boîte LPT blanche (paire complète) */}
         <div style={{
           position: 'absolute', top: 38, left: startLeft, transform: 'translate(-50%, 0)',
-          transition: 'left 1.5s cubic-bezier(0.65,0,0.35,1)',
+          transition: 'left 1.9s cubic-bezier(0.65,0,0.35,1)',
         }}>
           <div key={showBox ? 'box' : 'env'} style={{ animation: 'cardPopIn .4s ease' }}>
             {showBox ? <OutletLptBox /> : <OutletLensesEnvelope />}
