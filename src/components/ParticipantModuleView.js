@@ -4071,6 +4071,44 @@ function SAVContentMobile({ page, pageIndex, total }) {
   )
 }
 
+// Écran générique « regardez le diffuseur » pour les phases pilotées par un
+// module_page hors des pages normales (ex : animation PDM sur plage 1000+).
+function WatchDiffuserMobile({ moduleLabel, titre }) {
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, #00abe915 100%)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px', textAlign: 'center',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={110} height={42}
+        style={{ objectFit: 'contain', marginBottom: 40 }} />
+      <div style={{
+        display: 'inline-block',
+        background: '#00abe920', border: '1px solid #00abe940',
+        borderRadius: 20, padding: '3px 14px',
+        fontSize: 10, fontWeight: 700, color: '#00abe9',
+        textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 12,
+      }}>{moduleLabel || 'Formation LPT'}</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.3, marginBottom: 10 }}>
+        {titre}
+      </div>
+      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 300, marginBottom: 36 }}>
+        Regardez l&apos;écran de diffusion et suivez le formateur
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{
+            width: 7, height: 7, borderRadius: '50%', background: '#00abe9',
+            animation: `waitDot 1.4s ease-in-out ${i * 0.25}s infinite`,
+          }} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, entrainementQ, entrainementVfCorrect, entrainementClearTs, entrainementCustomQText, ordoRevealStep }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
@@ -5154,8 +5192,11 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const isLobby   = !!moduleData && modulePage === -1
   const isResults = !!moduleData && modulePage === 200
   const isQuiz    = !!moduleData && modulePage >= 100 && modulePage < 200
+  // Animation PDM (« du verre brut à la paire parfaite ») : le formateur pilote un module_page
+  // spécial (1000+, hors des bornes du tableau pages) — même plage que côté diffuseur.
+  const isPdmAnimation = activeModule === 'pdm' && modulePage >= 1000 && modulePage < 2000
   const qIdx = modulePage - 100
-  const page = (!isQuiz && !isResults && !isLobby && moduleData) ? (pages[modulePage] ?? null) : null
+  const page = (!isQuiz && !isResults && !isLobby && !isPdmAnimation && moduleData) ? (pages[modulePage] ?? null) : null
   // Le podium interstitiel (toutes les 5 questions) est piloté par quiz_interstitial_q
   // (même flag que le diffuseur — qui contient l'index de la prochaine question, module_page
   // ayant déjà avancé). Si le formateur a avancé au-delà sans clôturer l'interstitiel, on
@@ -5203,11 +5244,13 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
               ? <ParticipantQuizRanking pName={pName} moduleId={activeModule} qIdx={qIdx} />
               : isQuiz
               ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />
-              : page
-                ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} moduleId={activeModule} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} rembfrRevealed={rembfrRevealed} rembfrDemarcheA={rembfrDemarcheA} rembfrDemarcheB={rembfrDemarcheB} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} entrainementCustomQText={entrainementCustomQText} ordoRevealStep={ordoRevealStep} />
-                : faqJournee
-                  ? <FAQInputMobile journeeId={faqJournee} />
-                  : <ParticipantDashboard pName={pName} sessionCode={sessionCode} />
+              : isPdmAnimation
+                ? <WatchDiffuserMobile moduleLabel={moduleData?.label} titre="Du verre brut à la paire parfaite" />
+                : page
+                  ? <ModuleScreen page={page} pageIndex={modulePage} total={pages.length} moduleLabel={moduleData?.label} moduleId={activeModule} pName={pName} progZoneQ={progZoneQ} progZoneResponses={progZoneResponses} progObjectionIdx={progObjectionIdx} progObjectionResponses={progObjectionResponses} modelePoint={modelePoint} rembfrRevealed={rembfrRevealed} rembfrDemarcheA={rembfrDemarcheA} rembfrDemarcheB={rembfrDemarcheB} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} entrainementCustomQText={entrainementCustomQText} ordoRevealStep={ordoRevealStep} />
+                  : faqJournee
+                    ? <FAQInputMobile journeeId={faqJournee} />
+                    : <ParticipantDashboard pName={pName} sessionCode={sessionCode} />
       }
     </>
   )
