@@ -152,19 +152,24 @@ export const MANAGERS = {
     { name: 'Nathanael PEREZ', email: 'nperez@lunettespourtous.com' },
   ],
   'toulon': [
-    { name: 'Manon DEMORE', email: 'mdemore@lunettespourtous.com' },
+    { name: 'Mathias DARMON', email: 'mdarmon@lunettespourtous.com' },
   ],
   'toulon 83': [
-    { name: 'Manon DEMORE', email: 'mdemore@lunettespourtous.com' },
+    { name: 'Mathias DARMON', email: 'mdarmon@lunettespourtous.com' },
+  ],
+  'toulon avenue 83': [
+    { name: 'Mathias DARMON', email: 'mdarmon@lunettespourtous.com' },
   ],
   'la valette': [
-    { name: 'Manon DEMORE', email: 'mdemore@lunettespourtous.com' },
+    { name: 'Mathias DARMON', email: 'mdarmon@lunettespourtous.com' },
   ],
   'toulon mayol': [
     { name: 'Thibaud PONTONE', email: 'tpontone@lunettespourtous.com' },
+    { name: 'Henri BOURELY',  email: 'hbourely@lunettespourtous.com' },
   ],
   'mayol': [
     { name: 'Thibaud PONTONE', email: 'tpontone@lunettespourtous.com' },
+    { name: 'Henri BOURELY',  email: 'hbourely@lunettespourtous.com' },
   ],
   'toulouse blagnac': [
     { name: 'Maxime BOUSQUET', email: 'mbousquet@lunettespourtous.com' },
