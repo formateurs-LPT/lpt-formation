@@ -3,6 +3,8 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import Image from 'next/image'
 import { getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
 import { fetchOnlineParticipantsList } from '@/lib/participantPresence'
+import { ENTRAINEMENT_QUESTIONS } from '@/lib/modulesData'
+import { QuestionsGameTrainerPanel } from '@/components/QuestionsGamePanel'
 
 const THEMES = [
   'Un client qui veut du progressif mais n\'en a jamais porté',
@@ -441,6 +443,24 @@ function GameListView({ onSelect }) {
           <div style={{ fontSize: 13, fontWeight: 700, color: '#8b5cf6' }}>Jouer →</div>
         </div>
 
+        <div
+          onClick={() => onSelect('questions')}
+          style={{
+            background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.25)',
+            borderRadius: 22, padding: '28px 24px', cursor: 'pointer', transition: 'all 0.18s',
+            animation: 'mjFadeUp 0.4s ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.16)'; e.currentTarget.style.borderColor = 'rgba(0,171,233,0.5)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,171,233,0.25)' }}
+        >
+          <div style={{ fontSize: 38, marginBottom: 14 }}>🗣️</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 8 }}>Questions</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.55, marginBottom: 18 }}>
+            Posez une question, récupérez les réponses en direct et validez-les
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#00abe9' }}>Jouer →</div>
+        </div>
+
         <div style={{
           background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)',
           borderRadius: 22, padding: '28px 24px',
@@ -492,11 +512,19 @@ export default function ModuleMiniJeux({ pName, onBack }) {
   // Reset TV on unmount
   useEffect(() => {
     return () => {
-      setSharedState({ minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null, minijeu_phase: 'idle', minijeu_game: null }).catch(() => {})
+      setSharedState({
+        minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null, minijeu_phase: 'idle', minijeu_game: null,
+        mjq_q: null, mjq_vf_correct: null, mjq_clear_ts: null, mjq_custom_q_text: null,
+      }).catch(() => {})
     }
   }, [])
 
   const handleSelectGame = async (game) => {
+    if (game === 'questions') {
+      setView('questions')
+      await setSharedState({ minijeu_phase: 'questions', minijeu_game: 'questions' }).catch(() => {})
+      return
+    }
     setView('rules')
     await setSharedState({ minijeu_phase: 'rules', minijeu_game: game }).catch(() => {})
   }
@@ -615,9 +643,33 @@ export default function ModuleMiniJeux({ pName, onBack }) {
     } else if (view === 'rules') {
       setView('list')
       await setSharedState({ minijeu_phase: 'idle', minijeu_game: null }).catch(() => {})
+    } else if (view === 'questions') {
+      setView('list')
+      await setSharedState({
+        minijeu_phase: 'idle', minijeu_game: null,
+        mjq_q: null, mjq_vf_correct: null, mjq_clear_ts: null, mjq_custom_q_text: null,
+      }).catch(() => {})
     } else {
       onBack()
     }
+  }
+
+  // Le jeu "Questions" a son propre écran plein (topbar + Quitter inclus) — pas besoin
+  // du header/contenu standard de mini-jeux par-dessus.
+  if (view === 'questions') {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <QuestionsGameTrainerPanel
+          pName={pName}
+          moduleId="minijeu-questions"
+          sharedKeyPrefix="mjq"
+          questions={ENTRAINEMENT_QUESTIONS}
+          header="Mini Jeux · Questions"
+          onExit={handleBack}
+        />
+      </>
+    )
   }
 
   return (

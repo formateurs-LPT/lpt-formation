@@ -14,6 +14,7 @@ import { resolveParticipantName, isTrainerAccount } from '@/lib/participantNames
 import { mergeRoomSharedField } from '@/lib/roomSharedState'
 import { getLevelInfo, getRankMessage, fetchParticipantRanking } from '@/lib/scoring'
 import { canParticipantJoinSession, getCategoryJoinDeniedMessage } from '@/lib/formationCategories'
+import { QuestionsGameParticipantView } from '@/components/QuestionsGamePanel'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -4010,189 +4011,6 @@ function SAVContentMobile({ page, pageIndex, total }) {
   )
 }
 
-// ── Entraînement oral (participant) ──────────────────────────────
-const ENTRAINEMENT_PAGE_ID = 'optique:entrainement'
-
-function EntrainementOralMobile({ pName, entrainementQ, entrainementVfCorrect, entrainementClearTs, entrainementCustomQText }) {
-  const [text, setText] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-  const [vfSelected, setVfSelected] = useState(null)
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState(false)
-  const [validated, setValidated] = useState(null) // null | true | false
-
-  useEffect(() => {
-    setText('')
-    setSubmitted(false)
-    setVfSelected(null)
-    setSaveError(false)
-    setValidated(null)
-  }, [entrainementQ, entrainementClearTs])
-
-  // Poll la validation du formateur — sans ça le formé ne sait jamais si sa réponse était juste
-  useEffect(() => {
-    if (!submitted || entrainementQ == null) return
-    const questionIdx = entrainementQ === -1 ? 199 : 100 + entrainementQ
-    const poll = async () => {
-      const rows = await sbSelect(
-        'quiz_answers',
-        `session_code=eq.${getParticipantSessionCode()}&module_id=eq.optique&question_idx=eq.${questionIdx}&collaborateur=eq.${encodeURIComponent((pName || 'Anonyme').trim())}`
-      )
-      if (rows && rows.length > 0) setValidated(rows[0].is_correct)
-    }
-    poll()
-    const t = setInterval(poll, 2000)
-    return () => clearInterval(t)
-  }, [submitted, entrainementQ, pName])
-
-  const q = entrainementQ === -1
-    ? { text: entrainementCustomQText || '…', type: 'text' }
-    : entrainementQ != null ? ENTRAINEMENT_QUESTIONS[entrainementQ] : null
-
-  const submitText = async () => {
-    if (!text.trim() || submitted || saving) return
-    setSaving(true)
-    setSaveError(false)
-    try {
-      const ok = await insertOpenAnswer({
-        sessionCode: getParticipantSessionCode(),
-        pageId: ENTRAINEMENT_PAGE_ID,
-        participantName: pName?.trim() || 'Anonyme',
-        answer: text.trim(),
-      })
-      if (ok === false) throw new Error('insert failed')
-      setSubmitted(true)
-    } catch {
-      setSaveError(true)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const submitVF = async (answer) => {
-    if (submitted || saving) return
-    setSaving(true)
-    setSaveError(false)
-    setVfSelected(answer)
-    try {
-      const ok = await insertOpenAnswer({
-        sessionCode: getParticipantSessionCode(),
-        pageId: ENTRAINEMENT_PAGE_ID,
-        participantName: pName?.trim() || 'Anonyme',
-        answer,
-      })
-      if (ok === false) throw new Error('insert failed')
-      setSubmitted(true)
-    } catch {
-      setSaveError(true)
-      setVfSelected(null)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const bg = { minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 20px 40px' }
-
-  if (!q) {
-    return (
-      <div style={bg}>
-        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30}
-          style={{ objectFit: 'contain', opacity: 0.5, marginBottom: 40 }} />
-        <div style={{
-          fontSize: 11, fontWeight: 700, color: '#00abe9',
-          textTransform: 'uppercase', letterSpacing: 3, marginBottom: 16,
-        }}>Bases de l'optique</div>
-        <div style={{
-          fontSize: 52, fontWeight: 900, color: '#fff',
-          letterSpacing: 4, textTransform: 'uppercase',
-          textAlign: 'center', lineHeight: 1.1, marginBottom: 12,
-          textShadow: '0 0 40px rgba(0,171,233,0.5)',
-        }}>Entraîne&shy;ment</div>
-        <div style={{
-          width: 48, height: 3, borderRadius: 2,
-          background: 'linear-gradient(90deg, #00abe9, #7c3aed)',
-          marginBottom: 28,
-        }} />
-        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 1.7 }}>
-          Le formateur va choisir une question.<br />Elle apparaîtra ici — préparez-vous.
-        </div>
-        <div style={{ marginTop: 32, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'waitDot 1.4s ease-in-out infinite' }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', letterSpacing: 0.5 }}>En attente du formateur…</span>
-        </div>
-      </div>
-    )
-  }
-
-  if (submitted && validated !== null) return <QuizResultScreen isCorrect={validated} />
-
-  if (submitted) {
-    return (
-      <div style={bg}>
-        <div style={{ fontSize: 48, marginBottom: 20 }}>✍️</div>
-        <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 10, textAlign: 'center' }}>Réponse envoyée !</div>
-        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center' }}>En attente de la validation du formateur…</div>
-        {q.type === 'vrai-faux' && vfSelected && (
-          <div style={{
-            marginTop: 24, background: vfSelected === 'VRAI' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-            border: `1px solid ${vfSelected === 'VRAI' ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
-            borderRadius: 16, padding: '14px 32px', fontSize: 22, fontWeight: 900,
-            color: vfSelected === 'VRAI' ? '#4ade80' : '#f87171',
-          }}>{vfSelected}</div>
-        )}
-        <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #00abe9', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
-        <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    )
-  }
-
-  return (
-    <div style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <div style={{ background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.35)', borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24 }}>
-        Question du formateur
-      </div>
-
-      <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.3, maxWidth: 340, marginBottom: 32 }}>
-        {q.text}
-      </div>
-
-      {q.type === 'vrai-faux' ? (
-        <div style={{ display: 'flex', gap: 16, width: '100%', maxWidth: 340 }}>
-          {['VRAI', 'FAUX'].map(v => (
-            <button key={v} onClick={() => submitVF(v)} disabled={saving} style={{
-              flex: 1, padding: '22px 0', borderRadius: 18, fontSize: 22, fontWeight: 900,
-              cursor: saving ? 'default' : 'pointer', fontFamily: 'inherit',
-              background: v === 'VRAI' ? 'linear-gradient(135deg, #16a34a, #22c55e)' : 'linear-gradient(135deg, #dc2626, #ef4444)',
-              border: 'none', color: '#fff',
-              boxShadow: v === 'VRAI' ? '0 6px 20px rgba(34,197,94,0.35)' : '0 6px 20px rgba(239,68,68,0.35)',
-            }}>{v}</button>
-          ))}
-        </div>
-      ) : (
-        <div style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <textarea
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder="Votre réponse…"
-            rows={4}
-            style={{ width: '100%', padding: '16px', borderRadius: 16, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: 16, fontFamily: 'inherit', resize: 'none', outline: 'none', boxSizing: 'border-box' }}
-          />
-          <button onClick={submitText} disabled={!text.trim() || saving} style={{
-            background: text.trim() ? 'linear-gradient(135deg, #0070a8, #00abe9)' : 'rgba(255,255,255,0.08)',
-            border: 'none', color: '#fff', padding: '16px', borderRadius: 16,
-            fontSize: 16, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default', fontFamily: 'inherit',
-          }}>{saving ? 'Envoi…' : saveError ? '✗ Réessayer' : '✓ Envoyer'}</button>
-          {saveError && (
-            <div style={{ color: '#f87171', fontSize: 13, textAlign: 'center', marginTop: 4 }}>
-              Erreur lors de l'envoi. Réessayez.
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
 function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, progZoneQ, progZoneResponses, progObjectionIdx, progObjectionResponses, modelePoint, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, entrainementQ, entrainementVfCorrect, entrainementClearTs, entrainementCustomQText, ordoRevealStep }) {
   const [key, setKey] = useState(0)
   useEffect(() => { setKey(k => k + 1) }, [page.id])
@@ -4475,7 +4293,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
   )
 
   if (page.type === 'saisie-interactive') return <SaisieInteractiveMobile page={page} pageIndex={pageIndex} total={total} pName={pName} moduleId={moduleId} />
-  if (page.type === 'entrainement-oral')  return <EntrainementOralMobile pName={pName} entrainementQ={entrainementQ} entrainementVfCorrect={entrainementVfCorrect} entrainementClearTs={entrainementClearTs} entrainementCustomQText={entrainementCustomQText} />
+  if (page.type === 'entrainement-oral')  return <QuestionsGameParticipantView pName={pName} moduleId="optique" questionIdx={entrainementQ} vfCorrect={entrainementVfCorrect} clearTs={entrainementClearTs} customQText={entrainementCustomQText} questions={ENTRAINEMENT_QUESTIONS} />
 
   // Freins à l'achat — saisie libre
   if (page.type === 'freins') return <FreinsInputMobile page={page} pName={pName || 'Anonyme'} />

@@ -212,12 +212,15 @@ export const OPTIQUE_PAGES = [
   },
 ]
 
+// Options pour les questions "problèmes de vue" — sélection multiple (au lieu de texte libre)
+export const VISION_MULTI_OPTIONS = ['Myope', 'Hypermétrope', 'Astigmate', 'Presbyte']
+
 export const ENTRAINEMENT_QUESTIONS = [
-  { id: 1, text: 'Ce client voit : (répondez avec les définitions des problèmes de vue)', type: 'text' },
+  { id: 1, text: 'Ce client voit : (sélectionnez les problèmes de vue)', type: 'vision-multi' },
   { id: 2, text: 'De combien est la sphère sur cette ordonnance ?', type: 'text' },
   { id: 3, text: 'De combien est le cylindre sur cette ordonnance ?', type: 'text' },
   { id: 4, text: 'Ce client est presbyte.', type: 'vrai-faux' },
-  { id: 5, text: 'Quels sont les problèmes de vue de ce client ?', type: 'text' },
+  { id: 5, text: 'Quels sont les problèmes de vue de ce client ?', type: 'vision-multi' },
   { id: 6, text: 'Calculez la sphère de près pour ce client.', type: 'text' },
 ]
 
