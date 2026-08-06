@@ -1263,7 +1263,11 @@ export const MODULE_DATA = {
       { icon: '🎯', title: 'Le principe', desc: "Si vous ne pouvez pas upgrader le client faute des verres correspondants, adaptez la correction : retirez 0,25." },
       { icon: '⬆️', title: 'Combinez si besoin', desc: "Appliquez aussi l'upgrade en complément de l'adaptation, si nécessaire." },
     ] },
-    { id: 'montage-conclusion', type: 'pause', icon: '🎉', titre: 'Tout part de vous', sousTitre: "Si pour chaque montage vous utilisez toutes ces possibilités, vous remplirez notre promesse pour un maximum de clients. Les machines nous permettent de fabriquer les lunettes en 10 minutes, mais tout part de vous.", noAnswerBox: true },
+    { id: 'montage-conclusion', type: 'montage-info', icon: '🔑', titre: 'Pour une fabrication en 10 minutes', footer: 'Maintenant, vous avez tout.', footerStrong: true, blocks: [
+      { icon: '📦', title: 'De bons stocks', desc: 'Vous les avez.' },
+      { icon: '🛠️', title: 'Les bons outils', desc: 'Vous les avez.' },
+      { icon: '🎯', title: 'Les bonnes pratiques', desc: 'Vous les avez, maintenant.' },
+    ] },
   ], quiz: [], label: 'Le montage', sub: 'Des lunettes en 10 minutes' },
 }
 

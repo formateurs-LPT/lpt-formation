@@ -1863,9 +1863,15 @@ function MontageInfoMobile({ page }) {
         ))}
 
         {page.footer && (
-          <div style={{ marginTop: 4, background: 'rgba(0,137,186,0.08)', border: '1px solid rgba(0,137,186,0.25)', borderRadius: 12, padding: '12px 16px', fontSize: 12, color: '#00abe9', fontWeight: 700, lineHeight: 1.5 }}>
-            {page.footer}
-          </div>
+          page.footerStrong ? (
+            <div style={{ marginTop: 6, textAlign: 'center', background: 'linear-gradient(135deg, rgba(245,158,11,0.16), rgba(245,158,11,0.06))', border: '1.5px solid rgba(245,158,11,0.45)', borderRadius: 14, padding: '18px 16px', fontSize: 17, color: '#fff', fontWeight: 800, lineHeight: 1.4 }}>
+              {page.footer}
+            </div>
+          ) : (
+            <div style={{ marginTop: 4, background: 'rgba(0,137,186,0.08)', border: '1px solid rgba(0,137,186,0.25)', borderRadius: 12, padding: '12px 16px', fontSize: 12, color: '#00abe9', fontWeight: 700, lineHeight: 1.5 }}>
+              {page.footer}
+            </div>
+          )
         )}
       </div>
     </div>

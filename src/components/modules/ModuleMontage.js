@@ -128,9 +128,15 @@ function MontageInfoFormateur({ page }) {
       </div>
 
       {page.footer && (
-        <div style={{ marginTop: 16, padding: '12px 18px', background: 'rgba(0,137,186,0.07)', border: '1px solid rgba(0,137,186,0.2)', borderRadius: 12, fontSize: 13, color: '#00abe9', fontWeight: 600, lineHeight: 1.5 }}>
-          ⚠️ {page.footer}
-        </div>
+        page.footerStrong ? (
+          <div style={{ marginTop: 18, padding: '18px 22px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(245,158,11,0.14), rgba(245,158,11,0.05))', border: '1.5px solid rgba(245,158,11,0.45)', borderRadius: 14, fontSize: 16, color: '#fff', fontWeight: 800 }}>
+            {page.footer}
+          </div>
+        ) : (
+          <div style={{ marginTop: 16, padding: '12px 18px', background: 'rgba(0,137,186,0.07)', border: '1px solid rgba(0,137,186,0.2)', borderRadius: 12, fontSize: 13, color: '#00abe9', fontWeight: 600, lineHeight: 1.5 }}>
+            ⚠️ {page.footer}
+          </div>
+        )
       )}
 
       <div style={{ marginTop: 16, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>

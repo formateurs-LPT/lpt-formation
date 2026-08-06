@@ -5234,9 +5234,21 @@ function TVMontageInfo({ page }) {
         ))}
       </div>
       {page.footer && (
-        <div style={{ marginTop: 24, maxWidth: 900, padding: '16px 24px', background: 'rgba(0,137,186,0.08)', border: '1px solid rgba(0,137,186,0.25)', borderRadius: 14, fontSize: 16, color: '#00abe9', fontWeight: 700, lineHeight: 1.5 }}>
-          {page.footer}
-        </div>
+        page.footerStrong ? (
+          <div style={{
+            marginTop: 32, maxWidth: 900, padding: '26px 36px', textAlign: 'center',
+            background: 'linear-gradient(135deg, rgba(245,158,11,0.14), rgba(245,158,11,0.05))',
+            border: '2px solid rgba(245,158,11,0.5)', borderRadius: 20,
+            fontSize: 28, color: '#fff', fontWeight: 900, lineHeight: 1.4,
+            boxShadow: '0 0 50px rgba(245,158,11,0.15)',
+          }}>
+            {page.footer}
+          </div>
+        ) : (
+          <div style={{ marginTop: 24, maxWidth: 900, padding: '16px 24px', background: 'rgba(0,137,186,0.08)', border: '1px solid rgba(0,137,186,0.25)', borderRadius: 14, fontSize: 16, color: '#00abe9', fontWeight: 700, lineHeight: 1.5 }}>
+            {page.footer}
+          </div>
+        )
       )}
     </div>
   )
