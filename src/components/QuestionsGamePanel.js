@@ -28,6 +28,7 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
   const [answers, setAnswers] = useState([])
   const [vfCorrect, setVfCorrect] = useState(null)
   const [visionCorrect, setVisionCorrect] = useState([])
+  const [choiceCorrect, setChoiceCorrect] = useState(null)
   const [onlineCount, setOnlineCount] = useState(0)
   const [validatedMap, setValidatedMap] = useState({})
   const [customQText, setCustomQText] = useState('')
@@ -79,6 +80,7 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
     await clearAnswers()
     setVfCorrect(null)
     setVisionCorrect([])
+    setChoiceCorrect(null)
     setSelectedQ(idx)
     setValidatedMap({})
     await setSharedState({ [kQ]: idx, [kVf]: null, [kClear]: Date.now(), [kCustom]: null })
@@ -90,6 +92,7 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
     setSelectedQ(null)
     setVfCorrect(null)
     setVisionCorrect([])
+    setChoiceCorrect(null)
     await setSharedState({ [kQ]: null, [kVf]: null, [kClear]: Date.now(), [kCustom]: null })
   }
 
@@ -100,6 +103,7 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
       await clearAnswers()
       setVfCorrect(null)
       setVisionCorrect([])
+      setChoiceCorrect(null)
       setSelectedQ(-1)
       setValidatedMap({})
       await setSharedState({ [kQ]: -1, [kCustom]: customQText.trim(), [kVf]: null, [kClear]: Date.now() })
@@ -116,6 +120,10 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
 
   const toggleVisionCorrect = (opt) => {
     setVisionCorrect(prev => prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt])
+  }
+
+  const handleChoiceCorrect = (opt) => {
+    setChoiceCorrect(prev => prev === opt ? null : opt)
   }
 
   const questionIdxFor = (q) => q === -1 ? 199 : 100 + q
@@ -144,12 +152,24 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
     }
   }
 
+  // La réponse du formateur (parmi les options) est considérée juste — auto-valide les formés qui ont choisi pareil
+  const applyChoiceCorrection = async () => {
+    if (!choiceCorrect) return
+    const toValidate = answers.filter(row => !(row.participant_name in validatedMap))
+    for (const row of toValidate) {
+      if ((row.answer || '').trim() === choiceCorrect) {
+        await validateResponse(row.participant_name, true)
+      }
+    }
+  }
+
   const currentQ = selectedQ === -1
     ? { text: customQText.trim(), type: 'text' }
     : selectedQ !== null ? questions[selectedQ] : null
   const allAnswered = onlineCount > 0 && answers.length >= onlineCount
   const isVF = currentQ?.type === 'vrai-faux'
   const isVisionMulti = currentQ?.type === 'vision-multi'
+  const isChoice = currentQ?.type === 'choice'
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
@@ -208,6 +228,9 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
                     )}
                     {q.type === 'vision-multi' && (
                       <div style={{ fontSize: 11, color: isSelected ? 'rgba(0,171,233,0.8)' : 'rgba(255,255,255,0.35)', marginTop: 4, fontWeight: 600 }}>→ Sélection multiple</div>
+                    )}
+                    {q.type === 'choice' && (
+                      <div style={{ fontSize: 11, color: isSelected ? 'rgba(0,171,233,0.8)' : 'rgba(255,255,255,0.35)', marginTop: 4, fontWeight: 600 }}>→ {q.options.join(' / ')}</div>
                     )}
                   </div>
                 </div>
@@ -320,6 +343,36 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
                 </div>
               )}
 
+              {/* Choix unique formateur (ex: durée de validité d'ordonnance) */}
+              {isChoice && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Votre réponse (bonne réponse officielle)</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${currentQ.options.length}, 1fr)`, gap: 10, marginBottom: 12 }}>
+                    {currentQ.options.map(opt => {
+                      const sel = choiceCorrect === opt
+                      return (
+                        <button key={opt} onClick={() => handleChoiceCorrect(opt)} style={{
+                          padding: '14px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                          background: sel ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.07)',
+                          border: `2px solid ${sel ? '#4ade80' : 'rgba(255,255,255,0.15)'}`,
+                          color: sel ? '#4ade80' : 'rgba(255,255,255,0.6)',
+                        }}>{sel ? '✓ ' : ''}{opt}</button>
+                      )
+                    })}
+                  </div>
+                  <button
+                    onClick={applyChoiceCorrection}
+                    disabled={!choiceCorrect}
+                    style={{
+                      width: '100%', padding: '12px', borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: 'inherit',
+                      cursor: !choiceCorrect ? 'default' : 'pointer',
+                      background: !choiceCorrect ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg, #16a34a, #22c55e)',
+                      border: 'none', color: !choiceCorrect ? 'rgba(255,255,255,0.3)' : '#fff',
+                    }}
+                  >✓ Définir comme bonne réponse</button>
+                </div>
+              )}
+
               {/* Indicateur "Tous ont répondu" */}
               <div style={{ display: 'flex', gap: 8 }}>
                 <div style={{
@@ -406,6 +459,7 @@ export function QuestionsGameParticipantView({ pName, moduleId, questionIdx, vfC
   const [text, setText] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [vfSelected, setVfSelected] = useState(null)
+  const [choiceSelected, setChoiceSelected] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(false)
   const [validated, setValidated] = useState(null) // null | true | false
@@ -416,6 +470,7 @@ export function QuestionsGameParticipantView({ pName, moduleId, questionIdx, vfC
     setSelected([])
     setSubmitted(false)
     setVfSelected(null)
+    setChoiceSelected(null)
     setSaveError(false)
     setValidated(null)
   }, [questionIdx, clearTs])
@@ -461,6 +516,7 @@ export function QuestionsGameParticipantView({ pName, moduleId, questionIdx, vfC
 
   const submitText = () => { if (text.trim()) submitAnswer(text.trim()) }
   const submitVF = (answer) => { setVfSelected(answer); submitAnswer(answer) }
+  const submitChoice = (answer) => { setChoiceSelected(answer); submitAnswer(answer) }
   const toggleSelect = (opt) => setSelected(prev => prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt])
   const submitVisionMulti = () => { if (selected.length > 0) submitAnswer(encodeVisionAnswer(selected)) }
 
@@ -506,6 +562,12 @@ export function QuestionsGameParticipantView({ pName, moduleId, questionIdx, vfC
             ))}
           </div>
         )}
+        {q.type === 'choice' && choiceSelected && (
+          <div style={{
+            marginTop: 24, background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.4)',
+            borderRadius: 16, padding: '14px 32px', fontSize: 20, fontWeight: 900, color: '#00abe9',
+          }}>{choiceSelected}</div>
+        )}
         <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #00abe9', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
         <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -532,6 +594,18 @@ export function QuestionsGameParticipantView({ pName, moduleId, questionIdx, vfC
               border: 'none', color: '#fff',
               boxShadow: v === 'VRAI' ? '0 6px 20px rgba(34,197,94,0.35)' : '0 6px 20px rgba(239,68,68,0.35)',
             }}>{v}</button>
+          ))}
+        </div>
+      ) : q.type === 'choice' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 340 }}>
+          {q.options.map(opt => (
+            <button key={opt} onClick={() => submitChoice(opt)} disabled={saving} style={{
+              padding: '18px 0', borderRadius: 16, fontSize: 17, fontWeight: 800,
+              cursor: saving ? 'default' : 'pointer', fontFamily: 'inherit',
+              background: 'linear-gradient(135deg, #0070a8, #00abe9)',
+              border: 'none', color: '#fff',
+              boxShadow: '0 6px 20px rgba(0,171,233,0.35)',
+            }}>{opt}</button>
           ))}
         </div>
       ) : q.type === 'vision-multi' ? (

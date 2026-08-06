@@ -222,6 +222,7 @@ export const ENTRAINEMENT_QUESTIONS = [
   { id: 4, text: 'Ce client est presbyte.', type: 'vrai-faux' },
   { id: 5, text: 'Quels sont les problèmes de vue de ce client ?', type: 'vision-multi' },
   { id: 6, text: 'Calculez la sphère de près pour ce client.', type: 'text' },
+  { id: 7, text: 'Combien de temps est valable une ordonnance pour cette personne ?', type: 'choice', options: ['1 an', '3 ans', '5 ans'] },
 ]
 
 export const OPTIQUE_QUIZ = [
