@@ -131,6 +131,12 @@ const JOURNEES_BELGIQUE = (onLaunchModule, onLaunchPeerQuiz) => [
         sub: 'Recommandes · Process · Dernier recours',
         onClick: () => onLaunchModule('raz', 'journee4'),
       },
+      {
+        visual: 'emoji', icon: '⏱️',
+        label: 'Le montage',
+        sub: 'Des lunettes en 10 minutes — upgrade & adaptation',
+        onClick: () => onLaunchModule('montage', 'journee4'),
+      },
     ],
   },
 ]

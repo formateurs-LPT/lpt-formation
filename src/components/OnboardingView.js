@@ -147,6 +147,12 @@ const JOURNEES = (onLaunchModule, onLaunchPeerQuiz) => [
         sub: 'Recommandes · Process · Dernier recours',
         onClick: () => onLaunchModule('raz'),
       },
+      {
+        visual: 'emoji', icon: '⏱️',
+        label: 'Le montage',
+        sub: 'Des lunettes en 10 minutes — upgrade & adaptation',
+        onClick: () => onLaunchModule('montage'),
+      },
     ],
   },
 ]

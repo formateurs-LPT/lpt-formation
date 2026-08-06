@@ -1236,6 +1236,30 @@ export const MODULE_DATA = {
     { id: 'lpts-explication', type: 'lpt-sante-explication', titre: 'Comment ça marche ?' },
     { id: 'lpts-pec', type: 'lpt-sante-pec', titre: 'La prise en charge' },
   ], quiz: [], label: 'LPT Santé', sub: 'Tiers payant · Remboursements' },
+  'montage': { pages: [
+    { id: 'montage-q1', type: 'montage-question', icon: '🔧', titre: 'En tant que monteur chez Lunettes Pour Tous, quel est votre mission n°1 ?' },
+    { id: 'montage-promesse', type: 'pause', icon: '⏱️', titre: 'Des lunettes en 10 minutes', sousTitre: "C'est notre concept. Vous avez les outils, le stock et les solutions nécessaires pour tenir cette promesse.", noAnswerBox: true },
+    { id: 'montage-q2', type: 'montage-question', icon: '❓', titre: 'À votre avis, dans quel cas ne fabrique-t-on pas la paire en 10 minutes pour le client ?' },
+    { id: 'montage-raisons', type: 'montage-info', icon: '🎯', titre: 'Les deux vraies raisons', footer: 'En dehors de ces deux cas, nous devons impérativement fabriquer la paire en 10 minutes.', blocks: [
+      { icon: '🔷', title: 'Des verres progressifs', desc: 'Leur fabrication demande un temps incompressible.' },
+      { icon: '📦', title: 'Des verres unifocaux hors stock', desc: 'La correction du client dépasse la limite de nos stocks.' },
+    ] },
+    { id: 'montage-moyens', type: 'montage-info', icon: '🛠️', titre: 'Les moyens à votre disposition', blocks: [
+      { icon: '📚', title: 'Un stock conséquent', desc: 'Toutes corrections et tous traitements compris.' },
+      { icon: '⬆️', title: "L'upgrade", desc: "Offrir le traitement supérieur si le verre commandé n'est pas en stock." },
+      { icon: '🎯', title: 'L\'adaptation de la correction', desc: 'Ajuster légèrement la correction pour rester dans le stock disponible.' },
+    ] },
+    { id: 'montage-upgrade', type: 'montage-info', icon: '⬆️', titre: "L'upgrade, qu'est-ce que c'est ?", blocks: [
+      { icon: '💡', title: 'Le principe', desc: "Quand un client a commandé des verres que vous n'avez pas en stock, offrez-lui le traitement au-dessus. S'il n'est pas non plus en stock, offrez celui encore au-dessus." },
+      { icon: '🧪', title: 'Exemple', desc: "Un client a commandé des verres Basic, indisponibles → offrez-lui le traitement Pretium. La promesse est tenue et le client est ravi de l'upgrade." },
+      { icon: '⚡', title: 'Si besoin, allez plus loin', desc: "Pas de Pretium non plus ? Offrez du Digital Protect Pro. La promesse avant tout." },
+    ] },
+    { id: 'montage-adaptation', type: 'montage-info', icon: '🎯', titre: 'Adapter la correction', blocks: [
+      { icon: '🎯', title: 'Le principe', desc: "Si vous ne pouvez pas upgrader le client faute des verres correspondants, adaptez la correction : retirez 0,25." },
+      { icon: '⬆️', title: 'Combinez si besoin', desc: "Appliquez aussi l'upgrade en complément de l'adaptation, si nécessaire." },
+    ] },
+    { id: 'montage-conclusion', type: 'pause', icon: '🎉', titre: 'Tout part de vous', sousTitre: "Si pour chaque montage vous utilisez toutes ces possibilités, vous remplirez notre promesse pour un maximum de clients. Les machines nous permettent de fabriquer les lunettes en 10 minutes, mais tout part de vous.", noAnswerBox: true },
+  ], quiz: [], label: 'Le montage', sub: 'Des lunettes en 10 minutes' },
 }
 
 export const MUTUELLES_BELGIQUE = [

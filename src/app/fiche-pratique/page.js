@@ -478,6 +478,7 @@ export default function FichePratique() {
                 </div>
                 <Row label="Unifocal (2 paires)" value="~157 €" accent={GOLD} />
                 <Row label="Progressif (2 paires)" value="~260 €" accent={GOLD} last />
+                <div style={{ marginTop: 10, fontSize: 11, fontWeight: 700, color: GREEN }}>Remboursement : 0 € de reste à charge</div>
               </Card>
 
               <Card accent={BORDEAUX}>

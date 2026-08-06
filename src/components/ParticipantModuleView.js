@@ -1820,6 +1820,58 @@ function LptSanteExplicationMobile() {
   )
 }
 
+function MontageInfoMobile({ page }) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    setVisible(false)
+    const t = setTimeout(() => setVisible(true), 100)
+    return () => clearTimeout(t)
+  }, [page.id])
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #001a3d 100%)',
+      display: 'flex', flexDirection: 'column', padding: '20px 20px 36px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 20, flexShrink: 0 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1.5 }}>Le montage</div>
+      </div>
+
+      <div style={{
+        opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(16px)',
+        transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+        display: 'flex', flexDirection: 'column', gap: 14,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          {page.icon && <span style={{ fontSize: 26 }}>{page.icon}</span>}
+          <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', lineHeight: 1.25 }}>{page.titre}</div>
+        </div>
+
+        {(page.blocks || []).map((b, i) => (
+          <div key={i} style={{
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            borderLeft: '3px solid #f59e0b', borderRadius: 14, padding: '14px 16px',
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+          }}>
+            <span style={{ fontSize: 22, flexShrink: 0 }}>{b.icon}</span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{b.title}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.55 }}>{b.desc}</div>
+            </div>
+          </div>
+        ))}
+
+        {page.footer && (
+          <div style={{ marginTop: 4, background: 'rgba(0,137,186,0.08)', border: '1px solid rgba(0,137,186,0.25)', borderRadius: 12, padding: '12px 16px', fontSize: 12, color: '#00abe9', fontWeight: 700, lineHeight: 1.5 }}>
+            {page.footer}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function PauseMobile({ page, pageIndex, total, pName }) {
   const [visible, setVisible] = useState(false)
   const [text, setText] = useState('')
@@ -4174,6 +4226,8 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
   if (page.type === 'lpt-sante-intro')        return <LptSanteIntroMobile       page={page} pName={pName} />
   if (page.type === 'lpt-sante-explication') return <LptSanteExplicationMobile />
   if (page.type === 'lpt-sante-pec')         return <LptSantePecMobile />
+  if (page.type === 'montage-question') return <PauseMobile page={page} pageIndex={pageIndex} total={total} pName={pName} />
+  if (page.type === 'montage-info')     return <MontageInfoMobile page={page} />
 
   if (page.type === 'rembfr-conditions') {
     const revealed = rembfrRevealed || []

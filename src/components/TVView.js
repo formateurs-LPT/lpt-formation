@@ -5144,6 +5144,91 @@ function TVTiersPayant({ tiersPayantRevealed, answersRevealed, sessionCode, page
   )
 }
 
+// ── TV Le montage — question ouverte (révélation manuelle formateur) ──
+function TVMontageQuestion({ page, sessionCode }) {
+  const [revealed, setRevealed] = useState(false)
+
+  useEffect(() => {
+    setRevealed(false)
+    const key = `montage_revealed__${page.id}`
+    const poll = async () => {
+      try {
+        const state = await getRoomSharedState(sessionCode)
+        setRevealed(!!state?.[key])
+      } catch { /* ignore */ }
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [page.id, sessionCode])
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#03112a', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 2, padding: '28px 60px 0' }}>
+        Le montage
+      </div>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 0 }}>
+        <div style={{
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          padding: '40px 56px', gap: 32,
+          borderRight: '1px solid rgba(255,255,255,0.07)',
+        }}>
+          {page.icon && (
+            <div style={{
+              width: 110, height: 110, borderRadius: '50%',
+              background: 'rgba(245,158,11,0.1)', border: '2px solid rgba(245,158,11,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 50px rgba(245,158,11,0.18)',
+            }}>
+              <span style={{ fontSize: 52, lineHeight: 1 }}>{page.icon}</span>
+            </div>
+          )}
+          <h1 style={{ fontSize: 40, fontWeight: 900, color: '#fff', textAlign: 'center', lineHeight: 1.25 }}>
+            {page.titre}
+          </h1>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)' }}>Répondez sur votre téléphone</p>
+        </div>
+        <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column' }}>
+          <OpenAnswersFeed sessionCode={sessionCode} pageId={page.id} revealed={revealed} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── TV Le montage — pages d'explication (blocs statiques) ───────────
+function TVMontageInfo({ page }) {
+  return (
+    <div style={{ background: '#03112a', minHeight: '100vh', display: 'flex', flexDirection: 'column', padding: '40px 64px', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
+        {page.icon && <span style={{ fontSize: 44 }}>{page.icon}</span>}
+        <h1 style={{ fontSize: 38, fontWeight: 900, color: '#fff', margin: 0 }}>{page.titre}</h1>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 900 }}>
+        {(page.blocks || []).map((b, i) => (
+          <div key={i} style={{
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(245,158,11,0.2)',
+            borderLeft: '4px solid #f59e0b', borderRadius: 16, padding: '20px 26px',
+            display: 'flex', alignItems: 'flex-start', gap: 18,
+          }}>
+            <span style={{ fontSize: 32, flexShrink: 0 }}>{b.icon}</span>
+            <div>
+              <div style={{ fontSize: 19, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{b.title}</div>
+              <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', lineHeight: 1.55 }}>{b.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {page.footer && (
+        <div style={{ marginTop: 24, maxWidth: 900, padding: '16px 24px', background: 'rgba(0,137,186,0.08)', border: '1px solid rgba(0,137,186,0.25)', borderRadius: 14, fontSize: 16, color: '#00abe9', fontWeight: 700, lineHeight: 1.5 }}>
+          {page.footer}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TVParcoursOffres({ parcoursRevealed }) {
   const revealed = parcoursRevealed || []
 
@@ -6426,6 +6511,8 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'lpt-sante-intro')        return <TVLptSanteIntro        page={page} sessionCode={sessionCode} />
   if (page.type === 'lpt-sante-explication') return <TVLptSanteExplication />
   if (page.type === 'lpt-sante-pec')         return <TVLptSantePec scenario={lptsPecScenario} />
+  if (page.type === 'montage-question')  return <TVMontageQuestion page={page} sessionCode={sessionCode} />
+  if (page.type === 'montage-info')      return <TVMontageInfo page={page} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />
