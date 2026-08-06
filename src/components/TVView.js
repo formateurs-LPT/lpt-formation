@@ -5348,7 +5348,7 @@ function TVMontageUpgrade({ sessionCode }) {
           <div style={{ fontSize: 13, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 2 }}>Traitement trouvé</div>
           <h1 style={{ fontSize: 40, fontWeight: 900, color: '#fff', margin: 0 }}>{t?.label}</h1>
           <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.75)', fontWeight: 600, lineHeight: 1.5, margin: 0 }}>
-            Ce client aura <span style={{ color: '#4ade80' }}>{t?.label}</span> en 10 minutes, promesse tenue !
+            Le client aura le traitement <span style={{ color: '#4ade80' }}>{t?.label}</span> en 10 minutes, promesse tenue !
           </p>
         </div>
       </div>

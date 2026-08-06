@@ -178,7 +178,7 @@ function MontageUpgradeFormateur({ orderedIdx, currentIdx, status, foundIdx, onP
         <div style={{ fontSize: 48 }}>✅</div>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: '#4ade80', margin: 0 }}>{t?.label}</h2>
         <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', maxWidth: 420 }}>
-          Ce client aura {t?.label} en 10 minutes, promesse tenue ! C&apos;est affiché sur le diffuseur.
+          Le client aura le traitement {t?.label} en 10 minutes, promesse tenue ! C&apos;est affiché sur le diffuseur.
         </p>
         <button onClick={onReset} style={{
           marginTop: 8, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
