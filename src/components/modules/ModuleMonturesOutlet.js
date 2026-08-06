@@ -20,7 +20,7 @@ const BUBBLE_COLORS = ['#7c3aed', '#00abe9', '#4ade80', '#f59e0b', '#f472b6', '#
 // ── Vue formateur : question ouverte + révélation sur le diffuseur ──
 function OutletQuestionFormateur({ page, revealing, toggleReveal, revealedMap }) {
   const [answers, setAnswers] = useState([])
-  const revealKey = `outlet_revealed__${page.id}`
+  const revealKey = `montage_revealed__${page.id}`
   const revealed = !!revealedMap[revealKey]
 
   useEffect(() => {
@@ -193,7 +193,7 @@ export default function ModuleMonturesOutlet({ pName, onBack, onTerminate }) {
   const resetShared = () => {
     const clear = {}
     for (const p of PAGES) {
-      if (p.type === 'montage-question') clear[`outlet_revealed__${p.id}`] = false
+      if (p.type === 'montage-question') clear[`montage_revealed__${p.id}`] = false
     }
     return setSharedState(clear)
   }

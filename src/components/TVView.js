@@ -5255,6 +5255,38 @@ function TVMontageInfo({ page }) {
 }
 
 // ── TV Montures Outlet — schéma animé Rodenstock → Centre logistique → Magasin ──
+function OutletLensesEnvelope() {
+  return (
+    <div style={{
+      width: 50, height: 38, borderRadius: 5,
+      background: 'linear-gradient(135deg, #f1f5f9, #cbd5e1)',
+      border: '1px solid rgba(255,255,255,0.4)',
+      position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+    }}>
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 0,
+        borderLeft: '25px solid transparent', borderRight: '25px solid transparent',
+        borderTop: '19px solid #94a3b8',
+      }} />
+      <span style={{ fontSize: 16, zIndex: 1 }}>👓</span>
+    </div>
+  )
+}
+
+function OutletLptBox() {
+  return (
+    <div style={{
+      width: 56, height: 42, borderRadius: 8,
+      background: '#fff', border: '1px solid rgba(0,0,0,0.08)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
+    }}>
+      <Image src="/assets/logo-lpt.png" alt="LPT" width={40} height={16} style={{ objectFit: 'contain' }} />
+    </div>
+  )
+}
+
 function TVOutletFlow({ variant, titre }) {
   const isOutlet = variant === 'outlet'
   const [phase, setPhase] = useState(0)
@@ -5263,24 +5295,38 @@ function TVOutletFlow({ variant, titre }) {
   useEffect(() => {
     setPhase(0)
     const T = [
-      setTimeout(() => setPhase(1), 800),
-      setTimeout(() => setPhase(2), 2200),
-      setTimeout(() => setPhase(3), 3400),
-      setTimeout(() => setPhase(4), 4800),
-      setTimeout(() => setLoopKey(k => k + 1), 7200),
+      setTimeout(() => setPhase(1), 1400),
+      setTimeout(() => setPhase(2), 3200),
+      setTimeout(() => setPhase(3), 5200),
+      setTimeout(() => setPhase(4), 7400),
+      setTimeout(() => setPhase(5), 9600),
+      setTimeout(() => setLoopKey(k => k + 1), 12800),
     ]
     return () => T.forEach(clearTimeout)
   }, [variant, loopKey])
 
-  const pkgLeft = phase <= 1 ? '9%' : phase <= 2 ? '50%' : '91%'
-  const pkgIcon = phase >= 2 && !isOutlet ? '👓' : '📦'
-  const pkgLabel = phase === 0 ? 'Verres commandés'
-    : phase === 1 ? 'Verres en transit'
-    : phase === 2 ? (isOutlet ? 'Verres seuls (pas de monture)' : 'Monture reçue, paire assemblée')
-    : phase === 3 ? (isOutlet ? 'Envoi des verres seuls' : 'Envoi de la paire complète')
-    : (isOutlet ? 'Verres livrés — monture déjà en boutique' : 'Paire complète livrée ✅')
-
+  const pkgLeft = phase <= 2 ? '50%' : phase <= 3 ? '50%' : '91%'
+  const startLeft = phase === 0 ? '9%' : pkgLeft
+  const showBox = !isOutlet && phase >= 3
   const accent = isOutlet ? '#f59e0b' : '#4ade80'
+
+  const labels = isOutlet ? [
+    'Rodenstock envoie les verres',
+    'Les verres sont en transit vers le centre logistique',
+    'Le centre logistique reçoit les verres — seuls',
+    "Il n'a plus la monture en stock ❌",
+    'Il nous envoie les verres seuls, sans monture',
+    'Nous recevons les verres — la monture est déjà chez nous 👓',
+  ] : [
+    'Rodenstock envoie les verres',
+    'Les verres sont en transit vers le centre logistique',
+    'Le centre logistique reçoit les verres — seuls',
+    'Il les monte sur la monture, déjà en stock chez eux',
+    'Il nous envoie la paire complète',
+    'Nous recevons la paire, prête à remettre ✅',
+  ]
+  const pkgLabel = labels[phase]
+
   const NODE = { textAlign: 'center', width: 150 }
 
   return (
@@ -5320,18 +5366,14 @@ function TVOutletFlow({ variant, titre }) {
           )}
         </div>
 
-        {/* Colis animé */}
+        {/* Colis animé — enveloppe (verres) ou boîte LPT blanche (paire complète) */}
         <div style={{
-          position: 'absolute', top: 46, left: pkgLeft, transform: 'translate(-50%, 0)',
-          transition: 'left 1.1s cubic-bezier(0.65,0,0.35,1)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+          position: 'absolute', top: 38, left: startLeft, transform: 'translate(-50%, 0)',
+          transition: 'left 1.5s cubic-bezier(0.65,0,0.35,1)',
         }}>
-          <div style={{
-            width: 44, height: 44, borderRadius: '50%',
-            background: `${accent}20`, border: `2.5px solid ${accent}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-            boxShadow: `0 0 24px ${accent}40`,
-          }}>{pkgIcon}</div>
+          <div key={showBox ? 'box' : 'env'} style={{ animation: 'cardPopIn .4s ease' }}>
+            {showBox ? <OutletLptBox /> : <OutletLensesEnvelope />}
+          </div>
         </div>
 
         {/* Label d'étape */}
