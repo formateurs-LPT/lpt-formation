@@ -26,7 +26,7 @@ function normalizeStr(s) {
     .replace(/[^a-z]/g, '')
 }
 
-function buildLptEmail(entree) {
+export function buildLptEmail(entree) {
   const prenom = (entree.prenom || '').trim()
   const nom    = (entree.nom    || '').trim()
 

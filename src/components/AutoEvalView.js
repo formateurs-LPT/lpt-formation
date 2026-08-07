@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { sbSelect, getSharedState, setSharedState } from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
 import { classifyMagasin } from '@/lib/formationCategories'
+import { PUBLIC_ORIGIN } from '@/lib/sessionCode'
+import { buildLptEmail } from './FicheShareModal'
 import AutoEvalReport from './AutoEvalReport'
 
 function getWeekDate() {
@@ -291,6 +293,7 @@ export default function AutoEvalView({ onBack }) {
   const [redoing,         setRedoing]         = useState(null) // nom ou 'all' en cours
   const [autoEvalNames,   setAutoEvalNames]   = useState([]) // formés individuellement lancés
   const [launching,       setLaunching]       = useState(null) // nom en cours de lancement
+  const [linkSent,        setLinkSent]        = useState(() => new Set()) // liens envoyés (session courante)
   const firstLoad = useRef(true)
 
   const load = useCallback(async () => {
@@ -353,6 +356,22 @@ export default function AutoEvalView({ onBack }) {
       }
       await setSharedState(patch)
     } finally { setLaunching(null) }
+  }
+
+  // Envoie un lien perso (asynchrone, hors session live) au formé qui n'a pas pu
+  // faire son auto-éval en direct — n'active PAS tv_screen/auto_eval_names, pour
+  // ne pas interrompre une session live en cours pour tout le monde.
+  const handleSendLink = (entree, name) => {
+    const email = buildLptEmail(entree)
+    const link = `${PUBLIC_ORIGIN}/auto-eval/?c=${encodeURIComponent(name)}`
+    const prenom = entree?.prenom || name.split(' ')[0]
+    const trainerName = (typeof window !== 'undefined' && localStorage.getItem('trainer_name')) || 'Ton formateur'
+    const subject = encodeURIComponent(`Ton auto-évaluation de formation — Lunettes Pour Tous`)
+    const body = encodeURIComponent(
+      `Bonjour ${prenom},\n\nTu n'as pas encore pu compléter ton auto-évaluation de fin de formation. Peux-tu prendre 5 minutes pour la remplir via ce lien ?\n\n➡ ${link}\n\nMerci et bonnes ventes à toi !\n\n${trainerName}\nFormateur — Lunettes Pour Tous`
+    )
+    window.location.href = `mailto:${email || ''}?subject=${subject}&body=${body}`
+    setLinkSent(prev => new Set([...prev, name]))
   }
 
   const catMeta = CATEGORIES.find(c => c.key === selectedCategory) || CATEGORIES[3]
@@ -610,23 +629,40 @@ export default function AutoEvalView({ onBack }) {
                                 </button>
                                 <span style={{ fontSize: 13, color: '#94a3b8' }}>{open ? '▲' : '▼'}</span>
                               </>
-                            ) : !launched ? (
-                              <button
-                                onClick={ev => { ev.stopPropagation(); handleLaunchSingle(name) }}
-                                disabled={isLaunching}
-                                title="Envoyer le questionnaire à ce formé"
-                                style={{
-                                  fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 10,
-                                  background: 'linear-gradient(135deg, #0070a0, #0089ba)',
-                                  border: 'none', color: '#fff',
-                                  cursor: isLaunching ? 'wait' : 'pointer',
-                                  fontFamily: 'inherit', lineHeight: 1.4,
-                                  boxShadow: '0 2px 8px rgba(0,137,186,0.3)',
-                                }}
-                              >
-                                {isLaunching ? '…' : '▶ Lancer'}
-                              </button>
-                            ) : null}
+                            ) : (
+                              <>
+                                {!launched && (
+                                  <button
+                                    onClick={ev => { ev.stopPropagation(); handleLaunchSingle(name) }}
+                                    disabled={isLaunching}
+                                    title="Envoyer le questionnaire à ce formé (en direct, sur son téléphone)"
+                                    style={{
+                                      fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 10,
+                                      background: 'linear-gradient(135deg, #0070a0, #0089ba)',
+                                      border: 'none', color: '#fff',
+                                      cursor: isLaunching ? 'wait' : 'pointer',
+                                      fontFamily: 'inherit', lineHeight: 1.4,
+                                      boxShadow: '0 2px 8px rgba(0,137,186,0.3)',
+                                    }}
+                                  >
+                                    {isLaunching ? '…' : '▶ Lancer'}
+                                  </button>
+                                )}
+                                <button
+                                  onClick={ev => { ev.stopPropagation(); handleSendLink(e, name) }}
+                                  title="Envoyer un lien par email pour compléter à distance (formé absent, sans session live)"
+                                  style={{
+                                    fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 10,
+                                    background: linkSent.has(name) ? 'rgba(34,197,94,0.12)' : 'rgba(0,137,186,0.08)',
+                                    border: `1px solid ${linkSent.has(name) ? 'rgba(34,197,94,0.35)' : 'rgba(0,137,186,0.3)'}`,
+                                    color: linkSent.has(name) ? '#16a34a' : '#0089ba',
+                                    cursor: 'pointer', fontFamily: 'inherit', lineHeight: 1.4,
+                                  }}
+                                >
+                                  {linkSent.has(name) ? '✓ Lien envoyé' : '✉️ Envoyer le lien'}
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
                         {open && done && (
