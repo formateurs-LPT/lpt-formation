@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { sbSelect, getSharedState, setSharedState } from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
-import { classifyMagasin } from '@/lib/formationCategories'
+import { entreeMatchesCategory } from '@/lib/formationCategories'
+import { isTrainerAccount } from '@/lib/participantNames'
 import { PUBLIC_ORIGIN } from '@/lib/sessionCode'
 import { buildLptEmail } from './FicheShareModal'
 import AutoEvalReport from './AutoEvalReport'
@@ -314,6 +315,9 @@ export default function AutoEvalView({ onBack }) {
       }
       const byCollab = {}
       for (const r of (reports || [])) {
+        // Comptes test formateur exclus — ce ne sont pas de vrais formés, leur note
+        // et leurs commentaires ne doivent pas fausser la moyenne du groupe.
+        if (isTrainerAccount(r.collaborateur)) continue
         // Garde uniquement le plus récent par formé (ordre updated_at.desc, premier = plus récent)
         if (!byCollab[r.collaborateur]) byCollab[r.collaborateur] = r.stats_snapshot
       }
@@ -379,14 +383,13 @@ export default function AutoEvalView({ onBack }) {
   // Reset l'item ouvert si on change de catégorie
   useEffect(() => { setExpanded(null) }, [selectedCategory])
 
-  // Correspondance catégorie UI → valeur classifyMagasin
-  const CAT_CLASSIFY = { presentiel: 'paris', visio: 'province', belgique: 'belgique' }
-
-  // Formés filtrés par catégorie sélectionnée
+  // Formés filtrés par catégorie sélectionnée — utilise le même registre de
+  // catégories que le reste de l'app (formation_category / toggle EntreesView /
+  // repli magasin), pour respecter une catégorie forcée manuellement par le
+  // formateur au lieu de ne se fier qu'à la zone du magasin.
   const filteredEntrees = useMemo(() => {
     if (selectedCategory === 'tous') return entrees
-    const want = CAT_CLASSIFY[selectedCategory]
-    return entrees.filter(e => classifyMagasin(e.magasin) === want)
+    return entrees.filter(e => entreeMatchesCategory(e, selectedCategory))
   }, [entrees, selectedCategory])
 
   // Noms des formés filtrés (pour filtrer les réponses)

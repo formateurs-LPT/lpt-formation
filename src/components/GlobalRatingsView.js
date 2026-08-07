@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { sbSelect } from '@/lib/supabase'
+import { isTrainerAccount } from '@/lib/participantNames'
 
 const RATING_LABELS = ['', 'Insuffisant', 'Passable', 'Bien', 'Très bien', 'Excellent !']
 const RATING_COLORS = { 5: '#16a34a', 4: '#22c55e', 3: '#d97706', 2: '#f97316', 1: '#dc2626' }
@@ -24,7 +25,7 @@ export default function GlobalRatingsView({ onBack }) {
     sbSelect('formation_reports', 'trainer_name=eq.__auto_eval__')
       .then(data => {
         const list = (data || [])
-          .filter(r => r.stats_snapshot?.auto_eval?.rating)
+          .filter(r => r.stats_snapshot?.auto_eval?.rating && !isTrainerAccount(r.collaborateur))
           .map(r => ({
             name:      r.collaborateur,
             rating:    r.stats_snapshot.auto_eval.rating,

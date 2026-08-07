@@ -67,10 +67,11 @@ export default function FicheShareModal({ ficheUrl, ficheLabel, allowedGroups, p
     c => !allowedGroups || allowedGroups.includes(c.slug)
   )
 
-  const [entrees,      setEntrees]      = useState([])
-  const [loading,      setLoading]      = useState(true)
-  const [selectedSlug, setSelectedSlug] = useState(categories[0]?.slug || 'presentiel')
-  const [sent,         setSent]         = useState(false)
+  const [entrees,       setEntrees]       = useState([])
+  const [loading,       setLoading]       = useState(true)
+  const [selectedSlug,  setSelectedSlug]  = useState(categories[0]?.slug || 'presentiel')
+  const [sent,          setSent]          = useState(false)
+  const [selectedEmails, setSelectedEmails] = useState(() => new Set())
 
   useEffect(() => {
     getWeeklySharedState()
@@ -87,12 +88,37 @@ export default function FicheShareModal({ ficheUrl, ficheLabel, allowedGroups, p
     .map(e => ({ name: entreeDisplayName(e), email: buildLptEmail(e) }))
     .filter(r => r.email)
 
+  // Sélection par défaut : tout le monde — le formateur peut ensuite décocher.
+  // Se réinitialise uniquement quand la composition réelle de la liste change
+  // (chargement des entrées, changement de groupe), pas à chaque re-render.
+  const recipientsKey = recipients.map(r => r.email).join(',')
+  useEffect(() => {
+    setSelectedEmails(new Set(recipients.map(r => r.email)))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recipientsKey])
+
+  const toggleRecipient = (email) => {
+    setSelectedEmails(prev => {
+      const next = new Set(prev)
+      if (next.has(email)) next.delete(email)
+      else next.add(email)
+      return next
+    })
+  }
+
+  const allSelected = recipients.length > 0 && recipients.every(r => selectedEmails.has(r.email))
+  const toggleAll = () => {
+    setSelectedEmails(allSelected ? new Set() : new Set(recipients.map(r => r.email)))
+  }
+
+  const chosenRecipients = recipients.filter(r => selectedEmails.has(r.email))
+
   const selectedMeta = byPoste ? null : categories.find(c => c.slug === selectedSlug)
   const color = byPoste ? GREEN : (GROUP_COLORS[selectedSlug] || BLUE_L)
 
   const handleSend = () => {
-    if (!recipients.length) return
-    const bcc     = recipients.map(r => r.email).join(',')
+    if (!chosenRecipients.length) return
+    const bcc     = chosenRecipients.map(r => r.email).join(',')
     const subject = encodeURIComponent(`Ta fiche récapitulative de formation — Lunettes Pour Tous`)
     const body    = encodeURIComponent(
       emailBody || `Bonjour,\n\nAprès ces trois jours de formation, il te reste encore plein de choses à découvrir en magasin. Ces trois jours étaient riches en informations, et pour t’aider, voici une fiche récapitulative de la formation. Tu y trouveras l’essentiel des thèmes abordés durant ces trois jours.\n\n➡ ${ficheUrl}\n\nSi tu as la moindre question, n’hésite pas à me contacter sur ce mail.\n\nJe te souhaite une excellente intégration et peut-être à bientôt en magasin !\n\nBonnes ventes à toi !`
@@ -183,8 +209,21 @@ export default function FicheShareModal({ ficheUrl, ficheLabel, allowedGroups, p
 
         {/* Recipient list */}
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: SUB, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
-            Destinataires — {byPoste ? `🔧 ${ficheLabel || 'SAV'}` : `${selectedMeta?.emoji} ${selectedMeta?.label}`}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: SUB, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              Destinataires — {byPoste ? `🔧 ${ficheLabel || 'SAV'}` : `${selectedMeta?.emoji} ${selectedMeta?.label}`}
+            </div>
+            {recipients.length > 0 && (
+              <button
+                onClick={toggleAll}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                  fontSize: 11, fontWeight: 700, color: BLUE_L, padding: 0,
+                }}
+              >
+                {allSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
+              </button>
+            )}
           </div>
           {loading ? (
             <div style={{ color: SUB, fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
@@ -197,20 +236,38 @@ export default function FicheShareModal({ ficheUrl, ficheLabel, allowedGroups, p
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {recipients.map((r, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: 10, padding: '8px 12px',
-                }}>
-                  <div style={{ fontSize: 13, color: TEXT, fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {r.name}
+              {recipients.map((r, i) => {
+                const checked = selectedEmails.has(r.email)
+                return (
+                  <div
+                    key={i}
+                    onClick={() => toggleRecipient(r.email)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                      background: checked ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.01)',
+                      border: `1px solid ${checked ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.04)'}`,
+                      borderRadius: 10, padding: '8px 12px', cursor: 'pointer',
+                      opacity: checked ? 1 : 0.45, transition: 'opacity .15s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleRecipient(r.email)}
+                        onClick={e => e.stopPropagation()}
+                        style={{ flexShrink: 0, accentColor: color, width: 15, height: 15, cursor: 'pointer' }}
+                      />
+                      <div style={{ fontSize: 13, color: TEXT, fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {r.name}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 11, color, fontFamily: 'monospace', flexShrink: 0, opacity: 0.85 }}>
+                      {r.email}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 11, color, fontFamily: 'monospace', flexShrink: 0, opacity: 0.85 }}>
-                    {r.email}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
@@ -238,23 +295,23 @@ export default function FicheShareModal({ ficheUrl, ficheLabel, allowedGroups, p
           >Annuler</button>
           <button
             onClick={handleSend}
-            disabled={recipients.length === 0 || loading}
+            disabled={chosenRecipients.length === 0 || loading}
             style={{
               flex: 2, padding: '12px 0', borderRadius: 12,
-              cursor: recipients.length === 0 ? 'default' : 'pointer', fontFamily: 'inherit',
+              cursor: chosenRecipients.length === 0 ? 'default' : 'pointer', fontFamily: 'inherit',
               background: sent
                 ? `${GREEN}20`
-                : (recipients.length === 0 || loading)
+                : (chosenRecipients.length === 0 || loading)
                   ? 'rgba(255,255,255,0.05)'
                   : `linear-gradient(135deg, ${color}cc, ${color})`,
               border: sent ? `1px solid ${GREEN}50` : 'none',
-              color: sent ? GREEN : (recipients.length === 0 || loading) ? 'rgba(255,255,255,0.25)' : '#fff',
+              color: sent ? GREEN : (chosenRecipients.length === 0 || loading) ? 'rgba(255,255,255,0.25)' : '#fff',
               fontWeight: 800, fontSize: 14, transition: 'all .2s',
             }}
           >
             {sent
-              ? `✓ Client mail ouvert (${recipients.length} destinataires)`
-              : `📧 Envoyer à ${recipients.length} collaborateur${recipients.length !== 1 ? 's' : ''}`
+              ? `✓ Client mail ouvert (${chosenRecipients.length} destinataires)`
+              : `📧 Envoyer à ${chosenRecipients.length} collaborateur${chosenRecipients.length !== 1 ? 's' : ''}`
             }
           </button>
         </div>

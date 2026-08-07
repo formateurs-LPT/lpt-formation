@@ -24,6 +24,8 @@ export const TEST_ACCOUNT_KEYS = new Set([
   'dupuy kevin',
   'duchemin thomas',
   'huchet nadege',
+  'chanu valentine',
+  'dimanche jonathan',
 ])
 
 export function isTrainerAccount(name) {

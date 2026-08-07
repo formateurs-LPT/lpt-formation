@@ -13,6 +13,7 @@ import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
 import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { isDynamicRoomCode } from '@/lib/sessionCode'
+import { isTrainerAccount } from '@/lib/participantNames'
 import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees, addIdee } from '@/components/IdeesButton'
 import { MODULE_DATA } from '@/lib/modulesData'
 import SonnettePanel from './SonnettePanel'
@@ -1406,6 +1407,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
       try {
         const data = await sbSelect('formation_reports', 'trainer_name=eq.__auto_eval__')
         const ratings = (data || [])
+          .filter(r => !isTrainerAccount(r.collaborateur))
           .map(r => r.stats_snapshot?.auto_eval?.rating)
           .filter(Boolean)
         if (ratings.length) {
