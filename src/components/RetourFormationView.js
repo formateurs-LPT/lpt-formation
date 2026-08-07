@@ -66,6 +66,33 @@ function getWeekDate() {
   return d.toISOString().slice(0, 10)
 }
 
+/**
+ * Résultats quiz d'un formé — jamais filtrés par une salle "devinée" (ni la salle
+ * active du formateur, ni une semaine calendaire supposée : les deux ont fait
+ * disparaître à tort des points bien réels — cf. incidents Maëlle puis les
+ * nouveaux visio). On retrouve d'abord les VRAIES salles où ce formé a joué
+ * (table participants, jointe sur son nom), et on interroge uniquement celles-ci.
+ * S'il n'a aucune ligne participants (import RH sans connexion, edge case), on
+ * retombe sur une recherche par nom seul plutôt que de renvoyer 0 par excès de prudence.
+ */
+async function fetchModuleAndQuizRows(name) {
+  const participantRows = await sbSelect(
+    'participants',
+    `name=eq.${encodeURIComponent(name)}`
+  ).catch(() => [])
+  const codes = [...new Set((participantRows || []).map(p => p.session_code).filter(Boolean))]
+
+  const scope = codes.length
+    ? `session_code=in.(${codes.map(c => encodeURIComponent(c)).join(',')})`
+    : null
+
+  const [moduleRows, answerRows] = await Promise.all([
+    sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(name)}${scope ? `&${scope}` : ''}`),
+    sbSelect('quiz_answers',   `collaborateur=eq.${encodeURIComponent(name)}${scope ? `&${scope}` : ''}`),
+  ])
+  return { moduleRows: moduleRows || [], answerRows: answerRows || [] }
+}
+
 // Même formule que CompteRenduManager.js (le compte rendu réellement envoyé au
 // manager) — la barre affichée pendant la saisie doit annoncer le même taux.
 function computeRate(assessments) {
@@ -157,27 +184,12 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [reportRow, autoEvalRow] = await Promise.all([
+      const [{ moduleRows, answerRows }, reportRow, autoEvalRow] = await Promise.all([
+        fetchModuleAndQuizRows(name),
         // Charge le rapport le plus récent pour ce formé+formateur, quelle que soit la semaine
         sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc&limit=1`),
         // Auto-évaluation la plus récente de ce formé (indépendante du formateur)
         sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=eq.__auto_eval__&order=updated_at.desc&limit=1`),
-      ])
-      // Résultats quiz — filtrés par nom + fenêtre de LA SEMAINE RÉELLE du formé
-      // (lundi 00:00 → lundi suivant), jamais par session_code actif : la salle du
-      // formateur change au fil des semaines, donc filtrer sur getActiveSessionCode()
-      // ici renvoyait 0 résultat dès qu'une nouvelle salle avait été ouverte depuis
-      // la formation de ce formé, même si ses réponses existaient bien en base.
-      const realWeekDate = reportRow?.[0]?.week_date || weekDate
-      const start = new Date(`${realWeekDate}T00:00:00.000Z`)
-      const end = new Date(start)
-      end.setUTCDate(end.getUTCDate() + 7)
-      const startIso = start.toISOString()
-      const endIso   = end.toISOString()
-      const [moduleRows, answerRows] = await Promise.all([
-        sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(name)}&created_at=gte.${startIso}&created_at=lt.${endIso}`),
-        // Fallback : quiz_answers si module_results absent (formé parti avant l'écran de résultats)
-        sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(name)}&created_at=gte.${startIso}&created_at=lt.${endIso}`),
       ])
       const byModule = {}
       for (const r of moduleRows || []) {
@@ -1004,31 +1016,13 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
       setWeekDateMap(wdMap)
       setReportSnapMap(reportMap)
 
-      // Résultats quiz — filtrés par nom + fenêtre de LA SEMAINE RÉELLE du formé
-      // (lundi 00:00 → lundi suivant), jamais par session_code actif : la salle du
-      // formateur change au fil des semaines (nouvelle salle, nouvel active room),
-      // donc filtrer sur getActiveSessionCode() ici renvoyait 0 résultat — et donc
-      // 0 point — dès qu'une nouvelle salle avait été ouverte depuis la formation
-      // de ce formé, même si ses réponses existaient bien en base.
-      const weekRangeOf = (wd) => {
-        const start = new Date(`${wd || weekDate}T00:00:00.000Z`)
-        const end = new Date(start)
-        end.setUTCDate(end.getUTCDate() + 7)
-        return { start: start.toISOString(), end: end.toISOString() }
-      }
-      const rawArrays = await Promise.all([
-        ...names.map(n => {
-          const { start, end } = weekRangeOf(wdMap[n])
-          return sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(n)}&created_at=gte.${start}&created_at=lt.${end}`)
-        }),
-        // Fallback : quiz_answers si module_results absent (formé parti avant l'écran de résultats)
-        ...names.map(n => {
-          const { start, end } = weekRangeOf(wdMap[n])
-          return sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(n)}&created_at=gte.${start}&created_at=lt.${end}`)
-        }),
-      ])
-      const quizArrays  = rawArrays.slice(0, names.length)
-      const answerArrays = rawArrays.slice(names.length)
+      // Résultats quiz — un fetch par formé, résolu sur SES vraies salles jouées
+      // (voir fetchModuleAndQuizRows) plutôt que sur la salle active du formateur
+      // ou une semaine calendaire devinée — les deux ont fait disparaître à tort
+      // des points bien réels.
+      const perName = await Promise.all(names.map(n => fetchModuleAndQuizRows(n)))
+      const quizArrays   = perName.map(p => p.moduleRows)
+      const answerArrays = perName.map(p => p.answerRows)
 
       // Construit byModule pour un formé en combinant module_results + quiz_answers
       const buildByModule = (modRows, ansRows) => {
