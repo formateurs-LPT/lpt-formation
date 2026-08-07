@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { sbSelect, sbUpsert, getSharedState, getActiveSessionCode } from '@/lib/supabase'
+import { sbSelect, sbUpsert, getSharedState } from '@/lib/supabase'
 import { getLevelInfo } from '@/lib/scoring'
 import { classifyMagasin } from '@/lib/formationCategories'
 import { MODULE_DATA } from '@/lib/modulesData'
@@ -157,15 +157,27 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const sessionCode = getActiveSessionCode()
-      const [moduleRows, reportRow, answerRows, autoEvalRow] = await Promise.all([
-        sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(name)}&session_code=eq.${encodeURIComponent(sessionCode)}`),
+      const [reportRow, autoEvalRow] = await Promise.all([
         // Charge le rapport le plus récent pour ce formé+formateur, quelle que soit la semaine
         sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc&limit=1`),
-        // Fallback : quiz_answers si module_results absent (formé parti avant l'écran de résultats)
-        sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(name)}&session_code=eq.${encodeURIComponent(sessionCode)}`),
         // Auto-évaluation la plus récente de ce formé (indépendante du formateur)
         sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=eq.__auto_eval__&order=updated_at.desc&limit=1`),
+      ])
+      // Résultats quiz — filtrés par nom + fenêtre de LA SEMAINE RÉELLE du formé
+      // (lundi 00:00 → lundi suivant), jamais par session_code actif : la salle du
+      // formateur change au fil des semaines, donc filtrer sur getActiveSessionCode()
+      // ici renvoyait 0 résultat dès qu'une nouvelle salle avait été ouverte depuis
+      // la formation de ce formé, même si ses réponses existaient bien en base.
+      const realWeekDate = reportRow?.[0]?.week_date || weekDate
+      const start = new Date(`${realWeekDate}T00:00:00.000Z`)
+      const end = new Date(start)
+      end.setUTCDate(end.getUTCDate() + 7)
+      const startIso = start.toISOString()
+      const endIso   = end.toISOString()
+      const [moduleRows, answerRows] = await Promise.all([
+        sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(name)}&created_at=gte.${startIso}&created_at=lt.${endIso}`),
+        // Fallback : quiz_answers si module_results absent (formé parti avant l'écran de résultats)
+        sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(name)}&created_at=gte.${startIso}&created_at=lt.${endIso}`),
       ])
       const byModule = {}
       for (const r of moduleRows || []) {
@@ -974,16 +986,8 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
     const names = filtered.map(e => e.fullName || `${e.nom} ${e.prenom}`.trim())
 
     const computeRanks = async () => {
-      const sessionCode = getActiveSessionCode()
-      const [reportsRows, ...rawArrays] = await Promise.all([
-        // Charge tous les rapports pour ce formateur, triés du plus récent au plus ancien
-        sbSelect('formation_reports', `trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc`),
-        ...names.map(n => sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(n)}&session_code=eq.${encodeURIComponent(sessionCode)}`)),
-        // Fallback : quiz_answers si module_results absent (formé parti avant l'écran de résultats)
-        ...names.map(n => sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(n)}&session_code=eq.${encodeURIComponent(sessionCode)}`)),
-      ])
-      const quizArrays  = rawArrays.slice(0, names.length)
-      const answerArrays = rawArrays.slice(names.length)
+      // Charge tous les rapports pour ce formateur, triés du plus récent au plus ancien
+      const reportsRows = await sbSelect('formation_reports', `trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc`)
 
       // Garde uniquement le rapport le plus récent par formé (premier rencontré = plus récent)
       const reportMap = {}
@@ -999,6 +1003,32 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
       setMailSentMap(sentMap)
       setWeekDateMap(wdMap)
       setReportSnapMap(reportMap)
+
+      // Résultats quiz — filtrés par nom + fenêtre de LA SEMAINE RÉELLE du formé
+      // (lundi 00:00 → lundi suivant), jamais par session_code actif : la salle du
+      // formateur change au fil des semaines (nouvelle salle, nouvel active room),
+      // donc filtrer sur getActiveSessionCode() ici renvoyait 0 résultat — et donc
+      // 0 point — dès qu'une nouvelle salle avait été ouverte depuis la formation
+      // de ce formé, même si ses réponses existaient bien en base.
+      const weekRangeOf = (wd) => {
+        const start = new Date(`${wd || weekDate}T00:00:00.000Z`)
+        const end = new Date(start)
+        end.setUTCDate(end.getUTCDate() + 7)
+        return { start: start.toISOString(), end: end.toISOString() }
+      }
+      const rawArrays = await Promise.all([
+        ...names.map(n => {
+          const { start, end } = weekRangeOf(wdMap[n])
+          return sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(n)}&created_at=gte.${start}&created_at=lt.${end}`)
+        }),
+        // Fallback : quiz_answers si module_results absent (formé parti avant l'écran de résultats)
+        ...names.map(n => {
+          const { start, end } = weekRangeOf(wdMap[n])
+          return sbSelect('quiz_answers', `collaborateur=eq.${encodeURIComponent(n)}&created_at=gte.${start}&created_at=lt.${end}`)
+        }),
+      ])
+      const quizArrays  = rawArrays.slice(0, names.length)
+      const answerArrays = rawArrays.slice(names.length)
 
       // Construit byModule pour un formé en combinant module_results + quiz_answers
       const buildByModule = (modRows, ansRows) => {
