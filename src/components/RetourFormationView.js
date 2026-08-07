@@ -72,28 +72,35 @@ function getWeekDate() {
  * dans session_history.quiz_results (JSONB) PUIS supprimées des tables live
  * (participants, quiz_answers, module_results…). Sans cet index, un formé dont
  * la salle a été terminée retombe à 0 point alors que ses résultats existent
- * bel et bien — juste déplacés dans l'archive. C'est la cause des faux "0
- * points" répétés (Maëlle, puis les nouveaux visio) : les deux tentatives
- * précédentes ne cherchaient que dans les tables live.
+ * bel et bien — juste déplacés dans l'archive.
+ * Trié du plus récent au plus ancien et on ne garde QUE la salle la plus
+ * récente par personne (pas un cumul de tout l'historique) : sinon quelqu'un
+ * passé par plusieurs salles archivées au fil du temps voit ses points de
+ * plusieurs semaines s'additionner et grimpe artificiellement devant les
+ * autres — c'est ce qui a fait chuter Nadège (encore en données live, donc
+ * un seul total réel) dans le classement.
  * Un seul fetch, partagé entre tous les formés (voir appelants).
  */
 async function fetchArchiveIndex(trainerName) {
   const rows = await sbSelect(
     'session_history',
-    `trainer_name=eq.${encodeURIComponent(trainerName)}`
+    `trainer_name=eq.${encodeURIComponent(trainerName)}&order=session_date.desc`
   ).catch(() => [])
   const moduleByName = {}
   const answerByName = {}
+  const seen = new Set() // une salle plus récente a déjà fourni les points de cette personne
   for (const row of rows || []) {
     const qr = row.quiz_results
     if (!qr || typeof qr !== 'object') continue
-    for (const m of (qr.module_results || [])) {
-      if (!m.collaborateur) continue
-      ;(moduleByName[m.collaborateur] ||= []).push(m)
-    }
-    for (const a of (qr.answers || [])) {
-      if (!a.collaborateur) continue
-      ;(answerByName[a.collaborateur] ||= []).push(a)
+    const namesInRoom = new Set([
+      ...(qr.module_results || []).map(m => m.collaborateur).filter(Boolean),
+      ...(qr.answers || []).map(a => a.collaborateur).filter(Boolean),
+    ])
+    for (const n of namesInRoom) {
+      if (seen.has(n)) continue
+      seen.add(n)
+      moduleByName[n] = (qr.module_results || []).filter(m => m.collaborateur === n)
+      answerByName[n] = (qr.answers || []).filter(a => a.collaborateur === n)
     }
   }
   return { moduleByName, answerByName }
@@ -107,8 +114,9 @@ async function fetchArchiveIndex(trainerName) {
  * (table participants, jointe sur son nom), et on interroge uniquement celles-ci.
  * S'il n'a aucune ligne participants (import RH sans connexion, edge case), on
  * retombe sur une recherche par nom seul plutôt que de renvoyer 0 par excès de prudence.
- * On fusionne aussi ce qui a été archivé si la salle a depuis été terminée
- * (voir fetchArchiveIndex) — sinon les points d'une salle clôturée disparaissent.
+ * Si aucune donnée live n'existe (salle déjà terminée), on retombe sur sa
+ * salle archivée la plus récente (voir fetchArchiveIndex) — jamais un cumul
+ * live + archive, sinon on mélangerait deux semaines différentes.
  */
 async function fetchModuleAndQuizRows(name, archiveIndexPromise) {
   const participantRows = await sbSelect(
@@ -126,11 +134,13 @@ async function fetchModuleAndQuizRows(name, archiveIndexPromise) {
     sbSelect('quiz_answers',   `collaborateur=eq.${encodeURIComponent(name)}${scope ? `&${scope}` : ''}`),
     archiveIndexPromise,
   ])
-  const archivedModuleRows = archiveIndex?.moduleByName?.[name] || []
-  const archivedAnswerRows = archiveIndex?.answerByName?.[name] || []
+
+  const hasLiveData = (moduleRows?.length || 0) > 0 || (answerRows?.length || 0) > 0
+  if (hasLiveData) return { moduleRows: moduleRows || [], answerRows: answerRows || [] }
+
   return {
-    moduleRows: [...(moduleRows || []), ...archivedModuleRows],
-    answerRows: [...(answerRows || []), ...archivedAnswerRows],
+    moduleRows: archiveIndex?.moduleByName?.[name] || [],
+    answerRows: archiveIndex?.answerByName?.[name] || [],
   }
 }
 

@@ -160,6 +160,9 @@ export const MANAGERS = {
   'toulon avenue 83': [
     { name: 'Mathias DARMON', email: 'mdarmon@lunettespourtous.com' },
   ],
+  'avenue 83': [
+    { name: 'Mathias DARMON', email: 'mdarmon@lunettespourtous.com' },
+  ],
   'la valette': [
     { name: 'Mathias DARMON', email: 'mdarmon@lunettespourtous.com' },
   ],
@@ -178,13 +181,13 @@ export const MANAGERS = {
     { name: 'Maxime BOUSQUET', email: 'mbousquet@lunettespourtous.com' },
   ],
   'toulouse': [
-    { name: 'Marie-Julie CICUTO', email: 'mcicuto@lunettespourtous.com' },
+    { name: 'Marie-Julie CICUTO', email: 'mjcicuto@lunettespourtous.com' },
   ],
   'toulouse capitole': [
-    { name: 'Marie-Julie CICUTO', email: 'mcicuto@lunettespourtous.com' },
+    { name: 'Marie-Julie CICUTO', email: 'mjcicuto@lunettespourtous.com' },
   ],
   'capitole': [
-    { name: 'Marie-Julie CICUTO', email: 'mcicuto@lunettespourtous.com' },
+    { name: 'Marie-Julie CICUTO', email: 'mjcicuto@lunettespourtous.com' },
   ],
 
   // ── Belgique ──────────────────────────────────────────────────────
