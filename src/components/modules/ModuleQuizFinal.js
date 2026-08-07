@@ -499,7 +499,7 @@ function GroupResultsView({ onTerminate }) {
             fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', gap: 8,
           }}>
-            📊 Afficher les résultats groupe
+            📊 Afficher les résultats du groupe
           </button>
         )}
         {phase === 'recap' && <div />}

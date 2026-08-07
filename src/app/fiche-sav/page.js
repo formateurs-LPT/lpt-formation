@@ -7,6 +7,7 @@ const BLUE_L  = '#00abe9'
 const GOLD    = '#f59e0b'
 const GREEN   = '#22c55e'
 const PURPLE  = '#a78bfa'
+const VIOLET  = '#7c3aed'
 const RED     = '#f87171'
 const BG      = '#03112a'
 const BG2     = '#0d1f3c'
@@ -138,7 +139,7 @@ export default function FicheSAV() {
           ficheUrl={ficheUrl}
           ficheLabel="SAV"
           posteFilter={['Monteur Optique SAV']}
-          emailBody={`Bonjour,\n\nAprès cette journée dédiée au SAV, voici une fiche récapitulative des retraits, ajustages et RAZ. Tu y trouveras l’essentiel des points vus ensemble.\n\n➡ ${ficheUrl}\n\nSi tu as la moindre question, n’hésite pas à me contacter sur ce mail.\n\nBonnes ventes à toi !`}
+          emailBody={`Bonjour,\n\nAprès cette journée dédiée au SAV, voici une fiche récapitulative des retraits, ajustages, RAZ, du montage et des montures outlet. Tu y trouveras l’essentiel des points vus ensemble.\n\n➡ ${ficheUrl}\n\nSi tu as la moindre question, n’hésite pas à me contacter sur ce mail.\n\nBonnes ventes à toi !`}
           onClose={() => setShowShare(false)}
         />
       )}
@@ -170,13 +171,15 @@ export default function FicheSAV() {
               Fiche SAV — Journée 4
             </h1>
             <p style={{ fontSize: 13, color: TEXT_SUB, maxWidth: 480, lineHeight: 1.6 }}>
-              Retraits · Ajustages · RAZ — applicable en France et en Belgique
+              Retraits · Ajustages · RAZ · Montage · Montures Outlet — applicable en France et en Belgique
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
               {[
                 { label: 'Retraits', color: BLUE_L },
                 { label: 'Ajustages', color: PURPLE },
                 { label: 'RAZ · Recommandes', color: RED },
+                { label: 'Le Montage', color: GOLD },
+                { label: 'Montures Outlet', color: VIOLET },
               ].map(({ label, color }) => (
                 <span key={label} style={{ fontSize: 10, fontWeight: 700, color, background: `${color}18`, border: `1px solid ${color}50`, borderRadius: 20, padding: '4px 12px', textTransform: 'uppercase', letterSpacing: 1 }}>
                   {label}
@@ -312,7 +315,7 @@ export default function FicheSAV() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 18 }}>
               {[
                 { icon: '💆', titre: 'Confort quotidien', desc: 'Une paire mal réglée finit au placard — le client ne revient pas', color: PURPLE },
-                { icon: '👁️', titre: 'Gêne visuelle', desc: 'Un mauvais réglage peut créer une gêne vue — un ajustage la corrige sans RAZ', color: BLUE_L },
+                { icon: '👁️', titre: 'Gêne visuelle', desc: 'Un mauvais réglage peut créer une gêne visuelle — un ajustage la corrige sans RAZ', color: BLUE_L },
                 { icon: '💰', titre: 'Économique', desc: 'Évite une refabrication coûteuse pour LPT et une attente pour le client', color: GREEN },
               ].map(({ icon, titre, desc, color }) => (
                 <div key={titre} className="print-card" style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: CARD, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${color}`, borderRadius: 10, padding: '12px 14px' }}>
@@ -393,12 +396,12 @@ export default function FicheSAV() {
                 {
                   num: 1, color: RED,
                   titre: 'Saisie de correction + vérif fronto',
-                  points: ['Comparer l\'ordonnance avec le back-end (attention à la transposition)', 'Vérifier les verres au frontofocométre — sphère, cylindre, axe', 'Si différent → problème trouvé. Si identique → étape suivante'],
+                  points: ['Comparer l\'ordonnance avec le back-end (attention à la transposition)', 'Vérifier les verres au frontofocomètre — sphère, cylindre, axe', 'Si différent → problème trouvé. Si identique → étape suivante'],
                 },
                 {
                   num: 2, color: GOLD,
                   titre: 'PDM — Prises de mesures',
-                  points: ['Unifocaux : centre optique au frontofocométre face à la pupille', 'Progressifs : gravures → marqueur → ditest → la croix = vision de loin', 'Si centrage incorrect → tenter l\'ajustement avant de lancer la RAZ'],
+                  points: ['Unifocaux : centre optique au frontofocomètre face à la pupille', 'Progressifs : gravures → marqueur → ditest → la croix = vision de loin', 'Si centrage incorrect → tenter l\'ajustement avant de lancer la RAZ'],
                 },
                 {
                   num: 3, color: PURPLE,
@@ -475,6 +478,159 @@ export default function FicheSAV() {
               <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, marginBottom: 4 }}>📝 Structure du commentaire</div>
               <div style={{ fontSize: 11, color: TEXT_SUB, lineHeight: 1.6 }}>
                 <span style={{ color: TEXT }}>1. Ce qu'on recommande</span> (ex : "RAZ verres") · <span style={{ color: TEXT }}>2. Pourquoi</span> (ex : "Erreur saisie correction") · <span style={{ color: TEXT }}>3. Ce qu'on a vérifié</span> (ex : "PDM ok, correction validée en lunettes d'essai") · <strong style={{ color: GOLD }}>initiales</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* ══════════════════════════════════════════════════════
+              SECTION 4 — LE MONTAGE
+          ══════════════════════════════════════════════════════ */}
+          <BandDivider label="Le Montage" color={GOLD} />
+          <div className="print-section" style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 18, padding: '24px 26px' }}>
+            <SectionTitle accent={GOLD}>4 · Le Montage — Des lunettes en 10 minutes</SectionTitle>
+
+            <Card accent={GOLD} style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 13, color: TEXT_SUB, lineHeight: 1.65 }}>
+                <strong style={{ color: TEXT }}>Des lunettes en 10 minutes, c'est notre concept.</strong> Vous avez les outils, le stock et les solutions
+                nécessaires pour tenir cette promesse. En dehors de deux cas précis, chaque paire doit impérativement être fabriquée en 10 minutes.
+              </div>
+            </Card>
+
+            {/* Les deux vraies raisons */}
+            <Label color={GOLD}>Les deux seules vraies raisons de dépasser 10 minutes</Label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 18 }}>
+              <Card accent={GOLD}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <span style={{ fontSize: 20 }}>🔷</span>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: TEXT }}>Des verres progressifs</div>
+                </div>
+                <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.5 }}>Leur fabrication demande un temps incompressible.</div>
+              </Card>
+              <Card accent={GOLD}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <span style={{ fontSize: 20 }}>📦</span>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: TEXT }}>Des verres unifocaux hors stock</div>
+                </div>
+                <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.5 }}>La correction du client dépasse la limite de nos stocks.</div>
+              </Card>
+            </div>
+
+            {/* Les moyens */}
+            <Label color={GOLD}>Les moyens à votre disposition</Label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 18 }}>
+              {[
+                { icon: '📚', titre: 'Un stock conséquent', desc: 'Toutes corrections et tous traitements compris.' },
+                { icon: '⬆️', titre: 'L\'upgrade', desc: 'Offrir le traitement supérieur si le verre commandé n\'est pas en stock.' },
+              ].map(({ icon, titre, desc }) => (
+                <div key={titre} className="print-card" style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: CARD, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${GOLD}`, borderRadius: 10, padding: '12px 14px' }}>
+                  <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 2 }}>{titre}</div>
+                    <div style={{ fontSize: 11, color: TEXT_SUB, lineHeight: 1.45 }}>{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Upgrade détaillé */}
+            <Card accent={GOLD} style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: GOLD, marginBottom: 8 }}>⬆️ L'upgrade, qu'est-ce que c'est ?</div>
+              <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.6, marginBottom: 10 }}>
+                Quand un client a commandé des verres que vous n'avez pas en stock, offrez-lui le traitement au-dessus. S'il n'est pas non plus en stock, offrez celui encore au-dessus.
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                {['Basic', 'Premium', 'Digital Protect Pro', 'Digital Protect Pro 1.67 (aminci)', 'Suprême Digital Protect Pro'].map((label, i, arr) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Tag color={GOLD}>{label}</Tag>
+                    {i < arr.length - 1 && <span style={{ color: TEXT_SUB, fontSize: 12 }}>→</span>}
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 11, color: TEXT_SUB, fontStyle: 'italic', lineHeight: 1.55 }}>
+                Exemple : commande de verres Basic indisponibles → offrez le Digital Protect Pro. La promesse est tenue, le client est ravi de l'upgrade.
+              </div>
+            </Card>
+          </div>
+
+          {/* ══════════════════════════════════════════════════════
+              SECTION 5 — MONTURES OUTLET
+          ══════════════════════════════════════════════════════ */}
+          <BandDivider label="Montures Outlet" color={VIOLET} />
+          <div className="print-section" style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 18, padding: '24px 26px' }}>
+            <SectionTitle accent={VIOLET}>5 · Montures Outlet — Anticiper les ruptures de stock</SectionTitle>
+
+            {/* Fonctionnement normal vs outlet */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 18 }}>
+              <Card accent={GREEN}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <span style={{ fontSize: 20 }}>✅</span>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: TEXT }}>Fonctionnement normal</div>
+                </div>
+                <Bullet color={GREEN} items={[
+                  'Le centre logistique a la monture en stock',
+                  'Il reçoit les verres et monte la paire',
+                  'Il nous envoie la paire complète, prête à remettre',
+                ]} />
+              </Card>
+              <Card accent={VIOLET}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <span style={{ fontSize: 20 }}>📤</span>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: TEXT }}>La monture outlet</div>
+                </div>
+                <Bullet color={VIOLET} items={[
+                  'Le centre logistique n\'a plus la monture en stock',
+                  'Il nous envoie les verres seuls',
+                  'La monture, elle, est déjà chez nous en magasin',
+                ]} />
+              </Card>
+            </div>
+
+            {/* Le risque */}
+            <Label color={VIOLET}>Le risque à éviter</Label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 18 }}>
+              {[
+                { icon: '🕐', titre: 'Le temps qui passe', desc: 'Entre la commande et la réception des verres, la monture continue de se vendre en magasin.' },
+                { icon: '❌', titre: 'La dernière monture vendue', desc: 'Si on écoule le dernier exemplaire avant l\'arrivée des verres, plus de monture pour les monter.' },
+                { icon: '📵', titre: 'Introuvable ailleurs', desc: 'Le centre logistique ne l\'a pas non plus — il faut appeler tous les magasins un par un.' },
+              ].map(({ icon, titre, desc }) => (
+                <div key={titre} className="print-card" style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: CARD, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${RED}`, borderRadius: 10, padding: '12px 14px' }}>
+                  <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 2 }}>{titre}</div>
+                    <div style={{ fontSize: 11, color: TEXT_SUB, lineHeight: 1.45 }}>{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="print-card" style={{ background: `${RED}10`, border: `1px solid ${RED}40`, borderRadius: 12, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <span style={{ fontSize: 22, flexShrink: 0 }}>⚠️</span>
+              <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.6 }}>
+                <strong style={{ color: RED }}>Délais rallongés, appels à tous les magasins, client mécontent — à éviter absolument.</strong>
+              </div>
+            </div>
+
+            {/* La solution */}
+            <Label color={VIOLET}>La solution — l'onglet Montures Outlet</Label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { num: 1, color: VIOLET, titre: 'Surveiller chaque jour', desc: 'Dans le dashboard monteur, l\'onglet « Montures Outlet » liste les commandes concernées — à vérifier tous les jours.' },
+                { num: 2, color: GOLD, titre: 'Déstocker immédiatement', desc: 'Dès qu\'une commande apparaît, prendre la monture dans le stock magasin et la déstocker.' },
+                { num: 3, color: GREEN, titre: 'Mettre de côté', desc: 'La ranger dans le bac prévu, avec le bon de fabrication de la commande concernée.' },
+              ].map(({ num, color, titre, desc }) => (
+                <div key={num} className="print-card" style={{ display: 'flex', alignItems: 'flex-start', gap: 16, background: CARD, border: `1px solid ${BORDER}`, borderLeft: `4px solid ${color}`, borderRadius: 14, padding: '14px 18px' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, background: `${color}20`, border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, color }}>{num}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color, marginBottom: 4 }}>{titre}</div>
+                    <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.5 }}>{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Résultat */}
+            <div style={{ marginTop: 18, background: `${VIOLET}12`, border: `1px solid ${VIOLET}45`, borderRadius: 14, padding: '16px 22px', textAlign: 'center' }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: TEXT }}>
+                Résultat : quand les verres arrivent, il ne reste qu'à se servir dans le bac outlet. Plus d'attente inutile pour le client.
               </div>
             </div>
           </div>

@@ -23,7 +23,7 @@ export const PLANNING_JOURS = [
         horaire: '14h – 17h',
         titre: "Les bases de l'optique",
         items: [
-          'Pourquoi porte-on des lunettes',
+          'Pourquoi porte-t-on des lunettes',
           'Les troubles visuels',
           "Lecture d'une ordonnance",
         ],
@@ -76,7 +76,7 @@ export const PLANNING_JOURS = [
         titre: 'Les offres',
         items: [
           'Parcours classique',
-          'Parcours 1+1',
+          'Parcours 1=1',
         ],
       },
       {

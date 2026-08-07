@@ -274,7 +274,7 @@ function ClientDetailScreen({ client, onBack }) {
         <div style={{ fontSize:36, marginBottom:12 }}>📋</div>
         <div style={{ fontSize:15, fontWeight:600, color:TEXT, marginBottom:8 }}>Fiche client</div>
         <div style={{ fontSize:13, lineHeight:1.6 }}>
-          Partage le prochain écran de l&#39;app<br/>pour que je puisse le reproduire.
+          Écran bientôt disponible.
         </div>
       </div>
     </div>

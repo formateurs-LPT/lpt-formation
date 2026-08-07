@@ -40,7 +40,7 @@ export async function archiveAndPurgeRoom(roomCode, { trainerName } = {}) {
   if (hadData) {
     const resolvedTrainer =
       trainerName ||
-      session?.label?.replace(/^(Présentiel|Visio)\s*—\s*/i, '') ||
+      session?.label?.replace(/^(Présentiel|Visio|Belgique)\s*—\s*/i, '') ||
       'Formateur'
 
     archived = await insertSessionHistory({

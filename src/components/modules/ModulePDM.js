@@ -6,7 +6,6 @@ import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import { PDMAnimationSVG, PDM_ANIM_STEP_LABELS } from '@/lib/pdmAnimationSvg'
-import TrainerAvatar from '@/components/TrainerAvatar'
 import { PDM_PAGES as PAGES, PDM_QUIZ } from '@/lib/modulesData'
 import { useIsMobile } from '@/lib/useIsMobile'
 
@@ -606,7 +605,7 @@ function PDMAnimationTrainer({ page, pName, pageIndex, total, onPrev, onNext, on
         ))}
       </div>
       <div style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.3)', paddingBottom: 4, position: 'relative', zIndex: 10 }}>
-        {PDM_ANIM_STEP_LABELS[animStep]} &nbsp;·&nbsp; etape {animStep + 1} / {MAX_STEP + 1}
+        {PDM_ANIM_STEP_LABELS[animStep]} &nbsp;·&nbsp; étape {animStep + 1} / {MAX_STEP + 1}
       </div>
 
       {/* Navigation */}
@@ -813,6 +812,7 @@ export default function ModulePDM({ pName, onBack }) {
   const [showGroupResults, setShowGroupResults] = useState(false)
 
   const handleLaunchQuiz = async () => {
+    await setSharedState({ quiz_show_correction: false }).catch(() => {})
     await sbUpdate('sessions', { module_page: 100 }, 'code=eq.' + getActiveSessionCode())
     setQuizQ(0)
     setQuizLaunched(true)

@@ -799,7 +799,7 @@ function GroupResultsView({ onTerminate }) {
   const toggleRate = async () => {
     const next = !rateShowing
     setRateShowing(next)
-    await setSharedState({ quiz_rate_show: next ? Date.now() : false })
+    await setSharedState({ quiz_final_phase: next ? 'rate' : 'recap' }).catch(() => {})
   }
 
   useEffect(() => {

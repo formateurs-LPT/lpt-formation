@@ -190,7 +190,7 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
               {arrivals.length > 0
                 ? `${arrivals.length} personne${arrivals.length > 1 ? 's' : ''} en attente`
-                : 'Aucune arrivee pour le moment'}
+                : 'Aucune arrivée pour le moment'}
             </div>
           </div>
           <button
@@ -296,7 +296,7 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="white" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
                   <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="white" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                En attente d&apos;arrivees...
+                En attente d&apos;arrivées...
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -317,7 +317,7 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{a.prenom} {a.nom}</div>
                       <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', marginTop: 2 }}>
-                        Arrive a {formatTime(a.created_at)}
+                        Arrivé à {formatTime(a.created_at)}
                       </div>
                     </div>
                     <button
@@ -331,7 +331,7 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
                       onMouseOver={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.2)' }}
                       onMouseOut={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.1)' }}
                     >
-                      Recupere
+                      Récupéré
                     </button>
                   </div>
                 ))}
@@ -343,7 +343,7 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
           {tab === 'history' && (
             history.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '48px 0', color: 'rgba(255,255,255,0.25)', fontSize: 14 }}>
-                Aucune arrivee enregistree
+                Aucune arrivée enregistrée
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -369,7 +369,7 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
                                 {h.prenom} {h.nom}
                               </div>
                               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
-                                Arrive a {formatTime(h.created_at)}
+                                Arrivé à {formatTime(h.created_at)}
                               </div>
                             </div>
                           </div>

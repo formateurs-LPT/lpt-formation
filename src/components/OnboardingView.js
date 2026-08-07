@@ -669,7 +669,7 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
           </div>
           <div className="dash-tile-label" style={{ marginTop: 12 }}>Réveil des acquis</div>
           <div className="dash-tile-sub">FAQ et quiz de consolidation</div>
-          <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 8, fontWeight: 600 }}>Voir les révéils →</div>
+          <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 8, fontWeight: 600 }}>Voir les réveils →</div>
         </div>
 
         {/* Tuile Mini Jeux */}

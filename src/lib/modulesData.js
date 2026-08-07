@@ -55,12 +55,13 @@ export const TYPES_VERRES_PAGES = [
     id: 'unifocal',
     type: 'unifocal',
     titre: 'Le Verre Unifocal',
-    avatarScript: "Le verre unifocal, c'est la correction la plus simple : une seule correction sur toute la surface. Pas de zone de flou. Il est destine aux clients qui n'ont qu'un seul probleme a corriger, mais aussi aux presbytes qui veulent une paire dediee a une distance precise.",
+    avatarScript: "Le verre unifocal, c'est la correction la plus simple : une seule correction sur toute la surface. Pas de zone de flou. Il est destiné aux clients qui n'ont qu'un seul problème à corriger, mais aussi aux presbytes qui veulent une paire dédiée à une distance précise.",
     color: '#00abe9',
   },
   {
     id: 'progressif',
     type: 'progressif',
+    titre: 'Le Verre Progressif',
     avatarScript: "Le Pulsar Next est notre verre progressif haut de gamme. Il corrige la vision de loin, intermédiaire et de près avec une seule paire de lunettes. Sa zone de flou est réduite au maximum — l'adaptation est plus rapide et le confort nettement supérieur aux progressifs classiques.",
     color: '#7c3aed',
   },
@@ -84,8 +85,8 @@ export const PDM_PAGES = [
   {
     id: 'pdm-animation',
     type: 'pdm-animation',
-    titre: 'Du verre brut a la paire parfaite',
-    sousTitre: 'Animation pas a pas',
+    titre: 'Du verre brut à la paire parfaite',
+    sousTitre: 'Animation pas à pas',
     color: '#f59e0b',
   },
   {
@@ -522,7 +523,7 @@ export const ENTREPRISE_QUIZ = [
   {
     type: 'text-open-multi',
     fields: 5,
-    question: 'Quels sont les 5 éléments qui permettent à lunettes pour tous de faire des lunettes de qualité en un temps record',
+    question: 'Quels sont les 5 éléments qui permettent à Lunettes Pour Tous de faire des lunettes de qualité en un temps record ?',
     hint: "Les stocks · Pas d'intermédiaire · Notre propre marque · Des machines à la pointe de la technologie · Un volume de vente conséquent",
     autoCorrectEach: [
       ['stock'],
@@ -921,7 +922,7 @@ export const AJUSTAGES_PAGES = [
 export const AJUSTAGES_QUIZ = [
   { type: 'text-open', question: 'Pourquoi les ajustages sont-ils essentiels au quotidien pour le client ?', hint: 'Une paire mal réglée génère une gêne et finit au placard — le client ne reviendra pas' },
   { type: 'text-open', question: 'Comment ajuste-t-on une monture en acétate ? Et une monture en métal ?', hint: 'Acétate : à chaud (chaleur sèche) · Métal : à froid (plaquettes et branches réglables)' },
-  { type: 'text-open', question: 'En dehors du confort de port, quel autre problème un ajustage peut-il résoudre ?', hint: 'Une gêne visuelle — un mauvais réglage peut créer une gêne vue, un ajustage la corrige sans refabrication' },
+  { type: 'text-open', question: 'En dehors du confort de port, quel autre problème un ajustage peut-il résoudre ?', hint: 'Une gêne visuelle — un mauvais réglage peut créer une gêne visuelle, un ajustage la corrige sans refabrication' },
   { type: 'text-open', question: 'Quels avantages un bon ajustage représente-t-il — pour LPT et pour le client ?', hint: 'LPT : évite une refabrication coûteuse · Client : problème résolu immédiatement, pas d\'attente' },
 ]
 
@@ -958,7 +959,7 @@ export const RAZ_PAGES = [
     titre: 'Trouver la cause avant de recommander',
     sousTitre: 'SAV · RAZ — Les 4 vérifications',
     points: [
-      { emoji: '1️⃣', titre: 'Saisie de correction + vérif fronto', desc: "Comparer l'ordonnance avec le back-end, puis vérifier les verres au frontofocométre" },
+      { emoji: '1️⃣', titre: 'Saisie de correction + vérif fronto', desc: "Comparer l'ordonnance avec le back-end, puis vérifier les verres au frontofocomètre" },
       { emoji: '2️⃣', titre: 'PDM — Prises de mesures', desc: 'Hauteur et écarts pupillaires — un mauvais centrage provoque une gêne visuelle' },
       { emoji: '3️⃣', titre: 'Ajustement', desc: "Tenter de corriger le problème par un ajustage avant de lancer la refabrication" },
       { emoji: '4️⃣', titre: "Ordonnance / Examen de vue", desc: 'Si tout est conforme, la base même est peut-être incorrecte' },
@@ -973,16 +974,16 @@ export const RAZ_PAGES = [
     color: '#f87171',
     icon: '📋',
     titre: 'Étape 1 — Saisie de correction + vérif fronto',
-    sousTitre: "Dossier client → ordonnance → frontofocométre",
+    sousTitre: "Dossier client → ordonnance → frontofocomètre",
     points: [
       { emoji: '👁', titre: 'Comparer ordonnance ↔ back-end', desc: 'Attention à la transposition si la prescription est en négatif avant de comparer' },
-      { emoji: '🔬', titre: 'Vérifier les verres au frontofocométre', desc: 'Mesurer sphère, cylindre et axe sur la paire — comparer avec le back-end' },
+      { emoji: '🔬', titre: 'Vérifier les verres au frontofocomètre', desc: 'Mesurer sphère, cylindre et axe sur la paire — comparer avec le back-end' },
       { emoji: '❌', titre: 'Si différent → problème trouvé', desc: "Erreur de saisie ou mauvais verres montés — ne pas aller plus loin sur cette cause" },
       { emoji: '✅', titre: 'Si identique → étape suivante (PDM)', desc: "Saisie et verres corrects, le problème vient des mesures ou de l'ordonnance" },
     ],
     notesFormateur: [
       { icon: '🔄', title: 'La transposition', text: "Si la prescription est en négatif, il faut la transposer avant de comparer avec le back-end. Ex : -2.00 (-0.50 × 90) = -2.50 (+0.50 × 180). C'est l'erreur la plus fréquente en magasin." },
-      { icon: '🔬', title: 'Utilisation du frontofocométre', text: "Mesurer les deux verres séparément. Comparer sphère, cylindre et axe avec le back-end. Une inversion OD/OG est une erreur classique au montage — à vérifier en priorité." },
+      { icon: '🔬', title: 'Utilisation du frontofocomètre', text: "Mesurer les deux verres séparément. Comparer sphère, cylindre et axe avec le back-end. Une inversion OD/OG est une erreur classique au montage — à vérifier en priorité." },
       { icon: '📊', title: 'La cause n°1', text: "L'erreur de saisie reste la cause n°1 des RAZ. Ces deux vérifications (saisie + fronto) sont liées et se font dans la foulée — c'est pourquoi on les traite ensemble." },
     ],
   },
@@ -994,7 +995,7 @@ export const RAZ_PAGES = [
     titre: 'Étape 2 — PDM, Prises de mesures',
     sousTitre: 'Hauteur et écarts pupillaires',
     points: [
-      { emoji: '📏', titre: 'Unifocaux — Centre optique au frontofocométre', desc: "Le centre optique doit se trouver devant la pupille du client quand il porte la paire" },
+      { emoji: '📏', titre: 'Unifocaux — Centre optique au frontofocomètre', desc: "Le centre optique doit se trouver devant la pupille du client quand il porte la paire" },
       { emoji: '🔭', titre: 'Progressifs — Gravures + marqueur + ditest', desc: 'La croix obtenue = point de vision de loin → doit être juste devant la pupille' },
       { emoji: '❌', titre: "Si centrage incorrect → passer à l'ajustement", desc: "Un mauvais centrage peut provoquer une gêne même avec une correction parfaite" },
       { emoji: '✅', titre: 'Si PDM correctes → étape suivante (ordo)', desc: "Les mesures sont bonnes, le problème vient peut-être de l'ordonnance elle-même" },

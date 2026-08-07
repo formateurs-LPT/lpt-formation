@@ -557,7 +557,7 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
             </span>
           </>
         ) : (
-          <span style={{ color: '#888' }} title="Mode legacy — ouvrez « Ma salle » pour une salle dédiée">
+          <span style={{ color: '#888' }} title="Mode legacy — cliquez sur « Créer une salle » pour une salle dédiée">
             Legacy · {code || '—'}
           </span>
         )}

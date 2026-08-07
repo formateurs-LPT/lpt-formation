@@ -16,13 +16,13 @@ const FRAME_PERIM = Math.PI * (3 * (FRAME_RX + FRAME_RY) - Math.sqrt((3 * FRAME_
 export const PDM_ANIM_STEP_LABELS = [
   'Le verre brut',
   'Centre optique',
-  'A quoi ca sert ?',
+  'À quoi ça sert ?',
   'La monture sur le client',
   'Les mesures',
   'Positionnement du verre',
-  'Trace du contour',
+  'Tracé du contour',
   'Taillage du verre',
-  'Verre taille en place',
+  'Verre taillé en place',
 ]
 
 // eslint-disable-next-line react/display-name

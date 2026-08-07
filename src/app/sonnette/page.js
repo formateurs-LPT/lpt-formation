@@ -26,7 +26,7 @@ export default function SonnettePage() {
     if (result != null) {
       setSent(true)
     } else {
-      setError('Une erreur est survenue, reessayez.')
+      setError('Une erreur est survenue, réessayez.')
     }
     setLoading(false)
   }
@@ -53,7 +53,7 @@ export default function SonnettePage() {
           Un formateur arrive !
         </h1>
         <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, margin: 0 }}>
-          Restez devant l&apos;entree du batiment,<br />nous descendons vous accueillir.
+          Restez devant l&apos;entrée du bâtiment,<br />nous descendons vous accueillir.
         </p>
       </div>
     )
@@ -81,13 +81,13 @@ export default function SonnettePage() {
           Bienvenue !
         </h1>
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', margin: '0 0 28px', lineHeight: 1.5 }}>
-          Signalez votre arrivee pour que votre formateur descende vous accueillir.
+          Signalez votre arrivée pour que votre formateur descende vous accueillir.
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <input
             type="text"
-            placeholder="Votre prenom"
+            placeholder="Votre prénom"
             value={prenom}
             onChange={e => setPrenom(e.target.value)}
             autoComplete="given-name"
@@ -130,7 +130,7 @@ export default function SonnettePage() {
                 : '0 4px 20px rgba(0,171,233,0.4)',
             }}
           >
-            {loading ? 'Envoi...' : 'Je suis la !'}
+            {loading ? 'Envoi...' : 'Je suis là !'}
           </button>
         </form>
       </div>

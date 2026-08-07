@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { MODULE_DATA, TIERS_PAYANT_QUIZ } from '@/lib/modulesData'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
-import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { fetchTrainerQuizAnswers, isTrainerAccount } from '@/lib/participantNames'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 
 const MODULE_ID = 'remboursement-france'
@@ -55,10 +55,10 @@ function SupremeAcceptePopup() {
         </div>
       </div>
       <div style={{ fontSize: 19, fontWeight: 800, color: '#111', marginBottom: 10, lineHeight: 1.2 }}>
-        Remboursements enregistres
+        Remboursements enregistrés
       </div>
       <div style={{ fontSize: 15, color: '#444', lineHeight: 1.5, marginBottom: 22 }}>
-        Vous pouvez maintenant creer une commande Supreme.
+        Vous pouvez maintenant créer une commande Suprême.
       </div>
       <div style={{
         background: '#2a5080', borderRadius: 12, padding: '14px 0',
@@ -93,10 +93,10 @@ function SupremeRefusePopup() {
         </div>
       </div>
       <div style={{ fontSize: 18, fontWeight: 800, color: '#111', marginBottom: 10, lineHeight: 1.2 }}>
-        L&apos;envoi de devis OptoAMC a echoue
+        L&apos;envoi de devis OptoAMC a échoué
       </div>
       <div style={{ fontSize: 14, color: '#444', lineHeight: 1.5, marginBottom: 22 }}>
-        Erreur OptoAMC. Le remboursement est trop faible pour realiser cette commande Supreme
+        Erreur OptoAMC. Le remboursement est trop faible pour réaliser cette commande Suprême
       </div>
       <div style={{ display: 'flex', gap: 10 }}>
         <div style={{
@@ -130,6 +130,7 @@ function PageQ1Formateur({ page }) {
             answer: v.answer,
             ts: v.ts || 0,
           }))
+          .filter(r => !isTrainerAccount(r.participant_name))
           .sort((a, b) => a.ts - b.ts)
         setAnswers(rows)
       } catch { /* ignore */ }
@@ -142,14 +143,14 @@ function PageQ1Formateur({ page }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 }}>
-        Question ouverte · Reponses en direct
+        Question ouverte · Réponses en direct
       </div>
       <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 24 }}>{page.titre}</h2>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto', flex: 1, paddingRight: 4 }}>
         {answers.length === 0 ? (
           <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, fontStyle: 'italic', padding: '12px 0' }}>
-            En attente des reponses des participants…
+            En attente des réponses des participants…
           </div>
         ) : answers.map((row, i) => (
           <div key={row.id || i} style={{
@@ -168,7 +169,7 @@ function PageQ1Formateur({ page }) {
 
       {answers.length > 0 && (
         <div style={{ marginTop: 12, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
-          {answers.length} reponse{answers.length > 1 ? 's' : ''} recue{answers.length > 1 ? 's' : ''}
+          {answers.length} réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''}
         </div>
       )}
     </div>
@@ -318,15 +319,15 @@ function PageConditionsFormateur({ rembfrRevealed, revealing, toggleCondition, p
 const DEMARCHE_STEPS_A = [
   { id: 'a1', label: '1', text: "Prendre l'ordonnance du client, sa carte Vitale et sa mutuelle." },
   { id: 'a2', label: '2', text: null, hasAmeliPro: true },
-  { id: 'a3', label: '3', text: "Faire un test supreme si mon client possede une mutuelle autre que la CSS.", hasSante: true, note: 'Si CSS → passer directement en 1=1.' },
-  { id: 'a4', label: '4', text: "Retourner voir mon client et adapter mon discours aux reponses obtenues." },
+  { id: 'a3', label: '3', text: "Faire un test suprême si mon client possède une mutuelle autre que la CSS.", hasSante: true, note: 'Si CSS → passer directement en 1=1.' },
+  { id: 'a4', label: '4', text: "Retourner voir mon client et adapter mon discours aux réponses obtenues." },
 ]
 
 const DEMARCHE_STEPS_B = [
-  { id: 'b1', label: '1', text: "Prendre la carte Vitale et verifier si le client a bien une mutuelle." },
+  { id: 'b1', label: '1', text: "Prendre la carte Vitale et vérifier si le client a bien une mutuelle." },
   { id: 'b2', label: '2', text: null, hasAmeliPro: true },
   { id: 'b3', label: '3', text: "Si AMELIPRO ok → inscrire le client en examen de vue et obtenir une ordonnance via LYLEOO." },
-  { id: 'b4', label: '4', text: "Une fois l'ordonnance obtenue, retourner a l'ordinateur pour faire le test supreme.", hasSante: true, note: 'Sauf si CSS → 1=1 directement.' },
+  { id: 'b4', label: '4', text: "Une fois l'ordonnance obtenue, retourner à l'ordinateur pour faire le test suprême.", hasSante: true, note: 'Sauf si CSS → 1=1 directement.' },
 ]
 
 function PageDemarcheFormateur({ stepA, stepB, onRevealA, onRevealB }) {
@@ -357,7 +358,7 @@ function PageDemarcheFormateur({ stepA, stepB, onRevealA, onRevealB }) {
       <div style={{ flex: 1, fontSize: 13, color: revealed ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.3)', lineHeight: 1.5, transition: 'all .2s' }}>
         {step.hasAmeliPro ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span>Aller a l&apos;ordinateur et me rendre sur <strong>AMELIPRO</strong> pour voir de quand date le dernier remboursement.</span>
+            <span>Aller à l&apos;ordinateur et me rendre sur <strong>AMELIPRO</strong> pour voir de quand date le dernier remboursement.</span>
             <div><AmeliproBadge /></div>
           </div>
         ) : step.hasSante ? (

@@ -8,6 +8,13 @@ import {
   getRuntimeSessionCode,
   ensureSession,
 } from './supabase'
+import { normalizeNameKey, isTrainerAccount, TEST_ACCOUNT_KEYS } from './trainerAccounts'
+
+// Ré-exportées ici pour compatibilité — tout le code existant importe ces deux
+// fonctions depuis participantNames.js. Leur définition vit dans trainerAccounts.js
+// (module sans dépendance) pour pouvoir aussi être importée par supabase.js sans
+// créer d'import circulaire (participantNames.js dépend déjà de supabase.js).
+export { normalizeNameKey, isTrainerAccount }
 
 /** Nom affiché / stocké : fullName si présent, sinon « NOM Prénom » (import RH) */
 export function entreeDisplayName(c) {
@@ -18,23 +25,6 @@ export function entreeDisplayName(c) {
 /** @deprecated alias */
 export function rhFullName(c) {
   return entreeDisplayName(c)
-}
-
-/** Clé de comparaison : mots triés, sans accents (ordre prénom/nom libre) */
-export function normalizeNameKey(name) {
-  return (name || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\u00a0/g, ' ')
-    .replace(/[''`\-–—]/g, ' ')
-    .replace(/[^a-z\s]/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .sort()
-    .join(' ')
 }
 
 /** Clés de connexion : nom + prénom obligatoires (pas de prénom seul) */
@@ -182,17 +172,6 @@ export async function renameParticipantIdentity(oldCanonical, newCanonical) {
 /**
  * Résout un nom saisi : liste RH (trainer_state) puis secours table participants.
  */
-const TEST_ACCOUNT_KEYS = new Set([
-  'bahougne quentin',
-  'dupuy kevin',
-  'duchemin thomas',
-  'huchet nadege',
-])
-
-export function isTrainerAccount(name) {
-  return TEST_ACCOUNT_KEYS.has(normalizeNameKey(name))
-}
-
 export async function resolveParticipantName(rawInput) {
   const raw = (rawInput || '').trim().replace(/\s+/g, ' ')
   if (!raw) return { ok: false, reason: 'empty' }

@@ -1371,6 +1371,18 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
     await setSharedState({ quiz_show_correction: true }).catch(() => {})
   }
 
+  // Une réponse non validée n'est jamais comptée dans le score final sans avertissement —
+  // on bloque donc l'avancée tant que des réponses reçues n'ont pas été validées ✓/✗.
+  const pendingCount = openAnswers.filter(row => !validated[row.participant_name]).length
+  const confirmSkipPending = () => {
+    if (pendingCount === 0) return true
+    return window.confirm(
+      `${pendingCount} réponse${pendingCount > 1 ? 's' : ''} pas encore validée${pendingCount > 1 ? 's' : ''} ✓/✗.\n\n` +
+      `Si vous continuez maintenant, ${pendingCount > 1 ? 'elles compteront' : 'elle comptera'} comme fausse` +
+      `${pendingCount > 1 ? 's' : ''} — même si la réponse était juste.\n\nContinuer quand même ?`
+    )
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 40px' }}>
       {/* Header */}
@@ -1456,6 +1468,12 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
         </div>
       )}
 
+      {pendingCount > 0 && (
+        <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#fbbf24', marginTop: 10 }}>
+          ⚠️ {pendingCount} réponse{pendingCount > 1 ? 's' : ''} pas encore validée{pendingCount > 1 ? 's' : ''}
+        </div>
+      )}
+
       {/* Navigation */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 28 }}>
         {openAnswers.length > 0 && (
@@ -1464,11 +1482,11 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
           </button>
         )}
         {isLast ? (
-          <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 40px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>
+          <button onClick={() => { if (confirmSkipPending()) onEnd() }} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 40px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>
             ✓ Voir les résultats
           </button>
         ) : (
-          <button onClick={async () => { await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{ background: 'linear-gradient(135deg, #0089ba, #00abe9)', border: 'none', color: '#fff', padding: '14px 40px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,171,233,0.45)' }}>
+          <button onClick={async () => { if (!confirmSkipPending()) return; await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{ background: 'linear-gradient(135deg, #0089ba, #00abe9)', border: 'none', color: '#fff', padding: '14px 40px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,171,233,0.45)' }}>
             Question suivante →
           </button>
         )}

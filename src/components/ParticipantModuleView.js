@@ -6,7 +6,7 @@ import QuestionBubble from '@/components/QuestionBubble'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, ENTRAINEMENT_QUESTIONS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbUpsert, sbSelect, sbDelete, getParticipantSessionCode, ensureSession, getSharedState, getRoomSharedState, setSharedState, setRoomSharedState, mutateRoomState, insertOpenAnswer, updateOpenAnswer, setParticipantPage } from '@/lib/supabase'
+import { sbUpsert, sbSelect, sbDelete, getParticipantSessionCode, ensureSession, getSharedState, getRoomSharedState, setRoomSharedState, mutateRoomState, insertOpenAnswer, updateOpenAnswer, setParticipantPage } from '@/lib/supabase'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
@@ -3721,7 +3721,6 @@ function ZoneInteractifMobile({ page, pName, progZoneQ, progZoneResponses }) {
   const [sent, setSent] = useState(false)
 
   useEffect(() => {
-    console.log('[ZoneInteractifMobile] 🎯 progZoneQ=', progZoneQ, '— pName=', pName)
     setSelected(null); setSent(false)
   }, [progZoneQ])
 
@@ -4134,12 +4133,12 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
   if (page.type === 'tiers-payant-explication') return (
     <div style={{ minHeight: '100dvh', background: '#03112a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', textAlign: 'center' }}>
       <div style={{ fontSize: 52, marginBottom: 20 }}>📺</div>
-      <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Regardez le grand ecran</h2>
+      <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Regardez le grand écran</h2>
       <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 280 }}>
         L&apos;animation explique comment fonctionne le tiers payant complet et partiel.
       </p>
       <div style={{ marginTop: 28, background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 16, padding: '12px 24px' }}>
-        <span style={{ fontSize: 14, fontWeight: 700, color: '#4ade80' }}>Dans les deux cas : 0 € reste a charge 🎉</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: '#4ade80' }}>Dans les deux cas : 0 € reste à charge 🎉</span>
       </div>
     </div>
   )
@@ -4154,12 +4153,12 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={72} height={28} style={{ objectFit: 'contain', opacity: 0.7 }} />
         <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>Remboursement</div>
       </div>
-      <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>Ma demarche</div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>Ma démarche</div>
       <h2 style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 20 }}>
         Quand un client souhaite se faire rembourser je dois :
       </h2>
 
-      {/* Scenario A */}
+      {/* Scénario A */}
       <div style={{ marginBottom: 20 }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
@@ -4167,7 +4166,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
         }}>
           <span style={{ fontSize: 13 }}>📋</span>
           <div>
-            <div style={{ fontSize: 9, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1 }}>Scenario A</div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1 }}>Scénario A</div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>Avec ordonnance valide</div>
           </div>
         </div>
@@ -4192,7 +4191,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
         )}
       </div>
 
-      {/* Scenario B */}
+      {/* Scénario B */}
       <div style={{ marginBottom: 20 }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
@@ -4200,7 +4199,7 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
         }}>
           <span style={{ fontSize: 13 }}>🚫</span>
           <div>
-            <div style={{ fontSize: 9, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1 }}>Scenario B</div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1 }}>Scénario B</div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>Sans ordonnance valide</div>
           </div>
         </div>
@@ -4252,14 +4251,14 @@ function ModuleScreen({ page, pageIndex, total, moduleLabel, moduleId, pName, pr
       </div>
       <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginBottom: 12 }}>Test Supreme</div>
       <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 260 }}>
-        Le formateur revele les resultats.<br />Regardez l&apos;ecran de diffusion.
+        Le formateur révèle les résultats.<br />Regardez l&apos;écran de diffusion.
       </p>
       <div style={{ marginTop: 28, display: 'flex', gap: 12 }}>
         <div style={{ padding: '10px 20px', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.25)', borderRadius: 12, fontSize: 13, fontWeight: 700, color: '#4ade80' }}>
-          Accepte → Parcours Supreme
+          Accepté → Parcours Suprême
         </div>
         <div style={{ padding: '10px 20px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12, fontSize: 13, fontWeight: 700, color: '#f87171' }}>
-          Refuse → Parcours 1=1
+          Refusé → Parcours 1=1
         </div>
       </div>
       <div style={{ marginTop: 16, fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>
@@ -5131,8 +5130,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
   useEffect(() => {
-    if (!sharedState) { console.log('[ParticipantContent] sharedState null — polling pas encore actif'); return }
-    console.log('[ParticipantContent] 📥 sharedState reçu — prog_zone_q=', sharedState.prog_zone_q, 'module=', activeModule)
+    if (!sharedState) return
     setTvScreen(sharedState.tv_screen || null)
     setPlanningDay(sharedState.planning_day || null)
     setProgZoneQ(sharedState.prog_zone_q ?? null)
@@ -5219,7 +5217,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
         }} />
       )}
       <DisconnectChip pName={pName} onDisconnect={onDisconnect} />
-      {/* Bouton reset test — visible uniquement pour le compte test Quentin Bahougne */}
+      {/* Bouton reset test — visible uniquement pour les comptes test formateur */}
       {['bahougne', 'dupuy', 'duchemin', 'huchet'].some(n => pName?.toLowerCase().includes(n)) && (
         <TestResetButton pName={pName} />
       )}
@@ -5240,7 +5238,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
             ? <PersonalResultsScreen key="results" pName={pName} quiz={quiz} moduleId={activeModule} />
             : isQuiz && quizPodiumActive
               ? <ParticipantQuizRanking pName={pName} moduleId={activeModule} qIdx={interstitialQ - 1} />
-              : isQuiz && quizShowCorrection && (quiz[qIdx]?.type !== 'text-open')
+              : isQuiz && quizShowCorrection && quiz[qIdx]?.type !== 'text-open' && quiz[qIdx]?.type !== 'text-open-multi' && quiz[qIdx]?.type !== 'text-open-pairs'
               ? <ParticipantQuizRanking pName={pName} moduleId={activeModule} qIdx={qIdx} />
               : isQuiz
               ? <QuizAnswerScreen key={modulePage} pName={pName} qIdx={qIdx} quiz={quiz} moduleId={activeModule} />

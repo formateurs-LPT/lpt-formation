@@ -66,11 +66,13 @@ function getWeekDate() {
   return d.toISOString().slice(0, 10)
 }
 
+// Même formule que CompteRenduManager.js (le compte rendu réellement envoyé au
+// manager) — la barre affichée pendant la saisie doit annoncer le même taux.
 function computeRate(assessments) {
   const vals = Object.values(assessments || {}).filter(Boolean)
   if (!vals.length) return null
-  const sum = vals.reduce((s, v) => s + toStars(v), 0)
-  return Math.round((sum / (vals.length * 5)) * 100)
+  const score = vals.reduce((s, v) => s + (v === 'maitrise' ? 1 : v === 'en-cours' ? 0.667 : v === 'notions' ? 0.333 : 0), 0)
+  return Math.round((score / vals.length) * 100)
 }
 
 function CorrectButton({ onClick, loading }) {
@@ -1524,8 +1526,8 @@ function CategorySelector({ entrees, onSelect }) {
           ))}
         </div>
         <div style={{ marginTop: 12, fontSize: 11, color: '#475569', lineHeight: 1.6 }}>
-          Les rapports DR affichent uniquement les formés de leur réseau avec une appréciation Bon / Moyen / Mauvais.
-          Les appréciations se basent sur les fiches complétées ci-dessus.
+          Les rapports DR affichent uniquement les formés de leur réseau, avec l&apos;appréciation choisie ci-dessus
+          (« très bon élément » à « ça va être compliqué »). Les appréciations se basent sur les fiches complétées ci-dessus.
         </div>
       </div>
     </div>

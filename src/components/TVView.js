@@ -6,6 +6,7 @@ import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, TR
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, getRoomSharedState, setRoomSharedState } from '@/lib/supabase'
 import { isTrainerAccount } from '@/lib/participantNames'
+import { fetchOnlineParticipantsList } from '@/lib/participantPresence'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
 import { PDMAnimationSVG } from '@/lib/pdmAnimationSvg'
@@ -1056,7 +1057,7 @@ function OpenAnswersFeed({ sessionCode, pageId, revealed = false }) {
       try {
         const [state, pRows] = await Promise.all([
           getRoomSharedState(sessionCode),
-          sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`),
+          fetchOnlineParticipantsList(sessionCode),
         ])
         const prefix = `oa__${pageId}__`
         const rows = Object.entries(state || {})
@@ -1067,6 +1068,7 @@ function OpenAnswersFeed({ sessionCode, pageId, revealed = false }) {
             answer: v.answer,
             ts: v.ts || 0,
           }))
+          .filter(r => !isTrainerAccount(r.participant_name))
           .sort((a, b) => a.ts - b.ts)
         setAnswers(rows.slice(-8))
         setParticipantCount((pRows || []).length)
@@ -5411,6 +5413,18 @@ function TVMontageUpgrade({ sessionCode }) {
         setFoundIdx(state?.montage_up_found_idx ?? null)
         setOrderedIdx(ordered)
 
+        // Reset (bouton « Recommencer ») : on oublie l'exemple précédent pour que le
+        // choix suivant — même identique — rejoue bien la cascade d'intro.
+        if (ordered == null) {
+          prevOrderedRef.current = null
+          prevCurrentRef.current = null
+          introDoneRef.current = false
+          setCurrentIdx(null)
+          setRemovedSet(new Set())
+          setFallingSet(new Set())
+          return
+        }
+
         // Nouvel exemple : tous les traitements apparaissent, puis ceux en dessous
         // du choix du client tombent aussitôt (cascade automatique, sans clic)
         if (ordered != null && prevOrderedRef.current !== ordered) {
@@ -5622,14 +5636,14 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
   const STEPS_A = [
     "Prendre l'ordonnance, la carte Vitale et la mutuelle du client.",
     null, // amelipro
-    "Faire le Test Supreme si mutuelle autre que CSS — sinon 1=1 directement.",
+    "Faire le Test Suprême si mutuelle autre que CSS — sinon 1=1 directement.",
     "Retourner voir le client et adapter le discours.",
   ]
   const STEPS_B = [
     "Prendre la carte Vitale et verifier la mutuelle.",
     null, // amelipro
     "Si AMELIPRO ok → inscrire en examen de vue et obtenir ordonnance via LYLEOO.",
-    "Faire le Test Supreme avec l'ordonnance obtenue — sauf si CSS → 1=1.",
+    "Faire le Test Suprême avec l'ordonnance obtenue — sauf si CSS → 1=1.",
   ]
 
   const AmeliTV = ({ isVisible }) => (
@@ -5660,7 +5674,7 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, verticalAlign: 'middle' }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={28} height={28} style={{ objectFit: 'contain' }} />
-      <span style={{ fontSize: 13, fontWeight: 800, color: '#4ade80' }}>Test Supreme</span>
+      <span style={{ fontSize: 13, fontWeight: 800, color: '#4ade80' }}>Test Suprême</span>
     </span>
   )
 
@@ -5690,7 +5704,7 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
         <div style={{ fontSize: 14, color: vis ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)', lineHeight: 1.5, transition: 'all .3s' }}>
           {isAmeliPro ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <span>Aller a l&apos;ordinateur sur <strong>AMELIPRO</strong> pour verifier la date du dernier remboursement.</span>
+              <span>Aller a l&apos;ordinateur sur <strong>AMELIPRO</strong> pour vérifier la date du dernier remboursement.</span>
               <div><AmeliTV isVisible={vis} /></div>
             </div>
           ) : isSupreme ? (
@@ -5716,7 +5730,7 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, flex: 1 }}>
-        {/* Scenario A */}
+        {/* Scénario A */}
         <div>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
@@ -5724,7 +5738,7 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
           }}>
             <span style={{ fontSize: 18 }}>📋</span>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1 }}>Scenario A</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1 }}>Scénario A</div>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>Avec ordonnance valide</div>
             </div>
           </div>
@@ -5733,7 +5747,7 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
           </div>
         </div>
 
-        {/* Scenario B */}
+        {/* Scénario B */}
         <div>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
@@ -5741,7 +5755,7 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
           }}>
             <span style={{ fontSize: 18 }}>🚫</span>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1 }}>Scenario B</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1 }}>Scénario B</div>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>Sans ordonnance valide</div>
             </div>
           </div>
@@ -5757,14 +5771,14 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
         background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 12, fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, textAlign: 'center',
       }}>
-        <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Si apres verification le client n&apos;a pas droit au remboursement :</strong>
-        {' '}proposer l&apos;offre <strong style={{ color: '#fff' }}>1=1</strong> ou <strong style={{ color: '#fff' }}>Classique</strong> sans remboursement, a ses frais.
+        <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Si après vérification le client n&apos;a pas droit au remboursement :</strong>
+        {' '}proposer l&apos;offre <strong style={{ color: '#fff' }}>1=1</strong> ou <strong style={{ color: '#fff' }}>Classique</strong> sans remboursement, à ses frais.
       </div>
     </div>
   )
 }
 
-// ── TV : Test Supreme ─────────────────────────────────────────────
+// ── TV : Test Suprême ─────────────────────────────────────────────
 function TVRembFrSupreme({ supremeStep }) {
   return (
     <div style={{
@@ -5779,7 +5793,7 @@ function TVRembFrSupreme({ supremeStep }) {
           <div style={{ fontSize: 12, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
             LPT Santé
           </div>
-          <h1 style={{ fontSize: 36, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: -0.5 }}>Test Supreme</h1>
+          <h1 style={{ fontSize: 36, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: -0.5 }}>Test Suprême</h1>
         </div>
       </div>
 
@@ -5814,10 +5828,10 @@ function TVRembFrSupreme({ supremeStep }) {
               </div>
             </div>
             <div style={{ fontSize: 16, fontWeight: 800, color: '#111', marginBottom: 8, lineHeight: 1.2 }}>
-              Remboursements enregistres
+              Remboursements enregistrés
             </div>
             <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5, marginBottom: 16 }}>
-              Vous pouvez maintenant creer une commande Supreme.
+              Vous pouvez maintenant créer une commande Suprême.
             </div>
             <div style={{ background: '#2a5080', borderRadius: 10, padding: '10px 0', fontSize: 14, fontWeight: 600, color: '#fff' }}>OK</div>
           </div>
@@ -5871,10 +5885,10 @@ function TVRembFrSupreme({ supremeStep }) {
               </div>
             </div>
             <div style={{ fontSize: 15, fontWeight: 800, color: '#111', marginBottom: 8, lineHeight: 1.2 }}>
-              L&apos;envoi de devis OptoAMC a echoue
+              L&apos;envoi de devis OptoAMC a échoué
             </div>
             <div style={{ fontSize: 12, color: '#555', lineHeight: 1.5, marginBottom: 14 }}>
-              Erreur OptoAMC. Le remboursement est trop faible pour realiser cette commande Supreme
+              Erreur OptoAMC. Le remboursement est trop faible pour réaliser cette commande Suprême
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <div style={{ flex: 1, borderRadius: 10, padding: '9px 0', fontSize: 13, fontWeight: 600, color: '#2a5080', background: '#f0f0f0' }}>Annuler</div>
@@ -5901,10 +5915,10 @@ function TVRembFrSupreme({ supremeStep }) {
         borderRadius: 14, fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7,
         maxWidth: 820, textAlign: 'center',
       }}>
-        <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Message d&apos;erreur incomprehensible ?</strong>
-        {' '}Demandez aux collegues — sinon, photo sur{' '}
+        <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Message d&apos;erreur incompréhensible ?</strong>
+        {' '}Demandez aux collègues — sinon, photo sur{' '}
         <strong style={{ color: '#fff' }}>#tiers-payant</strong> Slack en identifiant{' '}
-        <strong style={{ color: '#fff' }}>@NathanVision</strong>. Le BOT repond en quelques secondes.
+        <strong style={{ color: '#fff' }}>@NathanVision</strong>. Le BOT répond en quelques secondes.
       </div>
     </div>
   )
@@ -6271,17 +6285,17 @@ function TVTiersPayantExplication() {
       {/* Titre */}
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>
-          Parcours rembourses
+          Parcours remboursés
         </div>
         <h2 style={{ fontSize: 30, fontWeight: 900, color: '#fff', margin: 0 }}>
           Comment fonctionne le tiers payant ?
         </h2>
         <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 6, marginBottom: 0 }}>
-          Dans les deux cas — reste a charge 0 pour le client
+          Dans les deux cas — reste à charge 0 pour le client
         </p>
       </div>
 
-      {/* Deux diagrammes cote a cote */}
+      {/* Deux diagrammes côte à côte */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, flex: 1 }}>
 
         {/* ═══ TIERS PAYANT COMPLET ═══ */}
@@ -6312,7 +6326,7 @@ function TVTiersPayantExplication() {
               <rect width="134" height="82" rx="9" fill="url(#tp-vg-c)" />
               {tpChip()}
               <text x="10" y="50" fontSize="8" fill="rgba(255,255,255,0.55)" fontWeight="700" letterSpacing="1.2">CARTE VITALE</text>
-              <text x="10" y="64" fontSize="12" fill="#fff" fontWeight="700">Securite Sociale</text>
+              <text x="10" y="64" fontSize="12" fill="#fff" fontWeight="700">Sécurité Sociale</text>
             </g>
 
             {/* Carte Mutuelle — translate(12,215) */}
@@ -6320,7 +6334,7 @@ function TVTiersPayantExplication() {
               <rect width="134" height="82" rx="9" fill="url(#tp-mg-c)" />
               {tpChip()}
               <text x="10" y="50" fontSize="8" fill="rgba(255,255,255,0.55)" fontWeight="700" letterSpacing="1.2">MUTUELLE</text>
-              <text x="10" y="64" fontSize="12" fill="#fff" fontWeight="700">Complementaire</text>
+              <text x="10" y="64" fontSize="12" fill="#fff" fontWeight="700">Complémentaire</text>
             </g>
 
             {/* LPT — translate(228,110) → cercle cx=48 cy=48 r=50 → centre abs (276,158) */}
@@ -6345,7 +6359,7 @@ function TVTiersPayantExplication() {
 
             {/* Legende */}
             <text x="270" y="330" textAnchor="middle" fontSize="11" fill="rgba(255,255,255,0.28)" fontStyle="italic">
-              La Vitale et la mutuelle reglent directement LPT
+              La Vitale et la mutuelle règlent directement LPT
             </text>
 
             {/* Fleches */}
@@ -6409,7 +6423,7 @@ function TVTiersPayantExplication() {
               <rect width="134" height="78" rx="9" fill="url(#tp-vg-p)" />
               {tpChip()}
               <text x="10" y="48" fontSize="8" fill="rgba(255,255,255,0.55)" fontWeight="700" letterSpacing="1.2">CARTE VITALE</text>
-              <text x="10" y="62" fontSize="12" fill="#fff" fontWeight="700">Securite Sociale</text>
+              <text x="10" y="62" fontSize="12" fill="#fff" fontWeight="700">Sécurité Sociale</text>
             </g>
 
             {/* Client UNIQUE — translate(12,228) */}
@@ -6439,7 +6453,7 @@ function TVTiersPayantExplication() {
               <rect width="134" height="78" rx="9" fill="url(#tp-mg-p)" />
               {tpChip()}
               <text x="10" y="48" fontSize="8" fill="rgba(255,255,255,0.55)" fontWeight="700" letterSpacing="1.2">MUTUELLE</text>
-              <text x="10" y="62" fontSize="12" fill="#fff" fontWeight="700">Complementaire</text>
+              <text x="10" y="62" fontSize="12" fill="#fff" fontWeight="700">Complémentaire</text>
             </g>
 
             {/* Label "facture" au milieu du chemin 3 — approx (230,260) */}
@@ -6501,11 +6515,11 @@ function TVTypesVerresUnifocal({ pageIndex, total }) {
     },
     {
       label: 'Pour qui',
-      text: 'Clients non presbytes (un seul defaut a corriger, quelle que soit la distance). Egalement pour les clients presbytes qui souhaitent une paire dediee a une seule distance — vision de loin ou vision de pres.',
+      text: 'Clients non presbytes (un seul défaut à corriger, quelle que soit la distance). Également pour les clients presbytes qui souhaitent une paire dédiée à une seule distance — vision de loin ou vision de près.',
     },
     {
       label: 'Fabrication',
-      text: '10 minutes en stock, de -8 a +7,25 avec un maximum de 3 de cylindre. Disponible dans tous les traitements en 10 min (sauf polarise).',
+      text: '10 minutes en stock, de -8 à +7,25 avec un maximum de 3 de cylindre. Disponible dans tous les traitements en 10 min (sauf polarisé).',
     },
   ]
 
@@ -6597,8 +6611,8 @@ function TVTypesVerresUnifocal({ pageIndex, total }) {
 // ── TV : Page verre progressif (Types de verres) ─────────────────
 const TV_TYPES_VERRES_ZONES = [
   { color: '#a78bfa', label: 'Vision de loin',       sub: 'Au loin — rue, voiture, horizon',    icon: 'loin'   },
-  { color: '#4ade80', label: 'Vision intermediaire', sub: "Ecran d'ordinateur — 40 cm a 1,5 m",  icon: 'milieu' },
-  { color: '#fbbf24', label: 'Vision de pres',        sub: 'Telephone, lecture — moins de 40 cm', icon: 'pres'  },
+  { color: '#4ade80', label: 'Vision intermédiaire', sub: "Écran d'ordinateur — 40 cm à 1,5 m",  icon: 'milieu' },
+  { color: '#fbbf24', label: 'Vision de près',        sub: 'Téléphone, lecture — moins de 40 cm', icon: 'pres'  },
 ]
 
 // Lens 1536x1024 px source, displayed at 650x433 (exact 1.5 ratio, fills perfectly)
@@ -6707,7 +6721,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
           borderRadius: 10, padding: '7px 18px',
         }}>
           <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
-            Pense pour les presbytes — une seule paire pour voir a toutes les distances.
+            Pensé pour les presbytes — une seule paire pour voir à toutes les distances.
           </span>
         </div>
       </div>
@@ -8860,6 +8874,28 @@ export default function TVView() {
     } else if (!isResults && !isLobby) {
       page = moduleData.pages[modulePage] ?? null
     }
+  }
+
+  // Atelier prise en charge (LPTSaleApp) : simulateur en autonomie sur le téléphone,
+  // pas de contenu dédié à diffuser — ne jamais déclencher le rechargement ci-dessous.
+  if (!loading && activeModule === 'atelier-pec') {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <FullscreenButton />
+        <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={200} height={76} style={{ objectFit: 'contain', animation: 'logoBreathe 3.5s ease-in-out infinite' }} />
+          <h1 style={{ fontSize: 44, fontWeight: 900, color: '#fff', textAlign: 'center', lineHeight: 1.2, maxWidth: 820, margin: 0 }}>
+            Atelier prise en charge
+          </h1>
+          <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>Les formés s&apos;entraînent en autonomie sur leur téléphone</p>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 14, background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)', borderRadius: 40, padding: '14px 32px' }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#00abe9', animation: 'waitingPulse 1.5s ease-in-out infinite' }} />
+            <span style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>📱 LPT Sale</span>
+          </div>
+        </div>
+      </>
+    )
   }
 
   // Module actif mais inconnu du JS courant → rechargement pour obtenir le dernier bundle

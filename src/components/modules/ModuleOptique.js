@@ -310,7 +310,6 @@ const FRISE_NEG = Array.from({ length: 32 }, (_, i) => (i + 1) * 0.25) // −0,2
 const FRISE_POS = Array.from({ length: 29 }, (_, i) => (i + 1) * 0.25) // +0,25 → +7,25
 const fFmt = (v) => v.toFixed(2).replace('.', ',')
 const OPT_PLAN_W = 96  // largeur colonne Plan (fixe, ne scrolle pas)
-const OPT_ROW_H  = 46  // hauteur fixe des rangées de chips
 
 // ── Page 2 : Frise horizontale ±8,00 ─────────────────────────────
 function CorrectionScalePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
@@ -1572,7 +1571,7 @@ function GroupResultsView({ onTerminate }) {
   const toggleRate = async () => {
     const next = !rateShowing
     setRateShowing(next)
-    await setSharedState({ quiz_rate_show: next }).catch(() => {})
+    await setSharedState({ quiz_final_phase: next ? 'rate' : 'recap' }).catch(() => {})
   }
 
   useEffect(() => {

@@ -668,7 +668,7 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
               Bonjour {cap(prenom)} 👋
             </div>
             <div style={{ fontSize: 16, fontWeight: 600, color: '#00abe9', marginBottom: 32 }}>
-              Bienvenu chez Lunettes Pour Tous
+              Bienvenue chez Lunettes Pour Tous
             </div>
           </>
         ) : null}

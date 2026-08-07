@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
 import { MODULE_DATA, MONTAGE_TRAITEMENTS } from '@/lib/modulesData'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
+import { isTrainerAccount } from '@/lib/participantNames'
 
 const MODULE_ID = 'montage'
 const PAGES = MODULE_DATA[MODULE_ID]?.pages || []
@@ -37,6 +38,7 @@ function MontageQuestionFormateur({ page, revealing, toggleReveal, revealedMap }
             answer: v.answer,
             ts: v.ts || 0,
           }))
+          .filter(r => !isTrainerAccount(r.participant_name))
           .sort((a, b) => a.ts - b.ts)
         setAnswers(rows)
       } catch { /* ignore */ }
@@ -297,11 +299,23 @@ export default function ModuleMontage({ pName, onBack, onTerminate }) {
     sbUpdate('sessions', data, 'code=eq.' + getActiveSessionCode())
   }
 
-  const resetShared = () => {
+  const resetShared = async () => {
     const clear = { montage_up_ordered: null, montage_up_current: null, montage_up_status: 'picking', montage_up_found_idx: null }
     for (const p of PAGES) {
       if (p.type === 'montage-question') clear[`montage_revealed__${p.id}`] = false
     }
+    // Efface aussi les anciennes réponses (clés oa__<pageId>__<nom>) pour qu'un
+    // relancement du module dans la même session ne réaffiche pas les réponses précédentes
+    try {
+      const state = await getSharedState()
+      for (const p of PAGES) {
+        if (p.type !== 'montage-question') continue
+        const prefix = `oa__${p.id}__`
+        for (const k of Object.keys(state || {})) {
+          if (k.startsWith(prefix)) clear[k] = null
+        }
+      }
+    } catch { /* best-effort */ }
     return setSharedState(clear)
   }
 
@@ -314,10 +328,12 @@ export default function ModuleMontage({ pName, onBack, onTerminate }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started])
 
+  // Synchronise chaque changement de page — y compris un retour à la page 0
+  // (pageIndex ne change pas au moment du lancement, donc pas de double écriture
+  // avec l'effet ci-dessus : celui-ci ne se déclenche que sur une vraie navigation).
   useEffect(() => {
-    if (started && pageIndex > 0) {
-      syncAndWrite({ module_page: pageIndex })
-    }
+    if (!started) return
+    syncAndWrite({ module_page: pageIndex })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex])
 
