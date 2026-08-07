@@ -67,6 +67,39 @@ function getWeekDate() {
 }
 
 /**
+ * Index des salles déjà terminées par ce formateur. Quand une salle est
+ * clôturée (endActiveRoom → archiveAndPurgeRoom), ses données sont copiées
+ * dans session_history.quiz_results (JSONB) PUIS supprimées des tables live
+ * (participants, quiz_answers, module_results…). Sans cet index, un formé dont
+ * la salle a été terminée retombe à 0 point alors que ses résultats existent
+ * bel et bien — juste déplacés dans l'archive. C'est la cause des faux "0
+ * points" répétés (Maëlle, puis les nouveaux visio) : les deux tentatives
+ * précédentes ne cherchaient que dans les tables live.
+ * Un seul fetch, partagé entre tous les formés (voir appelants).
+ */
+async function fetchArchiveIndex(trainerName) {
+  const rows = await sbSelect(
+    'session_history',
+    `trainer_name=eq.${encodeURIComponent(trainerName)}`
+  ).catch(() => [])
+  const moduleByName = {}
+  const answerByName = {}
+  for (const row of rows || []) {
+    const qr = row.quiz_results
+    if (!qr || typeof qr !== 'object') continue
+    for (const m of (qr.module_results || [])) {
+      if (!m.collaborateur) continue
+      ;(moduleByName[m.collaborateur] ||= []).push(m)
+    }
+    for (const a of (qr.answers || [])) {
+      if (!a.collaborateur) continue
+      ;(answerByName[a.collaborateur] ||= []).push(a)
+    }
+  }
+  return { moduleByName, answerByName }
+}
+
+/**
  * Résultats quiz d'un formé — jamais filtrés par une salle "devinée" (ni la salle
  * active du formateur, ni une semaine calendaire supposée : les deux ont fait
  * disparaître à tort des points bien réels — cf. incidents Maëlle puis les
@@ -74,8 +107,10 @@ function getWeekDate() {
  * (table participants, jointe sur son nom), et on interroge uniquement celles-ci.
  * S'il n'a aucune ligne participants (import RH sans connexion, edge case), on
  * retombe sur une recherche par nom seul plutôt que de renvoyer 0 par excès de prudence.
+ * On fusionne aussi ce qui a été archivé si la salle a depuis été terminée
+ * (voir fetchArchiveIndex) — sinon les points d'une salle clôturée disparaissent.
  */
-async function fetchModuleAndQuizRows(name) {
+async function fetchModuleAndQuizRows(name, archiveIndexPromise) {
   const participantRows = await sbSelect(
     'participants',
     `name=eq.${encodeURIComponent(name)}`
@@ -86,11 +121,17 @@ async function fetchModuleAndQuizRows(name) {
     ? `session_code=in.(${codes.map(c => encodeURIComponent(c)).join(',')})`
     : null
 
-  const [moduleRows, answerRows] = await Promise.all([
+  const [moduleRows, answerRows, archiveIndex] = await Promise.all([
     sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(name)}${scope ? `&${scope}` : ''}`),
     sbSelect('quiz_answers',   `collaborateur=eq.${encodeURIComponent(name)}${scope ? `&${scope}` : ''}`),
+    archiveIndexPromise,
   ])
-  return { moduleRows: moduleRows || [], answerRows: answerRows || [] }
+  const archivedModuleRows = archiveIndex?.moduleByName?.[name] || []
+  const archivedAnswerRows = archiveIndex?.answerByName?.[name] || []
+  return {
+    moduleRows: [...(moduleRows || []), ...archivedModuleRows],
+    answerRows: [...(answerRows || []), ...archivedAnswerRows],
+  }
 }
 
 // Même formule que CompteRenduManager.js (le compte rendu réellement envoyé au
@@ -184,8 +225,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
+      const archiveIndexPromise = fetchArchiveIndex(trainerName)
       const [{ moduleRows, answerRows }, reportRow, autoEvalRow] = await Promise.all([
-        fetchModuleAndQuizRows(name),
+        fetchModuleAndQuizRows(name, archiveIndexPromise),
         // Charge le rapport le plus récent pour ce formé+formateur, quelle que soit la semaine
         sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc&limit=1`),
         // Auto-évaluation la plus récente de ce formé (indépendante du formateur)
@@ -1019,8 +1061,10 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
       // Résultats quiz — un fetch par formé, résolu sur SES vraies salles jouées
       // (voir fetchModuleAndQuizRows) plutôt que sur la salle active du formateur
       // ou une semaine calendaire devinée — les deux ont fait disparaître à tort
-      // des points bien réels.
-      const perName = await Promise.all(names.map(n => fetchModuleAndQuizRows(n)))
+      // des points bien réels. L'index d'archive n'est chargé qu'une fois et
+      // partagé entre tous les formés (une seule requête session_history).
+      const archiveIndexPromise = fetchArchiveIndex(trainerName)
+      const perName = await Promise.all(names.map(n => fetchModuleAndQuizRows(n, archiveIndexPromise)))
       const quizArrays   = perName.map(p => p.moduleRows)
       const answerArrays = perName.map(p => p.answerRows)
 
