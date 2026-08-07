@@ -1257,13 +1257,8 @@ export const MODULE_DATA = {
     { id: 'montage-moyens', type: 'montage-info', icon: '🛠️', titre: 'Les moyens à votre disposition', blocks: [
       { icon: '📚', title: 'Un stock conséquent', desc: 'Toutes corrections et tous traitements compris.' },
       { icon: '⬆️', title: "L'upgrade", desc: "Offrir le traitement supérieur si le verre commandé n'est pas en stock." },
-      { icon: '🎯', title: 'L\'adaptation de la correction', desc: 'Ajuster légèrement la correction pour rester dans le stock disponible.' },
     ] },
     { id: 'montage-upgrade', type: 'montage-upgrade', icon: '⬆️', titre: "L'upgrade, qu'est-ce que c'est ?" },
-    { id: 'montage-adaptation', type: 'montage-info', icon: '🎯', titre: 'Adapter la correction', blocks: [
-      { icon: '🎯', title: 'Le principe', desc: "Si vous ne pouvez pas upgrader le client faute des verres correspondants, adaptez la correction : retirez 0,25." },
-      { icon: '⬆️', title: 'Combinez si besoin', desc: "Appliquez aussi l'upgrade en complément de l'adaptation, si nécessaire." },
-    ] },
     { id: 'montage-conclusion', type: 'montage-info', icon: '🔑', titre: 'Pour une fabrication en 10 minutes', footer: 'Maintenant, vous avez tout.', footerStrong: true, blocks: [
       { icon: '📦', title: 'De bons stocks', desc: 'Vous les avez.' },
       { icon: '🛠️', title: 'Les bons outils', desc: 'Vous les avez.' },
