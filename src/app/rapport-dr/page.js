@@ -1,21 +1,8 @@
 'use client'
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { sbSelect } from '@/lib/supabase'
+import { sbSelect, getWeeklySharedState } from '@/lib/supabase'
 import { DIRECTEURS, classifyDR } from '@/lib/directeursData'
-
-function getWeekDate() {
-  const d = new Date()
-  const day = d.getDay()
-  d.setDate(d.getDate() - day + (day === 0 ? -6 : 1))
-  return d.toISOString().slice(0, 10)
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-}
 
 function computeRate(assessments) {
   const vals = Object.values(assessments || {}).filter(Boolean)
@@ -161,8 +148,7 @@ function TraineeCard({ row }) {
 
 function RapportDRContent() {
   const params = useSearchParams()
-  const drKey    = params.get('dr') || ''
-  const weekDate = params.get('w') || getWeekDate()
+  const drKey = params.get('dr') || ''
 
   const [rows, setRows]       = useState([])
   const [loading, setLoading] = useState(true)
@@ -170,17 +156,45 @@ function RapportDRContent() {
 
   const dr = DIRECTEURS[drKey]
 
+  // Basé sur la liste "Entrées" actuelle du formateur (jamais vidée toute
+  // seule au changement de semaine calendaire — seulement à la clôture
+  // explicite), pas sur une correspondance stricte de week_date : sinon un
+  // formé pas encore individuellement évalué cette semaine-là, ou évalué un
+  // autre jour que celui attendu, disparaissait purement et simplement du
+  // rapport DR alors qu'il fait bien partie de la semaine en cours.
   useEffect(() => {
     if (!dr) { setError('Directeur régional introuvable.'); setLoading(false); return }
     const load = async () => {
       try {
-        const data = await sbSelect('formation_reports', `week_date=eq.${weekDate}`)
-        const filtered = (data || []).filter(r => {
-          const magasin = r.stats_snapshot?.magasin || ''
-          return classifyDR(magasin) === drKey
+        const state = await getWeeklySharedState()
+        const entrees = Array.isArray(state?.entrees_data) ? state.entrees_data : []
+        const drEntrees = entrees.filter(e => classifyDR(e?.magasin || '') === drKey)
+        const names = drEntrees.map(e => (e.fullName || `${e.nom || ''} ${e.prenom || ''}`).trim()).filter(Boolean)
+
+        // Dernière fiche formateur enregistrée pour chacun, indépendamment de
+        // la semaine — un formé pas encore évalué reste dans la liste
+        // ("Non évalué") plutôt que de disparaître.
+        const reportsRows = names.length
+          ? await sbSelect(
+              'formation_reports',
+              `collaborateur=in.(${names.map(n => encodeURIComponent(n)).join(',')})&order=updated_at.desc`
+            )
+          : []
+        const snapByName = {}
+        for (const r of reportsRows || []) {
+          if (r.trainer_name === '__auto_eval__') continue // on veut l'avis du formateur, pas l'auto-éval du formé
+          if (!snapByName[r.collaborateur]) snapByName[r.collaborateur] = r.stats_snapshot || {}
+        }
+
+        const built = drEntrees.map(e => {
+          const name = (e.fullName || `${e.nom || ''} ${e.prenom || ''}`).trim()
+          return {
+            collaborateur: name,
+            stats_snapshot: snapByName[name] || { magasin: e.magasin || '' },
+          }
         })
-        filtered.sort((a, b) => a.collaborateur.localeCompare(b.collaborateur))
-        setRows(filtered)
+        built.sort((a, b) => a.collaborateur.localeCompare(b.collaborateur))
+        setRows(built)
       } catch (e) {
         setError('Erreur lors du chargement.')
         console.error(e)
@@ -189,7 +203,7 @@ function RapportDRContent() {
       }
     }
     load()
-  }, [drKey, weekDate, dr])
+  }, [drKey, dr])
 
   if (!dr) return (
     <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
@@ -233,7 +247,7 @@ function RapportDRContent() {
             {dr.icon} {dr.fullName}
           </div>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 18 }}>
-            {dr.territory} · Formation du {formatDate(weekDate)}
+            {dr.territory} · Semaine en cours
           </div>
 
           {/* KPIs synthétiques */}
@@ -268,17 +282,17 @@ function RapportDRContent() {
             <div style={{ fontSize: 36, marginBottom: 14 }}>📭</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>Aucun formé pour votre réseau</div>
             <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
-              Aucun rapport disponible pour la semaine du {formatDate(weekDate)} dans votre territoire.
+              Aucune entrée de la semaine en cours ne correspond à votre territoire.
             </div>
           </div>
         ) : (
           <>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>
-              {total} formé{total > 1 ? 's' : ''} · {formatDate(weekDate)}
+              {total} formé{total > 1 ? 's' : ''}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {rows.map(r => (
-                <TraineeCard key={r.collaborateur + r.week_date} row={r} />
+                <TraineeCard key={r.collaborateur} row={r} />
               ))}
             </div>
             <div style={{ marginTop: 32, padding: '14px 18px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, fontSize: 12, color: '#94a3b8', textAlign: 'center', lineHeight: 1.6 }}>
