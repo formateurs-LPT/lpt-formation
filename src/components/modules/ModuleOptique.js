@@ -875,11 +875,17 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
 
   // Poll participants connectés + résultats du round courant
   useEffect(() => {
+    // module_results n'a pas de session_code sur ces lignes (clé d'upsert
+    // collaborateur+module_id+week_date) — sans filtre sur la date du jour,
+    // on remontait les résultats de toutes les semaines passées, faisant
+    // parfois avancer la correction automatiquement avant que les formés
+    // présents aient fini (results.length dépassait onlineCount à tort).
+    const today = new Date().toISOString().slice(0, 10)
     const poll = async () => {
       try {
         const [n, rows] = await Promise.all([
           fetchOnlineParticipantCount(getActiveSessionCode()),
-          sbSelect('module_results', `module_id=eq.${moduleIdRound}`),
+          sbSelect('module_results', `module_id=eq.${moduleIdRound}&week_date=eq.${today}`),
         ])
         setOnlineCount(n || 0)
         setResults(rows || [])
