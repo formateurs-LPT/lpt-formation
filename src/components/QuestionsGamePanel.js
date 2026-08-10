@@ -7,6 +7,7 @@ import {
 } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { VISION_MULTI_OPTIONS, encodeVisionAnswer, decodeVisionAnswer, sameVisionAnswer } from '@/lib/visionMulti'
+import { normalizeNameKey } from '@/lib/participantNames'
 
 /**
  * Panneau "jeu des questions" — partagé entre l'entraînement oral de Bases de
@@ -29,7 +30,7 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
   const [vfCorrect, setVfCorrect] = useState(null)
   const [visionCorrect, setVisionCorrect] = useState([])
   const [choiceCorrect, setChoiceCorrect] = useState(null)
-  const [onlineCount, setOnlineCount] = useState(0)
+  const [onlineNames, setOnlineNames] = useState([])
   const [validatedMap, setValidatedMap] = useState({})
   const [customQText, setCustomQText] = useState('')
   const [sendingCustomQ, setSendingCustomQ] = useState(false)
@@ -61,9 +62,9 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
 
   useEffect(() => {
     const fetch = async () => {
-      const { fetchOnlineParticipantCount } = await import('@/lib/participantPresence')
-      const count = await fetchOnlineParticipantCount(code)
-      setOnlineCount(count || 0)
+      const { fetchOnlineParticipantsList } = await import('@/lib/participantPresence')
+      const list = await fetchOnlineParticipantsList(code)
+      setOnlineNames((list || []).map(p => p.name).filter(Boolean))
     }
     fetch()
     const t = setInterval(fetch, 6000)
@@ -143,6 +144,9 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
   const currentQ = selectedQ === -1
     ? { text: customQText.trim(), type: 'text' }
     : selectedQ !== null ? questions[selectedQ] : null
+  const onlineCount = onlineNames.length
+  const answeredKeys = new Set(answers.map(r => normalizeNameKey(r.participant_name)))
+  const notAnswered = onlineNames.filter(n => !answeredKeys.has(normalizeNameKey(n)))
   const allAnswered = onlineCount > 0 && answers.length >= onlineCount
   const isVF = currentQ?.type === 'vrai-faux'
   const isVisionMulti = currentQ?.type === 'vision-multi'
@@ -407,6 +411,26 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
                   </div>
                 )}
               </div>
+
+              {/* Qui n'a pas encore répondu — pour ne pas avoir à deviner en comparant avec la liste des réponses */}
+              {notAnswered.length > 0 && (
+                <div style={{
+                  background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)',
+                  borderRadius: 12, padding: '10px 16px',
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+                    ⏳ N&apos;ont pas encore répondu ({notAnswered.length})
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {notAnswered.map(name => (
+                      <span key={name} style={{
+                        background: 'rgba(245,158,11,0.14)', border: '1px solid rgba(245,158,11,0.35)',
+                        borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: '#fbbf24',
+                      }}>{name}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Liste des réponses */}
               <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
