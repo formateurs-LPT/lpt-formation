@@ -3,7 +3,24 @@ import {
   getRuntimeSessionCode,
   sbUpsert,
   sbInsert,
+  sbDelete,
 } from './supabase'
+
+/**
+ * L'upsert PostgREST échoue silencieusement (sbUpsert renvoie null) s'il
+ * manque la contrainte unique correspondante côté base. Insérer en repli
+ * dans ce cas créait une NOUVELLE ligne à chaque réponse (y compris un
+ * changement de réponse à la même question), ce qui gonflait le compte de
+ * bonnes/mauvaises réponses affiché en fin de quiz (ex: 30 réponses pour 8
+ * formés). On supprime d'abord toute ligne existante pour cette clé avant
+ * d'insérer, pour ne jamais dupliquer même sans contrainte unique en base.
+ */
+async function upsertNoDuplicate(table, payload, onConflict, filter) {
+  const ok = await sbUpsert(table, payload, onConflict)
+  if (ok) return true
+  await sbDelete(table, filter)
+  return sbInsert(table, payload)
+}
 
 /** Enregistre une réponse quiz / ordonnance (formation classique) */
 export async function saveScenarioResponse({
@@ -26,15 +43,12 @@ export async function saveScenarioResponse({
     participant_name: name,
     response: String(response ?? ''),
   }
-  let ok = await sbUpsert(
+  return upsertNoDuplicate(
     'scenario_responses',
     payload,
-    'session_code,scenario_idx,participant_name'
+    'session_code,scenario_idx,participant_name',
+    `session_code=eq.${encodeURIComponent(code)}&scenario_idx=eq.${scenarioIdx}&participant_name=eq.${encodeURIComponent(name)}`
   )
-  if (!ok) {
-    ok = await sbInsert('scenario_responses', payload)
-  }
-  return !!ok
 }
 
 /** Enregistre une réponse quiz module (PDM, optique, types-verres) */
@@ -62,13 +76,10 @@ export async function saveModuleQuizAnswer({
     answer_idx: answerIdx,
     is_correct: !!isCorrect,
   }
-  let ok = await sbUpsert(
+  return upsertNoDuplicate(
     'quiz_answers',
     payload,
-    'session_code,module_id,question_idx,collaborateur'
+    'session_code,module_id,question_idx,collaborateur',
+    `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${encodeURIComponent(moduleId)}&question_idx=eq.${questionIdx}&collaborateur=eq.${encodeURIComponent(name)}`
   )
-  if (!ok) {
-    ok = await sbInsert('quiz_answers', payload)
-  }
-  return !!ok
 }

@@ -10,7 +10,7 @@ import { sbUpsert, sbSelect, sbDelete, getParticipantSessionCode, ensureSession,
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
-import { resolveParticipantName, isTrainerAccount } from '@/lib/participantNames'
+import { resolveParticipantName, isTrainerAccount, normalizeNameKey } from '@/lib/participantNames'
 import { mergeRoomSharedField } from '@/lib/roomSharedState'
 import { getLevelInfo, getRankMessage, fetchParticipantRanking } from '@/lib/scoring'
 import { canParticipantJoinSession, getCategoryJoinDeniedMessage } from '@/lib/formationCategories'
@@ -378,7 +378,47 @@ function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
 }
 
 // ── Réponse résultat partagé ──────────────────────────────────────
-function QuizResultScreen({ isCorrect }) {
+// Podium interstitiel toutes les 5 questions supprimé (bugs) — à la place,
+// chaque formé voit ici, uniquement sur son propre téléphone, son classement
+// en temps réel sur ce quiz (classement final toujours affiché à tous en fin
+// de module, cf. TVQuizFinalPodium).
+function QuizResultScreen({ isCorrect, pName, moduleId }) {
+  const [rankInfo, setRankInfo] = useState(null) // { rank, total }
+
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const code = getParticipantSessionCode()
+        const rows = await sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${encodeURIComponent(moduleId)}`)
+        // Dédoublonne par formé+question (garde la ligne la plus récente)
+        const latest = {}
+        for (const r of rows || []) {
+          if (!r.collaborateur || isTrainerAccount(r.collaborateur)) continue
+          const key = `${r.collaborateur}__${r.question_idx}`
+          if (!latest[key] || (r.id ?? 0) > (latest[key].id ?? 0)) latest[key] = r
+        }
+        const scoreByName = {}
+        for (const r of Object.values(latest)) {
+          if (!(r.collaborateur in scoreByName)) scoreByName[r.collaborateur] = 0
+          if (r.is_correct) scoreByName[r.collaborateur]++
+        }
+        const sorted = Object.entries(scoreByName)
+          .map(([name, score]) => ({ name, score }))
+          .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+        let rk = 1
+        for (let i = 0; i < sorted.length; i++) {
+          if (i > 0 && sorted[i].score !== sorted[i - 1].score) rk = i + 1
+          sorted[i].rank = rk
+        }
+        const me = sorted.find(r => normalizeNameKey(r.name) === normalizeNameKey(pName || ''))
+        if (!cancelled) setRankInfo(me ? { rank: me.rank, total: sorted.length } : null)
+      } catch { /* ignore */ }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [isCorrect, pName, moduleId])
+
   return (
     <div style={{
       minHeight: '100dvh',
@@ -393,6 +433,21 @@ function QuizResultScreen({ isCorrect }) {
       <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
         {isCorrect ? 'Bonne réponse !' : 'Mauvaise réponse'}
       </div>
+      {rankInfo && (
+        <div style={{
+          marginTop: 8, marginBottom: 12,
+          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: 16, padding: '12px 28px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+        }}>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+            Ton classement
+          </div>
+          <div style={{ fontSize: 26, fontWeight: 900, color: '#00abe9' }}>
+            {rankInfo.rank}<span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>{rankInfo.rank === 1 ? 'er' : 'e'} / {rankInfo.total}</span>
+          </div>
+        </div>
+      )}
       <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>En attente de la prochaine question…</div>
     </div>
   )
@@ -435,7 +490,7 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
     }
   }
 
-  if (validated !== null) return <QuizResultScreen isCorrect={validated} />
+  if (validated !== null) return <QuizResultScreen isCorrect={validated} pName={pName} moduleId={moduleId} />
 
   if (submitted) {
     return (
@@ -531,7 +586,7 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
     }
   }
 
-  if (validated !== null) return <QuizResultScreen isCorrect={validated} />
+  if (validated !== null) return <QuizResultScreen isCorrect={validated} pName={pName} moduleId={moduleId} />
 
   if (submitted) {
     return (
@@ -636,7 +691,7 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
     }
   }
 
-  if (validated !== null) return <QuizResultScreen isCorrect={validated} />
+  if (validated !== null) return <QuizResultScreen isCorrect={validated} pName={pName} moduleId={moduleId} />
 
   if (submitted) {
     return (
@@ -748,7 +803,7 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
     }
   }
 
-  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
+  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} />
 
   return (
     <div style={{
@@ -869,7 +924,7 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
     }
   }
 
-  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
+  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} />
 
   const corrLabel = {
     od: {
@@ -997,7 +1052,7 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
     }
   }
 
-  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} />
+  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} />
 
   return (
     <div style={{ height: '100dvh', overflow: 'hidden', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
@@ -1080,7 +1135,7 @@ function QuizQCMAnswer({ pName, q, qIdx, quiz, moduleId }) {
     setSaving(false)
   }
 
-  if (answered) return <QuizResultScreen isCorrect={lastIsCorrect} />
+  if (answered) return <QuizResultScreen isCorrect={lastIsCorrect} pName={pName} moduleId={moduleId} />
 
   return (
     <div style={{
@@ -2070,40 +2125,27 @@ function TroublesIntroMobile({ page, pageIndex, total }) {
 
 // ── Troubles list — vue téléphone ────────────────────────────────
 function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
-  const [visibleCount, setVisibleCount] = useState(0)
-  const [troublesPhase, setTroublesPhase] = useState(1)
-  const [defVisible, setDefVisible] = useState(0)
+  const [troublesRevealed, setTroublesRevealed] = useState([])
 
-  // Anime les lignes à l'arrivée
+  // Le formateur présente les 4 troubles un par un sur le diffuseur — le
+  // téléphone reste en attente pour ne pas distraire, et n'affiche le récap
+  // complet (les 4 noms + définitions) qu'une fois tous révélés.
   useEffect(() => {
-    setVisibleCount(0)
-    const timers = (page.troubles || []).map((_, i) =>
-      setTimeout(() => setVisibleCount(c => Math.max(c, i + 1)), 250 + i * 220)
-    )
-    return () => timers.forEach(clearTimeout)
-  }, [page.id])
-
-  // Poll troubles_phase depuis trainer_state
-  useEffect(() => {
+    setTroublesRevealed([])
+    let cancelled = false
     const poll = async () => {
       try {
         const state = await getSharedState()
-        setTroublesPhase(state?.troubles_phase || 1)
+        if (!cancelled) setTroublesRevealed(state?.troubles_revealed || [])
       } catch { /* ignore */ }
     }
     poll()
     const t = setInterval(poll, 1500)
-    return () => clearInterval(t)
-  }, [])
+    return () => { cancelled = true; clearInterval(t) }
+  }, [page.id])
 
-  // Stagger des définitions quand phase 2
-  useEffect(() => {
-    if (troublesPhase !== 2) { setDefVisible(0); return }
-    const timers = (page.troubles || []).map((_, i) =>
-      setTimeout(() => setDefVisible(c => Math.max(c, i + 1)), 500 + i * 900)
-    )
-    return () => timers.forEach(clearTimeout)
-  }, [troublesPhase])
+  const troubles = page.troubles || []
+  const allDone = troubles.length > 0 && troublesRevealed.length >= troubles.length
 
   return (
     <div style={{
@@ -2112,6 +2154,7 @@ function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
       display: 'flex', flexDirection: 'column',
       padding: '0 0 24px', overflow: 'hidden',
     }}>
+      <style>{`@keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }`}</style>
       {/* Header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={64} height={24} style={{ objectFit: 'contain', opacity: 0.7 }} />
@@ -2140,39 +2183,40 @@ function TroublesListMobile({ page, pageIndex, total, moduleLabel }) {
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{page.sousTitre}</div>
       </div>
 
-      {/* Liste */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '20px 16px 0', flex: 1 }}>
-        {(page.troubles || []).map((t, i) => (
-          <div key={i} style={{
-            display: 'flex', alignItems: 'flex-start', gap: 14,
-            background: i < visibleCount ? `${t.color}09` : 'transparent',
-            border: `1px solid ${i < visibleCount ? t.color + '28' : 'transparent'}`,
-            borderLeft: `4px solid ${i < visibleCount ? t.color : 'transparent'}`,
-            borderRadius: 14, padding: '16px 18px',
-            opacity: i < visibleCount ? 1 : 0,
-            transform: i < visibleCount ? 'translateX(0)' : 'translateX(-24px)',
-            transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
-          }}>
-            <span style={{ fontSize: 10, fontWeight: 800, color: t.color, letterSpacing: 1, opacity: 0.7, paddingTop: 3, minWidth: 20 }}>
-              {t.num}
-            </span>
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: -0.3, marginBottom: 4 }}>
-                {t.nom}
-              </div>
-              <div style={{
-                fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5, fontWeight: 400,
-                opacity: troublesPhase === 2 && i < defVisible ? 1 : 0,
-                transform: troublesPhase === 2 && i < defVisible ? 'translateY(0)' : 'translateY(4px)',
-                transition: 'opacity 0.6s ease, transform 0.6s ease',
-                minHeight: 18,
-              }}>
-                {t.def}
+      {!allDone ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 32px', textAlign: 'center' }}>
+          <div style={{ fontSize: 40, marginBottom: 16 }}>👁️</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
+            Regardez l&apos;écran, le formateur vous présente les troubles visuels un par un…
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '20px 16px 0', flex: 1 }}>
+          {troubles.map((t, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 14,
+              background: `${t.color}09`,
+              border: `1px solid ${t.color}28`,
+              borderLeft: `4px solid ${t.color}`,
+              borderRadius: 14, padding: '16px 18px',
+              animation: 'fadeInUp 0.5s ease both',
+              animationDelay: `${i * 0.12}s`,
+            }}>
+              <span style={{ fontSize: 10, fontWeight: 800, color: t.color, letterSpacing: 1, opacity: 0.7, paddingTop: 3, minWidth: 20 }}>
+                {t.num}
+              </span>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: -0.3, marginBottom: 4 }}>
+                  {t.nom}
+                </div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5, fontWeight: 400 }}>
+                  {t.def}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

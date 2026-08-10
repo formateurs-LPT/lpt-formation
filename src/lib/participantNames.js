@@ -8,7 +8,7 @@ import {
   getRuntimeSessionCode,
   ensureSession,
 } from './supabase'
-import { normalizeNameKey, isTrainerAccount, TEST_ACCOUNT_KEYS } from './trainerAccounts'
+import { normalizeNameKey, isTrainerAccount, TEST_ACCOUNT_KEYS, trainerAccountPrenom } from './trainerAccounts'
 
 // Ré-exportées ici pour compatibilité — tout le code existant importe ces deux
 // fonctions depuis participantNames.js. Leur définition vit dans trainerAccounts.js
@@ -178,7 +178,7 @@ export async function resolveParticipantName(rawInput) {
 
   // Comptes test : bypass liste RH, rejoignent toutes les sessions
   if (TEST_ACCOUNT_KEYS.has(normalizeNameKey(raw))) {
-    return { ok: true, canonicalName: raw, prenom: raw.split(' ')[0], entry: { _isTest: true } }
+    return { ok: true, canonicalName: raw, prenom: trainerAccountPrenom(raw) || raw.split(' ')[0], entry: { _isTest: true } }
   }
 
   const sessionCode = getRuntimeSessionCode()
@@ -273,10 +273,16 @@ export async function loadRhGuardContext() {
   return { participants: participants || [], entrees }
 }
 
+/**
+ * Vue formateur en direct (compteur de votes pendant le quiz) — jamais vue par
+ * les formés. On n'y exclut PAS les comptes staff : quand un formateur teste
+ * un module avec son propre compte, il doit voir sa réponse apparaître ici,
+ * sinon ça ressemble à un bug ("j'envoie ma réponse, elle n'apparaît pas").
+ * L'exclusion des comptes staff reste appliquée ailleurs, dans les vues
+ * publiques/agrégées (écran TV, notes, classement).
+ */
 export function filterAnswersForTrainer(answers, participants, entrees) {
-  return (answers || []).filter(a =>
-    !isTrainerAccount(a.collaborateur) && shouldShowAnswerForTrainer(a.collaborateur, participants, entrees)
-  )
+  return (answers || []).filter(a => shouldShowAnswerForTrainer(a.collaborateur, participants, entrees))
 }
 
 export async function fetchTrainerQuizAnswers(filter) {

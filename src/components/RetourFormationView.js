@@ -5,7 +5,7 @@ import { getLevelInfo } from '@/lib/scoring'
 import { classifyMagasin } from '@/lib/formationCategories'
 import { MODULE_DATA } from '@/lib/modulesData'
 import CompteRenduManager from './CompteRenduManager'
-import { getManagers } from '@/lib/managersData'
+import { getManagers, canonicalMagasinLabel } from '@/lib/managersData'
 import { DIRECTEURS } from '@/lib/directeursData'
 import { PUBLIC_ORIGIN } from '@/lib/sessionCode'
 
@@ -67,12 +67,19 @@ function getWeekDate() {
 }
 
 /**
- * Index des salles déjà terminées par ce formateur. Quand une salle est
- * clôturée (endActiveRoom → archiveAndPurgeRoom), ses données sont copiées
+ * Index des salles déjà terminées, tous formateurs confondus. Quand une salle
+ * est clôturée (endActiveRoom → archiveAndPurgeRoom), ses données sont copiées
  * dans session_history.quiz_results (JSONB) PUIS supprimées des tables live
  * (participants, quiz_answers, module_results…). Sans cet index, un formé dont
  * la salle a été terminée retombe à 0 point alors que ses résultats existent
  * bel et bien — juste déplacés dans l'archive.
+ * On ne filtre volontairement PAS par trainer_name : ce champ est une
+ * correspondance exacte et sensible à la casse, et ne reflète pas forcément
+ * qui consulte le retour de formation (passage de main Kevin/Quentin en
+ * cours de semaine, variante de casse du nom…) — un mauvais match rendait
+ * une salle entière invisible, d'où le comptage faux constaté sur le groupe
+ * présentiel. Chaque formé n'y retrouve de toute façon que SES points, filtrés
+ * par collaborateur juste en dessous.
  * Trié du plus récent au plus ancien et on ne garde QUE la salle la plus
  * récente par personne (pas un cumul de tout l'historique) : sinon quelqu'un
  * passé par plusieurs salles archivées au fil du temps voit ses points de
@@ -81,10 +88,10 @@ function getWeekDate() {
  * un seul total réel) dans le classement.
  * Un seul fetch, partagé entre tous les formés (voir appelants).
  */
-async function fetchArchiveIndex(trainerName) {
+async function fetchArchiveIndex() {
   const rows = await sbSelect(
     'session_history',
-    `trainer_name=eq.${encodeURIComponent(trainerName)}&order=session_date.desc`
+    'order=session_date.desc'
   ).catch(() => [])
   const moduleByName = {}
   const answerByName = {}
@@ -235,7 +242,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const archiveIndexPromise = fetchArchiveIndex(trainerName)
+      const archiveIndexPromise = fetchArchiveIndex()
       const [{ moduleRows, answerRows }, reportRow, autoEvalRow] = await Promise.all([
         fetchModuleAndQuizRows(name, archiveIndexPromise),
         // Charge le rapport le plus récent pour ce formé+formateur, quelle que soit la semaine
@@ -1073,7 +1080,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
       // ou une semaine calendaire devinée — les deux ont fait disparaître à tort
       // des points bien réels. L'index d'archive n'est chargé qu'une fois et
       // partagé entre tous les formés (une seule requête session_history).
-      const archiveIndexPromise = fetchArchiveIndex(trainerName)
+      const archiveIndexPromise = fetchArchiveIndex()
       const perName = await Promise.all(names.map(n => fetchModuleAndQuizRows(n, archiveIndexPromise)))
       const quizArrays   = perName.map(p => p.moduleRows)
       const answerArrays = perName.map(p => p.answerRows)
@@ -1846,7 +1853,8 @@ function HistoriqueView({ trainerName }) {
   const byMagasin = useMemo(() => {
     const map = {}
     for (const r of records) {
-      const m = r.stats_snapshot?.magasin || 'Magasin non renseigné'
+      const raw = r.stats_snapshot?.magasin
+      const m = raw ? canonicalMagasinLabel(raw) : 'Magasin non renseigné'
       if (!map[m]) map[m] = []
       map[m].push(r)
     }

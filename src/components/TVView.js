@@ -6808,7 +6808,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, saisieStage, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progRetourRevealed, progObjectionIdx, progObjectionResponses, progObjectionRevealed, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, tiersPayantAnswersRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, monturesMateriauxResponses, revealMonturesMateriaux, sessionCode, onAmeliProClick }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, troublesRevealed, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, saisieStage, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progRetourRevealed, progObjectionIdx, progObjectionResponses, progObjectionRevealed, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, tiersPayantAnswersRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, monturesMateriauxResponses, revealMonturesMateriaux, sessionCode, onAmeliProClick }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -6835,7 +6835,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'outlet-flow')       return <TVOutletFlow variant={page.variant} titre={page.titre} />
   if (page.type === 'pause')             return <TVPause              page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} />
   if (page.type === 'troubles-intro')    return <TVTroublesIntro      page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
-  if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} audioUnlocked={audioUnlocked} />
+  if (page.type === 'troubles-list')     return <TVTroublesListVideo  page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} troublesSelected={troublesSelected} troublesRevealed={troublesRevealed} audioUnlocked={audioUnlocked} />
   if (page.type === 'trame-accueil')    return <TVTrameAccueil step={trameStep} />
   if (page.type === 'montures-acetate') return <TVMontures type="montures-acetate" pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} priceRevealed={monturesPrixRevealed} />
   if (page.type === 'montures-metal')   return <TVMontures type="montures-metal"   pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} priceRevealed={monturesPrixRevealed} />
@@ -7551,17 +7551,44 @@ function LPTTrophy({ size = 160 }) {
   )
 }
 
+/**
+ * Un upsert manqué côté écriture pouvait laisser plusieurs lignes
+ * quiz_answers pour le même formé + question (voir formationSave.js). On
+ * dédoublonne ici par sécurité pour l'affichage (garde la ligne la plus
+ * récente par collaborateur, via id auto-incrémenté) : sans ça, le total de
+ * réponses dépassait le nombre réel de formés à l'écran de correction.
+ */
+function dedupeLatestByCollaborateur(rows) {
+  const byName = {}
+  for (const r of rows || []) {
+    const key = r.collaborateur
+    if (!key) continue
+    if (!byName[key] || (r.id ?? 0) > (byName[key].id ?? 0)) byName[key] = r
+  }
+  return Object.values(byName)
+}
+
+/** Même dédoublonnage, mais sur un lot mêlant plusieurs questions (une clé collaborateur+question). */
+function dedupeLatestByCollaborateurAndQuestion(rows) {
+  const byKey = {}
+  for (const r of rows || []) {
+    if (!r.collaborateur) continue
+    const key = `${r.collaborateur}__${r.question_idx}`
+    if (!byKey[key] || (r.id ?? 0) > (byKey[key].id ?? 0)) byKey[key] = r
+  }
+  return Object.values(byKey)
+}
+
 // ── TV Quiz Correction (débrief après chaque question) ───────────
 function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, showOrdo }) {
   const [answers, setAnswers] = useState([])
 
   useEffect(() => {
-    sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}`)
-      .then(rows => setAnswers(rows || [])).catch(() => {})
-    const t = setInterval(() => {
-      sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}`)
-        .then(rows => setAnswers(rows || [])).catch(() => {})
-    }, 2000)
+    const load = () => sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}`)
+      .then(rows => setAnswers(dedupeLatestByCollaborateur((rows || []).filter(r => !isTrainerAccount(r.collaborateur)))))
+      .catch(() => {})
+    load()
+    const t = setInterval(load, 2000)
     return () => clearInterval(t)
   }, [qIdx, sessionCode])
 
@@ -7694,7 +7721,7 @@ function TVOpenCorrection({ question, qIdx, total, moduleLabel, sessionCode, pag
         sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}`),
         fetchOpenAnswers(sessionCode || SESSION_CODE, pageId),
       ])
-      setAnswers(qa || [])
+      setAnswers(dedupeLatestByCollaborateur((qa || []).filter(r => !isTrainerAccount(r.collaborateur))))
       setOpenAnswers(oa || [])
     }
     load()
@@ -7840,7 +7867,8 @@ function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal, moduleId }) {
   useEffect(() => {
     sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}${moduleId ? `&module_id=eq.${moduleId}` : ''}`).then(rows => {
       const grouped = {}
-      ;(rows || []).filter(r => r.question_idx < qIdx && !isTrainerAccount(r.collaborateur)).forEach(r => {
+      const deduped = dedupeLatestByCollaborateurAndQuestion((rows || []).filter(r => r.question_idx < qIdx && !isTrainerAccount(r.collaborateur)))
+      deduped.forEach(r => {
         if (!grouped[r.collaborateur]) grouped[r.collaborateur] = 0
         if (r.is_correct) grouped[r.collaborateur]++
       })
@@ -7984,7 +8012,8 @@ function TVQuizFinalPodium({ quiz, sessionCode, moduleId = 'quiz-final' }) {
   useEffect(() => {
     sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&module_id=eq.${moduleId}`).then(rows => {
       const grouped = {}
-      ;(rows || []).filter(r => !isTrainerAccount(r.collaborateur)).forEach(r => {
+      const deduped = dedupeLatestByCollaborateurAndQuestion((rows || []).filter(r => !isTrainerAccount(r.collaborateur)))
+      deduped.forEach(r => {
         if (!grouped[r.collaborateur]) grouped[r.collaborateur] = 0
         if (r.is_correct) grouped[r.collaborateur]++
       })
@@ -8266,7 +8295,7 @@ function TVGroupResults({ moduleId, moduleLabel, quiz, sessionCode }) {
     const fetchAnswers = async () => {
       try {
         const rows = await sbSelect('quiz_answers', query)
-        setAnswers((rows || []).filter(r => !isTrainerAccount(r.collaborateur)))
+        setAnswers(dedupeLatestByCollaborateurAndQuestion((rows || []).filter(r => !isTrainerAccount(r.collaborateur))))
       } catch { /* ignore */ }
       finally { setLoading(false) }
     }
@@ -8274,7 +8303,7 @@ function TVGroupResults({ moduleId, moduleLabel, quiz, sessionCode }) {
     const interval = setInterval(async () => {
       try {
         const rows = await sbSelect('quiz_answers', query)
-        setAnswers((rows || []).filter(r => !isTrainerAccount(r.collaborateur)))
+        setAnswers(dedupeLatestByCollaborateurAndQuestion((rows || []).filter(r => !isTrainerAccount(r.collaborateur))))
       } catch { /* ignore */ }
     }, 3000)
     return () => clearInterval(interval)
@@ -8373,7 +8402,7 @@ function TVGroupResults({ moduleId, moduleLabel, quiz, sessionCode }) {
 }
 
 // ── TV Troubles List avec avatar opticien ────────────────────────
-function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSelected, audioUnlocked }) {
+function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSelected, troublesRevealed = [], audioUnlocked }) {
   const [entered, setEntered] = useState(false)
   const videoRef = useRef(null)
 
@@ -8451,12 +8480,18 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSele
           )}
 
           <div style={{ display: 'flex', gap: 28 }}>
-            {(page.troubles || []).map((t, i) => i !== troublesSelected && (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.25 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.color, flexShrink: 0 }} />
-                <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{t.nom}</div>
-              </div>
-            ))}
+            {(page.troubles || []).map((t, i) => {
+              if (i === troublesSelected) return null
+              const done = troublesRevealed.includes(i)
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: done ? 0.75 : 0.22 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: done ? t.color : 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+                  <div style={{ fontSize: 16, color: done ? '#fff' : 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
+                    {done ? t.nom : '?'}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
 
@@ -8490,6 +8525,7 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSele
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
       display: 'flex', flexDirection: 'column', position: 'relative',
     }}>
+      <style>{`@keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }`}</style>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={90} height={34} style={{ objectFit: 'contain' }} />
@@ -8514,17 +8550,35 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSele
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
-          {(page.troubles || []).map((t, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'center', gap: 28,
-              background: `${t.color}09`, border: `1px solid ${t.color}28`,
-              borderLeft: `5px solid ${t.color}`,
-              borderRadius: 16, padding: '22px 32px',
-            }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: t.color, letterSpacing: 1, minWidth: 28, opacity: 0.75 }}>{t.num}</span>
-              <span style={{ fontSize: 34, fontWeight: 800, color: '#fff', letterSpacing: -0.3 }}>{t.nom}</span>
-            </div>
-          ))}
+          {(page.troubles || []).map((t, i) => {
+            const done = troublesRevealed.includes(i)
+            if (!done) {
+              return (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: 28,
+                  background: 'rgba(255,255,255,0.02)', border: '1.5px dashed rgba(255,255,255,0.14)',
+                  borderRadius: 16, padding: '22px 32px', transition: 'all .4s ease',
+                }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: 'rgba(255,255,255,0.25)', letterSpacing: 1, minWidth: 28 }}>{t.num}</span>
+                  <span style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.22)', fontStyle: 'italic' }}>À découvrir…</span>
+                </div>
+              )
+            }
+            return (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 28,
+                background: `${t.color}09`, border: `1px solid ${t.color}28`,
+                borderLeft: `5px solid ${t.color}`,
+                borderRadius: 16, padding: '22px 32px',
+                animation: 'fadeInUp 0.5s ease both',
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: t.color, letterSpacing: 1, minWidth: 28, opacity: 0.75 }}>{t.num}</span>
+                <span style={{ fontSize: 30, fontWeight: 800, color: '#fff', letterSpacing: -0.3, minWidth: 260 }}>{t.nom}</span>
+                <div style={{ width: 1, height: 26, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+                <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5, flex: 1 }}>{t.def}</span>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
@@ -8712,6 +8766,7 @@ export default function TVView() {
   const [troublesPhase, setTroublesPhase]       = useState(1)
   const [opticienPlaying, setOpticienPlaying]   = useState(false)
   const [troublesSelected, setTroublesSelected] = useState(null)
+  const [troublesRevealed, setTroublesRevealed] = useState([])
   const [ordoPlaying, setOrdoPlaying]         = useState(false)
   const [ordoRevealStep, setOrdoRevealStep]   = useState(0)
   const [ordoHeadlightDemo, setOrdoHeadlightDemo] = useState(false)
@@ -8791,6 +8846,7 @@ export default function TVView() {
     setTroublesPhase(sharedState.troubles_phase || 1)
     setOpticienPlaying(!!sharedState.opticien_playing)
     setTroublesSelected(sharedState.troubles_selected ?? null)
+    setTroublesRevealed(sharedState.troubles_revealed || [])
     setOrdoPlaying(!!sharedState.ordo_playing)
     setOrdoRevealStep(sharedState.ordo_reveal_step ?? 0)
     setOrdoHeadlightDemo(!!sharedState.ordo_headlight_demo)
@@ -9113,6 +9169,7 @@ export default function TVView() {
             troublesPhase={troublesPhase}
             opticienPlaying={opticienPlaying}
             troublesSelected={troublesSelected}
+            troublesRevealed={troublesRevealed}
             ordoPlaying={ordoPlaying}
             ordoRevealStep={ordoRevealStep}
             ordoHeadlightDemo={ordoHeadlightDemo}

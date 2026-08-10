@@ -13,7 +13,6 @@ import { useIsMobile } from '@/lib/useIsMobile'
 import { HeadlightVision } from '@/lib/headlightVision'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { QuestionsGameTrainerPanel } from '@/components/QuestionsGamePanel'
-import { TrainerQuizRankingList } from '@/components/TrainerQuizRanking'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -173,11 +172,13 @@ function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext,
 function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst, isLast, pageIndex, total, nextPage }) {
   const [visibleCount, setVisibleCount] = useState(0)
   const [selected, setSelected]         = useState(null)
+  const [revealed, setRevealed]         = useState([])
 
   useEffect(() => {
     setVisibleCount(0)
     setSelected(null)
-    setSharedState({ troubles_selected: null }).catch(() => {})
+    setRevealed([])
+    setSharedState({ troubles_selected: null, troubles_revealed: [] }).catch(() => {})
     const timers = page.troubles.map((_, i) =>
       setTimeout(() => setVisibleCount(c => Math.max(c, i + 1)), 250 + i * 220)
     )
@@ -187,10 +188,18 @@ function TroublesPage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFi
     }
   }, [page.id])
 
+  // Une fois qu'un trouble a été ouvert, il reste acquis (visible avec sa
+  // définition sur le diffuseur et le téléphone des formés) même après avoir
+  // été refermé — on ne traite qu'un trouble à la fois pour ne pas distraire,
+  // mais les 4 restent affichés ensemble une fois tous passés.
   const toggle = (i) => {
     const next = selected === i ? null : i
     setSelected(next)
-    setSharedState({ troubles_selected: next }).catch(() => {})
+    setRevealed(prev => {
+      const nextRevealed = prev.includes(i) ? prev : [...prev, i]
+      setSharedState({ troubles_selected: next, troubles_revealed: nextRevealed }).catch(() => {})
+      return nextRevealed
+    })
   }
 
   return (
@@ -1743,7 +1752,6 @@ export default function ModuleOptique({ pName, onBack, onTerminate }) {
   const [pageIndex, setPageIndex] = useState(0)
   const [quizLaunched, setQuizLaunched] = useState(false)
   const [quizQ, setQuizQ] = useState(0)
-  const [quizInterstitial, setQuizInterstitial] = useState(false)
   const [quizFinalPhase, setQuizFinalPhase] = useState(null) // 'podium' | 'rate' | null
   const [showGroupResults, setShowGroupResults] = useState(false)
 
@@ -1776,21 +1784,15 @@ export default function ModuleOptique({ pName, onBack, onTerminate }) {
     setQuizFinalPhase(null)
   }
 
+  // Podium interstitiel toutes les 5 questions supprimé (faisait planter
+  // l'appli) — on enchaîne directement les questions, seul le podium final
+  // reste (cf. handleEndQuiz). Le classement en temps réel, désormais privé,
+  // s'affiche sur le téléphone de chaque formé après chaque correction.
   const handleNextQuestion = async () => {
     const next = quizQ + 1
     await sbUpdate('sessions', { active_module: 'optique', module_page: 100 + next }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(next)
-    if (next % 5 === 0 && next < OPTIQUE_QUIZ.length) {
-      setQuizInterstitial(true)
-      setSharedState({ quiz_interstitial_q: next }).catch(() => {})
-    } else {
-      setSharedState({ quiz_interstitial_q: null }).catch(() => {})
-    }
-  }
-
-  const handleContinueInterstitial = async () => {
-    setQuizInterstitial(false)
-    await setSharedState({ quiz_interstitial_q: null })
+    setSharedState({ quiz_interstitial_q: null }).catch(() => {})
   }
 
   const handleEndQuiz = async () => {
@@ -1899,37 +1901,6 @@ export default function ModuleOptique({ pName, onBack, onTerminate }) {
   }
 
   if (quizLaunched) {
-    if (quizInterstitial) {
-      return (
-        <>
-          <style>{STYLES}</style>
-          <div style={{
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32,
-          }}>
-            <div style={{ fontSize: 48 }}>🏆</div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 6 }}>
-                Classement après {quizQ} questions
-              </div>
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>
-                Le podium (top 3) est affiché sur le diffuseur
-              </div>
-            </div>
-            <TrainerQuizRankingList moduleId="optique" qIdx={quizQ - 1} accent="#7c3aed" />
-            <button onClick={handleContinueInterstitial} style={{
-              background: 'linear-gradient(135deg, #7c3aed, #9f67fa)',
-              border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
-              fontSize: 18, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              boxShadow: '0 6px 24px rgba(124,58,237,0.45)',
-            }}>
-              Continuer → Q{quizQ + 1}
-            </button>
-          </div>
-        </>
-      )
-    }
     return (
       <>
         <style>{STYLES}</style>

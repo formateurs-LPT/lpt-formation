@@ -223,23 +223,69 @@ function norm(s) {
 }
 
 /**
- * Retrouve la liste des managers d'un magasin.
+ * Retrouve la clé MANAGERS correspondant à un magasin.
  * Stratégie : correspondance exacte normalisée, puis partielle (input contient la clé),
- * en préférant la clé la plus longue (plus spécifique) en cas d'ambiguïté.
+ * en préférant la clé la plus longue (plus spécifique) en cas d'ambiguïté — c'est ce qui
+ * permet de distinguer les villes à plusieurs magasins (ex: "toulouse blagnac" gagne sur
+ * "toulouse" dès que le mot "blagnac" est présent) sans jamais fusionner deux magasins
+ * différents d'une même ville.
+ */
+function matchMagasinKey(magasin) {
+  if (!magasin) return null
+  const n = norm(magasin)
+
+  const exact = Object.keys(MANAGERS).find(k => norm(k) === n)
+  if (exact) return exact
+
+  const partial = Object.keys(MANAGERS)
+    .filter(k => n.includes(norm(k)))
+    .sort((a, b) => b.length - a.length)
+  return partial[0] || null
+}
+
+/**
+ * Retrouve la liste des managers d'un magasin.
  * @param {string} magasin
  * @returns {{ name: string, email: string }[]}
  */
 export function getManagers(magasin) {
-  if (!magasin) return []
-  const n = norm(magasin)
+  const key = matchMagasinKey(magasin)
+  return key ? MANAGERS[key] : []
+}
 
-  // 1. Correspondance exacte (insensible aux accents et à la casse)
-  const exact = Object.entries(MANAGERS).find(([k]) => norm(k) === n)
-  if (exact) return exact[1]
+/** Libellés d'affichage propres pour les clés MANAGERS à plusieurs mots. */
+const CANONICAL_LABELS = {
+  'bordeaux sainte catherine': 'Bordeaux Sainte Catherine',
+  'bordeaux bègles':           'Bordeaux Bègles',
+  'marseille canebière':       'Marseille Canebière',
+  'marseille terrasses':       'Marseille Terrasses du Port',
+  'terrasses du port':         'Marseille Terrasses du Port',
+  'montpellier comédie':       'Montpellier Comédie',
+  'montpellier odysseum':      'Montpellier Odysseum',
+  'toulon avenue 83':          'Toulon Avenue 83',
+  'toulon mayol':              'Toulon Mayol',
+  'toulouse capitole':         'Toulouse Capitole',
+  'toulouse blagnac':          'Toulouse Blagnac',
+  'bruxelles fripiers':        'Bruxelles Fripiers',
+}
 
-  // 2. Correspondance partielle : cherche la clé la plus longue contenue dans l'entrée
-  const partial = Object.entries(MANAGERS)
-    .filter(([k]) => n.includes(norm(k)))
-    .sort((a, b) => b[0].length - a[0].length)
-  return partial[0]?.[1] || []
+function titleCase(s) {
+  return s.replace(/\b\w/g, c => c.toUpperCase())
+}
+
+/**
+ * Regroupe les variantes de saisie d'un même magasin sous un nom canonique
+ * (ex: "Bayonne" et "Bayonne 35 apprenti" → "Bayonne") — utilisé dans
+ * l'historique des retours de formation pour éviter les doublons de tuiles.
+ * Réutilise la même correspondance que getManagers, donc les villes à
+ * plusieurs magasins (Marseille, Toulouse, Montpellier…) restent bien
+ * séparées puisqu'elles ont des clés distinctes.
+ * Si aucune clé connue ne correspond, renvoie le magasin tel quel plutôt
+ * que de risquer un mauvais regroupement.
+ */
+export function canonicalMagasinLabel(magasin) {
+  if (!magasin) return magasin
+  const key = matchMagasinKey(magasin)
+  if (!key) return magasin
+  return CANONICAL_LABELS[key] || titleCase(key)
 }
