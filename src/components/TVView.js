@@ -2177,8 +2177,13 @@ function TVSaisieCorrection({ moduleLabel, round, sessionCode }) {
   const [results, setResults] = useState([])
 
   useEffect(() => {
+    // module_results n'a pas de session_code sur ces lignes (clé d'upsert
+    // collaborateur+module_id+week_date) — sans filtre sur la date du jour,
+    // cet écran remontait les résultats de TOUTES les semaines/salles/
+    // formateurs ayant déjà fait cet exercice, pas seulement la session en cours.
+    const today = new Date().toISOString().slice(0, 10)
     const poll = async () => {
-      const rows = await sbSelect('module_results', `module_id=eq.optique-saisie-r${round}`)
+      const rows = await sbSelect('module_results', `module_id=eq.optique-saisie-r${round}&week_date=eq.${today}`)
       setResults(rows || [])
     }
     poll()
