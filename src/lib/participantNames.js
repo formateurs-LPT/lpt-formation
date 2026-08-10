@@ -6,6 +6,7 @@ import {
   sbUpsert,
   pgEq,
   getRuntimeSessionCode,
+  getActiveSessionCode,
   ensureSession,
 } from './supabase'
 import { normalizeNameKey, isTrainerAccount, TEST_ACCOUNT_KEYS, trainerAccountPrenom } from './trainerAccounts'
@@ -100,9 +101,12 @@ export async function loadEntreesList() {
   }
   if (!entrees.length) {
     try {
+      // getActiveSessionCode (rôle 'trainer'), pas getRuntimeSessionCode('any') qui
+      // priorise un code participant obsolète mémorisé sur l'appareil du formateur —
+      // même risque que loadRhGuardContext (cf. son commentaire).
       const rows = await sbSelect(
         'participants',
-        `session_code=eq.${encodeURIComponent(getRuntimeSessionCode())}&order=joined_at.asc`
+        `session_code=eq.${encodeURIComponent(getActiveSessionCode())}&order=joined_at.asc`
       )
       entrees = buildEntreesFromParticipants(rows)
     } catch {
@@ -127,7 +131,7 @@ export async function loadEntreesFromTrainerState() {
 
 /** Après renommage RH : aligner participants + réponses déjà enregistrées */
 export async function renameParticipantIdentity(oldCanonical, newCanonical) {
-  const code = getRuntimeSessionCode()
+  const code = getActiveSessionCode()
   const oldName = (oldCanonical || '').trim()
   const newName = (newCanonical || '').trim()
   if (!code || !oldName || !newName) return false
@@ -265,9 +269,19 @@ export function shouldShowAnswerForTrainer(collaborateur, participants, entrees)
   return partKeys.has(key)
 }
 
+/**
+ * Contexte "vue formateur" — toujours la salle ACTIVE DU FORMATEUR
+ * (getActiveSessionCode, rôle 'trainer'), jamais getRuntimeSessionCode('any')
+ * qui priorise un éventuel code participant mémorisé dans le navigateur. Sur
+ * l'appareil du formateur, si ce même navigateur a déjà servi à se connecter
+ * comme formé (test), ce code participant obsolète prenait le dessus : la
+ * table participants était interrogée sur la mauvaise salle, et un compte
+ * test (qui ne passe pas par la liste RH) semblait ne jamais répondre côté
+ * formateur alors que sa réponse était bien enregistrée.
+ */
 export async function loadRhGuardContext() {
   const [participants, entrees] = await Promise.all([
-    sbSelect('participants', 'session_code=eq.' + getRuntimeSessionCode()),
+    sbSelect('participants', 'session_code=eq.' + getActiveSessionCode()),
     loadEntreesList(),
   ])
   return { participants: participants || [], entrees }
