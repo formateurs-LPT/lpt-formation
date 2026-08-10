@@ -2465,20 +2465,20 @@ function ValueBox({ value, mode, locked, isCorrect, showResult, correctLabel, on
   const bg     = showResult ? (isCorrect ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.1)') : '#fff'
   const border = showResult ? (isCorrect ? '#22c55e' : '#ef4444') : `${APP_GOLD}88`
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <button
         onPointerDown={locked ? undefined : onClick}
         disabled={locked}
         style={{
-          width: '100%', padding: '11px 8px', borderRadius: 10,
-          background: bg, border: `1.5px solid ${border}`,
-          fontSize: 15, fontWeight: 700, color: APP_DARK,
+          width: '100%', minHeight: 56, padding: '14px 8px', borderRadius: 14,
+          background: bg, border: `2px solid ${border}`,
+          fontSize: 19, fontWeight: 800, color: APP_DARK,
           fontFamily: 'inherit', cursor: locked ? 'default' : 'pointer',
           fontVariantNumeric: 'tabular-nums', WebkitTapHighlightColor: 'transparent',
         }}
       >{label}</button>
       {showResult && !isCorrect && (
-        <div style={{ fontSize: 10, color: '#ef4444', fontWeight: 700, textAlign: 'center' }}>✓ {correctLabel}</div>
+        <div style={{ fontSize: 11, color: '#ef4444', fontWeight: 700, textAlign: 'center' }}>✓ {correctLabel}</div>
       )}
     </div>
   )
@@ -2616,13 +2616,10 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
     setSubmitting(false)
   }
 
-  // Une fois la réponse vérifiée, on verrouille et on enchaîne automatiquement sur le cas suivant
-  useEffect(() => {
-    if (!showResult) return
-    const t = setTimeout(() => { handleContinue() }, 1800)
-    return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showResult])
+  // Une fois la réponse vérifiée, le cas reste verrouillé (aucune modification
+  // possible, cf. setEye/setAdd) mais on n'enchaîne plus tout seul sur le cas
+  // suivant : le formé doit avoir le temps de lire le message et clique
+  // lui-même sur "Cas suivant" quand il est prêt.
 
   // Labels de la bonne réponse (pour feedback)
   const corrLabel = {
@@ -2699,21 +2696,21 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
           </div>
 
           {/* Sphère */}
-          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 10, marginBottom: 14, alignItems: 'center' }}>
             <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>Sphère</div>
             <ValueBox value={vals.od.sph} mode="diopter-signed" locked={showResult} isCorrect={results?.od?.sph} showResult={showResult} correctLabel={corrLabel.od.sph} onClick={() => openNumpad('od', 'sph')} />
             <ValueBox value={vals.og.sph} mode="diopter-signed" locked={showResult} isCorrect={results?.og?.sph} showResult={showResult} correctLabel={corrLabel.og.sph} onClick={() => openNumpad('og', 'sph')} />
           </div>
 
           {/* Cylindre */}
-          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 10, marginBottom: 14, alignItems: 'center' }}>
             <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>Cylindre</div>
             <ValueBox value={vals.od.cyl} mode="diopter-signed" locked={showResult} isCorrect={results?.od?.cyl} showResult={showResult} correctLabel={corrLabel.od.cyl} onClick={() => openNumpad('od', 'cyl')} />
             <ValueBox value={vals.og.cyl} mode="diopter-signed" locked={showResult} isCorrect={results?.og?.cyl} showResult={showResult} correctLabel={corrLabel.og.cyl} onClick={() => openNumpad('og', 'cyl')} />
           </div>
 
           {/* Axe */}
-          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 10, marginBottom: 14, alignItems: 'center' }}>
             <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>Axe</div>
             <ValueBox value={vals.od.axe} mode="degrees" locked={showResult} isCorrect={results?.od?.axe} showResult={showResult} correctLabel={corrLabel.od.axe} onClick={() => openNumpad('od', 'axe')} />
             <ValueBox value={vals.og.axe} mode="degrees" locked={showResult} isCorrect={results?.og?.axe} showResult={showResult} correctLabel={corrLabel.og.axe} onClick={() => openNumpad('og', 'axe')} />
@@ -2721,7 +2718,7 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
 
           {/* Add — toujours modifiable, même quand le cas n'en a pas (une valeur saisie à tort compte faux) ;
               pas d'indice sur la présence ou non d'une addition sur ce cas. */}
-          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 12, alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 10, marginBottom: 16, alignItems: 'center' }}>
             <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>Add</div>
             <ValueBox value={vals.add} mode="diopter-positive" locked={showResult} isCorrect={results?.add} showResult={showResult} correctLabel={corrLabel.add} onClick={() => openNumpad('add', null)} />
             <ValueBox value={vals.add} mode="diopter-positive" locked={showResult} isCorrect={results?.add} showResult={showResult} correctLabel={corrLabel.add} onClick={() => openNumpad('add', null)} />
@@ -2760,14 +2757,15 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
             letterSpacing: 0.5, WebkitTapHighlightColor: 'transparent',
           }}>VÉRIFIER</button>
         ) : (
-          <div style={{
+          <button onPointerDown={handleContinue} disabled={submitting} style={{
             width: '100%', padding: '16px', borderRadius: 12,
-            background: perfect ? APP_GOLD : '#6b5fa6', color: '#fff',
+            background: perfect ? APP_GOLD : '#6b5fa6', border: 'none', color: '#fff',
             fontSize: 14, fontWeight: 800, fontFamily: 'inherit',
-            letterSpacing: 0.5, textAlign: 'center', opacity: 0.85,
+            letterSpacing: 0.5, cursor: submitting ? 'default' : 'pointer',
+            opacity: submitting ? 0.7 : 1, WebkitTapHighlightColor: 'transparent',
           }}>
-            {submitting ? '…' : isLastCase ? "Envoi en cours…" : 'Cas suivant…'}
-          </div>
+            {submitting ? 'Envoi…' : isLastCase ? "✓ Envoyer mes résultats" : 'Cas suivant →'}
+          </button>
         )}
       </div>
 
