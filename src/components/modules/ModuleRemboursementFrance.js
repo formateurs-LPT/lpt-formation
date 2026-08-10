@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { MODULE_DATA, TIERS_PAYANT_QUIZ } from '@/lib/modulesData'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
-import { fetchTrainerQuizAnswers, isTrainerAccount } from '@/lib/participantNames'
+import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 
 const MODULE_ID = 'remboursement-france'
@@ -130,7 +130,6 @@ function PageQ1Formateur({ page }) {
             answer: v.answer,
             ts: v.ts || 0,
           }))
-          .filter(r => !isTrainerAccount(r.participant_name))
           .sort((a, b) => a.ts - b.ts)
         setAnswers(rows)
       } catch { /* ignore */ }

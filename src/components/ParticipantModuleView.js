@@ -10,7 +10,7 @@ import { sbUpsert, sbSelect, sbDelete, getParticipantSessionCode, ensureSession,
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
-import { resolveParticipantName, isTrainerAccount, normalizeNameKey } from '@/lib/participantNames'
+import { resolveParticipantName, normalizeNameKey } from '@/lib/participantNames'
 import { mergeRoomSharedField } from '@/lib/roomSharedState'
 import { getLevelInfo, getRankMessage, fetchParticipantRanking } from '@/lib/scoring'
 import { canParticipantJoinSession, getCategoryJoinDeniedMessage } from '@/lib/formationCategories'
@@ -286,7 +286,7 @@ function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
     if (!rows) return
     // Score = nombre de bonnes réponses jusqu'à la question actuelle incluse
     const scores = {}
-    rows.filter(r => r.question_idx <= qIdx && !isTrainerAccount(r.collaborateur)).forEach(r => {
+    rows.filter(r => r.question_idx <= qIdx).forEach(r => {
       if (!scores[r.collaborateur]) scores[r.collaborateur] = 0
       if (r.is_correct) scores[r.collaborateur]++
     })
@@ -394,7 +394,7 @@ function QuizResultScreen({ isCorrect, pName, moduleId }) {
         // Dédoublonne par formé+question (garde la ligne la plus récente)
         const latest = {}
         for (const r of rows || []) {
-          if (!r.collaborateur || isTrainerAccount(r.collaborateur)) continue
+          if (!r.collaborateur) continue
           const key = `${r.collaborateur}__${r.question_idx}`
           if (!latest[key] || (r.id ?? 0) > (latest[key].id ?? 0)) latest[key] = r
         }

@@ -5,7 +5,6 @@ import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE, MONTAGE_TRAITEMENTS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, getRoomSharedState, setRoomSharedState } from '@/lib/supabase'
-import { isTrainerAccount } from '@/lib/participantNames'
 import { fetchOnlineParticipantsList } from '@/lib/participantPresence'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
@@ -1068,7 +1067,6 @@ function OpenAnswersFeed({ sessionCode, pageId, revealed = false }) {
             answer: v.answer,
             ts: v.ts || 0,
           }))
-          .filter(r => !isTrainerAccount(r.participant_name))
           .sort((a, b) => a.ts - b.ts)
         setAnswers(rows.slice(-8))
         setParticipantCount((pRows || []).length)
@@ -7590,7 +7588,7 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, sho
 
   useEffect(() => {
     const load = () => sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}`)
-      .then(rows => setAnswers(dedupeLatestByCollaborateur((rows || []).filter(r => !isTrainerAccount(r.collaborateur)))))
+      .then(rows => setAnswers(dedupeLatestByCollaborateur(rows || [])))
       .catch(() => {})
     load()
     const t = setInterval(load, 2000)
@@ -7726,7 +7724,7 @@ function TVOpenCorrection({ question, qIdx, total, moduleLabel, sessionCode, pag
         sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}`),
         fetchOpenAnswers(sessionCode || SESSION_CODE, pageId),
       ])
-      setAnswers(dedupeLatestByCollaborateur((qa || []).filter(r => !isTrainerAccount(r.collaborateur))))
+      setAnswers(dedupeLatestByCollaborateur(qa || []))
       setOpenAnswers(oa || [])
     }
     load()
@@ -7872,7 +7870,7 @@ function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal, moduleId }) {
   useEffect(() => {
     sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}${moduleId ? `&module_id=eq.${moduleId}` : ''}`).then(rows => {
       const grouped = {}
-      const deduped = dedupeLatestByCollaborateurAndQuestion((rows || []).filter(r => r.question_idx < qIdx && !isTrainerAccount(r.collaborateur)))
+      const deduped = dedupeLatestByCollaborateurAndQuestion((rows || []).filter(r => r.question_idx < qIdx))
       deduped.forEach(r => {
         if (!grouped[r.collaborateur]) grouped[r.collaborateur] = 0
         if (r.is_correct) grouped[r.collaborateur]++
@@ -8017,7 +8015,7 @@ function TVQuizFinalPodium({ quiz, sessionCode, moduleId = 'quiz-final' }) {
   useEffect(() => {
     sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&module_id=eq.${moduleId}`).then(rows => {
       const grouped = {}
-      const deduped = dedupeLatestByCollaborateurAndQuestion((rows || []).filter(r => !isTrainerAccount(r.collaborateur)))
+      const deduped = dedupeLatestByCollaborateurAndQuestion(rows || [])
       deduped.forEach(r => {
         if (!grouped[r.collaborateur]) grouped[r.collaborateur] = 0
         if (r.is_correct) grouped[r.collaborateur]++
@@ -8176,7 +8174,7 @@ function TVQuizRateReveal({ sessionCode, moduleId, moduleLabel, quiz }) {
   useEffect(() => {
     sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&module_id=eq.${moduleId}`)
       .then(rows => {
-        const data             = (rows || []).filter(r => !isTrainerAccount(r.collaborateur))
+        const data             = rows || []
         const correct          = data.filter(r => r.is_correct).length
         const participants     = new Set(data.map(r => r.collaborateur)).size
         const totalQ           = (quiz || []).length
@@ -8300,7 +8298,7 @@ function TVGroupResults({ moduleId, moduleLabel, quiz, sessionCode }) {
     const fetchAnswers = async () => {
       try {
         const rows = await sbSelect('quiz_answers', query)
-        setAnswers(dedupeLatestByCollaborateurAndQuestion((rows || []).filter(r => !isTrainerAccount(r.collaborateur))))
+        setAnswers(dedupeLatestByCollaborateurAndQuestion(rows || []))
       } catch { /* ignore */ }
       finally { setLoading(false) }
     }
@@ -8308,7 +8306,7 @@ function TVGroupResults({ moduleId, moduleLabel, quiz, sessionCode }) {
     const interval = setInterval(async () => {
       try {
         const rows = await sbSelect('quiz_answers', query)
-        setAnswers(dedupeLatestByCollaborateurAndQuestion((rows || []).filter(r => !isTrainerAccount(r.collaborateur))))
+        setAnswers(dedupeLatestByCollaborateurAndQuestion(rows || []))
       } catch { /* ignore */ }
     }, 3000)
     return () => clearInterval(interval)

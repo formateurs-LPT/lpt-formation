@@ -4,7 +4,6 @@ import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
 import { MODULE_DATA, MONTAGE_TRAITEMENTS } from '@/lib/modulesData'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
-import { isTrainerAccount } from '@/lib/participantNames'
 
 const MODULE_ID = 'montage'
 const PAGES = MODULE_DATA[MODULE_ID]?.pages || []
@@ -38,7 +37,6 @@ function MontageQuestionFormateur({ page, revealing, toggleReveal, revealedMap }
             answer: v.answer,
             ts: v.ts || 0,
           }))
-          .filter(r => !isTrainerAccount(r.participant_name))
           .sort((a, b) => a.ts - b.ts)
         setAnswers(rows)
       } catch { /* ignore */ }

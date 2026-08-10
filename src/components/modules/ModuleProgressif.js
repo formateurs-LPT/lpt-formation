@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState } from '@/lib/supabase'
-import { fetchTrainerQuizAnswers, isTrainerAccount } from '@/lib/participantNames'
+import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import { PROGRESSIF_PAGES, PROGRESSIF_QUIZ } from '@/lib/modulesData'
@@ -321,7 +321,7 @@ function ZoneInteractifPage({ page, pName, onPrev, onNext, onBack, isFirst, page
   }, [activeQ])
 
   const q = activeQ !== null ? page.zoneQuestions[activeQ] : null
-  const entries = Object.entries(responses).filter(([name]) => !isTrainerAccount(name))
+  const entries = Object.entries(responses)
   const counts = q ? q.options.map((_, i) => entries.filter(([, v]) => v === i).length) : []
   const total_resp = entries.length
 
@@ -450,7 +450,7 @@ function RetourTerrainPage({ page, pName, onPrev, onNext, onBack, isFirst, pageI
     await setSharedState({ prog_retour_revealed: next }).catch(() => {})
   }
 
-  const entries = Object.entries(responses).filter(([name]) => !isTrainerAccount(name))
+  const entries = Object.entries(responses)
 
   return (
     <PageShell pageIndex={pageIndex} total={total} onBack={onBack}>
@@ -557,7 +557,7 @@ function JeuObjectionsPage({ page, pName, onPrev, onNext, onBack, isFirst, isLas
     return () => clearInterval(t)
   }, [activeObj])
 
-  const entries = Object.entries(responses).filter(([name]) => !isTrainerAccount(name))
+  const entries = Object.entries(responses)
 
   return (
     <PageShell pageIndex={pageIndex} total={total} onBack={onBack}>

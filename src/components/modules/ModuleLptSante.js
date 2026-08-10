@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from 'react'
 import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
-import { isTrainerAccount } from '@/lib/participantNames'
 
 const MODULE_ID = 'lpt-sante'
 const PAGES = MODULE_DATA[MODULE_ID]?.pages || []
@@ -26,7 +25,6 @@ function PageIntroFormateur({ page }) {
             answer: v.answer,
             ts: v.ts || 0,
           }))
-          .filter(r => !isTrainerAccount(r.participant_name))
           .sort((a, b) => a.ts - b.ts)
         setAnswers(rows)
       } catch { /* ignore */ }

@@ -1,6 +1,5 @@
 import { getSessionCode } from './env'
 import { resolveSessionCode, resolveRoomStateCode, getLegacySessionCode } from './sessionCode'
-import { isTrainerAccount } from './trainerAccounts'
 
 // Lu au build / au démarrage de `next dev` depuis .env.local (NEXT_PUBLIC_*)
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
@@ -434,7 +433,7 @@ export async function fetchOpenAnswers(sessionCode, pageId) {
     'open_answers',
     `session_code=eq.${encodeURIComponent(sessionCode)}&page_id=eq.${encodeURIComponent(pageId)}&order=created_at.asc&limit=50`
   )
-  return (rows || []).filter(r => !isTrainerAccount(r.participant_name))
+  return rows || []
 }
 
 export async function fetchOpenAnswersForSession(sessionCode) {
@@ -442,7 +441,7 @@ export async function fetchOpenAnswersForSession(sessionCode) {
     'open_answers',
     `session_code=eq.${encodeURIComponent(sessionCode)}&order=created_at.asc`
   )
-  return (rows || []).filter(r => !isTrainerAccount(r.participant_name))
+  return rows || []
 }
 
 /** Notation formateur : juste / faux (+ commentaire optionnel) */

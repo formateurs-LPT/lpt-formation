@@ -1,4 +1,3 @@
-import { isTrainerAccount } from './participantNames'
 import { sbSelect } from './supabase'
 
 // Règle unique de scoring : 10 points par bonne réponse, que ce soit dans un quiz de
@@ -16,7 +15,7 @@ export function buildParticipantRanking({ quizAnswers = [], openAnswers = [], mo
   const correctByName = {}
   const bump = (name) => {
     const n = (name || '').trim()
-    if (!n || isTrainerAccount(n)) return
+    if (!n) return
     correctByName[n] = (correctByName[n] || 0) + 1
   }
 
@@ -52,7 +51,7 @@ export function buildParticipantRanking({ quizAnswers = [], openAnswers = [], mo
     if (seenModule.has(key)) continue
     seenModule.add(key)
     const n = (r.collaborateur || '').trim()
-    if (!n || isTrainerAccount(n)) continue
+    if (!n) continue
     correctByName[n] = (correctByName[n] || 0) + (r.score || 0)
   }
 
