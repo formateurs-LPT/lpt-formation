@@ -272,11 +272,14 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
         const tot = r.score_total ?? r.total ?? 0
         if (!byModule[mid] || sc > byModule[mid].score) byModule[mid] = { moduleId: mid, label: MODULE_DATA[mid]?.label || mid, score: sc, total: tot }
       }
-      // Complète les modules absents de module_results depuis quiz_answers
+      // Complète les modules absents de module_results depuis quiz_answers du
+      // vrai quiz (question_idx < 100 — le "jeu des questions"/entraînement
+      // oral réutilise le même module_id mais avec question_idx >= 100, cf.
+      // questionIdxFor dans QuestionsGamePanel.js, traité séparément juste après).
       const qaByModule = {}
       for (const r of answerRows || []) {
         const mid = r.module_id
-        if (!mid || byModule[mid]) continue
+        if (!mid || byModule[mid] || (r.question_idx ?? 0) >= 100) continue
         if (!qaByModule[mid]) qaByModule[mid] = {}
         qaByModule[mid][r.question_idx] = r.is_correct // dernière réponse par question gagne
       }
@@ -284,6 +287,26 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
         const correct = Object.values(qMap).filter(Boolean).length
         const total = MODULE_DATA[mid]?.quiz?.length || Object.keys(qMap).length
         if (total > 0) byModule[mid] = { moduleId: mid, label: MODULE_DATA[mid]?.label || mid, score: correct, total }
+      }
+      // Jeu des questions / entraînement oral (question_idx >= 100) : toujours
+      // compté EN PLUS, même quand le vrai quiz du module a déjà un score —
+      // sinon ces bonnes réponses, bien réelles, disparaissaient en silence.
+      const gameByModule = {}
+      for (const r of answerRows || []) {
+        const mid = r.module_id
+        if (!mid || (r.question_idx ?? 0) < 100) continue
+        if (!gameByModule[mid]) gameByModule[mid] = {}
+        gameByModule[mid][r.question_idx] = r.is_correct
+      }
+      for (const [mid, qMap] of Object.entries(gameByModule)) {
+        const correct = Object.values(qMap).filter(Boolean).length
+        if (correct === 0) continue
+        byModule[`${mid}__jeu`] = {
+          moduleId: `${mid}__jeu`,
+          label: `${MODULE_DATA[mid]?.label || mid} — Jeu des questions`,
+          score: correct,
+          total: Object.keys(qMap).length,
+        }
       }
       setQuizData(Object.values(byModule))
       const found = reportRow?.[0]
@@ -1109,11 +1132,14 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
           const tot = r.score_total ?? r.total ?? 0
           if (!byModule[mid] || sc > byModule[mid].score) byModule[mid] = { score: sc, total: tot }
         }
-        // Complète les modules absents de module_results depuis quiz_answers
+        // Complète les modules absents de module_results depuis quiz_answers du
+        // vrai quiz (question_idx < 100 — le "jeu des questions"/entraînement
+        // oral réutilise le même module_id mais avec question_idx >= 100, cf.
+        // questionIdxFor dans QuestionsGamePanel.js, traité séparément ci-dessous).
         const qaByModule = {}
         for (const r of (ansRows || [])) {
           const mid = r.module_id
-          if (!mid || byModule[mid]) continue
+          if (!mid || byModule[mid] || (r.question_idx ?? 0) >= 100) continue
           if (!qaByModule[mid]) qaByModule[mid] = {}
           qaByModule[mid][r.question_idx] = r.is_correct
         }
@@ -1121,6 +1147,22 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
           const correct = Object.values(qMap).filter(Boolean).length
           const total = MODULE_DATA[mid]?.quiz?.length || Object.keys(qMap).length
           if (total > 0) byModule[mid] = { score: correct, total }
+        }
+        // Jeu des questions / entraînement oral (question_idx >= 100) : toujours
+        // compté EN PLUS, même quand le vrai quiz du module a déjà un score —
+        // sinon ces bonnes réponses, bien réelles, disparaissaient en silence
+        // (et avec elles, les points correspondants — 10 par bonne réponse).
+        const gameByModule = {}
+        for (const r of (ansRows || [])) {
+          const mid = r.module_id
+          if (!mid || (r.question_idx ?? 0) < 100) continue
+          if (!gameByModule[mid]) gameByModule[mid] = {}
+          gameByModule[mid][r.question_idx] = r.is_correct
+        }
+        for (const [mid, qMap] of Object.entries(gameByModule)) {
+          const correct = Object.values(qMap).filter(Boolean).length
+          if (correct === 0) continue
+          byModule[`${mid}__jeu`] = { score: correct, total: Object.keys(qMap).length }
         }
         return byModule
       }
