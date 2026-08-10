@@ -5,6 +5,7 @@ import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState, fetchOp
 import { MODULE_DATA, TIERS_PAYANT_QUIZ } from '@/lib/modulesData'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 
 const MODULE_ID = 'remboursement-france'
@@ -568,11 +569,21 @@ function RembfrTextOpenController({ quizQ, onNext, onEnd, onBack }) {
   const [openAnswers, setOpenAnswers] = useState([])
   const [validating, setValidating]   = useState({})
   const [validated, setValidated]     = useState({})
+  const [connectedCount, setConnectedCount] = useState(0)
   const autoValidatedRef = useRef(new Set())
 
   const q      = TIERS_PAYANT_QUIZ[quizQ]
   const isLast = quizQ >= TIERS_PAYANT_QUIZ.length - 1
   const pageId = `remboursement-france:${quizQ}`
+
+  // Tant que tout le monde n'a pas répondu, pas de correction sur le
+  // diffuseur — sinon un formé qui traîne peut lire les réponses des autres.
+  useEffect(() => {
+    const poll = async () => setConnectedCount(await fetchOnlineParticipantCount(getActiveSessionCode()))
+    poll()
+    const t = setInterval(poll, 5000)
+    return () => clearInterval(t)
+  }, [])
 
   useEffect(() => {
     setOpenAnswers([]); setValidating({}); setValidated({})
@@ -630,6 +641,8 @@ function RembfrTextOpenController({ quizQ, onNext, onEnd, onBack }) {
       `${pendingCount > 1 ? 's' : ''} — même si la réponse était juste.\n\nContinuer quand même ?`
     )
   }
+
+  const allAnswered = connectedCount > 0 && openAnswers.length >= connectedCount
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)', padding: '24px 40px', display: 'flex', flexDirection: 'column' }}>
@@ -693,8 +706,19 @@ function RembfrTextOpenController({ quizQ, onNext, onEnd, onBack }) {
           </div>
         )}
         {openAnswers.length > 0 && (
-          <button onClick={() => setSharedState({ quiz_show_correction: true }).catch(() => {})} style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', padding: '14px 28px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-            🎯 Voir la correction
+          <button
+            onClick={() => { if (allAnswered) setSharedState({ quiz_show_correction: true }).catch(() => {}) }}
+            disabled={!allAnswered}
+            title={!allAnswered ? 'En attente de toutes les réponses — révéler maintenant permettrait à ceux qui n\'ont pas répondu de voir les réponses des autres' : undefined}
+            style={{
+              background: allAnswered ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${allAnswered ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.12)'}`,
+              color: allAnswered ? '#fbbf24' : 'rgba(255,255,255,0.3)',
+              padding: '14px 28px', borderRadius: 14, fontSize: 15, fontWeight: 700,
+              cursor: allAnswered ? 'pointer' : 'default', fontFamily: 'inherit',
+            }}
+          >
+            {allAnswered ? '🎯 Voir la correction' : `⏳ En attente (${openAnswers.length}/${connectedCount || '?'})`}
           </button>
         )}
         {isLast ? (

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { QUIZ_FINAL_QUESTIONS } from '@/lib/quizFinalData'
 
@@ -58,6 +59,7 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
   const q = QUIZ_FINAL_QUESTIONS[quizQ]
   const [answers, setAnswers] = useState([])
   const [validations, setValidations] = useState({})
+  const [connectedCount, setConnectedCount] = useState(0)
 
   useEffect(() => {
     setValidations({})
@@ -70,6 +72,15 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
     const t = setInterval(poll, 1500)
     return () => clearInterval(t)
   }, [quizQ])
+
+  // Tant que tout le monde n'a pas répondu, pas de correction sur le
+  // diffuseur — sinon un formé qui traîne peut lire les réponses des autres.
+  useEffect(() => {
+    const poll = async () => setConnectedCount(await fetchOnlineParticipantCount(getActiveSessionCode()))
+    poll()
+    const t = setInterval(poll, 5000)
+    return () => clearInterval(t)
+  }, [])
 
   const handleValidate = async (name, isCorrect) => {
     try {
@@ -87,6 +98,7 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
 
   const validatedCount = Object.keys(validations).length
   const correctCount = Object.values(validations).filter(Boolean).length
+  const allAnswered = connectedCount > 0 && answers.length >= connectedCount
 
   // Ce quiz n'a pas d'auto-correction : chaque réponse doit être validée à la main.
   // Une réponse non validée n'est jamais comptée (ni juste ni fausse) si on avance
@@ -184,11 +196,20 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
           </div>
         )}
         {answers.length > 0 && (
-          <button onClick={() => setSharedState({ quiz_show_correction: true }).catch(() => {})} style={{
-            background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)',
-            color: '#fbbf24', padding: '14px 28px', borderRadius: 14,
-            fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-          }}>🎯 Voir la correction</button>
+          <button
+            onClick={() => { if (allAnswered) setSharedState({ quiz_show_correction: true }).catch(() => {}) }}
+            disabled={!allAnswered}
+            title={!allAnswered ? 'En attente de toutes les réponses — révéler maintenant permettrait à ceux qui n\'ont pas répondu de voir les réponses des autres' : undefined}
+            style={{
+              background: allAnswered ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${allAnswered ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.12)'}`,
+              color: allAnswered ? '#fbbf24' : 'rgba(255,255,255,0.3)',
+              padding: '14px 28px', borderRadius: 14,
+              fontSize: 15, fontWeight: 700, cursor: allAnswered ? 'pointer' : 'default', fontFamily: 'inherit',
+            }}
+          >
+            {allAnswered ? '🎯 Voir la correction' : `⏳ En attente (${answers.length}/${connectedCount || '?'})`}
+          </button>
         )}
         {isLast ? (
           <button onClick={() => { if (confirmSkipPending()) onEnd() }} style={{
