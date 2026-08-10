@@ -216,6 +216,9 @@ export const OPTIQUE_PAGES = [
 // Options pour les questions "problèmes de vue" — sélection multiple (au lieu de texte libre)
 export const VISION_MULTI_OPTIONS = ['Myope', 'Hypermétrope', 'Astigmate', 'Presbyte']
 
+// Options pour "Ce client voit :" — symptômes plutôt que noms de troubles
+export const VISION_SYMPTOM_OPTIONS = ['Flou de loin uniquement', 'Flou à toutes distances', 'Déformé à toutes distances', 'Flou de près uniquement']
+
 // Gamme de traitements — animation "upgrade" du module Le montage (du moins cher au plus cher)
 export const MONTAGE_TRAITEMENTS = [
   { id: 'basic',       label: 'Basic' },
@@ -226,7 +229,7 @@ export const MONTAGE_TRAITEMENTS = [
 ]
 
 export const ENTRAINEMENT_QUESTIONS = [
-  { id: 1, text: 'Ce client voit : (sélectionnez les problèmes de vue)', type: 'vision-multi' },
+  { id: 1, text: 'Ce client voit : (sélectionnez les problèmes de vue)', type: 'vision-multi', options: VISION_SYMPTOM_OPTIONS },
   { id: 2, text: 'De combien est la sphère sur cette ordonnance ?', type: 'text' },
   { id: 3, text: 'De combien est le cylindre sur cette ordonnance ?', type: 'text' },
   { id: 4, text: 'Ce client est presbyte.', type: 'vrai-faux' },

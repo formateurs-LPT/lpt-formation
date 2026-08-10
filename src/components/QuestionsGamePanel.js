@@ -140,29 +140,6 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
     setValidatedMap(v => ({ ...v, [participantName]: isCorrect }))
   }
 
-  // Applique la sélection du formateur : auto-valide tous ceux qui ont exactement la même sélection
-  const applyVisionCorrection = async () => {
-    if (visionCorrect.length === 0) return
-    const toValidate = answers.filter(row => !(row.participant_name in validatedMap))
-    for (const row of toValidate) {
-      const rowSelection = decodeVisionAnswer(row.answer)
-      if (sameVisionAnswer(rowSelection, visionCorrect)) {
-        await validateResponse(row.participant_name, true)
-      }
-    }
-  }
-
-  // La réponse du formateur (parmi les options) est considérée juste — auto-valide les formés qui ont choisi pareil
-  const applyChoiceCorrection = async () => {
-    if (!choiceCorrect) return
-    const toValidate = answers.filter(row => !(row.participant_name in validatedMap))
-    for (const row of toValidate) {
-      if ((row.answer || '').trim() === choiceCorrect) {
-        await validateResponse(row.participant_name, true)
-      }
-    }
-  }
-
   const currentQ = selectedQ === -1
     ? { text: customQText.trim(), type: 'text' }
     : selectedQ !== null ? questions[selectedQ] : null
@@ -170,6 +147,40 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
   const isVF = currentQ?.type === 'vrai-faux'
   const isVisionMulti = currentQ?.type === 'vision-multi'
   const isChoice = currentQ?.type === 'choice'
+  const visionOptions = (isVisionMulti && currentQ?.options) || VISION_MULTI_OPTIONS
+
+  // Auto-validation continue : dès que le formateur répond (VRAI/FAUX, choix,
+  // ou sélection de problèmes de vue), sa réponse fait foi — tout formé ayant
+  // répondu exactement pareil (déjà reçu ou à venir) est validé juste
+  // automatiquement. Le formateur garde toujours la main pour corriger
+  // manuellement ensuite (boutons ✓/✗ toujours visibles, cf. rendu).
+  const autoValidatingRef = useRef(new Set())
+  useEffect(() => {
+    if (!currentQ) return
+    const hasOfficialAnswer = isVF ? vfCorrect !== null
+      : isChoice ? choiceCorrect !== null
+      : isVisionMulti ? visionCorrect.length > 0
+      : false
+    if (!hasOfficialAnswer) return
+
+    for (const row of answers) {
+      if (row.participant_name in validatedMap) continue
+      if (autoValidatingRef.current.has(row.participant_name)) continue
+
+      const matches = isVF ? (row.answer || '').trim() === vfCorrect
+        : isChoice ? (row.answer || '').trim() === choiceCorrect
+        : isVisionMulti ? sameVisionAnswer(decodeVisionAnswer(row.answer, visionOptions), visionCorrect, visionOptions)
+        : false
+
+      if (matches) {
+        autoValidatingRef.current.add(row.participant_name)
+        validateResponse(row.participant_name, true).finally(() => {
+          autoValidatingRef.current.delete(row.participant_name)
+        })
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answers, vfCorrect, choiceCorrect, visionCorrect, isVF, isChoice, isVisionMulti, currentQ, validatedMap, visionOptions])
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
@@ -300,7 +311,7 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
               {isVF && (
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Votre réponse (bonne réponse officielle)</div>
-                  <div style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
                     {['VRAI', 'FAUX'].map(v => (
                       <button key={v} onClick={() => handleVF(v)} style={{
                         flex: 1, padding: '14px', borderRadius: 14, fontSize: 16, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
@@ -310,6 +321,11 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
                       }}>{v}</button>
                     ))}
                   </div>
+                  {vfCorrect && (
+                    <div style={{ fontSize: 12, color: 'rgba(74,222,128,0.9)', fontWeight: 600 }}>
+                      ✓ Validation automatique active — les formés ayant répondu {vfCorrect} passent juste tout seuls.
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -317,8 +333,8 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
               {isVisionMulti && (
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Votre sélection (bonne réponse officielle)</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 12 }}>
-                    {VISION_MULTI_OPTIONS.map(opt => {
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 10 }}>
+                    {visionOptions.map(opt => {
                       const sel = visionCorrect.includes(opt)
                       return (
                         <button key={opt} onClick={() => toggleVisionCorrect(opt)} style={{
@@ -330,16 +346,11 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
                       )
                     })}
                   </div>
-                  <button
-                    onClick={applyVisionCorrection}
-                    disabled={visionCorrect.length === 0}
-                    style={{
-                      width: '100%', padding: '12px', borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: 'inherit',
-                      cursor: visionCorrect.length === 0 ? 'default' : 'pointer',
-                      background: visionCorrect.length === 0 ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg, #16a34a, #22c55e)',
-                      border: 'none', color: visionCorrect.length === 0 ? 'rgba(255,255,255,0.3)' : '#fff',
-                    }}
-                  >✓ Définir comme bonne réponse</button>
+                  {visionCorrect.length > 0 && (
+                    <div style={{ fontSize: 12, color: 'rgba(74,222,128,0.9)', fontWeight: 600 }}>
+                      ✓ Validation automatique active — les formés ayant sélectionné exactement les mêmes réponses passent juste tout seuls.
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -347,7 +358,7 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
               {isChoice && (
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Votre réponse (bonne réponse officielle)</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${currentQ.options.length}, 1fr)`, gap: 10, marginBottom: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${currentQ.options.length}, 1fr)`, gap: 10, marginBottom: 10 }}>
                     {currentQ.options.map(opt => {
                       const sel = choiceCorrect === opt
                       return (
@@ -360,16 +371,11 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
                       )
                     })}
                   </div>
-                  <button
-                    onClick={applyChoiceCorrection}
-                    disabled={!choiceCorrect}
-                    style={{
-                      width: '100%', padding: '12px', borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: 'inherit',
-                      cursor: !choiceCorrect ? 'default' : 'pointer',
-                      background: !choiceCorrect ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg, #16a34a, #22c55e)',
-                      border: 'none', color: !choiceCorrect ? 'rgba(255,255,255,0.3)' : '#fff',
-                    }}
-                  >✓ Définir comme bonne réponse</button>
+                  {choiceCorrect && (
+                    <div style={{ fontSize: 12, color: 'rgba(74,222,128,0.9)', fontWeight: 600 }}>
+                      ✓ Validation automatique active — les formés ayant choisi la même réponse passent juste tout seuls.
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -409,37 +415,41 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
                 ) : answers.map(row => {
                   const status = validatedMap[row.participant_name]
                   const isValidated = status !== undefined
-                  const displayAnswer = isVisionMulti ? decodeVisionAnswer(row.answer).join(', ') || '—' : row.answer
+                  const displayAnswer = isVisionMulti ? decodeVisionAnswer(row.answer, visionOptions).join(', ') || '—' : row.answer
                   return (
                     <div key={row.participant_name} style={{
                       background: isValidated ? (status ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)') : 'rgba(255,255,255,0.05)',
                       border: `1px solid ${isValidated ? (status ? 'rgba(34,197,94,0.35)' : 'rgba(239,68,68,0.35)') : 'rgba(255,255,255,0.1)'}`,
                       borderRadius: 12, padding: '12px 16px',
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>{row.participant_name}</div>
                           <div style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{displayAnswer}</div>
                         </div>
-                        {!isValidated ? (
-                          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                            <button onClick={() => validateResponse(row.participant_name, true)} style={{
-                              width: 36, height: 36, borderRadius: 10, border: '1.5px solid rgba(34,197,94,0.5)', background: 'rgba(34,197,94,0.12)',
-                              color: '#4ade80', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700,
-                            }}>✓</button>
-                            <button onClick={() => validateResponse(row.participant_name, false)} style={{
-                              width: 36, height: 36, borderRadius: 10, border: '1.5px solid rgba(239,68,68,0.5)', background: 'rgba(239,68,68,0.12)',
-                              color: '#f87171', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700,
-                            }}>✗</button>
-                          </div>
-                        ) : (
-                          <div style={{
-                            flexShrink: 0, padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700,
-                            background: status ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)',
-                            color: status ? '#4ade80' : '#f87171',
-                            border: `1px solid ${status ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
-                          }}>{status ? '+10 pts ✓' : '0 pt ✗'}</div>
-                        )}
+                        {/* Boutons toujours visibles — modifiable même après une validation automatique */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                          {isValidated && (
+                            <span style={{
+                              padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                              background: status ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)',
+                              color: status ? '#4ade80' : '#f87171',
+                              border: `1px solid ${status ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
+                            }}>{status ? '+10 pts' : '0 pt'}</span>
+                          )}
+                          <button onClick={() => validateResponse(row.participant_name, true)} style={{
+                            width: 36, height: 36, borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 18,
+                            border: `1.5px solid ${status === true ? '#4ade80' : 'rgba(34,197,94,0.5)'}`,
+                            background: status === true ? 'rgba(34,197,94,0.35)' : 'rgba(34,197,94,0.12)',
+                            color: '#4ade80',
+                          }}>✓</button>
+                          <button onClick={() => validateResponse(row.participant_name, false)} style={{
+                            width: 36, height: 36, borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 18,
+                            border: `1.5px solid ${status === false ? '#f87171' : 'rgba(239,68,68,0.5)'}`,
+                            background: status === false ? 'rgba(239,68,68,0.35)' : 'rgba(239,68,68,0.12)',
+                            color: '#f87171',
+                          }}>✗</button>
+                        </div>
                       </div>
                     </div>
                   )
@@ -493,6 +503,7 @@ export function QuestionsGameParticipantView({ pName, moduleId, questionIdx, vfC
   const q = questionIdx === -1
     ? { text: customQText || '…', type: 'text' }
     : questionIdx != null ? questions[questionIdx] : null
+  const visionOptions = (q?.type === 'vision-multi' && q?.options) || VISION_MULTI_OPTIONS
 
   const submitAnswer = async (answer) => {
     if (submitted || saving) return
@@ -518,7 +529,7 @@ export function QuestionsGameParticipantView({ pName, moduleId, questionIdx, vfC
   const submitVF = (answer) => { setVfSelected(answer); submitAnswer(answer) }
   const submitChoice = (answer) => { setChoiceSelected(answer); submitAnswer(answer) }
   const toggleSelect = (opt) => setSelected(prev => prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt])
-  const submitVisionMulti = () => { if (selected.length > 0) submitAnswer(encodeVisionAnswer(selected)) }
+  const submitVisionMulti = () => { if (selected.length > 0) submitAnswer(encodeVisionAnswer(selected, visionOptions)) }
 
   const bg = { minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 20px 40px' }
 
@@ -611,7 +622,7 @@ export function QuestionsGameParticipantView({ pName, moduleId, questionIdx, vfC
       ) : q.type === 'vision-multi' ? (
         <div style={{ width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-            {VISION_MULTI_OPTIONS.map(opt => {
+            {visionOptions.map(opt => {
               const sel = selected.includes(opt)
               return (
                 <button key={opt} onClick={() => toggleSelect(opt)} disabled={saving} style={{
