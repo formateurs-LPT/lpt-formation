@@ -77,15 +77,16 @@ function getWeekDate() {
  * correspondance exacte et sensible à la casse, et ne reflète pas forcément
  * qui consulte le retour de formation (passage de main Kevin/Quentin en
  * cours de semaine, variante de casse du nom…) — un mauvais match rendait
- * une salle entière invisible, d'où le comptage faux constaté sur le groupe
- * présentiel. Chaque formé n'y retrouve de toute façon que SES points, filtrés
- * par collaborateur juste en dessous.
- * Trié du plus récent au plus ancien et on ne garde QUE la salle la plus
- * récente par personne (pas un cumul de tout l'historique) : sinon quelqu'un
- * passé par plusieurs salles archivées au fil du temps voit ses points de
- * plusieurs semaines s'additionner et grimpe artificiellement devant les
- * autres — c'est ce qui a fait chuter Nadège (encore en données live, donc
- * un seul total réel) dans le classement.
+ * une salle entière invisible. Chaque formé n'y retrouve de toute façon que
+ * SES points, filtrés par collaborateur juste en dessous.
+ * Par formé, on regroupe les salles archivées à moins de 6 jours de sa salle
+ * la plus récente (au lieu de ne garder QUE la plus récente) : le présentiel
+ * se joue souvent sur plusieurs jours avec parfois un passage de main
+ * formateur en cours de semaine (nouvelle salle recréée) — ne garder que la
+ * toute dernière salle perdait les points des jours précédents. Au-delà de
+ * cette fenêtre, on ignore : sinon quelqu'un passé par plusieurs salles à
+ * plusieurs SEMAINES d'écart verrait ses points s'additionner à tort et
+ * grimper artificiellement devant les autres (incident Nadège).
  * Un seul fetch, partagé entre tous les formés (voir appelants).
  */
 async function fetchArchiveIndex() {
@@ -93,22 +94,35 @@ async function fetchArchiveIndex() {
     'session_history',
     'order=session_date.desc'
   ).catch(() => [])
-  const moduleByName = {}
-  const answerByName = {}
-  const seen = new Set() // une salle plus récente a déjà fourni les points de cette personne
+  const roomsByName = {}
   for (const row of rows || []) {
     const qr = row.quiz_results
     if (!qr || typeof qr !== 'object') continue
+    const modRows = qr.module_results || []
+    const ansRows = qr.answers || []
+    const date = row.session_date ? new Date(row.session_date).getTime() : 0
     const namesInRoom = new Set([
-      ...(qr.module_results || []).map(m => m.collaborateur).filter(Boolean),
-      ...(qr.answers || []).map(a => a.collaborateur).filter(Boolean),
+      ...modRows.map(m => m.collaborateur).filter(Boolean),
+      ...ansRows.map(a => a.collaborateur).filter(Boolean),
     ])
     for (const n of namesInRoom) {
-      if (seen.has(n)) continue
-      seen.add(n)
-      moduleByName[n] = (qr.module_results || []).filter(m => m.collaborateur === n)
-      answerByName[n] = (qr.answers || []).filter(a => a.collaborateur === n)
+      ;(roomsByName[n] ||= []).push({
+        date,
+        moduleRows: modRows.filter(m => m.collaborateur === n),
+        answerRows: ansRows.filter(a => a.collaborateur === n),
+      })
     }
+  }
+
+  const WINDOW_MS = 6 * 24 * 60 * 60 * 1000
+  const moduleByName = {}
+  const answerByName = {}
+  for (const [name, entries] of Object.entries(roomsByName)) {
+    entries.sort((a, b) => b.date - a.date)
+    const mostRecent = entries[0].date
+    const kept = entries.filter(e => mostRecent - e.date <= WINDOW_MS)
+    moduleByName[name] = kept.flatMap(e => e.moduleRows)
+    answerByName[name] = kept.flatMap(e => e.answerRows)
   }
   return { moduleByName, answerByName }
 }
