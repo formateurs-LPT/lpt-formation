@@ -858,31 +858,35 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
   )
 }
 
-// ── Quiz remplir ordonnance (style LPT app WheelPicker) ─────────────
+// ── Quiz remplir ordonnance (pavé numérique, même design que la saisie interactive) ──
 function parseOrdoVal(str) {
   if (!str) return null
   return parseFloat(str.replace(',', '.'))
 }
 
+// Même design/système de saisie que la saisie interactive (Bases de l'optique) :
+// pavé numérique tap-to-type au lieu de la molette (ValueBox/ValueNumpad,
+// définis plus bas dans ce fichier, avant le composant SaisieInteractiveMobile).
 function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
   if (!q?.ordonnance?.od || !q?.ordonnance?.og) return null
   const hasCyl = !!(q.ordonnance.od.cyl || q.ordonnance.og.cyl)
 
-  const initIdx = () => ({
-    od: { sph: SPH_ZERO, cyl: CYL_ZERO, axe: AXE_ZERO, add: ADD_ZERO },
-    og: { sph: SPH_ZERO, cyl: CYL_ZERO, axe: AXE_ZERO, add: ADD_ZERO },
+  const initVals = () => ({
+    od: { sph: 0, cyl: 0, axe: 0, add: 0 },
+    og: { sph: 0, cyl: 0, axe: 0, add: 0 },
   })
 
-  const [idx, setIdx] = useState(initIdx)
+  const [vals, setVals] = useState(initVals)
   const [showResult, setShowResult] = useState(false)
   const [results, setResults] = useState(null)
   const [saving, setSaving] = useState(false)
   const [answered, setAnswered] = useState(false)
   const [isCorrect, setIsCorrect] = useState(null)
+  const [activeField, setActiveField] = useState(null) // null | { eye:'od'|'og', field:'sph'|'cyl'|'axe'|'add' }
 
   const setField = (eye, field, val) => {
-    setIdx(prev => ({ ...prev, [eye]: { ...prev[eye], [field]: val } }))
-    if (showResult) { setShowResult(false); setResults(null) }
+    if (showResult) return
+    setVals(prev => ({ ...prev, [eye]: { ...prev[eye], [field]: val } }))
   }
 
   const near = (a, b) => Math.abs(a - b) < 0.001
@@ -893,16 +897,16 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
     const og = q.ordonnance.og
     const r = {
       od: {
-        sph: near(SPH_VALS[idx.od.sph].val, parseOrdoVal(od.sph) ?? 0),
-        cyl: !hasCyl || near(CYL_VALS[idx.od.cyl].val, parseOrdoVal(od.cyl) ?? 0),
-        axe: !hasCyl || AXE_VALS[idx.od.axe].val === (parseInt(od.axe) || 0),
-        add: near(ADD_VALS[idx.od.add].val, parseOrdoVal(od.add) ?? 0),
+        sph: near(vals.od.sph, parseOrdoVal(od.sph) ?? 0),
+        cyl: !hasCyl || near(vals.od.cyl, parseOrdoVal(od.cyl) ?? 0),
+        axe: !hasCyl || Math.round(vals.od.axe) === (parseInt(od.axe) || 0),
+        add: near(vals.od.add, parseOrdoVal(od.add) ?? 0),
       },
       og: {
-        sph: near(SPH_VALS[idx.og.sph].val, parseOrdoVal(og.sph) ?? 0),
-        cyl: !hasCyl || near(CYL_VALS[idx.og.cyl].val, parseOrdoVal(og.cyl) ?? 0),
-        axe: !hasCyl || AXE_VALS[idx.og.axe].val === (parseInt(og.axe) || 0),
-        add: near(ADD_VALS[idx.og.add].val, parseOrdoVal(og.add) ?? 0),
+        sph: near(vals.og.sph, parseOrdoVal(og.sph) ?? 0),
+        cyl: !hasCyl || near(vals.og.cyl, parseOrdoVal(og.cyl) ?? 0),
+        axe: !hasCyl || Math.round(vals.og.axe) === (parseInt(og.axe) || 0),
+        add: near(vals.og.add, parseOrdoVal(og.add) ?? 0),
       },
     }
     setResults(r)
@@ -928,20 +932,36 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
 
   const corrLabel = {
     od: {
-      sph: SPH_VALS[findSphIdx(parseOrdoVal(q.ordonnance.od.sph) ?? 0)]?.label || '',
-      cyl: hasCyl ? CYL_VALS[findCylIdx(parseOrdoVal(q.ordonnance.od.cyl) ?? 0)]?.label || '' : '',
-      axe: hasCyl ? `${parseInt(q.ordonnance.od.axe) || 0}°` : '',
-      add: ADD_VALS[Math.max(0, Math.min(16, Math.round((parseOrdoVal(q.ordonnance.od.add) ?? 0) / 0.25)))]?.label || '',
+      sph: fmtDiop(parseOrdoVal(q.ordonnance.od.sph) ?? 0),
+      cyl: hasCyl ? fmtDiop(parseOrdoVal(q.ordonnance.od.cyl) ?? 0) : '',
+      axe: hasCyl ? fmtAxe(parseInt(q.ordonnance.od.axe) || 0) : '',
+      add: fmtAdd(parseOrdoVal(q.ordonnance.od.add) ?? 0),
     },
     og: {
-      sph: SPH_VALS[findSphIdx(parseOrdoVal(q.ordonnance.og.sph) ?? 0)]?.label || '',
-      cyl: hasCyl ? CYL_VALS[findCylIdx(parseOrdoVal(q.ordonnance.og.cyl) ?? 0)]?.label || '' : '',
-      axe: hasCyl ? `${parseInt(q.ordonnance.og.axe) || 0}°` : '',
-      add: ADD_VALS[Math.max(0, Math.min(16, Math.round((parseOrdoVal(q.ordonnance.og.add) ?? 0) / 0.25)))]?.label || '',
+      sph: fmtDiop(parseOrdoVal(q.ordonnance.og.sph) ?? 0),
+      cyl: hasCyl ? fmtDiop(parseOrdoVal(q.ordonnance.og.cyl) ?? 0) : '',
+      axe: hasCyl ? fmtAxe(parseInt(q.ordonnance.og.axe) || 0) : '',
+      add: fmtAdd(parseOrdoVal(q.ordonnance.og.add) ?? 0),
     },
   }
 
-  const colLabels = ['Sph', ...(hasCyl ? ['Cyl', 'Axe'] : []), 'Add']
+  const openNumpad = (eye, field) => {
+    if (showResult) return
+    setActiveField({ eye, field })
+  }
+  const activeValue = !activeField ? 0 : vals[activeField.eye][activeField.field]
+  const eyeLabel = (eye) => eye === 'od' ? 'Œil droit' : 'Œil gauche'
+  const numpadConfig = !activeField ? null
+    : activeField.field === 'axe' ? { title: `Axe — ${eyeLabel(activeField.eye)} (0° – 180°)`, mode: 'degrees', max: 180 }
+    : activeField.field === 'add' ? { title: `Add — ${eyeLabel(activeField.eye)}`, mode: 'diopter-positive', max: 4 }
+    : { title: `${activeField.field === 'sph' ? 'Sphère' : 'Cylindre'} — ${eyeLabel(activeField.eye)}`, mode: 'diopter-signed', max: 8 }
+
+  const rows = [
+    { key: 'sph', label: 'Sphère',   mode: 'diopter-signed',   show: true },
+    { key: 'cyl', label: 'Cylindre', mode: 'diopter-signed',   show: hasCyl },
+    { key: 'axe', label: 'Axe',      mode: 'degrees',          show: hasCyl },
+    { key: 'add', label: 'Add',      mode: 'diopter-positive', show: true },
+  ].filter(r => r.show)
 
   return (
     <div style={{ height: '100dvh', overflow: 'hidden', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
@@ -953,46 +973,25 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
       </div>
 
       {/* Corps scrollable */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 12px 8px' }}>
-        <div style={{ fontSize: 12, color: '#666', fontWeight: 600, textAlign: 'center', marginBottom: 14 }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 16px 8px' }}>
+        <div style={{ fontSize: 12, color: '#666', fontWeight: 600, textAlign: 'center', marginBottom: 16 }}>
           Regardez l&apos;ordonnance sur l&apos;écran et saisissez les valeurs
         </div>
 
         {/* En-têtes colonnes */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 4, paddingLeft: 40 }}>
-          {colLabels.map(lbl => (
-            <div key={lbl} style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: 0.5 }}>{lbl}</div>
-          ))}
+        <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 10, marginBottom: 8 }}>
+          <div />
+          <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 600, color: '#666', fontStyle: 'italic' }}>Œil droit</div>
+          <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 600, color: '#666', fontStyle: 'italic' }}>Œil gauche</div>
         </div>
 
-        {/* OD + OG rows */}
-        {[{ eye: 'od', label: 'OD' }, { eye: 'og', label: 'OG' }].map(({ eye, label }) => {
-          const fields = [
-            { key: 'sph', vals: SPH_VALS, curIdx: idx[eye].sph, isCorr: results?.[eye]?.sph, corrLbl: corrLabel[eye].sph, show: true },
-            { key: 'cyl', vals: CYL_VALS, curIdx: idx[eye].cyl, isCorr: results?.[eye]?.cyl, corrLbl: corrLabel[eye].cyl, show: hasCyl },
-            { key: 'axe', vals: AXE_VALS, curIdx: idx[eye].axe, isCorr: results?.[eye]?.axe, corrLbl: corrLabel[eye].axe, show: hasCyl, circular: true },
-            { key: 'add', vals: ADD_VALS, curIdx: idx[eye].add, isCorr: results?.[eye]?.add, corrLbl: corrLabel[eye].add, show: true },
-          ].filter(f => f.show)
-
-          return (
-            <div key={eye} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-              <div style={{ width: 34, textAlign: 'center', fontSize: 13, fontWeight: 900, color: APP_DARK, flexShrink: 0 }}>{label}</div>
-              {fields.map(f => (
-                <div key={f.key} style={{ flex: 1, background: '#fff', borderRadius: 10, border: `1.5px solid ${showResult ? (f.isCorr ? '#22c55e' : '#ef4444') : APP_GOLD + '88'}`, overflow: 'hidden' }}>
-                  <WheelPicker
-                    values={f.vals}
-                    selectedIdx={f.curIdx}
-                    onChange={v => setField(eye, f.key, v)}
-                    showResult={showResult}
-                    isCorrect={f.isCorr}
-                    correctLabel={f.corrLbl}
-                    circular={f.circular || false}
-                  />
-                </div>
-              ))}
-            </div>
-          )
-        })}
+        {rows.map(row => (
+          <div key={row.key} style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 10, marginBottom: 14, alignItems: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>{row.label}</div>
+            <ValueBox value={vals.od[row.key]} mode={row.mode} locked={showResult} isCorrect={results?.od?.[row.key]} showResult={showResult} correctLabel={corrLabel.od[row.key]} onClick={() => openNumpad('od', row.key)} />
+            <ValueBox value={vals.og[row.key]} mode={row.mode} locked={showResult} isCorrect={results?.og?.[row.key]} showResult={showResult} correctLabel={corrLabel.og[row.key]} onClick={() => openNumpad('og', row.key)} />
+          </div>
+        ))}
       </div>
 
       {/* Footer */}
@@ -1011,16 +1010,31 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
           {saving ? 'Enregistrement…' : '✓ Valider'}
         </button>
       </div>
+
+      {/* Pavé numérique — saisie manuelle du champ actif */}
+      {activeField && numpadConfig && (
+        <ValueNumpad
+          title={numpadConfig.title}
+          mode={numpadConfig.mode}
+          max={numpadConfig.max}
+          currentValue={activeValue}
+          onConfirm={v => { setField(activeField.eye, activeField.field, v); setActiveField(null) }}
+          onClose={() => setActiveField(null)}
+        />
+      )}
     </div>
   )
 }
 
 // ── Quiz sélecteur de puissances (roulettes, comme la saisie d'ordonnance) ──
-const SPH_POS_MAX_VALS = Array.from({ length: 33 }, (_, i) => {
+// Va jusqu'à ±30 (au lieu de ±8) : la vraie limite (7,25 / −8,00) doit être
+// trouvée par le formé au milieu d'une plage bien plus large, pas devinée
+// parce que la roulette s'arrête pile à la bonne valeur.
+const SPH_POS_MAX_VALS = Array.from({ length: 121 }, (_, i) => {
   const v = parseFloat((i * 0.25).toFixed(3))
   return { val: v, label: v > 0.001 ? `+${v.toFixed(2).replace('.', ',')}` : '0,00' }
 })
-const SPH_NEG_MAX_VALS = Array.from({ length: 33 }, (_, i) => {
+const SPH_NEG_MAX_VALS = Array.from({ length: 121 }, (_, i) => {
   const v = parseFloat((-i * 0.25).toFixed(3))
   return { val: v, label: v < -0.001 ? `−${Math.abs(v).toFixed(2).replace('.', ',')}` : '0,00' }
 })
@@ -2226,34 +2240,7 @@ const APP_GOLD = '#c8a52a'
 const APP_BG   = '#eae7f0'
 const APP_DARK = '#2a2840'
 
-// ── Tableaux de valeurs (ordonnés : moins en haut, plus en bas) ──
-const SPH_VALS = Array.from({ length: 65 }, (_, i) => {
-  const v = parseFloat((-8 + i * 0.25).toFixed(3))
-  const a = Math.abs(v).toFixed(2).replace('.', ',')
-  return { val: v, label: v > 0.001 ? `+${a}` : v < -0.001 ? `−${a}` : '0,00' }
-})
-const CYL_VALS = Array.from({ length: 65 }, (_, i) => {
-  const v = parseFloat((-8 + i * 0.25).toFixed(3))
-  const a = Math.abs(v).toFixed(2).replace('.', ',')
-  return { val: v, label: v > 0.001 ? `+${a}` : v < -0.001 ? `−${a}` : '0,00' }
-})
-const AXE_VALS = Array.from({ length: 181 }, (_, i) => ({ val: i, label: `${i}°` }))
-const ADD_VALS = Array.from({ length: 17 }, (_, i) => {
-  const v = parseFloat((i * 0.25).toFixed(3))
-  return { val: v, label: v > 0.001 ? `+${v.toFixed(2).replace('.', ',')}` : '0,00' }
-})
-
-// Index "zéro" dans chaque tableau
-const SPH_ZERO = 32   // -8 + 32*0.25 = 0.00
-const CYL_ZERO = 32   // -8 + 32*0.25 = 0.00
-const AXE_ZERO = 0    // 0°
-const ADD_ZERO = 0    // 0.00
-
-const findSphIdx = v => Math.max(0, Math.min(64, Math.round((v + 8) / 0.25)))
-const findCylIdx = v => Math.max(0, Math.min(64, Math.round((v + 8) / 0.25)))
-const findAxeIdx = v => Math.max(0, Math.min(180, Math.round(v)))
-
-// ── WheelPicker (roulette tactile) ────────────────────────────────
+// ── WheelPicker (roulette tactile) — utilisé par QuizPowerSelector ──
 // circular=true : le tableau boucle sur lui-même (0° ↔ 180°)
 function WheelPicker({ values, selectedIdx, onChange, showResult, isCorrect, correctLabel, circular = false }) {
   const ITEM_H = 38
@@ -2397,8 +2384,7 @@ function WheelPicker({ values, selectedIdx, onChange, showResult, isCorrect, cor
   )
 }
 
-// ── Formatage valeurs saisie interactive (indépendant du WheelPicker/VALS
-// partagés avec QuizOrdonnanceFill, pour ne pas y toucher) ────────
+// ── Formatage valeurs saisie interactive / ordonnance (dioptrie, add, degrés) ──
 const fmtDiop = (v) => {
   const a = Math.abs(v).toFixed(2).replace('.', ',')
   return v > 0.001 ? `+${a}` : v < -0.001 ? `−${a}` : '0,00'
@@ -2514,8 +2500,7 @@ const SAISIE_WRONG_MSG = "Ton client ne verra rien avec les corrections que tu a
 
 function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
   // Valeurs brutes (dioptries/degrés) — plus d'indices dans un tableau de
-  // molette : la saisie se fait maintenant au clavier numérique (cf.
-  // ValueNumpad), indépendamment du WheelPicker partagé avec QuizOrdonnanceFill.
+  // molette : la saisie se fait maintenant au clavier numérique (cf. ValueNumpad).
   const initVals = () => ({
     od: { sph: 0, cyl: 0, axe: 0 },
     og: { sph: 0, cyl: 0, axe: 0 },
