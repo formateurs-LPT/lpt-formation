@@ -868,7 +868,7 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
           textTransform: 'uppercase', letterSpacing: 1.5,
         }}>Pourquoi cylindre et axe vont ensemble</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 64 }}>
-          <HeadlightVision cyl={ordoHeadlightCyl || 0} axe={ordoHeadlightAxe || 0} size={340} label="Ce que voit le formé" />
+          <HeadlightVision cyl={ordoHeadlightCyl || 0} axe={ordoHeadlightAxe || 0} size={340} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '18px 28px', minWidth: 200 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#c084fc', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>Cylindre</div>
