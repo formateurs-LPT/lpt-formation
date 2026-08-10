@@ -1522,7 +1522,11 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
 // ── Sélecteur de catégorie ────────────────────────────────────────
 
 function CategorySelector({ entrees, onSelect }) {
-  const weekDate = getWeekDate()
+  const thisWeek = getWeekDate()
+  // Semaine à envoyer aux DR — par défaut la semaine en cours, mais modifiable :
+  // le lien pointait toujours sur "cette semaine", donc envoyer le retour d'une
+  // semaine passée (ex: visio de la semaine dernière) donnait un rapport vide.
+  const [drWeekDate, setDrWeekDate] = useState(thisWeek)
 
   const counts = {}
   for (const e of entrees) {
@@ -1530,16 +1534,22 @@ function CategorySelector({ entrees, onSelect }) {
     counts[cat] = (counts[cat] || 0) + 1
   }
 
+  const shiftDrWeek = (deltaDays) => {
+    const d = new Date(`${drWeekDate}T00:00:00`)
+    d.setDate(d.getDate() + deltaDays)
+    setDrWeekDate(d.toISOString().slice(0, 10))
+  }
+
   const getDrUrl = (drKey) => {
     if (typeof window === 'undefined') return ''
-    return `${PUBLIC_ORIGIN}/rapport-dr/?dr=${drKey}&w=${weekDate}`
+    return `${PUBLIC_ORIGIN}/rapport-dr/?dr=${drKey}&w=${drWeekDate}`
   }
 
   const handleMailDR = (drKey) => {
     const dr = DIRECTEURS[drKey]
     const prenom = dr.name.split(' ')[0]
     const url = getDrUrl(drKey)
-    const subject = encodeURIComponent(`Retour formation — semaine du ${weekDate}`)
+    const subject = encodeURIComponent(`Retour formation — semaine du ${drWeekDate}`)
     const body = encodeURIComponent(
       `Salut ${prenom} !\n\nVoici le retour global des entrées de la semaine sur ton réseau.\n\n${url}\n\nSi tu as des questions n'hésite pas !\n\nBonne journée à toi.`
     )
@@ -1594,8 +1604,30 @@ function CategorySelector({ entrees, onSelect }) {
 
       {/* ── Rapports Directeurs Régionaux ── */}
       <div style={{ marginTop: 32, borderTop: '1px solid #334155', paddingTop: 24 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>
-          Rapports Directeurs Régionaux
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Rapports Directeurs Régionaux
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={() => shiftDrWeek(-7)}
+              style={{ background: 'transparent', border: '1px solid #334155', color: '#94a3b8', borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}
+            >◀</button>
+            <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, minWidth: 130, textAlign: 'center' }}>
+              Semaine du {formatDate(drWeekDate)}
+            </span>
+            <button
+              onClick={() => shiftDrWeek(7)}
+              disabled={drWeekDate >= thisWeek}
+              style={{ background: 'transparent', border: '1px solid #334155', color: drWeekDate >= thisWeek ? '#334155' : '#94a3b8', borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: drWeekDate >= thisWeek ? 'default' : 'pointer', fontFamily: 'inherit' }}
+            >▶</button>
+            {drWeekDate !== thisWeek && (
+              <button
+                onClick={() => setDrWeekDate(thisWeek)}
+                style={{ background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.3)', color: '#00abe9', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+              >Aujourd&apos;hui</button>
+            )}
+          </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {Object.entries(DIRECTEURS).map(([key, dr]) => (
