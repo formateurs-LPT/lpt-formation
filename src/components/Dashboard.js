@@ -439,6 +439,127 @@ function SessionsHistoryView({ onBack, onToast }) {
 // ── Changelog data ───────────────────────────────────────────────
 const APP_UPDATES = [
   {
+    id: '2026-08-10',
+    date: '3 → 10 août 2026',
+    title: 'Récap de la semaine — sécurité quiz, points fiabilisés, saisie interactive repensée',
+    tag: 'Gros récap',
+    tagColor: '#fbbf24',
+    sections: [
+      {
+        title: 'Sécurité anti-triche sur les quiz à réponse libre',
+        accent: '#ef4444',
+        tag: 'Sécurité',
+        items: [
+          'Sur les 8 modules à questions libres (Bases de l\'optique, Ajustages, Remboursement France, Quiz Jour 1, Types de verres, Entreprise, Retraits, Quiz Final), le bouton "Voir la correction" est bloqué tant que tous les formés connectés n\'ont pas répondu',
+          'Avant : il pouvait être cliqué à tout moment et révélait sur le diffuseur le texte des réponses déjà reçues — un formé qui traînait pouvait lire les autres et recopier',
+          'Le bouton affiche maintenant un compteur "En attente (3/8)" tant que ce n\'est pas complet',
+        ],
+      },
+      {
+        title: 'Comptes formateur en test — traités comme un vrai formé',
+        accent: '#22d3ee',
+        tag: 'Correctif de fond',
+        items: [
+          'Un formateur qui teste l\'appli avec son propre compte voit maintenant ses réponses prises en compte partout où c\'est pertinent : classement en direct, vue formateur, écran diffuseur, jeu des questions, ses propres points sur son téléphone',
+          'Corrige un bug de fond où la vue formateur en direct interrogeait la mauvaise salle si le navigateur avait déjà servi à se connecter comme formé (code de salle resté en mémoire)',
+          'Reste volontairement filtré sur les rapports officiels (retour de formation, note globale, avis) pour ne pas fausser les vraies statistiques des formés',
+        ],
+      },
+      {
+        title: 'Points et classement — plusieurs bugs corrigés',
+        accent: '#818cf8',
+        tag: 'Correctif',
+        items: [
+          'Formés dont la salle avait déjà été terminée par le formateur : leurs points remontent maintenant depuis l\'archive au lieu d\'afficher 0',
+          'Corrige un cumul erroné qui additionnait à tort les points de plusieurs semaines passées au lieu de ne compter que la salle en cours',
+          'Corrige des doublons dans les réponses aux quiz qui faussaient les compteurs "bonnes/mauvaises réponses" affichés en fin de question',
+          'La saisie interactive (cas pratiques Bases de l\'optique) ne remonte plus les résultats de semaines passées, côté formateur comme sur le diffuseur',
+        ],
+      },
+      {
+        title: 'Jeu des questions',
+        accent: '#10b981',
+        tag: 'Amélioration',
+        items: [
+          'Le formateur voit maintenant qui n\'a pas encore répondu, en plus de la liste de ceux qui ont répondu',
+          'Validation automatique continue : dès que le formateur donne sa réponse (Vrai/Faux, choix, sélection multiple), tout formé ayant répondu exactement pareil est validé automatiquement — modifiable manuellement à tout moment, y compris après coup',
+          'Nouvelles options dédiées pour "Ce client voit :" (symptômes : flou de loin, flou à toutes distances, déformé, flou de près) distinctes de "Quels sont les problèmes de vue ?" (troubles)',
+          'Sélection multiple, durée de validité d\'ordonnance et nouveau mini-jeu autonome ajoutés en cours de semaine',
+        ],
+      },
+      {
+        title: 'Saisie interactive — cas pratiques (Bases de l\'optique)',
+        accent: '#fb923c',
+        tag: 'Refonte',
+        items: [
+          'La molette tactile est remplacée par un clavier numérique : le formé saisit lui-même chiffres, virgule et signe (comme sur une vraie ordonnance)',
+          'Cases sphère/cylindre/axe/add agrandies pour limiter les erreurs de clic',
+          'Plus d\'avancée automatique après validation : le formé clique "Cas suivant" lui-même, le temps de lire le résultat',
+          'Retire l\'indice "(aucune)" à côté d\'Add qui donnait la réponse sans effort',
+        ],
+      },
+      {
+        title: 'Animation cylindre/axe',
+        accent: '#f59e0b',
+        tag: 'Design',
+        items: [
+          'Nouveau visuel façon phare de voiture (au lieu d\'une sphère blanche abstraite) — le fonctionnement et le rapporteur restent identiques',
+          'Label inutile "Ce que voit le formé" retiré du diffuseur',
+        ],
+      },
+      {
+        title: '4 troubles visuels — Bases de l\'optique',
+        accent: '#00abe9',
+        tag: 'Amélioration',
+        items: [
+          'Les 4 troubles sont désormais révélés un par un sur le diffuseur et le téléphone des formés, au lieu d\'apparaître tous en même temps',
+        ],
+      },
+      {
+        title: 'Podium & correction en direct',
+        accent: '#a78bfa',
+        tag: 'Interactif',
+        items: [
+          'Le podium intermédiaire toutes les 5 questions est supprimé (source de plantages) — seul le podium final reste',
+          'Chaque formé voit désormais son classement en temps réel, en privé, sur son téléphone après chaque correction',
+        ],
+      },
+      {
+        title: 'Nouveaux modules SAV — Montures Outlet & Le Montage',
+        accent: '#f472b6',
+        tag: 'Nouveaux modules',
+        items: [
+          'Module "Montures Outlet" : animation dédiée, bouton de révélation et rythme corrigés',
+          'Module "Le Montage" : mention claire du 0€ de reste à charge, animation interactive (remplace l\'ancienne page statique), tous les traitements comparés côte à côte sur le diffuseur, page de conclusion plus percutante',
+        ],
+      },
+      {
+        title: 'Retour de formation & rapports',
+        accent: '#c084fc',
+        tag: 'Amélioration',
+        items: [
+          'Envoi d\'un lien d\'auto-évaluation à distance pour les formés absents',
+          'Sélection des destinataires lors du partage de la fiche pratique SAV',
+          'Classement du formé visible dans le compte rendu envoyé au manager',
+          'Historique : les variantes de saisie d\'un même magasin (ex. Bayonne) sont regroupées, sans fusionner les villes à plusieurs magasins (Marseille, Toulouse, Montpellier)',
+          'Managers retour de formation mis à jour (Toulon Avenue 83, Ixelles) + correction de l\'email de Marie-Julie Cicuto',
+        ],
+      },
+      {
+        title: 'Audit complet & corrections diverses',
+        accent: '#34d399',
+        tag: 'Fiabilité',
+        items: [
+          'Audit complet du Quiz Final : classement formateur, garde-fous et filtres',
+          'Contrôle complet de la Journée 4, fiche récap SAV enrichie',
+          'QR code de connexion : ne renvoie plus vers l\'écran de connexion Vercel',
+          'Corrige le formé qui restait bloqué quand le formateur quittait un module en cours',
+          'Corrige l\'écran formé pendant l\'animation PDM (verre brut → paire parfaite)',
+        ],
+      },
+    ],
+  },
+  {
     id: '2026-07-31',
     date: '13 → 31 juillet 2026',
     title: 'Récap complet — nouveautés de l\'app pendant tes vacances',
