@@ -244,7 +244,9 @@ function JourneeCard({ journee, onClick }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         background: hovered ? `${journee.color}18` : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${hovered ? journee.color + '55' : 'rgba(255,255,255,0.08)'}`,
+        borderTop: `1px solid ${hovered ? journee.color + '55' : 'rgba(255,255,255,0.08)'}`,
+        borderRight: `1px solid ${hovered ? journee.color + '55' : 'rgba(255,255,255,0.08)'}`,
+        borderBottom: `1px solid ${hovered ? journee.color + '55' : 'rgba(255,255,255,0.08)'}`,
         borderLeft: `4px solid ${journee.color}`,
         borderRadius: 18, padding: '22px 24px',
         cursor: 'pointer', transition: 'all .2s ease',
