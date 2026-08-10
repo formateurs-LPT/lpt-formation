@@ -2397,27 +2397,59 @@ function WheelPicker({ values, selectedIdx, onChange, showResult, isCorrect, cor
   )
 }
 
-// ── Pavé numérique axe ────────────────────────────────────────────
-function AxeNumpad({ currentValue, onConfirm, onClose }) {
-  const [digits, setDigits] = useState(String(currentValue))
-  const add = d => { const s = digits === '0' ? d : digits + d; if (parseInt(s) <= 180) setDigits(s) }
-  const del = () => setDigits(p => p.length <= 1 ? '0' : p.slice(0, -1))
-  const ok  = () => onConfirm(Math.max(0, Math.min(180, parseInt(digits) || 0)))
+// ── Formatage valeurs saisie interactive (indépendant du WheelPicker/VALS
+// partagés avec QuizOrdonnanceFill, pour ne pas y toucher) ────────
+const fmtDiop = (v) => {
+  const a = Math.abs(v).toFixed(2).replace('.', ',')
+  return v > 0.001 ? `+${a}` : v < -0.001 ? `−${a}` : '0,00'
+}
+const fmtAdd  = (v) => (v > 0.001 ? `+${v.toFixed(2).replace('.', ',')}` : '0,00')
+const fmtAxe  = (v) => `${Math.round(v)}°`
+
+// ── Pavé numérique générique (dioptrie signée, addition positive, ou degrés) ──
+function ValueNumpad({ title, mode, currentValue, max, onConfirm, onClose }) {
+  const isDeg = mode === 'degrees'
+  const [sign, setSign]     = useState(currentValue < 0 ? '-' : '+')
+  const [cents, setCents]   = useState(() => Math.round(Math.abs(currentValue) * 100))
+  const [degDigits, setDegDigits] = useState(() => String(Math.max(0, Math.round(currentValue))))
+
+  const addDigit = d => {
+    if (isDeg) setDegDigits(p => { const s = p === '0' ? d : p + d; return parseInt(s) <= 180 ? s : p })
+    else setCents(c => Math.min(max * 100, c * 10 + parseInt(d)))
+  }
+  const delDigit = () => {
+    if (isDeg) setDegDigits(p => p.length <= 1 ? '0' : p.slice(0, -1))
+    else setCents(c => Math.floor(c / 10))
+  }
+  const confirm = () => {
+    if (isDeg) onConfirm(Math.max(0, Math.min(180, parseInt(degDigits) || 0)))
+    else onConfirm((sign === '-' ? -1 : 1) * Math.min(max, cents / 100))
+  }
+
+  const display = isDeg ? `${degDigits}°` : `${sign}${(cents / 100).toFixed(2).replace('.', ',')}`
 
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 99 }} />
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: APP_BG, borderRadius: '20px 20px 0 0', padding: '18px 18px 40px', boxShadow: '0 -8px 40px rgba(0,0,0,0.25)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#555' }}>Axe (0° – 180°)</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#555' }}>{title}</span>
           <button onPointerDown={onClose} style={{ background: 'transparent', border: 'none', fontSize: 22, cursor: 'pointer', color: '#888', padding: '2px 8px' }}>✕</button>
         </div>
-        <div style={{ background: '#fff', borderRadius: 12, padding: '12px 20px', fontSize: 34, fontWeight: 800, color: APP_DARK, textAlign: 'center', marginBottom: 14, border: `2px solid ${APP_GOLD}`, fontVariantNumeric: 'tabular-nums' }}>
-          {digits}°
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          {mode === 'diopter-signed' && (
+            <button onPointerDown={() => setSign(s => s === '-' ? '+' : '-')} style={{
+              flexShrink: 0, padding: '12px 18px', borderRadius: 12, background: '#fff', border: `2px solid ${APP_GOLD}`,
+              color: APP_DARK, fontSize: 22, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent',
+            }}>{sign}</button>
+          )}
+          <div style={{ flex: 1, background: '#fff', borderRadius: 12, padding: '12px 20px', fontSize: 30, fontWeight: 800, color: APP_DARK, textAlign: 'center', border: `2px solid ${APP_GOLD}`, fontVariantNumeric: 'tabular-nums' }}>
+            {display}
+          </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
           {['1','2','3','4','5','6','7','8','9','⌫','0','✓'].map(k => (
-            <button key={k} onPointerDown={() => { if (k==='⌫') del(); else if (k==='✓') ok(); else add(k) }}
+            <button key={k} onPointerDown={() => { if (k==='⌫') delDigit(); else if (k==='✓') confirm(); else addDigit(k) }}
               style={{ padding: '15px 8px', borderRadius: 12, background: k==='✓' ? APP_GOLD : k==='⌫' ? '#e0dcf0' : '#fff', border: '1px solid #ddd9ec', color: k==='✓' ? '#fff' : APP_DARK, fontSize: k==='✓'||k==='⌫' ? 20 : 22, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent' }}
             >{k}</button>
           ))}
@@ -2427,14 +2459,41 @@ function AxeNumpad({ currentValue, onConfirm, onClose }) {
   )
 }
 
+// ── Case de valeur tappable (remplace le WheelPicker pour la saisie interactive) ──
+function ValueBox({ value, mode, locked, isCorrect, showResult, correctLabel, onClick }) {
+  const label = mode === 'degrees' ? fmtAxe(value) : mode === 'diopter-positive' ? fmtAdd(value) : fmtDiop(value)
+  const bg     = showResult ? (isCorrect ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.1)') : '#fff'
+  const border = showResult ? (isCorrect ? '#22c55e' : '#ef4444') : `${APP_GOLD}88`
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <button
+        onPointerDown={locked ? undefined : onClick}
+        disabled={locked}
+        style={{
+          width: '100%', padding: '11px 8px', borderRadius: 10,
+          background: bg, border: `1.5px solid ${border}`,
+          fontSize: 15, fontWeight: 700, color: APP_DARK,
+          fontFamily: 'inherit', cursor: locked ? 'default' : 'pointer',
+          fontVariantNumeric: 'tabular-nums', WebkitTapHighlightColor: 'transparent',
+        }}
+      >{label}</button>
+      {showResult && !isCorrect && (
+        <div style={{ fontSize: 10, color: '#ef4444', fontWeight: 700, textAlign: 'center' }}>✓ {correctLabel}</div>
+      )}
+    </div>
+  )
+}
 
 const SAISIE_WRONG_MSG = "Ton client ne verra rien avec les corrections que tu as entrées !"
 
 function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
-  const initIdx = () => ({
-    od: { sph: SPH_ZERO, cyl: CYL_ZERO, axe: AXE_ZERO },
-    og: { sph: SPH_ZERO, cyl: CYL_ZERO, axe: AXE_ZERO },
-    add: ADD_ZERO,
+  // Valeurs brutes (dioptries/degrés) — plus d'indices dans un tableau de
+  // molette : la saisie se fait maintenant au clavier numérique (cf.
+  // ValueNumpad), indépendamment du WheelPicker partagé avec QuizOrdonnanceFill.
+  const initVals = () => ({
+    od: { sph: 0, cyl: 0, axe: 0 },
+    og: { sph: 0, cyl: 0, axe: 0 },
+    add: 0,
   })
 
   const [stage, setStage] = useState('r1-entry')
@@ -2442,10 +2501,10 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
   const caseIndexes = (SAISIE_ROUNDS.find(r => r.round === round) || SAISIE_ROUNDS[0]).caseIndexes
 
   const [localCaseIdx, setLocalCaseIdx] = useState(0)
-  const [idx, setIdx] = useState(initIdx)
+  const [vals, setVals] = useState(initVals)
   const [showResult, setShowResult] = useState(false)
   const [results, setResults] = useState(null)
-  const [numpadEye, setNumpadEye] = useState(null) // null | 'od' | 'og'
+  const [activeField, setActiveField] = useState(null) // null | { eye:'od'|'og', field:'sph'|'cyl'|'axe' } | { eye:'add' }
   const [roundTally, setRoundTally] = useState({ correct: 0, total: 0 })
   const [roundDone, setRoundDone] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -2467,7 +2526,7 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
   // Nouveau round → on repart de zéro sur les 3 nouveaux cas
   useEffect(() => {
     setLocalCaseIdx(0)
-    setIdx(initIdx())
+    setVals(initVals())
     setShowResult(false)
     setResults(null)
     setRoundTally({ correct: 0, total: 0 })
@@ -2479,35 +2538,46 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
 
   const setEye = (eye, field, val) => {
     if (showResult) return // verrouillé après vérification, aucune modification possible
-    setIdx(prev => ({ ...prev, [eye]: { ...prev[eye], [field]: val } }))
+    setVals(prev => ({ ...prev, [eye]: { ...prev[eye], [field]: val } }))
   }
   const setAdd = val => {
     if (showResult) return
-    setIdx(prev => ({ ...prev, add: val }))
+    setVals(prev => ({ ...prev, add: val }))
   }
+
+  const openNumpad = (eye, field) => {
+    if (showResult) return
+    setActiveField(field ? { eye, field } : { eye })
+  }
+  const activeValue = !activeField ? 0
+    : activeField.eye === 'add' ? vals.add
+    : vals[activeField.eye][activeField.field]
+  const numpadConfig = !activeField ? null
+    : activeField.eye === 'add' ? { title: 'Addition (Add)', mode: 'diopter-positive', max: 4 }
+    : activeField.field === 'axe' ? { title: `Axe — ${activeField.eye === 'od' ? 'Œil droit' : 'Œil gauche'} (0° – 180°)`, mode: 'degrees', max: 180 }
+    : { title: `${activeField.field === 'sph' ? 'Sphère' : 'Cylindre'} — ${activeField.eye === 'od' ? 'Œil droit' : 'Œil gauche'}`, mode: 'diopter-signed', max: 8 }
 
   const near = (a, b) => Math.abs(a - b) < 0.001
 
   const verify = () => {
     const r = {
       od: {
-        sph: near(SPH_VALS[idx.od.sph].val, ex.od.sphere),
-        cyl: near(CYL_VALS[idx.od.cyl].val, ex.od.cylindre),
-        axe: AXE_VALS[idx.od.axe].val === ex.od.axe,
+        sph: near(vals.od.sph, ex.od.sphere),
+        cyl: near(vals.od.cyl, ex.od.cylindre),
+        axe: Math.round(vals.od.axe) === ex.od.axe,
       },
       og: {
-        sph: near(SPH_VALS[idx.og.sph].val, ex.og.sphere),
-        cyl: near(CYL_VALS[idx.og.cyl].val, ex.og.cylindre),
-        axe: AXE_VALS[idx.og.axe].val === ex.og.axe,
+        sph: near(vals.og.sph, ex.og.sphere),
+        cyl: near(vals.og.cyl, ex.og.cylindre),
+        axe: Math.round(vals.og.axe) === ex.og.axe,
       },
       // Une addition saisie alors qu'il n'y en a pas sur le cas est une erreur (comparaison à 0)
-      add: near(ADD_VALS[idx.add].val, ex.add ?? 0),
+      add: near(vals.add, ex.add ?? 0),
     }
     setResults(r)
     setShowResult(true)
   }
 
-  const hasAdd = ex.add != null
   const totalFields = 7 // OD sph/cyl/axe + OG sph/cyl/axe + add (l'add compte toujours, y compris "doit rester à 0")
   const correctCount = results
     ? [results.od.sph, results.od.cyl, results.od.axe,
@@ -2522,7 +2592,7 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
     if (!isLastCase) {
       setRoundTally(newTally)
       setLocalCaseIdx(i => i + 1)
-      setIdx(initIdx())
+      setVals(initVals())
       setShowResult(false)
       setResults(null)
       return
@@ -2556,9 +2626,9 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
 
   // Labels de la bonne réponse (pour feedback)
   const corrLabel = {
-    od: { sph: SPH_VALS[findSphIdx(ex.od.sphere)]?.label || '', cyl: CYL_VALS[findCylIdx(ex.od.cylindre)]?.label || '', axe: `${ex.od.axe}°` },
-    og: { sph: SPH_VALS[findSphIdx(ex.og.sphere)]?.label || '', cyl: CYL_VALS[findCylIdx(ex.og.cylindre)]?.label || '', axe: `${ex.og.axe}°` },
-    add: ADD_VALS[Math.round((ex.add ?? 0) / 0.25)]?.label || '0,00',
+    od: { sph: fmtDiop(ex.od.sphere), cyl: fmtDiop(ex.od.cylindre), axe: fmtAxe(ex.od.axe) },
+    og: { sph: fmtDiop(ex.og.sphere), cyl: fmtDiop(ex.og.cylindre), axe: fmtAxe(ex.og.axe) },
+    add: fmtAdd(ex.add ?? 0),
   }
 
   // ── Écran d'attente une fois les 3 cas du round envoyés ──
@@ -2630,46 +2700,31 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
 
           {/* Sphère */}
           <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-            <div />
-            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
-              <WheelPicker values={SPH_VALS} selectedIdx={idx.od.sph} onChange={v => setEye('od', 'sph', v)} showResult={showResult} isCorrect={results?.od?.sph} correctLabel={corrLabel.od.sph} />
-            </div>
-            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
-              <WheelPicker values={SPH_VALS} selectedIdx={idx.og.sph} onChange={v => setEye('og', 'sph', v)} showResult={showResult} isCorrect={results?.og?.sph} correctLabel={corrLabel.og.sph} />
-            </div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>Sphère</div>
+            <ValueBox value={vals.od.sph} mode="diopter-signed" locked={showResult} isCorrect={results?.od?.sph} showResult={showResult} correctLabel={corrLabel.od.sph} onClick={() => openNumpad('od', 'sph')} />
+            <ValueBox value={vals.og.sph} mode="diopter-signed" locked={showResult} isCorrect={results?.og?.sph} showResult={showResult} correctLabel={corrLabel.og.sph} onClick={() => openNumpad('og', 'sph')} />
           </div>
 
           {/* Cylindre */}
           <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-            <div />
-            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
-              <WheelPicker values={CYL_VALS} selectedIdx={idx.od.cyl} onChange={v => setEye('od', 'cyl', v)} showResult={showResult} isCorrect={results?.od?.cyl} correctLabel={corrLabel.od.cyl} />
-            </div>
-            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
-              <WheelPicker values={CYL_VALS} selectedIdx={idx.og.cyl} onChange={v => setEye('og', 'cyl', v)} showResult={showResult} isCorrect={results?.og?.cyl} correctLabel={corrLabel.og.cyl} />
-            </div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>Cylindre</div>
+            <ValueBox value={vals.od.cyl} mode="diopter-signed" locked={showResult} isCorrect={results?.od?.cyl} showResult={showResult} correctLabel={corrLabel.od.cyl} onClick={() => openNumpad('od', 'cyl')} />
+            <ValueBox value={vals.og.cyl} mode="diopter-signed" locked={showResult} isCorrect={results?.og?.cyl} showResult={showResult} correctLabel={corrLabel.og.cyl} onClick={() => openNumpad('og', 'cyl')} />
           </div>
 
           {/* Axe */}
-          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
-            <div />
-            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
-              <WheelPicker values={AXE_VALS} selectedIdx={idx.od.axe} onChange={v => setEye('od', 'axe', v)} showResult={showResult} isCorrect={results?.od?.axe} correctLabel={corrLabel.od.axe} circular />
-            </div>
-            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${APP_GOLD}88`, overflow: 'hidden' }}>
-              <WheelPicker values={AXE_VALS} selectedIdx={idx.og.axe} onChange={v => setEye('og', 'axe', v)} showResult={showResult} isCorrect={results?.og?.axe} correctLabel={corrLabel.og.axe} circular />
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>Axe</div>
+            <ValueBox value={vals.od.axe} mode="degrees" locked={showResult} isCorrect={results?.od?.axe} showResult={showResult} correctLabel={corrLabel.od.axe} onClick={() => openNumpad('od', 'axe')} />
+            <ValueBox value={vals.og.axe} mode="degrees" locked={showResult} isCorrect={results?.og?.axe} showResult={showResult} correctLabel={corrLabel.og.axe} onClick={() => openNumpad('og', 'axe')} />
           </div>
 
-          {/* Add — toujours modifiable, même quand le cas n'en a pas (une valeur saisie à tort compte faux) */}
+          {/* Add — toujours modifiable, même quand le cas n'en a pas (une valeur saisie à tort compte faux) ;
+              pas d'indice sur la présence ou non d'une addition sur ce cas. */}
           <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 8, marginBottom: 12, alignItems: 'center' }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: hasAdd ? '#555' : '#aaa' }}>Add{!hasAdd ? ' (aucune)' : ''}</div>
-            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${hasAdd ? APP_GOLD + '88' : '#ddd9ec'}`, overflow: 'hidden' }}>
-              <WheelPicker values={ADD_VALS} selectedIdx={idx.add} onChange={setAdd} showResult={showResult} isCorrect={results?.add} correctLabel={corrLabel.add} />
-            </div>
-            <div style={{ background: '#fff', borderRadius: 10, border: `1.5px solid ${hasAdd ? APP_GOLD + '88' : '#ddd9ec'}`, overflow: 'hidden' }}>
-              <WheelPicker values={ADD_VALS} selectedIdx={idx.add} onChange={setAdd} showResult={showResult} isCorrect={results?.add} correctLabel={corrLabel.add} />
-            </div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>Add</div>
+            <ValueBox value={vals.add} mode="diopter-positive" locked={showResult} isCorrect={results?.add} showResult={showResult} correctLabel={corrLabel.add} onClick={() => openNumpad('add', null)} />
+            <ValueBox value={vals.add} mode="diopter-positive" locked={showResult} isCorrect={results?.add} showResult={showResult} correctLabel={corrLabel.add} onClick={() => openNumpad('add', null)} />
           </div>
         </div>
 
@@ -2716,12 +2771,19 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
         )}
       </div>
 
-      {/* Pavé numérique axe */}
-      {numpadEye && (
-        <AxeNumpad
-          currentValue={AXE_VALS[idx[numpadEye].axe].val}
-          onConfirm={v => { setEye(numpadEye, 'axe', findAxeIdx(v)); setNumpadEye(null) }}
-          onClose={() => setNumpadEye(null)}
+      {/* Pavé numérique — saisie manuelle du champ actif */}
+      {activeField && numpadConfig && (
+        <ValueNumpad
+          title={numpadConfig.title}
+          mode={numpadConfig.mode}
+          max={numpadConfig.max}
+          currentValue={activeValue}
+          onConfirm={v => {
+            if (activeField.eye === 'add') setAdd(v)
+            else setEye(activeField.eye, activeField.field, v)
+            setActiveField(null)
+          }}
+          onClose={() => setActiveField(null)}
         />
       )}
     </div>
