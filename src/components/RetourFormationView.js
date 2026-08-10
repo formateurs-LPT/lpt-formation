@@ -1167,46 +1167,16 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
         return byModule
       }
 
-      const scores = names.map((name, i) => {
-        // Taux d'acquisition (évaluation formateur)
-        const snap = reportMap[name] || {}
-        const acqRate = computeRate(snap.theme_assessments)
+      // Classement définitif : uniquement sur le total de points (10 par
+      // bonne réponse), plus de mélange avec le taux d'acquisition évalué
+      // par le formateur — celui-ci pouvait donner une place différente du
+      // nombre de points réellement gagnés, ce qui n'a plus de sens : le
+      // nombre de points total définit la place.
+      const scores = names.map((name, i) => ({
+        name,
+        byModule: buildByModule(quizArrays[i], answerArrays[i]),
+      }))
 
-        const byModule = buildByModule(quizArrays[i], answerArrays[i])
-        const modules = Object.values(byModule).filter(m => m.total > 0)
-        const quizRate = modules.length > 0
-          ? Math.round(modules.reduce((s, m) => s + m.score, 0) / modules.reduce((s, m) => s + m.total, 0) * 100)
-          : null
-
-        // Score composite (60% acquis + 40% quiz — si les deux existent)
-        let composite = null
-        if (acqRate !== null && quizRate !== null) composite = Math.round(acqRate * 0.6 + quizRate * 0.4)
-        else if (acqRate !== null) composite = acqRate
-        else if (quizRate !== null) composite = quizRate
-
-        return { name, composite, byModule }
-      })
-
-      // Tri décroissant, nuls en dernier
-      const sorted = [...scores].sort((a, b) => {
-        if (a.composite === null && b.composite === null) return 0
-        if (a.composite === null) return 1
-        if (b.composite === null) return -1
-        return b.composite - a.composite
-      })
-
-      const rankMap = {}
-      let r = 1
-      for (let i = 0; i < sorted.length; i++) {
-        if (sorted[i].composite === null) break
-        if (i > 0 && sorted[i].composite !== sorted[i - 1].composite) r = i + 1
-        rankMap[sorted[i].name] = r
-      }
-
-      setRanks(rankMap)
-      setRankOf(Object.keys(rankMap).length)
-
-      // Classement basé sur les points (réponses correctes × 10) — byModule déjà construit
       const ptsScores = scores.map(({ name, byModule: bm }) => {
         const pts = Object.values(bm).reduce((s, m) => s + (m.score || 0), 0) * 10
         return { name, points: pts }
@@ -1223,6 +1193,9 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
       setPointsRanks(ptsRankMap)
       setPointsTotals(ptsTotMap)
       setPointsRankOf(Object.keys(ptsRankMap).length)
+
+      setRanks(ptsRankMap)
+      setRankOf(Object.keys(ptsRankMap).length)
     }
 
     computeRanks()
