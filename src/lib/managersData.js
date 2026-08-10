@@ -8,6 +8,10 @@
 export const MANAGERS = {
 
   // ── Île-de-France ─────────────────────────────────────────────────
+  'paris': [
+    { name: 'Mickael BOGGI', email: 'mboggi@lunettespourtous.com' },
+    { name: 'Romain MAESEELE', email: 'rmaeseele@lunettespourtous.com' },
+  ],
   'montparnasse': [
     { name: 'Victor LEJON', email: 'vlejon@lunettespourtous.com' },
   ],
