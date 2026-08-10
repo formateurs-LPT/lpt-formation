@@ -2407,26 +2407,62 @@ const fmtAdd  = (v) => (v > 0.001 ? `+${v.toFixed(2).replace('.', ',')}` : '0,00
 const fmtAxe  = (v) => `${Math.round(v)}°`
 
 // ── Pavé numérique générique (dioptrie signée, addition positive, ou degrés) ──
+// Saisie 100% manuelle pour les dioptries : le formé tape lui-même chiffres,
+// virgule et signe (comme sur une vraie ordonnance) — rien n'est inséré
+// automatiquement à sa place. S'il ne met pas de signe, la valeur est positive.
 function ValueNumpad({ title, mode, currentValue, max, onConfirm, onClose }) {
   const isDeg = mode === 'degrees'
-  const [sign, setSign]     = useState(currentValue < 0 ? '-' : '+')
-  const [cents, setCents]   = useState(() => Math.round(Math.abs(currentValue) * 100))
+  const isSigned = mode === 'diopter-signed'
+
   const [degDigits, setDegDigits] = useState(() => String(Math.max(0, Math.round(currentValue))))
 
-  const addDigit = d => {
-    if (isDeg) setDegDigits(p => { const s = p === '0' ? d : p + d; return parseInt(s) <= 180 ? s : p })
-    else setCents(c => Math.min(max * 100, c * 10 + parseInt(d)))
+  const initRaw = () => {
+    if (!currentValue) return ''
+    const abs = Math.abs(currentValue)
+    const s = Number.isInteger(abs) ? String(abs) : String(abs).replace('.', ',')
+    return (currentValue < 0 ? '-' : '') + s
   }
-  const delDigit = () => {
-    if (isDeg) setDegDigits(p => p.length <= 1 ? '0' : p.slice(0, -1))
-    else setCents(c => Math.floor(c / 10))
+  const [raw, setRaw] = useState(initRaw)
+
+  const addDegDigit = d => setDegDigits(p => { const s = p === '0' ? d : p + d; return parseInt(s) <= 180 ? s : p })
+  const addDigit = d => setRaw(r => r + d)
+  const addComma = () => setRaw(r => {
+    if (r.includes(',')) return r
+    return (r === '' || r === '-') ? `${r}0,` : `${r},`
+  })
+  const toggleSign = () => setRaw(r => r.startsWith('-') ? r.slice(1) : `-${r}`)
+  const delChar = () => {
+    if (isDeg) { setDegDigits(p => p.length <= 1 ? '0' : p.slice(0, -1)); return }
+    setRaw(r => r.slice(0, -1))
   }
   const confirm = () => {
-    if (isDeg) onConfirm(Math.max(0, Math.min(180, parseInt(degDigits) || 0)))
-    else onConfirm((sign === '-' ? -1 : 1) * Math.min(max, cents / 100))
+    if (isDeg) { onConfirm(Math.max(0, Math.min(180, parseInt(degDigits) || 0))); return }
+    const parsed = parseFloat(raw.replace(',', '.')) || 0
+    onConfirm(isSigned ? Math.max(-max, Math.min(max, parsed)) : Math.max(0, Math.min(max, parsed)))
   }
 
-  const display = isDeg ? `${degDigits}°` : `${sign}${(cents / 100).toFixed(2).replace('.', ',')}`
+  const display = isDeg ? `${degDigits}°` : (raw === '' || raw === '-' ? `${raw}0` : raw)
+
+  const keyStyle = (k) => ({
+    padding: '15px 8px', borderRadius: 12, fontFamily: 'inherit', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+    background: k === '✓' ? APP_GOLD : (k === '⌫' || k === '-' || k === ',') ? '#e0dcf0' : '#fff',
+    border: '1px solid #ddd9ec',
+    color: k === '✓' ? '#fff' : APP_DARK,
+    fontSize: k === '✓' || k === '⌫' ? 20 : 22, fontWeight: 700,
+  })
+
+  const degreeKeys = ['1','2','3','4','5','6','7','8','9','⌫','0','✓']
+  const diopterKeys = isSigned
+    ? ['1','2','3','4','5','6','7','8','9','-','0',',','⌫','✓']
+    : ['1','2','3','4','5','6','7','8','9','0',',','⌫','✓']
+
+  const handleKey = (k) => {
+    if (k === '⌫') return delChar()
+    if (k === '✓') return confirm()
+    if (k === '-') return toggleSign()
+    if (k === ',') return addComma()
+    return isDeg ? addDegDigit(k) : addDigit(k)
+  }
 
   return (
     <>
@@ -2436,22 +2472,12 @@ function ValueNumpad({ title, mode, currentValue, max, onConfirm, onClose }) {
           <span style={{ fontSize: 14, fontWeight: 700, color: '#555' }}>{title}</span>
           <button onPointerDown={onClose} style={{ background: 'transparent', border: 'none', fontSize: 22, cursor: 'pointer', color: '#888', padding: '2px 8px' }}>✕</button>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-          {mode === 'diopter-signed' && (
-            <button onPointerDown={() => setSign(s => s === '-' ? '+' : '-')} style={{
-              flexShrink: 0, padding: '12px 18px', borderRadius: 12, background: '#fff', border: `2px solid ${APP_GOLD}`,
-              color: APP_DARK, fontSize: 22, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent',
-            }}>{sign}</button>
-          )}
-          <div style={{ flex: 1, background: '#fff', borderRadius: 12, padding: '12px 20px', fontSize: 30, fontWeight: 800, color: APP_DARK, textAlign: 'center', border: `2px solid ${APP_GOLD}`, fontVariantNumeric: 'tabular-nums' }}>
-            {display}
-          </div>
+        <div style={{ marginBottom: 14, background: '#fff', borderRadius: 12, padding: '12px 20px', fontSize: 30, fontWeight: 800, color: APP_DARK, textAlign: 'center', border: `2px solid ${APP_GOLD}`, fontVariantNumeric: 'tabular-nums' }}>
+          {display}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-          {['1','2','3','4','5','6','7','8','9','⌫','0','✓'].map(k => (
-            <button key={k} onPointerDown={() => { if (k==='⌫') delDigit(); else if (k==='✓') confirm(); else addDigit(k) }}
-              style={{ padding: '15px 8px', borderRadius: 12, background: k==='✓' ? APP_GOLD : k==='⌫' ? '#e0dcf0' : '#fff', border: '1px solid #ddd9ec', color: k==='✓' ? '#fff' : APP_DARK, fontSize: k==='✓'||k==='⌫' ? 20 : 22, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent' }}
-            >{k}</button>
+          {(isDeg ? degreeKeys : diopterKeys).map((k, i) => (
+            <button key={`${k}-${i}`} onPointerDown={() => handleKey(k)} style={keyStyle(k)}>{k}</button>
           ))}
         </div>
       </div>
