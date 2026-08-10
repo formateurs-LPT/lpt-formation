@@ -29,7 +29,7 @@ export const DIRECTEURS = {
     territory: 'Sud de la France',
     icon: '☀️',
     color: '#d97706',
-    email: '',
+    email: 'afaye@lunettespourtous.com',
   },
 }
 
