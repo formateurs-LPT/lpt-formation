@@ -604,7 +604,16 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
     }
     poll()
     const interval = setInterval(poll, pollMs)
-    return () => clearInterval(interval)
+    // Le téléphone se verrouille/l'onglet passe en arrière-plan → iOS/Android
+    // suspendent les setInterval. Sans ce re-poll immédiat au réveil, le
+    // formé reste figé sur l'ancienne page tant que l'intervalle ne reprend
+    // pas de lui-même (des minutes, parfois jamais sur iOS).
+    const onVisible = () => { if (document.visibilityState === 'visible') poll() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [curStep, curSlide, pollMs, sessionCode, onOnlineCount])
 
   // Polling sharedState (trainer_state) — même cadence adaptative
@@ -629,7 +638,12 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
     }
     pollPlanning()
     const t = setInterval(pollPlanning, pollMs)
-    return () => clearInterval(t)
+    const onVisible = () => { if (document.visibilityState === 'visible') pollPlanning() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [pollMs])
 
   if (ended) {
