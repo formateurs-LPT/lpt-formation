@@ -84,6 +84,7 @@ export function TVFreeQuizScreen({ sharedState }) {
           gridTemplateColumns: `repeat(${Math.min(3, Math.ceil(answers.length / 3))}, 1fr)`,
           gap: 14, flex: 1, alignContent: 'start', overflow: 'hidden',
         }}>
+          {/* Anonyme : seul le formateur voit qui a répondu quoi (sur son propre écran) */}
           {answers.map(a => {
             const isGraded  = a.is_correct !== null && a.is_correct !== undefined
             const isCorrect = a.is_correct === true
@@ -95,10 +96,7 @@ export function TVFreeQuizScreen({ sharedState }) {
                 border: `1.5px solid ${isGraded ? (isCorrect ? 'rgba(34,197,94,0.45)' : 'rgba(248,113,113,0.45)') : 'rgba(255,255,255,0.1)'}`,
                 borderRadius: 16, padding: '16px 20px',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: isGraded ? (isCorrect ? '#22c55e' : '#f87171') : '#00abe9', letterSpacing: '0.02em' }}>
-                    {a.participant_name}
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 8 }}>
                   <div style={{ fontSize: 18 }}>
                     {isGraded ? (isCorrect ? '✅' : '❌') : '⏳'}
                   </div>

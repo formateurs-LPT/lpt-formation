@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState } from '@/lib/supabase'
+import { sbUpdate, sbDelete, getActiveSessionCode, setSharedState } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOpenAnswers } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
@@ -180,6 +180,22 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
 
   const correctCount = Object.values(validations).filter(Boolean).length
 
+  // Filet de sécurité : si une ancienne réponse (test, répétition...) traîne
+  // déjà en base pour cette question, le formé tombe direct sur la
+  // correction sans avoir pu répondre. Ce bouton efface tout pour cette
+  // question précise et repart à zéro.
+  const handleResetQuestion = async () => {
+    if (!window.confirm('Effacer toutes les réponses de cette question et repartir à zéro ?')) return
+    const code = getActiveSessionCode()
+    await Promise.all([
+      sbDelete('open_answers', `session_code=eq.${encodeURIComponent(code)}&page_id=eq.${encodeURIComponent(`quiz-j1:${quizQ}`)}`),
+      sbDelete('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${MODULE_ID}&question_idx=eq.${quizQ}`),
+    ]).catch(() => {})
+    setAnswers([])
+    setValidations({})
+    autoValidatedRef.current = new Set()
+  }
+
   const pendingCount = answers.filter(row => !(row.participant_name in validations)).length
   const confirmSkipPending = () => {
     if (pendingCount === 0) return true
@@ -216,8 +232,13 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz Jour 1 — Vue formateur</span>
         </div>
-        <div style={{ background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 20px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-          Q{quizQ + 1} / {QUIZ_J1.length}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {answers.length > 0 && (
+            <button onClick={handleResetQuestion} title="Efface les réponses de cette question (utile si un formé tombe direct sur la correction)" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '6px 14px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>🔄 Réinitialiser</button>
+          )}
+          <div style={{ background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 20px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+            Q{quizQ + 1} / {QUIZ_J1.length}
+          </div>
         </div>
       </div>
 
@@ -254,14 +275,11 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>{row.participant_name}</div>
                   <div style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>{formatAnswer(row.answer)}</div>
                 </div>
-                {status === undefined && (
-                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                    <button onClick={() => handleValidate(row.participant_name, true)} style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)', color: '#4ade80', padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓</button>
-                    <button onClick={() => handleValidate(row.participant_name, false)} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171', padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✗</button>
-                  </div>
-                )}
-                {status === true  && <span style={{ fontSize: 22, color: '#4ade80', flexShrink: 0 }}>✓</span>}
-                {status === false && <span style={{ fontSize: 22, color: '#f87171', flexShrink: 0 }}>✗</span>}
+                {/* Boutons toujours visibles — modifiables même après une validation automatique */}
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <button onClick={() => handleValidate(row.participant_name, true)} title="Marquer correct" style={{ background: status === true ? 'rgba(34,197,94,0.4)' : 'rgba(34,197,94,0.15)', border: `1.5px solid ${status === true ? '#4ade80' : 'rgba(34,197,94,0.4)'}`, color: '#4ade80', padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓</button>
+                  <button onClick={() => handleValidate(row.participant_name, false)} title="Marquer faux" style={{ background: status === false ? 'rgba(239,68,68,0.4)' : 'rgba(239,68,68,0.15)', border: `1.5px solid ${status === false ? '#f87171' : 'rgba(239,68,68,0.4)'}`, color: '#f87171', padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✗</button>
+                </div>
               </div>
             </div>
           )
@@ -338,6 +356,17 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
     await setSharedState({ quiz_ordo_show: next }).catch(() => {})
   }
 
+  // Filet de sécurité : si une ancienne réponse (test, répétition...) traîne
+  // déjà en base pour cette question, le formé tombe direct sur la
+  // correction sans avoir pu répondre. Ce bouton efface tout pour cette
+  // question précise et repart à zéro.
+  const handleResetQuestion = async () => {
+    if (!window.confirm('Effacer toutes les réponses de cette question et repartir à zéro ?')) return
+    const code = getActiveSessionCode()
+    await sbDelete('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${MODULE_ID}&question_idx=eq.${quizQ}`).catch(() => {})
+    setLiveAnswers([])
+  }
+
   const bg = { minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }
 
   return (
@@ -349,8 +378,13 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz Jour 1 — Vue formateur</span>
         </div>
-        <div style={{ background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 20px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-          Q{quizQ + 1} / {QUIZ_J1.length}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {liveAnswers.length > 0 && (
+            <button onClick={handleResetQuestion} title="Efface les réponses de cette question (utile si un formé tombe direct sur la correction)" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '6px 14px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>🔄 Réinitialiser</button>
+          )}
+          <div style={{ background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 20px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+            Q{quizQ + 1} / {QUIZ_J1.length}
+          </div>
         </div>
       </div>
 

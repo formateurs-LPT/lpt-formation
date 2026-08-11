@@ -632,14 +632,9 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
                 <div style={{ fontSize: 15, color: '#fff', lineHeight: 1.4 }}>{formatAnswer(row.answer)}</div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                {status ? (
-                  <div style={{ fontSize: 22, fontWeight: 800, color: status === 'correct' ? '#4ade80' : '#f87171' }}>{status === 'correct' ? '✓' : '✗'}</div>
-                ) : (
-                  <>
-                    <button onClick={() => handleValidate(row, true)} disabled={!!isValidating} style={{ width: 38, height: 38, borderRadius: 10, border: 'none', background: 'rgba(34,197,94,0.18)', color: '#4ade80', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isValidating ? 0.5 : 1, fontFamily: 'inherit' }}>✓</button>
-                    <button onClick={() => handleValidate(row, false)} disabled={!!isValidating} style={{ width: 38, height: 38, borderRadius: 10, border: 'none', background: 'rgba(239,68,68,0.18)', color: '#f87171', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isValidating ? 0.5 : 1, fontFamily: 'inherit' }}>✗</button>
-                  </>
-                )}
+                {/* Boutons toujours visibles — modifiables même après une validation automatique */}
+                <button onClick={() => handleValidate(row, true)} disabled={!!isValidating} title="Marquer correct" style={{ width: 38, height: 38, borderRadius: 10, border: `1.5px solid ${status === 'correct' ? '#4ade80' : 'transparent'}`, background: status === 'correct' ? 'rgba(34,197,94,0.4)' : 'rgba(34,197,94,0.18)', color: '#4ade80', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isValidating ? 0.5 : 1, fontFamily: 'inherit' }}>✓</button>
+                <button onClick={() => handleValidate(row, false)} disabled={!!isValidating} title="Marquer faux" style={{ width: 38, height: 38, borderRadius: 10, border: `1.5px solid ${status === 'wrong' ? '#f87171' : 'transparent'}`, background: status === 'wrong' ? 'rgba(239,68,68,0.4)' : 'rgba(239,68,68,0.18)', color: '#f87171', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isValidating ? 0.5 : 1, fontFamily: 'inherit' }}>✗</button>
               </div>
             </div>
           )

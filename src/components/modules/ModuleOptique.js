@@ -142,14 +142,6 @@ function TroublesIntroPage({ page, trainerAvatar, pName, onBack, onPrev, onNext,
         opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(20px)',
         transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
       }}>
-        <div style={{
-          width: 110, height: 110, borderRadius: '50%',
-          background: 'rgba(0,171,233,0.1)', border: '2px solid rgba(0,171,233,0.2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 0 60px rgba(0,171,233,0.15)',
-        }}>
-          <span style={{ fontSize: 52, lineHeight: 1 }}>{page.icon}</span>
-        </div>
         <div style={{ textAlign: 'center' }}>
           <div style={{ display: 'inline-block', background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.28)', borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 18 }}>
             Les bases de l&apos;optique
@@ -785,16 +777,6 @@ function PausePage({ page, trainerAvatar, pName, onBack, onPrev, onNext, isFirst
         opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(20px)',
         transition: 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
       }}>
-        {/* Icône */}
-        <div style={{
-          width: 120, height: 120, borderRadius: '50%',
-          background: 'rgba(0,171,233,0.1)', border: '2px solid rgba(0,171,233,0.25)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 0 60px rgba(0,171,233,0.15)',
-        }}>
-          <span style={{ fontSize: 56, lineHeight: 1 }}>{page.icon}</span>
-        </div>
-
         {/* Texte */}
         <div style={{ textAlign: 'center' }}>
           <h1 style={{ fontSize: 42, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 14 }}>
@@ -1242,6 +1224,23 @@ function TextOpenControllerOptique({ quizQ, isLast, onNext, onEnd, onBack }) {
     await setSharedState({ quiz_show_correction: true }).catch(() => {})
   }
 
+  // Filet de sécurité : si une ancienne réponse (test, répétition, jour
+  // précédent sur la même salle) traîne déjà en base pour cette question,
+  // le formé tombe direct sur la correction sans avoir pu répondre. Ce
+  // bouton efface tout pour cette question précise et repart à zéro.
+  const handleResetQuestion = async () => {
+    if (!window.confirm('Effacer toutes les réponses de cette question et repartir à zéro ?')) return
+    const code = getActiveSessionCode()
+    await Promise.all([
+      sbDelete('open_answers', `session_code=eq.${encodeURIComponent(code)}&page_id=eq.${encodeURIComponent(pageId)}`),
+      sbDelete('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.optique&question_idx=eq.${quizQ}`),
+    ]).catch(() => {})
+    setOpenAnswers([])
+    setValidated({})
+    setValidating({})
+    autoValidatedRef.current = new Set()
+  }
+
   // Une réponse texte libre non validée (auto-correction ratée + formateur qui enchaîne
   // trop vite) n'est jamais comptée dans le score final, sans aucun avertissement — un
   // formé qui a bien répondu peut perdre des points en silence. On bloque donc l'avancée
@@ -1266,7 +1265,12 @@ function TextOpenControllerOptique({ quizQ, isLast, onNext, onEnd, onBack }) {
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz · Les bases de l&apos;optique — Vue formateur</span>
         </div>
-        <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Terminer</button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          {openAnswers.length > 0 && (
+            <button onClick={handleResetQuestion} title="Efface les réponses de cette question (utile si un formé tombe direct sur la correction)" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>🔄 Réinitialiser la question</button>
+          )}
+          <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Terminer</button>
+        </div>
       </div>
 
       <div style={{ textAlign: 'center', marginBottom: 20 }}>
@@ -1299,14 +1303,11 @@ function TextOpenControllerOptique({ quizQ, isLast, onNext, onEnd, onBack }) {
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>{row.participant_name}</div>
                   <div style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>{row.answer || '—'}</div>
                 </div>
-                {!status && (
-                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                    <button onClick={() => handleValidate(row, true)} disabled={isValidating} style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)', color: '#4ade80', padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓</button>
-                    <button onClick={() => handleValidate(row, false)} disabled={isValidating} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171', padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✗</button>
-                  </div>
-                )}
-                {status === 'correct' && <span style={{ fontSize: 22, color: '#4ade80', flexShrink: 0 }}>✓</span>}
-                {status === 'wrong'   && <span style={{ fontSize: 22, color: '#f87171', flexShrink: 0 }}>✗</span>}
+                {/* Boutons toujours visibles — modifiables même après une validation automatique */}
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
+                  <button onClick={() => handleValidate(row, true)} disabled={isValidating} title="Marquer correct" style={{ background: status === 'correct' ? 'rgba(34,197,94,0.4)' : 'rgba(34,197,94,0.15)', border: `1.5px solid ${status === 'correct' ? '#4ade80' : 'rgba(34,197,94,0.4)'}`, color: '#4ade80', padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓</button>
+                  <button onClick={() => handleValidate(row, false)} disabled={isValidating} title="Marquer faux" style={{ background: status === 'wrong' ? 'rgba(239,68,68,0.4)' : 'rgba(239,68,68,0.15)', border: `1.5px solid ${status === 'wrong' ? '#f87171' : 'rgba(239,68,68,0.4)'}`, color: '#f87171', padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✗</button>
+                </div>
               </div>
             </div>
           )
@@ -1395,14 +1396,11 @@ function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
     return () => clearInterval(t)
   }, [])
 
-  // Auto-révèle la correction quand tout le monde a répondu
-  useEffect(() => {
-    if (!correctionPhase && connectedCount > 0 && liveAnswers.length >= connectedCount) {
-      setCorrectionPhase(true)
-      setSharedState({ quiz_show_correction: true, quiz_ordo_show: false }).catch(() => {})
-    }
-  }, [liveAnswers.length, connectedCount, correctionPhase])
-
+  // Pas de révélation automatique : si une réponse d'un test/répétition
+  // précédent traînait déjà en base pour cette question, la correction
+  // s'affichait instantanément et les formés n'avaient jamais l'occasion
+  // de répondre. Seul le clic du formateur sur "Révéler les réponses"
+  // (plus bas) déclenche la correction — jamais automatique.
   const handleRevealNow = async () => {
     setCorrectionPhase(true)
     await setSharedState({ quiz_show_correction: true, quiz_ordo_show: false }).catch(() => {})
@@ -1422,6 +1420,15 @@ function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
     setLiveAnswers([])
     setOrdoShown(false)
     onNext()
+  }
+
+  // Filet de sécurité : efface les réponses de cette question précise
+  // (utile si une ancienne réponse d'un test/répétition traîne déjà en base).
+  const handleResetQuestion = async () => {
+    if (!window.confirm('Effacer toutes les réponses de cette question et repartir à zéro ?')) return
+    const code = getActiveSessionCode()
+    await sbDelete('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.optique&question_idx=eq.${quizQ}`).catch(() => {})
+    setLiveAnswers([])
   }
 
   const handleTerminate = async () => {
@@ -1545,7 +1552,12 @@ function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
     <div style={bg}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
         {headerLogo}
-        {btnTerminer}
+        <div style={{ display: 'flex', gap: 10 }}>
+          {liveAnswers.length > 0 && (
+            <button onClick={handleResetQuestion} title="Efface les réponses de cette question (utile si un formé tombe direct sur la correction)" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>🔄 Réinitialiser</button>
+          )}
+          {btnTerminer}
+        </div>
       </div>
 
       <div style={{ textAlign: 'center', marginBottom: 16 }}>

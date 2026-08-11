@@ -167,7 +167,7 @@ export const QUIZ_J1 = [
   {
     type: 'text-open-multi',
     fields: 3,
-    question: 'Citez les trois catégories de montures disponibles chez Lunettes Pour Tous.',
+    question: 'Selon leur matière de fabrication, quelles sont les trois catégories de montures disponibles chez Lunettes Pour Tous ?',
     hint: 'Acétate · Métal · Injecté',
     autoCorrectEach: [
       ['acétate', 'acetate'],

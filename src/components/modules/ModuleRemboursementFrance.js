@@ -685,14 +685,9 @@ function RembfrTextOpenController({ quizQ, onNext, onEnd, onBack }) {
               <span style={{ fontSize: 12, fontWeight: 700, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length], minWidth: 80, flexShrink: 0 }}>{row.participant_name}</span>
               <span style={{ flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>{row.answer}</span>
               <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                {!status && (
-                  <>
-                    <button onClick={() => handleValidate(row, true)} style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)', color: '#4ade80', padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓</button>
-                    <button onClick={() => handleValidate(row, false)} style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', color: '#f87171', padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✗</button>
-                  </>
-                )}
-                {status === 'correct' && <span style={{ fontSize: 18 }}>✅</span>}
-                {status === 'wrong'   && <span style={{ fontSize: 18 }}>❌</span>}
+                {/* Boutons toujours visibles — modifiables même après une validation automatique */}
+                <button onClick={() => handleValidate(row, true)} title="Marquer correct" style={{ background: status === 'correct' ? 'rgba(34,197,94,0.4)' : 'rgba(34,197,94,0.15)', border: `1.5px solid ${status === 'correct' ? '#4ade80' : 'rgba(34,197,94,0.35)'}`, color: '#4ade80', padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓</button>
+                <button onClick={() => handleValidate(row, false)} title="Marquer faux" style={{ background: status === 'wrong' ? 'rgba(239,68,68,0.4)' : 'rgba(239,68,68,0.12)', border: `1.5px solid ${status === 'wrong' ? '#f87171' : 'rgba(239,68,68,0.35)'}`, color: '#f87171', padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✗</button>
               </div>
             </div>
           )

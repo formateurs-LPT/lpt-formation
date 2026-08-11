@@ -393,13 +393,13 @@ function TVQuizTextOpen({ question, qIdx, total, moduleLabel, sessionCode, modul
         </div>
       ) : (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, maxWidth: 1000, justifyContent: 'center' }}>
-          {answers.slice(0, 10).map(a => (
-            <div key={a.participant_name} style={{
+          {/* Anonyme : seul le formateur voit qui a répondu quoi (sur son propre écran) */}
+          {answers.slice(0, 10).map((a, i) => (
+            <div key={a.participant_name || i} style={{
               background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
               borderRadius: 12, padding: '10px 20px',
               fontSize: 16, color: 'rgba(255,255,255,0.8)',
             }}>
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 2 }}>{a.participant_name}</span>
               {question?.type === 'text-open-multi' ? (a.answer || '').split('||').map(s => s.trim()).filter(Boolean).join(' // ') : a.answer}
             </div>
           ))}
