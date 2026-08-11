@@ -377,6 +377,76 @@ function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
   )
 }
 
+// ── Anti re-réponse après rafraîchissement ─────────────────────────
+// Sans ce contrôle au montage, un formé qui recharge la page pendant une
+// question retombe sur un écran vierge et peut répondre une deuxième fois
+// (voire changer sa réponse) après avoir déjà vu le résultat. On revérifie
+// donc toujours en base avant d'afficher la question.
+function QuizChecking() {
+  return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{ width: 32, height: 32, border: '3px solid rgba(255,255,255,0.15)', borderTop: '3px solid #00abe9', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
+      <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+}
+
+// Questions à réponse directe (QCM, multi-sélection, ordonnance, puissances) :
+// une seule ligne quiz_answers par (session, module, question, formé).
+function useExistingQuizAnswer({ moduleId, qIdx, pName }) {
+  const [checking, setChecking] = useState(true)
+  const [existing, setExisting] = useState(null)
+  useEffect(() => {
+    let cancelled = false
+    const name = (pName || '').trim()
+    if (!name) { setChecking(false); return }
+    ;(async () => {
+      try {
+        const rows = await sbSelect(
+          'quiz_answers',
+          `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${encodeURIComponent(moduleId)}&question_idx=eq.${qIdx}&collaborateur=eq.${encodeURIComponent(name)}`
+        )
+        if (!cancelled && rows && rows.length > 0) setExisting(rows[0])
+      } catch { /* best-effort */ } finally {
+        if (!cancelled) setChecking(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [moduleId, qIdx, pName])
+  return { checking, existing }
+}
+
+// Questions texte libre : la réponse part dans open_answers en attendant la
+// validation manuelle du formateur, qui écrit ensuite dans quiz_answers.
+function useExistingOpenAnswer({ moduleId, qIdx, pName }) {
+  const [checking, setChecking] = useState(true)
+  const [validated, setValidated] = useState(null)
+  const [wasSubmitted, setWasSubmitted] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    const name = (pName || '').trim()
+    if (!name) { setChecking(false); return }
+    ;(async () => {
+      try {
+        const [qRows, oRows] = await Promise.all([
+          sbSelect('quiz_answers', `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${encodeURIComponent(moduleId)}&question_idx=eq.${qIdx}&collaborateur=eq.${encodeURIComponent(name)}`),
+          sbSelect('open_answers', `session_code=eq.${getParticipantSessionCode()}&page_id=eq.${encodeURIComponent(`${moduleId}:${qIdx}`)}&participant_name=eq.${encodeURIComponent(name)}`),
+        ])
+        if (cancelled) return
+        if (qRows && qRows.length > 0) setValidated(qRows[0].is_correct)
+        else if (oRows && oRows.length > 0) setWasSubmitted(true)
+      } catch { /* best-effort */ } finally {
+        if (!cancelled) setChecking(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [moduleId, qIdx, pName])
+  return { checking, validated, wasSubmitted }
+}
+
 // ── Réponse résultat partagé ──────────────────────────────────────
 // Podium interstitiel toutes les 5 questions supprimé (bugs) — à la place,
 // chaque formé voit ici, uniquement sur son propre téléphone, son classement
@@ -455,13 +525,16 @@ function QuizResultScreen({ isCorrect, pName, moduleId }) {
 
 // ── Quiz texte libre ──────────────────────────────────────────────
 function QuizTextOpen({ pName, q, qIdx, moduleId }) {
+  const { checking, validated: existingValidated, wasSubmitted } = useExistingOpenAnswer({ moduleId, qIdx, pName })
   const [text, setText] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
   const [validated, setValidated] = useState(null) // null | true | false
+  const effectiveSubmitted = submitted || wasSubmitted
+  const effectiveValidated = validated !== null ? validated : existingValidated
 
   useEffect(() => {
-    if (!submitted) return
+    if (!effectiveSubmitted) return
     const poll = async () => {
       const rows = await sbSelect(
         'quiz_answers',
@@ -472,7 +545,7 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
     poll()
     const t = setInterval(poll, 2000)
     return () => clearInterval(t)
-  }, [submitted, qIdx, moduleId, pName])
+  }, [effectiveSubmitted, qIdx, moduleId, pName])
 
   const handleSubmit = async () => {
     if (!text.trim() || saving) return
@@ -490,9 +563,10 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
     }
   }
 
-  if (validated !== null) return <QuizResultScreen isCorrect={validated} pName={pName} moduleId={moduleId} />
+  if (checking) return <QuizChecking />
+  if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} />
 
-  if (submitted) {
+  if (effectiveSubmitted) {
     return (
       <div style={{
         minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
@@ -548,13 +622,16 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
 // ── Quiz texte libre à plusieurs cases (ex: "citez les 5 éléments") ──
 function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
   const fieldsCount = q.fields || 5
+  const { checking, validated: existingValidated, wasSubmitted } = useExistingOpenAnswer({ moduleId, qIdx, pName })
   const [values, setValues] = useState(Array(fieldsCount).fill(''))
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
   const [validated, setValidated] = useState(null) // null | true | false
+  const effectiveSubmitted = submitted || wasSubmitted
+  const effectiveValidated = validated !== null ? validated : existingValidated
 
   useEffect(() => {
-    if (!submitted) return
+    if (!effectiveSubmitted) return
     const poll = async () => {
       const rows = await sbSelect(
         'quiz_answers',
@@ -565,7 +642,7 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
     poll()
     const t = setInterval(poll, 2000)
     return () => clearInterval(t)
-  }, [submitted, qIdx, moduleId, pName])
+  }, [effectiveSubmitted, qIdx, moduleId, pName])
 
   const setField = (i, val) => setValues(vs => vs.map((v, idx) => idx === i ? val : v))
   const allFilled = values.every(v => v.trim())
@@ -586,9 +663,10 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
     }
   }
 
-  if (validated !== null) return <QuizResultScreen isCorrect={validated} pName={pName} moduleId={moduleId} />
+  if (checking) return <QuizChecking />
+  if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} />
 
-  if (submitted) {
+  if (effectiveSubmitted) {
     return (
       <div style={{
         minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
@@ -653,13 +731,16 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
 function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
   const pairsCount = q.pairs || 4
   const [labelLeft, labelRight] = q.pairLabels || ['Élément', 'Détail']
+  const { checking, validated: existingValidated, wasSubmitted } = useExistingOpenAnswer({ moduleId, qIdx, pName })
   const [rows, setRows] = useState(Array.from({ length: pairsCount }, () => ['', '']))
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
   const [validated, setValidated] = useState(null)
+  const effectiveSubmitted = submitted || wasSubmitted
+  const effectiveValidated = validated !== null ? validated : existingValidated
 
   useEffect(() => {
-    if (!submitted) return
+    if (!effectiveSubmitted) return
     const poll = async () => {
       const rows = await sbSelect(
         'quiz_answers',
@@ -670,7 +751,7 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
     poll()
     const t = setInterval(poll, 2000)
     return () => clearInterval(t)
-  }, [submitted, qIdx, moduleId, pName])
+  }, [effectiveSubmitted, qIdx, moduleId, pName])
 
   const setCell = (rowIdx, colIdx, val) => setRows(rs => rs.map((r, i) => i === rowIdx ? (colIdx === 0 ? [val, r[1]] : [r[0], val]) : r))
   const allFilled = rows.every(r => r[0].trim() && r[1].trim())
@@ -691,9 +772,10 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
     }
   }
 
-  if (validated !== null) return <QuizResultScreen isCorrect={validated} pName={pName} moduleId={moduleId} />
+  if (checking) return <QuizChecking />
+  if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} />
 
-  if (submitted) {
+  if (effectiveSubmitted) {
     return (
       <div style={{
         minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
@@ -766,6 +848,7 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
 
 // ── Quiz multi-sélection ──────────────────────────────────────────
 function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
+  const { checking, existing } = useExistingQuizAnswer({ moduleId, qIdx, pName })
   const [selected, setSelected] = useState([])
   const [answered, setAnswered] = useState(false)
   const [isCorrect, setIsCorrect] = useState(null)
@@ -803,6 +886,8 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
     }
   }
 
+  if (checking) return <QuizChecking />
+  if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
   if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} />
 
   return (
@@ -868,6 +953,7 @@ function parseOrdoVal(str) {
 // pavé numérique tap-to-type au lieu de la molette (ValueBox/ValueNumpad,
 // définis plus bas dans ce fichier, avant le composant SaisieInteractiveMobile).
 function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
+  const { checking, existing } = useExistingQuizAnswer({ moduleId, qIdx, pName })
   if (!q?.ordonnance?.od || !q?.ordonnance?.og) return null
   const hasCyl = !!(q.ordonnance.od.cyl || q.ordonnance.og.cyl)
 
@@ -928,6 +1014,8 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
     }
   }
 
+  if (checking) return <QuizChecking />
+  if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
   if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} />
 
   const corrLabel = {
@@ -1040,6 +1128,7 @@ const SPH_NEG_MAX_VALS = Array.from({ length: 121 }, (_, i) => {
 })
 
 function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
+  const { checking, existing } = useExistingQuizAnswer({ moduleId, qIdx, pName })
   const [posIdx, setPosIdx] = useState(0)
   const [negIdx, setNegIdx] = useState(0)
   const [answered, setAnswered] = useState(false)
@@ -1066,6 +1155,8 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
     }
   }
 
+  if (checking) return <QuizChecking />
+  if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
   if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} />
 
   return (
@@ -1122,6 +1213,7 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
 // La question est sur la TV, le participant répond ici
 // QCM standard (ordonnance sur TV comptent aussi comme qcm-ordonnance)
 function QuizQCMAnswer({ pName, q, qIdx, quiz, moduleId }) {
+  const { checking, existing } = useExistingQuizAnswer({ moduleId, qIdx, pName })
   const [answered, setAnswered] = useState(false)
   const [chosenIdx, setChosenIdx] = useState(null)
   const [lastIsCorrect, setLastIsCorrect] = useState(null)
@@ -1149,6 +1241,8 @@ function QuizQCMAnswer({ pName, q, qIdx, quiz, moduleId }) {
     setSaving(false)
   }
 
+  if (checking) return <QuizChecking />
+  if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
   if (answered) return <QuizResultScreen isCorrect={lastIsCorrect} pName={pName} moduleId={moduleId} />
 
   return (
@@ -4791,22 +4885,25 @@ function RhAccessDenied({ message }) {
   )
 }
 
-function RhParticipantGate({ pNameInput, children }) {
-  const [status, setStatus] = useState('loading')
+// Pas de reconnexion automatique : le formé doit toujours ressaisir nom et
+// prénom lui-même (pas de lecture du dernier nom connu en localStorage).
+function RhParticipantGate({ children }) {
+  const [nom, setNom] = useState('')
+  const [prenom, setPrenom] = useState('')
+  const [submitted, setSubmitted] = useState('')
+  const [status, setStatus] = useState('idle')
   const [canonicalName, setCanonicalName] = useState('')
   const [denyMessage, setDenyMessage] = useState('')
 
+  const canJoin = nom.trim().length > 0 && prenom.trim().length > 0
+  const handleJoin = () => { if (canJoin) setSubmitted(`${nom.trim()} ${prenom.trim()}`) }
+
   useEffect(() => {
+    if (!submitted) return
     let cancelled = false
+    setStatus('loading')
     ;(async () => {
-      const raw = (pNameInput || '').trim()
-      if (!raw) {
-        if (!cancelled) {
-          setDenyMessage('Connectez-vous depuis la page d\'accueil avec votre nom et prénom (liste RH).')
-          setStatus('denied')
-        }
-        return
-      }
+      const raw = submitted.trim()
       const resolved = await resolveParticipantName(raw)
       if (!resolved.ok) {
         if (!cancelled) {
@@ -4866,11 +4963,55 @@ function RhParticipantGate({ pNameInput, children }) {
       }
     })()
     return () => { cancelled = true }
-  }, [pNameInput])
+  }, [submitted])
 
   if (status === 'loading') return <WaitingScreen />
   if (status === 'denied') return <RhAccessDenied message={denyMessage} />
-  return children(canonicalName)
+  if (status === 'ok') return children(canonicalName)
+
+  return (
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px',
+    }}>
+      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={160} height={60} style={{ objectFit: 'contain', marginBottom: 32 }} />
+      <div style={{ width: '100%', maxWidth: 340 }}>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', textAlign: 'center', marginBottom: 18, lineHeight: 1.5 }}>
+          Saisissez votre nom et prénom pour rejoindre la formation.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <input
+            className="finput"
+            type="text"
+            placeholder="Nom"
+            value={nom}
+            onChange={e => setNom(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleJoin()}
+            autoComplete="family-name"
+          />
+          <input
+            className="finput"
+            type="text"
+            placeholder="Prénom"
+            value={prenom}
+            onChange={e => setPrenom(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleJoin()}
+            autoComplete="given-name"
+          />
+        </div>
+        <button
+          className="gbtn"
+          style={{ width: '100%', marginTop: 10, opacity: canJoin ? 1 : 0.55 }}
+          onClick={handleJoin}
+          disabled={!canJoin}
+        >
+          Rejoindre →
+        </button>
+      </div>
+    </div>
+  )
 }
 
 function ParticipantPlanningScreen({ planningDay }) {
@@ -5384,10 +5525,9 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
     )
   }
 
-  // Accès direct via ?mode=participant → validation RH obligatoire
-  const pNameRaw = typeof window !== 'undefined' ? localStorage.getItem('participant_name') || '' : ''
+  // Accès direct via ?mode=participant → connexion manuelle obligatoire
   return (
-    <RhParticipantGate pNameInput={pNameRaw}>
+    <RhParticipantGate>
       {canonicalName => (
         <ParticipantModuleContent
           forcedModule={forcedModule}

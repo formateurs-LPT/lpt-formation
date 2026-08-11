@@ -12,8 +12,7 @@ import { resolveParticipantSessionCode, participantJoinBlockedMessage } from '@/
 import { canParticipantJoinSession, getCategoryJoinDeniedMessage } from '@/lib/formationCategories'
 import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
-import { captureParticipantRoomFromUrl, captureTvRoomFromUrl, buildTvUrl, isDynamicRoomCode, setParticipantSessionCode, readParticipantSessionCode, getLegacySessionCode } from '@/lib/sessionCode'
-import { touchParticipantPresence } from '@/lib/participantPresence'
+import { captureParticipantRoomFromUrl, captureTvRoomFromUrl, buildTvUrl, isDynamicRoomCode, setParticipantSessionCode, getLegacySessionCode } from '@/lib/sessionCode'
 import { useIsMobile } from '@/lib/useIsMobile'
 import { endActiveRoom, getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { useOnlineCount } from '@/lib/useOnlineCount'
@@ -69,83 +68,25 @@ export default function Page() {
     onCount: setOnlineCount,
   })
 
-  const restoreParticipantSession = async () => {
-    const savedName = localStorage.getItem('participant_name')
-    if (!savedName) return null
-
-    const resolved = await resolveParticipantName(savedName)
-    if (!resolved.ok) {
-      localStorage.removeItem('participant_name')
-      localStorage.removeItem('participant_prenom')
-      setParticipantSessionCode('')
-      return null
-    }
-
-    const roomResolved = await resolveParticipantSessionCode(resolved.entry)
-    if (!roomResolved.ok) {
-      localStorage.removeItem('participant_name')
-      localStorage.removeItem('participant_prenom')
-      setParticipantSessionCode('')
-      return null
-    }
-
-    const sessionCode = roomResolved.code
-    const session = roomResolved.session
-    if (!canParticipantJoinSession(session, resolved.entry)) {
-      localStorage.removeItem('participant_name')
-      localStorage.removeItem('participant_prenom')
-      setParticipantSessionCode('')
-      return null
-    }
-
-    try {
-      await ensureSession(sessionCode)
-      await touchParticipantPresence(sessionCode, savedName)
-    } catch (e) {
-      console.warn('participant restore failed:', e)
-    }
-
-    return {
-      name: savedName,
-      prenom: localStorage.getItem('participant_prenom') || '',
-      sessionCode,
-    }
-  }
-
+  // Pas de reconnexion automatique pour les formés : après toute déconnexion
+  // (fermeture, rafraîchissement...) ils doivent ressaisir nom/prénom via le
+  // formulaire de connexion. Seuls les formateurs sont reconnectés
+  // automatiquement (via trainer_name ci-dessous).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const urlMode = params.get('mode')
-    const joinFromQr = params.get('join') === '1' || params.get('code')
 
     const finishBootstrap = async () => {
       let savedTrainer = null
 
       if (urlMode === 'tv' || urlMode === 'participant') {
         setMode(urlMode)
-        if (urlMode === 'participant') {
-          const restored = await restoreParticipantSession()
-          if (restored) {
-            setPName(restored.name)
-            setPPrenom(restored.prenom)
-            setIsTrainer(false)
-            setDisplaySessionCode(restored.sessionCode)
-          }
-        }
       } else {
         savedTrainer = localStorage.getItem('trainer_name')
         if (savedTrainer) {
           setPName(savedTrainer)
           setIsTrainer(true)
           setView('dashboard')
-        } else if (joinFromQr || readParticipantSessionCode()) {
-          const restored = await restoreParticipantSession()
-          if (restored) {
-            setPName(restored.name)
-            setPPrenom(restored.prenom)
-            setIsTrainer(false)
-            setDisplaySessionCode(restored.sessionCode)
-            setView('participant')
-          }
         }
       }
 

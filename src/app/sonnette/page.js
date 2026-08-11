@@ -6,6 +6,7 @@ import { sbUpsert, sbSelect } from '@/lib/supabase'
 const DOOR_CODE = '1990A'
 const ADDRESS = '42 Boulevard de Sébastopol, 75001 Paris'
 const GROUP_GAP_MS = 5 * 60 * 1000
+const SONNETTE_STORAGE_KEY = 'sonnette_session'
 
 function accessMessageText(prenom) {
   return `Salut ${prenom} 👋 Tu peux nous rejoindre directement en salle de formation !\n\n📍 ${ADDRESS}\n🔑 Code de la porte : ${DOOR_CODE}\n\nLa salle se trouve au dernier étage, prends l'ascenseur pour nous rejoindre. À tout de suite !`
@@ -86,6 +87,22 @@ export default function SonnettePage() {
   const createdAtRef = useRef(null)
   const listRef = useRef(null)
 
+  // Retrouve une conversation déjà envoyée si la page est rafraîchie — sinon
+  // le formé se retrouve renvoyé au formulaire et doit sonner une deuxième
+  // fois pour pouvoir écrire au formateur.
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(SONNETTE_STORAGE_KEY) || 'null')
+      if (saved?.key && saved?.prenom && saved?.nom) {
+        keyRef.current = saved.key
+        createdAtRef.current = saved.createdAt || null
+        setPrenom(saved.prenom)
+        setNom(saved.nom)
+        setSent(true)
+      }
+    } catch { /* ignore */ }
+  }, [])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!prenom.trim() || !nom.trim()) return
@@ -108,6 +125,11 @@ export default function SonnettePage() {
     if (result != null) {
       keyRef.current = key
       createdAtRef.current = createdAt
+      try {
+        localStorage.setItem(SONNETTE_STORAGE_KEY, JSON.stringify({
+          key, prenom: prenom.trim(), nom: nom.trim(), createdAt,
+        }))
+      } catch { /* ignore */ }
       setSent(true)
     } else {
       setError('Une erreur est survenue, réessayez.')
@@ -142,6 +164,11 @@ export default function SonnettePage() {
           setAccessStatusAt(state.access_status_at || null)
         }
         if (Array.isArray(state.messages)) setMessages(state.messages)
+        // Le formateur a cliqué "Récupéré" : la visite est terminée, on
+        // repart d'un formulaire vierge si la page est rouverte plus tard.
+        if (state.dismissed_at) {
+          try { localStorage.removeItem(SONNETTE_STORAGE_KEY) } catch { /* ignore */ }
+        }
       } catch { /* best-effort */ }
     }
     poll()
