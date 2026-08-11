@@ -17,13 +17,15 @@ function fixSpaced(str) {
   return s
 }
 
-function fixPhone(str) {
-  if (!str) return ''
-  const digits = str.replace(/\D/g, '')
-  if (digits.length < 9) return ''
-  if (digits.length === 10) return digits.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5')
-  if (digits.length >= 11) return '+' + digits.substring(0, digits.length - 9) + ' ' + digits.slice(-9).replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{1})/, '$1 $2 $3 $4 $5')
-  return digits
+// Civilités à retirer du nom (sinon "Monsieur"/"Madame" se retrouve collé au
+// nom de famille et casse la connexion du formé, qui se fait sur nom+prénom).
+const CIVILITES_RE = /^(monsieur|madame|mademoiselle|mme|mlle|mr|m\.)\s+/i
+
+function stripCivilite(str) {
+  let s = str.trim()
+  let prev = ''
+  while (prev !== s) { prev = s; s = s.replace(CIVILITES_RE, '') }
+  return s
 }
 
 function parseRHTable(rawText) {
@@ -44,7 +46,6 @@ function parseRHTable(rawText) {
   chunks.forEach((chunk, i) => {
     if (i === 0) return
     const rawBefore = chunks[i - 1]
-    const after = chunk
     const before = rawBefore.replace(/^[\d\s]{8,}\n/m, '').trim()
 
     let poste = '', textBeforePoste = before
@@ -76,15 +77,7 @@ function parseRHTable(rawText) {
       nameText = textBeforePoste.substring(0, textBeforePoste.indexOf(magMatch[0])).trim()
     }
 
-    const afterLines = after.split('\n').map(l => l.trim())
-    let telephone = ''
-    for (const al of afterLines.slice(0, 4)) {
-      if (al.toLowerCase().includes('déjà')) { telephone = 'déjà chez nous'; break }
-      const digits = fixSpaced(al).replace(/\D/g, '')
-      if (digits.length >= 9) { telephone = fixPhone(digits); break }
-    }
-
-    nameText = nameText.replace(/\n/g, ' ').trim().replace(/^[\d\s]+/, '').trim()
+    nameText = stripCivilite(nameText.replace(/\n/g, ' ').trim().replace(/^[\d\s]+/, '').trim())
     const words = nameText.split(/\s+/).filter(w => w.length > 0)
     let nom = '', prenom = '', splitIdx = words.length
     for (let j = 1; j < words.length; j++) {
@@ -106,7 +99,6 @@ function parseRHTable(rawText) {
         magasin: magasin || '',
         heures,
         poste,
-        telephone,
       })
     }
   })
@@ -206,7 +198,6 @@ function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving, onT
           </button>
         )}
         {c.heures && <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-s)' }}>{c.heures}h/sem</div>}
-        {c.telephone && <div style={{ fontSize: 11, color: 'var(--text-m)' }}>{c.telephone}</div>}
       </div>
       {!editing && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
@@ -255,7 +246,7 @@ function QuickAddModal({ onClose, onAdd }) {
     const magT = magasin.trim().toUpperCase()
     if (!nomT || !prenomT) return
     setSaving(true)
-    await onAdd({ nom: nomT, prenom: prenomT, fullName: `${nomT} ${prenomT}`.trim(), magasin: magT, poste: '', heures: '', telephone: '' })
+    await onAdd({ nom: nomT, prenom: prenomT, fullName: `${nomT} ${prenomT}`.trim(), magasin: magT, poste: '', heures: '' })
     setSaving(false)
     onClose()
   }
@@ -383,6 +374,54 @@ export default function EntreesView({ onBack, onToast, pName }) {
   const [editingIndex, setEditingIndex] = useState(null)
   const [savingIndex, setSavingIndex] = useState(null)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
+  const [ocrLoading, setOcrLoading] = useState(false)
+  const [ocrProgress, setOcrProgress] = useState(0)
+
+  // Lecture d'une capture d'écran du tableau RH (OCR local dans le navigateur,
+  // aucune donnée envoyée à l'extérieur). Le texte reconnu est déposé dans la
+  // zone de texte pour relecture avant analyse — l'OCR peut se tromper.
+  const handleImageFile = async (file) => {
+    if (!file || !file.type?.startsWith('image/')) return
+    setOcrLoading(true)
+    setOcrProgress(0)
+    try {
+      const { createWorker } = await import('tesseract.js')
+      const worker = await createWorker('fra', 1, {
+        logger: m => {
+          if (m.status === 'recognizing text' && typeof m.progress === 'number') {
+            setOcrProgress(Math.round(m.progress * 100))
+          }
+        },
+      })
+      const { data } = await worker.recognize(file)
+      await worker.terminate()
+      setPasteText((data.text || '').trim())
+      onToast('Image analysée — vérifiez le texte puis cliquez sur "Analyser et dispatcher"')
+    } catch (e) {
+      console.error(e)
+      onToast('Erreur de lecture de l\'image. Réessayez ou collez le texte manuellement.')
+    } finally {
+      setOcrLoading(false)
+      setOcrProgress(0)
+    }
+  }
+
+  const handlePasteZone = (e) => {
+    const items = e.clipboardData?.items || []
+    for (const item of items) {
+      if (item.type?.startsWith('image/')) {
+        e.preventDefault()
+        handleImageFile(item.getAsFile())
+        return
+      }
+    }
+  }
+
+  const handleDropZone = (e) => {
+    e.preventDefault()
+    const file = e.dataTransfer?.files?.[0]
+    if (file) handleImageFile(file)
+  }
 
   const handleQuickAdd = async (newEntry) => {
     const next = [...entrees, newEntry]
@@ -680,20 +719,49 @@ export default function EntreesView({ onBack, onToast, pName }) {
 
       {/* Paste zone */}
       {!showResults && (
-        <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--r)', padding: 24, marginBottom: 16, background: 'var(--card)' }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>📋 Coller le texte du tableau RH</div>
+        <div
+          onPaste={handlePasteZone}
+          onDragOver={e => e.preventDefault()}
+          onDrop={handleDropZone}
+          style={{ border: '2px dashed var(--border)', borderRadius: 'var(--r)', padding: 24, marginBottom: 16, background: 'var(--card)' }}
+        >
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>📋 Importer le tableau RH</div>
           <p style={{ fontSize: 12, color: 'var(--text-s)', marginBottom: 12 }}>
-            Ouvrez votre image dans Aperçu (Mac) → sélectionnez tout (Cmd+A) → copiez (Cmd+C) → collez ici
+            Collez directement une capture d&apos;écran (Cmd+V), glissez-déposez l&apos;image, ou collez le texte du tableau ci-dessous.
           </p>
-          <textarea
-            style={{ width: '100%', height: 180, padding: 12, border: '1.5px solid var(--border)', borderRadius: 'var(--rs)', fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text)', resize: 'vertical', outline: 'none', background: 'rgba(255,255,255,0.05)' }}
-            placeholder="Collez ici le contenu copié depuis votre tableau..."
-            value={pasteText}
-            onChange={e => setPasteText(e.target.value)}
-          />
-          <button className="btn1" style={{ marginTop: 10, width: '100%' }} onClick={handleParse} disabled={loading}>
-            {loading ? 'Analyse en cours...' : 'Analyser et dispatcher →'}
-          </button>
+
+          {ocrLoading ? (
+            <div style={{ textAlign: 'center', padding: '32px 0' }}>
+              <div style={{ width: 36, height: 36, border: '3px solid var(--lpt-l)', borderTopColor: 'var(--lpt)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 14px' }} />
+              <div style={{ fontSize: 13, color: 'var(--text-s)' }}>Lecture de l&apos;image en cours... {ocrProgress > 0 ? `${ocrProgress}%` : ''}</div>
+            </div>
+          ) : (
+            <>
+              <label
+                htmlFor="entrees-screenshot-input"
+                className="btn2"
+                style={{ display: 'block', textAlign: 'center', marginBottom: 12, cursor: 'pointer', fontSize: 13 }}
+              >
+                📷 Choisir une image du tableau
+              </label>
+              <input
+                id="entrees-screenshot-input"
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleImageFile(f); e.target.value = '' }}
+              />
+              <textarea
+                style={{ width: '100%', height: 140, padding: 12, border: '1.5px solid var(--border)', borderRadius: 'var(--rs)', fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text)', resize: 'vertical', outline: 'none', background: 'rgba(255,255,255,0.05)' }}
+                placeholder="...ou collez ici le texte copié depuis votre tableau"
+                value={pasteText}
+                onChange={e => setPasteText(e.target.value)}
+              />
+              <button className="btn1" style={{ marginTop: 10, width: '100%' }} onClick={handleParse} disabled={loading}>
+                {loading ? 'Analyse en cours...' : 'Analyser et dispatcher →'}
+              </button>
+            </>
+          )}
         </div>
       )}
 

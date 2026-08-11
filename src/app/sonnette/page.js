@@ -1,117 +1,69 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Image from 'next/image'
 import { sbUpsert, sbSelect } from '@/lib/supabase'
 
 const DOOR_CODE = '1990A'
+const ADDRESS = '42 Boulevard de Sébastopol, 75001 Paris'
+const GROUP_GAP_MS = 5 * 60 * 1000
 
-function StatusIcon({ kind }) {
-  if (kind === 'access') {
-    return (
-      <div style={{
-        width: 80, height: 80, borderRadius: '50%',
-        background: 'rgba(0,171,233,0.15)', border: '2px solid rgba(0,171,233,0.4)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginBottom: 28,
-      }}>
-        <svg width={38} height={38} viewBox="0 0 24 24" fill="none">
-          <circle cx="7" cy="15" r="4" stroke="#00abe9" strokeWidth={2} />
-          <path d="M10 12 L21 1 M17 4 L20 7 M14 7 L16 9" stroke="#00abe9" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </div>
-    )
-  }
-  if (kind === 'coming') {
-    return (
-      <div style={{
-        width: 80, height: 80, borderRadius: '50%',
-        background: 'rgba(251,191,36,0.15)', border: '2px solid rgba(251,191,36,0.4)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginBottom: 28,
-      }}>
-        <svg width={38} height={38} viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="9" stroke="#fbbf24" strokeWidth={2} />
-          <path d="M12 7v5l3.5 2" stroke="#fbbf24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </div>
-    )
-  }
+function accessMessageText(prenom) {
+  return `Salut ${prenom} 👋 Tu peux nous rejoindre directement en salle de formation !\n\n📍 ${ADDRESS}\n🔑 Code de la porte : ${DOOR_CODE}\n\nLa salle se trouve au dernier étage, prends l'ascenseur pour nous rejoindre. À tout de suite !`
+}
+
+function comingMessageText(prenom, trainerName) {
+  return `Salut ${prenom} 👋 Je descends te récupérer dans 5 minutes !${trainerName ? `\n— ${trainerName}` : ''}`
+}
+
+function formatBubbleTime(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const today = new Date()
+  const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  if (d.toDateString() === today.toDateString()) return `Aujourd'hui ${time}`
+  return `${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} ${time}`
+}
+
+// ── Bulle façon Messages iOS (mode nuit) ────────────────────────────
+function Bubble({ msg, isFirst, isLast }) {
+  const mine = msg.from === 'forme'
+  const radius = mine
+    ? { borderTopLeftRadius: 18, borderBottomLeftRadius: 18, borderTopRightRadius: isFirst ? 18 : 6, borderBottomRightRadius: isLast ? 18 : 6 }
+    : { borderTopRightRadius: 18, borderBottomRightRadius: 18, borderTopLeftRadius: isFirst ? 18 : 6, borderBottomLeftRadius: isLast ? 18 : 6 }
+
   return (
     <div style={{
-      width: 80, height: 80, borderRadius: '50%',
-      background: 'rgba(34,197,94,0.15)', border: '2px solid rgba(34,197,94,0.4)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      marginBottom: 28,
+      display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start',
+      marginTop: isFirst ? 10 : 2,
     }}>
-      <svg width={40} height={40} viewBox="0 0 40 40">
-        <path d="M 8,20 L 17,29 L 32,12" fill="none" stroke="#22c55e" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <div style={{
+        maxWidth: '78%', padding: '9px 14px', fontSize: 15.5, lineHeight: 1.35,
+        whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+        background: mine ? '#0b93f6' : '#26252a',
+        color: '#fff',
+        ...radius,
+      }}>
+        {msg.text}
+      </div>
     </div>
   )
 }
 
-// ── Petit chat formé ↔ formateur — utile à tout moment (introuvable,
-// question, retard...), pas seulement une fois l'accès donné. ──────
-function ChatBox({ messages, chatText, setChatText, onSend, sending }) {
-  const endRef = useRef(null)
-  useEffect(() => { endRef.current?.scrollIntoView({ block: 'nearest' }) }, [messages.length])
-
+function TypingBubble() {
   return (
-    <div style={{
-      width: '100%', maxWidth: 380, marginTop: 28,
-      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
-      borderRadius: 16, padding: '14px 14px 12px', textAlign: 'left',
-    }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-        💬 Un souci, une question ?
+    <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 10 }}>
+      <div style={{
+        background: '#26252a', borderRadius: 18, padding: '12px 16px',
+        display: 'flex', gap: 4, alignItems: 'center',
+      }}>
+        {[0, 1, 2].map(i => (
+          <span key={i} style={{
+            width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.5)',
+            animation: `sonnetteTypingDot 1.2s ${i * 0.18}s infinite ease-in-out`,
+          }} />
+        ))}
       </div>
-      {messages.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 180, overflowY: 'auto', marginBottom: 10 }}>
-          {messages.map((m, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: m.from === 'forme' ? 'flex-end' : 'flex-start' }}>
-              <div style={{
-                maxWidth: '80%', padding: '8px 12px', borderRadius: 12,
-                fontSize: 13, lineHeight: 1.4, whiteSpace: 'pre-wrap',
-                background: m.from === 'forme' ? 'rgba(0,171,233,0.2)' : 'rgba(255,255,255,0.08)',
-                color: m.from === 'forme' ? '#fff' : 'rgba(255,255,255,0.85)',
-                borderBottomRightRadius: m.from === 'forme' ? 4 : 12,
-                borderBottomLeftRadius: m.from === 'forme' ? 12 : 4,
-              }}>
-                {m.text}
-              </div>
-            </div>
-          ))}
-          <div ref={endRef} />
-        </div>
-      )}
-      <form
-        onSubmit={e => { e.preventDefault(); onSend() }}
-        style={{ display: 'flex', gap: 8 }}
-      >
-        <input
-          type="text"
-          value={chatText}
-          onChange={e => setChatText(e.target.value)}
-          placeholder="Écrire un message..."
-          style={{
-            flex: 1, padding: '10px 12px', borderRadius: 10, fontSize: 14,
-            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-            color: '#fff', outline: 'none', fontFamily: 'inherit',
-          }}
-        />
-        <button
-          type="submit"
-          disabled={sending || !chatText.trim()}
-          style={{
-            padding: '10px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700,
-            background: (!chatText.trim() || sending) ? 'rgba(0,171,233,0.15)' : 'rgba(0,171,233,0.9)',
-            border: 'none', color: '#fff', cursor: (!chatText.trim() || sending) ? 'default' : 'pointer',
-            fontFamily: 'inherit', flexShrink: 0,
-          }}
-        >
-          Envoyer
-        </button>
-      </form>
+      <style>{`@keyframes sonnetteTypingDot { 0%, 60%, 100% { opacity: .3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }`}</style>
     </div>
   )
 }
@@ -123,12 +75,16 @@ export default function SonnettePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [response, setResponse] = useState(null) // null | 'coming' | 'access'
+  const [respondedAt, setRespondedAt] = useState(null)
   const [trainerName, setTrainerName] = useState('')
   const [accessStatus, setAccessStatusState] = useState(null) // null | 'lost' | 'arriving'
+  const [accessStatusAt, setAccessStatusAt] = useState(null)
   const [messages, setMessages] = useState([])
   const [chatText, setChatText] = useState('')
   const [sendingChat, setSendingChat] = useState(false)
   const keyRef = useRef('')
+  const createdAtRef = useRef(null)
+  const endRef = useRef(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -139,13 +95,15 @@ export default function SonnettePage() {
       ? crypto.randomUUID()
       : Date.now() + '-' + Math.random().toString(36).slice(2, 8)
     const key = 'sonnette-' + uid
+    const createdAt = new Date().toISOString()
     const result = await sbUpsert('trainer_state', {
       trainer: key,
-      state: { prenom: prenom.trim(), nom: nom.trim(), created_at: new Date().toISOString() },
+      state: { prenom: prenom.trim(), nom: nom.trim(), created_at: createdAt },
       updated_at: new Date().toISOString(),
     }, 'trainer')
     if (result != null) {
       keyRef.current = key
+      createdAtRef.current = createdAt
       setSent(true)
     } else {
       setError('Une erreur est survenue, réessayez.')
@@ -165,9 +123,13 @@ export default function SonnettePage() {
         if (cancelled || !state) return
         if (state.response) {
           setResponse(state.response)
+          setRespondedAt(state.responded_at || null)
           setTrainerName(state.trainer_name || '')
         }
-        if (state.access_status) setAccessStatusState(state.access_status)
+        if (state.access_status) {
+          setAccessStatusState(state.access_status)
+          setAccessStatusAt(state.access_status_at || null)
+        }
         if (Array.isArray(state.messages)) setMessages(state.messages)
       } catch { /* best-effort */ }
     }
@@ -192,8 +154,10 @@ export default function SonnettePage() {
   }
 
   const sendAccessStatus = async (status) => {
+    const at = new Date().toISOString()
     setAccessStatusState(status)
-    try { await patchState({ access_status: status, access_status_at: new Date().toISOString() }) } catch { /* best-effort */ }
+    setAccessStatusAt(at)
+    try { await patchState({ access_status: status, access_status_at: at }) } catch { /* best-effort */ }
   }
 
   const sendChat = async () => {
@@ -211,95 +175,163 @@ export default function SonnettePage() {
     }
   }
 
+  // Timeline unifiée façon conversation SMS : messages système (arrivée,
+  // réponse du formateur, statut d'accès) + messages libres, triés par date.
+  const timeline = useMemo(() => {
+    const t = []
+    if (createdAtRef.current) {
+      t.push({ from: 'forme', text: 'Salut, je suis arrivé(e) devant l\'entrée !', at: createdAtRef.current })
+    }
+    if (response === 'coming') {
+      t.push({ from: 'formateur', text: comingMessageText(prenom.trim(), trainerName), at: respondedAt || new Date().toISOString() })
+    } else if (response === 'access') {
+      t.push({ from: 'formateur', text: accessMessageText(prenom.trim()), at: respondedAt || new Date().toISOString() })
+    }
+    if (accessStatus === 'lost') {
+      t.push({ from: 'forme', text: '❌ Je ne trouve pas l\'entrée', at: accessStatusAt || new Date().toISOString() })
+    } else if (accessStatus === 'arriving') {
+      t.push({ from: 'forme', text: '✅ J\'ai trouvé, j\'arrive !', at: accessStatusAt || new Date().toISOString() })
+    }
+    for (const m of messages) t.push(m)
+    t.sort((a, b) => new Date(a.at || 0) - new Date(b.at || 0))
+    return t
+  }, [response, respondedAt, accessStatus, accessStatusAt, messages, prenom, trainerName])
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: 'end' })
+  }, [timeline.length, response, accessStatus])
+
   if (sent) {
+    const subtitle = accessStatus === 'lost'
+      ? '❌ Vous ne trouvez pas l\'entrée'
+      : accessStatus === 'arriving'
+      ? '✅ En route vers la salle'
+      : response === 'access'
+      ? '🔑 Accès donné'
+      : response === 'coming'
+      ? '⏱ Arrive dans 5 minutes'
+      : 'En attente de réponse...'
+
     return (
       <div style={{
         minHeight: '100vh', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-        padding: '32px 24px', textAlign: 'center',
+        background: '#000',
       }}>
-        <StatusIcon kind={response} />
+        {/* Header contact façon Messages */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '18px 16px 14px', borderBottom: '1px solid rgba(255,255,255,0.08)',
+          flexShrink: 0,
+        }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #3a3a3c, #1c1c1e)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16, fontWeight: 700, color: '#fff', flexShrink: 0,
+          }}>
+            {(trainerName || 'F')[0].toUpperCase()}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>
+              {trainerName || 'Formateur LPT'}
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>{subtitle}</div>
+          </div>
+        </div>
 
-        {response === 'access' ? (
-          <>
-            <h1 style={{ fontSize: 26, fontWeight: 800, color: '#fff', margin: '0 0 12px' }}>
-              Accès à la salle
-            </h1>
-            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, margin: 0, maxWidth: 380 }}>
-              Salut {prenom.trim()}, tu peux nous rejoindre directement en salle de formation,
-              le code de la porte est : <strong style={{ color: '#00abe9' }}>{DOOR_CODE}</strong>.
-              <br /><br />
-              La salle de formation se trouve au dernier étage, prends l&apos;ascenseur pour nous rejoindre.
-              <br /><br />
-              À tout de suite !
-            </p>
+        {/* Fil de conversation */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '14px 12px 100px' }}>
+          {timeline.length > 0 && (
+            <div style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>
+              {formatBubbleTime(timeline[0].at)}
+            </div>
+          )}
+          {timeline.map((m, i) => {
+            const prev = timeline[i - 1]
+            const next = timeline[i + 1]
+            const gapBefore = prev ? new Date(m.at || 0) - new Date(prev.at || 0) : Infinity
+            const isFirst = !prev || prev.from !== m.from || gapBefore > GROUP_GAP_MS
+            const isLast = !next || next.from !== m.from
+            return (
+              <div key={i}>
+                {isFirst && i > 0 && gapBefore > GROUP_GAP_MS && (
+                  <div style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.35)', margin: '14px 0 4px' }}>
+                    {formatBubbleTime(m.at)}
+                  </div>
+                )}
+                <Bubble msg={m} isFirst={isFirst} isLast={isLast} />
+              </div>
+            )
+          })}
 
-            {accessStatus === 'arriving' ? (
-              <div style={{ marginTop: 24, fontSize: 14, color: '#4ade80', fontWeight: 700 }}>
-                ✅ Le formateur a été prévenu, à tout de suite !
-              </div>
-            ) : (
-              <div style={{ display: 'flex', gap: 10, marginTop: 24, width: '100%', maxWidth: 380 }}>
-                <button
-                  onClick={() => sendAccessStatus('lost')}
-                  style={{
-                    flex: 1, padding: '13px 10px', borderRadius: 12, fontSize: 13, fontWeight: 700,
-                    background: accessStatus === 'lost' ? 'rgba(239,68,68,0.25)' : 'rgba(239,68,68,0.12)',
-                    border: '1px solid rgba(239,68,68,0.4)', color: '#f87171',
-                    cursor: 'pointer', fontFamily: 'inherit',
-                  }}
-                >
-                  ❌ Je ne trouve pas l&apos;entrée
-                </button>
-                <button
-                  onClick={() => sendAccessStatus('arriving')}
-                  style={{
-                    flex: 1, padding: '13px 10px', borderRadius: 12, fontSize: 13, fontWeight: 700,
-                    background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)',
-                    color: '#4ade80', cursor: 'pointer', fontFamily: 'inherit',
-                  }}
-                >
-                  ✅ J&apos;ai trouvé, j&apos;arrive
-                </button>
-              </div>
-            )}
-            {accessStatus === 'lost' && (
-              <div style={{ marginTop: 14, fontSize: 13, color: '#f87171' }}>
-                Le formateur est prévenu — écris-lui ci-dessous où tu te trouves si besoin.
-              </div>
-            )}
-          </>
-        ) : response === 'coming' ? (
-          <>
-            <h1 style={{ fontSize: 26, fontWeight: 800, color: '#fff', margin: '0 0 12px' }}>
-              On arrive !
-            </h1>
-            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, margin: 0, maxWidth: 380 }}>
-              Salut {prenom.trim()}, je descends te récupérer dans 5 minutes !
-            </p>
-            {trainerName && (
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 14 }}>— {trainerName}</p>
-            )}
-          </>
-        ) : (
-          <>
-            <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', margin: '0 0 12px' }}>
-              C&apos;est envoyé !
-            </h1>
-            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, margin: 0 }}>
-              Un instant, le formateur va vous répondre.<br />Restez devant l&apos;entrée du bâtiment.
-            </p>
-          </>
-        )}
+          {/* Quick replies : disponibles une fois l'accès donné */}
+          {response === 'access' && !accessStatus && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 14, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => sendAccessStatus('lost')}
+                style={{
+                  padding: '9px 14px', borderRadius: 16, fontSize: 13, fontWeight: 600,
+                  background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
+                  color: '#f87171', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                ❌ Je ne trouve pas l&apos;entrée
+              </button>
+              <button
+                onClick={() => sendAccessStatus('arriving')}
+                style={{
+                  padding: '9px 14px', borderRadius: 16, fontSize: 13, fontWeight: 600,
+                  background: 'rgba(11,147,246,0.18)', border: '1px solid rgba(11,147,246,0.5)',
+                  color: '#5eb8ff', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                ✅ J&apos;ai trouvé, j&apos;arrive
+              </button>
+            </div>
+          )}
 
-        <ChatBox
-          messages={messages}
-          chatText={chatText}
-          setChatText={setChatText}
-          onSend={sendChat}
-          sending={sendingChat}
-        />
+          {!response && <TypingBubble />}
+          <div ref={endRef} />
+        </div>
+
+        {/* Barre de saisie fixe façon Messages */}
+        <form
+          onSubmit={e => { e.preventDefault(); sendChat() }}
+          style={{
+            position: 'fixed', left: 0, right: 0, bottom: 0,
+            display: 'flex', gap: 8, alignItems: 'center',
+            padding: '10px 12px calc(10px + env(safe-area-inset-bottom))',
+            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <input
+            type="text"
+            value={chatText}
+            onChange={e => setChatText(e.target.value)}
+            placeholder="Message"
+            style={{
+              flex: 1, padding: '10px 16px', borderRadius: 20, fontSize: 15,
+              background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.15)',
+              color: '#fff', outline: 'none', fontFamily: 'inherit',
+            }}
+          />
+          <button
+            type="submit"
+            disabled={sendingChat || !chatText.trim()}
+            aria-label="Envoyer"
+            style={{
+              width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+              background: (!chatText.trim() || sendingChat) ? 'rgba(11,147,246,0.3)' : '#0b93f6',
+              border: 'none', color: '#fff', cursor: (!chatText.trim() || sendingChat) ? 'default' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <svg width={15} height={15} viewBox="0 0 24 24" fill="none">
+              <path d="M12 19V5M12 5l-6 6M12 5l6 6" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </form>
       </div>
     )
   }
