@@ -1906,6 +1906,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           visible={showSonnette}
           onClose={() => setShowSonnette(false)}
           onPendingChange={setSonnettePending}
+          trainerName={pName}
         />
         {selectedUpdate && <AppUpdateModal update={selectedUpdate} onClose={() => setSelectedUpdate(null)} />}
 

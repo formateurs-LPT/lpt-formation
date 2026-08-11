@@ -60,7 +60,7 @@ function groupByDate(items) {
   return groups
 }
 
-export default function SonnettePanel({ visible, onClose, onPendingChange }) {
+export default function SonnettePanel({ visible, onClose, onPendingChange, trainerName }) {
   const [tab, setTab] = useState('pending')
   const [arrivals, setArrivals] = useState([])
   const [history, setHistory] = useState([])
@@ -69,7 +69,9 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
   const [muted, setMuted] = useState(() => {
     try { return localStorage.getItem('sonnette_muted') === '1' } catch { return false }
   })
+  const [replyText, setReplyText] = useState({})
   const seenIds = useRef(null)
+  const seenSig = useRef({})
   const mutedRef = useRef(muted)
 
   const toggleMute = () => {
@@ -93,16 +95,41 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
       .map(r => ({ ...r.state, _key: r.trainer }))
       .sort((a, b) => new Date(b.dismissed_at) - new Date(a.dismissed_at))
 
+    let shouldRing = false
+
     if (seenIds.current === null) {
       seenIds.current = new Set(pending.map(r => r._key))
     } else {
       const newOnes = pending.filter(r => !seenIds.current.has(r._key))
       if (newOnes.length > 0) {
-        if (!mutedRef.current) playDingDong()
-        setRinging(true)
-        setTimeout(() => setRinging(false), 2500)
+        shouldRing = true
         newOnes.forEach(r => seenIds.current.add(r._key))
       }
+    }
+
+    // Sonne aussi pour un nouveau message du formé ou un "je ne trouve pas
+    // l'entrée" en cours de route — pas seulement pour une toute nouvelle
+    // arrivée. On compare à la signature vue au tour précédent pour ne pas
+    // re-sonner sur l'écho de nos propres réponses.
+    for (const p of pending) {
+      const msgs = Array.isArray(p.messages) ? p.messages : []
+      const last = msgs[msgs.length - 1]
+      const prevSig = seenSig.current[p._key]
+      const sig = { msgCount: msgs.length, accessStatus: p.access_status || null }
+      if (prevSig) {
+        if (sig.msgCount > prevSig.msgCount && last?.from === 'forme') shouldRing = true
+        if (sig.accessStatus === 'lost' && prevSig.accessStatus !== 'lost') shouldRing = true
+      }
+      seenSig.current[p._key] = sig
+    }
+    for (const key of Object.keys(seenSig.current)) {
+      if (!pending.some(p => p._key === key)) delete seenSig.current[key]
+    }
+
+    if (shouldRing) {
+      if (!mutedRef.current) playDingDong()
+      setRinging(true)
+      setTimeout(() => setRinging(false), 2500)
     }
 
     setArrivals(pending)
@@ -122,7 +149,7 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
     const dismissedAt = new Date().toISOString()
     await sbUpsert('trainer_state', {
       trainer: key,
-      state: { prenom: a.prenom, nom: a.nom, created_at: a.created_at, dismissed_at: dismissedAt },
+      state: { ...a, _key: undefined, dismissed_at: dismissedAt },
       updated_at: new Date().toISOString(),
     }, 'trainer')
     setArrivals(prev => {
@@ -132,6 +159,43 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
     })
     setHistory(prev => [{ ...a, dismissed_at: dismissedAt }, ...prev])
     seenIds.current?.delete(key)
+  }
+
+  // "Donner l'accès" (code de porte affiché au formé) ou "J'arrive dans 5
+  // minutes" — le formé, qui poll sa propre ligne, voit la réponse en direct.
+  const respond = async (key, response) => {
+    const a = arrivals.find(x => x._key === key)
+    if (!a) return
+    const respondedAt = new Date().toISOString()
+    const nextState = { ...a, _key: undefined, response, responded_at: respondedAt, trainer_name: trainerName || '' }
+    await sbUpsert('trainer_state', {
+      trainer: key,
+      state: nextState,
+      updated_at: new Date().toISOString(),
+    }, 'trainer')
+    setArrivals(prev => prev.map(x => x._key === key ? { ...x, ...nextState } : x))
+  }
+
+  // Réponse du formateur dans le chat — on relit la ligne juste avant
+  // d'écrire pour ne pas écraser un message envoyé entre-temps par le formé.
+  const sendReply = async (key, text) => {
+    const trimmed = text.trim()
+    if (!trimmed) return
+    const rows = await sbSelect('trainer_state', `trainer=eq.${encodeURIComponent(key)}`)
+    const current = rows?.[0]?.state
+    if (!current) return
+    const messages = [
+      ...(Array.isArray(current.messages) ? current.messages : []),
+      { from: 'formateur', text: trimmed, at: new Date().toISOString() },
+    ]
+    const nextState = { ...current, messages }
+    await sbUpsert('trainer_state', {
+      trainer: key,
+      state: nextState,
+      updated_at: new Date().toISOString(),
+    }, 'trainer')
+    setArrivals(prev => prev.map(x => x._key === key ? { ...x, messages } : x))
+    seenSig.current[key] = { msgCount: messages.length, accessStatus: current.access_status || null }
   }
 
   const clearHistory = async () => {
@@ -302,37 +366,151 @@ export default function SonnettePanel({ visible, onClose, onPendingChange }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {arrivals.map(a => (
                   <div key={a._key} style={{
-                    display: 'flex', alignItems: 'center', gap: 14,
+                    display: 'flex', flexDirection: 'column', gap: 10,
                     background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 14, padding: '14px 16px',
                   }}>
-                    <div style={{
-                      width: 42, height: 42, borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #0089ba, #00abe9)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 16, fontWeight: 800, color: '#fff', flexShrink: 0,
-                    }}>
-                      {(a.prenom || '?')[0].toUpperCase()}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{a.prenom} {a.nom}</div>
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', marginTop: 2 }}>
-                        Arrivé à {formatTime(a.created_at)}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <div style={{
+                        width: 42, height: 42, borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #0089ba, #00abe9)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 16, fontWeight: 800, color: '#fff', flexShrink: 0,
+                      }}>
+                        {(a.prenom || '?')[0].toUpperCase()}
                       </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{a.prenom} {a.nom}</div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', marginTop: 2 }}>
+                          Arrivé à {formatTime(a.created_at)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => dismiss(a._key)}
+                        style={{
+                          background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)',
+                          color: '#4ade80', padding: '8px 14px', borderRadius: 10,
+                          fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                          flexShrink: 0, transition: 'all .15s', whiteSpace: 'nowrap',
+                        }}
+                        onMouseOver={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.2)' }}
+                        onMouseOut={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.1)' }}
+                      >
+                        Récupéré
+                      </button>
                     </div>
-                    <button
-                      onClick={() => dismiss(a._key)}
-                      style={{
+
+                    {/* Réponse au formé : donner l'accès ou prévenir qu'on arrive */}
+                    {a.response ? (
+                      <div style={{
+                        fontSize: 12, fontWeight: 600,
+                        color: a.response === 'access' ? '#00abe9' : '#fbbf24',
+                        background: a.response === 'access' ? 'rgba(0,171,233,0.1)' : 'rgba(251,191,36,0.1)',
+                        border: `1px solid ${a.response === 'access' ? 'rgba(0,171,233,0.3)' : 'rgba(251,191,36,0.3)'}`,
+                        borderRadius: 10, padding: '8px 12px',
+                      }}>
+                        {a.response === 'access' ? '🔑 Accès donné' : '⏱ "J\'arrive dans 5 minutes" envoyé'} à {formatTime(a.responded_at)}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          onClick={() => respond(a._key, 'coming')}
+                          style={{
+                            flex: 1, background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)',
+                            color: '#fbbf24', padding: '9px 10px', borderRadius: 10,
+                            fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                            transition: 'all .15s',
+                          }}
+                          onMouseOver={e => { e.currentTarget.style.background = 'rgba(251,191,36,0.2)' }}
+                          onMouseOut={e => { e.currentTarget.style.background = 'rgba(251,191,36,0.1)' }}
+                        >
+                          ⏱ J&apos;arrive dans 5 min
+                        </button>
+                        <button
+                          onClick={() => respond(a._key, 'access')}
+                          style={{
+                            flex: 1, background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.3)',
+                            color: '#00abe9', padding: '9px 10px', borderRadius: 10,
+                            fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                            transition: 'all .15s',
+                          }}
+                          onMouseOver={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.2)' }}
+                          onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.1)' }}
+                        >
+                          🔑 Donner l&apos;accès
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Statut envoyé par le formé une fois l'accès donné */}
+                    {a.access_status === 'lost' && (
+                      <div style={{
+                        fontSize: 12, fontWeight: 700, color: '#f87171',
+                        background: 'rgba(239,68,68,0.14)', border: '1px solid rgba(239,68,68,0.4)',
+                        borderRadius: 10, padding: '8px 12px',
+                      }}>
+                        ❌ Ne trouve pas l&apos;entrée — a besoin d&apos;aide !
+                      </div>
+                    )}
+                    {a.access_status === 'arriving' && (
+                      <div style={{
+                        fontSize: 12, fontWeight: 600, color: '#4ade80',
                         background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)',
-                        color: '#4ade80', padding: '8px 14px', borderRadius: 10,
-                        fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                        flexShrink: 0, transition: 'all .15s', whiteSpace: 'nowrap',
+                        borderRadius: 10, padding: '8px 12px',
+                      }}>
+                        ✅ En chemin vers la salle
+                      </div>
+                    )}
+
+                    {/* Chat avec le formé */}
+                    {Array.isArray(a.messages) && a.messages.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 140, overflowY: 'auto' }}>
+                        {a.messages.map((m, i) => (
+                          <div key={i} style={{ display: 'flex', justifyContent: m.from === 'forme' ? 'flex-start' : 'flex-end' }}>
+                            <div style={{
+                              maxWidth: '85%', padding: '7px 11px', borderRadius: 10,
+                              fontSize: 12.5, lineHeight: 1.4, whiteSpace: 'pre-wrap',
+                              background: m.from === 'forme' ? 'rgba(255,255,255,0.08)' : 'rgba(0,171,233,0.2)',
+                              color: m.from === 'forme' ? 'rgba(255,255,255,0.85)' : '#fff',
+                            }}>
+                              {m.text}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <form
+                      onSubmit={e => {
+                        e.preventDefault()
+                        const t = replyText[a._key] || ''
+                        if (!t.trim()) return
+                        sendReply(a._key, t)
+                        setReplyText(prev => ({ ...prev, [a._key]: '' }))
                       }}
-                      onMouseOver={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.2)' }}
-                      onMouseOut={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.1)' }}
+                      style={{ display: 'flex', gap: 6 }}
                     >
-                      Récupéré
-                    </button>
+                      <input
+                        type="text"
+                        value={replyText[a._key] || ''}
+                        onChange={e => setReplyText(prev => ({ ...prev, [a._key]: e.target.value }))}
+                        placeholder="Répondre..."
+                        style={{
+                          flex: 1, padding: '8px 10px', borderRadius: 8, fontSize: 12.5,
+                          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+                          color: '#fff', outline: 'none', fontFamily: 'inherit',
+                        }}
+                      />
+                      <button
+                        type="submit"
+                        style={{
+                          padding: '8px 12px', borderRadius: 8, fontSize: 11, fontWeight: 700,
+                          background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.35)',
+                          color: '#00abe9', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+                        }}
+                      >
+                        Envoyer
+                      </button>
+                    </form>
                   </div>
                 ))}
               </div>
