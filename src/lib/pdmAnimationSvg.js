@@ -13,6 +13,37 @@ const LENS_INIT = { x: 190, y: 310 }
 const LENS_EYE  = EYE_L
 const FRAME_PERIM = Math.PI * (3 * (FRAME_RX + FRAME_RY) - Math.sqrt((3 * FRAME_RX + FRAME_RY) * (FRAME_RX + 3 * FRAME_RY)))
 
+// Bruit deterministe (pas de Math.random, le rendu doit rester identique a chaque render)
+function pseudoRand(i) {
+  const j = Math.sin(i * 12.9898) * 43758.5453
+  return j - Math.floor(j)
+}
+// Petites meches de texture sur le dessus des cheveux, contenues dans la silhouette
+const HAIR_TEX_LINES = Array.from({ length: 13 }, (_, i) => {
+  const t = i / 12
+  const x = FC.x - 92 + t * 184
+  const yBase = 96 - Math.sin(t * Math.PI) * 26
+  const len = 14 + pseudoRand(i) * 10
+  const bend = (pseudoRand(i + 5) - 0.5) * 6
+  return {
+    d: `M ${x.toFixed(1)} ${yBase.toFixed(1)} q ${bend.toFixed(1)} ${(len * 0.6).toFixed(1)} ${(bend * 0.4).toFixed(1)} ${len.toFixed(1)}`,
+    color: i % 2 ? '#100a05' : '#3a2416',
+    opacity: 0.35 + pseudoRand(i) * 0.25,
+  }
+})
+// Sourcil : forme pleine effilee + 2 poils de texture. dir = 1 (gauche) / -1 (droit)
+function eyebrowShape(eye, dir) {
+  const x0 = eye.x - dir * 22
+  const x2 = eye.x - dir * 1
+  return {
+    base: `M ${x0.toFixed(1)} ${(eye.y - 18).toFixed(1)} Q ${eye.x.toFixed(1)} ${(eye.y - 29).toFixed(1)} ${(eye.x + dir * 22).toFixed(1)} ${(eye.y - 20).toFixed(1)} Q ${x2.toFixed(1)} ${(eye.y - 23).toFixed(1)} ${x0.toFixed(1)} ${(eye.y - 18).toFixed(1)} Z`,
+    h1: `M ${(eye.x - dir * 10).toFixed(1)} ${(eye.y - 24).toFixed(1)} l ${dir * 2} -4`,
+    h2: `M ${(eye.x + dir * 4).toFixed(1)} ${(eye.y - 25).toFixed(1)} l ${dir * 2} -3.5`,
+  }
+}
+const BROW_L = eyebrowShape(EYE_L, 1)
+const BROW_R = eyebrowShape(EYE_R, -1)
+
 export const PDM_ANIM_STEP_LABELS = [
   'Le verre brut',
   'Centre optique',
@@ -112,98 +143,231 @@ export function PDMAnimationSVG({ animStep }) {
           <feGaussianBlur stdDeviation="4" result="b"/>
           <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
+
+        {/* ── Personnage : degrades + flous doux pour un rendu illustratif pro ── */}
+        <linearGradient id="pdma-skin" x1="20%" y1="0%" x2="85%" y2="100%">
+          <stop offset="0%"   stopColor="#f6dcb6" />
+          <stop offset="55%"  stopColor="#e7bc8c" />
+          <stop offset="100%" stopColor="#c99968" />
+        </linearGradient>
+        <linearGradient id="pdma-skin-shadow" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stopColor="#b98554" stopOpacity="0" />
+          <stop offset="100%" stopColor="#96683f" stopOpacity="0.55" />
+        </linearGradient>
+        <radialGradient id="pdma-forehead-light" cx="50%" cy="20%" r="60%">
+          <stop offset="0%"   stopColor="rgba(255,244,224,0.4)" />
+          <stop offset="100%" stopColor="rgba(255,244,224,0)" />
+        </radialGradient>
+        <linearGradient id="pdma-hair" x1="15%" y1="0%" x2="90%" y2="100%">
+          <stop offset="0%"   stopColor="#3a2416" />
+          <stop offset="55%"  stopColor="#1e1209" />
+          <stop offset="100%" stopColor="#100a05" />
+        </linearGradient>
+        <radialGradient id="pdma-iris" cx="35%" cy="30%" r="75%">
+          <stop offset="0%"   stopColor="#8d6a3d" />
+          <stop offset="100%" stopColor="#33200f" />
+        </radialGradient>
+        <linearGradient id="pdma-lip-top" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stopColor="#9c5c4b" />
+          <stop offset="100%" stopColor="#7f4638" />
+        </linearGradient>
+        <linearGradient id="pdma-lip-bottom" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stopColor="#bd7461" />
+          <stop offset="100%" stopColor="#9c5847" />
+        </linearGradient>
+        <linearGradient id="pdma-sweater" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stopColor="#41576f" />
+          <stop offset="100%" stopColor="#243244" />
+        </linearGradient>
+        <linearGradient id="pdma-frame-g" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stopColor="#f3cd76" />
+          <stop offset="55%"  stopColor="#c9962f" />
+          <stop offset="100%" stopColor="#8f6317" />
+        </linearGradient>
+        <radialGradient id="pdma-lens-tint" cx="35%" cy="30%" r="75%">
+          <stop offset="0%"   stopColor="rgba(180,210,255,0.32)" />
+          <stop offset="100%" stopColor="rgba(120,170,220,0.1)" />
+        </radialGradient>
+        <filter id="pdma-soft" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="6"/>
+        </filter>
+        <filter id="pdma-soft2" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="2.2"/>
+        </filter>
+        <filter id="pdma-soft3" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="1.1"/>
+        </filter>
       </defs>
 
       <rect width="900" height="500" rx="16" fill="rgba(3,17,42,0.6)" />
 
-      {/* ── Personnage — tete seule, grand format (step 3+) ── */}
+      {/* ── Personnage — buste, rendu illustratif soigne (step 3+) ── */}
       <g opacity={personOpacity} style={{ transition: 'opacity 0.9s ease' }}>
 
-        {/* Oreilles (derriere le visage) */}
-        <ellipse cx={FC.x - 107} cy={FC.y + 8} rx={10} ry={16} fill="#d4a580"/>
-        <ellipse cx={FC.x + 107} cy={FC.y + 8} rx={10} ry={16} fill="#d4a580"/>
+        {/* Ombre au sol (profondeur) */}
+        <ellipse cx={FC.x} cy={482} rx={168} ry={13} fill="rgba(0,0,0,0.3)" filter="url(#pdma-soft)"/>
 
-        {/* ── Cheveux : ellipse sombre derriere, visage peau par-dessus ── */}
-        {/* L'ellipse des cheveux est centree plus haut et plus large */}
-        <ellipse cx={FC.x} cy={FC.y - 72} rx={124} ry={112} fill="#1c110a"/>
-
-        {/* Visage — peau — couvre la partie basse des cheveux */}
-        <ellipse cx={FC.x} cy={FC.y} rx={106} ry={126} fill="#ecc9a6"/>
-
-        {/* Ombre sous les pommettes */}
-        <ellipse cx={FC.x - 70} cy={FC.y + 28} rx={28} ry={12} fill="rgba(0,0,0,0.05)"/>
-        <ellipse cx={FC.x + 70} cy={FC.y + 28} rx={28} ry={12} fill="rgba(0,0,0,0.05)"/>
-
-        {/* Sourcils — fins et arques */}
+        {/* Epaules / pull */}
         <path
-          d={`M ${EYE_L.x - 22} ${EYE_L.y - 24} Q ${EYE_L.x} ${EYE_L.y - 34} ${EYE_L.x + 22} ${EYE_L.y - 26}`}
-          stroke="#1c110a" strokeWidth="3" fill="none" strokeLinecap="round"
+          d={`M ${FC.x - 172} 500 L ${FC.x - 142} 420 Q ${FC.x - 98} 372 ${FC.x - 44} 366
+              Q ${FC.x - 40} 400 ${FC.x} 408 Q ${FC.x + 40} 400 ${FC.x + 44} 366
+              Q ${FC.x + 98} 372 ${FC.x + 142} 420 L ${FC.x + 172} 500 Z`}
+          fill="url(#pdma-sweater)"
+        />
+        {/* Col */}
+        <path
+          d={`M ${FC.x - 44} 366 Q ${FC.x} 386 ${FC.x + 44} 366 Q ${FC.x + 38} 400 ${FC.x} 408 Q ${FC.x - 38} 400 ${FC.x - 44} 366 Z`}
+          fill="#182430"
+        />
+        {/* Cou */}
+        <path d={`M ${FC.x - 30} 332 L ${FC.x - 27} 393 Q ${FC.x} 407 ${FC.x + 27} 393 L ${FC.x + 30} 332 Z`} fill="url(#pdma-skin)"/>
+        <path d={`M ${FC.x - 30} 332 L ${FC.x - 27} 393 Q ${FC.x} 407 ${FC.x + 27} 393 L ${FC.x + 30} 332 Z`} fill="url(#pdma-skin-shadow)" opacity={0.5}/>
+        <path d={`M ${FC.x - 24} 336 Q ${FC.x} 348 ${FC.x + 24} 336`} stroke="rgba(0,0,0,0.1)" strokeWidth="2" fill="none" filter="url(#pdma-soft3)"/>
+
+        {/* Oreilles — forme "6" avec helix + creux interieur */}
+        <path
+          d={`M ${FC.x - 102} ${FC.y - 14} C ${FC.x - 118} ${FC.y - 12} ${FC.x - 124} ${FC.y + 4} ${FC.x - 118} ${FC.y + 20}
+              C ${FC.x - 114} ${FC.y + 32} ${FC.x - 104} ${FC.y + 38} ${FC.x - 96} ${FC.y + 36}
+              C ${FC.x - 90} ${FC.y + 34} ${FC.x - 88} ${FC.y + 26} ${FC.x - 92} ${FC.y + 20}
+              C ${FC.x - 98} ${FC.y + 14} ${FC.x - 100} ${FC.y + 6} ${FC.x - 98} ${FC.y - 2}
+              C ${FC.x - 96} ${FC.y - 10} ${FC.x - 98} ${FC.y - 15} ${FC.x - 102} ${FC.y - 14} Z`}
+          fill="url(#pdma-skin)"
         />
         <path
-          d={`M ${EYE_R.x - 22} ${EYE_R.y - 26} Q ${EYE_R.x} ${EYE_R.y - 34} ${EYE_R.x + 22} ${EYE_R.y - 24}`}
-          stroke="#1c110a" strokeWidth="3" fill="none" strokeLinecap="round"
+          d={`M ${FC.x - 105} ${FC.y - 6} C ${FC.x - 112} ${FC.y - 2} ${FC.x - 113} ${FC.y + 8} ${FC.x - 108} ${FC.y + 16}
+              C ${FC.x - 104} ${FC.y + 22} ${FC.x - 98} ${FC.y + 24} ${FC.x - 96} ${FC.y + 21}`}
+          fill="none" stroke="rgba(110,68,40,0.4)" strokeWidth="1.6" strokeLinecap="round"
+        />
+        <path
+          d={`M ${FC.x + 102} ${FC.y - 14} C ${FC.x + 118} ${FC.y - 12} ${FC.x + 124} ${FC.y + 4} ${FC.x + 118} ${FC.y + 20}
+              C ${FC.x + 114} ${FC.y + 32} ${FC.x + 104} ${FC.y + 38} ${FC.x + 96} ${FC.y + 36}
+              C ${FC.x + 90} ${FC.y + 34} ${FC.x + 88} ${FC.y + 26} ${FC.x + 92} ${FC.y + 20}
+              C ${FC.x + 98} ${FC.y + 14} ${FC.x + 100} ${FC.y + 6} ${FC.x + 98} ${FC.y - 2}
+              C ${FC.x + 96} ${FC.y - 10} ${FC.x + 98} ${FC.y - 15} ${FC.x + 102} ${FC.y - 14} Z`}
+          fill="url(#pdma-skin)"
+        />
+        <path
+          d={`M ${FC.x + 105} ${FC.y - 6} C ${FC.x + 112} ${FC.y - 2} ${FC.x + 113} ${FC.y + 8} ${FC.x + 108} ${FC.y + 16}
+              C ${FC.x + 104} ${FC.y + 22} ${FC.x + 98} ${FC.y + 24} ${FC.x + 96} ${FC.y + 21}`}
+          fill="none" stroke="rgba(110,68,40,0.4)" strokeWidth="1.6" strokeLinecap="round"
         />
 
-        {/* Yeux — blancs */}
-        <ellipse cx={EYE_L.x} cy={EYE_L.y} rx={16} ry={10} fill="white"/>
-        <ellipse cx={EYE_R.x} cy={EYE_R.y} rx={16} ry={10} fill="white"/>
-        {/* Iris */}
-        <circle cx={EYE_L.x} cy={EYE_L.y} r={7} fill="#5a3a20"/>
-        <circle cx={EYE_R.x} cy={EYE_R.y} r={7} fill="#5a3a20"/>
-        {/* Pupilles */}
-        <circle cx={EYE_L.x} cy={EYE_L.y} r={3.5} fill="#080504"/>
-        <circle cx={EYE_R.x} cy={EYE_R.y} r={3.5} fill="#080504"/>
-        {/* Reflets */}
-        <circle cx={EYE_L.x + 3} cy={EYE_L.y - 3} r={2} fill="rgba(255,255,255,0.9)"/>
-        <circle cx={EYE_R.x + 3} cy={EYE_R.y - 3} r={2} fill="rgba(255,255,255,0.9)"/>
-        {/* Paupiere superieure */}
+        {/* Visage — proportions plus resserrees et adultes */}
         <path
-          d={`M ${EYE_L.x - 16} ${EYE_L.y} Q ${EYE_L.x} ${EYE_L.y - 11} ${EYE_L.x + 16} ${EYE_L.y}`}
-          stroke="#1c110a" strokeWidth="1.8" fill="none"
+          d={`M ${FC.x} 156
+              C ${FC.x + 78} 154 ${FC.x + 106} 192 ${FC.x + 102} 234
+              C ${FC.x + 100} 264 ${FC.x + 92} 292 ${FC.x + 58} 328
+              C ${FC.x + 40} 350 ${FC.x + 22} 372 ${FC.x} 375
+              C ${FC.x - 22} 372 ${FC.x - 40} 350 ${FC.x - 58} 328
+              C ${FC.x - 92} 292 ${FC.x - 100} 264 ${FC.x - 102} 234
+              C ${FC.x - 106} 192 ${FC.x - 78} 154 ${FC.x} 156 Z`}
+          fill="url(#pdma-skin)"
         />
+        {/* Ombre laterale — relief du visage */}
         <path
-          d={`M ${EYE_R.x - 16} ${EYE_R.y} Q ${EYE_R.x} ${EYE_R.y - 11} ${EYE_R.x + 16} ${EYE_R.y}`}
-          stroke="#1c110a" strokeWidth="1.8" fill="none"
+          d={`M ${FC.x + 26} 162
+              C ${FC.x + 84} 174 ${FC.x + 102} 204 ${FC.x + 102} 234
+              C ${FC.x + 100} 264 ${FC.x + 92} 292 ${FC.x + 58} 328
+              C ${FC.x + 42} 348 ${FC.x + 26} 368 ${FC.x + 6} 374
+              C ${FC.x + 36} 344 ${FC.x + 54} 290 ${FC.x + 54} 236
+              C ${FC.x + 54} 196 ${FC.x + 42} 174 ${FC.x + 26} 162 Z`}
+          fill="url(#pdma-skin-shadow)" opacity={0.55}
         />
+        <ellipse cx={FC.x - 8} cy={192} rx={52} ry={30} fill="url(#pdma-forehead-light)"/>
+
+        {/* Cheveux — silhouette pleine, coupe courte naturelle */}
+        <path
+          d={`M ${FC.x - 104} 200
+              C ${FC.x - 116} 140 ${FC.x - 98} 88 ${FC.x - 46} 66
+              C ${FC.x - 22} 56 ${FC.x + 26} 56 ${FC.x + 50} 67
+              C ${FC.x + 100} 89 ${FC.x + 116} 140 ${FC.x + 104} 202
+              C ${FC.x + 100} 194 ${FC.x + 93} 190 ${FC.x + 90} 194
+              Q ${FC.x + 68} 162 ${FC.x + 40} 172
+              Q ${FC.x + 18} 179 ${FC.x - 2} 168
+              Q ${FC.x - 22} 178 ${FC.x - 44} 172
+              Q ${FC.x - 70} 163 ${FC.x - 92} 195
+              C ${FC.x - 96} 191 ${FC.x - 102} 194 ${FC.x - 104} 200 Z`}
+          fill="url(#pdma-hair)"
+        />
+        {/* Meches de texture courtes, contenues dans la masse */}
+        {HAIR_TEX_LINES.map((l, i) => (
+          <path key={i} d={l.d} stroke={l.color} strokeWidth="1.6" fill="none" strokeLinecap="round" opacity={l.opacity}/>
+        ))}
+        {/* Reflet */}
+        <ellipse cx={FC.x - 24} cy={90} rx={30} ry={12} fill="rgba(255,255,255,0.12)" filter="url(#pdma-soft)" transform={`rotate(-20 ${FC.x - 24} 90)`}/>
+
+        {/* Blush */}
+        <ellipse cx={FC.x - 52} cy={FC.y + 46} rx={16} ry={9} fill="rgba(224,110,90,0.13)" filter="url(#pdma-soft)"/>
+        <ellipse cx={FC.x + 52} cy={FC.y + 46} rx={16} ry={9} fill="rgba(224,110,90,0.13)" filter="url(#pdma-soft)"/>
+
+        {/* Ombre orbitale (sous l'arcade) */}
+        <path d={`M ${EYE_L.x - 19} ${EYE_L.y - 14} Q ${EYE_L.x} ${EYE_L.y - 19} ${EYE_L.x + 19} ${EYE_L.y - 13} Q ${EYE_L.x} ${EYE_L.y - 6} ${EYE_L.x - 19} ${EYE_L.y - 14} Z`} fill="rgba(120,80,50,0.14)" filter="url(#pdma-soft3)"/>
+        <path d={`M ${EYE_R.x - 19} ${EYE_R.y - 13} Q ${EYE_R.x} ${EYE_R.y - 19} ${EYE_R.x + 19} ${EYE_R.y - 14} Q ${EYE_R.x} ${EYE_R.y - 6} ${EYE_R.x - 19} ${EYE_R.y - 13} Z`} fill="rgba(120,80,50,0.14)" filter="url(#pdma-soft3)"/>
+
+        {/* Sourcils */}
+        <path d={BROW_L.base} fill="#2a1a10"/>
+        <path d={BROW_L.h1} stroke="#160d07" strokeWidth="1" strokeLinecap="round" opacity={0.6}/>
+        <path d={BROW_L.h2} stroke="#160d07" strokeWidth="1" strokeLinecap="round" opacity={0.6}/>
+        <path d={BROW_R.base} fill="#2a1a10"/>
+        <path d={BROW_R.h1} stroke="#160d07" strokeWidth="1" strokeLinecap="round" opacity={0.6}/>
+        <path d={BROW_R.h2} stroke="#160d07" strokeWidth="1" strokeLinecap="round" opacity={0.6}/>
+
+        {/* Yeux */}
+        <path d={`M ${EYE_L.x - 16} ${EYE_L.y + 1} Q ${EYE_L.x} ${EYE_L.y - 9} ${EYE_L.x + 16} ${EYE_L.y + 1} Q ${EYE_L.x} ${EYE_L.y + 8} ${EYE_L.x - 16} ${EYE_L.y + 1} Z`} fill="white"/>
+        <path d={`M ${EYE_R.x - 16} ${EYE_R.y + 1} Q ${EYE_R.x} ${EYE_R.y - 9} ${EYE_R.x + 16} ${EYE_R.y + 1} Q ${EYE_R.x} ${EYE_R.y + 8} ${EYE_R.x - 16} ${EYE_R.y + 1} Z`} fill="white"/>
+        <circle cx={EYE_L.x + 1} cy={EYE_L.y + 2} r={7} fill="url(#pdma-iris)"/>
+        <circle cx={EYE_R.x + 1} cy={EYE_R.y + 2} r={7} fill="url(#pdma-iris)"/>
+        <circle cx={EYE_L.x + 1} cy={EYE_L.y + 2} r={3.2} fill="#0a0704"/>
+        <circle cx={EYE_R.x + 1} cy={EYE_R.y + 2} r={3.2} fill="#0a0704"/>
+        <circle cx={EYE_L.x + 3.5} cy={EYE_L.y - 0.5} r={1.9} fill="rgba(255,255,255,0.95)"/>
+        <circle cx={EYE_R.x + 3.5} cy={EYE_R.y - 0.5} r={1.9} fill="rgba(255,255,255,0.95)"/>
+        <path d={`M ${EYE_L.x - 16} ${EYE_L.y + 1} Q ${EYE_L.x} ${EYE_L.y - 9} ${EYE_L.x + 16} ${EYE_L.y + 1}`} stroke="#1c1108" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+        <path d={`M ${EYE_R.x - 16} ${EYE_R.y + 1} Q ${EYE_R.x} ${EYE_R.y - 9} ${EYE_R.x + 16} ${EYE_R.y + 1}`} stroke="#1c1108" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+        <path d={`M ${EYE_L.x - 14} ${EYE_L.y + 4} Q ${EYE_L.x} ${EYE_L.y + 9} ${EYE_L.x + 14} ${EYE_L.y + 4}`} stroke="rgba(70,45,25,0.4)" strokeWidth="1.1" fill="none"/>
+        <path d={`M ${EYE_R.x - 14} ${EYE_R.y + 4} Q ${EYE_R.x} ${EYE_R.y + 9} ${EYE_R.x + 14} ${EYE_R.y + 4}`} stroke="rgba(70,45,25,0.4)" strokeWidth="1.1" fill="none"/>
+        <path d={`M ${EYE_L.x - 15} ${EYE_L.y - 1} l -4 -2.5`} stroke="#1c1108" strokeWidth="1.2" strokeLinecap="round"/>
+        <path d={`M ${EYE_R.x + 15} ${EYE_R.y - 1} l 4 -2.5`} stroke="#1c1108" strokeWidth="1.2" strokeLinecap="round"/>
 
         {/* Nez */}
-        <path
-          d={`M ${FC.x} ${FC.y + 22} Q ${FC.x - 8} ${FC.y + 44} ${FC.x - 11} ${FC.y + 50} Q ${FC.x} ${FC.y + 58} ${FC.x + 11} ${FC.y + 50} Q ${FC.x + 8} ${FC.y + 44} ${FC.x} ${FC.y + 22}`}
-          fill="rgba(0,0,0,0.055)"
-        />
-        <path
-          d={`M ${FC.x - 11} ${FC.y + 50} Q ${FC.x} ${FC.y + 58} ${FC.x + 11} ${FC.y + 50}`}
-          stroke="#b8846a" strokeWidth="1.8" fill="none" strokeLinecap="round"
-        />
+        <path d={`M ${FC.x - 4} ${FC.y + 16} Q ${FC.x - 12} ${FC.y + 38} ${FC.x - 14} ${FC.y + 45} Q ${FC.x - 3} ${FC.y + 42} ${FC.x - 4} ${FC.y + 16} Z`} fill="url(#pdma-skin-shadow)" opacity={0.4} filter="url(#pdma-soft2)"/>
+        <path d={`M ${FC.x - 14} ${FC.y + 45} Q ${FC.x} ${FC.y + 50} ${FC.x + 11} ${FC.y + 44}`} stroke="#ab7454" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+        <ellipse cx={FC.x - 8} cy={FC.y + 43} rx={1.9} ry={1.2} fill="rgba(110,68,40,0.35)"/>
+        <ellipse cx={FC.x + 7} cy={FC.y + 42} rx={1.9} ry={1.2} fill="rgba(110,68,40,0.35)"/>
+        <path d={`M ${FC.x - 6} ${FC.y + 20} Q ${FC.x - 9} ${FC.y + 32} ${FC.x - 10} ${FC.y + 38}`} stroke="rgba(255,240,218,0.45)" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
 
-        {/* Bouche — sourire discret */}
-        <path
-          d={`M ${FC.x - 20} ${FC.y + 74} Q ${FC.x} ${FC.y + 88} ${FC.x + 20} ${FC.y + 74}`}
-          stroke="#a86848" strokeWidth="2.2" fill="none" strokeLinecap="round"
-        />
+        {/* Bouche */}
+        <path d={`M ${FC.x - 16} ${FC.y + 66} Q ${FC.x} ${FC.y + 61} ${FC.x + 16} ${FC.y + 66} Q ${FC.x} ${FC.y + 70} ${FC.x - 16} ${FC.y + 66} Z`} fill="url(#pdma-lip-top)"/>
+        <path d={`M ${FC.x - 16} ${FC.y + 67} Q ${FC.x} ${FC.y + 80} ${FC.x + 16} ${FC.y + 67} Q ${FC.x} ${FC.y + 76} ${FC.x - 16} ${FC.y + 67} Z`} fill="url(#pdma-lip-bottom)"/>
+        <path d={`M ${FC.x - 16} ${FC.y + 67} Q ${FC.x} ${FC.y + 72} ${FC.x + 16} ${FC.y + 67}`} stroke="#5f3126" strokeWidth="1.3" fill="none" strokeLinecap="round" opacity={0.6}/>
+        <path d={`M ${FC.x - 4} ${FC.y + 48} L ${FC.x - 3} ${FC.y + 58}`} stroke="rgba(255,240,218,0.3)" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
 
-        {/* Ombre sous le menton */}
-        <ellipse cx={FC.x} cy={FC.y + 126} rx={42} ry={8} fill="rgba(0,0,0,0.07)"/>
+        {/* Ombre menton */}
+        <ellipse cx={FC.x} cy={FC.y + 112} rx={28} ry={5} fill="rgba(0,0,0,0.08)" filter="url(#pdma-soft2)"/>
 
         {/* ── Monture lunettes ── */}
-        <ellipse cx={EYE_L.x} cy={EYE_L.y} rx={FRAME_RX} ry={FRAME_RY}
-          fill="rgba(147,210,255,0.07)" stroke="#c9a227" strokeWidth="3.2"/>
-        <ellipse cx={EYE_R.x} cy={EYE_R.y} rx={FRAME_RX} ry={FRAME_RY}
-          fill="rgba(147,210,255,0.07)" stroke="#c9a227" strokeWidth="3.2"/>
+        <ellipse cx={EYE_L.x} cy={EYE_L.y} rx={FRAME_RX} ry={FRAME_RY} fill="url(#pdma-lens-tint)"/>
+        <ellipse cx={EYE_R.x} cy={EYE_R.y} rx={FRAME_RX} ry={FRAME_RY} fill="url(#pdma-lens-tint)"/>
+        <ellipse cx={EYE_L.x} cy={EYE_L.y} rx={FRAME_RX} ry={FRAME_RY} fill="none" stroke="url(#pdma-frame-g)" strokeWidth="4"/>
+        <ellipse cx={EYE_R.x} cy={EYE_R.y} rx={FRAME_RX} ry={FRAME_RY} fill="none" stroke="url(#pdma-frame-g)" strokeWidth="4"/>
+        {/* Sheen sur le verre droit */}
+        <path
+          d={`M ${EYE_L.x + FRAME_RX - 10} ${EYE_L.y - 20} Q ${EYE_L.x + FRAME_RX - 2} ${EYE_L.y - 15} ${EYE_L.x + FRAME_RX - 6} ${EYE_L.y - 8}`}
+          stroke="rgba(255,255,255,0.55)" strokeWidth="2" fill="none" strokeLinecap="round"
+        />
         {/* Pont */}
         <path
-          d={`M ${EYE_L.x + FRAME_RX} ${EYE_L.y - 4} C ${FC.x} ${EYE_L.y - 20} ${FC.x} ${EYE_R.y - 20} ${EYE_R.x - FRAME_RX} ${EYE_R.y - 4}`}
-          fill="none" stroke="#c9a227" strokeWidth="3.2"
+          d={`M ${EYE_L.x + FRAME_RX} ${EYE_L.y - 2} C ${FC.x} ${EYE_L.y - 14} ${FC.x} ${EYE_R.y - 14} ${EYE_R.x - FRAME_RX} ${EYE_R.y - 2}`}
+          fill="none" stroke="url(#pdma-frame-g)" strokeWidth="4"
         />
         {/* Branche gauche */}
         <path
           d={`M ${EYE_L.x - FRAME_RX} ${EYE_L.y} Q ${FC.x - 108} ${EYE_L.y + 6} ${FC.x - 112} ${EYE_L.y + 22}`}
-          fill="none" stroke="#c9a227" strokeWidth="3.2" strokeLinecap="round"
+          fill="none" stroke="url(#pdma-frame-g)" strokeWidth="4" strokeLinecap="round"
         />
         {/* Branche droite */}
         <path
           d={`M ${EYE_R.x + FRAME_RX} ${EYE_R.y} Q ${FC.x + 108} ${EYE_R.y + 6} ${FC.x + 112} ${EYE_R.y + 22}`}
-          fill="none" stroke="#c9a227" strokeWidth="3.2" strokeLinecap="round"
+          fill="none" stroke="url(#pdma-frame-g)" strokeWidth="4" strokeLinecap="round"
         />
       </g>
 

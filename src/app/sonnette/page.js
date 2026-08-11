@@ -84,11 +84,15 @@ export default function SonnettePage() {
   const [sendingChat, setSendingChat] = useState(false)
   const keyRef = useRef('')
   const createdAtRef = useRef(null)
-  const endRef = useRef(null)
+  const listRef = useRef(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!prenom.trim() || !nom.trim()) return
+    // Ferme le clavier mobile avant de basculer sur l'écran de conversation,
+    // sinon le scroll gardé pour garder le champ visible reste appliqué à
+    // la nouvelle vue et le formé se retrouve en bas de l'écran.
+    document.activeElement?.blur?.()
     setLoading(true)
     setError('')
     const uid = typeof crypto !== 'undefined' && crypto.randomUUID
@@ -110,6 +114,13 @@ export default function SonnettePage() {
     }
     setLoading(false)
   }
+
+  // Filet de sécurité : force la page tout en haut dès le passage à l'écran
+  // de conversation, quelle que soit la position de scroll héritée du
+  // formulaire (clavier mobile ouvert, etc.)
+  useEffect(() => {
+    if (sent) window.scrollTo(0, 0)
+  }, [sent])
 
   // Poll la réponse du formateur (donner l'accès / j'arrive dans 5 minutes)
   // et les messages échangés, une fois la notification envoyée.
@@ -197,8 +208,12 @@ export default function SonnettePage() {
     return t
   }, [response, respondedAt, accessStatus, accessStatusAt, messages, prenom, trainerName])
 
+  // Scroll interne au fil de conversation uniquement (jamais la page entière) :
+  // scrollIntoView remonterait l'ancêtre scrollable le plus proche, qui peut
+  // être la fenêtre elle-même sur mobile et faire disparaître l'en-tête.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: 'end' })
+    const el = listRef.current
+    if (el) el.scrollTop = el.scrollHeight
   }, [timeline.length, response, accessStatus])
 
   if (sent) {
@@ -217,30 +232,44 @@ export default function SonnettePage() {
         minHeight: '100vh', display: 'flex', flexDirection: 'column',
         background: '#000',
       }}>
-        {/* Header contact façon Messages */}
+        {/* Header façon vraie conv iMessage : retour + avatar/nom centrés */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: '18px 16px 14px', borderBottom: '1px solid rgba(255,255,255,0.08)',
-          flexShrink: 0,
+          position: 'relative', flexShrink: 0,
+          padding: '10px 12px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)',
+          background: '#000',
         }}>
           <div style={{
-            width: 40, height: 40, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #3a3a3c, #1c1c1e)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, fontWeight: 700, color: '#fff', flexShrink: 0,
+            position: 'absolute', left: 12, top: 10,
+            fontSize: 17, color: '#0b93f6', display: 'flex', alignItems: 'center', gap: 2,
           }}>
-            {(trainerName || 'F')[0].toUpperCase()}
+            <svg width={11} height={18} viewBox="0 0 11 18" fill="none">
+              <path d="M9.5 1.5 L1.5 9 L9.5 16.5" stroke="#0b93f6" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>Messages</span>
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>
-              {trainerName || 'Formateur LPT'}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 26 }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #3a3a3c, #1c1c1e)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 6,
+            }}>
+              {(trainerName || 'F')[0].toUpperCase()}
             </div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>{subtitle}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
+                {trainerName || 'Formateur LPT'}
+              </div>
+              <svg width={7} height={12} viewBox="0 0 7 12" fill="none">
+                <path d="M1 1 L6 6 L1 11" stroke="rgba(255,255,255,0.3)" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{subtitle}</div>
           </div>
         </div>
 
         {/* Fil de conversation */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '14px 12px 100px' }}>
+        <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: '14px 12px 100px' }}>
           {timeline.length > 0 && (
             <div style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>
               {formatBubbleTime(timeline[0].at)}
@@ -291,7 +320,6 @@ export default function SonnettePage() {
           )}
 
           {!response && <TypingBubble />}
-          <div ref={endRef} />
         </div>
 
         {/* Barre de saisie fixe façon Messages */}
