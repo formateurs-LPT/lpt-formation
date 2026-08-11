@@ -6235,44 +6235,108 @@ function TVMutuellesReveal({ mutuellesRevealed }) {
 }
 
 // ── Helpers SVG réutilisables (tiers payant explication) ──────────────
-function tpChip() {
+// Rendu façon "illustration pro" : cartes façon vraie carte bancaire/vitale
+// (dégradé, puce détaillée, reflet), badge LPT avec icône lunettes vectorielle
+// (au lieu de l'emoji, rendu inconsistant selon les appareils), personnage
+// en silhouette vectorielle, pièces et facture avec relief/dégradé.
+function tpCardChip(chipGradId) {
+  return (
+    <g transform="translate(13,13)">
+      <rect width="26" height="19" rx="3.5" fill={`url(#${chipGradId})`} />
+      <line x1="0" y1="6.5" x2="26" y2="6.5" stroke="rgba(0,0,0,0.3)" strokeWidth="0.7" />
+      <line x1="0" y1="13" x2="26" y2="13" stroke="rgba(0,0,0,0.3)" strokeWidth="0.7" />
+      <line x1="9" y1="0" x2="9" y2="19" stroke="rgba(0,0,0,0.3)" strokeWidth="0.7" />
+      <line x1="17.5" y1="0" x2="17.5" y2="19" stroke="rgba(0,0,0,0.3)" strokeWidth="0.7" />
+    </g>
+  )
+}
+
+function tpCard({ w, h, cardGradId, chipGradId, label, sub }) {
   return (
     <>
-      <rect x="10" y="10" width="28" height="20" rx="3" fill="#c9a227" />
-      <line x1="10" y1="20" x2="38" y2="20" stroke="rgba(0,0,0,0.25)" strokeWidth="0.8" />
-      <line x1="24" y1="10" x2="24" y2="30" stroke="rgba(0,0,0,0.25)" strokeWidth="0.8" />
+      <rect width={w} height={h} rx={12} fill={`url(#${cardGradId})`} />
+      <rect width={w} height={h} rx={12} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+      <ellipse cx={w - 20} cy={8} rx={w * 0.4} ry={h * 0.36} fill="rgba(255,255,255,0.08)" />
+      {tpCardChip(chipGradId)}
+      <text x={13} y={h - 22} fontSize="7.5" fill="rgba(255,255,255,0.6)" fontWeight="700" letterSpacing="1.4">{label}</text>
+      <text x={13} y={h - 9} fontSize="12.5" fill="#fff" fontWeight="800">{sub}</text>
+      <circle cx={w - 16} cy={h - 15} r={11} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="1.3" />
+      <circle cx={w - 22} cy={h - 15} r={11} fill="none" stroke="rgba(255,255,255,0.13)" strokeWidth="1.3" />
     </>
   )
 }
 
-function tpCoins(pathId, color, dur, offsets) {
+function tpLptBadge({ r, ringGradId }) {
+  return (
+    <>
+      <circle r={r} fill={`url(#${ringGradId})`} />
+      <circle r={r} fill="none" stroke="#00abe9" strokeWidth="2.6" />
+      <circle r={r + 7} fill="none" stroke="#00abe9" strokeWidth="1.3" opacity="0.22">
+        <animate attributeName="r" values={`${r + 4};${r + 10};${r + 4}`} dur="2.4s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.22;0;0.22" dur="2.4s" repeatCount="indefinite" />
+      </circle>
+      <g transform={`translate(0,${-r * 0.18})`}>
+        <ellipse cx={-r * 0.29} cy={0} rx={r * 0.26} ry={r * 0.19} fill="none" stroke="#00abe9" strokeWidth="2.6" />
+        <ellipse cx={r * 0.29} cy={0} rx={r * 0.26} ry={r * 0.19} fill="none" stroke="#00abe9" strokeWidth="2.6" />
+        <path d={`M ${-r * 0.03} -2 Q 0 -7 ${r * 0.03} -2`} fill="none" stroke="#00abe9" strokeWidth="2.6" />
+        <path d={`M ${-r * 0.55} -3 Q ${-r * 0.68} -1 ${-r * 0.71} 4`} fill="none" stroke="#00abe9" strokeWidth="2.6" strokeLinecap="round" />
+        <path d={`M ${r * 0.55} -3 Q ${r * 0.68} -1 ${r * 0.71} 4`} fill="none" stroke="#00abe9" strokeWidth="2.6" strokeLinecap="round" />
+      </g>
+      <text y={r * 0.62} textAnchor="middle" fontSize={r * 0.24} fill="#00abe9" fontWeight="900" letterSpacing="2.5">LPT</text>
+    </>
+  )
+}
+
+function tpPerson({ r, fill }) {
+  return (
+    <>
+      <circle cy={-r * 0.28} r={r * 0.42} fill={fill} />
+      <path d={`M ${-r * 0.62} ${r * 0.82} Q ${-r * 0.62} ${r * 0.1} 0 ${r * 0.1} Q ${r * 0.62} ${r * 0.1} ${r * 0.62} ${r * 0.82} Z`} fill={fill} />
+    </>
+  )
+}
+
+function tpCoinVisual({ gradId, textFill }) {
+  return (
+    <>
+      <circle r="11.5" fill={`url(#${gradId})`} stroke="rgba(0,0,0,0.19)" strokeWidth="1" />
+      <circle r="8.8" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="0.9" />
+      <text y="4" textAnchor="middle" fontSize="11.5" fontWeight="900" fill={textFill}>€</text>
+      <ellipse cx="-3.6" cy="-4.4" rx="3" ry="1.8" fill="rgba(255,255,255,0.55)" />
+    </>
+  )
+}
+
+function tpFactureVisual({ gradId }) {
+  return (
+    <>
+      <rect x="-10" y="-12.5" width="20" height="25" rx="2.5" fill={`url(#${gradId})`} stroke="#a5640a" strokeWidth="0.7" />
+      <rect x="-10" y="-12.5" width="20" height="7" rx="2.5" fill="rgba(255,255,255,0.22)" />
+      <line x1="-5.5" y1="-1" x2="5.5" y2="-1" stroke="rgba(255,255,255,0.75)" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="-5.5" y1="3.5" x2="5.5" y2="3.5" stroke="rgba(255,255,255,0.75)" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="-5.5" y1="8" x2="0.5" y2="8" stroke="rgba(255,255,255,0.75)" strokeWidth="1.4" strokeLinecap="round" />
+    </>
+  )
+}
+
+function tpMovingCoins(pathId, gradId, textFill, dur, offsets) {
   return offsets.map((d, i) => (
     <g key={`${pathId}-${i}`}>
-      <circle r="11" fill={color} opacity="0.95">
-        <animateMotion dur={`${dur}s`} begin={`${d}s`} repeatCount="indefinite">
-          <mpath href={`#${pathId}`} />
-        </animateMotion>
-      </circle>
-      <text fontSize="11" textAnchor="middle" fill="#fff" fontWeight="900" dy="4">
-        {'€'}
-        <animateMotion dur={`${dur}s`} begin={`${d}s`} repeatCount="indefinite">
-          <mpath href={`#${pathId}`} />
-        </animateMotion>
-      </text>
+      <animateMotion dur={`${dur}s`} begin={`${d}s`} repeatCount="indefinite">
+        <mpath href={`#${pathId}`} />
+      </animateMotion>
+      {tpCoinVisual({ gradId, textFill })}
     </g>
   ))
 }
 
-function tpFacture(pathId, color, dur, offsets) {
+function tpMovingFactures(pathId, gradId, dur, offsets) {
   return offsets.map((d, i) => (
     <g key={`${pathId}-f${i}`}>
       <animateMotion dur={`${dur}s`} begin={`${d}s`} repeatCount="indefinite">
         <mpath href={`#${pathId}`} />
       </animateMotion>
-      <rect x="-9" y="-11" width="18" height="22" rx="2" fill={color} opacity="0.92" />
-      <line x1="-5" y1="-5" x2="5" y2="-5" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="-5" y1="0" x2="5" y2="0" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="-5" y1="5" x2="1" y2="5" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round" />
+      {tpFactureVisual({ gradId })}
     </g>
   ))
 }
@@ -6305,12 +6369,24 @@ function TVTiersPayantExplication() {
         <div style={{ background: 'rgba(74,222,128,0.04)', border: '1px solid rgba(74,222,128,0.18)', borderRadius: 20, overflow: 'hidden' }}>
           <svg viewBox="0 0 540 340" style={{ width: '100%', height: '100%', display: 'block' }}>
             <defs>
-              <linearGradient id="tp-vg-c" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#4a9e4a" /><stop offset="100%" stopColor="#2d6e2d" />
+              <linearGradient id="tp-vg-c" x1="10%" y1="0%" x2="95%" y2="100%">
+                <stop offset="0%" stopColor="#5cb86a" /><stop offset="55%" stopColor="#2f8a45" /><stop offset="100%" stopColor="#1c5e30" />
               </linearGradient>
-              <linearGradient id="tp-mg-c" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#1565c0" /><stop offset="100%" stopColor="#0d47a1" />
+              <linearGradient id="tp-mg-c" x1="10%" y1="0%" x2="95%" y2="100%">
+                <stop offset="0%" stopColor="#3d8bd8" /><stop offset="55%" stopColor="#1a5fb4" /><stop offset="100%" stopColor="#0c3d80" />
               </linearGradient>
+              <linearGradient id="tp-chip-c" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#ffe9a8" /><stop offset="50%" stopColor="#e0b64f" /><stop offset="100%" stopColor="#a5791f" />
+              </linearGradient>
+              <radialGradient id="tp-lpt-ring-c" cx="50%" cy="35%" r="70%">
+                <stop offset="0%" stopColor="#123a6b" /><stop offset="100%" stopColor="#0a2447" />
+              </radialGradient>
+              <radialGradient id="tp-coin-gold-c" cx="32%" cy="28%" r="75%">
+                <stop offset="0%" stopColor="#fff2c4" /><stop offset="55%" stopColor="#e8b93d" /><stop offset="100%" stopColor="#a5791f" />
+              </radialGradient>
+              <filter id="tp-shadow-c" x="-40%" y="-40%" width="180%" height="180%">
+                <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#000" floodOpacity="0.35" />
+              </filter>
               <marker id="tp-aw-c" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
                 <polygon points="0 0, 9 3.5, 0 7" fill="#c9a227" opacity="0.55" />
               </marker>
@@ -6321,57 +6397,44 @@ function TVTiersPayantExplication() {
             </defs>
 
             {/* Titre panneau */}
-            <circle cx="24" cy="24" r="8" fill="#4ade80" />
-            <text x="40" y="30" fontSize="16" fontWeight="800" fill="#4ade80">Tiers payant complet</text>
+            <circle cx="24" cy="24" r="7" fill="#4ade80" />
+            <text x="38" y="29" fontSize="15" fontWeight="800" fill="#4ade80">Tiers payant complet</text>
 
-            {/* Carte Vitale — translate(12,55) */}
-            <g transform="translate(12,55)">
-              <rect width="134" height="82" rx="9" fill="url(#tp-vg-c)" />
-              {tpChip()}
-              <text x="10" y="50" fontSize="8" fill="rgba(255,255,255,0.55)" fontWeight="700" letterSpacing="1.2">CARTE VITALE</text>
-              <text x="10" y="64" fontSize="12" fill="#fff" fontWeight="700">Sécurité Sociale</text>
+            {/* Carte Vitale — translate(12,52) */}
+            <g transform="translate(12,52)" filter="url(#tp-shadow-c)">
+              {tpCard({ w: 134, h: 82, cardGradId: 'tp-vg-c', chipGradId: 'tp-chip-c', label: 'CARTE VITALE', sub: 'Sécurité Sociale' })}
             </g>
 
-            {/* Carte Mutuelle — translate(12,215) */}
-            <g transform="translate(12,215)">
-              <rect width="134" height="82" rx="9" fill="url(#tp-mg-c)" />
-              {tpChip()}
-              <text x="10" y="50" fontSize="8" fill="rgba(255,255,255,0.55)" fontWeight="700" letterSpacing="1.2">MUTUELLE</text>
-              <text x="10" y="64" fontSize="12" fill="#fff" fontWeight="700">Complémentaire</text>
+            {/* Carte Mutuelle — translate(12,212) */}
+            <g transform="translate(12,212)" filter="url(#tp-shadow-c)">
+              {tpCard({ w: 134, h: 82, cardGradId: 'tp-mg-c', chipGradId: 'tp-chip-c', label: 'MUTUELLE', sub: 'Complémentaire' })}
             </g>
 
-            {/* LPT — translate(228,110) → cercle cx=48 cy=48 r=50 → centre abs (276,158) */}
-            <g transform="translate(228,110)">
-              <circle cx="48" cy="48" r="50" fill="#0d1f3c" />
-              <circle cx="48" cy="48" r="50" fill="none" stroke="#0089ba" strokeWidth="3" />
-              <circle cx="48" cy="48" r="56" fill="none" stroke="#0089ba" strokeWidth="1.5" strokeOpacity="0.12">
-                <animate attributeName="r" values="52;58;52" dur="2.4s" repeatCount="indefinite" />
-                <animate attributeName="stroke-opacity" values="0.12;0;0.12" dur="2.4s" repeatCount="indefinite" />
-              </circle>
-              <text x="48" y="44" textAnchor="middle" fontSize="26">&#x1F453;</text>
-              <text x="48" y="62" textAnchor="middle" fontSize="11" fill="#00abe9" fontWeight="900" letterSpacing="2">LPT</text>
+            {/* LPT — centre abs (276,158), rayon 50 */}
+            <g transform="translate(276,158)" filter="url(#tp-shadow-c)">
+              {tpLptBadge({ r: 50, ringGradId: 'tp-lpt-ring-c' })}
             </g>
 
-            {/* Client = 0 — translate(406,210) — LPT droite bord : 276+50=326, gap 80px */}
-            <g transform="translate(406,210)">
-              <text x="40" y="32" textAnchor="middle" fontSize="40">&#x1F9D1;</text>
-              <text x="40" y="52" textAnchor="middle" fontSize="11" fill="rgba(255,255,255,0.5)">Client</text>
-              <rect x="2" y="57" width="76" height="27" rx="13" fill="rgba(74,222,128,0.18)" stroke="rgba(74,222,128,0.5)" strokeWidth="1.5" />
-              <text x="40" y="75" textAnchor="middle" fontSize="14" fill="#4ade80" fontWeight="900">0 &euro;</text>
+            {/* Client = 0 — translate(446,240) */}
+            <g transform="translate(446,240)" filter="url(#tp-shadow-c)">
+              {tpPerson({ r: 30, fill: '#9fb4c9' })}
+              <text y="46" textAnchor="middle" fontSize="10.5" fill="rgba(255,255,255,0.55)" fontWeight="600">Client</text>
+              <rect x="-38" y="52" width="76" height="26" rx="13" fill="rgba(74,222,128,0.16)" stroke="rgba(74,222,128,0.5)" strokeWidth="1.3" />
+              <text y="70" textAnchor="middle" fontSize="13" fill="#4ade80" fontWeight="900">0 €</text>
             </g>
 
             {/* Legende */}
-            <text x="270" y="330" textAnchor="middle" fontSize="11" fill="rgba(255,255,255,0.28)" fontStyle="italic">
+            <text x="270" y="326" textAnchor="middle" fontSize="10.5" fill="rgba(255,255,255,0.28)" fontStyle="italic">
               La Vitale et la mutuelle règlent directement LPT
             </text>
 
             {/* Fleches */}
-            <use href="#tp-pvc" fill="none" stroke="#c9a227" strokeWidth="2" strokeOpacity="0.18" markerEnd="url(#tp-aw-c)" />
-            <use href="#tp-pmc" fill="none" stroke="#c9a227" strokeWidth="2" strokeOpacity="0.18" markerEnd="url(#tp-aw-c)" />
+            <use href="#tp-pvc" fill="none" stroke="#c9a227" strokeWidth="1.6" strokeOpacity="0.16" markerEnd="url(#tp-aw-c)" />
+            <use href="#tp-pmc" fill="none" stroke="#c9a227" strokeWidth="1.6" strokeOpacity="0.16" markerEnd="url(#tp-aw-c)" />
 
-            {/* Pieces animees */}
-            {tpCoins('tp-pvc', '#c9a227', 1.8, [0, 0.6, 1.2])}
-            {tpCoins('tp-pmc', '#c9a227', 1.8, [0.3, 0.9, 1.5])}
+            {/* Pieces animees — ralenties pour rester lisibles */}
+            {tpMovingCoins('tp-pvc', 'tp-coin-gold-c', '#5c3f0d', 3.6, [0, 1.2, 2.4])}
+            {tpMovingCoins('tp-pmc', 'tp-coin-gold-c', '#5c3f0d', 3.6, [0.6, 1.8, 3.0])}
           </svg>
         </div>
 
@@ -6379,9 +6442,9 @@ function TVTiersPayantExplication() {
         <div style={{ background: 'rgba(245,158,11,0.04)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 20, overflow: 'hidden' }}>
           {/*
             Layout (viewBox 520x370) :
-              Vitale     (12,18)  → centre (79,57)
-              Client     (12,228) → centre (54,270) — UN SEUL client
-              LPT circle (210,84) → centre (256,130)
+              Vitale     (12,44)  → centre (79,83)
+              Client     (12,268) bloc détaillé, UN SEUL client
+              LPT circle (256,130) rayon 48
               Mutuelle   (356,196) → centre (423,235)
 
             Flux :
@@ -6392,12 +6455,30 @@ function TVTiersPayantExplication() {
           */}
           <svg viewBox="0 0 520 370" style={{ width: '100%', height: '100%', display: 'block' }}>
             <defs>
-              <linearGradient id="tp-vg-p" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#4a9e4a" /><stop offset="100%" stopColor="#2d6e2d" />
+              <linearGradient id="tp-vg-p" x1="10%" y1="0%" x2="95%" y2="100%">
+                <stop offset="0%" stopColor="#5cb86a" /><stop offset="55%" stopColor="#2f8a45" /><stop offset="100%" stopColor="#1c5e30" />
               </linearGradient>
-              <linearGradient id="tp-mg-p" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#1565c0" /><stop offset="100%" stopColor="#0d47a1" />
+              <linearGradient id="tp-mg-p" x1="10%" y1="0%" x2="95%" y2="100%">
+                <stop offset="0%" stopColor="#3d8bd8" /><stop offset="55%" stopColor="#1a5fb4" /><stop offset="100%" stopColor="#0c3d80" />
               </linearGradient>
+              <linearGradient id="tp-chip-p" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#ffe9a8" /><stop offset="50%" stopColor="#e0b64f" /><stop offset="100%" stopColor="#a5791f" />
+              </linearGradient>
+              <radialGradient id="tp-lpt-ring-p" cx="50%" cy="35%" r="70%">
+                <stop offset="0%" stopColor="#123a6b" /><stop offset="100%" stopColor="#0a2447" />
+              </radialGradient>
+              <radialGradient id="tp-coin-gold-p" cx="32%" cy="28%" r="75%">
+                <stop offset="0%" stopColor="#fff2c4" /><stop offset="55%" stopColor="#e8b93d" /><stop offset="100%" stopColor="#a5791f" />
+              </radialGradient>
+              <radialGradient id="tp-coin-green-p" cx="32%" cy="28%" r="75%">
+                <stop offset="0%" stopColor="#c8f7d4" /><stop offset="55%" stopColor="#4ade80" /><stop offset="100%" stopColor="#1f8f4f" />
+              </radialGradient>
+              <linearGradient id="tp-facture-p" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#ffc978" /><stop offset="100%" stopColor="#e08a1f" />
+              </linearGradient>
+              <filter id="tp-shadow-p" x="-40%" y="-40%" width="180%" height="180%">
+                <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#000" floodOpacity="0.35" />
+              </filter>
               <marker id="tp-aw-p-gold" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
                 <polygon points="0 0, 9 3.5, 0 7" fill="#c9a227" opacity="0.55" />
               </marker>
@@ -6418,67 +6499,54 @@ function TVTiersPayantExplication() {
             </defs>
 
             {/* Titre panneau */}
-            <circle cx="24" cy="24" r="8" fill="#f59e0b" />
-            <text x="40" y="30" fontSize="16" fontWeight="800" fill="#f59e0b">Tiers payant partiel</text>
+            <circle cx="24" cy="24" r="7" fill="#f59e0b" />
+            <text x="38" y="29" fontSize="15" fontWeight="800" fill="#f59e0b">Tiers payant partiel</text>
 
-            {/* Carte Vitale — translate(12,46) — sous le titre */}
-            <g transform="translate(12,46)">
-              <rect width="134" height="78" rx="9" fill="url(#tp-vg-p)" />
-              {tpChip()}
-              <text x="10" y="48" fontSize="8" fill="rgba(255,255,255,0.55)" fontWeight="700" letterSpacing="1.2">CARTE VITALE</text>
-              <text x="10" y="62" fontSize="12" fill="#fff" fontWeight="700">Sécurité Sociale</text>
+            {/* Carte Vitale — translate(12,44) */}
+            <g transform="translate(12,44)" filter="url(#tp-shadow-p)">
+              {tpCard({ w: 134, h: 78, cardGradId: 'tp-vg-p', chipGradId: 'tp-chip-p', label: 'CARTE VITALE', sub: 'Sécurité Sociale' })}
             </g>
 
-            {/* Client UNIQUE — translate(12,228) */}
-            <g transform="translate(12,228)">
-              <rect width="84" height="92" rx="14" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-              <text x="42" y="42" textAnchor="middle" fontSize="30">&#x1F9D1;</text>
-              <text x="42" y="60" textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.55)" fontWeight="600">Client</text>
-              <text x="42" y="74" textAnchor="middle" fontSize="9" fill="#f59e0b" fontWeight="700">avance les frais</text>
-              <rect x="6" y="79" width="72" height="10" rx="4" fill="rgba(74,222,128,0.14)" />
-              <text x="42" y="88" textAnchor="middle" fontSize="8" fill="#4ade80" fontWeight="700">rembourse</text>
+            {/* Client UNIQUE — translate(54,268), bloc détaillé */}
+            <g transform="translate(54,268)" filter="url(#tp-shadow-p)">
+              <rect x="-44" y="-58" width="88" height="116" rx="18" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <g transform="translate(0,-26)">{tpPerson({ r: 20, fill: '#9fb4c9' })}</g>
+              <text y="1" textAnchor="middle" fontSize="11.5" fill="rgba(255,255,255,0.6)" fontWeight="700">Client</text>
+              <line x1="-30" y1="12" x2="30" y2="12" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <text y="30" textAnchor="middle" fontSize="9.5" fill="#f59e0b" fontWeight="700">↑ avance les frais</text>
+              <text y="46" textAnchor="middle" fontSize="9.5" fill="#4ade80" fontWeight="700">↓ se fait rembourser</text>
             </g>
 
-            {/* LPT — translate(210,84) → cercle cx=46 cy=46 r=48 → centre abs (256,130) */}
-            <g transform="translate(210,84)">
-              <circle cx="46" cy="46" r="48" fill="#0d1f3c" />
-              <circle cx="46" cy="46" r="48" fill="none" stroke="#0089ba" strokeWidth="3" />
-              <circle cx="46" cy="46" r="54" fill="none" stroke="#0089ba" strokeWidth="1.5" strokeOpacity="0.12">
-                <animate attributeName="r" values="50;56;50" dur="2.4s" repeatCount="indefinite" />
-                <animate attributeName="stroke-opacity" values="0.12;0;0.12" dur="2.4s" repeatCount="indefinite" />
-              </circle>
-              <text x="46" y="42" textAnchor="middle" fontSize="24">&#x1F453;</text>
-              <text x="46" y="60" textAnchor="middle" fontSize="11" fill="#00abe9" fontWeight="900" letterSpacing="2">LPT</text>
+            {/* LPT — centre abs (256,130), rayon 48 */}
+            <g transform="translate(256,130)" filter="url(#tp-shadow-p)">
+              {tpLptBadge({ r: 48, ringGradId: 'tp-lpt-ring-p' })}
             </g>
 
             {/* Mutuelle — translate(356,196) */}
-            <g transform="translate(356,196)">
-              <rect width="134" height="78" rx="9" fill="url(#tp-mg-p)" />
-              {tpChip()}
-              <text x="10" y="48" fontSize="8" fill="rgba(255,255,255,0.55)" fontWeight="700" letterSpacing="1.2">MUTUELLE</text>
-              <text x="10" y="62" fontSize="12" fill="#fff" fontWeight="700">Complémentaire</text>
+            <g transform="translate(356,196)" filter="url(#tp-shadow-p)">
+              {tpCard({ w: 134, h: 78, cardGradId: 'tp-mg-p', chipGradId: 'tp-chip-p', label: 'MUTUELLE', sub: 'Complémentaire' })}
             </g>
 
-            {/* Label "facture" au milieu du chemin 3 — approx (230,260) */}
-            <text x="228" y="256" textAnchor="middle" fontSize="10" fill="#f59e0b" opacity="0.8" fontWeight="700">facture</text>
+            {/* Label "facture" au milieu du chemin 3 */}
+            <text x="228" y="256" textAnchor="middle" fontSize="9.5" fill="#f59e0b" opacity="0.85" fontWeight="700">facture</text>
 
-            {/* Label "remboursement" au milieu du chemin 4 — approx (262,335) */}
-            <text x="262" y="355" textAnchor="middle" fontSize="10" fill="#4ade80" opacity="0.8" fontWeight="700">remboursement</text>
+            {/* Label "remboursement" au milieu du chemin 4 */}
+            <text x="262" y="354" textAnchor="middle" fontSize="9.5" fill="#4ade80" opacity="0.85" fontWeight="700">remboursement</text>
 
             {/* Fleches */}
-            <use href="#tp-pvp" fill="none" stroke="#c9a227" strokeWidth="2" strokeOpacity="0.18" markerEnd="url(#tp-aw-p-gold)" />
-            <use href="#tp-pcp" fill="none" stroke="#c9a227" strokeWidth="2" strokeOpacity="0.18" markerEnd="url(#tp-aw-p-gold)" />
-            <use href="#tp-pfp" fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeOpacity="0.22" strokeDasharray="7 4" markerEnd="url(#tp-aw-p-orange)" />
-            <use href="#tp-prp" fill="none" stroke="#4ade80" strokeWidth="2" strokeOpacity="0.22" markerEnd="url(#tp-aw-p-green)" />
+            <use href="#tp-pvp" fill="none" stroke="#c9a227" strokeWidth="1.6" strokeOpacity="0.16" markerEnd="url(#tp-aw-p-gold)" />
+            <use href="#tp-pcp" fill="none" stroke="#c9a227" strokeWidth="1.6" strokeOpacity="0.16" markerEnd="url(#tp-aw-p-gold)" />
+            <use href="#tp-pfp" fill="none" stroke="#f59e0b" strokeWidth="1.3" strokeOpacity="0.2" strokeDasharray="6 4" markerEnd="url(#tp-aw-p-orange)" />
+            <use href="#tp-prp" fill="none" stroke="#4ade80" strokeWidth="1.6" strokeOpacity="0.2" markerEnd="url(#tp-aw-p-green)" />
 
             {/* 1. Vitale → LPT : euros or */}
-            {tpCoins('tp-pvp', '#c9a227', 1.8, [0, 0.6, 1.2])}
+            {tpMovingCoins('tp-pvp', 'tp-coin-gold-p', '#5c3f0d', 3.6, [0, 1.2, 2.4])}
             {/* 2. Client → LPT : euros or */}
-            {tpCoins('tp-pcp', '#c9a227', 1.8, [0.3, 0.9, 1.5])}
-            {/* 3. Client → Mutuelle : factures orange */}
-            {tpFacture('tp-pfp', '#f59e0b', 2.6, [0, 1.3])}
+            {tpMovingCoins('tp-pcp', 'tp-coin-gold-p', '#5c3f0d', 3.6, [0.6, 1.8, 3.0])}
+            {/* 3. Client → Mutuelle : factures orange — ralenties pour rester lisibles */}
+            {tpMovingFactures('tp-pfp', 'tp-facture-p', 5.2, [0, 2.6])}
             {/* 4. Mutuelle → Client : euros verts */}
-            {tpCoins('tp-prp', '#4ade80', 2.2, [0, 1.1])}
+            {tpMovingCoins('tp-prp', 'tp-coin-green-p', '#0e4a28', 4.4, [0, 2.2])}
           </svg>
         </div>
 
