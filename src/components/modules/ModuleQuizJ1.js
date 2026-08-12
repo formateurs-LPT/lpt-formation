@@ -2,10 +2,10 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { sbUpdate, sbDelete, getActiveSessionCode, setSharedState } from '@/lib/supabase'
-import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { fetchTrainerQuizAnswers, normalizeNameKey } from '@/lib/participantNames'
 import { fetchOpenAnswers } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
-import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
+import { fetchOnlineParticipantCount, fetchOnlineParticipantsList } from '@/lib/participantPresence'
 import { QUIZ_J1 } from '@/lib/quizJ1Data'
 
 const MODULE_ID = 'quiz-j1'
@@ -323,6 +323,7 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
   const q = QUIZ_J1[quizQ]
   const type = q.type || 'qcm'
   const [liveAnswers, setLiveAnswers] = useState([])
+  const [onlineNames, setOnlineNames] = useState([])
   const [ordoShown, setOrdoShown] = useState(false)
 
   useEffect(() => { setOrdoShown(false) }, [quizQ])
@@ -340,8 +341,22 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
     return () => clearInterval(t)
   }, [quizQ])
 
+  // Qui n'a pas encore répondu — visible uniquement ici, jamais sur le diffuseur
+  useEffect(() => {
+    const code = getActiveSessionCode()
+    const poll = async () => {
+      const list = await fetchOnlineParticipantsList(code)
+      setOnlineNames((list || []).map(p => p.name).filter(Boolean))
+    }
+    poll()
+    const t = setInterval(poll, 5000)
+    return () => clearInterval(t)
+  }, [])
+
   const total = liveAnswers.length
   const correctCount = liveAnswers.filter(r => r.is_correct).length
+  const answeredKeys = new Set(liveAnswers.map(r => normalizeNameKey(r.collaborateur)))
+  const notAnswered = onlineNames.filter(n => !answeredKeys.has(normalizeNameKey(n)))
 
   const hasOptions = !!q.options
   const counts = hasOptions ? q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length) : []
@@ -438,6 +453,20 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
               <div style={{ fontSize: 44, fontWeight: 800, color: '#ef4444' }}>{total - correctCount}</div>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>INCORRECT{total - correctCount > 1 ? 'S' : ''}</div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Qui n'a pas encore répondu — visible uniquement sur cet écran formateur */}
+      {notAnswered.length > 0 && (
+        <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 14, padding: '12px 16px', marginTop: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+            ⏳ N&apos;ont pas encore répondu ({notAnswered.length})
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {notAnswered.map(name => (
+              <span key={name} style={{ background: 'rgba(245,158,11,0.14)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: '#fbbf24' }}>{name}</span>
+            ))}
           </div>
         </div>
       )}

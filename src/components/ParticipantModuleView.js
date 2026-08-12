@@ -969,6 +969,12 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
   const [answered, setAnswered] = useState(false)
   const [isCorrect, setIsCorrect] = useState(null)
   const [activeField, setActiveField] = useState(null) // null | { eye:'od'|'og', field:'sph'|'cyl'|'axe'|'add' }
+  // Le bouton "✓" du pavé numérique se trouve pile à l'endroit où apparaît
+  // le bouton "Valider" une fois le pavé refermé — un tap un peu long sur le
+  // "✓" du pavé pouvait donc valider la réponse par erreur, avec une seule
+  // valeur remplie. On ignore les taps sur "Valider" juste après la
+  // fermeture du pavé, le temps que l'utilisateur relâche vraiment.
+  const numpadClosedAtRef = useRef(0)
 
   const setField = (eye, field, val) => {
     if (showResult) return
@@ -979,6 +985,7 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
 
   const verify = async () => {
     if (saving) return
+    if (Date.now() - numpadClosedAtRef.current < 500) return
     const od = q.ordonnance.od
     const og = q.ordonnance.og
     const r = {
@@ -1082,8 +1089,9 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
         ))}
       </div>
 
-      {/* Footer */}
-      <div style={{ padding: '12px 14px 36px', background: APP_BG, flexShrink: 0, borderTop: `1px solid ${APP_GOLD}33` }}>
+      {/* Footer — bouton bien séparé de la grille et du pavé numérique (au-dessus,
+          en position fixe) pour qu'un tap sur "✓" du pavé ne valide pas par erreur */}
+      <div style={{ padding: '40px 14px 36px', background: APP_BG, flexShrink: 0, borderTop: `1px solid ${APP_GOLD}33` }}>
         <button
           onClick={verify}
           disabled={saving}
@@ -1106,8 +1114,8 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
           mode={numpadConfig.mode}
           max={numpadConfig.max}
           currentValue={activeValue}
-          onConfirm={v => { setField(activeField.eye, activeField.field, v); setActiveField(null) }}
-          onClose={() => setActiveField(null)}
+          onConfirm={v => { setField(activeField.eye, activeField.field, v); setActiveField(null); numpadClosedAtRef.current = Date.now() }}
+          onClose={() => { setActiveField(null); numpadClosedAtRef.current = Date.now() }}
         />
       )}
     </div>
@@ -2613,6 +2621,11 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
   const [roundTally, setRoundTally] = useState({ correct: 0, total: 0 })
   const [roundDone, setRoundDone] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  // Le bouton "✓" du pavé numérique se trouve pile à l'endroit où apparaît
+  // le bouton "VÉRIFIER" une fois le pavé refermé — un tap un peu long sur
+  // le "✓" du pavé pouvait donc valider par erreur. On ignore les taps sur
+  // "VÉRIFIER" juste après la fermeture du pavé.
+  const numpadClosedAtRef = useRef(0)
 
   // Poll l'étape globale pilotée par le formateur (round + correction en cours)
   useEffect(() => {
@@ -2665,6 +2678,7 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
   const near = (a, b) => Math.abs(a - b) < 0.001
 
   const verify = () => {
+    if (Date.now() - numpadClosedAtRef.current < 500) return
     const r = {
       od: {
         sph: near(vals.od.sph, ex.od.sphere),
@@ -2852,8 +2866,9 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
         <div style={{ height: 12 }} />
       </div>
 
-      {/* ── Bouton bas ── */}
-      <div style={{ padding: '12px 14px 36px', background: APP_BG, flexShrink: 0 }}>
+      {/* ── Bouton bas — bien séparé de la grille/du pavé numérique (au-dessus,
+          en position fixe) pour qu'un tap sur "✓" du pavé ne valide pas par erreur ── */}
+      <div style={{ padding: '40px 14px 36px', background: APP_BG, flexShrink: 0 }}>
         {!showResult ? (
           <button onPointerDown={verify} style={{
             width: '100%', padding: '16px', borderRadius: 12,
@@ -2885,8 +2900,9 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
             if (activeField.eye === 'add') setAdd(v)
             else setEye(activeField.eye, activeField.field, v)
             setActiveField(null)
+            numpadClosedAtRef.current = Date.now()
           }}
-          onClose={() => setActiveField(null)}
+          onClose={() => { setActiveField(null); numpadClosedAtRef.current = Date.now() }}
         />
       )}
     </div>

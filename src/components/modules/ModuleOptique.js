@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { sbUpdate, sbDelete, sbSelect, getActiveSessionCode, setSharedState, getRoomSharedState, fetchOpenAnswers } from '@/lib/supabase'
-import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
-import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { fetchOnlineParticipantCount, fetchOnlineParticipantsList } from '@/lib/participantPresence'
+import { fetchTrainerQuizAnswers, normalizeNameKey } from '@/lib/participantNames'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, OPTIQUE_QUIZ, ENTRAINEMENT_QUESTIONS } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
@@ -1359,6 +1359,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
 function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
   const [liveAnswers, setLiveAnswers]     = useState([])
   const [connectedCount, setConnectedCount] = useState(0)
+  const [onlineNames, setOnlineNames]     = useState([])
   const [correctionPhase, setCorrectionPhase] = useState(false)
   const [ordoShown, setOrdoShown]         = useState(false)
 
@@ -1390,6 +1391,17 @@ function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
     const poll = async () => {
       const n = await fetchOnlineParticipantCount(getActiveSessionCode())
       setConnectedCount(n)
+    }
+    poll()
+    const t = setInterval(poll, 5000)
+    return () => clearInterval(t)
+  }, [])
+
+  // Qui n'a pas encore répondu — visible uniquement ici, jamais sur le diffuseur
+  useEffect(() => {
+    const poll = async () => {
+      const list = await fetchOnlineParticipantsList(getActiveSessionCode())
+      setOnlineNames((list || []).map(p => p.name).filter(Boolean))
     }
     poll()
     const t = setInterval(poll, 5000)
@@ -1446,6 +1458,8 @@ function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
   const counts         = (q.options || []).map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
   const wrongAnswerers = liveAnswers.filter(r => !r.is_correct)
   const correctCount   = liveAnswers.filter(r => r.is_correct).length
+  const answeredKeys   = new Set(liveAnswers.map(r => normalizeNameKey(r.collaborateur)))
+  const notAnswered    = onlineNames.filter(n => !answeredKeys.has(normalizeNameKey(n)))
 
   const bg = { minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }
   const headerLogo = (
@@ -1595,6 +1609,20 @@ function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
           )
         })}
       </div>
+
+      {/* Qui n'a pas encore répondu — visible uniquement sur cet écran formateur */}
+      {notAnswered.length > 0 && (
+        <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 14, padding: '12px 16px', marginTop: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+            ⏳ N&apos;ont pas encore répondu ({notAnswered.length})
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {notAnswered.map(name => (
+              <span key={name} style={{ background: 'rgba(245,158,11,0.14)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: '#fbbf24' }}>{name}</span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28 }}>
         <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
