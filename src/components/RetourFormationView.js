@@ -250,6 +250,12 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const [mailSentAt, setMailSentAt]             = useState(null)
   // week_date du dernier enregistrement trouvé — peut différer de weekDate si la session a eu lieu une semaine précédente
   const [saveWeekDate, setSaveWeekDate]         = useState(weekDate)
+  // Fiche partagée entre formateurs : trainer_name de la ligne existante (celui qui
+  // l'a créée ou modifiée en dernier). On continue d'écrire dessus quel que soit le
+  // formateur connecté, plutôt que de forker une ligne par formateur — sinon Kevin
+  // et Quentin auraient chacun leur propre fiche invisible l'un de l'autre.
+  const [ownerName, setOwnerName]               = useState(trainerName)
+  const [lastEditor, setLastEditor]             = useState(null)
   const themes = CATEGORY_META[categoryKey]?.themes || THEMES_FRANCE
   const name = entree.fullName || `${entree.nom} ${entree.prenom}`.trim()
 
@@ -259,8 +265,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       const archiveIndexPromise = fetchArchiveIndex()
       const [{ moduleRows, answerRows }, reportRow, autoEvalRow] = await Promise.all([
         fetchModuleAndQuizRows(name, archiveIndexPromise),
-        // Charge le rapport le plus récent pour ce formé+formateur, quelle que soit la semaine
-        sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc&limit=1`),
+        // Charge le rapport le plus récent pour ce formé, tous formateurs confondus
+        // (fiche partagée), quelle que soit la semaine
+        sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=neq.__auto_eval__&order=updated_at.desc&limit=1`),
         // Auto-évaluation la plus récente de ce formé (indépendante du formateur)
         sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=eq.__auto_eval__&order=updated_at.desc&limit=1`),
       ])
@@ -314,7 +321,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
         // Conserve la week_date d'origine pour sauvegarder sur le bon enregistrement
         setSaveWeekDate(found.week_date || weekDate)
       }
+      setOwnerName(found?.trainer_name || trainerName)
       const snap = found?.stats_snapshot || {}
+      setLastEditor(snap.last_editor || found?.trainer_name || null)
       setAssessments(snap.theme_assessments || {})
       setAttitudeStatus(snap.attitude_status || null)
       setAttitudeNote(snap.attitude_note || '')
@@ -359,14 +368,15 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const saveSnapshot = async (patch) => {
     setSaving(true)
     try {
+      setLastEditor(trainerName)
       await sbUpsert(
         'formation_reports',
         {
           collaborateur: name,
           week_date: saveWeekDate,
-          trainer_name: trainerName,
+          trainer_name: ownerName,
           status: 'draft',
-          stats_snapshot: patch,
+          stats_snapshot: { ...patch, last_editor: trainerName },
           updated_at: new Date().toISOString(),
         },
         'collaborateur,week_date,trainer_name'
@@ -611,7 +621,14 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       {/* Nom + classements */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9' }}>{name}</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9' }}>{name}</div>
+            {lastEditor && lastEditor !== trainerName && (
+              <span style={{ fontSize: 11, color: '#818cf8', fontWeight: 600 }}>
+                🔄 dernière saisie par {lastEditor}
+              </span>
+            )}
+          </div>
           {rank && rankOf && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 6,
@@ -1094,8 +1111,10 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
     const names = filtered.map(e => e.fullName || `${e.nom} ${e.prenom}`.trim())
 
     const computeRanks = async () => {
-      // Charge tous les rapports pour ce formateur, triés du plus récent au plus ancien
-      const reportsRows = await sbSelect('formation_reports', `trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc`)
+      // Charge tous les rapports (fiches partagées entre formateurs), triés du
+      // plus récent au plus ancien — un formé peut avoir été rempli par un
+      // autre formateur que celui actuellement connecté
+      const reportsRows = await sbSelect('formation_reports', `trainer_name=neq.__auto_eval__&order=updated_at.desc`)
 
       // Garde uniquement le rapport le plus récent par formé (premier rencontré = plus récent)
       const reportMap = {}
@@ -1265,17 +1284,21 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
     Promise.all(group.entrees.map(async (e) => {
       const nm = e.fullName || `${e.nom} ${e.prenom}`.trim()
       const wd = weekDateMap[nm] || weekDate
+      // Fiche partagée : on relit la ligne la plus récente tous formateurs
+      // confondus et on continue d'écrire dessus (même trainer_name), au lieu
+      // de forker une ligne sous le nom du formateur qui clique sur "Envoyer"
       const freshRows = await sbSelect(
         'formation_reports',
-        `collaborateur=eq.${encodeURIComponent(nm)}&week_date=eq.${encodeURIComponent(wd)}&trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc&limit=1`
+        `collaborateur=eq.${encodeURIComponent(nm)}&week_date=eq.${encodeURIComponent(wd)}&trainer_name=neq.__auto_eval__&order=updated_at.desc&limit=1`
       )
+      const owner = freshRows?.[0]?.trainer_name || trainerName
       const snap = freshRows?.[0]?.stats_snapshot || reportSnapMap[nm] || {}
       return sbUpsert(
         'formation_reports',
         {
           collaborateur: nm,
           week_date: wd,
-          trainer_name: trainerName,
+          trainer_name: owner,
           status: 'draft',
           stats_snapshot: {
             ...snap,
@@ -1866,7 +1889,8 @@ function HistoriqueView({ trainerName }) {
     const load = async () => {
       try {
         const [recs, evals] = await Promise.all([
-          sbSelect('formation_reports', `trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc`),
+          // Historique partagé entre formateurs : plus de filtre sur trainer_name
+          sbSelect('formation_reports', `trainer_name=neq.__auto_eval__&order=updated_at.desc`),
           sbSelect('formation_reports', `trainer_name=eq.__auto_eval__&order=updated_at.desc`),
         ])
         // Garde le plus récent par formé
