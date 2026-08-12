@@ -233,6 +233,35 @@ const COMMENTAIRE_OPTS = [
   { key: 'attention',     label: 'Attention',         color: '#dc2626', bg: '#fee2e2', border: '#fecaca' },
 ]
 
+/**
+ * Fusionne plusieurs lignes `formation_reports` d'un même formé (fiche partagée
+ * entre formateurs, plusieurs lignes possibles si chaque formateur a sauvegardé
+ * sous son propre trainer_name avant/pendant la bascule vers la fiche partagée).
+ * Les champs simples viennent de la ligne la plus récente, MAIS les acquis/non
+ * acquis par thème sont fusionnés thème par thème (le dernier à avoir noté CE
+ * thème gagne) plutôt que remplacés en bloc — sinon un formateur qui sauvegarde
+ * ne serait-ce qu'une seule case efface silencieusement tous les acquis déjà
+ * notés par un collègue sur les autres thèmes (incident du 12/08 : fiches
+ * remplies par Quentin vidées par une sauvegarde plus récente mais partielle).
+ */
+function mergeFormationReports(rows) {
+  if (!rows?.length) return null
+  const chronological = [...rows].sort((a, b) => new Date(a.updated_at || 0) - new Date(b.updated_at || 0))
+  const latest = rows.reduce((a, b) => new Date(a.updated_at || 0) > new Date(b.updated_at || 0) ? a : b)
+  const snapshot = {}
+  const themeAssessments = {}
+  for (const row of chronological) {
+    const snap = row.stats_snapshot || {}
+    const { theme_assessments, ...rest } = snap
+    Object.assign(snapshot, rest)
+    for (const [theme, val] of Object.entries(theme_assessments || {})) {
+      if (val != null) themeAssessments[theme] = val
+    }
+  }
+  snapshot.theme_assessments = themeAssessments
+  return { snapshot, trainerName: latest.trainer_name, weekDate: latest.week_date, latestRow: latest }
+}
+
 function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf, pointsRank, totalPoints = 0, pointsRankOf }) {
   const [quizData, setQuizData]                 = useState([])
   // Taux de compréhension par thème calculé depuis les vraies réponses aux quiz
@@ -270,9 +299,10 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       const archiveIndexPromise = fetchArchiveIndex()
       const [{ moduleRows, answerRows }, reportRow, autoEvalRow] = await Promise.all([
         fetchModuleAndQuizRows(name, archiveIndexPromise),
-        // Charge le rapport le plus récent pour ce formé, tous formateurs confondus
-        // (fiche partagée), quelle que soit la semaine
-        sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=neq.__auto_eval__&order=updated_at.desc&limit=1`),
+        // Charge les rapports récents de ce formé, tous formateurs confondus
+        // (fiche partagée), quelle que soit la semaine — fusionnés ensuite par
+        // mergeFormationReports pour ne jamais perdre un thème déjà noté
+        sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=neq.__auto_eval__&order=updated_at.desc&limit=30`),
         // Auto-évaluation la plus récente de ce formé (indépendante du formateur)
         sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(name)}&trainer_name=eq.__auto_eval__&order=updated_at.desc&limit=1`),
       ])
@@ -346,14 +376,14 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       }
       setThemeQuizStats(themeStats)
 
-      const found = reportRow?.[0]
+      const found = mergeFormationReports(reportRow)
       if (found) {
         // Conserve la week_date d'origine pour sauvegarder sur le bon enregistrement
-        setSaveWeekDate(found.week_date || weekDate)
+        setSaveWeekDate(found.weekDate || weekDate)
       }
-      setOwnerName(found?.trainer_name || trainerName)
-      const snap = found?.stats_snapshot || {}
-      setLastEditor(snap.last_editor || found?.trainer_name || null)
+      setOwnerName(found?.trainerName || trainerName)
+      const snap = found?.snapshot || {}
+      setLastEditor(snap.last_editor || found?.trainerName || null)
       setAssessments(snap.theme_assessments || {})
       setAttitudeStatus(snap.attitude_status || null)
       setAttitudeNote(snap.attitude_note || '')
@@ -1157,16 +1187,22 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
       // autre formateur que celui actuellement connecté
       const reportsRows = await sbSelect('formation_reports', `trainer_name=neq.__auto_eval__&order=updated_at.desc`)
 
-      // Garde uniquement le rapport le plus récent par formé (premier rencontré = plus récent)
+      // Regroupe par formé puis fusionne (mergeFormationReports) — jamais un
+      // simple "premier rencontré = le bon", sinon une sauvegarde partielle plus
+      // récente d'un formateur masque les acquis déjà notés par un collègue
+      const rowsByCollab = {}
+      for (const r of (reportsRows || [])) {
+        (rowsByCollab[r.collaborateur] ||= []).push(r)
+      }
       const reportMap = {}
       const sentMap   = {}
       const wdMap     = {}
-      for (const r of (reportsRows || [])) {
-        if (!reportMap[r.collaborateur]) {
-          reportMap[r.collaborateur] = r.stats_snapshot || {}
-          wdMap[r.collaborateur]     = r.week_date || weekDate
-          if (r.stats_snapshot?.mail_sent_at) sentMap[r.collaborateur] = r.stats_snapshot.mail_sent_at
-        }
+      for (const [collab, rows] of Object.entries(rowsByCollab)) {
+        const merged = mergeFormationReports(rows)
+        if (!merged) continue
+        reportMap[collab] = merged.snapshot
+        wdMap[collab]     = merged.weekDate || weekDate
+        if (merged.snapshot?.mail_sent_at) sentMap[collab] = merged.snapshot.mail_sent_at
       }
       setMailSentMap(sentMap)
       setWeekDateMap(wdMap)
@@ -1325,15 +1361,17 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
     Promise.all(group.entrees.map(async (e) => {
       const nm = e.fullName || `${e.nom} ${e.prenom}`.trim()
       const wd = weekDateMap[nm] || weekDate
-      // Fiche partagée : on relit la ligne la plus récente tous formateurs
-      // confondus et on continue d'écrire dessus (même trainer_name), au lieu
-      // de forker une ligne sous le nom du formateur qui clique sur "Envoyer"
+      // Fiche partagée : on relit et fusionne les lignes récentes tous formateurs
+      // confondus (mergeFormationReports) et on continue d'écrire sur la plus
+      // récente, au lieu de forker une ligne sous le nom du formateur qui clique
+      // sur "Envoyer" — ou d'écraser les acquis notés par un collègue
       const freshRows = await sbSelect(
         'formation_reports',
-        `collaborateur=eq.${encodeURIComponent(nm)}&week_date=eq.${encodeURIComponent(wd)}&trainer_name=neq.__auto_eval__&order=updated_at.desc&limit=1`
+        `collaborateur=eq.${encodeURIComponent(nm)}&week_date=eq.${encodeURIComponent(wd)}&trainer_name=neq.__auto_eval__&order=updated_at.desc&limit=30`
       )
-      const owner = freshRows?.[0]?.trainer_name || trainerName
-      const snap = freshRows?.[0]?.stats_snapshot || reportSnapMap[nm] || {}
+      const merged = mergeFormationReports(freshRows)
+      const owner = merged?.trainerName || trainerName
+      const snap = merged?.snapshot || reportSnapMap[nm] || {}
       return sbUpsert(
         'formation_reports',
         {
@@ -1934,9 +1972,18 @@ function HistoriqueView({ trainerName }) {
           sbSelect('formation_reports', `trainer_name=neq.__auto_eval__&order=updated_at.desc`),
           sbSelect('formation_reports', `trainer_name=eq.__auto_eval__&order=updated_at.desc`),
         ])
-        // Garde le plus récent par formé
-        const seen = new Set()
-        setRecords((recs || []).filter(r => { if (seen.has(r.collaborateur)) return false; seen.add(r.collaborateur); return true }))
+        // Regroupe par formé puis fusionne (mergeFormationReports) — sinon la
+        // ligne la plus récente d'un formateur peut masquer les acquis notés
+        // par un collègue sur d'autres thèmes
+        const rowsByCollab = {}
+        for (const r of (recs || [])) {
+          (rowsByCollab[r.collaborateur] ||= []).push(r)
+        }
+        const mergedRecords = Object.values(rowsByCollab).map(rows => {
+          const merged = mergeFormationReports(rows)
+          return { ...merged.latestRow, stats_snapshot: merged.snapshot, trainer_name: merged.trainerName, week_date: merged.weekDate }
+        })
+        setRecords(mergedRecords)
         // Plus récent auto-eval par formé
         const em = {}
         for (const r of (evals || [])) if (!em[r.collaborateur]) em[r.collaborateur] = r.stats_snapshot
