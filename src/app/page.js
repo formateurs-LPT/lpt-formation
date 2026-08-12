@@ -68,10 +68,11 @@ export default function Page() {
     onCount: setOnlineCount,
   })
 
-  // Pas de reconnexion automatique pour les formés : après toute déconnexion
-  // (fermeture, rafraîchissement...) ils doivent ressaisir nom/prénom via le
-  // formulaire de connexion. Seuls les formateurs sont reconnectés
-  // automatiquement (via trainer_name ci-dessous).
+  // Reconnexion automatique des formés sur un simple rafraîchissement (F5,
+  // verrouillage/déverrouillage du tel...) : sessionStorage survit à un
+  // rechargement de page mais est vidé quand l'onglet/l'appli est fermé — ça
+  // reproduit exactement "refresh = je reste connecté, fermeture = déconnexion"
+  // sans avoir à garder les formés connectés indéfiniment d'une session à l'autre.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const urlMode = params.get('mode')
@@ -87,6 +88,11 @@ export default function Page() {
           setPName(savedTrainer)
           setIsTrainer(true)
           setView('dashboard')
+        } else if (sessionStorage.getItem('participant_tab_alive') && localStorage.getItem('participant_name')) {
+          setPName(localStorage.getItem('participant_name'))
+          setPPrenom(localStorage.getItem('participant_prenom') || '')
+          setIsTrainer(false)
+          setView('participant')
         }
       }
 
@@ -206,6 +212,7 @@ export default function Page() {
     localStorage.setItem('participant_name', canonical)
     localStorage.setItem('participant_prenom', prenomDisplay)
     localStorage.setItem('participant_joined_at', Date.now().toString())
+    sessionStorage.setItem('participant_tab_alive', '1')
     setParticipantSessionCode(sessionCode)
     try {
       await ensureSession(sessionCode)
@@ -233,6 +240,7 @@ export default function Page() {
   const handleParticipantDisconnect = () => {
     localStorage.removeItem('participant_name')
     localStorage.removeItem('participant_prenom')
+    sessionStorage.removeItem('participant_tab_alive')
     setPName('')
     setPPrenom('')
     setView('landing')

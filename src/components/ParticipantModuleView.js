@@ -4995,7 +4995,16 @@ function RhAccessDenied({ message }) {
 function RhParticipantGate({ children }) {
   const [nom, setNom] = useState('')
   const [prenom, setPrenom] = useState('')
-  const [submitted, setSubmitted] = useState('')
+  // Reconnexion auto sur simple rafraîchissement (F5, écran verrouillé...) :
+  // sessionStorage survit à un rechargement mais disparaît à la fermeture de
+  // l'onglet/l'appli — un formé qui recharge n'a pas à ressaisir son nom, un
+  // formé qui ferme et rouvre (autre visiteur sur un tel dédié) si.
+  const [submitted, setSubmitted] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    const stillAlive = sessionStorage.getItem('participant_tab_alive')
+    const saved = localStorage.getItem('participant_name')
+    return (stillAlive && saved) || ''
+  })
   const [status, setStatus] = useState('idle')
   const [canonicalName, setCanonicalName] = useState('')
   const [denyMessage, setDenyMessage] = useState('')
@@ -5057,6 +5066,7 @@ function RhParticipantGate({ children }) {
       const canonical = resolved.canonicalName
       if (typeof window !== 'undefined') {
         localStorage.setItem('participant_name', canonical)
+        sessionStorage.setItem('participant_tab_alive', '1')
       }
       try {
         await ensureSession(roomResolved.code)
