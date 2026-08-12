@@ -5587,6 +5587,26 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   // ── LPTSale simulator — participants travaillent en autonomie ──
   if (activeModule === 'atelier-pec') return <LPTSaleApp pName={pName} />
 
+  // Mini-jeu "Questions" (module Mini Jeux) — piloté par sharedState.minijeu_game,
+  // pas par activeModule (Mini Jeux n'est pas un module MODULE_DATA classique,
+  // active_module reste null tant qu'il tourne). Même mécanique que l'entraînement
+  // oral de Bases de l'optique — voir ParticipantView.js pour le même branchement
+  // côté accès QR/connexion classique.
+  if (sharedState?.minijeu_game === 'questions') return (
+    <>
+      <DisconnectChip pName={pName} onDisconnect={onDisconnect} />
+      <QuestionsGameParticipantView
+        pName={pName}
+        moduleId="minijeu-questions"
+        questionIdx={sharedState?.mjq_q}
+        vfCorrect={sharedState?.mjq_vf_correct}
+        clearTs={sharedState?.mjq_clear_ts}
+        customQText={sharedState?.mjq_custom_q_text}
+        questions={ENTRAINEMENT_QUESTIONS}
+      />
+    </>
+  )
+
   return (
     <>
       <style>{STYLES}</style>
