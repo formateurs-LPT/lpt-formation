@@ -14,6 +14,7 @@ import { resolveParticipantName, normalizeNameKey } from '@/lib/participantNames
 import { mergeRoomSharedField } from '@/lib/roomSharedState'
 import { getLevelInfo, getRankMessage, fetchParticipantRanking } from '@/lib/scoring'
 import { canParticipantJoinSession, getCategoryJoinDeniedMessage } from '@/lib/formationCategories'
+import { resolveParticipantSessionCode, participantJoinBlockedMessage } from '@/lib/participantSession'
 import { QuestionsGameParticipantView } from '@/components/QuestionsGamePanel'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -5025,11 +5026,19 @@ function RhParticipantGate({ children }) {
         return
       }
 
-      const sessionRows = await sbSelect(
-        'sessions',
-        `code=eq.${encodeURIComponent(getParticipantSessionCode())}&limit=1`
-      )
-      const session = sessionRows?.[0]
+      // Même logique de résolution/auto-réparation de salle que la connexion
+      // classique (écran d'accueil) : un code de salle périmé (raccourci
+      // enregistré sur un téléphone dédié, ancienne session...) est purgé et
+      // remplacé par la salle ouverte du jour, au lieu de rester bloqué dessus.
+      const roomResolved = await resolveParticipantSessionCode(resolved.entry)
+      if (!roomResolved.ok) {
+        if (!cancelled) {
+          setDenyMessage(participantJoinBlockedMessage(roomResolved.reason, roomResolved.message))
+          setStatus('denied')
+        }
+        return
+      }
+      const session = roomResolved.session
       if (session?.status === 'ended') {
         if (!cancelled) {
           setDenyMessage('Cette session est terminée.')
@@ -5050,9 +5059,9 @@ function RhParticipantGate({ children }) {
         localStorage.setItem('participant_name', canonical)
       }
       try {
-        await ensureSession()
+        await ensureSession(roomResolved.code)
         await sbUpsert('participants', {
-          session_code: getParticipantSessionCode(),
+          session_code: roomResolved.code,
           name: canonical,
           joined_at: new Date().toISOString(),
           left_at: null,
