@@ -295,7 +295,7 @@ function TVOrdonnanceDisplay({ ordonnance, hideLabels, cylInParens, hideNonAddHe
                   {data.cyl && <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}> ({data.cyl})</span>}
                 </td>
                 {hasCyl && <td style={{ ...cellStyle, fontSize: 18, color: 'rgba(255,255,255,0.7)' }}>{data.axe ? `${data.axe}°` : '—'}</td>}
-                {hasAdd && <td style={cellStyle}>{data.add || '—'}</td>}
+                {hasAdd && <td style={cellStyle}>{data.add ? `Add ${data.add}` : '—'}</td>}
               </tr>
             ))}
           </tbody>
