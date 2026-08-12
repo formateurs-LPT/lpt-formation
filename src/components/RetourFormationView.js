@@ -8,6 +8,7 @@ import CompteRenduManager from './CompteRenduManager'
 import { getManagers, canonicalMagasinLabel } from '@/lib/managersData'
 import { DIRECTEURS } from '@/lib/directeursData'
 import { PUBLIC_ORIGIN } from '@/lib/sessionCode'
+import { themeForAnswer, DIRECT_THEME_MODULES, TRANSVERSAL_MODULE_IDS } from '@/lib/quizThemeMap'
 
 // ── Constantes ────────────────────────────────────────────────────
 
@@ -234,6 +235,10 @@ const COMMENTAIRE_OPTS = [
 
 function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf, pointsRank, totalPoints = 0, pointsRankOf }) {
   const [quizData, setQuizData]                 = useState([])
+  // Taux de compréhension par thème calculé depuis les vraies réponses aux quiz
+  // — { theme: { correct, total } } — affiché à côté de l'évaluation manuelle
+  // du formateur, jamais à sa place (le formateur reste seul décisionnaire).
+  const [themeQuizStats, setThemeQuizStats]     = useState({})
   const [assessments, setAssessments]           = useState({})
   const [attitudeStatus, setAttitudeStatus]     = useState(null)
   const [attitudeNote, setAttitudeNote]         = useState('')
@@ -316,6 +321,31 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
         }
       }
       setQuizData(Object.values(byModule))
+
+      // Taux de compréhension par thème (basé sur les vraies réponses aux quiz)
+      const themeStats = {}
+      const addToTheme = (theme, correct, total) => {
+        if (!theme || !total) return
+        if (!themeStats[theme]) themeStats[theme] = { correct: 0, total: 0 }
+        themeStats[theme].correct += correct
+        themeStats[theme].total += total
+      }
+      // Modules mono-thème : leur score déjà calculé (byModule) EST le score du thème
+      for (const [mid, m] of Object.entries(byModule)) {
+        if (DIRECT_THEME_MODULES.has(mid)) addToTheme(mid, m.score, m.total)
+      }
+      // Quiz transversaux (quiz-j1, quiz-final) : question par question, chacune
+      // vers son propre thème — une seule réponse par question (upsert en base)
+      const transversalByQuestion = {}
+      for (const r of answerRows || []) {
+        if (!TRANSVERSAL_MODULE_IDS.has(r.module_id) || (r.question_idx ?? 0) >= 100) continue
+        transversalByQuestion[`${r.module_id}:${r.question_idx}`] = r
+      }
+      for (const r of Object.values(transversalByQuestion)) {
+        addToTheme(themeForAnswer(r.module_id, r.question_idx), r.is_correct ? 1 : 0, 1)
+      }
+      setThemeQuizStats(themeStats)
+
       const found = reportRow?.[0]
       if (found) {
         // Conserve la week_date d'origine pour sauvegarder sur le bon enregistrement
@@ -738,6 +768,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
             if (!meta) return null
             const current = assessments[moduleId] || null
             const activeSt = STATUS_OPTIONS.find(o => o.key === current)
+            const qStats = themeQuizStats[moduleId]
+            const qRate = qStats?.total ? Math.round((qStats.correct / qStats.total) * 100) : null
+            const qColor = qRate === null ? null : qRate >= 70 ? '#16a34a' : qRate >= 40 ? '#d97706' : '#dc2626'
             return (
               <div
                 key={moduleId}
@@ -752,6 +785,14 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{meta.label}</div>
                   {meta.sub && <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{meta.sub}</div>}
+                  {qRate !== null && (
+                    <div
+                      title="Taux de bonnes réponses aux quiz sur ce thème — calculé automatiquement, indépendant de ton évaluation ci-contre"
+                      style={{ fontSize: 11, fontWeight: 700, color: qColor, marginTop: 3 }}
+                    >
+                      📊 Quiz : {qStats.correct}/{qStats.total} ({qRate}%)
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                   {STATUS_OPTIONS.map(opt => {
