@@ -377,6 +377,73 @@ function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
   )
 }
 
+// ── Minuteur de question — 1min30 max, au-delà les traîneurs se
+// consultaient/cherchaient la réponse au lieu de répondre seuls ───────
+const QUIZ_TIME_LIMIT_SEC = 90
+
+function useQuizCountdown({ seconds = QUIZ_TIME_LIMIT_SEC, onExpire, enabled }) {
+  const [remaining, setRemaining] = useState(seconds)
+  // Ref plutôt que dépendance d'effet : onExpire capture souvent des états
+  // qui changent à chaque frappe (texte, sélection...) — on veut toujours
+  // appeler la version la plus récente sans redémarrer le minuteur.
+  const onExpireRef = useRef(onExpire)
+  onExpireRef.current = onExpire
+
+  useEffect(() => {
+    if (!enabled) { setRemaining(seconds); return }
+    let fired = false
+    setRemaining(seconds)
+    const start = Date.now()
+    const t = setInterval(() => {
+      const left = Math.max(0, seconds - Math.floor((Date.now() - start) / 1000))
+      setRemaining(left)
+      if (left <= 0 && !fired) {
+        fired = true
+        onExpireRef.current?.()
+      }
+    }, 250)
+    return () => clearInterval(t)
+  }, [enabled, seconds])
+
+  return remaining
+}
+
+function QuizCountdownBadge({ remaining }) {
+  const urgent = remaining <= 15
+  const mm = Math.floor(remaining / 60)
+  const ss = String(remaining % 60).padStart(2, '0')
+  return (
+    <div style={{
+      display: 'inline-flex', alignItems: 'center', gap: 6,
+      background: urgent ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,0.08)',
+      border: `1px solid ${urgent ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.15)'}`,
+      borderRadius: 20, padding: '5px 12px', marginBottom: 14,
+      fontSize: 13, fontWeight: 800, color: urgent ? '#f87171' : 'rgba(255,255,255,0.7)',
+      fontVariantNumeric: 'tabular-nums', animation: urgent ? 'quizTimerPulse 1s ease-in-out infinite' : 'none',
+    }}>
+      ⏱ {mm}:{ss}
+      <style>{`@keyframes quizTimerPulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }`}</style>
+    </div>
+  )
+}
+
+// Variante compacte pour les en-têtes clairs (pavé numérique / saisie interactive)
+function QuizHeaderTimer({ remaining }) {
+  const urgent = remaining <= 15
+  const mm = Math.floor(remaining / 60)
+  const ss = String(remaining % 60).padStart(2, '0')
+  return (
+    <div style={{
+      background: urgent ? '#dc2626' : 'rgba(0,0,0,0.2)',
+      borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#fff',
+      fontVariantNumeric: 'tabular-nums', animation: urgent ? 'quizTimerPulse 1s ease-in-out infinite' : 'none',
+    }}>
+      ⏱ {mm}:{ss}
+      <style>{`@keyframes quizTimerPulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }`}</style>
+    </div>
+  )
+}
+
 // ── Anti re-réponse après rafraîchissement ─────────────────────────
 // Sans ce contrôle au montage, un formé qui recharge la page pendant une
 // question retombe sur un écran vierge et peut répondre une deuxième fois
@@ -547,8 +614,8 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
     return () => clearInterval(t)
   }, [effectiveSubmitted, qIdx, moduleId, pName])
 
-  const handleSubmit = async () => {
-    if (!text.trim() || saving) return
+  const handleSubmit = async (force = false) => {
+    if ((!text.trim() && !force) || saving || submitted) return
     setSaving(true)
     try {
       await insertOpenAnswer({
@@ -562,6 +629,8 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
       setSaving(false)
     }
   }
+
+  const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && effectiveValidated === null && !effectiveSubmitted })
 
   if (checking) return <QuizChecking />
   if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} />
@@ -587,6 +656,7 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
       minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
       padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
     }}>
+      <QuizCountdownBadge remaining={remaining} />
       <div style={{
         background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
         borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
@@ -607,7 +677,7 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
           outline: 'none', marginBottom: 20,
         }}
       />
-      <button onClick={handleSubmit} disabled={!text.trim() || saving} style={{
+      <button onClick={() => handleSubmit()} disabled={!text.trim() || saving} style={{
         background: text.trim() ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
         border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
         fontSize: 16, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default',
@@ -647,8 +717,8 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
   const setField = (i, val) => setValues(vs => vs.map((v, idx) => idx === i ? val : v))
   const allFilled = values.every(v => v.trim())
 
-  const handleSubmit = async () => {
-    if (!allFilled || saving) return
+  const handleSubmit = async (force = false) => {
+    if ((!allFilled && !force) || saving || submitted) return
     setSaving(true)
     try {
       await insertOpenAnswer({
@@ -662,6 +732,8 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
       setSaving(false)
     }
   }
+
+  const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && effectiveValidated === null && !effectiveSubmitted })
 
   if (checking) return <QuizChecking />
   if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} />
@@ -687,6 +759,7 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
       minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
       padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
     }}>
+      <QuizCountdownBadge remaining={remaining} />
       <div style={{
         background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
         borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
@@ -715,7 +788,7 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
           </div>
         ))}
       </div>
-      <button onClick={handleSubmit} disabled={!allFilled || saving} style={{
+      <button onClick={() => handleSubmit()} disabled={!allFilled || saving} style={{
         background: allFilled ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
         border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
         fontSize: 16, fontWeight: 700, cursor: allFilled ? 'pointer' : 'default',
@@ -756,8 +829,8 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
   const setCell = (rowIdx, colIdx, val) => setRows(rs => rs.map((r, i) => i === rowIdx ? (colIdx === 0 ? [val, r[1]] : [r[0], val]) : r))
   const allFilled = rows.every(r => r[0].trim() && r[1].trim())
 
-  const handleSubmit = async () => {
-    if (!allFilled || saving) return
+  const handleSubmit = async (force = false) => {
+    if ((!allFilled && !force) || saving || submitted) return
     setSaving(true)
     try {
       await insertOpenAnswer({
@@ -771,6 +844,8 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
       setSaving(false)
     }
   }
+
+  const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && effectiveValidated === null && !effectiveSubmitted })
 
   if (checking) return <QuizChecking />
   if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} />
@@ -796,6 +871,7 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
       minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
       padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
     }}>
+      <QuizCountdownBadge remaining={remaining} />
       <div style={{
         background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
         borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
@@ -834,7 +910,7 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
           </div>
         ))}
       </div>
-      <button onClick={handleSubmit} disabled={!allFilled || saving} style={{
+      <button onClick={() => handleSubmit()} disabled={!allFilled || saving} style={{
         background: allFilled ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
         border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
         fontSize: 16, fontWeight: 700, cursor: allFilled ? 'pointer' : 'default',
@@ -862,15 +938,15 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
     setSelected(s => s.includes(i) ? s.filter(x => x !== i) : [...s, i])
   }
 
-  const handleSubmit = async () => {
-    if (!readyToSubmit || saving || answered) return
+  const handleSubmit = async (force = false) => {
+    if ((!readyToSubmit && !force) || saving || answered) return
     if (!q?.correct) return
     setSaving(true)
     try {
       const correctArr = [...q.correct].sort()
       const selectedSorted = [...selected].sort()
       const ok = JSON.stringify(correctArr) === JSON.stringify(selectedSorted)
-      const answerIdx = selectedSorted[0] ?? 0
+      const answerIdx = selectedSorted[0] ?? -1
       await saveModuleQuizAnswer({
         sessionCode: getParticipantSessionCode(),
         moduleId, questionIdx: qIdx,
@@ -886,6 +962,8 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
     }
   }
 
+  const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && !existing && !answered })
+
   if (checking) return <QuizChecking />
   if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
   if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} />
@@ -895,6 +973,7 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
       minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
       padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
     }}>
+      <QuizCountdownBadge remaining={remaining} />
       <div style={{
         background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
         borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
@@ -931,7 +1010,7 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
           Sélectionnez {requiredCount} réponse{requiredCount > 1 ? 's' : ''} ({selected.length} / {requiredCount})
         </div>
       )}
-      <button onClick={handleSubmit} disabled={!readyToSubmit || saving} style={{
+      <button onClick={() => handleSubmit()} disabled={!readyToSubmit || saving} style={{
         background: readyToSubmit ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
         border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
         fontSize: 16, fontWeight: 700, cursor: readyToSubmit ? 'pointer' : 'default',
@@ -983,9 +1062,9 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
 
   const near = (a, b) => Math.abs(a - b) < 0.001
 
-  const verify = async () => {
+  const verify = async (force = false) => {
     if (saving) return
-    if (Date.now() - numpadClosedAtRef.current < 500) return
+    if (!force && Date.now() - numpadClosedAtRef.current < 500) return
     const od = q.ordonnance.od
     const og = q.ordonnance.og
     const r = {
@@ -1020,6 +1099,8 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
       setSaving(false)
     }
   }
+
+  const remaining = useQuizCountdown({ onExpire: () => verify(true), enabled: !checking && !existing && !answered })
 
   if (checking) return <QuizChecking />
   if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
@@ -1064,6 +1145,7 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
       <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={52} height={18} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
         <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' }}>Saisir l&apos;ordonnance</span>
+        <QuizHeaderTimer remaining={remaining} />
         <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#fff' }}>Q{qIdx + 1}</div>
       </div>
 
@@ -1093,7 +1175,7 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
           en position fixe) pour qu'un tap sur "✓" du pavé ne valide pas par erreur */}
       <div style={{ padding: '40px 14px 36px', background: APP_BG, flexShrink: 0, borderTop: `1px solid ${APP_GOLD}33` }}>
         <button
-          onClick={verify}
+          onClick={() => verify()}
           disabled={saving}
           style={{
             width: '100%', padding: '16px', borderRadius: 14,
@@ -1163,6 +1245,8 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
     }
   }
 
+  const remaining = useQuizCountdown({ onExpire: handleSubmit, enabled: !checking && !existing && !answered })
+
   if (checking) return <QuizChecking />
   if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
   if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} />
@@ -1173,6 +1257,7 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
       <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={52} height={18} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
         <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' }}>Puissances maximales</span>
+        <QuizHeaderTimer remaining={remaining} />
         <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#fff' }}>Q{qIdx + 1}</div>
       </div>
 
@@ -1249,6 +1334,8 @@ function QuizQCMAnswer({ pName, q, qIdx, quiz, moduleId }) {
     setSaving(false)
   }
 
+  const remaining = useQuizCountdown({ onExpire: () => handleAnswer(-1), enabled: !checking && !existing && !answered })
+
   if (checking) return <QuizChecking />
   if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
   if (answered) return <QuizResultScreen isCorrect={lastIsCorrect} pName={pName} moduleId={moduleId} />
@@ -1258,6 +1345,7 @@ function QuizQCMAnswer({ pName, q, qIdx, quiz, moduleId }) {
       minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
       padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
     }}>
+      <QuizCountdownBadge remaining={remaining} />
       <div style={{
         background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
         borderRadius: 20, padding: '6px 20px',
