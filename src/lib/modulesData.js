@@ -2,6 +2,8 @@ import { QUIZ_FINAL_QUESTIONS } from '@/lib/quizFinalData'
 export { QUIZ_FINAL_QUESTIONS }
 import { QUIZ_J1 } from '@/lib/quizJ1Data'
 export { QUIZ_J1 }
+import { QUIZ_J2 } from '@/lib/quizJ2Data'
+export { QUIZ_J2 }
 
 export const TYPES_VERRES_QUIZ = [
   {
@@ -1227,6 +1229,7 @@ export const MODULE_DATA = {
   'raz':              { pages: RAZ_PAGES,        quiz: RAZ_QUIZ,        label: 'Les RAZ',            sub: 'Recommandes · Process · Dernier recours' },
   'quiz-final':       { pages: [], quiz: QUIZ_FINAL_QUESTIONS, label: 'Quiz de fin de formation', sub: 'Trame · Optique · Offres · Remboursement' },
   'quiz-j1':          { pages: [], quiz: QUIZ_J1, label: 'Quiz Jour 1', sub: 'Entreprise · Optique · Ordonnances · Montures' },
+  'quiz-j2':          { pages: [], quiz: QUIZ_J2, label: 'Quiz Jour 2', sub: "Offres · 1=1 · Pack Plan · Ordonnances" },
   'mutuelles-inami':  { pages: [
     { id: 'mutuelles-q1', type: 'pause', icon: '🛡️', titre: 'Que savez-vous des mutuelles ?', sousTitre: 'Partagez ce que vous savez déjà' },
     { id: 'inami-info', type: 'inami-info', titre: 'INAMI' },

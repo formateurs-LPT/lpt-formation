@@ -666,18 +666,35 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
       <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 32, textAlign: 'center' }}>
         Regardez la question sur l&apos;écran<br />et tapez votre réponse
       </div>
-      <textarea
-        value={text}
-        onChange={e => setText(e.target.value)}
-        placeholder="Votre réponse…"
-        rows={4}
-        style={{
-          width: '100%', maxWidth: 400, padding: '16px', borderRadius: 16,
-          background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-          color: '#fff', fontSize: 16, fontFamily: 'inherit', resize: 'none',
-          outline: 'none', marginBottom: 20,
-        }}
-      />
+      {q.numeric ? (
+        <input
+          type="tel"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={text}
+          onChange={e => setText(e.target.value.replace(/[^0-9]/g, ''))}
+          placeholder="Votre réponse…"
+          style={{
+            width: '100%', maxWidth: 400, padding: '16px', borderRadius: 16,
+            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+            color: '#fff', fontSize: 24, fontWeight: 700, fontFamily: 'inherit',
+            textAlign: 'center', outline: 'none', marginBottom: 20,
+          }}
+        />
+      ) : (
+        <textarea
+          value={text}
+          onChange={e => setText(e.target.value)}
+          placeholder="Votre réponse…"
+          rows={4}
+          style={{
+            width: '100%', maxWidth: 400, padding: '16px', borderRadius: 16,
+            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+            color: '#fff', fontSize: 16, fontFamily: 'inherit', resize: 'none',
+            outline: 'none', marginBottom: 20,
+          }}
+        />
+      )}
       <button onClick={() => handleSubmit()} disabled={!text.trim() || saving} style={{
         background: text.trim() ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
         border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,

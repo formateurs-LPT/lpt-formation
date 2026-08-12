@@ -28,6 +28,7 @@ import ModuleMontures from '@/components/modules/ModuleMontures'
 import ModuleMiniJeux from '@/components/modules/ModuleMiniJeux'
 import ModuleQuizFinal from '@/components/modules/ModuleQuizFinal'
 import ModuleQuizJ1 from '@/components/modules/ModuleQuizJ1'
+import ModuleQuizJ2 from '@/components/modules/ModuleQuizJ2'
 import ModuleMutuelles from '@/components/modules/ModuleMutuelles'
 import ModuleRemboursementFrance from '@/components/modules/ModuleRemboursementFrance'
 import ModuleParcoursRembourses from '@/components/modules/ModuleParcoursRembourses'
@@ -568,6 +569,12 @@ export default function Page() {
       )}
       {view === 'module-quiz-j1' && (
         <ModuleQuizJ1
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-quiz-j2' && (
+        <ModuleQuizJ2
           pName={pName}
           onBack={handleBackToModules}
         />

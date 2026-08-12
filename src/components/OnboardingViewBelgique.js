@@ -85,6 +85,12 @@ const JOURNEES_BELGIQUE = (onLaunchModule, onLaunchPeerQuiz) => [
         sub: 'Découverte des offres LPT et argumentation commerciale',
         onClick: () => onLaunchModule('offres', 'journee2'),
       },
+      {
+        visual: 'emoji', icon: '🧠',
+        label: 'Quiz Jour 2',
+        sub: 'Trame d\'accueil · Offre 1=1 · Pack Plan · Ordonnances',
+        onClick: () => onLaunchModule('quiz-j2', 'journee2'),
+      },
     ],
   },
   {
