@@ -89,6 +89,12 @@ const JOURNEES = (onLaunchModule, onLaunchPeerQuiz) => [
         sub: 'Découverte des offres LPT et argumentation commerciale',
         onClick: () => onLaunchModule('offres'),
       },
+      {
+        visual: 'emoji', icon: '🧠',
+        label: 'Quiz Jour 2',
+        sub: 'Trame d\'accueil · Offre 1=1 · Pack Plan · Ordonnances',
+        onClick: () => onLaunchModule('quiz-j2'),
+      },
     ],
   },
   {

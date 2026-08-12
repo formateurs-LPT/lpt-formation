@@ -363,9 +363,12 @@ function TVQuizTextOpen({ question, qIdx, total, moduleLabel, sessionCode, modul
       padding: '60px 80px', position: 'relative',
     }}>
       <TVQuizHeader qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
-      <h1 style={{ fontSize: 52, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 40, maxWidth: 1000 }}>
+      <h1 style={{ fontSize: 52, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: question.ordonnance ? 24 : 40, maxWidth: 1000 }}>
         {question.question}
       </h1>
+      {question.ordonnance && (
+        <TVOrdonnanceDisplay ordonnance={question.ordonnance} hideLabels={question.hideOrdoLabels} cylInParens={question.cylInParens} hideNonAddHeaders={question.hideNonAddHeaders} topLabel={question.ordoLabel} />
+      )}
       {!allAnswered ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
           <div style={{
@@ -405,6 +408,51 @@ function TVQuizTextOpen({ question, qIdx, total, moduleLabel, sessionCode, modul
           ))}
         </div>
       )}
+      <TVQuizFooter />
+    </div>
+  )
+}
+
+// ── TV trame d'accueil à compléter (Quiz Jour 2 · Q1) ────────────────
+function TVQuizTrameFill({ question, qIdx, total, moduleLabel }) {
+  const points = question.tramePoints || []
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '60px 80px', position: 'relative',
+    }}>
+      <TVQuizHeader qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+      <h1 style={{ fontSize: 42, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 36, maxWidth: 900 }}>
+        {question.question}
+      </h1>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18, width: '100%', maxWidth: 760, marginBottom: 8 }}>
+        {points.map(pt => {
+          const blank = !pt.text
+          return (
+            <div key={pt.num} style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+                background: `${pt.color}18`, border: `2px solid ${pt.color}55`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 22, fontWeight: 900, color: pt.color,
+              }}>{pt.num}</div>
+              <div style={{
+                flex: 1, borderLeft: `4px solid ${pt.color}`,
+                background: blank ? 'rgba(255,255,255,0.03)' : `${pt.color}08`,
+                border: `1px solid ${blank ? 'rgba(255,255,255,0.15)' : pt.color + '22'}`,
+                borderRadius: 14, padding: '16px 22px',
+                borderStyle: blank ? 'dashed' : 'solid',
+              }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: blank ? 'rgba(255,255,255,0.35)' : '#fff', lineHeight: 1.5, fontStyle: blank ? 'italic' : 'normal' }}>
+                  {blank ? '? À vous de compléter…' : pt.text}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
       <TVQuizFooter />
     </div>
   )
@@ -554,6 +602,9 @@ function TVQuizMultiQuestion({ question, qIdx, total, moduleLabel }) {
 function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode, moduleId }) {
   const type = question.type || 'qcm'
 
+  if (type === 'text-open' && question.tramePoints) {
+    return <TVQuizTrameFill question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+  }
   if (type === 'text-open' || type === 'text-open-multi' || type === 'text-open-pairs') {
     return <TVQuizTextOpen question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} moduleId={moduleId} />
   }
@@ -7651,17 +7702,18 @@ function dedupeLatestByCollaborateurAndQuestion(rows) {
 }
 
 // ── TV Quiz Correction (débrief après chaque question) ───────────
-function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, showOrdo }) {
+function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, moduleId, showOrdo }) {
   const [answers, setAnswers] = useState([])
 
   useEffect(() => {
-    const load = () => sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}`)
+    const filter = `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}${moduleId ? `&module_id=eq.${moduleId}` : ''}`
+    const load = () => sbSelect('quiz_answers', filter)
       .then(rows => setAnswers(dedupeLatestByCollaborateur(rows || [])))
       .catch(() => {})
     load()
     const t = setInterval(load, 2000)
     return () => clearInterval(t)
-  }, [qIdx, sessionCode])
+  }, [qIdx, sessionCode, moduleId])
 
   if (!question) return null
   const total_answers = answers.length
@@ -7782,14 +7834,14 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, sho
 }
 
 // ── TV Correction — questions texte libre (réponses validées par le formateur) ──
-function TVOpenCorrection({ question, qIdx, total, moduleLabel, sessionCode, pageId }) {
+function TVOpenCorrection({ question, qIdx, total, moduleLabel, sessionCode, moduleId, pageId }) {
   const [answers, setAnswers] = useState([])
   const [openAnswers, setOpenAnswers] = useState([])
 
   useEffect(() => {
     const load = async () => {
       const [qa, oa] = await Promise.all([
-        sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}`),
+        sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}${moduleId ? `&module_id=eq.${moduleId}` : ''}`),
         fetchOpenAnswers(sessionCode || SESSION_CODE, pageId),
       ])
       setAnswers(dedupeLatestByCollaborateur(qa || []))
@@ -7798,7 +7850,7 @@ function TVOpenCorrection({ question, qIdx, total, moduleLabel, sessionCode, pag
     load()
     const t = setInterval(load, 2000)
     return () => clearInterval(t)
-  }, [qIdx, sessionCode, pageId])
+  }, [qIdx, sessionCode, pageId, moduleId])
 
   const textByName = {}
   for (const row of openAnswers) textByName[row.participant_name] = row.answer
@@ -9210,6 +9262,7 @@ export default function TVView() {
                   total={moduleData.quiz.length}
                   moduleLabel={moduleData?.label || ''}
                   sessionCode={sessionCode}
+                  moduleId={activeModule}
                   pageId={`${activeModule}:${modulePage - 100}`}
                 />
               : sharedState?.quiz_show_correction && quizQuestion?.type !== 'text-open' && quizQuestion?.type !== 'text-open-multi' && quizQuestion?.type !== 'text-open-pairs'
@@ -9219,6 +9272,7 @@ export default function TVView() {
                     total={moduleData.quiz.length}
                     moduleLabel={moduleData?.label || ''}
                     sessionCode={sessionCode}
+                    moduleId={activeModule}
                     showOrdo={!!sharedState?.quiz_ordo_show}
                   />
                 : <TVQuizQuestion
