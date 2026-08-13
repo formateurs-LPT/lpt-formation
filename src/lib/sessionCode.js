@@ -61,13 +61,24 @@ export function resolveRoomStateCode() {
     if (urlCode && isDynamicRoomCode(urlCode)) return urlCode
   }
 
+  // Accès direct ?mode=participant (raccourci téléphones dédiés) : priorité
+  // absolue sur tout trainer_name résiduel en localStorage. Un appareil dédié
+  // aux formés peut garder un vieux trainer_name d'un test antérieur — sans
+  // cette priorité, la synchro partait sur la salle du FORMATEUR au lieu de
+  // celle du formé, et rien ne bougeait quand le formateur lançait un module
+  // (incident du 13/08 — le score du formé restait correct car getParticipant-
+  // SessionCode(), utilisé ailleurs pour ça, n'a jamais ce problème).
+  if (mode === 'participant') {
+    return readParticipantSessionCode() || getLegacySessionCode()
+  }
+
   // Formateur connecté → salle active formateur (pas le code participant résiduel)
   if (localStorage.getItem('trainer_name')) {
     return readTrainerActiveRoomCode() || getLegacySessionCode()
   }
 
-  // Participant
-  if (mode === 'participant' || localStorage.getItem('participant_name')) {
+  // Participant (accès via l'écran de connexion classique)
+  if (localStorage.getItem('participant_name')) {
     return readParticipantSessionCode() || getLegacySessionCode()
   }
 
