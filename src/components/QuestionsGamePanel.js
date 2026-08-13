@@ -77,6 +77,17 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
     setValidatedMap({})
   }
 
+  // Supprime les réponses SCORÉES (quiz_answers, celles qui comptent pour les
+  // points) de tous les formés sur ce jeu — utile pour repartir de zéro en
+  // relançant le jeu un autre jour, sans garder les anciennes validations.
+  // Filtré sur question_idx >= 100 : ne touche jamais le vrai quiz noté d'un
+  // module qui partagerait le même moduleId (ex. "optique").
+  const handleDeleteAllAnswers = async () => {
+    if (!confirm('Supprimer TOUTES les réponses enregistrées de ce jeu (tous formés, toutes questions) ? Utile pour relancer le jeu proprement un autre jour. Cette action est irréversible.')) return
+    await sbDelete('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${encodeURIComponent(moduleId)}&question_idx=gte.100`)
+    await clearAnswers()
+  }
+
   const selectQuestion = async (idx) => {
     await clearAnswers()
     setVfCorrect(null)
@@ -206,6 +217,11 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
             onClick={clearAnswers}
             style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', padding: '8px 18px', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
           >🗑 Effacer les réponses</button>
+          <button
+            onClick={handleDeleteAllAnswers}
+            title="Supprime les réponses enregistrées (points) de tous les formés sur ce jeu — pour relancer proprement un autre jour"
+            style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.5)', color: '#fca5a5', padding: '8px 18px', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+          >🗑️ Réinitialiser le jeu</button>
           {onExit && (
             <button onClick={onExit}
               style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}

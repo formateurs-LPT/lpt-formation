@@ -4,7 +4,7 @@ import Image from 'next/image'
 import LPTSaleApp from '@/components/LPTSaleApp'
 import QuestionBubble from '@/components/QuestionBubble'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, ENTRAINEMENT_QUESTIONS } from '@/lib/modulesData'
+import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, ENTRAINEMENT_QUESTIONS, ENTRAINEMENT_QUESTIONS_J2 } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbUpsert, sbSelect, sbDelete, getParticipantSessionCode, ensureSession, getSharedState, setSharedState, getRoomSharedState, setRoomSharedState, mutateRoomState, insertOpenAnswer, updateOpenAnswer, setParticipantPage } from '@/lib/supabase'
 import { PeerQuizParticipant } from '@/components/PeerQuizGame'
@@ -5878,6 +5878,22 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
         clearTs={sharedState?.mjq_clear_ts}
         customQText={sharedState?.mjq_custom_q_text}
         questions={ENTRAINEMENT_QUESTIONS}
+      />
+    </>
+  )
+
+  // Mini-jeu "Questions Jour 2" — même mécanique, contenu Jour 2
+  if (sharedState?.minijeu_game === 'questions-j2') return (
+    <>
+      <DisconnectChip pName={pName} onDisconnect={onDisconnect} />
+      <QuestionsGameParticipantView
+        pName={pName}
+        moduleId="minijeu-questions-j2"
+        questionIdx={sharedState?.mjq2_q}
+        vfCorrect={sharedState?.mjq2_vf_correct}
+        clearTs={sharedState?.mjq2_clear_ts}
+        customQText={sharedState?.mjq2_custom_q_text}
+        questions={ENTRAINEMENT_QUESTIONS_J2}
       />
     </>
   )

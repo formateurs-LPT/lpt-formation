@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import Image from 'next/image'
 import { getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
 import { fetchOnlineParticipantsList } from '@/lib/participantPresence'
-import { ENTRAINEMENT_QUESTIONS } from '@/lib/modulesData'
+import { ENTRAINEMENT_QUESTIONS, ENTRAINEMENT_QUESTIONS_J2 } from '@/lib/modulesData'
 import { QuestionsGameTrainerPanel } from '@/components/QuestionsGamePanel'
 
 const THEMES = [
@@ -461,14 +461,22 @@ function GameListView({ onSelect }) {
           <div style={{ fontSize: 13, fontWeight: 700, color: '#00abe9' }}>Jouer →</div>
         </div>
 
-        <div style={{
-          background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)',
-          borderRadius: 22, padding: '28px 24px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.18)', textAlign: 'center', lineHeight: 1.8 }}>
-            🔜 Prochain jeu<br />à venir…
+        <div
+          onClick={() => onSelect('questions-j2')}
+          style={{
+            background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.25)',
+            borderRadius: 22, padding: '28px 24px', cursor: 'pointer', transition: 'all 0.18s',
+            animation: 'mjFadeUp 0.4s ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.16)'; e.currentTarget.style.borderColor = 'rgba(124,58,237,0.5)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.08)'; e.currentTarget.style.borderColor = 'rgba(124,58,237,0.25)' }}
+        >
+          <div style={{ fontSize: 38, marginBottom: 14 }}>🗣️</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 8 }}>Questions Jour 2</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.55, marginBottom: 18 }}>
+            Même jeu, sur le contenu du Jour 2 (offres, 1=1, montures, verre progressif)
           </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#a78bfa' }}>Jouer →</div>
         </div>
       </div>
     </div>
@@ -515,14 +523,15 @@ export default function ModuleMiniJeux({ pName, onBack }) {
       setSharedState({
         minijeu_vendeur: null, minijeu_client: null, minijeu_theme: null, minijeu_phase: 'idle', minijeu_game: null,
         mjq_q: null, mjq_vf_correct: null, mjq_clear_ts: null, mjq_custom_q_text: null,
+        mjq2_q: null, mjq2_vf_correct: null, mjq2_clear_ts: null, mjq2_custom_q_text: null,
       }).catch(() => {})
     }
   }, [])
 
   const handleSelectGame = async (game) => {
-    if (game === 'questions') {
-      setView('questions')
-      await setSharedState({ minijeu_phase: 'questions', minijeu_game: 'questions' }).catch(() => {})
+    if (game === 'questions' || game === 'questions-j2') {
+      setView(game)
+      await setSharedState({ minijeu_phase: 'questions', minijeu_game: game }).catch(() => {})
       return
     }
     setView('rules')
@@ -649,6 +658,12 @@ export default function ModuleMiniJeux({ pName, onBack }) {
         minijeu_phase: 'idle', minijeu_game: null,
         mjq_q: null, mjq_vf_correct: null, mjq_clear_ts: null, mjq_custom_q_text: null,
       }).catch(() => {})
+    } else if (view === 'questions-j2') {
+      setView('list')
+      await setSharedState({
+        minijeu_phase: 'idle', minijeu_game: null,
+        mjq2_q: null, mjq2_vf_correct: null, mjq2_clear_ts: null, mjq2_custom_q_text: null,
+      }).catch(() => {})
     } else {
       onBack()
     }
@@ -666,6 +681,21 @@ export default function ModuleMiniJeux({ pName, onBack }) {
           sharedKeyPrefix="mjq"
           questions={ENTRAINEMENT_QUESTIONS}
           header="Mini Jeux · Questions"
+          onExit={handleBack}
+        />
+      </>
+    )
+  }
+  if (view === 'questions-j2') {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <QuestionsGameTrainerPanel
+          pName={pName}
+          moduleId="minijeu-questions-j2"
+          sharedKeyPrefix="mjq2"
+          questions={ENTRAINEMENT_QUESTIONS_J2}
+          header="Mini Jeux · Questions Jour 2"
           onExit={handleBack}
         />
       </>

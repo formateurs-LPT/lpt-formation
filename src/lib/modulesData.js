@@ -240,6 +240,17 @@ export const ENTRAINEMENT_QUESTIONS = [
   { id: 7, text: 'Combien de temps est valable une ordonnance pour cette personne ?', type: 'choice', options: ['1 an', '3 ans', '5 ans'] },
 ]
 
+// Jeu des questions — variante Jour 2 (offres, 1=1, montures, verre progressif)
+export const ENTRAINEMENT_QUESTIONS_J2 = [
+  { id: 1, text: "Dans l'offre 1=1, la seconde paire est-elle offerte ?", type: 'vrai-faux' },
+  { id: 2, text: "Combien coûte en moyenne un équipement progressif dans l'offre 1=1 ?", type: 'text' },
+  { id: 3, text: "Quel est le délai de fabrication pour des verres progressifs dans l'offre 1=1 ?", type: 'text' },
+  { id: 4, text: 'Avec quel matériau sont fabriquées les montures entre 5 et 15€ ?', type: 'text' },
+  { id: 5, text: "Qu'est-ce que le pack plan ?", type: 'choice', options: ['2 paires sans correction pour 95€', '2 paires avec correction pour 95€', '2 paires progressives pour 95€'] },
+  { id: 6, text: 'À partir de quel âge peut-on faire son examen de vue en magasin ?', type: 'choice', options: ['14 ans', '15 ans', '16 ans'] },
+  { id: 7, text: "Combien coûte l'examen de vue ?", type: 'text' },
+]
+
 export const OPTIQUE_QUIZ = [
   // Q1
   {

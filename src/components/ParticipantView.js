@@ -12,7 +12,7 @@ import { PeerQuizParticipant } from '@/components/PeerQuizGame'
 import { FreeQuizParticipant } from '@/components/FreeQuizGame'
 import AutoEvalParticipant from '@/components/AutoEvalParticipant'
 import { QuestionsGameParticipantView } from '@/components/QuestionsGamePanel'
-import { ENTRAINEMENT_QUESTIONS } from '@/lib/modulesData'
+import { ENTRAINEMENT_QUESTIONS, ENTRAINEMENT_QUESTIONS_J2 } from '@/lib/modulesData'
 
 const QUIZ10 = [
   { q: 'Quel trouble visuel fait que les verres progressifs sont utiles au quotidien ?', opts: ['La myopie', 'La presbytie', "L'astigmatisme", "L'hypermétropie"], correct: 1, kind: 'standard' },
@@ -593,6 +593,22 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
         clearTs={sharedState?.mjq_clear_ts}
         customQText={sharedState?.mjq_custom_q_text}
         questions={ENTRAINEMENT_QUESTIONS}
+      />
+    </>
+  )
+
+  // Mini-jeu "Questions Jour 2" — même mécanique, contenu Jour 2
+  if (sharedState?.minijeu_game === 'questions-j2') return (
+    <>
+      {disconnectChip}
+      <QuestionsGameParticipantView
+        pName={pName}
+        moduleId="minijeu-questions-j2"
+        questionIdx={sharedState?.mjq2_q}
+        vfCorrect={sharedState?.mjq2_vf_correct}
+        clearTs={sharedState?.mjq2_clear_ts}
+        customQText={sharedState?.mjq2_custom_q_text}
+        questions={ENTRAINEMENT_QUESTIONS_J2}
       />
     </>
   )
