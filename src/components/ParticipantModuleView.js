@@ -309,6 +309,11 @@ function DashboardScreen({ pName, myEntry, ranking, myProfile, quizHistory, badg
               <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
                 sur {ranking.length} participant{ranking.length > 1 ? 's' : ''}
               </div>
+              {myEntry?.total > 0 && (
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>
+                  Classement basé sur ton taux de bonnes réponses : {Math.round((myEntry.rate || 0) * 100)}%
+                </div>
+              )}
             </div>
           )}
         </>

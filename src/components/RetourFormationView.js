@@ -1566,28 +1566,30 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
         return byModule
       }
 
-      // Classement définitif : uniquement sur le total de points (10 par
-      // bonne réponse), plus de mélange avec le taux d'acquisition évalué
-      // par le formateur — celui-ci pouvait donner une place différente du
-      // nombre de points réellement gagnés, ce qui n'a plus de sens : le
-      // nombre de points total définit la place.
+      // Classement basé sur le TAUX de bonnes réponses (pas le nombre brut de
+      // points) — même règle que le classement affiché au formé sur son propre
+      // dashboard (voir buildParticipantRanking dans src/lib/scoring.js) : un
+      // formé qui a répondu à moins de questions ne doit pas être défavorisé
+      // face à un formé qui en a fait plus mais avec un taux plus faible.
       const scores = names.map((name, i) => ({
         name,
         byModule: buildByModule(quizArrays[i], answerArrays[i]),
       }))
 
-      const ptsScores = scores.map(({ name, byModule: bm }) => {
-        const pts = Object.values(bm).reduce((s, m) => s + (m.score || 0), 0) * 10
-        return { name, points: pts }
+      const rateScores = scores.map(({ name, byModule: bm }) => {
+        const vals = Object.values(bm)
+        const correct = vals.reduce((s, m) => s + (m.score || 0), 0)
+        const total = vals.reduce((s, m) => s + (m.total || 0), 0)
+        return { name, points: correct * 10, total, rate: total ? correct / total : 0 }
       })
-      const sortedByPts = [...ptsScores].sort((a, b) => b.points - a.points)
+      const sortedByRate = [...rateScores].sort((a, b) => b.rate - a.rate || b.total - a.total)
       const ptsRankMap = {}
       const ptsTotMap = {}
       let pr = 1
-      for (let i = 0; i < sortedByPts.length; i++) {
-        if (i > 0 && sortedByPts[i].points !== sortedByPts[i - 1].points) pr = i + 1
-        ptsTotMap[sortedByPts[i].name] = sortedByPts[i].points
-        if (sortedByPts[i].points > 0) ptsRankMap[sortedByPts[i].name] = pr
+      for (let i = 0; i < sortedByRate.length; i++) {
+        if (i > 0 && sortedByRate[i].rate !== sortedByRate[i - 1].rate) pr = i + 1
+        ptsTotMap[sortedByRate[i].name] = sortedByRate[i].points
+        if (sortedByRate[i].total > 0) ptsRankMap[sortedByRate[i].name] = pr
       }
       setPointsRanks(ptsRankMap)
       setPointsTotals(ptsTotMap)

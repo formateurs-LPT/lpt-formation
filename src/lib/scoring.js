@@ -10,27 +10,32 @@ export const POINTS_PER_CORRECT = 10
  * Construit le classement à partir des 3 sources de bonnes réponses de l'app.
  * Chaque source est dédupliquée pour qu'une même question ne rapporte des points
  * qu'une seule fois, même en cas de renvoi/upsert multiple.
+ * Classement basé sur le TAUX de bonnes réponses (pas le nombre brut de points) :
+ * un formé qui a répondu à moins de questions ne doit pas être défavorisé face à
+ * un formé qui en a fait plus mais avec un taux de réussite plus faible.
  */
 export function buildParticipantRanking({ quizAnswers = [], openAnswers = [], moduleResults = [] } = {}) {
-  const correctByName = {}
-  const bump = (name) => {
+  const statsByName = {} // { name: { correct, total } }
+  const bump = (name, isCorrect, weight = 1) => {
     const n = (name || '').trim()
     if (!n) return
-    correctByName[n] = (correctByName[n] || 0) + 1
+    if (!statsByName[n]) statsByName[n] = { correct: 0, total: 0 }
+    statsByName[n].total += weight
+    if (isCorrect) statsByName[n].correct += weight
   }
 
-  // Quiz de module — une bonne réponse par (module, question) et par formé
+  // Quiz de module — une réponse comptée par (module, question) et par formé
   const seenQuiz = new Set()
   for (const r of quizAnswers) {
-    if (!r?.is_correct) continue
+    if (!r?.collaborateur || !r?.module_id) continue
     const key = `${r.collaborateur}|${r.module_id}|${r.question_idx}`
     if (seenQuiz.has(key)) continue
     seenQuiz.add(key)
-    bump(r.collaborateur)
+    bump(r.collaborateur, !!r.is_correct)
   }
 
   // Questions ouvertes notées hors quiz (jeu des questions, entraînement oral…) —
-  // une bonne réponse par page_id et par formé (on garde la note la plus récente).
+  // une réponse comptée par page_id et par formé (on garde la note la plus récente).
   const latestOpenByKey = {}
   for (const r of openAnswers) {
     if (r?.is_correct == null || !r?.participant_name) continue
@@ -39,33 +44,43 @@ export function buildParticipantRanking({ quizAnswers = [], openAnswers = [], mo
     if (!prev || new Date(r.created_at || 0) > new Date(prev.created_at || 0)) latestOpenByKey[key] = r
   }
   for (const r of Object.values(latestOpenByKey)) {
-    if (r.is_correct) bump(r.participant_name)
+    bump(r.participant_name, !!r.is_correct)
   }
 
-  // Exercices notés (ex: saisie interactive) — score = nb de bonnes réponses/cas,
-  // on ignore le champ xp stocké pour ne pas hériter d'un éventuel mauvais multiplicateur.
-  // Une ligne par (collaborateur, module_id, semaine) : on garde le meilleur score
-  // par module plutôt que la première ligne rencontrée (ordre non garanti).
-  const bestModuleScore = {}
+  // Exercices notés (ex: saisie interactive) — score/total connus directement.
+  // Une ligne par (collaborateur, module_id, semaine) : on garde le total le plus
+  // élevé par module plutôt que la première ligne rencontrée (ordre non garanti).
+  const bestModule = {}
   for (const r of moduleResults) {
     if (!r?.collaborateur || !r?.module_id) continue
     const key = `${r.collaborateur}|${r.module_id}`
-    const sc = r.score || 0
-    if (bestModuleScore[key] === undefined || sc > bestModuleScore[key]) bestModuleScore[key] = sc
+    const score = r.score || 0
+    const total = r.score_total ?? r.total ?? score
+    if (!bestModule[key] || total > bestModule[key].total) bestModule[key] = { score, total }
   }
-  for (const [key, sc] of Object.entries(bestModuleScore)) {
+  for (const [key, { score, total }] of Object.entries(bestModule)) {
     const n = key.split('|')[0].trim()
-    if (!n) continue
-    correctByName[n] = (correctByName[n] || 0) + sc
+    if (!n || !total) continue
+    if (!statsByName[n]) statsByName[n] = { correct: 0, total: 0 }
+    statsByName[n].correct += score
+    statsByName[n].total += total
   }
 
-  const rows = Object.entries(correctByName)
-    .map(([name, correct]) => ({ name, correct, points: correct * POINTS_PER_CORRECT }))
-    .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
+  const rows = Object.entries(statsByName)
+    .map(([name, s]) => ({
+      name,
+      correct: s.correct,
+      total: s.total,
+      points: s.correct * POINTS_PER_CORRECT,
+      rate: s.total ? s.correct / s.total : 0,
+    }))
+    // Classé par taux de réussite d'abord, nombre de réponses en départage
+    // (à taux égal, celui qui a répondu à plus de questions passe devant)
+    .sort((a, b) => b.rate - a.rate || b.total - a.total || a.name.localeCompare(b.name))
 
   let rk = 1
   return rows.map((entry, i) => {
-    if (i > 0 && entry.points !== rows[i - 1].points) rk = i + 1
+    if (i > 0 && entry.rate !== rows[i - 1].rate) rk = i + 1
     return { ...entry, rank: rk }
   })
 }
