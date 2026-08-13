@@ -35,56 +35,15 @@ function ErrorScreen({ message }) {
   )
 }
 
-function BilanContent() {
-  const params = useSearchParams()
-  const collaborateur = params.get('c') || ''
-  const weekDate = params.get('w') || ''
-  const categoryKey = params.get('cat') || 'province'
-
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [assessments, setAssessments] = useState({})
-  const [globalRate, setGlobalRate] = useState(null)
-  const [globalCounts, setGlobalCounts] = useState({ correct: 0, total: 0 })
-  const [message, setMessage] = useState('')
-
-  useEffect(() => {
-    if (!collaborateur) {
-      setError('Lien invalide — paramètres manquants.')
-      setLoading(false)
-      return
-    }
-    const load = async () => {
-      try {
-        const archiveIndexPromise = fetchArchiveIndex()
-        const [reportRows, { answerRows }] = await Promise.all([
-          sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(collaborateur)}&trainer_name=neq.__auto_eval__&order=updated_at.desc&limit=30`),
-          fetchModuleAndQuizRows(collaborateur, archiveIndexPromise),
-        ])
-        const merged = mergeFormationReports(reportRows)
-        setAssessments(merged?.snapshot?.theme_assessments || {})
-        setMessage(merged?.snapshot?.message_formateur_forme || '')
-
-        // Taux global — quiz de module ET jeu des questions confondus, comme demandé
-        const total = (answerRows || []).length
-        const correct = (answerRows || []).filter(r => r.is_correct).length
-        setGlobalCounts({ correct, total })
-        setGlobalRate(total ? Math.round((correct / total) * 100) : null)
-      } catch (e) {
-        console.error('[Bilan] load error', e)
-        setError('Impossible de charger ton bilan. Vérifie ta connexion.')
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [collaborateur, weekDate])
-
-  if (loading) return <LoadingScreen />
-  if (error) return <ErrorScreen message={error} />
-
+/**
+ * Contenu du bilan formé — pure présentation (aucun fetch), pour être réutilisé
+ * à la fois par la page publique /bilan-formation (données chargées via URL) et
+ * par l'aperçu affiché au formateur dans le Retour de formation (données déjà
+ * en mémoire, pour un aperçu instantané avant envoi).
+ */
+export function BilanFormationContent({ collaborateur, categoryKey, assessments, message, globalRate, globalCounts }) {
   const themes = CATEGORY_META[categoryKey]?.themes || CATEGORY_META.province.themes
-  const firstName = collaborateur.split(' ')[0]
+  const firstName = (collaborateur || '').split(' ')[0]
   const rateColor = globalRate === null ? '#64748b' : globalRate >= 70 ? '#16a34a' : globalRate >= 40 ? '#d97706' : '#dc2626'
 
   return (
@@ -169,6 +128,66 @@ function BilanContent() {
         </div>
       </div>
     </div>
+  )
+}
+
+function BilanContent() {
+  const params = useSearchParams()
+  const collaborateur = params.get('c') || ''
+  const weekDate = params.get('w') || ''
+  const categoryKey = params.get('cat') || 'province'
+
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [assessments, setAssessments] = useState({})
+  const [globalRate, setGlobalRate] = useState(null)
+  const [globalCounts, setGlobalCounts] = useState({ correct: 0, total: 0 })
+  const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    if (!collaborateur) {
+      setError('Lien invalide — paramètres manquants.')
+      setLoading(false)
+      return
+    }
+    const load = async () => {
+      try {
+        const archiveIndexPromise = fetchArchiveIndex()
+        const [reportRows, { answerRows }] = await Promise.all([
+          sbSelect('formation_reports', `collaborateur=eq.${encodeURIComponent(collaborateur)}&trainer_name=neq.__auto_eval__&order=updated_at.desc&limit=30`),
+          fetchModuleAndQuizRows(collaborateur, archiveIndexPromise),
+        ])
+        const merged = mergeFormationReports(reportRows)
+        setAssessments(merged?.snapshot?.theme_assessments || {})
+        setMessage(merged?.snapshot?.message_formateur_forme || '')
+
+        // Taux global — quiz de module ET jeu des questions confondus, comme demandé
+        const total = (answerRows || []).length
+        const correct = (answerRows || []).filter(r => r.is_correct).length
+        setGlobalCounts({ correct, total })
+        setGlobalRate(total ? Math.round((correct / total) * 100) : null)
+      } catch (e) {
+        console.error('[Bilan] load error', e)
+        setError('Impossible de charger ton bilan. Vérifie ta connexion.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [collaborateur, weekDate])
+
+  if (loading) return <LoadingScreen />
+  if (error) return <ErrorScreen message={error} />
+
+  return (
+    <BilanFormationContent
+      collaborateur={collaborateur}
+      categoryKey={categoryKey}
+      assessments={assessments}
+      message={message}
+      globalRate={globalRate}
+      globalCounts={globalCounts}
+    />
   )
 }
 

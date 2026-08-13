@@ -482,6 +482,70 @@ function SessionsHistoryView({ pName, onBack, onToast }) {
 // ── Changelog data ───────────────────────────────────────────────
 const APP_UPDATES = [
   {
+    id: '2026-08-13',
+    date: '10 → 13 août 2026',
+    title: 'Audit complet de l\'app, retour de formation partagé, dashboard formé refait',
+    tag: 'Gros récap',
+    tagColor: '#fbbf24',
+    sections: [
+      {
+        title: 'Audit complet — bugs corrigés',
+        accent: '#ef4444',
+        tag: 'Sécurité & fiabilité',
+        items: [
+          'Mini-jeu des questions invisible sur les téléphones dédiés (raccourci) — corrigé pour fonctionner comme via le QR code',
+          'Lien "compte rendu" pouvant renvoyer une fiche vide au manager quand un autre formateur que celui qui l\'a remplie cliquait sur "Envoyer"',
+          'Risque de perte de données à la clôture d\'une salle si l\'archivage réseau échouait — la salle n\'est plus purgée tant que l\'archivage n\'a pas réussi',
+          '"Clôturer la session" pouvait planter silencieusement (import manquant)',
+          'Boutons "Vider les résultats quiz" / "Vider l\'historique" limités à sa propre salle/historique au lieu de toucher tous les formateurs',
+          'Décalage d\'affichage formateur ↔ diffuseur sur certaines corrections d\'ordonnance (Optique, Quiz Final)',
+          'Clôture de semaine RH : une erreur de sauvegarde individuelle est détectée au lieu d\'annoncer un succès et de vider la liste à tort',
+        ],
+      },
+      {
+        title: 'Connexion des formés',
+        accent: '#22d3ee',
+        tag: 'Correctif',
+        items: [
+          'Un rafraîchissement de page ne déconnecte plus les formés — ils retombent directement sur leur écran en cours (fermer complètement l\'app déconnecte toujours, comme prévu)',
+          'Détection fiable des formés partis pour de bon (téléphone rangé) — ils n\'apparaissent plus indéfiniment "connectés", ce qui faussait le "qui n\'a pas répondu" pendant les quiz',
+          'Clôture automatique d\'une salle oubliée d\'une semaine précédente à l\'ouverture du Dashboard — sans risque, les retours de formation restent accessibles quoi qu\'il arrive',
+        ],
+      },
+      {
+        title: 'Retour de formation',
+        accent: '#818cf8',
+        tag: 'Nouveauté',
+        items: [
+          'Fiche partagée entre formateurs : un même formé n\'a plus qu\'une seule fiche par semaine, modifiable par n\'importe qui — fini les acquis/non-acquis invisibles d\'un formateur à l\'autre',
+          'Taux de compréhension par thème calculé automatiquement à partir des vraies réponses aux quiz, affiché à côté de ton évaluation (jamais à sa place), avec tendance jour par jour',
+          'Retour individuel envoyé au formé par mail (en plus du compte rendu manager) : acquis/non-acquis, taux global, message personnalisable, adresse déduite automatiquement',
+          'Indicateur d\'activité écran : alerte si un formé est nettement moins actif sur l\'app que la moyenne du groupe — signal relatif à vérifier avec lui, pas une preuve absolue',
+        ],
+      },
+      {
+        title: 'Dashboard formé refait',
+        accent: '#10b981',
+        tag: 'Nouveauté',
+        items: [
+          'L\'écran d\'attente "Bonjour..." est remplacé par un vrai dashboard : profil (magasin, poste), niveau (10 pts par bonne réponse, palier tous les 50 points), historique des quiz de la semaine',
+          'Visible uniquement quand rien n\'est en cours (jamais pendant un module/quiz, pour ne pas détourner l\'attention)',
+          'Badges : série de bonnes réponses, Expert par thème, Sans-faute, Increvable',
+        ],
+      },
+      {
+        title: 'Dashboard formateur',
+        accent: '#fb923c',
+        tag: 'Amélioration',
+        items: [
+          'Mode de travail persistant (présentiel / visio / Belgique) à côté de ton nom — l\'Onboarding France ne redemande plus le groupe à chaque fois',
+          'Bouton QR en double retiré (celui de la barre du haut suffit)',
+          'Quiz Jour 2 ajouté et intégré au taux de compréhension par thème',
+        ],
+      },
+    ],
+  },
+  {
     id: '2026-08-10',
     date: '3 → 10 août 2026',
     title: 'Récap de la semaine — sécurité quiz, points fiabilisés, saisie interactive repensée',

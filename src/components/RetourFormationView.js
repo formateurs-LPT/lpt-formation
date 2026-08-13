@@ -5,6 +5,7 @@ import { getLevelInfo } from '@/lib/scoring'
 import { classifyMagasin } from '@/lib/formationCategories'
 import { MODULE_DATA } from '@/lib/modulesData'
 import CompteRenduManager from './CompteRenduManager'
+import { BilanFormationContent } from '@/app/bilan-formation/page'
 import { getManagers, canonicalMagasinLabel } from '@/lib/managersData'
 import { DIRECTEURS } from '@/lib/directeursData'
 import { PUBLIC_ORIGIN } from '@/lib/sessionCode'
@@ -366,6 +367,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const [mailSentAt, setMailSentAt]             = useState(null)
   const [messageFormé, setMessageFormé]         = useState('')
   const [mailFormeSentAt, setMailFormeSentAt]   = useState(null)
+  const [showFormePreview, setShowFormePreview] = useState(false)
+  const [globalRate, setGlobalRate]             = useState(null)
+  const [globalCounts, setGlobalCounts]         = useState({ correct: 0, total: 0 })
   // week_date du dernier enregistrement trouvé — peut différer de weekDate si la session a eu lieu une semaine précédente
   const [saveWeekDate, setSaveWeekDate]         = useState(weekDate)
   // Fiche partagée entre formateurs : trainer_name de la ligne existante (celui qui
@@ -435,6 +439,13 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
         }
       }
       setQuizData(Object.values(byModule))
+
+      // Taux global (quiz + jeu des questions confondus) — même calcul que la
+      // page /bilan-formation, pour que l'aperçu formateur soit fidèle
+      const totalAns = (answerRows || []).length
+      const correctAns = (answerRows || []).filter(r => r.is_correct).length
+      setGlobalCounts({ correct: correctAns, total: totalAns })
+      setGlobalRate(totalAns ? Math.round((correctAns / totalAns) * 100) : null)
 
       // Taux de compréhension par thème (basé sur les vraies réponses aux quiz)
       const themeStats = {}
@@ -813,6 +824,39 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
           </div>
         </div>
         <CompteRenduManager data={reportData} />
+      </div>
+    )}
+
+    {/* Aperçu du bilan envoyé au formé — exactement ce qu'il verra en ouvrant le lien */}
+    {showFormePreview && (
+      <div
+        onClick={e => { if (e.target === e.currentTarget) setShowFormePreview(false) }}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+          overflowY: 'auto', padding: '24px 16px 48px',
+        }}
+      >
+        <div style={{ maxWidth: 560, margin: '0 auto 16px' }}>
+          <button
+            onClick={() => setShowFormePreview(false)}
+            style={{
+              padding: '8px 18px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.3)',
+              background: 'rgba(255,255,255,0.12)', color: '#fff',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            ← Fermer
+          </button>
+        </div>
+        <BilanFormationContent
+          collaborateur={name}
+          categoryKey={categoryKey}
+          assessments={assessments}
+          message={messageFormé}
+          globalRate={globalRate}
+          globalCounts={globalCounts}
+        />
       </div>
     )}
 
@@ -1340,50 +1384,64 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
               fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', lineHeight: 1.6,
             }}
           />
-          {!formeEmail ? (
-            <div style={{
-              padding: '14px 16px', borderRadius: 14,
-              background: '#1e293b', border: '1.5px dashed #334155',
-              fontSize: 12, color: '#475569', fontWeight: 500, textAlign: 'center',
-            }}>
-              Nom/prénom manquants pour déduire l'adresse mail
-            </div>
-          ) : mailFormeSentAt ? (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
-              <div style={{
-                flex: 1, padding: '12px 16px', borderRadius: 14,
-                background: '#14532d33', border: '1.5px solid #16a34a66',
-                fontSize: 13, color: '#4ade80', fontWeight: 700,
+          <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+            <button
+              onClick={() => setShowFormePreview(true)}
+              style={{
+                flexShrink: 0, padding: '14px 16px', borderRadius: 14,
+                background: '#334155', color: '#f1f5f9', border: 'none',
+                fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              <span>👁</span> Aperçu
+            </button>
+            {!formeEmail ? (
+              <div style={{
+                flex: 1, padding: '14px 16px', borderRadius: 14,
+                background: '#1e293b', border: '1.5px dashed #334155',
+                fontSize: 12, color: '#475569', fontWeight: 500, textAlign: 'center',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                ✉️ Envoyé le {new Date(mailFormeSentAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                Nom/prénom manquants pour déduire l'adresse mail
               </div>
+            ) : mailFormeSentAt ? (
+              <>
+                <div style={{
+                  flex: 1, padding: '12px 16px', borderRadius: 14,
+                  background: '#14532d33', border: '1.5px solid #16a34a66',
+                  fontSize: 13, color: '#4ade80', fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}>
+                  ✉️ Envoyé le {new Date(mailFormeSentAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                </div>
+                <button
+                  onClick={handleSendToForme}
+                  style={{
+                    flexShrink: 0, padding: '12px 16px', borderRadius: 14,
+                    background: '#1e293b', border: '1.5px solid #334155',
+                    fontSize: 12, color: '#64748b', fontWeight: 600,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  Renvoyer
+                </button>
+              </>
+            ) : (
               <button
                 onClick={handleSendToForme}
                 style={{
-                  flexShrink: 0, padding: '12px 16px', borderRadius: 14,
-                  background: '#1e293b', border: '1.5px solid #334155',
-                  fontSize: 12, color: '#64748b', fontWeight: 600,
-                  cursor: 'pointer', fontFamily: 'inherit',
+                  flex: 1, padding: '14px 16px', borderRadius: 14,
+                  background: '#7c3aed', color: '#fff', border: 'none',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  boxShadow: '0 4px 14px rgba(124,58,237,0.25)',
                 }}
               >
-                Renvoyer
+                <span>✉️</span> Envoyer au formé ({formeEmail})
               </button>
-            </div>
-          ) : (
-            <button
-              onClick={handleSendToForme}
-              style={{
-                padding: '14px 16px', borderRadius: 14,
-                background: '#7c3aed', color: '#fff', border: 'none',
-                fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: '0 4px 14px rgba(124,58,237,0.25)',
-              }}
-            >
-              <span>✉️</span> Envoyer au formé ({formeEmail})
-            </button>
-          )}
+            )}
+          </div>
         </div>
       </section>
 
