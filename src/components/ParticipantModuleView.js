@@ -545,9 +545,11 @@ function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
 
 // ── Minuteur de question — 1min30 max, au-delà les traîneurs se
 // consultaient/cherchaient la réponse au lieu de répondre seuls ───────
-const QUIZ_TIME_LIMIT_SEC = 90
+// Exporté pour être réutilisé tel quel côté diffuseur (TVView.js), afin que
+// l'écran partagé affiche le même compte à rebours que le téléphone du formé.
+export const QUIZ_TIME_LIMIT_SEC = 90
 
-function useQuizCountdown({ seconds = QUIZ_TIME_LIMIT_SEC, onExpire, enabled }) {
+export function useQuizCountdown({ seconds = QUIZ_TIME_LIMIT_SEC, onExpire, enabled }) {
   const [remaining, setRemaining] = useState(seconds)
   // Ref plutôt que dépendance d'effet : onExpire capture souvent des états
   // qui changent à chaque frappe (texte, sélection...) — on veut toujours

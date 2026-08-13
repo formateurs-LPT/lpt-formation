@@ -12,6 +12,7 @@ import { PDMAnimationSVG } from '@/lib/pdmAnimationSvg'
 import { HeadlightVision } from '@/lib/headlightVision'
 import { TVPeerQuizScreen } from '@/components/PeerQuizGame'
 import { TVFreeQuizScreen } from '@/components/FreeQuizGame'
+import { useQuizCountdown } from '@/components/ParticipantModuleView'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -598,30 +599,60 @@ function TVQuizMultiQuestion({ question, qIdx, total, moduleLabel }) {
   )
 }
 
+// Minuteur affiché sur le diffuseur pendant une question — même compte à
+// rebours (90s) que celui du téléphone du formé (useQuizCountdown, partagé
+// depuis ParticipantModuleView.js). Overlay fixe indépendant du type de
+// question, pour ne pas avoir à le recaser dans chaque écran TVQuiz*.
+// `key={qIdx}` côté appelant force le redémarrage à chaque nouvelle question.
+function TVQuizTimerOverlay() {
+  const remaining = useQuizCountdown({ enabled: true })
+  const urgent = remaining <= 15
+  const mm = Math.floor(remaining / 60)
+  const ss = String(remaining % 60).padStart(2, '0')
+  return (
+    <div style={{
+      position: 'fixed', top: 24, right: 32, zIndex: 200,
+      display: 'flex', alignItems: 'center', gap: 10,
+      background: urgent ? 'rgba(239,68,68,0.22)' : 'rgba(255,255,255,0.08)',
+      border: `1.5px solid ${urgent ? 'rgba(239,68,68,0.6)' : 'rgba(255,255,255,0.2)'}`,
+      borderRadius: 24, padding: '10px 22px',
+      fontSize: 26, fontWeight: 800, color: urgent ? '#f87171' : '#fff',
+      fontVariantNumeric: 'tabular-nums',
+      animation: urgent ? 'tvQuizTimerPulse 1s ease-in-out infinite' : 'none',
+    }}>
+      ⏱ {mm}:{ss}
+      <style>{`@keyframes tvQuizTimerPulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }`}</style>
+    </div>
+  )
+}
+
 // ── TV Quiz Question ──────────────────────────────────────────────
 function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode, moduleId }) {
   const type = question.type || 'qcm'
+  const timer = <TVQuizTimerOverlay key={`quiz-timer-${moduleId}-${qIdx}`} />
 
   if (type === 'text-open' && question.tramePoints) {
-    return <TVQuizTrameFill question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+    return <>{timer}<TVQuizTrameFill question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} /></>
   }
   if (type === 'text-open' || type === 'text-open-multi' || type === 'text-open-pairs') {
-    return <TVQuizTextOpen question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} moduleId={moduleId} />
+    return <>{timer}<TVQuizTextOpen question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} moduleId={moduleId} /></>
   }
   if (type === 'ordonnance-fill') {
-    return <TVQuizOrdonnanceFill question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+    return <>{timer}<TVQuizOrdonnanceFill question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} /></>
   }
   if (type === 'qcm-ordonnance') {
-    return <TVQuizOrdonnanceQCM question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+    return <>{timer}<TVQuizOrdonnanceQCM question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} /></>
   }
   if (type === 'power-selector') {
-    return <TVQuizPowerSel question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+    return <>{timer}<TVQuizPowerSel question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} /></>
   }
   if (type === 'qcm-multi') {
-    return <TVQuizMultiQuestion question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} />
+    return <>{timer}<TVQuizMultiQuestion question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} /></>
   }
 
   return (
+    <>
+    {timer}
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
@@ -684,6 +715,7 @@ function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode, modul
         <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>Répondez depuis votre téléphone</span>
       </div>
     </div>
+    </>
   )
 }
 
