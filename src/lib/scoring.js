@@ -44,15 +44,19 @@ export function buildParticipantRanking({ quizAnswers = [], openAnswers = [], mo
 
   // Exercices notés (ex: saisie interactive) — score = nb de bonnes réponses/cas,
   // on ignore le champ xp stocké pour ne pas hériter d'un éventuel mauvais multiplicateur.
-  const seenModule = new Set()
+  // Une ligne par (collaborateur, module_id, semaine) : on garde le meilleur score
+  // par module plutôt que la première ligne rencontrée (ordre non garanti).
+  const bestModuleScore = {}
   for (const r of moduleResults) {
     if (!r?.collaborateur || !r?.module_id) continue
     const key = `${r.collaborateur}|${r.module_id}`
-    if (seenModule.has(key)) continue
-    seenModule.add(key)
-    const n = (r.collaborateur || '').trim()
+    const sc = r.score || 0
+    if (bestModuleScore[key] === undefined || sc > bestModuleScore[key]) bestModuleScore[key] = sc
+  }
+  for (const [key, sc] of Object.entries(bestModuleScore)) {
+    const n = key.split('|')[0].trim()
     if (!n) continue
-    correctByName[n] = (correctByName[n] || 0) + (r.score || 0)
+    correctByName[n] = (correctByName[n] || 0) + sc
   }
 
   const rows = Object.entries(correctByName)
@@ -66,20 +70,36 @@ export function buildParticipantRanking({ quizAnswers = [], openAnswers = [], mo
   })
 }
 
-/** Charge les 3 sources de bonnes réponses pour une salle/session et construit le classement. */
+/**
+ * Charge les 3 sources de bonnes réponses et construit le classement.
+ * `sessionCode` sert UNIQUEMENT à déterminer le groupe de formés à classer
+ * (qui est/a été dans cette salle) — le score de CHACUN prend ensuite en
+ * compte TOUTES ses réponses, peu importe la salle où elles ont été données
+ * (un formé a un compte de points individuel, pas un compte par salle —
+ * scoper le score lui-même par session_code faisait disparaître des points
+ * bien réels dès qu'une salle était recréée, incident IDF du 13/08).
+ */
 export async function fetchParticipantRanking(sessionCode) {
   const code = (sessionCode || '').trim()
   if (!code) return []
-  const filter = `session_code=eq.${encodeURIComponent(code)}`
-  const [quizAnswers, openAnswers, moduleResults] = await Promise.all([
-    sbSelect('quiz_answers', filter),
-    sbSelect('open_answers', `${filter}&is_correct=not.is.null`),
-    sbSelect('module_results', filter),
-  ])
+  const participantRows = await sbSelect('participants', `session_code=eq.${encodeURIComponent(code)}`)
+  const names = [...new Set((participantRows || []).map(p => p.name).filter(Boolean))]
+  if (!names.length) return []
+
+  const perName = await Promise.all(names.map(async (n) => {
+    const nameFilter = `collaborateur=eq.${encodeURIComponent(n)}`
+    const [quizAnswers, openAnswers, moduleResults] = await Promise.all([
+      sbSelect('quiz_answers', nameFilter),
+      sbSelect('open_answers', `participant_name=eq.${encodeURIComponent(n)}&is_correct=not.is.null`),
+      sbSelect('module_results', nameFilter),
+    ])
+    return { quizAnswers: quizAnswers || [], openAnswers: openAnswers || [], moduleResults: moduleResults || [] }
+  }))
+
   return buildParticipantRanking({
-    quizAnswers: quizAnswers || [],
-    openAnswers: openAnswers || [],
-    moduleResults: moduleResults || [],
+    quizAnswers: perName.flatMap(p => p.quizAnswers),
+    openAnswers: perName.flatMap(p => p.openAnswers),
+    moduleResults: perName.flatMap(p => p.moduleResults),
   })
 }
 

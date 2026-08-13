@@ -184,40 +184,28 @@ export async function fetchActiveSeconds(name, archiveIndexPromise) {
 }
 
 /**
- * Résultats quiz d'un formé — jamais filtrés par une salle "devinée" (ni la salle
- * active du formateur, ni une semaine calendaire supposée : les deux ont fait
- * disparaître à tort des points bien réels — cf. incidents Maëlle puis les
- * nouveaux visio). On retrouve d'abord les VRAIES salles où ce formé a joué
- * (table participants, jointe sur son nom), et on interroge uniquement celles-ci.
- * S'il n'a aucune ligne participants (import RH sans connexion, edge case), on
- * retombe sur une recherche par nom seul plutôt que de renvoyer 0 par excès de prudence.
- * Si aucune donnée live n'existe (salle déjà terminée), on retombe sur sa
- * salle archivée la plus récente (voir fetchArchiveIndex) — jamais un cumul
- * live + archive, sinon on mélangerait deux semaines différentes.
+ * Résultats quiz d'un formé — plus aucun filtre par salle : on prend TOUTES
+ * ses réponses (live + archive fusionnées), peu importe dans quelle salle
+ * elles ont été données. Avant, un scope par session_code (via la table
+ * participants) faisait disparaître à tort les réponses données dans une
+ * salle recréée après une clôture manuelle (incident IDF du 13/08) — un
+ * formé a un compte de points individuel, pas un compte par salle.
+ * L'archive (salles déjà closes, cf. fetchArchiveIndex) reste limitée à
+ * une fenêtre de 6 jours autour de l'activité la plus récente pour éviter
+ * qu'un passage plusieurs SEMAINES plus tôt ne gonfle artificiellement le
+ * score (incident Nadège) — mais n'est plus ignorée dès qu'une donnée live
+ * existe : les deux sont toujours fusionnées.
  */
 export async function fetchModuleAndQuizRows(name, archiveIndexPromise) {
-  const participantRows = await sbSelect(
-    'participants',
-    `name=eq.${encodeURIComponent(name)}`
-  ).catch(() => [])
-  const codes = [...new Set((participantRows || []).map(p => p.session_code).filter(Boolean))]
-
-  const scope = codes.length
-    ? `session_code=in.(${codes.map(c => encodeURIComponent(c)).join(',')})`
-    : null
-
   const [moduleRows, answerRows, archiveIndex] = await Promise.all([
-    sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(name)}${scope ? `&${scope}` : ''}`),
-    sbSelect('quiz_answers',   `collaborateur=eq.${encodeURIComponent(name)}${scope ? `&${scope}` : ''}`),
+    sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(name)}`),
+    sbSelect('quiz_answers',   `collaborateur=eq.${encodeURIComponent(name)}`),
     archiveIndexPromise,
   ])
 
-  const hasLiveData = (moduleRows?.length || 0) > 0 || (answerRows?.length || 0) > 0
-  if (hasLiveData) return { moduleRows: moduleRows || [], answerRows: answerRows || [] }
-
   return {
-    moduleRows: archiveIndex?.moduleByName?.[name] || [],
-    answerRows: archiveIndex?.answerByName?.[name] || [],
+    moduleRows: [...(moduleRows || []), ...(archiveIndex?.moduleByName?.[name] || [])],
+    answerRows: [...(answerRows || []), ...(archiveIndex?.answerByName?.[name] || [])],
   }
 }
 
@@ -402,21 +390,25 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
         const tot = r.score_total ?? r.total ?? 0
         if (!byModule[mid] || sc > byModule[mid].score) byModule[mid] = { moduleId: mid, label: MODULE_DATA[mid]?.label || mid, score: sc, total: tot }
       }
-      // Complète les modules absents de module_results depuis quiz_answers du
-      // vrai quiz (question_idx < 100 — le "jeu des questions"/entraînement
-      // oral réutilise le même module_id mais avec question_idx >= 100, cf.
-      // questionIdxFor dans QuestionsGamePanel.js, traité séparément juste après).
+      // Vrai quiz (question_idx < 100 — le "jeu des questions"/entraînement oral
+      // réutilise le même module_id mais avec question_idx >= 100, traité séparément
+      // juste après) : toujours calculé depuis quiz_answers, jamais ignoré au
+      // prétexte qu'un module_results existe déjà — une ancienne ligne (module déjà
+      // fait un jour précédent) bloquait sinon les réponses du jour (incident IDF
+      // du 13/08). On garde la source la plus complète des deux.
       const qaByModule = {}
       for (const r of answerRows || []) {
         const mid = r.module_id
-        if (!mid || byModule[mid] || (r.question_idx ?? 0) >= 100) continue
+        if (!mid || (r.question_idx ?? 0) >= 100) continue
         if (!qaByModule[mid]) qaByModule[mid] = {}
         qaByModule[mid][r.question_idx] = r.is_correct // dernière réponse par question gagne
       }
       for (const [mid, qMap] of Object.entries(qaByModule)) {
         const correct = Object.values(qMap).filter(Boolean).length
         const total = MODULE_DATA[mid]?.quiz?.length || Object.keys(qMap).length
-        if (total > 0) byModule[mid] = { moduleId: mid, label: MODULE_DATA[mid]?.label || mid, score: correct, total }
+        if (total > 0 && (!byModule[mid] || total >= byModule[mid].total)) {
+          byModule[mid] = { moduleId: mid, label: MODULE_DATA[mid]?.label || mid, score: correct, total }
+        }
       }
       // Jeu des questions / entraînement oral (question_idx >= 100) : toujours
       // compté EN PLUS, même quand le vrai quiz du module a déjà un score —
@@ -1536,21 +1528,24 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
           const tot = r.score_total ?? r.total ?? 0
           if (!byModule[mid] || sc > byModule[mid].score) byModule[mid] = { score: sc, total: tot }
         }
-        // Complète les modules absents de module_results depuis quiz_answers du
-        // vrai quiz (question_idx < 100 — le "jeu des questions"/entraînement
-        // oral réutilise le même module_id mais avec question_idx >= 100, cf.
-        // questionIdxFor dans QuestionsGamePanel.js, traité séparément ci-dessous).
+        // Vrai quiz (question_idx < 100 — le "jeu des questions"/entraînement oral
+        // réutilise le même module_id mais avec question_idx >= 100, traité
+        // séparément ci-dessous) : toujours calculé depuis quiz_answers, jamais
+        // ignoré au prétexte qu'un module_results existe déjà (incident IDF du
+        // 13/08) — on garde la source la plus complète des deux.
         const qaByModule = {}
         for (const r of (ansRows || [])) {
           const mid = r.module_id
-          if (!mid || byModule[mid] || (r.question_idx ?? 0) >= 100) continue
+          if (!mid || (r.question_idx ?? 0) >= 100) continue
           if (!qaByModule[mid]) qaByModule[mid] = {}
           qaByModule[mid][r.question_idx] = r.is_correct
         }
         for (const [mid, qMap] of Object.entries(qaByModule)) {
           const correct = Object.values(qMap).filter(Boolean).length
           const total = MODULE_DATA[mid]?.quiz?.length || Object.keys(qMap).length
-          if (total > 0) byModule[mid] = { score: correct, total }
+          if (total > 0 && (!byModule[mid] || total >= byModule[mid].total)) {
+            byModule[mid] = { score: correct, total }
+          }
         }
         // Jeu des questions / entraînement oral (question_idx >= 100) : toujours
         // compté EN PLUS, même quand le vrai quiz du module a déjà un score —
