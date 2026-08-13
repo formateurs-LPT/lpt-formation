@@ -27,9 +27,12 @@ export function useOnlineCount({ enabled = true, sessionCode, onCount }) {
 
     poll()
     const interval = setInterval(poll, POLL_MS)
+    const onVisible = () => { if (document.visibilityState === 'visible') poll() }
+    document.addEventListener('visibilitychange', onVisible)
     return () => {
       cancelled = true
       clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
     }
   }, [enabled, sessionCode, onCount])
 }

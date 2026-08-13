@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbSelect, sbDelete, getSharedState, insertSessionHistory, parseSessionHistorySummary, getRuntimeSessionCode } from '@/lib/supabase'
+import { sbSelect, sbDelete, getSharedState, insertSessionHistory, parseSessionHistorySummary, getRuntimeSessionCode, SESSION_CODE } from '@/lib/supabase'
 import PlanningWidget from './PlanningWidget'
 import ShortcutsWidget from './ShortcutsWidget'
 import OnboardingView from './OnboardingView'
@@ -203,7 +203,7 @@ function ConfirmModal({ title, message, confirmLabel, onConfirm, onCancel, dange
   )
 }
 
-function SessionsHistoryView({ onBack, onToast }) {
+function SessionsHistoryView({ pName, onBack, onToast }) {
   const [sessions, setSessions] = useState([])
   const [quizResults, setQuizResults] = useState([])
   const [loading, setLoading] = useState(true)
@@ -232,19 +232,27 @@ function SessionsHistoryView({ onBack, onToast }) {
 
   useEffect(() => { load() }, [])
 
+  // Limité à la salle/au formateur actif : ces boutons supprimaient auparavant
+  // les données de TOUS les formateurs et TOUTES les salles sans distinction —
+  // dangereux dès que deux formateurs (Kevin/Quentin) travaillent en parallèle
+  // sur la même base.
   const handleClearQuiz = async () => {
-    await sbDelete('quiz_answers', 'id=gte.0')
-    await sbDelete('module_results', 'id=gte.0')
-    setQuizResults([])
+    const roomCode = getRuntimeSessionCode('trainer') || SESSION_CODE
+    const filter = `session_code=eq.${encodeURIComponent(roomCode)}`
+    await sbDelete('quiz_answers', filter)
+    await sbDelete('module_results', filter)
+    await load()
     setModal(null)
-    onToast('Résultats quiz vidés')
+    onToast('Résultats quiz de la salle active vidés')
   }
 
   const handleClearHistory = async () => {
-    await sbDelete('session_history', 'session_date=gte.2000-01-01')
-    setSessions([])
+    const trainer = pName || (typeof window !== 'undefined' ? localStorage.getItem('trainer_name') : '') || ''
+    if (!trainer) { onToast('Formateur non identifié'); setModal(null); return }
+    await sbDelete('session_history', `trainer_name=eq.${encodeURIComponent(trainer)}`)
+    await load()
     setModal(null)
-    onToast('Historique vidé')
+    onToast('Ton historique vidé')
   }
 
   const handleCloseSession = async () => {
@@ -312,7 +320,7 @@ function SessionsHistoryView({ onBack, onToast }) {
       {modal === 'quiz' && (
         <ConfirmModal
           title="Vider les résultats quiz ?"
-          message="⚠️ ATTENTION — Tu es sur le point d'effacer définitivement tous les résultats du quiz de la semaine. Cette action est irréversible. Si tu veux garder une trace, clôture d'abord la session."
+          message="⚠️ ATTENTION — Tu es sur le point d'effacer définitivement les résultats quiz de TA salle active uniquement. Cette action est irréversible. Si tu veux garder une trace, clôture d'abord la session."
           confirmLabel="Oui, vider"
           onConfirm={handleClearQuiz}
           onCancel={() => setModal(null)}
@@ -322,7 +330,7 @@ function SessionsHistoryView({ onBack, onToast }) {
       {modal === 'history' && (
         <ConfirmModal
           title="Vider l'historique ?"
-          message="⚠️ ATTENTION — Tu vas supprimer tout l'historique des sessions enregistrées. Cette action est irréversible et définitive."
+          message="⚠️ ATTENTION — Tu vas supprimer TON historique des sessions enregistrées (pas celui des autres formateurs). Cette action est irréversible et définitive."
           confirmLabel="Oui, vider"
           onConfirm={handleClearHistory}
           onCancel={() => setModal(null)}
@@ -1482,12 +1490,14 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
   useEffect(() => {
     const onFocus = () => { refreshActiveRoom() }
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', () => {
+    const onVisible = () => {
       if (document.visibilityState === 'visible') refreshActiveRoom()
-    })
+    }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisible)
     return () => {
       window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisible)
     }
   }, [pName])
 
@@ -1575,7 +1585,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   if (activeView === 'sessions') {
     return (
       <div id="dashboard">
-        <SessionsHistoryView onBack={() => { setActiveView('home'); loadTileStats() }} onToast={onToast} />
+        <SessionsHistoryView pName={pName} onBack={() => { setActiveView('home'); loadTileStats() }} onToast={onToast} />
       </div>
     )
   }

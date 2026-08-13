@@ -523,7 +523,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   }
 
   const reportUrl = typeof window !== 'undefined'
-    ? `${PUBLIC_ORIGIN}/rapport/?c=${encodeURIComponent(name)}&w=${saveWeekDate}&t=${encodeURIComponent(trainerName)}&cat=${categoryKey}`
+    ? `${PUBLIC_ORIGIN}/rapport/?c=${encodeURIComponent(name)}&w=${saveWeekDate}&t=${encodeURIComponent(ownerName)}&cat=${categoryKey}`
     : ''
 
   const copyLink = () => {
@@ -815,16 +815,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{meta.label}</div>
                   {meta.sub && <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{meta.sub}</div>}
-                  {qRate !== null && (
-                    <div
-                      title="Taux de bonnes réponses aux quiz sur ce thème — calculé automatiquement, indépendant de ton évaluation ci-contre"
-                      style={{ fontSize: 11, fontWeight: 700, color: qColor, marginTop: 3 }}
-                    >
-                      📊 Quiz : {qStats.correct}/{qStats.total} ({qRate}%)
-                    </div>
-                  )}
                 </div>
-                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
                   {STATUS_OPTIONS.map(opt => {
                     const active = current === opt.key
                     return (
@@ -845,6 +837,16 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                       </button>
                     )
                   })}
+                </div>
+                <div
+                  title="Taux de bonnes réponses aux quiz sur ce thème — calculé automatiquement à partir des réponses du formé, indépendant de ton évaluation ci-contre"
+                  style={{
+                    flexShrink: 0, minWidth: 64, textAlign: 'right',
+                    fontSize: 11, fontWeight: 700,
+                    color: qRate === null ? '#475569' : qColor,
+                  }}
+                >
+                  {qRate !== null ? `📊 ${qStats.correct}/${qStats.total} (${qRate}%)` : '—'}
                 </div>
               </div>
             )
@@ -1172,6 +1174,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
   const [mailSentMap, setMailSentMap] = useState({}) // { name: dateISO }
   const [weekDateMap, setWeekDateMap] = useState({}) // { name: week_date du dernier rapport }
   const [reportSnapMap, setReportSnapMap] = useState({}) // { name: stats_snapshot complet } — pour fusionner sans écraser
+  const [reportOwnerMap, setReportOwnerMap] = useState({}) // { name: vrai trainer_name en base de sa fiche partagée }
   const weekDate = getWeekDate()
   const catMeta  = CATEGORY_META[categoryKey] || {}
 
@@ -1197,15 +1200,18 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
       const reportMap = {}
       const sentMap   = {}
       const wdMap     = {}
+      const ownerMap  = {}
       for (const [collab, rows] of Object.entries(rowsByCollab)) {
         const merged = mergeFormationReports(rows)
         if (!merged) continue
         reportMap[collab] = merged.snapshot
         wdMap[collab]     = merged.weekDate || weekDate
+        ownerMap[collab]  = merged.trainerName
         if (merged.snapshot?.mail_sent_at) sentMap[collab] = merged.snapshot.mail_sent_at
       }
       setMailSentMap(sentMap)
       setWeekDateMap(wdMap)
+      setReportOwnerMap(ownerMap)
       setReportSnapMap(reportMap)
 
       // Résultats quiz — un fetch par formé, résolu sur SES vraies salles jouées
@@ -1324,7 +1330,11 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
     const links = group.entrees.map(e => {
       const name = e.fullName || `${e.nom} ${e.prenom}`.trim()
       const wd   = weekDateMap[name] || weekDate
-      const url  = `${PUBLIC_ORIGIN}/rapport/?c=${encodeURIComponent(name)}&w=${wd}&t=${encodeURIComponent(trainerName)}&cat=${categoryKey}`
+      // Fiche partagée : le lien pointe vers le vrai propriétaire en base de la
+      // fiche de CE formé, pas forcément le formateur qui clique sur "Envoyer"
+      // — sinon le manager peut recevoir un lien vers une fiche vide.
+      const owner = reportOwnerMap[name] || trainerName
+      const url  = `${PUBLIC_ORIGIN}/rapport/?c=${encodeURIComponent(name)}&w=${wd}&t=${encodeURIComponent(owner)}&cat=${categoryKey}`
       return prenoms.length === 1 ? url : `${getPrenom(e)} : ${url}`
     }).join('\n')
 

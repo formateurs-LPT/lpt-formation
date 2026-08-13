@@ -273,7 +273,14 @@ export default function Page() {
       || getActiveSessionCode()
     const result = await endActiveRoom(code, { trainerName: pName })
     if (result?.ok) {
-      toast(result.archived ? 'Salle terminée et archivée ✓' : 'Salle terminée ✓')
+      // Si l'archivage a échoué (coupure réseau...), les données live ne sont
+      // volontairement PAS purgées (voir roomArchive.js) — rien n'est perdu,
+      // juste pas encore rangé dans l'historique.
+      toast(
+        result.archived ? 'Salle terminée et archivée ✓'
+          : result.hadData ? 'Salle terminée — archivage impossible pour le moment, données conservées, réessaie plus tard'
+          : 'Salle terminée ✓'
+      )
       setDisplaySessionCode(getLegacySessionCode())
       setView('dashboard')
     } else {

@@ -167,12 +167,21 @@ create table if not exists public.trainer_state (
 comment on table public.trainer_state is
   'État partagé : __weekly__ = liste RH (entrees_data) ; session_code = TV/QR/module par salle';
 
+-- NB : ce schéma a divergé de la vraie table en prod (colonnes ajoutées
+-- directement via le dashboard Supabase, jamais capturées dans une migration
+-- versionnée). Description mise à jour le 13/08 pour refléter les colonnes
+-- réellement utilisées par EntreesView.js / OnboardingView.js / OnboardingViewBelgique.js.
 create table if not exists public.onboarding_sessions (
   id bigserial primary key,
-  week_label text,
-  trainer_name text,
-  payload jsonb,
-  created_at timestamptz default now()
+  week_date text not null,
+  collaborateur text not null,
+  pin text,
+  magasin text,
+  poste text,
+  present boolean default false,
+  contrat boolean default false,
+  created_at timestamptz default now(),
+  unique (collaborateur, week_date)
 );
 
 -- -----------------------------------------------------------------------------

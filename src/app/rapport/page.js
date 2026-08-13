@@ -47,7 +47,7 @@ function RapportContent() {
   const [error, setError]     = useState(null)
 
   useEffect(() => {
-    if (!collaborateur || !weekDate || !trainerName) {
+    if (!collaborateur || !weekDate) {
       setError('Lien invalide — paramètres manquants.')
       setLoading(false)
       return
@@ -55,15 +55,19 @@ function RapportContent() {
 
     const load = async () => {
       try {
-        // Cherche d'abord l'enregistrement exact (semaine du lien), sinon prend le plus récent
+        // Fiche partagée entre formateurs : on ne filtre plus par trainer_name
+        // (le paramètre `t` de l'URL reflète qui a généré CE lien, pas forcément
+        // qui a rempli la fiche en base — un lien envoyé par un autre formateur
+        // que celui qui a rempli la fiche affichait un compte rendu vide sinon).
+        // Cherche d'abord l'enregistrement exact (semaine du lien), sinon le plus récent.
         let rows = await sbSelect(
           'formation_reports',
-          `collaborateur=eq.${encodeURIComponent(collaborateur)}&week_date=eq.${weekDate}&trainer_name=eq.${encodeURIComponent(trainerName)}&limit=1`
+          `collaborateur=eq.${encodeURIComponent(collaborateur)}&week_date=eq.${weekDate}&trainer_name=neq.__auto_eval__&order=updated_at.desc&limit=1`
         )
         if (!rows?.length) {
           rows = await sbSelect(
             'formation_reports',
-            `collaborateur=eq.${encodeURIComponent(collaborateur)}&trainer_name=eq.${encodeURIComponent(trainerName)}&order=updated_at.desc&limit=1`
+            `collaborateur=eq.${encodeURIComponent(collaborateur)}&trainer_name=neq.__auto_eval__&order=updated_at.desc&limit=1`
           )
         }
         const autoEvalRows = await sbSelect(
@@ -73,7 +77,7 @@ function RapportContent() {
         const snap = rows?.[0]?.stats_snapshot || {}
         setData({
           collaborateur,
-          trainerName,
+          trainerName: rows?.[0]?.trainer_name || trainerName,
           weekDate,
           categoryKey,
           assessments:         snap.theme_assessments     || {},

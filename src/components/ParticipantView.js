@@ -1,13 +1,13 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { sbSelect, sbUpsert, sbUpdate, getParticipantSessionCode, ensureSession, getSharedState, setSharedState } from '@/lib/supabase'
+import { sbSelect, sbUpsert, sbUpdate, getParticipantSessionCode, ensureSession, getSharedState } from '@/lib/supabase'
 import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveScenarioResponse } from '@/lib/formationSave'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import Image from 'next/image'
-import ParticipantModuleView, { FAQInputMobile } from '@/components/ParticipantModuleView'
+import ParticipantModuleView, { FAQInputMobile, MiniJeuObserverView } from '@/components/ParticipantModuleView'
 import { PeerQuizParticipant } from '@/components/PeerQuizGame'
 import { FreeQuizParticipant } from '@/components/FreeQuizGame'
 import AutoEvalParticipant from '@/components/AutoEvalParticipant'
@@ -384,148 +384,6 @@ function DisconnectButton({ prenom, onDisconnect }) {
           Se déconnecter
         </button>
       )}
-    </div>
-  )
-}
-
-function MiniJeuObserverView({ sharedState }) {
-  const [text, setText] = useState('')
-  const [sent, setSent] = useState([])
-  const [sending, setSending] = useState(false)
-  const phase   = sharedState?.minijeu_phase
-  const vendeur = sharedState?.minijeu_vendeur
-  const client  = sharedState?.minijeu_client
-  const theme   = sharedState?.minijeu_theme
-
-  const handleSend = async () => {
-    const t = text.trim()
-    if (!t || sending) return
-    setSending(true)
-    try {
-      await setSharedState({ [`mj_obs__${Date.now()}`]: t })
-      setSent(prev => [...prev, t])
-      setText('')
-    } catch {}
-    setSending(false)
-  }
-
-  const handleKey = (e) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSend()
-  }
-
-  if (phase === 'debrief') {
-    return (
-      <div style={{
-        minHeight: '100dvh',
-        background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: '40px 24px', textAlign: 'center', gap: 20,
-      }}>
-        <div style={{ fontSize: 44, marginBottom: 8 }}>🎭</div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Débrief en cours</div>
-        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>
-          Vos remarques s'affichent sur le grand écran
-        </div>
-        {sent.length > 0 && (
-          <div style={{ marginTop: 8, padding: '10px 18px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 12, fontSize: 13, color: '#22c55e', fontWeight: 600 }}>
-            ✓ Vous avez envoyé {sent.length} remarque{sent.length > 1 ? 's' : ''}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  return (
-    <div style={{
-      minHeight: '100dvh',
-      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      padding: '28px 20px 100px', overflowY: 'auto',
-    }}>
-      <div style={{ maxWidth: 560, margin: '0 auto' }}>
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
-            🎰 Jeu de rôle en cours
-          </div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', marginBottom: 4 }}>Observez &amp; notez</div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
-            Notez vos remarques, suggestions, ce que vous auriez fait différemment…
-          </div>
-        </div>
-
-        {vendeur && client && (
-          <div style={{
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
-            borderRadius: 14, padding: '14px 16px', marginBottom: 24,
-            display: 'flex', flexDirection: 'column', gap: 8,
-          }}>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>Vendeur</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{vendeur}</div>
-              </div>
-              <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.2)' }}>↔</div>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>Client</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{client}</div>
-              </div>
-            </div>
-            {theme && (
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 8 }}>
-                « {theme} »
-              </div>
-            )}
-          </div>
-        )}
-
-        {sent.length > 0 && (
-          <div style={{ marginBottom: 20 }}>
-            {sent.map((t, i) => (
-              <div key={i} style={{
-                background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
-                borderRadius: 10, padding: '10px 14px', marginBottom: 8,
-                fontSize: 13, color: '#86efac', lineHeight: 1.5,
-                display: 'flex', alignItems: 'flex-start', gap: 8,
-              }}>
-                <span style={{ color: '#22c55e', fontWeight: 700, flexShrink: 0 }}>✓</span>
-                {t}
-              </div>
-            ))}
-          </div>
-        )}
-
-        <textarea
-          value={text}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={handleKey}
-          placeholder="Écrivez une remarque ou suggestion…"
-          rows={3}
-          style={{
-            width: '100%', padding: '12px 14px', borderRadius: 12,
-            border: '1.5px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)',
-            fontSize: 14, color: '#fff', resize: 'vertical',
-            fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
-            lineHeight: 1.5, marginBottom: 10,
-          }}
-          onFocus={e => { e.target.style.borderColor = 'rgba(139,92,246,0.6)' }}
-          onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.15)' }}
-        />
-        <button
-          onClick={handleSend}
-          disabled={!text.trim() || sending}
-          style={{
-            width: '100%', padding: '14px 24px', borderRadius: 14,
-            background: (!text.trim() || sending) ? 'rgba(139,92,246,0.25)' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-            color: (!text.trim() || sending) ? 'rgba(255,255,255,0.3)' : '#fff',
-            fontWeight: 800, fontSize: 15, border: 'none',
-            cursor: (!text.trim() || sending) ? 'not-allowed' : 'pointer',
-            fontFamily: 'inherit',
-            boxShadow: (!text.trim() || sending) ? 'none' : '0 4px 18px rgba(139,92,246,0.4)',
-            transition: 'all .2s',
-          }}
-        >
-          {sending ? 'Envoi…' : '+ Envoyer cette remarque'}
-        </button>
-      </div>
     </div>
   )
 }

@@ -586,13 +586,16 @@ export default function EntreesView({ onBack, onToast, pName }) {
       const obData = sharedState.ob_data || JSON.parse(localStorage.getItem('ob_data') || '{}')
       const weekDate = new Date().toISOString().slice(0, 10)
 
-      // Archiver chaque collaborateur
+      // Archiver chaque collaborateur — on compte les échecs individuels : un
+      // sbInsert qui échoue silencieusement (colonne manquante, réseau...) ne
+      // doit jamais se traduire par un message de succès + liste vidée.
+      let failCount = 0
       for (const c of entrees) {
         const fullName = ((c.nom || '') + ' ' + (c.prenom || '')).trim()
         const key = fullName.replace(/"/g, '')
         const pin = generatePin(fullName)
         const d = obData[key] || {}
-        await sbInsert('onboarding_sessions', {
+        const ok = await sbInsert('onboarding_sessions', {
           week_date: weekDate,
           collaborateur: fullName,
           pin,
@@ -601,6 +604,11 @@ export default function EntreesView({ onBack, onToast, pName }) {
           present: !!d.present,
           contrat: !!d.contrat,
         })
+        if (!ok) failCount++
+      }
+      if (failCount > 0) {
+        onToast(`Erreur : ${failCount}/${entrees.length} collaborateur(s) non archivé(s). La liste n'a PAS été vidée — réessayez.`)
+        return
       }
 
       // Ajouter une ligne dans session_history

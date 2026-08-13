@@ -162,6 +162,25 @@ export default function TrainerView({ pName, onBack, onToast, onOnlineCount }) {
   const [lobbyActive, setLobbyActive] = useState(true)
   const [participantCount, setParticipantCount] = useState(0)
 
+  // Resynchronise depuis la base au montage : sans ça, un formateur qui revient
+  // sur cet écran (retour arrière, rafraîchissement) après avoir déjà lancé la
+  // formation retombait sur "Prêt à lancer ?" et un re-clic remettait
+  // current_step à 0, réinitialisant la progression des formés en cours.
+  useEffect(() => {
+    let cancelled = false
+    sbSelect('sessions', `code=eq.${encodeURIComponent(getActiveSessionCode())}&limit=1`)
+      .then(rows => {
+        if (cancelled) return
+        const step = rows?.[0]?.current_step
+        if (typeof step === 'number' && step >= 0) {
+          setCurStep(step)
+          setLobbyActive(false)
+        }
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
   useOnlineCount({
     enabled: true,
     onCount: (count) => {

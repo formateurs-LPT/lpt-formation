@@ -367,7 +367,7 @@ function TVQuizTextOpen({ question, qIdx, total, moduleLabel, sessionCode, modul
         {question.question}
       </h1>
       {question.ordonnance && (
-        <TVOrdonnanceDisplay ordonnance={question.ordonnance} hideLabels={question.hideOrdoLabels} cylInParens={question.cylInParens} hideNonAddHeaders={question.hideNonAddHeaders} topLabel={question.ordoLabel} />
+        <TVOrdonnanceDisplay ordonnance={question.ordonnance} hideLabels={question.hideOrdoLabels || question.hideLabels} cylInParens={question.cylInParens} hideNonAddHeaders={question.hideNonAddHeaders} topLabel={question.ordoLabel} />
       )}
       {!allAnswered ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
@@ -471,7 +471,7 @@ function TVQuizOrdonnanceFill({ question, qIdx, total, moduleLabel }) {
       <h1 style={{ fontSize: 46, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 40, maxWidth: 900 }}>
         {question.question}
       </h1>
-      <TVOrdonnanceDisplay ordonnance={question.ordonnance} hideLabels={question.hideOrdoLabels} cylInParens={question.cylInParens} hideNonAddHeaders={question.hideNonAddHeaders} topLabel={question.ordoLabel} />
+      <TVOrdonnanceDisplay ordonnance={question.ordonnance} hideLabels={question.hideOrdoLabels || question.hideLabels} cylInParens={question.cylInParens} hideNonAddHeaders={question.hideNonAddHeaders} topLabel={question.ordoLabel} />
       <div style={{
         background: 'rgba(0,171,233,0.08)', border: '1px solid rgba(0,171,233,0.2)',
         borderRadius: 16, padding: '12px 28px',
@@ -7770,7 +7770,7 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, mod
 
       {/* Ordonnance — ré-affichée si le formateur le demande (ou déjà visible pour une saisie d'ordonnance) */}
       {showOrdonnance && (
-        <TVOrdonnanceDisplay ordonnance={question.ordonnance} hideLabels={question.hideOrdoLabels} cylInParens={question.cylInParens} hideNonAddHeaders={question.hideNonAddHeaders} topLabel={question.ordoLabel} />
+        <TVOrdonnanceDisplay ordonnance={question.ordonnance} hideLabels={question.hideOrdoLabels || question.hideLabels} cylInParens={question.cylInParens} hideNonAddHeaders={question.hideNonAddHeaders} topLabel={question.ordoLabel} />
       )}
 
       {/* Options */}

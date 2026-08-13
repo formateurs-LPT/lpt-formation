@@ -75,6 +75,13 @@ export function useParticipantPresence({
     join()
     const interval = setInterval(ping, PRESENCE_HEARTBEAT_MS)
 
+    // Un tel verrouillé puis rouvert peut rester "hors ligne" côté formateur
+    // jusqu'au prochain tick (jusqu'à PRESENCE_HEARTBEAT_MS, potentiellement
+    // plus si le setInterval a été suspendu par le navigateur en arrière-plan)
+    // sans ce ping immédiat au réveil de l'onglet.
+    const onVisible = () => { if (document.visibilityState === 'visible') ping() }
+    document.addEventListener('visibilitychange', onVisible)
+
     const onLeave = () => {
       if (!endedRef.current) markParticipantLeftBeacon(sessionCode, name)
     }
@@ -84,6 +91,7 @@ export function useParticipantPresence({
     return () => {
       cancelled = true
       clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
       window.removeEventListener('pagehide', onLeave)
       window.removeEventListener('beforeunload', onLeave)
       if (!endedRef.current) markParticipantLeftBeacon(sessionCode, name)

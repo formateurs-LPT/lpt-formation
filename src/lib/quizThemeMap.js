@@ -87,8 +87,33 @@ const QUIZ_FINAL_THEMES = [
   'trame-accueil',         // 33 — trame d'accueil complète
 ]
 
+// Index = question_idx (0-based) dans src/lib/quizJ2Data.js (QUIZ_J2, 20 questions)
+const QUIZ_J2_THEMES = [
+  'trame-accueil',         // 0  — case manquante de la trame d'accueil
+  'offres',                // 1  — matériaux monture offre 1=1
+  'offres',                // 2  — 2nde paire offerte (1=1)
+  'offres',                // 3  — prix moyen équipement progressif (1=1)
+  'offres',                // 4  — avantages 2nde paire (1=1)
+  'verre-progressif',      // 5  — délai fabrication progressifs (1=1)
+  'entreprise',            // 6  — délai fabrication unifocaux (1=1)
+  'types-verres',          // 7  — traitements Digital Protect Pro
+  'verre-progressif',      // 8  — 5 arguments de vente verre progressif
+  'offres',                // 9  — composition paire à 10€
+  'offres',                // 10 — réduction 2nde paire (offre classique)
+  'offres',                // 11 — 2nde paire offerte (pack 95€)
+  'offres',                // 12 — qu'est-ce que le pack plan
+  'montures',              // 13 — matériau montures 5-15€
+  'montures',              // 14 — matériau monture conseillé (qcm-ordonnance)
+  'verre-progressif',      // 15 — 3 zones de vision du progressif
+  'entreprise',            // 16 — âge examen de vue en magasin
+  'entreprise',            // 17 — coût de l'examen de vue
+  'verre-progressif',      // 18 — conseil verre 2nde paire (couture)
+  'optique',               // 19 — calcul vision de près
+]
+
 const TRANSVERSAL_THEME_MAPS = {
   'quiz-j1': QUIZ_J1_THEMES,
+  'quiz-j2': QUIZ_J2_THEMES,
   'quiz-final': QUIZ_FINAL_THEMES,
 }
 

@@ -64,15 +64,20 @@ export async function archiveAndPurgeRoom(roomCode, { trainerName } = {}) {
     })
   }
 
-  await Promise.all([
-    sbDelete('participants', filter),
-    sbDelete('quiz_results', filter),
-    sbDelete('quiz_answers', filter),
-    sbDelete('scenario_responses', filter),
-    sbDelete('module_results', filter),
-    sbDelete('open_answers', filter),
-    deleteTrainerStateByKey(code),
-  ])
+  // Ne purge les tables live QUE si l'archivage a réussi (ou s'il n'y avait rien
+  // à archiver) — sinon un échec d'insertSessionHistory (coupure réseau, panne
+  // Supabase...) effaçait quand même les résultats live, perte définitive.
+  if (!hadData || archived) {
+    await Promise.all([
+      sbDelete('participants', filter),
+      sbDelete('quiz_results', filter),
+      sbDelete('quiz_answers', filter),
+      sbDelete('scenario_responses', filter),
+      sbDelete('module_results', filter),
+      sbDelete('open_answers', filter),
+      deleteTrainerStateByKey(code),
+    ])
+  }
 
   return { archived: !!archived, hadData }
 }
