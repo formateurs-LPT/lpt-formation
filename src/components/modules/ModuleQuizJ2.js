@@ -6,7 +6,6 @@ import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOpenAnswers } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { QUIZ_J2 } from '@/lib/quizJ2Data'
-import { TrainerQuizRankingList } from '@/components/TrainerQuizRanking'
 
 const MODULE_ID = 'quiz-j2'
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
@@ -512,7 +511,6 @@ function GroupResultsView({ onTerminate }) {
 export default function ModuleQuizJ2({ pName, onBack }) {
   const [started, setStarted] = useState(false)
   const [quizQ, setQuizQ] = useState(0)
-  const [quizInterstitial, setQuizInterstitial] = useState(false)
   const [showGroupResults, setShowGroupResults] = useState(false)
 
   useEffect(() => {
@@ -538,21 +536,14 @@ export default function ModuleQuizJ2({ pName, onBack }) {
     setStarted(true)
   }
 
+  // Podium interstitiel toutes les 5 questions supprimé (faisait planter
+  // l'appli, cf. Quiz Jour 1) — on enchaîne directement, seul le podium
+  // final reste (cf. handleEndQuiz).
   const handleNextQuestion = async () => {
     const next = quizQ + 1
-    if (next % 5 === 0 && next < QUIZ_J2.length) {
-      await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false, quiz_interstitial_q: next }).catch(() => {})
-      setQuizInterstitial(true)
-    } else {
-      await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false, quiz_interstitial_q: null }).catch(() => {})
-    }
+    await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false, quiz_interstitial_q: null }).catch(() => {})
     await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 100 + next }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(next)
-  }
-
-  const handleContinueInterstitial = async () => {
-    setQuizInterstitial(false)
-    await setSharedState({ quiz_interstitial_q: null, quiz_show_correction: false })
   }
 
   const handleEndQuiz = async () => {
@@ -582,35 +573,6 @@ export default function ModuleQuizJ2({ pName, onBack }) {
     <>
       <style>{STYLES}</style>
       <GroupResultsView onTerminate={handleTerminate} />
-    </>
-  )
-
-  if (quizInterstitial) return (
-    <>
-      <style>{STYLES}</style>
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28,
-      }}>
-        <div style={{ fontSize: 44 }}>🏆</div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 6 }}>
-            Classement après {quizQ} questions
-          </div>
-          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
-            Le podium (top 3) s&apos;affiche sur le grand écran
-          </div>
-        </div>
-        <TrainerQuizRankingList moduleId={MODULE_ID} qIdx={quizQ - 1} accent="#00abe9" />
-        <button onClick={handleContinueInterstitial} style={{
-          background: 'linear-gradient(135deg, #0070a8, #00abe9)',
-          border: 'none', color: '#fff', padding: '16px 36px', borderRadius: 14,
-          fontSize: 17, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-        }}>
-          Continuer → Q{quizQ + 1}
-        </button>
-      </div>
     </>
   )
 

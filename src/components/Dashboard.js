@@ -1569,8 +1569,20 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   const [sonnettePending, setSonnettePending] = useState(0)
   const [trainerMode, setTrainerModeState] = useState(null)
   useEffect(() => {
-    setTrainerModeState(readTrainerMode())
-  }, [])
+    const saved = readTrainerMode()
+    if (saved) {
+      setTrainerModeState(saved)
+      return
+    }
+    // Thomas anime exclusivement en Belgique — pré-sélectionné par défaut
+    // tant qu'il n'a jamais choisi de mode lui-même.
+    const rawKey = (pName || '').toLowerCase().split(' ')[0]
+    const key = TRAINER_CANONICAL[rawKey] || rawKey
+    if (key === 'thomas') {
+      setTrainerMode('belgique')
+      setTrainerModeState('belgique')
+    }
+  }, [pName])
   const handleTrainerModeChange = (slug) => {
     setTrainerMode(slug)
     setTrainerModeState(slug)
@@ -1660,6 +1672,12 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     const existing = await findActiveRoomForTrainer(login, pName)
     if (existing?.code) {
       onOpenRoom?.({ code: existing.code, resumed: true })
+      return
+    }
+    // Mode formateur déjà choisi (présentiel/visio/Belgique, persistant) :
+    // on ouvre direct la salle sans redemander la catégorie.
+    if (trainerMode) {
+      handleConfirmRoom(trainerMode)
       return
     }
     setRoomModalOpen(true)
