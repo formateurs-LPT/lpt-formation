@@ -155,7 +155,8 @@ export async function fetchArchiveIndex() {
 /**
  * Temps d'activité écran (onglet au premier plan) d'un formé, cette semaine —
  * signal RELATIF à comparer à la moyenne du groupe (voir addActiveSeconds).
- * Même repli salle live → archive que fetchModuleAndQuizRows.
+ * Plus aucun filtre par salle : somme le temps de TOUTES ses salles (live +
+ * archive, toujours fusionnées) — même principe que fetchModuleAndQuizRows.
  */
 export async function fetchActiveSeconds(name, archiveIndexPromise) {
   const participantRows = await sbSelect(
@@ -163,24 +164,20 @@ export async function fetchActiveSeconds(name, archiveIndexPromise) {
     `name=eq.${encodeURIComponent(name)}`
   ).catch(() => [])
   const codes = [...new Set((participantRows || []).map(p => p.session_code).filter(Boolean))]
-  if (!codes.length) {
-    const archiveIndex = await archiveIndexPromise
-    return archiveIndex?.activeSecondsByName?.[name] || 0
-  }
 
-  const stateRows = await sbSelect(
-    'trainer_state',
-    `trainer=in.(${codes.map(c => encodeURIComponent(c)).join(',')})`
-  ).catch(() => [])
+  const [stateRows, archiveIndex] = await Promise.all([
+    codes.length
+      ? sbSelect('trainer_state', `trainer=in.(${codes.map(c => encodeURIComponent(c)).join(',')})`).catch(() => [])
+      : Promise.resolve([]),
+    archiveIndexPromise,
+  ])
   const liveSeconds = (stateRows || []).reduce((sum, row) => {
     let state = row.state
     if (typeof state === 'string') { try { state = JSON.parse(state) } catch { state = {} } }
     return sum + (state?.active_time?.[name] || 0)
   }, 0)
-  if (liveSeconds > 0) return liveSeconds
 
-  const archiveIndex = await archiveIndexPromise
-  return archiveIndex?.activeSecondsByName?.[name] || 0
+  return liveSeconds + (archiveIndex?.activeSecondsByName?.[name] || 0)
 }
 
 /**
