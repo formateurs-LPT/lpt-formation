@@ -1600,6 +1600,23 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     return monday
   }
 
+  // Dernière activité RÉELLE d'une salle (dernier passage formé, dernière
+  // réponse quiz) — jamais started_at seul : une salle peut être créée il y a
+  // plusieurs semaines et rester activement utilisée en continu (le
+  // formateur ne la clôture pas systématiquement chaque vendredi). Se fier à
+  // started_at a fait fermer une salle IDF en pleine utilisation (incident du
+  // 13/08) — plus jamais sans preuve positive d'inactivité.
+  const lastRoomActivity = async (code) => {
+    const [participants, answers] = await Promise.all([
+      sbSelect('participants', `session_code=eq.${encodeURIComponent(code)}&order=last_seen_at.desc&limit=1`),
+      sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&order=created_at.desc&limit=1`),
+    ])
+    const dates = [participants?.[0]?.last_seen_at, answers?.[0]?.created_at]
+      .filter(Boolean)
+      .map(d => new Date(d))
+    return dates.length ? new Date(Math.max(...dates)) : null
+  }
+
   const refreshActiveRoom = async () => {
     const login = trainerLoginFromDisplayName(pName)
     const room = await findActiveRoomForTrainer(login, pName)
@@ -1610,13 +1627,17 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     // clôturée le vendredi) — les retours de formation restent accessibles quoi
     // qu'il arrive (indépendants du statut de la salle, cf. formation_reports +
     // repli archive), donc rien n'est perdu à la clôturer sans repasser par le
-    // formateur.
-    if (code && room?.started_at && new Date(room.started_at) < startOfWeek(new Date())) {
-      await endActiveRoom(code, { trainerName: pName })
-      setTrainerActiveRoomCode('')
-      setActiveRoomCode('')
-      onToast?.('Salle de la semaine dernière clôturée automatiquement')
-      return
+    // formateur. Ne se déclenche QUE si on a une preuve positive de dernière
+    // activité antérieure à cette semaine — sans preuve, on ne touche à rien.
+    if (code) {
+      const lastActivity = await lastRoomActivity(code)
+      if (lastActivity && lastActivity < startOfWeek(new Date())) {
+        await endActiveRoom(code, { trainerName: pName })
+        setTrainerActiveRoomCode('')
+        setActiveRoomCode('')
+        onToast?.('Salle de la semaine dernière clôturée automatiquement')
+        return
+      }
     }
     setActiveRoomCode(code)
   }
