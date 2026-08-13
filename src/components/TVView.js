@@ -5751,7 +5751,7 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/assets/logo-amelipro.svg" alt="AMELIPRO" width={52} height={52} style={{ objectFit: 'contain' }} />
-      <span style={{ fontSize: 13, fontWeight: 700, color: '#00abe9' }}>
+      <span style={{ fontSize: 16, fontWeight: 700, color: '#00abe9' }}>
         Cliquer pour ouvrir →
       </span>
     </a>
@@ -5760,7 +5760,7 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, verticalAlign: 'middle' }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={28} height={28} style={{ objectFit: 'contain' }} />
-      <span style={{ fontSize: 13, fontWeight: 800, color: '#4ade80' }}>Test Suprême</span>
+      <span style={{ fontSize: 16, fontWeight: 800, color: '#4ade80' }}>Test Suprême</span>
     </span>
   )
 
@@ -5782,12 +5782,12 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
         borderRadius: 12, padding: '12px 16px',
       }}>
         <div style={{
-          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+          width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: vis ? 'rgba(0,171,233,0.2)' : 'rgba(255,255,255,0.06)',
-          fontSize: 13, fontWeight: 900, color: vis ? '#00abe9' : 'rgba(255,255,255,0.2)',
+          fontSize: 16, fontWeight: 900, color: vis ? '#00abe9' : 'rgba(255,255,255,0.2)',
         }}>{label}</div>
-        <div style={{ fontSize: 14, color: vis ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)', lineHeight: 1.5, transition: 'all .3s' }}>
+        <div style={{ fontSize: 18, color: vis ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)', lineHeight: 1.5, transition: 'all .3s' }}>
           {isAmeliPro ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <span>Aller a l&apos;ordinateur sur <strong>AMELIPRO</strong> pour vérifier la date du dernier remboursement.</span>
@@ -5807,10 +5807,10 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
       display: 'flex', flexDirection: 'column', padding: '40px 56px', fontFamily: 'inherit',
     }}>
       <div style={{ textAlign: 'center', marginBottom: 36 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
           Remboursement optique · France
         </div>
-        <h1 style={{ fontSize: 30, fontWeight: 900, color: '#fff', margin: 0 }}>
+        <h1 style={{ fontSize: 36, fontWeight: 900, color: '#fff', margin: 0 }}>
           Quand un client souhaite se faire rembourser je dois donc :
         </h1>
       </div>
@@ -5822,10 +5822,10 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
             display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
             padding: '10px 16px', background: 'rgba(0,137,186,0.1)', border: '1px solid rgba(0,137,186,0.25)', borderRadius: 10,
           }}>
-            <span style={{ fontSize: 18 }}>📋</span>
+            <span style={{ fontSize: 22 }}>📋</span>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1 }}>Scénario A</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>Avec ordonnance valide</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1 }}>Scénario A</div>
+              <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.55)' }}>Avec ordonnance valide</div>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -5839,10 +5839,10 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
             display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
             padding: '10px 16px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 10,
           }}>
-            <span style={{ fontSize: 18 }}>🚫</span>
+            <span style={{ fontSize: 22 }}>🚫</span>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1 }}>Scénario B</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>Sans ordonnance valide</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 1 }}>Scénario B</div>
+              <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.55)' }}>Sans ordonnance valide</div>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -5855,7 +5855,7 @@ function TVRembFrDemarche({ stepA, stepB, onAmeliProClick }) {
       <div style={{
         marginTop: 28, padding: '14px 20px',
         background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 12, fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, textAlign: 'center',
+        borderRadius: 12, fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, textAlign: 'center',
       }}>
         <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Si après vérification le client n&apos;a pas droit au remboursement :</strong>
         {' '}proposer l&apos;offre <strong style={{ color: '#fff' }}>1=1</strong> ou <strong style={{ color: '#fff' }}>Classique</strong> sans remboursement, à ses frais.
@@ -5876,10 +5876,10 @@ function TVRembFrSupreme({ supremeStep }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 36 }}>
         <img src="/assets/logo-lpt-sante.png" alt="LPT Santé" width={64} height={64} style={{ objectFit: 'contain', flexShrink: 0 }} />
         <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#4db85c', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
             LPT Santé
           </div>
-          <h1 style={{ fontSize: 36, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: -0.5 }}>Test Suprême</h1>
+          <h1 style={{ fontSize: 40, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: -0.5 }}>Test Suprême</h1>
         </div>
       </div>
 
@@ -5897,7 +5897,7 @@ function TVRembFrSupreme({ supremeStep }) {
           <div style={{
             alignSelf: 'flex-start', padding: '5px 18px', borderRadius: 20,
             background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)',
-            fontSize: 14, fontWeight: 900, color: '#4ade80', letterSpacing: 1,
+            fontSize: 16, fontWeight: 900, color: '#4ade80', letterSpacing: 1,
           }}>ACCEPTE ✓</div>
           {/* Popup mockup */}
           <div style={{
@@ -5925,10 +5925,10 @@ function TVRembFrSupreme({ supremeStep }) {
             display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
             background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 12, width: '100%',
           }}>
-            <span style={{ fontSize: 22 }}>🎉</span>
+            <span style={{ fontSize: 26 }}>🎉</span>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: '#4ade80' }}>Parcours Supreme</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>Client repart avec 2 paires pour 0 €</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#4ade80' }}>Parcours Supreme</div>
+              <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.55)' }}>Client repart avec 2 paires pour 0 €</div>
             </div>
           </div>
         </div>
@@ -5946,7 +5946,7 @@ function TVRembFrSupreme({ supremeStep }) {
           <div style={{
             alignSelf: 'flex-start', padding: '5px 18px', borderRadius: 20,
             background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)',
-            fontSize: 14, fontWeight: 900, color: '#f87171', letterSpacing: 1,
+            fontSize: 16, fontWeight: 900, color: '#f87171', letterSpacing: 1,
           }}>REFUSE ✗</div>
           {/* Popup mockup */}
           <div style={{
@@ -5985,10 +5985,10 @@ function TVRembFrSupreme({ supremeStep }) {
             display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
             background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, width: '100%',
           }}>
-            <span style={{ fontSize: 22 }}>🎉</span>
+            <span style={{ fontSize: 26 }}>🎉</span>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: '#f87171' }}>Parcours 1=1</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>Client repart avec 2 paires pour 0 €</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#f87171' }}>Parcours 1=1</div>
+              <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.55)' }}>Client repart avec 2 paires pour 0 €</div>
             </div>
           </div>
         </div>
@@ -5998,7 +5998,7 @@ function TVRembFrSupreme({ supremeStep }) {
       <div style={{
         marginTop: 28, padding: '14px 22px',
         background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 14, fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7,
+        borderRadius: 14, fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7,
         maxWidth: 820, textAlign: 'center',
       }}>
         <strong style={{ color: 'rgba(255,255,255,0.7)' }}>Message d&apos;erreur incompréhensible ?</strong>
@@ -6039,17 +6039,17 @@ function TVRembFrConditions({ rembfrRevealed }) {
       content: (
         <div style={{ marginTop: 16, display: 'flex', gap: 10, flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(0,137,186,0.1)', borderRadius: 10, border: '1px solid rgba(0,137,186,0.2)' }}>
-            <span style={{ fontSize: 18 }}>🏥</span>
+            <span style={{ fontSize: 20 }}>🏥</span>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Sécurité Sociale</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Remboursement de base</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Sécurité Sociale</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>Remboursement de base</div>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(0,137,186,0.1)', borderRadius: 10, border: '1px solid rgba(0,137,186,0.2)' }}>
-            <span style={{ fontSize: 18 }}>🤝</span>
+            <span style={{ fontSize: 20 }}>🤝</span>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Mutuelle / CSS</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Complète le remboursement SS</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Mutuelle / CSS</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>Complète le remboursement SS</div>
             </div>
           </div>
         </div>
@@ -6073,8 +6073,8 @@ function TVRembFrConditions({ rembfrRevealed }) {
               padding: '10px 14px', borderRadius: 10,
               background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
             }}>
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>{row.label}</span>
-              <span style={{ fontSize: 16, fontWeight: 900, color: row.color }}>{row.duree}</span>
+              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>{row.label}</span>
+              <span style={{ fontSize: 19, fontWeight: 900, color: row.color }}>{row.duree}</span>
             </div>
           ))}
           {/* LYLEOO */}
@@ -6083,12 +6083,12 @@ function TVRembFrConditions({ rembfrRevealed }) {
             background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.25)',
             borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: 10,
           }}>
-            <span style={{ fontSize: 16, flexShrink: 0 }}>💡</span>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>💡</span>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: '#c9a227', marginBottom: 3 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#c9a227', marginBottom: 3 }}>
                 Pas d'ordonnance valable ? → LYLEOO
               </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
                 Pour les +18 ans uniquement · Uniquement pour débloquer un remboursement ·
                 Après vérification de tous les autres critères
               </div>
@@ -6107,24 +6107,24 @@ function TVRembFrConditions({ rembfrRevealed }) {
         <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {/* Moins de 16 ans */}
           <div style={{ padding: '12px 14px', background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>Moins de 16 ans</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>Moins de 16 ans</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
               Renouvellement <strong style={{ color: '#fff' }}>tous les ans</strong> sans condition<br />
               Renouvellement <strong style={{ color: '#fff' }}>sans délai</strong> si changement de correction ≥ 0,50
             </div>
           </div>
           {/* Plus de 16 ans */}
           <div style={{ padding: '12px 14px', background: `rgba(0,171,233,0.07)`, border: `1px solid rgba(0,171,233,0.2)`, borderRadius: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: BLUE_L, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>16 ans et plus</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: BLUE_L, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>16 ans et plus</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
               Renouvellement <strong style={{ color: '#fff' }}>tous les 2 ans</strong><br />
               Anticipé après <strong style={{ color: '#fff' }}>1 an et 1 jour</strong> si changement ≥ 0,50
             </div>
           </div>
           {/* AMELIPRO */}
           <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <span style={{ fontSize: 16, flexShrink: 0 }}>💻</span>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>💻</span>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
               Date du dernier remboursement vérifiable sur <strong style={{ color: BLUE_L }}>AMELIPRO</strong> via le numéro de sécurité sociale du patient
             </div>
           </div>
@@ -6143,32 +6143,32 @@ function TVRembFrConditions({ rembfrRevealed }) {
     }}>
       {/* Header */}
       <div style={{ marginBottom: 32, textAlign: 'center' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: BLUE, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: BLUE, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
           Remboursement optique · France
         </div>
-        <h1 style={{ fontSize: 32, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: -0.5 }}>
+        <h1 style={{ fontSize: 40, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: -0.5 }}>
           Les conditions de remboursement
         </h1>
       </div>
 
       {/* 3 cartes */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, flex: 1 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18, flex: 1 }}>
         {conditions.map(c => (
           <div key={c.id} style={{
             background: CARD, border: `1px solid rgba(255,255,255,0.08)`,
-            borderRadius: 18, padding: '24px 22px',
+            borderRadius: 18, padding: '22px 18px',
             display: 'flex', flexDirection: 'column',
           }}>
             {/* Numéro */}
             <div style={{
-              fontSize: 11, fontWeight: 900, color: BLUE, letterSpacing: 2,
+              fontSize: 13, fontWeight: 900, color: BLUE, letterSpacing: 2,
               marginBottom: 12,
             }}>{c.num}</div>
             {/* Titre */}
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.35, marginBottom: 6 }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', lineHeight: 1.3, marginBottom: 6 }}>
               {c.titre}
             </div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, marginBottom: 4 }}>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', lineHeight: 1.45, marginBottom: 4 }}>
               {c.detail}
             </div>
             {/* Contenu */}
