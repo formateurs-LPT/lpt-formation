@@ -7,7 +7,7 @@ import { saveScenarioResponse } from '@/lib/formationSave'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import Image from 'next/image'
-import ParticipantModuleView, { FAQInputMobile, MiniJeuObserverView } from '@/components/ParticipantModuleView'
+import ParticipantModuleView, { FAQInputMobile, MiniJeuObserverView, ParticipantDashboard } from '@/components/ParticipantModuleView'
 import { PeerQuizParticipant } from '@/components/PeerQuizGame'
 import { FreeQuizParticipant } from '@/components/FreeQuizGame'
 import AutoEvalParticipant from '@/components/AutoEvalParticipant'
@@ -518,46 +518,6 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
     )
   }
 
-  const prenom = pPrenom || (typeof window !== 'undefined' && localStorage.getItem('participant_prenom')) || pName?.split(' ')[0] || ''
-  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''
-
-  const WaitScreen = () => (
-    <>
-      <style>{`@keyframes waitDotP { 0%,100%{opacity:.2} 50%{opacity:1} }`}</style>
-      <div style={{
-        minHeight: '100dvh',
-        background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', padding: '40px 24px',
-        textAlign: 'center',
-      }}>
-        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={160} height={60}
-          style={{ objectFit: 'contain', marginBottom: 48 }} />
-
-        {prenom ? (
-          <>
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
-              Bonjour {cap(prenom)} 👋
-            </div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#00abe9', marginBottom: 32 }}>
-              Bienvenue chez Lunettes Pour Tous
-            </div>
-          </>
-        ) : null}
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.4)',
-            animation: 'waitDotP 1.4s ease-in-out infinite',
-          }} />
-          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>
-            En attente du formateur…
-          </span>
-        </div>
-      </div>
-    </>
-  )
-
   // Planning prioritaire : affiché dès que le formateur diffuse, peu importe l'état
   if (tvScreen === 'planning' && planningDay) {
     const jour = PLANNING_JOURS.find(j => j.id === planningDay)
@@ -684,7 +644,7 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
     <div id="pv">
       {disconnectChip}
       <div className="pshell">
-        <WaitScreen />
+        <ParticipantDashboard pName={pName} sessionCode={sessionCode} />
       </div>
     </div>
   )

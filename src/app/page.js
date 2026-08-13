@@ -93,28 +93,19 @@ export default function Page() {
           setIsTrainer(true)
           setView('dashboard')
         } else if (sessionStorage.getItem('participant_tab_alive') && localStorage.getItem('participant_name')) {
-          // Reconnexion silencieuse sur rafraîchissement : on revalide la salle
-          // exactement comme un vrai join (même appels que handleParticipantJoin)
-          // pour ne jamais restaurer un formé sur une salle périmée/terminée —
-          // sinon un onglet resté ouvert reste bloqué sur "Bonjour" pour de bon.
-          const savedName = localStorage.getItem('participant_name')
-          const resolved = await resolveParticipantName(savedName)
-          const roomResolved = resolved.ok ? await resolveParticipantSessionCode(resolved.entry) : null
-          const stillValid = resolved.ok && roomResolved?.ok
-            && roomResolved.session?.status !== 'ended'
-            && canParticipantJoinSession(roomResolved.session, resolved.entry)
-          if (stillValid) {
-            setPName(resolved.canonicalName)
-            setPPrenom(localStorage.getItem('participant_prenom') || '')
-            setIsTrainer(false)
-            setView('participant')
-          } else {
-            // Salle périmée/terminée : on efface pour retomber sur l'écran de
-            // connexion, où la ressaisie du nom relance la même auto-réparation
-            sessionStorage.removeItem('participant_tab_alive')
-            localStorage.removeItem('participant_name')
-            localStorage.removeItem('participant_prenom')
-          }
+          // Reconnexion silencieuse sur rafraîchissement : on fait confiance au
+          // localStorage (comme un "rester connecté" classique) plutôt que de
+          // revalider la salle en réseau avant d'afficher quoi que ce soit — un
+          // simple aléa réseau pendant cette revalidation forçait sinon une
+          // reconnexion manuelle, un problème pire que celui qu'on voulait
+          // corriger (incident du 13/08). Si la salle est réellement terminée,
+          // useParticipantPresence le détecte une fois monté (isSessionEnded)
+          // et affiche l'écran "Session terminée" — pas besoin de le vérifier
+          // avant coup.
+          setPName(localStorage.getItem('participant_name'))
+          setPPrenom(localStorage.getItem('participant_prenom') || '')
+          setIsTrainer(false)
+          setView('participant')
         }
       }
 

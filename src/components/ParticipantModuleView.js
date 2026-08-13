@@ -13,10 +13,11 @@ import AutoEvalParticipant from '@/components/AutoEvalParticipant'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
-import { resolveParticipantName, normalizeNameKey } from '@/lib/participantNames'
+import { resolveParticipantName, normalizeNameKey, loadEntreesList, entreeDisplayName } from '@/lib/participantNames'
 import { mergeRoomSharedField } from '@/lib/roomSharedState'
 import { getLevelInfo, getRankMessage, fetchParticipantRanking } from '@/lib/scoring'
-import { canParticipantJoinSession, getCategoryJoinDeniedMessage } from '@/lib/formationCategories'
+import { canParticipantJoinSession, getCategoryJoinDeniedMessage, mapPosteLabel } from '@/lib/formationCategories'
+import { themeForAnswer, DIRECT_THEME_MODULES } from '@/lib/quizThemeMap'
 import { resolveParticipantSessionCode, participantJoinBlockedMessage } from '@/lib/participantSession'
 import { QuestionsGameParticipantView } from '@/components/QuestionsGamePanel'
 
@@ -125,7 +126,89 @@ function WelcomeScreenFirst({ pName }) {
   )
 }
 
-function DashboardScreen({ pName, myEntry, ranking }) {
+// Badges calculés à partir des réponses de la semaine — purement informatif,
+// aucune persistance nécessaire (recalculé à chaque affichage).
+function computeBadges({ quizRows, quizHistory }) {
+  const badges = []
+  const rows = [...(quizRows || [])]
+    .filter(r => (r.question_idx ?? 0) < 100 && r.created_at)
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+
+  let streak = 0, bestStreak = 0
+  for (const r of rows) {
+    streak = r.is_correct ? streak + 1 : 0
+    bestStreak = Math.max(bestStreak, streak)
+  }
+  if (bestStreak >= 10) badges.push({ icon: '🔥', label: '10 bonnes réponses d\'affilée' })
+
+  const totalCorrect = rows.filter(r => r.is_correct).length
+  if (totalCorrect >= 30) badges.push({ icon: '💪', label: 'Increvable — 30 bonnes réponses' })
+
+  const themeStats = {}
+  for (const r of rows) {
+    const theme = DIRECT_THEME_MODULES.has(r.module_id) ? r.module_id : themeForAnswer(r.module_id, r.question_idx)
+    if (!theme) continue
+    if (!themeStats[theme]) themeStats[theme] = { correct: 0, total: 0 }
+    themeStats[theme].total++
+    if (r.is_correct) themeStats[theme].correct++
+  }
+  for (const [theme, s] of Object.entries(themeStats)) {
+    if (s.total >= 5 && s.correct === s.total) {
+      badges.push({ icon: '🎯', label: `Expert ${MODULE_DATA[theme]?.label || theme}` })
+    }
+  }
+
+  for (const h of (quizHistory || [])) {
+    if (h.total >= 5 && h.pct === 100) {
+      badges.push({ icon: '🏆', label: `Sans-faute — ${h.label}` })
+    }
+  }
+
+  return badges
+}
+
+function ParticipantBadges({ badges }) {
+  if (!badges?.length) return null
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
+        Badges débloqués
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {badges.map((b, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)',
+            borderRadius: 20, padding: '6px 12px',
+          }}>
+            <span style={{ fontSize: 15 }}>{b.icon}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#eab308' }}>{b.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ParticipantProfileCard({ pName, myProfile }) {
+  if (!myProfile) return null
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+      borderRadius: 16, padding: '16px 18px', marginBottom: 16,
+      display: 'flex', flexDirection: 'column', gap: 6,
+    }}>
+      <div style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{pName}</div>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+        {myProfile.magasin && <span>🏬 {myProfile.magasin}</span>}
+        {myProfile.poste && <span>💼 {myProfile.poste}</span>}
+      </div>
+    </div>
+  )
+}
+
+function DashboardScreen({ pName, myEntry, ranking, myProfile, quizHistory, badges }) {
+  const [tab, setTab] = useState('profil') // profil | historique
   const firstName = (pName || '').split(' ')[0] || 'toi'
   const points = myEntry?.points ?? 0
   const rank = myEntry?.rank
@@ -139,69 +222,115 @@ function DashboardScreen({ pName, myEntry, ranking }) {
       display: 'flex', flexDirection: 'column',
       padding: '32px 20px 48px', overflowY: 'auto',
     }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={120} height={45}
           style={{ objectFit: 'contain', marginBottom: 18 }} />
         <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', textAlign: 'center', margin: 0 }}>
           Bonjour, {firstName} 👋
         </h2>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>{pName}</div>
       </div>
 
-      {/* Carte niveau + points */}
-      <div style={{
-        background: levelInfo.levelDef.bg, border: `1px solid ${levelInfo.levelDef.border}`,
-        borderRadius: 20, padding: '24px 20px', textAlign: 'center', marginBottom: 16,
-      }}>
-        <div style={{ fontSize: 42 }}>{levelInfo.levelDef.icon}</div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: levelInfo.levelDef.color, marginTop: 6, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-          {levelInfo.levelDef.name}
-        </div>
-        <div style={{ fontSize: 56, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginTop: 8 }}>{points}</div>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 16 }}>points</div>
-        {!levelInfo.isMaxLevel ? (
-          <>
-            <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden', margin: '0 8px' }}>
-              <div style={{ width: `${levelInfo.progressPct}%`, height: '100%', background: levelInfo.levelDef.color, borderRadius: 99, transition: 'width 0.6s' }} />
-            </div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 8 }}>
-              Encore {levelInfo.ptsToNext} pts pour le niveau suivant
-            </div>
-          </>
-        ) : (
-          <div style={{ fontSize: 12, color: levelInfo.levelDef.color, fontWeight: 700 }}>Niveau maximum atteint !</div>
-        )}
+      {/* Onglets */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {[['profil', 'Mon profil'], ['historique', 'Mes quiz']].map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            style={{
+              flex: 1, padding: '10px 0', borderRadius: 12, fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+              border: `1.5px solid ${tab === key ? 'rgba(0,171,233,0.5)' : 'rgba(255,255,255,0.12)'}`,
+              background: tab === key ? 'rgba(0,171,233,0.15)' : 'transparent',
+              color: tab === key ? '#00abe9' : 'rgba(255,255,255,0.5)',
+            }}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* Message classement */}
-      {msg && (
-        <div style={{ textAlign: 'center', fontSize: 14, color: msg.color, fontStyle: 'italic', marginBottom: 16, padding: '0 4px', lineHeight: 1.5 }}>
-          {msg.text}
-        </div>
-      )}
+      {tab === 'profil' ? (
+        <>
+          <ParticipantProfileCard pName={pName} myProfile={myProfile} />
 
-      {/* Ma position */}
-      {rank != null && ranking.length > 0 && (
-        <div style={{
-          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: 16, padding: '24px 16px', textAlign: 'center',
-        }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 18 }}>
-            Ta position cette semaine
+          {/* Carte niveau + points */}
+          <div style={{
+            background: levelInfo.levelDef.bg, border: `1px solid ${levelInfo.levelDef.border}`,
+            borderRadius: 20, padding: '24px 20px', textAlign: 'center', marginBottom: 16,
+          }}>
+            <div style={{ fontSize: 42 }}>{levelInfo.levelDef.icon}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: levelInfo.levelDef.color, marginTop: 6, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              {levelInfo.levelDef.name}
+            </div>
+            <div style={{ fontSize: 56, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginTop: 8 }}>{points}</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 16 }}>points</div>
+            {!levelInfo.isMaxLevel ? (
+              <>
+                <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden', margin: '0 8px' }}>
+                  <div style={{ width: `${levelInfo.progressPct}%`, height: '100%', background: levelInfo.levelDef.color, borderRadius: 99, transition: 'width 0.6s' }} />
+                </div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 8 }}>
+                  Encore {levelInfo.ptsToNext} pts pour le niveau suivant
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: 12, color: levelInfo.levelDef.color, fontWeight: 700 }}>Niveau maximum atteint !</div>
+            )}
           </div>
-          {rank <= 3 ? (
-            <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 6 }}>
-              {MEDALS[rank - 1]}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2, marginBottom: 6 }}>
-              <span style={{ fontSize: 58, fontWeight: 900, color: '#00abe9', lineHeight: 1 }}>{rank}</span>
-              <span style={{ fontSize: 22, fontWeight: 700, color: '#00abe9' }}>e</span>
+
+          <ParticipantBadges badges={badges} />
+
+          {/* Message classement */}
+          {msg && (
+            <div style={{ textAlign: 'center', fontSize: 14, color: msg.color, fontStyle: 'italic', marginBottom: 16, padding: '0 4px', lineHeight: 1.5 }}>
+              {msg.text}
             </div>
           )}
-          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
-            sur {ranking.length} participant{ranking.length > 1 ? 's' : ''}
-          </div>
+
+          {/* Ma position */}
+          {rank != null && ranking.length > 0 && (
+            <div style={{
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 16, padding: '24px 16px', textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 18 }}>
+                Ta position cette semaine
+              </div>
+              {rank <= 3 ? (
+                <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 6 }}>
+                  {MEDALS[rank - 1]}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2, marginBottom: 6 }}>
+                  <span style={{ fontSize: 58, fontWeight: 900, color: '#00abe9', lineHeight: 1 }}>{rank}</span>
+                  <span style={{ fontSize: 22, fontWeight: 700, color: '#00abe9' }}>e</span>
+                </div>
+              )}
+              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
+                sur {ranking.length} participant{ranking.length > 1 ? 's' : ''}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {!quizHistory?.length ? (
+            <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)', padding: '32px 0' }}>
+              Aucun quiz fait pour l'instant.
+            </div>
+          ) : quizHistory.map(h => {
+            const color = h.pct >= 70 ? '#16a34a' : h.pct >= 40 ? '#d97706' : '#dc2626'
+            return (
+              <div key={h.moduleId} style={{
+                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: 14, padding: '14px 16px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{h.label}</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color }}>{h.correct}/{h.total} · {h.pct}%</div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
@@ -209,26 +338,31 @@ function DashboardScreen({ pName, myEntry, ranking }) {
 }
 
 /**
- * Charge le classement complet (quiz + hors quiz, voir buildParticipantRanking) et
- * expose systématiquement une entrée pour pName (0 pt par défaut si pas encore répondu).
- * Partagé entre l'écran d'accueil formé et le bouton "Mon profil" accessible à tout moment.
+ * Charge le classement complet (quiz + hors quiz, voir buildParticipantRanking),
+ * le profil RH (magasin/poste), l'historique par quiz et les badges — utilisé
+ * uniquement quand aucun module/quiz/jeu n'est en cours (écran d'accueil formé),
+ * jamais pendant un contenu actif, pour ne pas détourner l'attention du formé.
  */
 function useParticipantRanking(pName, sessionCode, { pollMs = 12000 } = {}) {
   const [loadState, setLoadState] = useState('loading')
   const [ranking, setRanking] = useState([])
+  const [myProfile, setMyProfile] = useState(null)
+  const [quizHistory, setQuizHistory] = useState([])
+  const [badges, setBadges] = useState([])
 
   useEffect(() => {
     if (!pName || !sessionCode) return
     let cancelled = false
     const load = async () => {
       try {
-        const nameFilter = `session_code=eq.${encodeURIComponent(sessionCode)}&collaborateur=eq.${encodeURIComponent(pName)}&limit=1`
+        const nameFilter = `session_code=eq.${encodeURIComponent(sessionCode)}&collaborateur=eq.${encodeURIComponent(pName)}`
         const nameFilterOA = `session_code=eq.${encodeURIComponent(sessionCode)}&participant_name=eq.${encodeURIComponent(pName)}&limit=1`
-        const [quizRows, moduleRows, openRows, withRanks] = await Promise.all([
+        const [quizRows, moduleRows, openRows, withRanks, entrees] = await Promise.all([
           sbSelect('quiz_answers', nameFilter),
           sbSelect('module_results', nameFilter),
           sbSelect('open_answers', nameFilterOA),
           fetchParticipantRanking(sessionCode),
+          loadEntreesList(),
         ])
         if (cancelled) return
         const hasAnyActivity = (quizRows?.length || 0) + (moduleRows?.length || 0) + (openRows?.length || 0) > 0
@@ -237,6 +371,29 @@ function useParticipantRanking(pName, sessionCode, { pollMs = 12000 } = {}) {
           : [...withRanks, { name: pName, correct: 0, points: 0, rank: withRanks.length + 1 }]
         setRanking(final)
         setLoadState(hasAnyActivity ? 'dashboard' : 'welcome')
+
+        const myKey = normalizeNameKey(pName)
+        const entry = (entrees || []).find(e => normalizeNameKey(entreeDisplayName(e)) === myKey)
+        setMyProfile(entry ? { magasin: entry.magasin || '', poste: mapPosteLabel(entry.poste) } : null)
+
+        const byModule = {}
+        for (const r of quizRows || []) {
+          if ((r.question_idx ?? 0) >= 100 || !r.module_id) continue
+          if (!byModule[r.module_id]) byModule[r.module_id] = { correct: 0, total: 0 }
+          byModule[r.module_id].total++
+          if (r.is_correct) byModule[r.module_id].correct++
+        }
+        const history = Object.entries(byModule)
+          .map(([mid, s]) => ({
+            moduleId: mid,
+            label: MODULE_DATA[mid]?.label || mid,
+            correct: s.correct,
+            total: s.total,
+            pct: s.total ? Math.round((s.correct / s.total) * 100) : 0,
+          }))
+          .sort((a, b) => a.label.localeCompare(b.label))
+        setQuizHistory(history)
+        setBadges(computeBadges({ quizRows, quizHistory: history }))
       } catch {
         if (!cancelled) setLoadState('welcome')
       }
@@ -247,15 +404,15 @@ function useParticipantRanking(pName, sessionCode, { pollMs = 12000 } = {}) {
   }, [pName, sessionCode, pollMs])
 
   const myEntry = ranking.find(r => r.name === pName)
-  return { loadState, ranking, myEntry }
+  return { loadState, ranking, myEntry, myProfile, quizHistory, badges }
 }
 
-function ParticipantDashboard({ pName, sessionCode }) {
-  const { loadState, ranking, myEntry } = useParticipantRanking(pName, sessionCode)
+export function ParticipantDashboard({ pName, sessionCode }) {
+  const { loadState, ranking, myEntry, myProfile, quizHistory, badges } = useParticipantRanking(pName, sessionCode)
 
   if (loadState === 'loading') return <WaitingScreen />
-  if (loadState === 'welcome') return <WelcomeScreenFirst pName={pName} />
-  return <DashboardScreen pName={pName} myEntry={myEntry} ranking={ranking} />
+  if (loadState === 'welcome') return <WelcomeScreenFirst pName={pName} myProfile={myProfile} />
+  return <DashboardScreen pName={pName} myEntry={myEntry} ranking={ranking} myProfile={myProfile} quizHistory={quizHistory} badges={badges} />
 }
 
 function ParticipantModuleLobby({ moduleLabel, moduleSub }) {
@@ -5536,59 +5693,6 @@ function TestResetButton({ pName }) {
   )
 }
 
-// ── Bouton "Mon profil" — accessible à tout moment (score temps réel, classement, niveau) ──
-function ParticipantProfileContent({ pName, sessionCode }) {
-  const { loadState, ranking, myEntry } = useParticipantRanking(pName, sessionCode, { pollMs: 6000 })
-  if (loadState === 'loading') return <WaitingScreen />
-  if (loadState === 'welcome') return <WelcomeScreenFirst pName={pName} />
-  return <DashboardScreen pName={pName} myEntry={myEntry} ranking={ranking} />
-}
-
-function ParticipantProfileButton({ pName, sessionCode }) {
-  const [open, setOpen] = useState(false)
-  if (!pName || !sessionCode) return null
-  return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        title="Mon profil"
-        style={{
-          position: 'fixed', bottom: 14, right: 14, zIndex: 850,
-          width: 48, height: 48, borderRadius: '50%',
-          background: 'linear-gradient(135deg, #00abe9, #0089ba)',
-          border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 20, boxShadow: '0 4px 18px rgba(0,171,233,0.45)',
-        }}
-      >👤</button>
-
-      {open && (
-        <div
-          onClick={() => setOpen(false)}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 1500,
-            background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-            overflowY: 'auto',
-          }}
-        >
-          <div onClick={e => e.stopPropagation()} style={{ position: 'relative', minHeight: '100dvh' }}>
-            <button
-              onClick={() => setOpen(false)}
-              style={{
-                position: 'fixed', top: 14, right: 14, zIndex: 1600,
-                width: 36, height: 36, borderRadius: '50%',
-                background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.2)',
-                color: '#fff', fontSize: 16, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >✕</button>
-            <ParticipantProfileContent pName={pName} sessionCode={sessionCode} />
-          </div>
-        </div>
-      )}
-    </>
-  )
-}
 
 function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp, onDisconnect }) {
   const sessionCode = getParticipantSessionCode()
@@ -5838,10 +5942,6 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
       {/* Bouton reset test — visible uniquement pour les comptes test formateur */}
       {['bahougne', 'dupuy', 'duchemin', 'huchet'].some(n => pName?.toLowerCase().includes(n)) && (
         <TestResetButton pName={pName} />
-      )}
-      {/* Mon profil — score temps réel, classement, niveau — accessible à tout moment */}
-      {!sessionEnded && activeModule !== 'atelier-pec' && (
-        <ParticipantProfileButton pName={pName} sessionCode={sessionCode} />
       )}
       {/* Bulle question — discrète, visible sur toutes les pages de module */}
       {activeModule && !isLobby && !isResults && !sessionEnded && (

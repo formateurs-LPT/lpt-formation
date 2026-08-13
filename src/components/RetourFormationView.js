@@ -22,13 +22,13 @@ const THEMES_BELGIQUE = [
   'verre-progressif', 'trame-accueil', 'montures', 'mutuelles-inami',
 ]
 
-const CATEGORY_META = {
+export const CATEGORY_META = {
   paris:    { label: 'Île de France', sub: 'Présentiel Paris',     icon: '🏢', color: '#0089ba', rgb: '0,137,186',   themes: THEMES_FRANCE   },
   province: { label: 'Visio Province', sub: 'Formation à distance', icon: '💻', color: '#7c3aed', rgb: '124,58,237',  themes: THEMES_FRANCE   },
   belgique: { label: 'Belgique',       sub: 'Présentiel Belgique',  icon: '🇧🇪', color: '#db2777', rgb: '219,39,119',  themes: THEMES_BELGIQUE },
 }
 
-const STATUS_OPTIONS = [
+export const STATUS_OPTIONS = [
   { key: 'maitrise',    label: 'Maîtrisé',        color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0', icon: '✓' },
   { key: 'en-cours',    label: 'En cours',         color: '#d97706', bg: '#fef3c7', border: '#fde68a', icon: '◑' },
   { key: 'notions',     label: 'Quelques notions', color: '#f97316', bg: '#fff7ed', border: '#fed7aa', icon: '◔' },
@@ -51,9 +51,27 @@ function starsDisplay(v) {
 }
 
 /** Extrait le prénom depuis "Prénom NOM" (les mots tout-caps = nom de famille) */
+function formatDuration(seconds) {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.round((seconds % 3600) / 60)
+  if (h > 0) return `${h}h${String(m).padStart(2, '0')}`
+  return `${m}min`
+}
+
 function extractPrenom(fullName) {
   const parts = (fullName || '').split(' ').filter(w => w !== w.toUpperCase())
   return parts.join(' ') || (fullName || '').split(' ')[0]
+}
+
+/** Adresse mail LPT : 1ère lettre du prénom + nom de famille, sans accents/espaces */
+function buildLptEmail(prenom, nom) {
+  const clean = s => (s || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // retire les accents
+    .replace(/[^a-zA-Z-]/g, '').toLowerCase()
+  const p = clean(prenom)
+  const n = clean(nom)
+  if (!p || !n) return ''
+  return `${p[0]}${n}@lunettespourtous.com`
 }
 
 function effectiveCat(e) {
@@ -90,7 +108,7 @@ function getWeekDate() {
  * grimper artificiellement devant les autres (incident Nadège).
  * Un seul fetch, partagé entre tous les formés (voir appelants).
  */
-async function fetchArchiveIndex() {
+export async function fetchArchiveIndex() {
   const rows = await sbSelect(
     'session_history',
     'order=session_date.desc'
@@ -101,16 +119,19 @@ async function fetchArchiveIndex() {
     if (!qr || typeof qr !== 'object') continue
     const modRows = qr.module_results || []
     const ansRows = qr.answers || []
+    const activeTime = qr.room_state?.active_time || {}
     const date = row.session_date ? new Date(row.session_date).getTime() : 0
     const namesInRoom = new Set([
       ...modRows.map(m => m.collaborateur).filter(Boolean),
       ...ansRows.map(a => a.collaborateur).filter(Boolean),
+      ...Object.keys(activeTime),
     ])
     for (const n of namesInRoom) {
       ;(roomsByName[n] ||= []).push({
         date,
         moduleRows: modRows.filter(m => m.collaborateur === n),
         answerRows: ansRows.filter(a => a.collaborateur === n),
+        activeSeconds: activeTime[n] || 0,
       })
     }
   }
@@ -118,14 +139,47 @@ async function fetchArchiveIndex() {
   const WINDOW_MS = 6 * 24 * 60 * 60 * 1000
   const moduleByName = {}
   const answerByName = {}
+  const activeSecondsByName = {}
   for (const [name, entries] of Object.entries(roomsByName)) {
     entries.sort((a, b) => b.date - a.date)
     const mostRecent = entries[0].date
     const kept = entries.filter(e => mostRecent - e.date <= WINDOW_MS)
     moduleByName[name] = kept.flatMap(e => e.moduleRows)
     answerByName[name] = kept.flatMap(e => e.answerRows)
+    activeSecondsByName[name] = kept.reduce((s, e) => s + (e.activeSeconds || 0), 0)
   }
-  return { moduleByName, answerByName }
+  return { moduleByName, answerByName, activeSecondsByName }
+}
+
+/**
+ * Temps d'activité écran (onglet au premier plan) d'un formé, cette semaine —
+ * signal RELATIF à comparer à la moyenne du groupe (voir addActiveSeconds).
+ * Même repli salle live → archive que fetchModuleAndQuizRows.
+ */
+export async function fetchActiveSeconds(name, archiveIndexPromise) {
+  const participantRows = await sbSelect(
+    'participants',
+    `name=eq.${encodeURIComponent(name)}`
+  ).catch(() => [])
+  const codes = [...new Set((participantRows || []).map(p => p.session_code).filter(Boolean))]
+  if (!codes.length) {
+    const archiveIndex = await archiveIndexPromise
+    return archiveIndex?.activeSecondsByName?.[name] || 0
+  }
+
+  const stateRows = await sbSelect(
+    'trainer_state',
+    `trainer=in.(${codes.map(c => encodeURIComponent(c)).join(',')})`
+  ).catch(() => [])
+  const liveSeconds = (stateRows || []).reduce((sum, row) => {
+    let state = row.state
+    if (typeof state === 'string') { try { state = JSON.parse(state) } catch { state = {} } }
+    return sum + (state?.active_time?.[name] || 0)
+  }, 0)
+  if (liveSeconds > 0) return liveSeconds
+
+  const archiveIndex = await archiveIndexPromise
+  return archiveIndex?.activeSecondsByName?.[name] || 0
 }
 
 /**
@@ -140,7 +194,7 @@ async function fetchArchiveIndex() {
  * salle archivée la plus récente (voir fetchArchiveIndex) — jamais un cumul
  * live + archive, sinon on mélangerait deux semaines différentes.
  */
-async function fetchModuleAndQuizRows(name, archiveIndexPromise) {
+export async function fetchModuleAndQuizRows(name, archiveIndexPromise) {
   const participantRows = await sbSelect(
     'participants',
     `name=eq.${encodeURIComponent(name)}`
@@ -168,6 +222,33 @@ async function fetchModuleAndQuizRows(name, archiveIndexPromise) {
 
 // Même formule que CompteRenduManager.js (le compte rendu réellement envoyé au
 // manager) — la barre affichée pendant la saisie doit annoncer le même taux.
+// Petite tendance jour par jour du taux de bonnes réponses sur un thème —
+// un jour = une barre, plus foncé/vert = meilleur taux ce jour-là. N'est
+// affiché que s'il y a au moins 2 jours de données (sinon rien à comparer).
+function ThemeTrendSparkline({ byDay }) {
+  const days = Object.keys(byDay || {}).sort()
+  if (days.length < 2) return null
+  const BAR_W = 7
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 20 }} title="Tendance jour par jour">
+      {days.map(day => {
+        const { correct, total } = byDay[day]
+        const rate = total ? correct / total : 0
+        const color = rate >= 0.7 ? '#16a34a' : rate >= 0.4 ? '#d97706' : '#dc2626'
+        const h = Math.max(3, Math.round(rate * 20))
+        const label = new Date(day).toLocaleDateString('fr-FR', { weekday: 'short' })
+        return (
+          <div
+            key={day}
+            title={`${label} — ${correct}/${total} (${Math.round(rate * 100)}%)`}
+            style={{ width: BAR_W, height: h, borderRadius: 2, background: color }}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
 function computeRate(assessments) {
   const vals = Object.values(assessments || {}).filter(Boolean)
   if (!vals.length) return null
@@ -244,7 +325,7 @@ const COMMENTAIRE_OPTS = [
  * notés par un collègue sur les autres thèmes (incident du 12/08 : fiches
  * remplies par Quentin vidées par une sauvegarde plus récente mais partielle).
  */
-function mergeFormationReports(rows) {
+export function mergeFormationReports(rows) {
   if (!rows?.length) return null
   const chronological = [...rows].sort((a, b) => new Date(a.updated_at || 0) - new Date(b.updated_at || 0))
   const latest = rows.reduce((a, b) => new Date(a.updated_at || 0) > new Date(b.updated_at || 0) ? a : b)
@@ -262,12 +343,13 @@ function mergeFormationReports(rows) {
   return { snapshot, trainerName: latest.trainer_name, weekDate: latest.week_date, latestRow: latest }
 }
 
-function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf, pointsRank, totalPoints = 0, pointsRankOf }) {
+function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf, pointsRank, totalPoints = 0, pointsRankOf, myActiveSeconds = 0, groupAvgActiveSeconds = 0 }) {
   const [quizData, setQuizData]                 = useState([])
   // Taux de compréhension par thème calculé depuis les vraies réponses aux quiz
   // — { theme: { correct, total } } — affiché à côté de l'évaluation manuelle
   // du formateur, jamais à sa place (le formateur reste seul décisionnaire).
   const [themeQuizStats, setThemeQuizStats]     = useState({})
+  const [themeQuizByDay, setThemeQuizByDay]     = useState({}) // { theme: { 'YYYY-MM-DD': {correct, total} } } — tendance
   const [assessments, setAssessments]           = useState({})
   const [attitudeStatus, setAttitudeStatus]     = useState(null)
   const [attitudeNote, setAttitudeNote]         = useState('')
@@ -282,6 +364,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const [loading, setLoading]                   = useState(true)
   const [correcting, setCorrecting]             = useState(null) // 'attitude' | 'participation' | 'comprehension' | 'commentaire'
   const [mailSentAt, setMailSentAt]             = useState(null)
+  const [messageFormé, setMessageFormé]         = useState('')
+  const [mailFormeSentAt, setMailFormeSentAt]   = useState(null)
   // week_date du dernier enregistrement trouvé — peut différer de weekDate si la session a eu lieu une semaine précédente
   const [saveWeekDate, setSaveWeekDate]         = useState(weekDate)
   // Fiche partagée entre formateurs : trainer_name de la ligne existante (celui qui
@@ -376,6 +460,24 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       }
       setThemeQuizStats(themeStats)
 
+      // Tendance jour par jour : une seule réponse par question (created_at posé
+      // à la 1ère soumission, cf. commentaire schema), donc chaque ligne de
+      // quiz_answers date bien le jour où CETTE question a été traitée.
+      const themeOf = (mid, qi) => DIRECT_THEME_MODULES.has(mid) ? mid : themeForAnswer(mid, qi)
+      const byDay = {}
+      for (const r of answerRows || []) {
+        const qi = r.question_idx ?? 0
+        if (qi >= 100 || !r.created_at) continue
+        const theme = themeOf(r.module_id, qi)
+        if (!theme) continue
+        const day = r.created_at.slice(0, 10)
+        if (!byDay[theme]) byDay[theme] = {}
+        if (!byDay[theme][day]) byDay[theme][day] = { correct: 0, total: 0 }
+        byDay[theme][day].total += 1
+        if (r.is_correct) byDay[theme][day].correct += 1
+      }
+      setThemeQuizByDay(byDay)
+
       const found = mergeFormationReports(reportRow)
       if (found) {
         // Conserve la week_date d'origine pour sauvegarder sur le bon enregistrement
@@ -394,6 +496,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       setAppreciation(snap.appreciation || null)
       setCommentaireLibre(snap.commentaire_libre || '')
       setMailSentAt(snap.mail_sent_at || null)
+      setMessageFormé(snap.message_formateur_forme || '')
+      setMailFormeSentAt(snap.mail_forme_sent_at || null)
       setAutoEval(autoEvalRow?.[0]?.stats_snapshot?.auto_eval || null)
     } catch (e) {
       console.error('[RetourFormation] loadData', e)
@@ -416,6 +520,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
     commentaire_libre: commentaireLibre,
     magasin: entree.magasin || '',
     mail_sent_at: mailSentAt,
+    message_formateur_forme: messageFormé,
+    mail_forme_sent_at: mailFormeSentAt,
     // Classement figé au moment de l'envoi (le stats_snapshot remplace tout à
     // chaque sauvegarde, donc on le reporte par défaut pour ne pas l'écraser
     // après un envoi si le formateur retouche la fiche ensuite)
@@ -532,6 +638,40 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   }
 
   const managers = getManagers(entree.magasin)
+
+  // Retour envoyé au formé lui-même — distinct du compte rendu manager.
+  const bilanUrl = typeof window !== 'undefined'
+    ? `${PUBLIC_ORIGIN}/bilan-formation/?c=${encodeURIComponent(name)}&w=${saveWeekDate}&t=${encodeURIComponent(ownerName)}&cat=${categoryKey}`
+    : ''
+  const fichePratiqueUrl = `${PUBLIC_ORIGIN}/fiche-pratique/`
+  const formeEmail = buildLptEmail(entree.prenom, entree.nom)
+  const formePrenom = extractPrenom(entree.prenom || name) || name.split(' ')[0]
+
+  const buildFormeMailto = () => {
+    const subject = encodeURIComponent('Ton retour de formation')
+    const messageBloc = messageFormé.trim() ? `\n${messageFormé.trim()}\n` : ''
+    const body = encodeURIComponent(
+      `Salut ${formePrenom},\n\n` +
+      `Voici mon retour suite à la formation. Les points non maîtrisés ne sont pas un reproche, c'est simplement des points à travailler, et c'est parfaitement normal en sortie de formation — pas d'inquiétude !\n` +
+      `${messageBloc}\n` +
+      `Tu trouveras dans ce mail :\n` +
+      `- Ta fiche récapitulative de la formation, qui reprend dans les grandes lignes les thèmes abordés : ${bilanUrl}\n` +
+      `- La fiche pratique à garder sous la main : ${fichePratiqueUrl}\n\n` +
+      `Si tu as des questions, n'hésite pas, tu peux répondre à ce mail pour me demander.\n\n` +
+      `Bonnes ventes à toi !\n\n` +
+      `${trainerName}\n` +
+      `Formateur — Lunettes Pour Tous`
+    )
+    return `mailto:${formeEmail}?subject=${subject}&body=${body}`
+  }
+
+  const handleSendToForme = async () => {
+    if (!formeEmail) return
+    window.location.href = buildFormeMailto()
+    const now = new Date().toISOString()
+    setMailFormeSentAt(now)
+    await saveSnapshot(buildSnap({ mail_forme_sent_at: now }))
+  }
 
   const correctWithLT = async (text) => {
     const params = new URLSearchParams({ text, language: 'fr' })
@@ -703,6 +843,27 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
             </div>
           )}
         </div>
+
+        {/* Alerte activité écran — signal RELATIF au groupe uniquement, jamais
+            une preuve absolue de ce que fait le formé (voir échange du 13/08) */}
+        {groupAvgActiveSeconds >= 300 && myActiveSeconds > 0 && myActiveSeconds < groupAvgActiveSeconds * 0.6 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.35)',
+            borderRadius: 12, padding: '10px 14px',
+          }}>
+            <span style={{ fontSize: 18 }}>📱</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#d97706' }}>
+                Activité écran nettement en dessous du groupe
+              </div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>
+                {formatDuration(myActiveSeconds)} sur l'app cette semaine, contre {formatDuration(groupAvgActiveSeconds)} en moyenne dans le groupe
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Bande points / niveau / classement points */}
         {(() => {
           const lvl = getLevelInfo(totalPoints)
@@ -838,6 +999,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                     )
                   })}
                 </div>
+                <ThemeTrendSparkline byDay={themeQuizByDay[moduleId]} />
                 <div
                   title="Taux de bonnes réponses aux quiz sur ce thème — calculé automatiquement à partir des réponses du formé, indépendant de ton évaluation ci-contre"
                   style={{
@@ -1153,6 +1315,78 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
         )}
       </div>
 
+      {/* Retour au formé lui-même — distinct du compte rendu manager */}
+      <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Retour au formé
+          </span>
+        </div>
+        <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
+            Un mail personnel à {name.split(' ')[0]} avec ses acquis/non-acquis, son taux global de bonnes réponses,
+            et ton message ci-dessous — distinct du compte rendu envoyé au manager.
+          </div>
+          <textarea
+            value={messageFormé}
+            onChange={e => setMessageFormé(e.target.value)}
+            onBlur={() => saveSnapshot(buildSnap({ message_formateur_forme: messageFormé }))}
+            placeholder="Un mot pour le rassurer, le conseiller ou l'encourager (optionnel)…"
+            rows={3}
+            style={{
+              width: '100%', padding: '10px 12px', borderRadius: 10,
+              border: '1.5px solid #334155', background: '#0f172a',
+              fontSize: 13, color: '#f1f5f9', resize: 'vertical',
+              fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', lineHeight: 1.6,
+            }}
+          />
+          {!formeEmail ? (
+            <div style={{
+              padding: '14px 16px', borderRadius: 14,
+              background: '#1e293b', border: '1.5px dashed #334155',
+              fontSize: 12, color: '#475569', fontWeight: 500, textAlign: 'center',
+            }}>
+              Nom/prénom manquants pour déduire l'adresse mail
+            </div>
+          ) : mailFormeSentAt ? (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+              <div style={{
+                flex: 1, padding: '12px 16px', borderRadius: 14,
+                background: '#14532d33', border: '1.5px solid #16a34a66',
+                fontSize: 13, color: '#4ade80', fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}>
+                ✉️ Envoyé le {new Date(mailFormeSentAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+              </div>
+              <button
+                onClick={handleSendToForme}
+                style={{
+                  flexShrink: 0, padding: '12px 16px', borderRadius: 14,
+                  background: '#1e293b', border: '1.5px solid #334155',
+                  fontSize: 12, color: '#64748b', fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                Renvoyer
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleSendToForme}
+              style={{
+                padding: '14px 16px', borderRadius: 14,
+                background: '#7c3aed', color: '#fff', border: 'none',
+                fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: '0 4px 14px rgba(124,58,237,0.25)',
+              }}
+            >
+              <span>✉️</span> Envoyer au formé ({formeEmail})
+            </button>
+          )}
+        </div>
+      </section>
+
     </div>
     </>
   )
@@ -1175,6 +1409,8 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
   const [weekDateMap, setWeekDateMap] = useState({}) // { name: week_date du dernier rapport }
   const [reportSnapMap, setReportSnapMap] = useState({}) // { name: stats_snapshot complet } — pour fusionner sans écraser
   const [reportOwnerMap, setReportOwnerMap] = useState({}) // { name: vrai trainer_name en base de sa fiche partagée }
+  const [activeSecondsMap, setActiveSecondsMap] = useState({}) // { name: secondes d'activité écran cette semaine }
+  const [activeSecondsAvg, setActiveSecondsAvg] = useState(0) // moyenne du groupe
   const weekDate = getWeekDate()
   const catMeta  = CATEGORY_META[categoryKey] || {}
 
@@ -1223,6 +1459,14 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
       const perName = await Promise.all(names.map(n => fetchModuleAndQuizRows(n, archiveIndexPromise)))
       const quizArrays   = perName.map(p => p.moduleRows)
       const answerArrays = perName.map(p => p.answerRows)
+
+      // Temps d'activité écran — signal relatif au groupe (voir addActiveSeconds)
+      const activeSecondsArr = await Promise.all(names.map(n => fetchActiveSeconds(n, archiveIndexPromise)))
+      const activeMap = {}
+      names.forEach((n, i) => { activeMap[n] = activeSecondsArr[i] })
+      const activeValues = Object.values(activeMap).filter(v => v > 0)
+      setActiveSecondsMap(activeMap)
+      setActiveSecondsAvg(activeValues.length ? activeValues.reduce((a, b) => a + b, 0) / activeValues.length : 0)
 
       // Construit byModule pour un formé en combinant module_results + quiz_answers
       const buildByModule = (modRows, ansRows) => {
@@ -1624,6 +1868,8 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
             pointsRank={pointsRanks[selEntry.fullName || `${selEntry.nom} ${selEntry.prenom}`.trim()]}
             totalPoints={pointsTotals[selEntry.fullName || `${selEntry.nom} ${selEntry.prenom}`.trim()] ?? 0}
             pointsRankOf={pointsRankOf}
+            myActiveSeconds={activeSecondsMap[selEntry.fullName || `${selEntry.nom} ${selEntry.prenom}`.trim()] ?? 0}
+            groupAvgActiveSeconds={activeSecondsAvg}
           />
         )}
       </div>

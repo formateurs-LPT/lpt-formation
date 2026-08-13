@@ -4,12 +4,22 @@ import {
   PRESENCE_HEARTBEAT_MS,
   isSessionEnded,
   joinParticipant,
+  markParticipantLeft,
   markParticipantLeftBeacon,
   pingParticipant,
+  addActiveSeconds,
 } from './participantPresence'
 import { getRoomSharedState } from './supabase'
 
 const KICK_EXPIRY_MS = 30 * 60 * 1000 // 30 minutes
+
+// Un tel verrouillé/rangé en poche continue de faire tourner ses timers en
+// arrière-plan sur beaucoup de navigateurs mobiles — le heartbeat continue
+// donc de tourner même quand le formé a réellement quitté la formation,
+// le faisant apparaître "connecté" indéfiniment (fausse le "qui n'a pas
+// répondu" pendant les quiz). Au-delà de ce temps en arrière-plan continu,
+// on le marque explicitement "parti" (left_at) au lieu de le rafraîchir.
+const BACKGROUND_LEFT_MS = 10 * 60 * 1000 // 10 minutes
 
 function isKickActive(kickValue) {
   if (!kickValue) return false
@@ -43,6 +53,21 @@ export function useParticipantPresence({
 
     let cancelled = false
     endedRef.current = false
+    const startVisible = typeof document !== 'undefined' && document.visibilityState === 'visible'
+    let hiddenAt = startVisible ? null : Date.now()
+    let visibleSince = startVisible ? Date.now() : null
+    let markedLeft = false
+
+    // Cumule le temps réellement passé avec l'onglet au premier plan, flushé à
+    // chaque tick de heartbeat — voir addActiveSeconds (signal RELATIF pour le
+    // retour de formation, jamais une preuve de ce que fait le formé).
+    const flushActiveTime = () => {
+      if (visibleSince == null) return
+      const now = Date.now()
+      const deltaSec = Math.round((now - visibleSince) / 1000)
+      visibleSince = now
+      if (deltaSec > 0) addActiveSeconds(sessionCode, name, deltaSec)
+    }
 
     const join = async () => {
       if (cancelled || endedRef.current) return
@@ -59,6 +84,7 @@ export function useParticipantPresence({
           return
         }
       } catch {}
+      markedLeft = false
       await joinParticipant(sessionCode, name)
     }
 
@@ -69,6 +95,16 @@ export function useParticipantPresence({
         onSessionEndedRef.current?.()
         return
       }
+      // En arrière-plan continu depuis trop longtemps : marqué "parti" plutôt
+      // que de continuer à rafraîchir last_seen_at (voir BACKGROUND_LEFT_MS).
+      if (hiddenAt && Date.now() - hiddenAt > BACKGROUND_LEFT_MS) {
+        if (!markedLeft) {
+          markedLeft = true
+          await markParticipantLeft(sessionCode, name)
+        }
+        return
+      }
+      flushActiveTime()
       await pingParticipant(sessionCode, name)
     }
 
@@ -79,7 +115,18 @@ export function useParticipantPresence({
     // jusqu'au prochain tick (jusqu'à PRESENCE_HEARTBEAT_MS, potentiellement
     // plus si le setInterval a été suspendu par le navigateur en arrière-plan)
     // sans ce ping immédiat au réveil de l'onglet.
-    const onVisible = () => { if (document.visibilityState === 'visible') ping() }
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        hiddenAt = null
+        visibleSince = Date.now()
+        if (markedLeft) join() // redevient présent après avoir été marqué "parti"
+        else ping()
+      } else {
+        flushActiveTime()
+        visibleSince = null
+        hiddenAt = Date.now()
+      }
+    }
     document.addEventListener('visibilitychange', onVisible)
 
     const onLeave = () => {

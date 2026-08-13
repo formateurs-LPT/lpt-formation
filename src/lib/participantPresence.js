@@ -2,7 +2,7 @@ import {
   filterParticipantsInRh,
   loadEntreesList,
 } from './participantNames'
-import { pgEq, sbSelect, sbUpdate, sbUpsert } from './supabase'
+import { pgEq, sbSelect, sbUpdate, sbUpsert, mutateRoomState } from './supabase'
 
 /** Intervalle heartbeat navigateur */
 export const PRESENCE_HEARTBEAT_MS = 45_000
@@ -124,6 +124,25 @@ export async function fetchOnlineParticipantsList(sessionCode) {
     loadEntreesList(),
   ])
   return filterOnlineParticipants(rows || [], entrees)
+}
+
+/**
+ * Cumule le temps où l'app était réellement au premier plan (onglet visible)
+ * pour ce formé, dans l'état partagé de la salle — sert de signal RELATIF
+ * (comparé à la moyenne du groupe) pour repérer une activité anormalement
+ * basse, jamais comme preuve absolue de ce que fait le formé (impossible à
+ * savoir depuis une page web — voir échange du 13/08).
+ */
+export async function addActiveSeconds(sessionCode, name, deltaSeconds) {
+  const code = (sessionCode || '').trim()
+  const participantName = (name || '').trim()
+  const delta = Math.round(deltaSeconds || 0)
+  if (!code || !participantName || delta <= 0) return
+  await mutateRoomState(code, (state) => {
+    const active = { ...(state.active_time || {}) }
+    active[participantName] = (active[participantName] || 0) + delta
+    return { active_time: active }
+  }).catch(() => {})
 }
 
 export async function isSessionEnded(sessionCode) {

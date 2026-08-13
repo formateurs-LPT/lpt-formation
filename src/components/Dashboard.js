@@ -11,8 +11,8 @@ import RoomOpenModal from './RoomOpenModal'
 import { TRAINER_AVATARS, TRAINER_CANONICAL } from '@/lib/constants'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
-import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
-import { isDynamicRoomCode } from '@/lib/sessionCode'
+import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName, endActiveRoom } from '@/lib/sessionRoom'
+import { isDynamicRoomCode, setTrainerActiveRoomCode } from '@/lib/sessionCode'
 import { isTrainerAccount } from '@/lib/participantNames'
 import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees, addIdee } from '@/components/IdeesButton'
 import { MODULE_DATA } from '@/lib/modulesData'
@@ -22,9 +22,60 @@ import AutoEvalView from './AutoEvalView'
 import GlobalRatingsView from './GlobalRatingsView'
 import PeerQuizTrainer from './PeerQuizGame'
 import FreeQuizTrainer from './FreeQuizGame'
+import { readTrainerMode, setTrainerMode, TRAINER_MODE_META } from '@/lib/trainerMode'
 
+function TrainerModeToggle({ mode, onChange }) {
+  const [open, setOpen] = useState(false)
+  const meta = mode ? TRAINER_MODE_META[mode] : null
 
-function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoom, onSonnetteClick, sonnettePending }) {
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        title="Mode de travail — mémorisé jusqu'à ce que tu le changes"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: mode ? 'rgba(0,171,233,0.15)' : 'rgba(255,255,255,0.08)',
+          border: `1px solid ${mode ? 'rgba(0,171,233,0.35)' : 'rgba(255,255,255,0.2)'}`,
+          borderRadius: 20, padding: '6px 12px',
+          cursor: 'pointer', fontFamily: 'inherit',
+          color: mode ? '#00abe9' : 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 700,
+        }}
+      >
+        {meta ? `${meta.emoji} ${meta.label}` : '⚙️ Choisir un mode'}
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+          <div style={{
+            position: 'absolute', top: '110%', right: 0, zIndex: 41,
+            background: '#0f172a', border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: 12, padding: 6, minWidth: 160,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', gap: 2,
+          }}>
+            {Object.entries(TRAINER_MODE_META).map(([slug, m]) => (
+              <button
+                key={slug}
+                onClick={() => { onChange(slug); setOpen(false) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left',
+                  background: mode === slug ? 'rgba(0,171,233,0.15)' : 'transparent',
+                  border: 'none', borderRadius: 8, padding: '8px 10px',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  color: mode === slug ? '#00abe9' : '#e2e8f0', fontSize: 13, fontWeight: 600,
+                }}
+              >
+                {m.emoji} {m.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoom, onSonnetteClick, sonnettePending, trainerMode, onTrainerModeChange }) {
   const rawKey = (pName || '').toLowerCase().split(' ')[0]
   const key = TRAINER_CANONICAL[rawKey] || rawKey
   const avatarSrc = TRAINER_AVATARS[key] || TRAINER_AVATARS.kevin
@@ -52,6 +103,7 @@ function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoo
 
       {/* Zone salle active */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, zIndex: 1 }}>
+        <TrainerModeToggle mode={trainerMode} onChange={onTrainerModeChange} />
         {hasRoom ? (
           <>
             <div
@@ -65,23 +117,6 @@ function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoo
               <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(0,171,233,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>Salle active</span>
               <span style={{ fontSize: 16, fontWeight: 900, color: '#00abe9', fontFamily: 'monospace', letterSpacing: 3, lineHeight: 1.2 }}>{activeRoomCode}</span>
             </div>
-            {onOpenTv && (
-              <button
-                onClick={onOpenTv}
-                title="Afficher le QR code sur le diffuseur"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.35)',
-                  borderRadius: 20, padding: '6px 12px',
-                  cursor: 'pointer', fontFamily: 'inherit',
-                  color: '#00abe9', fontSize: 12, fontWeight: 700, transition: 'all .18s',
-                }}
-                onMouseOver={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.25)' }}
-                onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.15)' }}
-              >
-                📺 QR
-              </button>
-            )}
             <button
               onClick={onOpenRoom}
               title="Reprendre la salle"
@@ -1468,6 +1503,14 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   const [ideeCount, setIdeeCount] = useState(0)
   const [showSonnette, setShowSonnette] = useState(false)
   const [sonnettePending, setSonnettePending] = useState(0)
+  const [trainerMode, setTrainerModeState] = useState(null)
+  useEffect(() => {
+    setTrainerModeState(readTrainerMode())
+  }, [])
+  const handleTrainerModeChange = (slug) => {
+    setTrainerMode(slug)
+    setTrainerModeState(slug)
+  }
   useEffect(() => {
     loadIdeesFromSupabase().then(list => setIdeeCount(list.length)).catch(() => {})
   }, [])
@@ -1482,9 +1525,35 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     return () => clearInterval(interval)
   }, [pName])
 
+  // Lundi 00h00 de la semaine de `d` — une salle démarrée avant cette date
+  // vient d'une semaine précédente, donc oubliée/abandonnée.
+  const startOfWeek = (d) => {
+    const day = d.getDay()
+    const diff = (day === 0 ? -6 : 1) - day
+    const monday = new Date(d)
+    monday.setDate(d.getDate() + diff)
+    monday.setHours(0, 0, 0, 0)
+    return monday
+  }
+
   const refreshActiveRoom = async () => {
     const login = trainerLoginFromDisplayName(pName)
-    const code = await getLiveTrainerRoomCode(login, pName)
+    const room = await findActiveRoomForTrainer(login, pName)
+    const code = room?.code || ''
+    setTrainerActiveRoomCode(code)
+
+    // Clôture automatique d'une salle oubliée d'une semaine précédente (ex: pas
+    // clôturée le vendredi) — les retours de formation restent accessibles quoi
+    // qu'il arrive (indépendants du statut de la salle, cf. formation_reports +
+    // repli archive), donc rien n'est perdu à la clôturer sans repasser par le
+    // formateur.
+    if (code && room?.started_at && new Date(room.started_at) < startOfWeek(new Date())) {
+      await endActiveRoom(code, { trainerName: pName })
+      setTrainerActiveRoomCode('')
+      setActiveRoomCode('')
+      onToast?.('Salle de la semaine dernière clôturée automatiquement')
+      return
+    }
     setActiveRoomCode(code)
   }
 
@@ -1716,6 +1785,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           onLaunchPeerQuiz={() => { setObReturnJournee('journee2'); setObReturnView('onboarding'); setActiveView('peer-quiz') }}
           initialStep={returnJournee ? 'modules' : 'select'}
           initialJournee={returnJournee}
+          initialGroup={(trainerMode === 'paris' || trainerMode === 'province') ? trainerMode : null}
         />
       </div>
     )
@@ -1911,6 +1981,8 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           onOpenRoom={handleOpenRoomClick}
           onSonnetteClick={() => setShowSonnette(true)}
           sonnettePending={sonnettePending}
+          trainerMode={trainerMode}
+          onTrainerModeChange={handleTrainerModeChange}
         />
         <SonnettePanel
           visible={showSonnette}

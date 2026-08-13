@@ -92,6 +92,16 @@ export function getCategoryMeta(slug) {
   return FORMATION_CATEGORIES[slug] || null
 }
 
+/** Libellé court du poste RH pour affichage formé (profil) */
+export function mapPosteLabel(poste) {
+  const p = (poste || '').toLowerCase()
+  if (p.includes('apprenti') || p.includes('alternan')) return 'Alternant'
+  if (p.includes('opticien')) return 'Opticien'
+  if (p.includes('monteur') || p.includes('sav')) return 'MO/SAV'
+  if (p.includes('vente') || p.includes('conseiller')) return 'CVO'
+  return poste || ''
+}
+
 export function getCategoryLabel(slug) {
   return getCategoryMeta(slug)?.label || slug || ''
 }

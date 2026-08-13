@@ -1,5 +1,6 @@
 import { getSessionCode } from './env'
 import { resolveSessionCode, resolveRoomStateCode, getLegacySessionCode } from './sessionCode'
+import { enqueueWrite, startWriteQueueLoop } from './writeQueue'
 
 // Lu au build / au démarrage de `next dev` depuis .env.local (NEXT_PUBLIC_*)
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
@@ -65,6 +66,50 @@ function sbHeaders() {
   }
 }
 
+// Ne retente que les échecs plausiblement transitoires (réseau/panne serveur) —
+// jamais les erreurs 4xx (données invalides, contrainte violée…) qui
+// échoueraient identiquement à chaque tentative et ne feraient que
+// s'accumuler indéfiniment dans la file.
+function isRetriableStatus(status) {
+  return status === 0 || status >= 500
+}
+
+async function rawWrite(item) {
+  try {
+    if (item.kind === 'insert') {
+      const r = await fetch(`${SB_URL}/rest/v1/${item.table}`, {
+        method: 'POST',
+        headers: { ...sbHeaders(), Prefer: 'return=minimal' },
+        body: JSON.stringify(item.data),
+      })
+      return r.ok
+    }
+    if (item.kind === 'upsert') {
+      let url = `${SB_URL}/rest/v1/${item.table}`
+      if (item.onConflict) url += '?on_conflict=' + item.onConflict
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { ...sbHeaders(), Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify(item.data),
+      })
+      return r.ok
+    }
+    if (item.kind === 'update') {
+      const r = await fetch(`${SB_URL}/rest/v1/${item.table}?${item.filter}`, {
+        method: 'PATCH',
+        headers: { ...sbHeaders(), Prefer: 'return=minimal' },
+        body: JSON.stringify(item.data),
+      })
+      return r.ok
+    }
+  } catch {
+    return false
+  }
+  return false
+}
+
+if (typeof window !== 'undefined') startWriteQueueLoop(rawWrite)
+
 export async function sbSelect(table, filter = null) {
   let url = `${SB_URL}/rest/v1/${table}?select=*`
   if (filter) url += '&' + filter
@@ -95,14 +140,24 @@ export async function sbUpsert(table, data, onConflict) {
   let url = `${SB_URL}/rest/v1/${table}`
   if (onConflict) url += '?on_conflict=' + onConflict
   const headers = { ...sbHeaders(), Prefer: 'resolution=merge-duplicates,return=representation' }
-  const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(data) })
-  if (!r.ok) {
-    const err = await r.json().catch(() => ({}))
-    const msg = err?.message || err?.hint || err?.details || err?.code || JSON.stringify(err)
-    console.error('sbUpsert error', table, r.status, msg)
+  const dedupKey = onConflict
+    ? `upsert:${table}:${onConflict}:${onConflict.split(',').map(c => data[c.trim()]).join('|')}`
+    : null
+  try {
+    const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(data) })
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}))
+      const msg = err?.message || err?.hint || err?.details || err?.code || JSON.stringify(err)
+      console.error('sbUpsert error', table, r.status, msg)
+      if (isRetriableStatus(r.status)) enqueueWrite({ kind: 'upsert', table, data, onConflict, dedupKey })
+      return null
+    }
+    return await r.json()
+  } catch (e) {
+    console.error('sbUpsert network error', table, e)
+    enqueueWrite({ kind: 'upsert', table, data, onConflict, dedupKey })
     return null
   }
-  return await r.json()
 }
 
 export async function sbUpsertOrThrow(table, data, onConflict) {
@@ -120,16 +175,23 @@ export async function sbUpsertOrThrow(table, data, onConflict) {
 }
 
 export async function sbInsert(table, data) {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
-    method: 'POST',
-    headers: { ...sbHeaders(), Prefer: 'return=minimal' },
-    body: JSON.stringify(data),
-  })
-  if (!r.ok) {
-    const err = await r.json().catch(() => ({}))
-    console.error('sbInsert error', table, r.status, err?.message || err?.hint || err?.details || err)
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: { ...sbHeaders(), Prefer: 'return=minimal' },
+      body: JSON.stringify(data),
+    })
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}))
+      console.error('sbInsert error', table, r.status, err?.message || err?.hint || err?.details || err)
+      if (isRetriableStatus(r.status)) enqueueWrite({ kind: 'insert', table, data })
+    }
+    return r.ok
+  } catch (e) {
+    console.error('sbInsert network error', table, e)
+    enqueueWrite({ kind: 'insert', table, data })
+    return false
   }
-  return r.ok
 }
 
 function parseJsonField(value, fallback) {
@@ -209,16 +271,23 @@ export async function ensureSession(sessionCode) {
 }
 
 export async function sbUpdate(table, data, filter) {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}?${filter}`, {
-    method: 'PATCH',
-    headers: { ...sbHeaders(), Prefer: 'return=minimal' },
-    body: JSON.stringify(data),
-  })
-  if (!r.ok) {
-    const err = await r.json().catch(() => ({}))
-    console.error('[sbUpdate]', table, r.status, err?.message || err?.code || err)
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/${table}?${filter}`, {
+      method: 'PATCH',
+      headers: { ...sbHeaders(), Prefer: 'return=minimal' },
+      body: JSON.stringify(data),
+    })
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}))
+      console.error('[sbUpdate]', table, r.status, err?.message || err?.code || err)
+      if (isRetriableStatus(r.status)) enqueueWrite({ kind: 'update', table, data, filter, dedupKey: `update:${table}:${filter}` })
+    }
+    return r.ok
+  } catch (e) {
+    console.error('[sbUpdate] network error', table, e)
+    enqueueWrite({ kind: 'update', table, data, filter, dedupKey: `update:${table}:${filter}` })
+    return false
   }
-  return r.ok
 }
 
 /** PATCH conditionnel : retourne true seulement si au moins une ligne correspondait au filtre

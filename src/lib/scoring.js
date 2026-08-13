@@ -92,26 +92,22 @@ export const LEVELS = [
   { name: 'Légende',   icon: '👑', color: '#eab308', bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.35)'  },
 ]
 
-// Seuils cumulés : L1=50, L2=110, L3=180, L4=260, L5=350
-// formule : threshold(N) = 5*N*(N+9)
+// Palier plat provisoire : un niveau tous les POINTS_PER_LEVEL points — simple
+// exprès en attendant assez de recul pour ajuster la courbe (cf. Quentin, 13/08).
+export const POINTS_PER_LEVEL = 50
+
 export function getLevelInfo(points) {
-  let level = 0
-  let needed = 50
-  let accumulated = 0
-  while (level < LEVELS.length - 1 && points >= accumulated + needed) {
-    accumulated += needed
-    needed += 10
-    level++
-  }
+  const level = Math.min(LEVELS.length - 1, Math.floor(Math.max(0, points) / POINTS_PER_LEVEL))
   const isMaxLevel = level >= LEVELS.length - 1
+  const accumulated = level * POINTS_PER_LEVEL
   const progressInLevel = points - accumulated
   return {
     level,
     levelDef: LEVELS[level],
     progressInLevel,
-    ptsForLevel: needed,
-    ptsToNext: isMaxLevel ? 0 : Math.max(0, needed - progressInLevel),
-    progressPct: isMaxLevel ? 100 : Math.min(100, (progressInLevel / needed) * 100),
+    ptsForLevel: POINTS_PER_LEVEL,
+    ptsToNext: isMaxLevel ? 0 : Math.max(0, POINTS_PER_LEVEL - progressInLevel),
+    progressPct: isMaxLevel ? 100 : Math.min(100, (progressInLevel / POINTS_PER_LEVEL) * 100),
     isMaxLevel,
   }
 }

@@ -749,9 +749,9 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
 }
 
 // ── Composant principal ───────────────────────────────────────────
-export default function OnboardingView({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, onLaunchPeerQuiz, initialStep = 'select', initialJournee = null }) {
-  const [step, setStep] = useState(initialStep) // select | list | modules
-  const [group, setGroup] = useState(null)
+export default function OnboardingView({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, onLaunchPeerQuiz, initialStep = 'select', initialJournee = null, initialGroup = null }) {
+  const [step, setStep] = useState(initialStep === 'select' && initialGroup ? 'list' : initialStep) // select | list | modules
+  const [group, setGroup] = useState(initialGroup)
 
   const handleSelectGroup = (g) => {
     setGroup(g)
