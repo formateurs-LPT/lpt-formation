@@ -607,6 +607,20 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
 
   const rate = computeRate(assessments)
   const [showReport, setShowReport] = useState(false)
+  const [autoPrint, setAutoPrint] = useState(false)
+
+  // Déclenche l'impression (→ "Enregistrer en PDF" du navigateur) automatiquement
+  // dès que le compte rendu est monté, uniquement quand ouvert via "Télécharger PDF".
+  useEffect(() => {
+    if (!showReport || !autoPrint) return
+    const t = setTimeout(() => window.print(), 300)
+    return () => clearTimeout(t)
+  }, [showReport, autoPrint])
+
+  const handleDownloadPdf = () => {
+    setAutoPrint(true)
+    setShowReport(true)
+  }
 
   const reportData = {
     collaborateur: name,
@@ -767,7 +781,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
     {/* Modal compte rendu */}
     {showReport && (
       <div
-        onClick={e => { if (e.target === e.currentTarget) setShowReport(false) }}
+        onClick={e => { if (e.target === e.currentTarget) { setShowReport(false); setAutoPrint(false) } }}
         style={{
           position: 'fixed', inset: 0, zIndex: 9999,
           background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
@@ -780,7 +794,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
         }}>
           <button
-            onClick={() => setShowReport(false)}
+            onClick={() => { setShowReport(false); setAutoPrint(false) }}
             style={{
               padding: '8px 18px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.3)',
               background: 'rgba(255,255,255,0.12)', color: '#fff',
@@ -1286,7 +1300,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       </section>
 
       {/* Boutons actions */}
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <button
           onClick={() => setShowReport(true)}
           style={{
@@ -1297,6 +1311,18 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
           }}
         >
           <span>👁</span> Aperçu compte rendu
+        </button>
+
+        <button
+          onClick={handleDownloadPdf}
+          style={{
+            flex: 1, padding: '14px 16px', borderRadius: 14,
+            background: '#334155', color: '#f1f5f9', border: 'none',
+            fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+        >
+          <span>📄</span> Télécharger PDF
         </button>
 
         {managers.length > 0 ? (
