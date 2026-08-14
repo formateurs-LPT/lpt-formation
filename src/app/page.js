@@ -350,14 +350,25 @@ export default function Page() {
       return
     }
     // Affiche le lobby du module sur le diffuseur immediatement
+    // Efface aussi tout minijeu_game résiduel : sans ça, un mini-jeu quitté
+    // sans repasser par le bouton "Retour" (ex: le formateur lance directement
+    // un autre module depuis le dashboard) laissait les formés bloqués sur
+    // l'écran du jeu en boucle, car leur vue le vérifie indépendamment du
+    // module réellement actif (incident du 14/08).
+    const minijeuReset = {
+      tv_screen: null,
+      minijeu_game: null, minijeu_phase: null, minijeu_vendeur: null, minijeu_client: null,
+      mjq_q: null, mjq_vf_correct: null, mjq_clear_ts: null, mjq_custom_q_text: null,
+      mjq2_q: null, mjq2_vf_correct: null, mjq2_clear_ts: null, mjq2_custom_q_text: null,
+    }
     try {
       const code = getActiveSessionCode()
       if (isDynamicRoomCode(code)) {
         await sbUpdate('sessions', { active_module: moduleId, module_page: -1 }, 'code=eq.' + code)
-        await setRoomSharedState({ tv_screen: null }, code)
+        await setRoomSharedState(minijeuReset, code)
       } else if (SESSION_CODE) {
         await sbUpdate('sessions', { active_module: moduleId, module_page: -1 }, 'code=eq.' + SESSION_CODE)
-        await setSharedState({ tv_screen: null })
+        await setSharedState(minijeuReset)
       }
     } catch (e) {
       console.warn('handleLaunchModule tv sync', e)

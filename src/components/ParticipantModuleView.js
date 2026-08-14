@@ -5701,7 +5701,7 @@ function TestResetButton({ pName }) {
 }
 
 
-function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp, onDisconnect }) {
+function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedStateProp, onDisconnect, trackPresence = true }) {
   const sessionCode = getParticipantSessionCode()
   const [sessionEnded, setSessionEnded] = useState(false)
   const [alertMessage, setAlertMessage] = useState(null)
@@ -5736,10 +5736,16 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     return () => clearInterval(interval)
   }, [pName, sessionCode])
 
+  // trackPresence=false quand ParticipantView (qui suit déjà la présence en
+  // continu) englobe ce composant : sans ça, les deux hooks écrivaient en
+  // parallèle sur la même ligne trainer_state (heartbeat + active_time),
+  // doublant les collisions d'écriture concurrente pile pendant les
+  // modules/quiz — la période où le suivi du temps actif compte le plus
+  // (voir alerte activité écran, incident du 13/08).
   useParticipantPresence({
     sessionCode,
     name: pName,
-    enabled: !!sessionCode && !!pName && !sessionEnded,
+    enabled: trackPresence && !!sessionCode && !!pName && !sessionEnded,
     onSessionEnded: () => setSessionEnded(true),
   })
 
@@ -5869,7 +5875,13 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   // active_module reste null tant qu'il tourne). Même mécanique que l'entraînement
   // oral de Bases de l'optique — voir ParticipantView.js pour le même branchement
   // côté accès QR/connexion classique.
-  if (sharedState?.minijeu_game === 'questions') return (
+  // Gardé par !activeModule : minijeu_game n'est censé s'appliquer que tant
+  // qu'aucun vrai module n'est lancé (voir commentaire ci-dessus). Sans ce
+  // garde-fou, un minijeu_game resté bloqué en base (le formateur ayant
+  // quitté les Mini Jeux pour lancer un module sans repasser par handleBack)
+  // piégeait les formés sur l'écran du jeu indéfiniment, même une fois un
+  // vrai module lancé et visible côté formateur/diffuseur (incident du 14/08).
+  if (!activeModule && sharedState?.minijeu_game === 'questions') return (
     <>
       <DisconnectChip pName={pName} onDisconnect={onDisconnect} />
       <QuestionsGameParticipantView
@@ -5885,7 +5897,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   )
 
   // Mini-jeu "Questions Jour 2" — même mécanique, contenu Jour 2
-  if (sharedState?.minijeu_game === 'questions-j2') return (
+  if (!activeModule && sharedState?.minijeu_game === 'questions-j2') return (
     <>
       <DisconnectChip pName={pName} onDisconnect={onDisconnect} />
       <QuestionsGameParticipantView
@@ -5902,7 +5914,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
 
   // Mini-jeu de rôle vendeur/client — les observateurs notent des remarques
   // pendant le débrief. Même branchement que ParticipantView.js (flux QR).
-  if (sharedState?.minijeu_game && ['revealed', 'debrief'].includes(sharedState?.minijeu_phase)) {
+  if (!activeModule && sharedState?.minijeu_game && ['revealed', 'debrief'].includes(sharedState?.minijeu_phase)) {
     const isObserver = pName !== sharedState?.minijeu_vendeur && pName !== sharedState?.minijeu_client
     if (isObserver) return (
       <>
@@ -6006,6 +6018,7 @@ export default function ParticipantModuleView({ forcedModule, forcedPage, pName:
         pName={pNameProp}
         sharedStateProp={sharedState}
         onDisconnect={onDisconnect}
+        trackPresence={false}
       />
     )
   }
