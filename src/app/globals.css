@@ -331,3 +331,13 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   --red-l: rgba(239,68,68,0.12);
   --orange-l: rgba(245,158,11,0.12);
 }
+
+/* ── IMPRESSION — n'imprime que le compte rendu (.print-report-area), pas le
+   reste de la page qui reste dans le DOM derrière la modale ── */
+@media print {
+  body * { visibility: hidden; }
+  .print-report-area, .print-report-area * { visibility: visible; }
+  .print-report-area {
+    position: absolute; left: 0; top: 0; width: 100%;
+  }
+}

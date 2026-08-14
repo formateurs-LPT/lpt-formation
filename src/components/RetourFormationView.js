@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { sbSelect, sbUpsert, getSharedState } from '@/lib/supabase'
 import { getLevelInfo } from '@/lib/scoring'
 import { classifyMagasin } from '@/lib/formationCategories'
@@ -607,19 +607,31 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
 
   const rate = computeRate(assessments)
   const [showReport, setShowReport] = useState(false)
-  const [autoPrint, setAutoPrint] = useState(false)
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
+  const pdfSourceRef = useRef(null)
 
-  // Déclenche l'impression (→ "Enregistrer en PDF" du navigateur) automatiquement
-  // dès que le compte rendu est monté, uniquement quand ouvert via "Télécharger PDF".
-  useEffect(() => {
-    if (!showReport || !autoPrint) return
-    const t = setTimeout(() => window.print(), 300)
-    return () => clearTimeout(t)
-  }, [showReport, autoPrint])
-
-  const handleDownloadPdf = () => {
-    setAutoPrint(true)
-    setShowReport(true)
+  // Génère un vrai fichier PDF téléchargeable depuis une copie hors-écran du
+  // compte rendu (pas de boîte de dialogue d'impression) — voir pdfSourceRef ci-dessous.
+  const handleDownloadPdf = async () => {
+    if (downloadingPdf || !pdfSourceRef.current) return
+    setDownloadingPdf(true)
+    try {
+      const html2pdf = (await import('html2pdf.js')).default
+      await html2pdf()
+        .set({
+          filename: `Compte-rendu-${name.replace(/\s+/g, '-')}.pdf`,
+          margin: 10,
+          image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { scale: 2, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        })
+        .from(pdfSourceRef.current)
+        .save()
+    } catch (e) {
+      console.error('Génération PDF échouée', e)
+    } finally {
+      setDownloadingPdf(false)
+    }
   }
 
   const reportData = {
@@ -781,7 +793,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
     {/* Modal compte rendu */}
     {showReport && (
       <div
-        onClick={e => { if (e.target === e.currentTarget) { setShowReport(false); setAutoPrint(false) } }}
+        onClick={e => { if (e.target === e.currentTarget) setShowReport(false) }}
         style={{
           position: 'fixed', inset: 0, zIndex: 9999,
           background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
@@ -794,7 +806,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
         }}>
           <button
-            onClick={() => { setShowReport(false); setAutoPrint(false) }}
+            onClick={() => setShowReport(false)}
             style={{
               padding: '8px 18px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.3)',
               background: 'rgba(255,255,255,0.12)', color: '#fff',
@@ -826,9 +838,16 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
             </button>
           </div>
         </div>
-        <CompteRenduManager data={reportData} />
+        <div className="print-report-area">
+          <CompteRenduManager data={reportData} />
+        </div>
       </div>
     )}
+
+    {/* Copie hors-écran, toujours montée, utilisée uniquement pour générer le PDF téléchargeable */}
+    <div ref={pdfSourceRef} style={{ position: 'fixed', left: -9999, top: 0, width: 780, background: '#fff' }}>
+      <CompteRenduManager data={reportData} />
+    </div>
 
     {/* Aperçu du bilan envoyé au formé — exactement ce qu'il verra en ouvrant le lien */}
     {showFormePreview && (
@@ -1315,14 +1334,16 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
 
         <button
           onClick={handleDownloadPdf}
+          disabled={downloadingPdf}
           style={{
             flex: 1, padding: '14px 16px', borderRadius: 14,
             background: '#334155', color: '#f1f5f9', border: 'none',
-            fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            fontSize: 13, fontWeight: 700, cursor: downloadingPdf ? 'default' : 'pointer', fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            opacity: downloadingPdf ? 0.6 : 1,
           }}
         >
-          <span>📄</span> Télécharger PDF
+          <span>📄</span> {downloadingPdf ? 'Génération…' : 'Télécharger PDF'}
         </button>
 
         {managers.length > 0 ? (
