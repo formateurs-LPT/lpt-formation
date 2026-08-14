@@ -608,30 +608,43 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const rate = computeRate(assessments)
   const [showReport, setShowReport] = useState(false)
   const [downloadingPdf, setDownloadingPdf] = useState(false)
-  const pdfSourceRef = useRef(null)
+  const reportRef = useRef(null)
+  const pendingDownloadRef = useRef(false)
 
-  // Génère un vrai fichier PDF téléchargeable depuis une copie hors-écran du
-  // compte rendu (pas de boîte de dialogue d'impression) — voir pdfSourceRef ci-dessous.
-  const handleDownloadPdf = async () => {
-    if (downloadingPdf || !pdfSourceRef.current) return
+  // Génère un vrai fichier PDF téléchargeable (pas de boîte de dialogue
+  // d'impression) à partir du rapport une fois affiché normalement dans la
+  // modale — un rendu hors-écran donnait une capture vide avec html2canvas.
+  useEffect(() => {
+    if (!showReport || !pendingDownloadRef.current) return
+    pendingDownloadRef.current = false
+    const t = setTimeout(async () => {
+      try {
+        const html2pdf = (await import('html2pdf.js')).default
+        await html2pdf()
+          .set({
+            filename: `Compte-rendu-${name.replace(/\s+/g, '-')}.pdf`,
+            margin: 10,
+            image: { type: 'jpeg', quality: 0.95 },
+            html2canvas: { scale: 2, backgroundColor: '#ffffff' },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          })
+          .from(reportRef.current)
+          .save()
+      } catch (e) {
+        console.error('Génération PDF échouée', e)
+      } finally {
+        setDownloadingPdf(false)
+        setShowReport(false)
+      }
+    }, 200)
+    return () => clearTimeout(t)
+  }, [showReport, name])
+
+  const handleDownloadPdf = () => {
+    if (downloadingPdf) return
     setDownloadingPdf(true)
-    try {
-      const html2pdf = (await import('html2pdf.js')).default
-      await html2pdf()
-        .set({
-          filename: `Compte-rendu-${name.replace(/\s+/g, '-')}.pdf`,
-          margin: 10,
-          image: { type: 'jpeg', quality: 0.95 },
-          html2canvas: { scale: 2, backgroundColor: '#ffffff' },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        })
-        .from(pdfSourceRef.current)
-        .save()
-    } catch (e) {
-      console.error('Génération PDF échouée', e)
-    } finally {
-      setDownloadingPdf(false)
-    }
+    pendingDownloadRef.current = true
+    setShowReport(true)
   }
 
   const reportData = {
@@ -838,16 +851,11 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
             </button>
           </div>
         </div>
-        <div className="print-report-area">
+        <div ref={reportRef} className="print-report-area">
           <CompteRenduManager data={reportData} />
         </div>
       </div>
     )}
-
-    {/* Copie hors-écran, toujours montée, utilisée uniquement pour générer le PDF téléchargeable */}
-    <div ref={pdfSourceRef} style={{ position: 'fixed', left: -9999, top: 0, width: 780, background: '#fff' }}>
-      <CompteRenduManager data={reportData} />
-    </div>
 
     {/* Aperçu du bilan envoyé au formé — exactement ce qu'il verra en ouvrant le lien */}
     {showFormePreview && (
