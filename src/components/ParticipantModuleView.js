@@ -15,7 +15,7 @@ import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName, normalizeNameKey, loadEntreesList, entreeDisplayName } from '@/lib/participantNames'
 import { mergeRoomSharedField } from '@/lib/roomSharedState'
-import { getLevelInfo, getRankMessage, fetchParticipantRanking } from '@/lib/scoring'
+import { getLevelInfo, getRankMessage, fetchParticipantRanking, fetchWeeklyGlobalRanking } from '@/lib/scoring'
 import { canParticipantJoinSession, getCategoryJoinDeniedMessage, mapPosteLabel } from '@/lib/formationCategories'
 import { themeForAnswer, DIRECT_THEME_MODULES } from '@/lib/quizThemeMap'
 import { resolveParticipantSessionCode, participantJoinBlockedMessage } from '@/lib/participantSession'
@@ -207,8 +207,67 @@ function ParticipantProfileCard({ pName, myProfile }) {
   )
 }
 
+// Classement "pour le fun", toutes salles de formation confondues, sur la
+// semaine en cours — voir fetchWeeklyGlobalRanking (scoring.js). Distinct du
+// classement de la salle affiché dans l'onglet "Mon profil".
+function NationalRankingTab({ pName }) {
+  const [ranking, setRanking] = useState(null) // null = en cours de chargement
+  const MEDALS = ['🥇', '🥈', '🥉']
+
+  useEffect(() => {
+    let cancelled = false
+    const load = () => {
+      fetchWeeklyGlobalRanking(10)
+        .then(r => { if (!cancelled) setRanking(r) })
+        .catch(() => { if (!cancelled) setRanking([]) })
+    }
+    load()
+    const t = setInterval(load, 30000)
+    return () => { cancelled = true; clearInterval(t) }
+  }, [])
+
+  const myKey = normalizeNameKey(pName || '')
+
+  return (
+    <div>
+      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: 18, lineHeight: 1.5, padding: '0 8px' }}>
+        🌍 Meilleurs taux de bonnes réponses de la semaine, toutes salles de formation confondues — pour le fun, ça ne change rien à ton classement de la salle.
+      </div>
+      {ranking === null ? (
+        <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)', padding: '32px 0' }}>Chargement…</div>
+      ) : ranking.length === 0 ? (
+        <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)', padding: '32px 0' }}>
+          Pas encore assez de réponses cette semaine pour établir un classement.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {ranking.map(r => {
+            const mine = normalizeNameKey(r.name) === myKey
+            return (
+              <div key={r.name} style={{
+                background: mine ? 'rgba(0,171,233,0.14)' : 'rgba(255,255,255,0.03)',
+                border: `1.5px solid ${mine ? 'rgba(0,171,233,0.5)' : 'rgba(255,255,255,0.07)'}`,
+                borderRadius: 14, padding: '12px 16px',
+                display: 'flex', alignItems: 'center', gap: 12,
+              }}>
+                <div style={{ width: 28, textAlign: 'center', fontSize: r.rank <= 3 ? 20 : 14, fontWeight: 800, color: mine ? '#00abe9' : 'rgba(255,255,255,0.5)', flexShrink: 0 }}>
+                  {r.rank <= 3 ? MEDALS[r.rank - 1] : r.rank}
+                </div>
+                <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#fff', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {r.name}{mine && <span style={{ color: '#00abe9' }}> (toi)</span>}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{Math.round(r.rate * 100)}%</div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function DashboardScreen({ pName, myEntry, ranking, myProfile, quizHistory, badges }) {
-  const [tab, setTab] = useState('profil') // profil | historique
+  const [tab, setTab] = useState('profil') // profil | historique | national
   const firstName = (pName || '').split(' ')[0] || 'toi'
   const points = myEntry?.points ?? 0
   const rank = myEntry?.rank
@@ -232,7 +291,7 @@ function DashboardScreen({ pName, myEntry, ranking, myProfile, quizHistory, badg
 
       {/* Onglets */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        {[['profil', 'Mon profil'], ['historique', 'Mes quiz']].map(([key, label]) => (
+        {[['profil', 'Mon profil'], ['historique', 'Mes quiz'], ['national', '🌍 National']].map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
@@ -249,7 +308,9 @@ function DashboardScreen({ pName, myEntry, ranking, myProfile, quizHistory, badg
         ))}
       </div>
 
-      {tab === 'profil' ? (
+      {tab === 'national' ? (
+        <NationalRankingTab pName={pName} />
+      ) : tab === 'profil' ? (
         <>
           <ParticipantProfileCard pName={pName} myProfile={myProfile} />
 

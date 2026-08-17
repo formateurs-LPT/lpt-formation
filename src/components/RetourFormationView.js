@@ -1748,6 +1748,8 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
   const [reportOwnerMap, setReportOwnerMap] = useState({}) // { name: vrai trainer_name en base de sa fiche partagée }
   const [activeSecondsMap, setActiveSecondsMap] = useState({}) // { name: secondes d'activité écran cette semaine }
   const [activeSecondsAvg, setActiveSecondsAvg] = useState(0) // moyenne du groupe
+  const [groupThemeStats, setGroupThemeStats] = useState({}) // { theme: { correct, total } } — agrégé sur tout le groupe
+  const [showWeakThemes, setShowWeakThemes] = useState(true)
   const weekDate = getWeekDate()
   const catMeta  = CATEGORY_META[categoryKey] || {}
 
@@ -1863,6 +1865,34 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
         byModule: buildByModule(quizArrays[i], answerArrays[i]),
       }))
 
+      // Points faibles du groupe — agrège le taux de réussite par thème sur
+      // TOUS les formés de la catégorie, même calcul que themeQuizStats dans
+      // FicheCollab (thèmes mono-module directs + quiz transversaux question
+      // par question) mais additionné sur tout le groupe au lieu d'un seul
+      // formé, pour repérer en un coup d'œil ce qui mérite d'être repris en
+      // clôture de session plutôt que d'avoir à ouvrir chaque fiche.
+      const groupThemeTotals = {}
+      const addGroupTheme = (theme, correct, total) => {
+        if (!theme || !total) return
+        if (!groupThemeTotals[theme]) groupThemeTotals[theme] = { correct: 0, total: 0 }
+        groupThemeTotals[theme].correct += correct
+        groupThemeTotals[theme].total += total
+      }
+      scores.forEach(({ byModule: bm }, i) => {
+        for (const [mid, m] of Object.entries(bm)) {
+          if (DIRECT_THEME_MODULES.has(mid)) addGroupTheme(mid, m.score, m.total)
+        }
+        const transversalByQuestion = {}
+        for (const r of (answerArrays[i] || [])) {
+          if (!TRANSVERSAL_MODULE_IDS.has(r.module_id) || (r.question_idx ?? 0) >= 100) continue
+          transversalByQuestion[`${r.module_id}:${r.question_idx}`] = r
+        }
+        for (const r of Object.values(transversalByQuestion)) {
+          addGroupTheme(themeForAnswer(r.module_id, r.question_idx), r.is_correct ? 1 : 0, 1)
+        }
+      })
+      setGroupThemeStats(groupThemeTotals)
+
       const rateScores = scores.map(({ name, byModule: bm }) => {
         const vals = Object.values(bm)
         const correct = vals.reduce((s, m) => s + (m.score || 0), 0)
@@ -1906,6 +1936,16 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
     () => filtered.filter(e => !getManagers(e.magasin).length),
     [filtered]
   )
+
+  // Trié du taux le plus faible au plus fort — seuil minimum de réponses pour
+  // ne pas remonter un thème sur une poignée de questions non représentative
+  // (même logique que la suggestion automatique d'acquis dans FicheCollab).
+  const weakThemes = useMemo(() => {
+    return Object.entries(groupThemeStats)
+      .map(([theme, s]) => ({ theme, correct: s.correct, total: s.total, rate: s.total ? s.correct / s.total : 0 }))
+      .filter(t => t.total >= 3)
+      .sort((a, b) => a.rate - b.rate)
+  }, [groupThemeStats])
 
   const buildGroupMailto = (group) => {
     const emails   = group.managers.map(m => m.email).join(',')
@@ -2159,6 +2199,53 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
           </button>
         )}
       </div>
+
+      {/* Points faibles du groupe — agrégé sur tous les formés de la catégorie,
+          pour repérer en un coup d'œil ce qui mérite d'être repris en clôture
+          de session sans avoir à ouvrir chaque fiche une par une. */}
+      {weakThemes.length > 0 && (
+        <div style={{
+          background: '#1e293b', border: '1px solid #334155', borderRadius: 14,
+          overflow: 'hidden', marginBottom: 18,
+        }}>
+          <div
+            onClick={() => setShowWeakThemes(v => !v)}
+            style={{
+              padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10,
+              cursor: 'pointer', userSelect: 'none',
+            }}
+          >
+            <span style={{ fontSize: 16 }}>🎯</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9', flex: 1 }}>
+              Points faibles du groupe
+            </span>
+            <span style={{ fontSize: 11, color: '#64748b' }}>
+              {weakThemes.length} thème{weakThemes.length > 1 ? 's' : ''} · trié du plus faible au plus fort
+            </span>
+            <span style={{ fontSize: 11, color: '#64748b', transform: showWeakThemes ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>▾</span>
+          </div>
+          {showWeakThemes && (
+            <div style={{ padding: '4px 16px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {weakThemes.map(t => {
+                const pct = Math.round(t.rate * 100)
+                const color = pct >= 70 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626'
+                const label = MODULE_DATA[t.theme]?.label || t.theme
+                return (
+                  <div key={t.theme} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 150, flexShrink: 0, fontSize: 12.5, color: '#cbd5e1', fontWeight: 600 }}>{label}</div>
+                    <div style={{ flex: 1, height: 8, background: '#334155', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 4, transition: 'width .5s ease' }} />
+                    </div>
+                    <div style={{ width: 90, flexShrink: 0, textAlign: 'right', fontSize: 12, fontWeight: 700, color }}>
+                      {pct}% <span style={{ color: '#475569', fontWeight: 500 }}>({t.correct}/{t.total})</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tabs */}
       <div style={{

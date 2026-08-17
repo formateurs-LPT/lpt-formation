@@ -154,6 +154,51 @@ export async function fetchParticipantRanking(sessionCode) {
   })
 }
 
+function startOfThisWeekISO() {
+  const d = new Date()
+  const day = d.getDay()
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day))
+  d.setHours(0, 0, 0, 0)
+  return d.toISOString()
+}
+
+/**
+ * Classement "pour le fun", toutes salles de formation confondues, sur la
+ * semaine en cours — un ressort compétitif EN PLUS, distinct de et sans
+ * impact sur le classement de la salle (fetchParticipantRanking ci-dessus,
+ * inchangé). Basé uniquement sur les quiz_answers LIVE de la semaine, pas
+ * l'archive des salles déjà clôturées (fetchArchiveIndex) : volontairement
+ * léger — un formé dont la salle a été fermée avant la fin de semaine peut
+ * donc temporairement sortir de CE classement précis, ce qui est acceptable
+ * pour un ressort ludique mais ne le serait pas pour un score officiel.
+ */
+export async function fetchWeeklyGlobalRanking(limit = 10) {
+  const since = startOfThisWeekISO()
+  const rows = await sbSelect('quiz_answers', `created_at=gte.${encodeURIComponent(since)}`).catch(() => [])
+  const seen = new Set()
+  const statsByName = {}
+  for (const r of rows || []) {
+    const name = (r.collaborateur || '').trim()
+    if (!name || !r.module_id) continue
+    const key = `${name}|${r.module_id}|${r.question_idx}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    if (!statsByName[name]) statsByName[name] = { correct: 0, total: 0 }
+    statsByName[name].total += 1
+    if (r.is_correct) statsByName[name].correct += 1
+  }
+  const ranked = Object.entries(statsByName)
+    .map(([name, s]) => ({ name, correct: s.correct, total: s.total, rate: s.total ? s.correct / s.total : 0 }))
+    .filter(r => r.total >= 5) // seuil minimum — sinon 1 bonne réponse sur 1 question = 100%
+    .sort((a, b) => b.rate - a.rate || b.total - a.total || a.name.localeCompare(b.name))
+
+  let rk = 1
+  return ranked.map((entry, i) => {
+    if (i > 0 && entry.rate !== ranked[i - 1].rate) rk = i + 1
+    return { ...entry, rank: rk }
+  }).slice(0, limit)
+}
+
 export const LEVELS = [
   { name: 'Débutant',  icon: '🌱', color: '#6b7280', bg: 'rgba(107,114,128,0.15)', border: 'rgba(107,114,128,0.3)' },
   { name: 'Apprenti',  icon: '⭐', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)',  border: 'rgba(245,158,11,0.35)' },
