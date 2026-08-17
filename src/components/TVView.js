@@ -616,7 +616,7 @@ function TVQuizTimerOverlay({ moduleId, qIdx, sessionCode, seconds }) {
   const ss = String(remaining % 60).padStart(2, '0')
   return (
     <div style={{
-      position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 200,
+      position: 'fixed', top: '50%', right: 32, transform: 'translateY(-50%)', zIndex: 200,
       display: 'flex', alignItems: 'center', gap: 16,
       background: urgent ? 'rgba(239,68,68,0.25)' : 'rgba(3,17,42,0.85)',
       border: `3px solid ${urgent ? '#f87171' : 'rgba(0,171,233,0.5)'}`,
@@ -7613,78 +7613,84 @@ function TVKPasswordOverlay() {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       pointerEvents: 'none',
     }}>
-      <div style={{ position: 'relative', width: 260, height: 530, flexShrink: 0 }}>
+      <div style={{ position: 'relative', width: 340, height: 692, flexShrink: 0 }}>
         {/* Coque iPhone */}
         <div style={{
           position: 'absolute', inset: 0,
           background: 'linear-gradient(145deg, #3a3a3c, #1c1c1e)',
-          borderRadius: 46, border: '1px solid #555',
+          borderRadius: 60, border: '1px solid #555',
           boxShadow: '0 30px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08)',
         }} />
-        <div style={{ position: 'absolute', left: -3, top: 100, width: 3, height: 32, background: '#3a3a3c', borderRadius: '3px 0 0 3px' }} />
-        <div style={{ position: 'absolute', left: -3, top: 145, width: 3, height: 52, background: '#3a3a3c', borderRadius: '3px 0 0 3px' }} />
-        <div style={{ position: 'absolute', left: -3, top: 210, width: 3, height: 52, background: '#3a3a3c', borderRadius: '3px 0 0 3px' }} />
-        <div style={{ position: 'absolute', right: -3, top: 155, width: 3, height: 70, background: '#3a3a3c', borderRadius: '0 3px 3px 0' }} />
+        <div style={{ position: 'absolute', left: -4, top: 130, width: 4, height: 42, background: '#3a3a3c', borderRadius: '4px 0 0 4px' }} />
+        <div style={{ position: 'absolute', left: -4, top: 189, width: 4, height: 68, background: '#3a3a3c', borderRadius: '4px 0 0 4px' }} />
+        <div style={{ position: 'absolute', left: -4, top: 273, width: 4, height: 68, background: '#3a3a3c', borderRadius: '4px 0 0 4px' }} />
+        <div style={{ position: 'absolute', right: -4, top: 202, width: 4, height: 91, background: '#3a3a3c', borderRadius: '0 4px 4px 0' }} />
         {/* Écran — reproduit l'écran de connexion réel de l'appli Lunettes Pour Tous */}
         <div style={{
-          position: 'absolute', inset: 8,
-          background: '#efece7', borderRadius: 38,
+          position: 'absolute', inset: 10,
+          background: '#efece7', borderRadius: 50,
           backgroundImage:
             'repeating-linear-gradient(0deg, rgba(0,0,0,0.035) 0 1px, transparent 1px 22px), ' +
             'repeating-linear-gradient(90deg, rgba(0,0,0,0.02) 0 1px, transparent 1px 44px)',
           overflow: 'hidden', display: 'flex', flexDirection: 'column',
         }}>
           {/* Dynamic Island */}
-          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12, paddingBottom: 4, flexShrink: 0 }}>
-            <div style={{ width: 88, height: 28, background: '#000', border: '2px solid #1a1a1a', borderRadius: 20, boxShadow: '0 0 0 1px #333' }} />
+          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 16, paddingBottom: 5, flexShrink: 0 }}>
+            <div style={{ width: 114, height: 36, background: '#000', border: '2px solid #1a1a1a', borderRadius: 26, boxShadow: '0 0 0 1px #333' }} />
           </div>
           {/* Status bar */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 18px 6px', flexShrink: 0 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#111' }}>09:04</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <svg width="14" height="10" viewBox="0 0 14 10"><rect x="0" y="3" width="3" height="7" fill="#111" rx="1"/><rect x="4" y="2" width="3" height="8" fill="#111" rx="1"/><rect x="8" y="0" width="3" height="10" fill="#111" rx="1"/><rect x="12" y="0" width="2" height="10" fill="rgba(0,0,0,0.3)" rx="1"/></svg>
-              <span style={{ fontSize: 9, fontWeight: 700, color: '#111' }}>5G</span>
-              <div style={{ width: 22, height: 11, border: '1.5px solid rgba(0,0,0,0.5)', borderRadius: 3, position: 'relative', display: 'flex', alignItems: 'center', padding: '0 2px' }}>
-                <div style={{ width: '75%', height: 6, background: '#16a34a', borderRadius: 1 }} />
-                <div style={{ position: 'absolute', right: -4, top: '50%', transform: 'translateY(-50%)', width: 3, height: 5, background: 'rgba(0,0,0,0.4)', borderRadius: '0 1px 1px 0' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 24px 8px', flexShrink: 0 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>09:04</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <svg width="18" height="13" viewBox="0 0 14 10"><rect x="0" y="3" width="3" height="7" fill="#111" rx="1"/><rect x="4" y="2" width="3" height="8" fill="#111" rx="1"/><rect x="8" y="0" width="3" height="10" fill="#111" rx="1"/><rect x="12" y="0" width="2" height="10" fill="rgba(0,0,0,0.3)" rx="1"/></svg>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#111' }}>5G</span>
+              <div style={{ width: 28, height: 14, border: '1.5px solid rgba(0,0,0,0.5)', borderRadius: 4, position: 'relative', display: 'flex', alignItems: 'center', padding: '0 2px' }}>
+                <div style={{ width: '75%', height: 8, background: '#16a34a', borderRadius: 1 }} />
+                <div style={{ position: 'absolute', right: -5, top: '50%', transform: 'translateY(-50%)', width: 4, height: 6, background: 'rgba(0,0,0,0.4)', borderRadius: '0 1px 1px 0' }} />
               </div>
             </div>
           </div>
           {/* Contenu — écran de connexion K'Formation */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '0 22px' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 13, padding: '0 28px' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/logo-lpt.png" alt="Lunettes Pour Tous" width={52} height={52} style={{ objectFit: 'contain', marginBottom: 4 }} />
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#111', letterSpacing: 1.5 }}>LUNETTES POUR TOUS</div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: '#111', marginTop: 6 }}>Bienvenue !</div>
-            <div style={{ fontSize: 10.5, color: '#8a8a8a', textAlign: 'center', lineHeight: 1.5, marginBottom: 6 }}>
+            <img src="/assets/logo-lpt.png" alt="Lunettes Pour Tous" width={68} height={68} style={{ objectFit: 'contain', marginBottom: 5 }} />
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#111', letterSpacing: 2 }}>LUNETTES POUR TOUS</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#111', marginTop: 8 }}>Bienvenue !</div>
+            <div style={{ fontSize: 13.5, color: '#8a8a8a', textAlign: 'center', lineHeight: 1.5, marginBottom: 8 }}>
               Connectez-vous pour accéder à l&apos;application de vente Lunettes Pour Tous
             </div>
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{
-                padding: '12px 14px', background: '#fff', borderRadius: 12,
-                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                fontSize: 14, color: '#333', fontWeight: 500,
-              }}>
-                {KFORMATION_IDENTIFIANT}
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 13 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8a8a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 5, paddingLeft: 2 }}>Identifiant</div>
+                <div style={{
+                  padding: '16px 18px', background: '#fff', borderRadius: 14,
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                  fontSize: 24, color: '#222', fontWeight: 700,
+                }}>
+                  {KFORMATION_IDENTIFIANT}
+                </div>
               </div>
-              <div style={{
-                padding: '12px 14px', background: '#fff', borderRadius: 12,
-                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              }}>
-                <span style={{ fontSize: 19, color: '#222', fontWeight: 700, letterSpacing: 1 }}>
-                  {password || '------'}
-                </span>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2">
-                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8a8a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 5, paddingLeft: 2 }}>Mot de passe</div>
+                <div style={{
+                  padding: '16px 18px', background: '#fff', borderRadius: 14,
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                }}>
+                  <span style={{ fontSize: 34, color: '#111', fontWeight: 800, letterSpacing: 3, fontVariantNumeric: 'tabular-nums' }}>
+                    {password || '------'}
+                  </span>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2">
+                    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </div>
               </div>
             </div>
             <button style={{
-              width: '100%', marginTop: 6, padding: '13px 0', borderRadius: 12,
+              width: '100%', marginTop: 8, padding: '17px 0', borderRadius: 14,
               background: '#3ba7d6', border: 'none',
-              fontSize: 13, fontWeight: 800, color: '#fff', letterSpacing: 0.5,
+              fontSize: 16, fontWeight: 800, color: '#fff', letterSpacing: 0.6,
             }}>
               SE CONNECTER
             </button>

@@ -1134,17 +1134,17 @@ export const TIERS_PAYANT_QUIZ = [
     hint: 'Carte Vitale + Mutuelle + Ordonnance valide',
   },
   {
-    question: 'Quelle est la durée de validité d\'une ordonnance pour une personne de 42 ans ?',
+    question: 'Quelle est la durée de validité d\'une ordonnance pour une personne de 40 ans ?',
     options: ['3 ans', '5 ans', '10 ans'],
     correct: 1,
   },
   {
-    question: 'Quelle est la durée de validité d\'une ordonnance pour un enfant de 16 ans ?',
+    question: 'Quelle est la durée de validité d\'une ordonnance pour un enfant de 14 ans ?',
     options: ['1 an', '2 ans', '5 ans'],
     correct: 0,
   },
   {
-    question: 'Un enfant de 12 ans accompagné de son père souhaite faire un examen de vue chez l\'opticien. Est-ce réalisable ?',
+    question: 'Un enfant de 12 ans accompagné de son père souhaite faire un examen de vue. Est-ce réalisable ?',
     options: ['Oui', 'Non'],
     correct: 1,
   },
@@ -1154,9 +1154,11 @@ export const TIERS_PAYANT_QUIZ = [
     correct: 0,
   },
   {
+    type: 'text-open-multi',
     question: 'Le forfait optique se renouvelle tous les combien de temps ?',
-    options: ['1 an', '2 ans', '3 ans'],
-    correct: 1,
+    fields: 2,
+    fieldLabels: ['Moins de 16 ans', '16 ans et plus'],
+    autoCorrectEach: [['1 an'], ['2 ans']],
   },
   {
     type: 'text-open',
@@ -1180,11 +1182,6 @@ export const TIERS_PAYANT_QUIZ = [
     question: 'Sur quel site faisons-nous passer nos PEC (Prises En Charge) ?',
     hint: 'lyleoo',
     autoCorrect: ['lyleoo'],
-  },
-  {
-    type: 'text-open',
-    question: 'Qu\'est-ce que signifie le tiers payant ?',
-    hint: 'Le client n\'avance pas les frais : LPT est remboursé directement par la Sécurité Sociale et la mutuelle',
   },
   {
     type: 'text-open',

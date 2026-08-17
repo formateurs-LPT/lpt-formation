@@ -274,8 +274,15 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   const q = PDM_QUIZ[quizQ]
   const isLast = quizQ >= PDM_QUIZ.length - 1
 
+  // setLiveAnswers([]) ici aussi : sans ça, les réponses de la question
+  // précédente restent en mémoire le temps que le poll (juste en dessous)
+  // aille rechercher celles de la nouvelle question — l'auto-avance pouvait
+  // alors se déclencher instantanément sur Q2 (ou toute question suivante)
+  // en comparant liveAnswers.length de l'ANCIENNE question à connectedCount,
+  // empêchant les formés de répondre (incident du 18/08).
   useEffect(() => {
     setCorrectionPhase(false)
+    setLiveAnswers([])
   }, [quizQ])
 
   useEffect(() => {
@@ -826,7 +833,12 @@ export default function ModulePDM({ pName, onBack }) {
   }
 
   const handleEndQuiz = async () => {
-    await setSharedState({ quiz_show_correction: false }).catch(() => {})
+    // quiz_final_phase est un flag PARTAGÉ (pas propre à ce module) utilisé par
+    // Quiz J1/J2/Final/Optique pour leur propre podium de fin ('podium'/'rate'/
+    // 'ended'). S'il est resté à 'ended' d'un quiz précédent dans la même salle,
+    // le diffuseur affichait l'écran d'accueil au lieu du bilan de CE quiz — le
+    // récapitulatif semblait ne jamais s'afficher (incident du 18/08).
+    await setSharedState({ quiz_show_correction: false, quiz_final_phase: null }).catch(() => {})
     try { await sbUpdate('sessions', { active_module: 'pdm', module_page: 200 }, 'code=eq.' + getActiveSessionCode()) } catch { /* best-effort */ }
     setShowGroupResults(true)
   }
