@@ -482,6 +482,33 @@ function SessionsHistoryView({ pName, onBack, onToast }) {
 // ── Changelog data ───────────────────────────────────────────────
 const APP_UPDATES = [
   {
+    id: '2026-08-17',
+    date: '14 → 17 août 2026',
+    title: 'Compte rendu téléchargeable en PDF, mises à jour déplacées dans l\'éclair',
+    tag: 'Mises à jour',
+    tagColor: '#a78bfa',
+    sections: [
+      {
+        title: 'Compte rendu formateur',
+        accent: '#818cf8',
+        tag: 'Nouveauté',
+        items: [
+          'Bouton "Télécharger PDF" sur la fiche d\'un collaborateur — génère directement un fichier PDF téléchargeable, sans passer par la boîte de dialogue d\'impression',
+          'Corrige "Imprimer" qui affichait le rapport en double (la fiche du collaborateur restait visible derrière la fenêtre du rapport)',
+        ],
+      },
+      {
+        title: 'Tableau de bord',
+        accent: '#a78bfa',
+        tag: 'Amélioration',
+        items: [
+          'La tuile "Mises à jour de l\'app" au milieu du dashboard a été retirée — elle prenait trop de place',
+          'La liste complète des mises à jour reste accessible en un clic via l\'éclair ⚡ à côté de ton avatar, en haut',
+        ],
+      },
+    ],
+  },
+  {
     id: '2026-08-13',
     date: '10 → 13 août 2026',
     title: 'Audit complet de l\'app, retour de formation partagé, dashboard formé refait',
@@ -994,16 +1021,16 @@ function AppUpdateModal({ update, onClose }) {
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
         background: 'rgba(0,0,0,0.7)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '20px',
         backdropFilter: 'blur(4px)',
+        overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+        padding: '20px',
       }}
     >
       <div style={{
         background: '#0a1628', borderRadius: 24,
         border: '1px solid rgba(255,255,255,0.1)',
         width: '100%', maxWidth: 680,
-        maxHeight: '90vh', overflowY: 'auto',
+        margin: '0 auto',
         padding: '40px',
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
@@ -1076,16 +1103,16 @@ function AppUpdatesListModal({ onClose, onSelect }) {
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
         background: 'rgba(0,0,0,0.7)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '20px',
         backdropFilter: 'blur(4px)',
+        overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+        padding: '20px',
       }}
     >
       <div style={{
         background: '#0a1628', borderRadius: 24,
         border: '1px solid rgba(255,255,255,0.1)',
         width: '100%', maxWidth: 560,
-        maxHeight: '90vh', overflowY: 'auto',
+        margin: '0 auto',
         padding: '32px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
