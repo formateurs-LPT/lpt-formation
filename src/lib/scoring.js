@@ -33,7 +33,13 @@ export function buildParticipantRanking({ quizAnswers = [], openAnswers = [], mo
   // avec question_idx >= 100, n'a pas de total fixe (nombre de questions
   // orales variable) — traité comme les questions ouvertes, 1:1.
   const seenQuiz = new Set()
-  const quizCorrectByNameModule = {} // { `${name}|${moduleId}`: nbBonnesRéponses }
+  const quizCorrectByNameModule = {} // { `${name}|${moduleId}`: nbBonnesRéponses } — idx < 100 uniquement
+  // "collaborateur|module_id" déjà couvert par quiz_answers (idx < 100) — sert à
+  // exclure ces modules du décompte module_results plus bas : le dashboard formé
+  // (PersonalResultsScreen) enregistre aussi un résumé module_results à la fin
+  // d'un quiz classique, en plus des réponses détaillées déjà comptées ici —
+  // sans cette exclusion, chaque bonne réponse de quiz était comptée deux fois.
+  const quizModulePairs = new Set()
   for (const r of quizAnswers) {
     if (!r?.collaborateur || !r?.module_id) continue
     const qi = r.question_idx ?? 0
@@ -45,6 +51,7 @@ export function buildParticipantRanking({ quizAnswers = [], openAnswers = [], mo
       continue
     }
     const gKey = `${r.collaborateur}|${r.module_id}`
+    quizModulePairs.add(gKey)
     quizCorrectByNameModule[gKey] = (quizCorrectByNameModule[gKey] || 0) + (r.is_correct ? 1 : 0)
   }
   for (const [key, correctCount] of Object.entries(quizCorrectByNameModule)) {
@@ -74,10 +81,15 @@ export function buildParticipantRanking({ quizAnswers = [], openAnswers = [], mo
   // Exercices notés (ex: saisie interactive) — score/total connus directement.
   // Une ligne par (collaborateur, module_id, semaine) : on garde le total le plus
   // élevé par module plutôt que la première ligne rencontrée (ordre non garanti).
+  // Exclut les module_id déjà couverts par quiz_answers : le dashboard formé
+  // (PersonalResultsScreen) enregistre aussi un résumé module_results à la fin
+  // d'un quiz classique, en plus des réponses détaillées — sans cette exclusion,
+  // chaque bonne réponse de quiz était comptée deux fois (quiz_answers + résumé).
   const bestModule = {}
   for (const r of moduleResults) {
     if (!r?.collaborateur || !r?.module_id) continue
     const key = `${r.collaborateur}|${r.module_id}`
+    if (quizModulePairs.has(key)) continue
     const score = r.score || 0
     const total = r.score_total ?? r.total ?? score
     if (!bestModule[key] || total > bestModule[key].total) bestModule[key] = { score, total }
