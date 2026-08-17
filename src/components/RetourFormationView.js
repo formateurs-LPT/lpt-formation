@@ -242,6 +242,71 @@ function computeRate(assessments) {
   return Math.round((score / vals.length) * 100)
 }
 
+/** Statut acquis/non-acquis suggéré à partir du taux de bonnes réponses aux quiz du thème */
+function suggestStatusFromRate(rate) {
+  if (rate >= 85) return 'maitrise'
+  if (rate >= 60) return 'en-cours'
+  if (rate >= 35) return 'notions'
+  return 'non-compris'
+}
+
+function joinFr(list) {
+  if (list.length === 0) return ''
+  if (list.length === 1) return list[0]
+  return `${list.slice(0, -1).join(', ')} et ${list[list.length - 1]}`
+}
+
+/**
+ * Génère un brouillon de "mot du formateur" à partir de ce qui est déjà
+ * renseigné dans la fiche (thèmes, attitude/participation/compréhension,
+ * appréciation) — aucune IA, juste un assemblage déterministe et gratuit,
+ * toujours modifiable ensuite par le formateur.
+ */
+function buildDraftComment({ prenom, themes, assessments, attitudeStatus, attitudeNote, participationStatus, participationNote, comprehensionStatus, comprehensionNote, appreciation, globalRate, notesSemaine }) {
+  const p = prenom || 'Le/La formé(e)'
+  const labelsFor = status => themes.filter(t => assessments[t] === status).map(t => MODULE_DATA[t]?.label || t)
+  const sentences = []
+
+  const maitrise   = labelsFor('maitrise')
+  const enCours    = labelsFor('en-cours')
+  const notions    = labelsFor('notions')
+  const nonCompris = labelsFor('non-compris')
+
+  if (maitrise.length)   sentences.push(`${p} maîtrise ${joinFr(maitrise)}.`)
+  if (enCours.length)    sentences.push(`${p} est encore en cours d'acquisition sur ${joinFr(enCours)}.`)
+  if (notions.length)    sentences.push(`${p} a quelques notions sur ${joinFr(notions)}, à consolider.`)
+  if (nonCompris.length) sentences.push(`${p} n'a pas encore acquis ${joinFr(nonCompris)}, à retravailler en priorité.`)
+
+  if (globalRate !== null && globalRate !== undefined) {
+    sentences.push(`Taux global de bonnes réponses aux quiz : ${globalRate}%.`)
+  }
+
+  if (attitudeStatus && attitudeStatus !== 'ras') {
+    const label = COMMENTAIRE_OPTS.find(o => o.key === attitudeStatus)?.label?.toLowerCase()
+    sentences.push(`Attitude générale jugée « ${label} »${attitudeNote ? ` : ${attitudeNote}` : '.'}`)
+  }
+  if (participationStatus && participationStatus !== 'ras') {
+    const label = COMMENTAIRE_OPTS.find(o => o.key === participationStatus)?.label?.toLowerCase()
+    sentences.push(`Participation jugée « ${label} »${participationNote ? ` : ${participationNote}` : '.'}`)
+  }
+  if (comprehensionStatus && comprehensionStatus !== 'ras') {
+    const label = COMMENTAIRE_OPTS.find(o => o.key === comprehensionStatus)?.label?.toLowerCase()
+    sentences.push(`Compréhension des contenus jugée « ${label} »${comprehensionNote ? ` : ${comprehensionNote}` : '.'}`)
+  }
+
+  const appMeta = APPRECIATIONS.find(o => o.key === appreciation)
+  if (appMeta) sentences.push(appMeta.label + '.')
+
+  const draft = sentences.join(' ')
+  // Notes prises au fil de la semaine par le formateur : reprises telles
+  // quelles (aucune IA), en paragraphe séparé pour rester lisibles même si
+  // ce sont des remarques en vrac jour par jour.
+  if (notesSemaine && notesSemaine.trim()) {
+    return [draft, notesSemaine.trim()].filter(Boolean).join('\n\n')
+  }
+  return draft
+}
+
 function CorrectButton({ onClick, loading }) {
   return (
     <button
@@ -337,6 +402,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const [themeQuizStats, setThemeQuizStats]     = useState({})
   const [themeQuizByDay, setThemeQuizByDay]     = useState({}) // { theme: { 'YYYY-MM-DD': {correct, total} } } — tendance
   const [assessments, setAssessments]           = useState({})
+  // Thèmes dont le statut vient d'être suggéré automatiquement (taux de quiz)
+  // et pas encore confirmé/modifié par le formateur — juste pour l'affichage.
+  const [autoSuggestedThemes, setAutoSuggestedThemes] = useState(() => new Set())
   const [attitudeStatus, setAttitudeStatus]     = useState(null)
   const [attitudeNote, setAttitudeNote]         = useState('')
   const [participationStatus, setParticipationStatus] = useState(null)
@@ -353,6 +421,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const [messageFormé, setMessageFormé]         = useState('')
   const [mailFormeSentAt, setMailFormeSentAt]   = useState(null)
   const [showFormePreview, setShowFormePreview] = useState(false)
+  const [activeTab, setActiveTab]               = useState('retour') // 'retour' | 'notes'
+  const [notesSemaine, setNotesSemaine]         = useState('')
   const [globalRate, setGlobalRate]             = useState(null)
   const [globalCounts, setGlobalCounts]         = useState({ correct: 0, total: 0 })
   // week_date du dernier enregistrement trouvé — peut différer de weekDate si la session a eu lieu une semaine précédente
@@ -486,7 +556,64 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       setOwnerName(found?.trainerName || trainerName)
       const snap = found?.snapshot || {}
       setLastEditor(snap.last_editor || found?.trainerName || null)
-      setAssessments(snap.theme_assessments || {})
+      const ownerForSave = found?.trainerName || trainerName
+      const weekDateForSave = found?.weekDate || weekDate
+
+      // Suggestion automatique et gratuite des acquis/non-acquis à partir du
+      // taux de quiz par thème, uniquement pour les thèmes jamais évalués par
+      // un formateur (on ne touche jamais à une évaluation déjà posée) et avec
+      // au moins 2 réponses (pas de suggestion sur un coup de chance/malchance
+      // isolé). Le formateur corrige ensuite d'un clic si besoin.
+      const existingAssessments = snap.theme_assessments || {}
+      const suggested = {}
+      for (const theme of themes) {
+        if (existingAssessments[theme]) continue
+        const qs = themeStats[theme]
+        if (!qs || qs.total < 2) continue
+        suggested[theme] = suggestStatusFromRate(Math.round((qs.correct / qs.total) * 100))
+      }
+      setAssessments({ ...suggested, ...existingAssessments })
+      setAutoSuggestedThemes(new Set(Object.keys(suggested)))
+      if (Object.keys(suggested).length > 0) {
+        // Écrit directement à partir de `snap` (valeurs fraîchement chargées),
+        // jamais via buildSnap()/l'état React ici : au tout premier passage de
+        // loadData pour ce formé, attitudeStatus/commentaireLibre/etc. dans le
+        // state n'ont pas encore été mis à jour (setState est asynchrone) —
+        // passer par buildSnap() aurait écrasé les vraies données déjà en base
+        // avec ces valeurs par défaut vides (même classe de bug que l'incident
+        // « fiche partagée » du 13/08).
+        sbUpsert(
+          'formation_reports',
+          {
+            collaborateur: name,
+            trainer_name: ownerForSave,
+            week_date: weekDateForSave,
+            status: 'draft',
+            stats_snapshot: {
+              theme_assessments: { ...suggested, ...existingAssessments },
+              attitude_status: snap.attitude_status || null,
+              attitude_note: snap.attitude_note || '',
+              participation_status: snap.participation_status || null,
+              participation_note: snap.participation_note || '',
+              comprehension_status: snap.comprehension_status || null,
+              comprehension_note: snap.comprehension_note || '',
+              appreciation: snap.appreciation || null,
+              commentaire_libre: snap.commentaire_libre || '',
+              magasin: entree.magasin || '',
+              mail_sent_at: snap.mail_sent_at || null,
+              message_formateur_forme: snap.message_formateur_forme || '',
+              mail_forme_sent_at: snap.mail_forme_sent_at || null,
+              notes_semaine: snap.notes_semaine || '',
+              points_rank: pointsRank ?? null,
+              points_rank_of: pointsRankOf ?? null,
+              total_points: totalPoints ?? 0,
+              last_editor: trainerName,
+            },
+            updated_at: new Date().toISOString(),
+          },
+          'collaborateur,week_date,trainer_name'
+        ).catch(() => {})
+      }
       setAttitudeStatus(snap.attitude_status || null)
       setAttitudeNote(snap.attitude_note || '')
       setParticipationStatus(snap.participation_status || null)
@@ -498,6 +625,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       setMailSentAt(snap.mail_sent_at || null)
       setMessageFormé(snap.message_formateur_forme || '')
       setMailFormeSentAt(snap.mail_forme_sent_at || null)
+      setNotesSemaine(snap.notes_semaine || '')
       setAutoEval(autoEvalRow?.[0]?.stats_snapshot?.auto_eval || null)
     } catch (e) {
       console.error('[RetourFormation] loadData', e)
@@ -522,6 +650,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
     mail_sent_at: mailSentAt,
     message_formateur_forme: messageFormé,
     mail_forme_sent_at: mailFormeSentAt,
+    notes_semaine: notesSemaine,
     // Classement figé au moment de l'envoi (le stats_snapshot remplace tout à
     // chaque sauvegarde, donc on le reporte par défaut pour ne pas l'écraser
     // après un envoi si le formateur retouche la fiche ensuite)
@@ -557,6 +686,11 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   const setThemeStatus = async (moduleId, status) => {
     const next = { ...assessments, [moduleId]: status === assessments[moduleId] ? null : status }
     setAssessments(next)
+    if (autoSuggestedThemes.has(moduleId)) {
+      const nextSuggested = new Set(autoSuggestedThemes)
+      nextSuggested.delete(moduleId)
+      setAutoSuggestedThemes(nextSuggested)
+    }
     await saveSnapshot(buildSnap({ theme_assessments: next }))
   }
 
@@ -728,6 +862,23 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
         await saveSnapshot(buildSnap({ commentaire_libre: corrected }))
       }
     } catch (e) { console.error('Correction échouée', e) } finally { setCorrecting(null) }
+  }
+
+  const handlePrefillComment = async () => {
+    const draft = buildDraftComment({
+      prenom: entree.prenom || name.split(' ')[0],
+      themes, assessments,
+      attitudeStatus, attitudeNote,
+      participationStatus, participationNote,
+      comprehensionStatus, comprehensionNote,
+      appreciation,
+      globalRate,
+      notesSemaine,
+    })
+    if (!draft) return
+    if (commentaireLibre.trim() && !window.confirm('Remplacer le texte actuel par un résumé généré à partir de la fiche ?')) return
+    setCommentaireLibre(draft)
+    await saveSnapshot(buildSnap({ commentaire_libre: draft }))
   }
 
   const sendToManager = () => {
@@ -933,6 +1084,72 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
         })()}
       </div>
 
+      {/* Onglets */}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          onClick={() => setActiveTab('retour')}
+          style={{
+            flex: 1, padding: '10px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+            cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+            border: `1.5px solid ${activeTab === 'retour' ? '#0089ba' : '#334155'}`,
+            background: activeTab === 'retour' ? 'rgba(0,137,186,0.15)' : '#1e293b',
+            color: activeTab === 'retour' ? '#00abe9' : '#64748b',
+          }}
+        >
+          📋 Retour de formation
+        </button>
+        <button
+          onClick={() => setActiveTab('notes')}
+          style={{
+            flex: 1, padding: '10px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+            cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+            border: `1.5px solid ${activeTab === 'notes' ? '#7c3aed' : '#334155'}`,
+            background: activeTab === 'notes' ? 'rgba(124,58,237,0.15)' : '#1e293b',
+            color: activeTab === 'notes' ? '#a78bfa' : '#64748b',
+          }}
+        >
+          📝 Notes de la semaine {notesSemaine.trim() && '•'}
+        </button>
+      </div>
+
+      {activeTab === 'notes' ? (
+        <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Notes prises pendant la semaine
+            </span>
+            {saving && <span style={{ fontSize: 11, color: '#475569', fontStyle: 'italic' }}>Sauvegarde…</span>}
+          </div>
+          <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
+              Notes libres à prendre au fil de la semaine sur ce formé (une remarque après un module, un point à ne pas oublier…).
+              Elles ne sont visibles que par les formateurs et sont reprises automatiquement par le bouton
+              "🪄 Pré-remplir" du "Mot du formateur" dans l'onglet Retour de formation.
+            </div>
+            <textarea
+              value={notesSemaine}
+              onChange={e => setNotesSemaine(e.target.value)}
+              onBlur={async e => {
+                const val = e.target.value
+                setNotesSemaine(val)
+                await saveSnapshot(buildSnap({ notes_semaine: val }))
+              }}
+              placeholder="Ex : Lundi — un peu perdu sur les verres progressifs, à revoir. Mercredi — bonne participation à l'oral…"
+              rows={10}
+              style={{
+                width: '100%', padding: '10px 12px', borderRadius: 10,
+                border: '1.5px solid #334155', background: '#0f172a',
+                fontSize: 13, color: '#f1f5f9', resize: 'vertical',
+                fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', lineHeight: 1.6,
+              }}
+              onFocus={e => { e.target.style.borderColor = '#475569' }}
+              onBlurCapture={e => { e.target.style.borderColor = '#334155' }}
+            />
+          </div>
+        </section>
+      ) : (
+      <>
+
       {/* Quiz results */}
       <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
         <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032' }}>
@@ -995,6 +1212,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
             const qStats = themeQuizStats[moduleId]
             const qRate = qStats?.total ? Math.round((qStats.correct / qStats.total) * 100) : null
             const qColor = qRate === null ? null : qRate >= 70 ? '#16a34a' : qRate >= 40 ? '#d97706' : '#dc2626'
+            const isSuggested = autoSuggestedThemes.has(moduleId)
             return (
               <div
                 key={moduleId}
@@ -1003,12 +1221,18 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                   padding: '10px 18px',
                   borderBottom: idx < themes.length - 1 ? '1px solid #334155' : 'none',
                   background: activeSt ? `${activeSt.color}18` : 'transparent',
+                  boxShadow: isSuggested ? `inset 3px 0 0 ${activeSt?.color || '#475569'}` : 'none',
                   transition: 'background .15s',
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{meta.label}</div>
                   {meta.sub && <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{meta.sub}</div>}
+                  {isSuggested && (
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#818cf8', marginTop: 3 }}>
+                      🤖 suggéré via le taux de quiz — à vérifier
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
                   {STATUS_OPTIONS.map(opt => {
@@ -1257,6 +1481,18 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {saving && <span style={{ fontSize: 11, color: '#475569', fontStyle: 'italic' }}>Sauvegarde…</span>}
+            <button
+              onClick={handlePrefillComment}
+              title="Génère un brouillon à partir des thèmes, de l'attitude, de la participation, de la compréhension, de l'appréciation et des notes de la semaine déjà renseignées"
+              style={{
+                padding: '5px 12px', borderRadius: 8, border: '1px solid #334155',
+                background: '#0f172a', color: '#818cf8',
+                fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              🪄 Pré-remplir
+            </button>
             {commentaireLibre.trim() && (
               <CorrectButton onClick={handleCorrectCommentaire} loading={correcting === 'commentaire'} />
             )}
@@ -1433,6 +1669,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
           </div>
         </div>
       </section>
+
+      </>
+      )}
 
     </div>
     </>
