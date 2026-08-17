@@ -7558,10 +7558,13 @@ function TVKPasswordOverlay() {
         <div style={{ position: 'absolute', left: -3, top: 145, width: 3, height: 52, background: '#3a3a3c', borderRadius: '3px 0 0 3px' }} />
         <div style={{ position: 'absolute', left: -3, top: 210, width: 3, height: 52, background: '#3a3a3c', borderRadius: '3px 0 0 3px' }} />
         <div style={{ position: 'absolute', right: -3, top: 155, width: 3, height: 70, background: '#3a3a3c', borderRadius: '0 3px 3px 0' }} />
-        {/* Écran */}
+        {/* Écran — reproduit l'écran de connexion réel de l'appli Lunettes Pour Tous */}
         <div style={{
           position: 'absolute', inset: 8,
-          background: '#000', borderRadius: 38,
+          background: '#efece7', borderRadius: 38,
+          backgroundImage:
+            'repeating-linear-gradient(0deg, rgba(0,0,0,0.035) 0 1px, transparent 1px 22px), ' +
+            'repeating-linear-gradient(90deg, rgba(0,0,0,0.02) 0 1px, transparent 1px 44px)',
           overflow: 'hidden', display: 'flex', flexDirection: 'column',
         }}>
           {/* Dynamic Island */}
@@ -7570,50 +7573,54 @@ function TVKPasswordOverlay() {
           </div>
           {/* Status bar */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 18px 6px', flexShrink: 0 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>09:04</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#111' }}>09:04</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <svg width="14" height="10" viewBox="0 0 14 10"><rect x="0" y="3" width="3" height="7" fill="white" rx="1"/><rect x="4" y="2" width="3" height="8" fill="white" rx="1"/><rect x="8" y="0" width="3" height="10" fill="white" rx="1"/><rect x="12" y="0" width="2" height="10" fill="rgba(255,255,255,0.3)" rx="1"/></svg>
-              <span style={{ fontSize: 9, fontWeight: 700, color: '#fff' }}>5G</span>
-              <div style={{ width: 22, height: 11, border: '1.5px solid rgba(255,255,255,0.5)', borderRadius: 3, position: 'relative', display: 'flex', alignItems: 'center', padding: '0 2px' }}>
-                <div style={{ width: '75%', height: 6, background: '#4ade80', borderRadius: 1 }} />
-                <div style={{ position: 'absolute', right: -4, top: '50%', transform: 'translateY(-50%)', width: 3, height: 5, background: 'rgba(255,255,255,0.4)', borderRadius: '0 1px 1px 0' }} />
+              <svg width="14" height="10" viewBox="0 0 14 10"><rect x="0" y="3" width="3" height="7" fill="#111" rx="1"/><rect x="4" y="2" width="3" height="8" fill="#111" rx="1"/><rect x="8" y="0" width="3" height="10" fill="#111" rx="1"/><rect x="12" y="0" width="2" height="10" fill="rgba(0,0,0,0.3)" rx="1"/></svg>
+              <span style={{ fontSize: 9, fontWeight: 700, color: '#111' }}>5G</span>
+              <div style={{ width: 22, height: 11, border: '1.5px solid rgba(0,0,0,0.5)', borderRadius: 3, position: 'relative', display: 'flex', alignItems: 'center', padding: '0 2px' }}>
+                <div style={{ width: '75%', height: 6, background: '#16a34a', borderRadius: 1 }} />
+                <div style={{ position: 'absolute', right: -4, top: '50%', transform: 'translateY(-50%)', width: 3, height: 5, background: 'rgba(0,0,0,0.4)', borderRadius: '0 1px 1px 0' }} />
               </div>
             </div>
           </div>
           {/* Contenu — écran de connexion K'Formation */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 22, padding: '0 26px' }}>
-            <div style={{
-              width: 60, height: 60, borderRadius: 16,
-              background: 'linear-gradient(135deg, #0089ba, #00abe9)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 26, fontWeight: 900, color: '#fff',
-            }}>K</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>K&apos;Formation</div>
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#8e8e93', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 }}>
-                  Identifiant
-                </div>
-                <div style={{
-                  padding: '10px 12px', background: '#1c1c1e', border: '1px solid #3a3a3c',
-                  borderRadius: 10, fontSize: 14, color: '#fff', fontWeight: 600, textAlign: 'center',
-                }}>
-                  {KFORMATION_IDENTIFIANT}
-                </div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '0 22px' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/assets/logo-lpt.png" alt="Lunettes Pour Tous" width={52} height={52} style={{ objectFit: 'contain', marginBottom: 4 }} />
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#111', letterSpacing: 1.5 }}>LUNETTES POUR TOUS</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#111', marginTop: 6 }}>Bienvenue !</div>
+            <div style={{ fontSize: 10.5, color: '#8a8a8a', textAlign: 'center', lineHeight: 1.5, marginBottom: 6 }}>
+              Connectez-vous pour accéder à l&apos;application de vente Lunettes Pour Tous
+            </div>
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{
+                padding: '12px 14px', background: '#fff', borderRadius: 12,
+                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                fontSize: 14, color: '#333', fontWeight: 500,
+              }}>
+                {KFORMATION_IDENTIFIANT}
               </div>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#8e8e93', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 }}>
-                  Mot de passe
-                </div>
-                <div style={{
-                  padding: '10px 12px', background: '#1c1c1e', border: '1px solid #3a3a3c',
-                  borderRadius: 10, fontSize: 20, color: '#fff', fontWeight: 800,
-                  letterSpacing: 5, fontFamily: 'monospace', textAlign: 'center',
-                }}>
+              <div style={{
+                padding: '12px 14px', background: '#fff', borderRadius: 12,
+                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}>
+                <span style={{ fontSize: 19, color: '#222', fontWeight: 700, letterSpacing: 1 }}>
                   {password || '------'}
-                </div>
+                </span>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
               </div>
             </div>
+            <button style={{
+              width: '100%', marginTop: 6, padding: '13px 0', borderRadius: 12,
+              background: '#3ba7d6', border: 'none',
+              fontSize: 13, fontWeight: 800, color: '#fff', letterSpacing: 0.5,
+            }}>
+              SE CONNECTER
+            </button>
           </div>
         </div>
       </div>
