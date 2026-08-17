@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE, MONTAGE_TRAITEMENTS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, getRoomSharedState, setRoomSharedState } from '@/lib/supabase'
+import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, getRoomSharedState, setRoomSharedState, getWeeklySharedState } from '@/lib/supabase'
 import { fetchOnlineParticipantsList } from '@/lib/participantPresence'
 import { buildQrImageUrl, getLegacySessionCode, getTvDisplayRoomCode } from '@/lib/sessionCode'
 import ZeroInterChain from '@/components/ZeroInterChain'
@@ -7517,6 +7517,110 @@ function TVQrOverlay({ roomCode }) {
   )
 }
 
+const KFORMATION_IDENTIFIANT = 'kformation'
+
+/**
+ * Mot de passe K'Formation de la semaine, affiché/masqué sur le diffuseur
+ * depuis l'écran formateur (même mécanique que TVQrOverlay). Relit la valeur
+ * en direct pendant que l'overlay est affiché : si le formateur modifie le
+ * mot de passe pendant qu'il est affiché, le diffuseur se met à jour tout seul.
+ */
+function TVKPasswordOverlay() {
+  const [password, setPassword] = useState('')
+  useEffect(() => {
+    let cancelled = false
+    const load = () => {
+      getWeeklySharedState().then(s => {
+        if (!cancelled) setPassword(s?.kformation_password || '')
+      }).catch(() => {})
+    }
+    load()
+    const interval = setInterval(load, 5000)
+    return () => { cancelled = true; clearInterval(interval) }
+  }, [])
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 800,
+      background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      pointerEvents: 'none',
+    }}>
+      <div style={{ position: 'relative', width: 260, height: 530, flexShrink: 0 }}>
+        {/* Coque iPhone */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(145deg, #3a3a3c, #1c1c1e)',
+          borderRadius: 46, border: '1px solid #555',
+          boxShadow: '0 30px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08)',
+        }} />
+        <div style={{ position: 'absolute', left: -3, top: 100, width: 3, height: 32, background: '#3a3a3c', borderRadius: '3px 0 0 3px' }} />
+        <div style={{ position: 'absolute', left: -3, top: 145, width: 3, height: 52, background: '#3a3a3c', borderRadius: '3px 0 0 3px' }} />
+        <div style={{ position: 'absolute', left: -3, top: 210, width: 3, height: 52, background: '#3a3a3c', borderRadius: '3px 0 0 3px' }} />
+        <div style={{ position: 'absolute', right: -3, top: 155, width: 3, height: 70, background: '#3a3a3c', borderRadius: '0 3px 3px 0' }} />
+        {/* Écran */}
+        <div style={{
+          position: 'absolute', inset: 8,
+          background: '#000', borderRadius: 38,
+          overflow: 'hidden', display: 'flex', flexDirection: 'column',
+        }}>
+          {/* Dynamic Island */}
+          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12, paddingBottom: 4, flexShrink: 0 }}>
+            <div style={{ width: 88, height: 28, background: '#000', border: '2px solid #1a1a1a', borderRadius: 20, boxShadow: '0 0 0 1px #333' }} />
+          </div>
+          {/* Status bar */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 18px 6px', flexShrink: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>09:04</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <svg width="14" height="10" viewBox="0 0 14 10"><rect x="0" y="3" width="3" height="7" fill="white" rx="1"/><rect x="4" y="2" width="3" height="8" fill="white" rx="1"/><rect x="8" y="0" width="3" height="10" fill="white" rx="1"/><rect x="12" y="0" width="2" height="10" fill="rgba(255,255,255,0.3)" rx="1"/></svg>
+              <span style={{ fontSize: 9, fontWeight: 700, color: '#fff' }}>5G</span>
+              <div style={{ width: 22, height: 11, border: '1.5px solid rgba(255,255,255,0.5)', borderRadius: 3, position: 'relative', display: 'flex', alignItems: 'center', padding: '0 2px' }}>
+                <div style={{ width: '75%', height: 6, background: '#4ade80', borderRadius: 1 }} />
+                <div style={{ position: 'absolute', right: -4, top: '50%', transform: 'translateY(-50%)', width: 3, height: 5, background: 'rgba(255,255,255,0.4)', borderRadius: '0 1px 1px 0' }} />
+              </div>
+            </div>
+          </div>
+          {/* Contenu — écran de connexion K'Formation */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 22, padding: '0 26px' }}>
+            <div style={{
+              width: 60, height: 60, borderRadius: 16,
+              background: 'linear-gradient(135deg, #0089ba, #00abe9)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 26, fontWeight: 900, color: '#fff',
+            }}>K</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>K&apos;Formation</div>
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#8e8e93', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 }}>
+                  Identifiant
+                </div>
+                <div style={{
+                  padding: '10px 12px', background: '#1c1c1e', border: '1px solid #3a3a3c',
+                  borderRadius: 10, fontSize: 14, color: '#fff', fontWeight: 600, textAlign: 'center',
+                }}>
+                  {KFORMATION_IDENTIFIANT}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#8e8e93', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 }}>
+                  Mot de passe
+                </div>
+                <div style={{
+                  padding: '10px 12px', background: '#1c1c1e', border: '1px solid #3a3a3c',
+                  borderRadius: 10, fontSize: 20, color: '#fff', fontWeight: 800,
+                  letterSpacing: 5, fontFamily: 'monospace', textAlign: 'center',
+                }}>
+                  {password || '------'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function WelcomeScreen() {
   return (
     <div style={{
@@ -9139,6 +9243,7 @@ export default function TVView() {
         <FullscreenButton />
         <TVPeerQuizScreen sharedState={sharedState} />
         {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+        {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         <TVAnnotationCanvas key="peer-quiz" />
       </>
     )
@@ -9152,6 +9257,7 @@ export default function TVView() {
         <FullscreenButton />
         <TVFreeQuizScreen sharedState={sharedState} />
         {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+        {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         <TVAnnotationCanvas key="free-quiz" />
       </>
     )
@@ -9167,6 +9273,7 @@ export default function TVView() {
           <FullscreenButton />
           <TVMiniJeuRules />
           {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+        {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         </>
       )
     }
@@ -9177,6 +9284,7 @@ export default function TVView() {
           <FullscreenButton />
           <TVMiniJeuDebrief sharedState={sharedState} />
           {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+        {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         </>
       )
     }
@@ -9192,6 +9300,7 @@ export default function TVView() {
             theme={sharedState.minijeu_theme}
           />
           {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+        {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         </>
       )
     }
@@ -9202,6 +9311,7 @@ export default function TVView() {
           <FullscreenButton />
           <TVMiniJeuQuestions />
           {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+        {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         </>
       )
     }
@@ -9220,6 +9330,7 @@ export default function TVView() {
           singleId={sharedState?.mq_single_id || null}
         />
         {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+        {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         <TVAnnotationCanvas key="module-questions" />
       </>
     )
@@ -9240,6 +9351,7 @@ export default function TVView() {
           }
         </div>
         {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+        {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         <TVAnnotationCanvas key="no-module" />
       </>
     )
@@ -9382,6 +9494,7 @@ export default function TVView() {
       </div>
 
       {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+        {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
       <TVAnnotationCanvas key={`module-${activeModule}`} />
     </>
   )

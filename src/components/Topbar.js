@@ -337,13 +337,32 @@ function KFormationPasswordPanel({ onClose }) {
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState('')
   const [saving, setSaving] = useState(false)
+  const [overlayActive, setOverlayActive] = useState(false)
+  const [overlayBusy, setOverlayBusy] = useState(false)
 
   useEffect(() => {
     getWeeklySharedState().then(s => {
       setPassword(s?.kformation_password || '')
       setUpdatedAt(s?.kformation_password_updated_at || null)
     }).catch(() => {}).finally(() => setLoading(false))
+    // Salle active du diffuseur (pas la donnée hebdo partagée) — même logique que toggleQR
+    getSharedState().then(s => setOverlayActive(!!s?.tv_kpassword_overlay)).catch(() => {})
   }, [])
+
+  const toggleOverlay = async () => {
+    if (overlayBusy) return
+    setOverlayBusy(true)
+    try {
+      const state = await getSharedState()
+      const active = !!state?.tv_kpassword_overlay
+      await setSharedState({ tv_kpassword_overlay: !active })
+      setOverlayActive(!active)
+    } catch (e) {
+      console.error('toggleTvKPassword error', e)
+    } finally {
+      setOverlayBusy(false)
+    }
+  }
 
   const startEdit = () => {
     setEditValue(password)
@@ -434,16 +453,33 @@ function KFormationPasswordPanel({ onClose }) {
               <div style={{ fontSize: 11, color: formattedDate ? 'rgba(255,255,255,0.45)' : '#f59e0b', textAlign: 'center' }}>
                 {formattedDate ? `Mis à jour le ${formattedDate}` : 'Jamais mis à jour'}
               </div>
-              <button
-                onClick={startEdit}
-                style={{
-                  padding: '9px 0', borderRadius: 10, background: 'rgba(0,137,186,0.12)',
-                  border: '1px solid rgba(0,137,186,0.3)', color: '#0089ba', fontSize: 12, fontWeight: 700,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
-                ✎ Modifier
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={startEdit}
+                  style={{
+                    flex: 1, padding: '9px 0', borderRadius: 10, background: 'rgba(0,137,186,0.12)',
+                    border: '1px solid rgba(0,137,186,0.3)', color: '#0089ba', fontSize: 12, fontWeight: 700,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  ✎ Modifier
+                </button>
+                <button
+                  onClick={toggleOverlay}
+                  disabled={overlayBusy}
+                  title={overlayActive ? 'Masquer le mot de passe sur le diffuseur' : 'Afficher le mot de passe sur le diffuseur'}
+                  style={{
+                    flex: 1, padding: '9px 0', borderRadius: 10,
+                    background: overlayActive ? '#0089ba' : 'rgba(0,137,186,0.12)',
+                    border: overlayActive ? '1px solid #0089ba' : '1px solid rgba(0,137,186,0.3)',
+                    color: overlayActive ? '#fff' : '#0089ba', fontSize: 12, fontWeight: 700,
+                    cursor: overlayBusy ? 'wait' : 'pointer', fontFamily: 'inherit',
+                    opacity: overlayBusy ? 0.6 : 1,
+                  }}
+                >
+                  {overlayBusy ? '⏳' : '📺'} {overlayActive ? 'Masquer' : 'Diffuseur'}
+                </button>
+              </div>
             </>
           )}
         </div>
