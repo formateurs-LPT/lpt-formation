@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { sbSelect, sbUpsert, getSharedState } from '@/lib/supabase'
 import { getLevelInfo } from '@/lib/scoring'
 import { classifyMagasin } from '@/lib/formationCategories'
@@ -741,6 +741,45 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
 
   const rate = computeRate(assessments)
   const [showReport, setShowReport] = useState(false)
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
+  const reportRef = useRef(null)
+  const pendingDownloadRef = useRef(false)
+
+  // Génère un vrai fichier PDF téléchargeable (pas de boîte de dialogue
+  // d'impression) à partir du rapport une fois affiché normalement dans la
+  // modale — un rendu hors-écran donnait une capture vide avec html2canvas.
+  useEffect(() => {
+    if (!showReport || !pendingDownloadRef.current) return
+    pendingDownloadRef.current = false
+    const t = setTimeout(async () => {
+      try {
+        const html2pdf = (await import('html2pdf.js')).default
+        await html2pdf()
+          .set({
+            filename: `Compte-rendu-${name.replace(/\s+/g, '-')}.pdf`,
+            margin: 10,
+            image: { type: 'jpeg', quality: 0.95 },
+            html2canvas: { scale: 2, backgroundColor: '#ffffff' },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          })
+          .from(reportRef.current)
+          .save()
+      } catch (e) {
+        console.error('Génération PDF échouée', e)
+      } finally {
+        setDownloadingPdf(false)
+        setShowReport(false)
+      }
+    }, 200)
+    return () => clearTimeout(t)
+  }, [showReport, name])
+
+  const handleDownloadPdf = () => {
+    if (downloadingPdf) return
+    setDownloadingPdf(true)
+    pendingDownloadRef.current = true
+    setShowReport(true)
+  }
 
   const reportData = {
     collaborateur: name,
@@ -963,7 +1002,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
             </button>
           </div>
         </div>
-        <CompteRenduManager data={reportData} />
+        <div ref={reportRef} className="print-report-area">
+          <CompteRenduManager data={reportData} />
+        </div>
       </div>
     )}
 
@@ -1522,7 +1563,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       </section>
 
       {/* Boutons actions */}
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <button
           onClick={() => setShowReport(true)}
           style={{
@@ -1533,6 +1574,20 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
           }}
         >
           <span>👁</span> Aperçu compte rendu
+        </button>
+
+        <button
+          onClick={handleDownloadPdf}
+          disabled={downloadingPdf}
+          style={{
+            flex: 1, padding: '14px 16px', borderRadius: 14,
+            background: '#334155', color: '#f1f5f9', border: 'none',
+            fontSize: 13, fontWeight: 700, cursor: downloadingPdf ? 'default' : 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            opacity: downloadingPdf ? 0.6 : 1,
+          }}
+        >
+          <span>📄</span> {downloadingPdf ? 'Génération…' : 'Télécharger PDF'}
         </button>
 
         {managers.length > 0 ? (
