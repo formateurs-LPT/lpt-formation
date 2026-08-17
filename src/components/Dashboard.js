@@ -483,18 +483,70 @@ function SessionsHistoryView({ pName, onBack, onToast }) {
 const APP_UPDATES = [
   {
     id: '2026-08-17',
-    date: '14 → 17 août 2026',
-    title: 'Compte rendu téléchargeable en PDF, mises à jour déplacées dans l\'éclair',
-    tag: 'Mises à jour',
-    tagColor: '#a78bfa',
+    date: '13 → 17 août 2026',
+    title: 'Scoring fiabilisé, retour de formation accéléré, mot de passe K\'Formation, Quiz Jour 2',
+    tag: 'Gros récap',
+    tagColor: '#fbbf24',
     sections: [
       {
-        title: 'Compte rendu formateur',
+        title: 'Scoring & classement — incidents corrigés',
+        accent: '#ef4444',
+        tag: 'Fiabilité critique',
+        items: [
+          'Clôture automatique qui fermait des salles EN COURS D\'UTILISATION (se basait sur la date de création au lieu de la dernière activité réelle) — incident IDF du 13/08',
+          'Réponses d\'un formé qui disparaissaient du Retour de formation et du classement quand sa salle avait été recréée — un formé a un compte de points individuel, plus un compte par salle',
+          'Temps d\'activité sous-estimé par le même type de défaut de filtrage par salle',
+          'Classement (dashboard formé + fiche formateur) basé sur le taux de bonnes réponses plutôt que sur les points bruts — un formé qui a répondu à moins de questions n\'est plus défavorisé',
+        ],
+      },
+      {
+        title: 'Correctifs formés en direct',
+        accent: '#22d3ee',
+        tag: 'Correctif',
+        items: [
+          'Téléphones dédiés ayant déjà servi à une connexion formateur (test, démo…) : le formé restait bloqué sans que rien ne bouge à l\'écran — corrigé',
+          'Formés restant piégés sur l\'écran du jeu des questions après que le formateur ait lancé un autre module directement (sans repasser par "Retour")',
+          'Podium interstitiel du Quiz Jour 2 qui faisait planter l\'appli — retiré (comme déjà fait sur le Quiz Jour 1)',
+        ],
+      },
+      {
+        title: 'Retour de formation — saisie accélérée',
         accent: '#818cf8',
         tag: 'Nouveauté',
         items: [
-          'Bouton "Télécharger PDF" sur la fiche d\'un collaborateur — génère directement un fichier PDF téléchargeable, sans passer par la boîte de dialogue d\'impression',
-          'Corrige "Imprimer" qui affichait le rapport en double (la fiche du collaborateur restait visible derrière la fenêtre du rapport)',
+          'Suggestion automatique des acquis/non-acquis par thème à partir du taux de quiz (uniquement sur les thèmes jamais évalués manuellement, badge "suggéré à vérifier")',
+          'Bouton "Pré-remplir" sur le mot du formateur : génère un brouillon à partir de ce qui est déjà renseigné (thèmes, attitude, participation, compréhension, appréciation)',
+          'Nouvel onglet "Notes de la semaine" pour prendre des notes libres au fil des jours, reprises par le "Pré-remplir" en fin de semaine',
+          'Bouton "Télécharger PDF" sur la fiche d\'un collaborateur — génère directement un fichier PDF, sans passer par la boîte de dialogue d\'impression',
+          'Corrige "Imprimer" qui affichait le rapport en double',
+        ],
+      },
+      {
+        title: 'Mot de passe K\'Formation',
+        accent: '#f59e0b',
+        tag: 'Nouveauté',
+        items: [
+          'Bouton 🔑 dans la barre du haut (desktop et mobile) : affiche le code de la semaine, sa date de mise à jour, et permet de le modifier — partagé et modifiable par tous les formateurs',
+          'Bouton "📺 Diffuseur" pour l\'afficher sur le grand écran (mockup iPhone avec identifiant et mot de passe de la semaine)',
+        ],
+      },
+      {
+        title: 'Quiz Jour 2 & Mini Jeux',
+        accent: '#10b981',
+        tag: 'Nouveauté',
+        items: [
+          '3e carte "Questions Jour 2" dans Mini Jeux (offres, 1=1, montures, verre progressif, examen de vue)',
+          'Ouverture de salle sans re-redemander la catégorie (présentiel/visio/Belgique) à chaque fois — reprend directement ton mode de travail persistant',
+          'Mode Belgique pré-sélectionné automatiquement pour Thomas tant qu\'il n\'a jamais choisi de mode lui-même',
+        ],
+      },
+      {
+        title: 'Diffuseur',
+        accent: '#fb923c',
+        tag: 'Amélioration',
+        items: [
+          'Minuteur de quiz (90s) affiché en overlay sur le diffuseur, comme sur le téléphone du formé',
+          'Texte agrandi sur les 3 pages du module Remboursement France — plus lisible au fond de la salle',
         ],
       },
       {
