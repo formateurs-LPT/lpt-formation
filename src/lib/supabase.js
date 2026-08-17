@@ -468,6 +468,25 @@ export async function mutateRoomState(roomCode, mutateFn) {
   return null
 }
 
+/**
+ * Pose (une seule fois, premier arrivé gagne) l'horodatage de démarrage
+ * d'une question de quiz — clé partagée entre TOUS les clients (formés +
+ * diffuseur), pour que le compte à rebours ne dépende plus du moment où
+ * CHAQUE appareil a lui-même monté son composant. Ça règle à la fois la
+ * désynchro formé/diffuseur et le "reset gratuit" du timer par simple
+ * rafraîchissement (le formé relit ce même horodatage au lieu d'en repartir
+ * un nouveau à chaque montage).
+ */
+export async function ensureQuestionStartTimestamp(roomCode, qKey) {
+  if (!qKey) return null
+  await mutateRoomState(roomCode, (state) => {
+    if (state?.quiz_starts?.[qKey]) return {} // déjà posé par un autre client — rien à changer
+    return { quiz_starts: { ...(state.quiz_starts || {}), [qKey]: Date.now() } }
+  })
+  const fresh = await getRoomSharedState(roomCode)
+  return fresh?.quiz_starts?.[qKey] || null
+}
+
 // ── Réponses libres aux questions ouvertes ────────────────────────
 export async function insertOpenAnswer({
   sessionCode,

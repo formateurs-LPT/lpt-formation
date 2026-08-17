@@ -517,9 +517,10 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
   useEffect(() => {
     const kws     = q?.autoCorrect
     const kwsAll  = q?.autoCorrectAll
+    const kwsAllOr = q?.autoCorrectAllOr // groupe de variantes par mot-clé requis (AND entre groupes, OR dans chaque groupe)
     const kwsNot  = q?.autoCorrectNot
     const kwsEach = q?.autoCorrectEach // text-open-multi : un groupe de mots-clés par case attendue
-    if (!kws?.length && !kwsAll?.length && !kwsEach?.length) return
+    if (!kws?.length && !kwsAll?.length && !kwsAllOr?.length && !kwsEach?.length) return
     openAnswers.forEach(row => {
       const name = row.participant_name
       if (autoValidatedRef.current.has(name)) return
@@ -527,12 +528,13 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
       const text = raw.toLowerCase()
       const matchOr  = kws?.length    && kws.some(kw  => text.includes(kw.toLowerCase()))
       const matchAnd = kwsAll?.length && kwsAll.every(kw => text.includes(kw.toLowerCase()))
+      const matchAllOr = kwsAllOr?.length && kwsAllOr.every(group => group.some(kw => text.includes(kw.toLowerCase())))
       const blocked  = kwsNot?.length && kwsNot.some(kw => text.includes(kw.toLowerCase()))
       const matchEach = kwsEach?.length && (() => {
         const parts = raw.split('||').map(p => p.trim().toLowerCase()).filter(Boolean)
         return kwsEach.every(group => group.some(kw => parts.some(p => p.includes(kw.toLowerCase()))))
       })()
-      if ((matchOr || matchAnd || matchEach) && !blocked) {
+      if ((matchOr || matchAnd || matchAllOr || matchEach) && !blocked) {
         autoValidatedRef.current.add(name)
         saveModuleQuizAnswer({ sessionCode: getActiveSessionCode(), moduleId: 'types-verres', questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
           .then(() => setValidated(v => ({ ...v, [name]: 'correct' })))
@@ -850,9 +852,9 @@ function MCQController({ quizQ, onNext, onEnd, onBack }) {
             : (total !== 1 ? 'participants ont répondu' : 'participant a répondu')
           }
         </div>
-        {total > 0 && (
-          <button onClick={handleRevealNow} style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.35)', color: '#4ade80', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Révéler les réponses →</button>
-        )}
+        <button onClick={handleRevealNow} style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.35)', color: '#4ade80', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+          {total > 0 ? 'Révéler les réponses →' : 'Passer (sans réponse) →'}
+        </button>
       </div>
     </div>
   )

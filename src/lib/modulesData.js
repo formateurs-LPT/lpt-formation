@@ -32,18 +32,16 @@ export const TYPES_VERRES_QUIZ = [
     autoCorrectNot: ['non presbyte', 'pas presbyte'],
   },
   {
-    type: 'text-open-multi',
-    question: 'Quel est le délai de fabrication pour un verre progressif fabriqué dans notre laboratoire parisien ? Pour les magasins parisiens ? Pour tous les autres magasins ?',
-    hint: 'Magasins parisiens : dans la journée — Autres magasins : 24h à 48h',
-    fields: 2,
-    fieldLabels: ['Magasins parisiens', 'Pour les autres magasins'],
-    autoCorrectEach: [['jour'], ['24']],
+    type: 'text-open',
+    question: 'Quel est le délai de fabrication pour un verre progressif fabriqué dans notre laboratoire parisien ?',
+    hint: 'Dans la journée',
+    autoCorrect: ['jour'],
   },
   {
     type: 'text-open',
     question: 'Combien de zones de vision a un verre progressif ? Citez-les.',
     hint: '3 zones : loin (haut) · intermédiaire (centre) · près (bas)',
-    autoCorrect: ['3'],
+    autoCorrectAllOr: [['3'], ['loin'], ['intermédiaire', 'intermediaire'], ['près', 'pres']],
   },
   {
     question: 'Un client myope et astigmate de 28 ans peut avoir des verres progressifs.',
@@ -254,7 +252,7 @@ export const ENTRAINEMENT_QUESTIONS_J2 = [
 export const OPTIQUE_QUIZ = [
   // Q1
   {
-    question: 'Un client voit bien de près mais flou de loin. Quel est son trouble ?',
+    question: 'Un client voit flou de loin. Quel est son trouble ?',
     options: ['Myope', 'Hypermétrope', 'Presbyte', 'Astigmate'],
     correct: 0,
   },
@@ -336,16 +334,16 @@ export const OPTIQUE_QUIZ = [
   // Q12 — double bonne réponse
   {
     type: 'qcm-multi',
-    question: "Sur une ordonnance, comment l'ophtalmologiste peut indiquer une sphère nulle ?",
+    question: "Sur une ordonnance, comment l'ophtalmologue peut indiquer une sphère nulle ?",
     instruction: 'Sélectionnez les 2 bonnes réponses',
     options: ['0 / Rien', 'PLAN', 'Nulle', 'Correction de repos'],
     correct: [0, 1],
   },
-  // Q13
+  // Q13 — vrai/faux
   {
-    question: "Sur une ordonnance, l'axe est exprimé en :",
-    options: ['Millimètre', 'Degrés', 'Pourcentage'],
-    correct: 1,
+    question: "L'axe est exprimé en degrés.",
+    options: ['VRAI', 'FAUX'],
+    correct: 0,
   },
   // Q14 — labels masqués, cylindre entre parenthèses
   {
@@ -491,12 +489,7 @@ export const OFFRES_PAGES = [
 
 export const OFFRES_QUIZ = [
   {
-    question: 'Quel parcours propose un reste à charge de 0€ ET des verres Origine France Garantie ?',
-    options: ['Parcours 1=1', 'Parcours Suprême', 'Pack Plan à 95€'],
-    correct: 1,
-  },
-  {
-    question: 'Dans le parcours 1=1 sans remboursement, combien coûtent 2 paires de progressifs ?',
+    question: 'Combien coûtent en moyenne deux paires de lunettes progressives dans l\'offre 1=1 ?',
     options: ['~157€', '~260€', '~350€'],
     correct: 1,
   },
@@ -508,11 +501,6 @@ export const OFFRES_QUIZ = [
   {
     question: 'Dans le parcours Classique, quel est l\'avantage sur la 2e paire ?',
     options: ['Elle est offerte', 'Elle est à -50%', 'Elle est à -20%'],
-    correct: 2,
-  },
-  {
-    question: 'Quelle formule GlassProtect couvre la casse ET la rayure de l\'équipement complet pendant 1 an ?',
-    options: ['Basic', 'Silver', 'Gold'],
     correct: 2,
   },
 ]

@@ -12,7 +12,7 @@ import { PDMAnimationSVG } from '@/lib/pdmAnimationSvg'
 import { HeadlightVision } from '@/lib/headlightVision'
 import { TVPeerQuizScreen } from '@/components/PeerQuizGame'
 import { TVFreeQuizScreen } from '@/components/FreeQuizGame'
-import { useQuizCountdown } from '@/components/ParticipantModuleView'
+import { useQuizCountdown, QUIZ_TIME_LIMIT_SEC } from '@/components/ParticipantModuleView'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -285,22 +285,27 @@ function TVOrdonnanceDisplay({ ordonnance, hideLabels, cylInParens, hideNonAddHe
       <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', letterSpacing: 2, textTransform: 'uppercase', textAlign: 'center', marginBottom: 12 }}>ORDONNANCE</div>
 
       {cylInParens && hasCyl ? (
-        /* Mode compact : sph (cyl) axe */
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <tbody>
-            {eyes.map(({ label, data }) => (
-              <tr key={label} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                <td style={labelStyle}>{label}</td>
-                <td style={{ ...cellStyle, whiteSpace: 'nowrap' }}>
-                  {data.sph || '—'}
-                  {data.cyl && <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}> ({data.cyl})</span>}
-                </td>
-                {hasCyl && <td style={{ ...cellStyle, fontSize: 18, color: 'rgba(255,255,255,0.7)' }}>{data.axe ? `${data.axe}°` : '—'}</td>}
-                {hasAdd && <td style={cellStyle}>{data.add ? `Add ${data.add}` : '—'}</td>}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        /* Mode compact : sph (cyl) axe — colonnes fixes groupées au centre
+           (un <table> classique laissait l'axe s'étirer loin à droite, la
+           colonne sph(cyl) prenant toute la place restante). */
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          {eyes.map(({ label, data }) => (
+            <div key={label} style={{
+              display: 'grid',
+              gridTemplateColumns: hasAdd ? '70px 1fr 1fr 1fr' : '70px 1fr 1fr',
+              alignItems: 'center', width: '100%', maxWidth: 460,
+              borderTop: '1px solid rgba(255,255,255,0.06)', padding: '4px 0',
+            }}>
+              <div style={labelStyle}>{label}</div>
+              <div style={{ ...cellStyle, whiteSpace: 'nowrap' }}>
+                {data.sph || '—'}
+                {data.cyl && <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}> ({data.cyl})</span>}
+              </div>
+              <div style={{ ...cellStyle, fontSize: 18, color: 'rgba(255,255,255,0.7)' }}>{data.axe ? `${data.axe}°` : '—'}</div>
+              {hasAdd && <div style={cellStyle}>{data.add ? `Add ${data.add}` : '—'}</div>}
+            </div>
+          ))}
+        </div>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           {!hideLabels && (
@@ -501,8 +506,8 @@ function TVQuizOrdonnanceQCM({ question, qIdx, total, moduleLabel }) {
       <TVOrdonnanceDisplay ordonnance={question.ordonnance} hideLabels={question.hideOrdoLabels || question.hideLabels} cylInParens={question.cylInParens} hideNonAddHeaders={question.hideNonAddHeaders} topLabel={question.ordoLabel} />
       <div style={{
         display: 'grid',
-        gridTemplateColumns: (question.options?.length ?? 0) === 2 ? '1fr 1fr' : 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: 18, width: '100%', maxWidth: 900,
+        gridTemplateColumns: (question.options?.length ?? 0) >= 3 ? 'repeat(2, 1fr)' : '1fr 1fr',
+        gap: 18, width: '100%', maxWidth: 760,
       }}>
         {(question.options || []).map((opt, i) => (
           <div key={i} style={{
@@ -604,20 +609,21 @@ function TVQuizMultiQuestion({ question, qIdx, total, moduleLabel }) {
 // depuis ParticipantModuleView.js). Overlay fixe indépendant du type de
 // question, pour ne pas avoir à le recaser dans chaque écran TVQuiz*.
 // `key={qIdx}` côté appelant force le redémarrage à chaque nouvelle question.
-function TVQuizTimerOverlay() {
-  const remaining = useQuizCountdown({ enabled: true })
+function TVQuizTimerOverlay({ moduleId, qIdx, sessionCode, seconds }) {
+  const remaining = useQuizCountdown({ enabled: true, moduleId, qIdx, sessionCode, seconds })
   const urgent = remaining <= 15
   const mm = Math.floor(remaining / 60)
   const ss = String(remaining % 60).padStart(2, '0')
   return (
     <div style={{
-      position: 'fixed', top: 24, right: 32, zIndex: 200,
-      display: 'flex', alignItems: 'center', gap: 10,
-      background: urgent ? 'rgba(239,68,68,0.22)' : 'rgba(255,255,255,0.08)',
-      border: `1.5px solid ${urgent ? 'rgba(239,68,68,0.6)' : 'rgba(255,255,255,0.2)'}`,
-      borderRadius: 24, padding: '10px 22px',
-      fontSize: 26, fontWeight: 800, color: urgent ? '#f87171' : '#fff',
+      position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 200,
+      display: 'flex', alignItems: 'center', gap: 16,
+      background: urgent ? 'rgba(239,68,68,0.25)' : 'rgba(3,17,42,0.85)',
+      border: `3px solid ${urgent ? '#f87171' : 'rgba(0,171,233,0.5)'}`,
+      borderRadius: 32, padding: '14px 40px',
+      fontSize: 52, fontWeight: 900, color: urgent ? '#f87171' : '#fff',
       fontVariantNumeric: 'tabular-nums',
+      boxShadow: urgent ? '0 0 50px rgba(239,68,68,0.4)' : '0 8px 40px rgba(0,0,0,0.5)',
       animation: urgent ? 'tvQuizTimerPulse 1s ease-in-out infinite' : 'none',
     }}>
       ⏱ {mm}:{ss}
@@ -629,7 +635,7 @@ function TVQuizTimerOverlay() {
 // ── TV Quiz Question ──────────────────────────────────────────────
 function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode, moduleId }) {
   const type = question.type || 'qcm'
-  const timer = <TVQuizTimerOverlay key={`quiz-timer-${moduleId}-${qIdx}`} />
+  const timer = <TVQuizTimerOverlay key={`quiz-timer-${moduleId}-${qIdx}`} moduleId={moduleId} qIdx={qIdx} sessionCode={sessionCode} seconds={question.timeLimitSec || QUIZ_TIME_LIMIT_SEC} />
 
   if (type === 'text-open' && question.tramePoints) {
     return <>{timer}<TVQuizTrameFill question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} /></>
@@ -4109,43 +4115,104 @@ const TV_ARGS_PROGRESSIF_11 = [
   { label: 'Garantie Adaptation — satisfait ou échangé 100 jours' },
 ]
 
-function TVOffresProgressif11() {
+// Explosion en une fois, jouée au montage (donc au moment précis où le
+// formateur clique sur "Révéler →" côté ModuleOffres.js, qui fait passer
+// `revealed` de false à true et monte ce composant) — particules + anneau de
+// choc partant du centre de l'écran, en CSS pur (transform+opacity uniquement,
+// donc animable, respecte prefers-reduced-motion via peu d'insistance visuelle).
+function TVExplosionBurst({ color = '#c9a227', count = 22 }) {
+  const particles = Array.from({ length: count }, (_, i) => {
+    const angle = (i / count) * Math.PI * 2 + (i % 2) * 0.15
+    const dist = 220 + (i % 4) * 70
+    return { angle, dist, delay: (i % 5) * 0.02, big: i % 3 === 0 }
+  })
+  return (
+    <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 300 }}>
+      {particles.map((p, i) => {
+        const tx = Math.cos(p.angle) * p.dist
+        const ty = Math.sin(p.angle) * p.dist
+        const size = p.big ? 14 : 8
+        return (
+          <div key={i} style={{
+            position: 'absolute', width: size, height: size, borderRadius: '50%',
+            background: i % 2 === 0 ? color : '#fff',
+            boxShadow: `0 0 16px ${i % 2 === 0 ? color : '#fff'}`,
+            '--tx': `${tx}px`, '--ty': `${ty}px`,
+            animation: `offresProgExplosionParticle .75s ease-out ${p.delay}s forwards`,
+          }} />
+        )
+      })}
+      <div style={{ position: 'absolute', width: 60, height: 60, borderRadius: '50%', border: `4px solid ${color}`, animation: 'offresProgExplosionRing .6s ease-out forwards' }} />
+      <div style={{ position: 'absolute', width: 60, height: 60, borderRadius: '50%', background: '#fff', animation: 'offresProgExplosionFlash .35s ease-out forwards' }} />
+      <style>{`
+        @keyframes offresProgExplosionParticle {
+          0%   { transform: translate(0,0) scale(1); opacity: 1; }
+          100% { transform: translate(var(--tx), var(--ty)) scale(0.2); opacity: 0; }
+        }
+        @keyframes offresProgExplosionRing {
+          0%   { transform: scale(0.4); opacity: 1; }
+          100% { transform: scale(11); opacity: 0; }
+        }
+        @keyframes offresProgExplosionFlash {
+          0%   { transform: scale(0.3); opacity: 0.9; }
+          100% { transform: scale(4); opacity: 0; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+function TVOffresProgressif11({ revealed }) {
   const COLOR = '#c9a227'
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #1a1200 100%)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-      {/* Gauche : verre + arguments de vente */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 32px', borderRight: '1px solid rgba(255,255,255,0.07)', gap: 28 }}>
+      {revealed && <TVExplosionBurst key="burst" color={COLOR} />}
+      {/* Gauche : le verre progressif, en plus gros — les arguments ne sont
+          plus affichés ici en permanence, ils prennent la place de la colonne
+          de droite une fois révélés (voir plus bas). */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 32px', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
         <div style={{ animation: 'verreFloat 4.5s ease-in-out infinite', pointerEvents: 'none' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/verre-prog.png"
             alt="Verre progressif"
-            style={{ width: 420, height: 420, objectFit: 'contain', filter: `drop-shadow(0 0 48px ${COLOR}70) drop-shadow(0 16px 32px rgba(0,0,0,0.35))` }}
+            style={{ width: 540, height: 540, objectFit: 'contain', filter: `drop-shadow(0 0 64px ${COLOR}80) drop-shadow(0 20px 44px rgba(0,0,0,0.4))` }}
           />
         </div>
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {TV_ARGS_PROGRESSIF_11.map((item, i) => (
-            <div key={i} style={{ background: `${COLOR}12`, border: `1px solid ${COLOR}40`, borderRadius: 12, padding: '11px 18px', textAlign: 'center' }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: COLOR }}>{item.label}</div>
-            </div>
-          ))}
-        </div>
       </div>
-      {/* Droite : titre + caractéristiques de l'offre */}
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '50px 48px' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Parcours 1=1 · Verre progressif</div>
-        <div style={{ fontSize: 38, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 32 }}>
-          Le verre progressif<br /><span style={{ color: COLOR }}>dans l&apos;offre 1=1</span>
+
+      {/* Droite : "ce que comprend l'offre" au départ, puis les arguments de
+          vente en gros une fois que le formateur a cliqué sur Révéler. */}
+      {!revealed ? (
+        <div key="included" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '56px 52px' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Parcours 1=1 · Verre progressif</div>
+          <div style={{ fontSize: 44, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 36 }}>
+            Le verre progressif<br /><span style={{ color: COLOR }}>dans l&apos;offre 1=1</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            {TV_OFFRE_PROGRESSIF_11.map((item, i) => (
+              <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `5px solid ${COLOR}`, borderRadius: 16, padding: '20px 26px' }}>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{item.label}</div>
+                {item.sub && <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', marginTop: 5 }}>{item.sub}</div>}
+              </div>
+            ))}
+          </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {TV_OFFRE_PROGRESSIF_11.map((item, i) => (
-            <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `4px solid ${COLOR}`, borderRadius: 14, padding: '16px 22px' }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>{item.label}</div>
-              {item.sub && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{item.sub}</div>}
-            </div>
-          ))}
+      ) : (
+        <div key="args" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '56px 52px', animation: 'successPop .5s cubic-bezier(0.22,1,0.36,1)' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 18 }}>Pourquoi le proposer</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {TV_ARGS_PROGRESSIF_11.map((item, i) => (
+              <div key={i} style={{
+                background: `${COLOR}18`, border: `1.5px solid ${COLOR}55`, borderRadius: 18,
+                padding: '22px 28px', textAlign: 'center',
+              }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1.25 }}>{item.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -6962,7 +7029,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, troublesRevealed, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, saisieStage, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progRetourRevealed, progObjectionIdx, progObjectionResponses, progObjectionRevealed, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, tiersPayantAnswersRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, monturesMateriauxResponses, revealMonturesMateriaux, sessionCode, onAmeliProClick }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, troublesRevealed, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, saisieStage, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progRetourRevealed, progObjectionIdx, progObjectionResponses, progObjectionRevealed, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, offresProg11Revealed, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, tiersPayantAnswersRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, monturesMateriauxResponses, revealMonturesMateriaux, sessionCode, onAmeliProClick }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -7000,7 +7067,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'offres-classique')   return <TVOffresClassique step={offresClassiqueStep} />
   if (page.type === 'offres-1-1')         return <TVOffres11 step={offres11Step} />
   if (page.type === 'offres-unifocal-11')   return <TVOffresUnifocal11 />
-  if (page.type === 'offres-progressif-11') return <TVOffresProgressif11 />
+  if (page.type === 'offres-progressif-11') return <TVOffresProgressif11 revealed={offresProg11Revealed} />
   if (page.type === 'offres-pack-plan')   return <TVOffresPackPlan step={offresPackPlanStep} />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} ordoRevealStep={ordoRevealStep} audioUnlocked={audioUnlocked} ordoHeadlightDemo={ordoHeadlightDemo} ordoHeadlightCyl={ordoHeadlightCyl} ordoHeadlightAxe={ordoHeadlightAxe} />
@@ -7977,39 +8044,18 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, mod
 }
 
 // ── TV Correction — questions texte libre (réponses validées par le formateur) ──
-function TVOpenCorrection({ question, qIdx, total, moduleLabel, sessionCode, moduleId, pageId }) {
+function TVOpenCorrection({ question, qIdx, total, moduleLabel, sessionCode, moduleId }) {
   const [answers, setAnswers] = useState([])
-  const [openAnswers, setOpenAnswers] = useState([])
 
   useEffect(() => {
     const load = async () => {
-      const [qa, oa] = await Promise.all([
-        sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}${moduleId ? `&module_id=eq.${moduleId}` : ''}`),
-        fetchOpenAnswers(sessionCode || SESSION_CODE, pageId),
-      ])
+      const qa = await sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}${moduleId ? `&module_id=eq.${moduleId}` : ''}`)
       setAnswers(dedupeLatestByCollaborateur(qa || []))
-      setOpenAnswers(oa || [])
     }
     load()
     const t = setInterval(load, 2000)
     return () => clearInterval(t)
-  }, [qIdx, sessionCode, pageId, moduleId])
-
-  const textByName = {}
-  for (const row of openAnswers) textByName[row.participant_name] = row.answer
-
-  const formatAnswer = (name) => {
-    const raw = textByName[name] || ''
-    if (question?.type === 'text-open-pairs') {
-      const parts = raw.split('||').map(s => s.trim())
-      const pairs = []
-      for (let i = 0; i < parts.length; i += 2) pairs.push(`${parts[i] || '—'} → ${parts[i + 1] || '—'}`)
-      return pairs.join('  //  ')
-    }
-    return question?.type === 'text-open-multi'
-      ? raw.split('||').map(s => s.trim()).filter(Boolean).join(' // ')
-      : raw
-  }
+  }, [qIdx, sessionCode, moduleId])
 
   const correctCount = answers.filter(r => r.is_correct).length
   const wrongRows = answers.filter(r => !r.is_correct)
@@ -8062,23 +8108,10 @@ function TVOpenCorrection({ question, qIdx, total, moduleLabel, sessionCode, mod
         <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1.35 }}>{question?.hint}</div>
       </div>
 
-      {/* Mauvaises réponses, anonymes */}
-      {wrongRows.length > 0 ? (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 800, alignSelf: 'center', width: '100%', overflowY: 'auto' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4, textAlign: 'center' }}>
-            Réponses à corriger
-          </div>
-          {wrongRows.map((row, i) => (
-            <div key={i} style={{
-              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12,
-            }}>
-              <span style={{ fontSize: 18 }}>✗</span>
-              <span style={{ fontSize: 16, color: '#fff' }}>{formatAnswer(row.collaborateur)}</span>
-            </div>
-          ))}
-        </div>
-      ) : (
+      {/* Les mauvaises réponses ne sont jamais détaillées sur le diffuseur — le
+          formateur seul les voit sur son écran (ModuleOptique.js / ModuleQuizJ2.js).
+          Ici juste un message neutre, sans contenu ni identité. */}
+      {wrongRows.length === 0 && (
         <div style={{ textAlign: 'center', color: '#4ade80', fontSize: 18, fontWeight: 700, marginTop: 16 }}>
           🎉 Tout le monde a bon !
         </div>
@@ -9056,6 +9089,7 @@ export default function TVView() {
   const [offres11Step, setOffres11Step]                 = useState(0)
   const [offresClassiqueStep, setOffresClassiqueStep]   = useState(0)
   const [offresPackPlanStep, setOffresPackPlanStep]     = useState(0)
+  const [offresProg11Revealed, setOffresProg11Revealed] = useState(false)
   // Force LPT — point sélectionné par le formateur
   const [modelePoint, setModelePoint]                   = useState(null)
   // FAQ Réveil des acquis
@@ -9108,6 +9142,7 @@ export default function TVView() {
     setOffres11Step(sharedState.offres_11_step ?? 0)
     setOffresClassiqueStep(sharedState.offres_classique_step ?? 0)
     setOffresPackPlanStep(sharedState.offres_pack_plan_step ?? 0)
+    setOffresProg11Revealed(!!sharedState.offres_prog11_revealed)
     setModelePoint(sharedState.modele_point ?? null)
     setTroublesPhase(sharedState.troubles_phase || 1)
     setOpticienPlaying(!!sharedState.opticien_playing)
@@ -9476,6 +9511,7 @@ export default function TVView() {
             offres11Step={offres11Step}
             offresClassiqueStep={offresClassiqueStep}
             offresPackPlanStep={offresPackPlanStep}
+            offresProg11Revealed={offresProg11Revealed}
             modelePoint={modelePoint}
             mutuellesRevealed={mutuellesRevealed}
             inamiRevealed={inamiRevealed}

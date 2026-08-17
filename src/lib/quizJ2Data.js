@@ -61,11 +61,12 @@ export const QUIZ_J2 = [
     fields: 5,
     question: 'Citez tous les traitements que l\'on peut retrouver dans notre verre Digital Protect Pro.',
   },
-  // Q9 — 5 arguments de vente verre progressif
+  // Q9 — 5 arguments de vente verre progressif — 2min30
   {
     type: 'text-open-multi',
     fields: 5,
     question: 'Donnez les 5 arguments de vente du verre progressif.',
+    timeLimitSec: 150,
   },
   // Q10 — composition paire à 10€
   {
@@ -76,12 +77,6 @@ export const QUIZ_J2 = [
   {
     question: "À combien s'élève la réduction sur la seconde paire sur l'offre classique ?",
     options: ['-50%', '-20%', '-10%', '-5%'],
-    correct: 1,
-  },
-  // Q12 — 2nde paire offerte pack 95€ (vrai/faux)
-  {
-    question: 'La deuxième paire est offerte dans le pack plan à 95 euros.',
-    options: ['Vrai', 'Faux'],
     correct: 1,
   },
   // Q13 — qu'est-ce que le pack plan
@@ -142,15 +137,24 @@ export const QUIZ_J2 = [
     hideOrdoLabels: true,
     cylInParens: true,
   },
-  // Q20 — calcul vision de près
+  // Q20 — calcul vision de près : le formé saisit uniquement la sphère de
+  // près (= sphère + add) pour chaque œil, même mécanique que la saisie de
+  // correction (onlyFields réduit le formulaire à la sphère seule,
+  // answerOverride fournit la valeur calculée attendue plutôt que la
+  // sphère brute de l'ordonnance).
   {
-    type: 'text-open',
-    question: 'Calculez la vision de près de cette correction.',
+    type: 'ordonnance-fill',
+    question: 'Calculez la vision de près de cette correction (indiquez uniquement la sphère).',
     ordonnance: {
       od: { sph: '+0,75', cyl: '+1,00', axe: '85', add: '+2,25' },
       og: { sph: '+0,25', cyl: '+0,25', axe: '125', add: '+2,25' },
     },
     hideOrdoLabels: true,
     cylInParens: true,
+    onlyFields: ['sph'],
+    answerOverride: {
+      od: { sph: '+3,00' },
+      og: { sph: '+2,50' },
+    },
   },
 ]

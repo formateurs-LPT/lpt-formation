@@ -1,4 +1,5 @@
 import { sbSelect } from './supabase'
+import { MODULE_DATA } from './modulesData'
 
 // Règle unique de scoring : 10 points par bonne réponse, que ce soit dans un quiz de
 // module (quiz_answers), une question ouverte notée par le formateur — jeu des
@@ -24,14 +25,37 @@ export function buildParticipantRanking({ quizAnswers = [], openAnswers = [], mo
     if (isCorrect) statsByName[n].correct += weight
   }
 
-  // Quiz de module — une réponse comptée par (module, question) et par formé
+  // Quiz de module — le taux doit porter sur TOUTES les questions du quiz
+  // auquel le formé a participé, pas seulement celles auxquelles il a
+  // répondu : sinon 1 bonne réponse sur 1 question tentée (dans un quiz qui
+  // en compte 10) affichait 100% au lieu du 10% réel (incident du 18/08).
+  // Le "jeu des questions"/entraînement oral, qui réutilise quiz_answers
+  // avec question_idx >= 100, n'a pas de total fixe (nombre de questions
+  // orales variable) — traité comme les questions ouvertes, 1:1.
   const seenQuiz = new Set()
+  const quizCorrectByNameModule = {} // { `${name}|${moduleId}`: nbBonnesRéponses }
   for (const r of quizAnswers) {
     if (!r?.collaborateur || !r?.module_id) continue
-    const key = `${r.collaborateur}|${r.module_id}|${r.question_idx}`
+    const qi = r.question_idx ?? 0
+    const key = `${r.collaborateur}|${r.module_id}|${qi}`
     if (seenQuiz.has(key)) continue
     seenQuiz.add(key)
-    bump(r.collaborateur, !!r.is_correct)
+    if (qi >= 100) {
+      bump(r.collaborateur, !!r.is_correct)
+      continue
+    }
+    const gKey = `${r.collaborateur}|${r.module_id}`
+    quizCorrectByNameModule[gKey] = (quizCorrectByNameModule[gKey] || 0) + (r.is_correct ? 1 : 0)
+  }
+  for (const [key, correctCount] of Object.entries(quizCorrectByNameModule)) {
+    const sep = key.lastIndexOf('|')
+    const name = key.slice(0, sep)
+    const moduleId = key.slice(sep + 1)
+    const quizLen = MODULE_DATA[moduleId]?.quiz?.length
+    if (!quizLen) continue // module/quiz inconnu — on ignore plutôt que de fausser le taux
+    if (!statsByName[name]) statsByName[name] = { correct: 0, total: 0 }
+    statsByName[name].correct += correctCount
+    statsByName[name].total += quizLen
   }
 
   // Questions ouvertes notées hors quiz (jeu des questions, entraînement oral…) —

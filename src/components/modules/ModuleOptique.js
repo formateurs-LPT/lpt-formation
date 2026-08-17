@@ -1461,6 +1461,16 @@ function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
   const answeredKeys   = new Set(liveAnswers.map(r => normalizeNameKey(r.collaborateur)))
   const notAnswered    = onlineNames.filter(n => !answeredKeys.has(normalizeNameKey(n)))
 
+  // Passe automatiquement à la correction dès que tous les formés actuellement
+  // connectés ont répondu — comparaison par nom (pas juste un compte) pour ne
+  // pas se faire piéger par une vieille réponse traînant en base (voir le
+  // commentaire sur handleRevealNow un peu plus haut).
+  useEffect(() => {
+    if (correctionPhase || onlineNames.length === 0 || notAnswered.length > 0) return
+    handleRevealNow()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notAnswered.length, onlineNames.length, correctionPhase])
+
   const bg = { minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }
   const headerLogo = (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -1632,11 +1642,9 @@ function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
             : 'ont répondu'
           }
         </div>
-        {answered > 0 && (
-          <button onClick={handleRevealNow} style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.35)', color: '#4ade80', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-            Révéler les réponses →
-          </button>
-        )}
+        <button onClick={handleRevealNow} style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.35)', color: '#4ade80', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+          {answered > 0 ? 'Révéler les réponses →' : 'Passer (sans réponse) →'}
+        </button>
       </div>
     </div>
   )

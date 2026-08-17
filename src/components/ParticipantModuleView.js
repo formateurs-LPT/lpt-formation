@@ -6,7 +6,7 @@ import QuestionBubble from '@/components/QuestionBubble'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, ENTRAINEMENT_QUESTIONS, ENTRAINEMENT_QUESTIONS_J2 } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
-import { sbUpsert, sbSelect, sbDelete, getParticipantSessionCode, ensureSession, getSharedState, setSharedState, getRoomSharedState, setRoomSharedState, mutateRoomState, insertOpenAnswer, updateOpenAnswer, setParticipantPage } from '@/lib/supabase'
+import { sbUpsert, sbSelect, sbDelete, getParticipantSessionCode, ensureSession, getSharedState, setSharedState, getRoomSharedState, setRoomSharedState, mutateRoomState, insertOpenAnswer, updateOpenAnswer, setParticipantPage, ensureQuestionStartTimestamp } from '@/lib/supabase'
 import { PeerQuizParticipant } from '@/components/PeerQuizGame'
 import { FreeQuizParticipant } from '@/components/FreeQuizGame'
 import AutoEvalParticipant from '@/components/AutoEvalParticipant'
@@ -549,29 +549,56 @@ function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
 // l'écran partagé affiche le même compte à rebours que le téléphone du formé.
 export const QUIZ_TIME_LIMIT_SEC = 90
 
-export function useQuizCountdown({ seconds = QUIZ_TIME_LIMIT_SEC, onExpire, enabled }) {
+/**
+ * Compte à rebours d'une question de quiz, ancré sur un horodatage PARTAGÉ
+ * (trainer_state.quiz_starts[`${moduleId}:${qIdx}`], voir
+ * ensureQuestionStartTimestamp dans supabase.js) plutôt que sur le moment où
+ * CE composant a été monté. Deux effets recherchés :
+ * - le formé et le diffuseur, qui lisent le même horodatage, décomptent
+ *   exactement pareil (plus de dérive entre les deux écrans) ;
+ * - un rafraîchissement du téléphone du formé ne redonne plus un temps
+ *   plein : il relit le même horodatage déjà posé et reprend le décompte là
+ *   où il en était réellement (incident du 17/08).
+ * moduleId/qIdx manquants → comportement dégradé (temps plein affiché sans
+ * décompter) plutôt que de planter ; toujours les fournir en pratique.
+ */
+export function useQuizCountdown({ seconds = QUIZ_TIME_LIMIT_SEC, onExpire, enabled, moduleId, qIdx, sessionCode }) {
   const [remaining, setRemaining] = useState(seconds)
+  const [startedAt, setStartedAt] = useState(null)
   // Ref plutôt que dépendance d'effet : onExpire capture souvent des états
   // qui changent à chaque frappe (texte, sélection...) — on veut toujours
   // appeler la version la plus récente sans redémarrer le minuteur.
   const onExpireRef = useRef(onExpire)
   onExpireRef.current = onExpire
 
+  const qKey = (moduleId != null && qIdx != null) ? `${moduleId}:${qIdx}` : null
+
   useEffect(() => {
-    if (!enabled) { setRemaining(seconds); return }
+    setStartedAt(null)
+    if (!enabled || !qKey) return
+    let cancelled = false
+    const code = sessionCode || getParticipantSessionCode()
+    ensureQuestionStartTimestamp(code, qKey).then(ts => {
+      if (!cancelled && ts) setStartedAt(ts)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [enabled, qKey, sessionCode])
+
+  useEffect(() => {
+    if (!enabled || !startedAt) { setRemaining(seconds); return }
     let fired = false
-    setRemaining(seconds)
-    const start = Date.now()
-    const t = setInterval(() => {
-      const left = Math.max(0, seconds - Math.floor((Date.now() - start) / 1000))
+    const tick = () => {
+      const left = Math.max(0, seconds - Math.floor((Date.now() - startedAt) / 1000))
       setRemaining(left)
       if (left <= 0 && !fired) {
         fired = true
         onExpireRef.current?.()
       }
-    }, 250)
+    }
+    tick()
+    const t = setInterval(tick, 250)
     return () => clearInterval(t)
-  }, [enabled, seconds])
+  }, [enabled, seconds, startedAt])
 
   return remaining
 }
@@ -593,6 +620,52 @@ function QuizCountdownBadge({ remaining }) {
       <style>{`@keyframes quizTimerPulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }`}</style>
     </div>
   )
+}
+
+/**
+ * Brouillon de réponse texte survivant à un rafraîchissement accidentel de
+ * la page — sessionStorage (par onglet, effacé à la fermeture) plutôt que
+ * localStorage : on ne veut pas qu'un vieux brouillon resurgisse des jours
+ * plus tard sur le même téléphone partagé. Nettoyé dès que la réponse est
+ * effectivement envoyée (clearDraft), pour ne jamais préremplir la question
+ * suivante avec un texte périmé.
+ */
+function useDraftText(key) {
+  const [text, setTextState] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    try { return sessionStorage.getItem(key) || '' } catch { return '' }
+  })
+  const setText = (v) => {
+    setTextState(v)
+    try { sessionStorage.setItem(key, v) } catch {}
+  }
+  const clearDraft = () => {
+    try { sessionStorage.removeItem(key) } catch {}
+  }
+  return [text, setText, clearDraft]
+}
+
+// Même principe que useDraftText, pour un brouillon en forme de tableau
+// (text-open-multi / text-open-pairs), sérialisé en JSON.
+function useDraftArray(key, initial) {
+  const [val, setValState] = useState(() => {
+    if (typeof window === 'undefined') return initial
+    try {
+      const raw = sessionStorage.getItem(key)
+      return raw ? JSON.parse(raw) : initial
+    } catch { return initial }
+  })
+  const setVal = (updater) => {
+    setValState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      try { sessionStorage.setItem(key, JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
+  const clearDraft = () => {
+    try { sessionStorage.removeItem(key) } catch {}
+  }
+  return [val, setVal, clearDraft]
 }
 
 // Variante compacte pour les en-têtes clairs (pavé numérique / saisie interactive)
@@ -687,7 +760,7 @@ function useExistingOpenAnswer({ moduleId, qIdx, pName }) {
 // chaque formé voit ici, uniquement sur son propre téléphone, son classement
 // en temps réel sur ce quiz (classement final toujours affiché à tous en fin
 // de module, cf. TVQuizFinalPodium).
-function QuizResultScreen({ isCorrect, pName, moduleId }) {
+function QuizResultScreen({ isCorrect, pName, moduleId, timedOut }) {
   const [rankInfo, setRankInfo] = useState(null) // { rank, total }
 
   useEffect(() => {
@@ -734,9 +807,9 @@ function QuizResultScreen({ isCorrect, pName, moduleId }) {
       alignItems: 'center', justifyContent: 'center',
       padding: '40px 24px', textAlign: 'center',
     }}>
-      <div style={{ fontSize: 64, marginBottom: 20 }}>{isCorrect ? '✅' : '❌'}</div>
+      <div style={{ fontSize: 64, marginBottom: 20 }}>{timedOut ? '⏱' : isCorrect ? '✅' : '❌'}</div>
       <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
-        {isCorrect ? 'Bonne réponse !' : 'Mauvaise réponse'}
+        {timedOut ? 'Temps écoulé !' : isCorrect ? 'Bonne réponse !' : 'Mauvaise réponse'}
       </div>
       {rankInfo && (
         <div style={{
@@ -761,10 +834,11 @@ function QuizResultScreen({ isCorrect, pName, moduleId }) {
 // ── Quiz texte libre ──────────────────────────────────────────────
 function QuizTextOpen({ pName, q, qIdx, moduleId }) {
   const { checking, validated: existingValidated, wasSubmitted } = useExistingOpenAnswer({ moduleId, qIdx, pName })
-  const [text, setText] = useState('')
+  const [text, setText, clearDraft] = useDraftText(`quiz_draft_${moduleId}_${qIdx}`)
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
   const [validated, setValidated] = useState(null) // null | true | false
+  const [timedOut, setTimedOut] = useState(false)
   const effectiveSubmitted = submitted || wasSubmitted
   const effectiveValidated = validated !== null ? validated : existingValidated
 
@@ -784,6 +858,7 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
 
   const handleSubmit = async (force = false) => {
     if ((!text.trim() && !force) || saving || submitted) return
+    if (force) setTimedOut(true)
     setSaving(true)
     try {
       await insertOpenAnswer({
@@ -793,15 +868,16 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
         answer: text.trim(),
       })
       setSubmitted(true)
+      clearDraft()
     } catch { /* best-effort */ } finally {
       setSaving(false)
     }
   }
 
-  const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && effectiveValidated === null && !effectiveSubmitted })
+  const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && effectiveValidated === null && !effectiveSubmitted, moduleId, qIdx, seconds: q.timeLimitSec || QUIZ_TIME_LIMIT_SEC })
 
   if (checking) return <QuizChecking />
-  if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} />
+  if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   if (effectiveSubmitted) {
     return (
@@ -810,8 +886,10 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         padding: '40px 24px', textAlign: 'center',
       }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>✍️</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Réponse envoyée !</div>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>{timedOut ? '⏱' : '✍️'}</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>
+          {timedOut ? 'Temps écoulé !' : 'Réponse envoyée !'}
+        </div>
         <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>En attente de la validation du formateur…</div>
         <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
         <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
@@ -878,10 +956,11 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
 function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
   const fieldsCount = q.fields || 5
   const { checking, validated: existingValidated, wasSubmitted } = useExistingOpenAnswer({ moduleId, qIdx, pName })
-  const [values, setValues] = useState(Array(fieldsCount).fill(''))
+  const [values, setValues, clearDraft] = useDraftArray(`quiz_draft_${moduleId}_${qIdx}`, Array(fieldsCount).fill(''))
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
   const [validated, setValidated] = useState(null) // null | true | false
+  const [timedOut, setTimedOut] = useState(false)
   const effectiveSubmitted = submitted || wasSubmitted
   const effectiveValidated = validated !== null ? validated : existingValidated
 
@@ -904,6 +983,7 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
 
   const handleSubmit = async (force = false) => {
     if ((!allFilled && !force) || saving || submitted) return
+    if (force) setTimedOut(true)
     setSaving(true)
     try {
       await insertOpenAnswer({
@@ -913,15 +993,16 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
         answer: values.map(v => v.trim()).join('||'),
       })
       setSubmitted(true)
+      clearDraft()
     } catch { /* best-effort */ } finally {
       setSaving(false)
     }
   }
 
-  const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && effectiveValidated === null && !effectiveSubmitted })
+  const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && effectiveValidated === null && !effectiveSubmitted, moduleId, qIdx, seconds: q.timeLimitSec || QUIZ_TIME_LIMIT_SEC })
 
   if (checking) return <QuizChecking />
-  if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} />
+  if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   if (effectiveSubmitted) {
     return (
@@ -930,8 +1011,10 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         padding: '40px 24px', textAlign: 'center',
       }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>✍️</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Réponse envoyée !</div>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>{timedOut ? '⏱' : '✍️'}</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>
+          {timedOut ? 'Temps écoulé !' : 'Réponse envoyée !'}
+        </div>
         <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>En attente de la validation du formateur…</div>
         <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
         <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
@@ -990,10 +1073,11 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
   const pairsCount = q.pairs || 4
   const [labelLeft, labelRight] = q.pairLabels || ['Élément', 'Détail']
   const { checking, validated: existingValidated, wasSubmitted } = useExistingOpenAnswer({ moduleId, qIdx, pName })
-  const [rows, setRows] = useState(Array.from({ length: pairsCount }, () => ['', '']))
+  const [rows, setRows, clearDraft] = useDraftArray(`quiz_draft_${moduleId}_${qIdx}`, Array.from({ length: pairsCount }, () => ['', '']))
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
   const [validated, setValidated] = useState(null)
+  const [timedOut, setTimedOut] = useState(false)
   const effectiveSubmitted = submitted || wasSubmitted
   const effectiveValidated = validated !== null ? validated : existingValidated
 
@@ -1016,6 +1100,7 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
 
   const handleSubmit = async (force = false) => {
     if ((!allFilled && !force) || saving || submitted) return
+    if (force) setTimedOut(true)
     setSaving(true)
     try {
       await insertOpenAnswer({
@@ -1025,15 +1110,16 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
         answer: rows.flatMap(r => [r[0].trim(), r[1].trim()]).join('||'),
       })
       setSubmitted(true)
+      clearDraft()
     } catch { /* best-effort */ } finally {
       setSaving(false)
     }
   }
 
-  const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && effectiveValidated === null && !effectiveSubmitted })
+  const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && effectiveValidated === null && !effectiveSubmitted, moduleId, qIdx, seconds: q.timeLimitSec || QUIZ_TIME_LIMIT_SEC })
 
   if (checking) return <QuizChecking />
-  if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} />
+  if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   if (effectiveSubmitted) {
     return (
@@ -1042,8 +1128,10 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         padding: '40px 24px', textAlign: 'center',
       }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>✍️</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Réponse envoyée !</div>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>{timedOut ? '⏱' : '✍️'}</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>
+          {timedOut ? 'Temps écoulé !' : 'Réponse envoyée !'}
+        </div>
         <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>En attente de la validation du formateur…</div>
         <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
         <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
@@ -1113,6 +1201,7 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
   const [selected, setSelected] = useState([])
   const [answered, setAnswered] = useState(false)
   const [isCorrect, setIsCorrect] = useState(null)
+  const [timedOut, setTimedOut] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const requiredCount = q?.correct?.length || 2
@@ -1126,6 +1215,7 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
   const handleSubmit = async (force = false) => {
     if ((!readyToSubmit && !force) || saving || answered) return
     if (!q?.correct) return
+    if (force) setTimedOut(true)
     setSaving(true)
     try {
       const correctArr = [...q.correct].sort()
@@ -1147,11 +1237,11 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
     }
   }
 
-  const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && !existing && !answered })
+  const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && !existing && !answered, moduleId, qIdx, seconds: q.timeLimitSec || QUIZ_TIME_LIMIT_SEC })
 
   if (checking) return <QuizChecking />
   if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
-  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} />
+  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   return (
     <div style={{
@@ -1219,7 +1309,6 @@ function parseOrdoVal(str) {
 function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
   const { checking, existing } = useExistingQuizAnswer({ moduleId, qIdx, pName })
   if (!q?.ordonnance?.od || !q?.ordonnance?.og) return null
-  const hasCyl = !!(q.ordonnance.od.cyl || q.ordonnance.og.cyl)
 
   const initVals = () => ({
     od: { sph: 0, cyl: 0, axe: 0, add: 0 },
@@ -1232,6 +1321,7 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
   const [saving, setSaving] = useState(false)
   const [answered, setAnswered] = useState(false)
   const [isCorrect, setIsCorrect] = useState(null)
+  const [timedOut, setTimedOut] = useState(false)
   const [activeField, setActiveField] = useState(null) // null | { eye:'od'|'og', field:'sph'|'cyl'|'axe'|'add' }
   // Le bouton "✓" du pavé numérique se trouve pile à l'endroit où apparaît
   // le bouton "Valider" une fois le pavé refermé — un tap un peu long sur le
@@ -1247,28 +1337,43 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
 
   const near = (a, b) => Math.abs(a - b) < 0.001
 
+  // La valeur attendue est normalement celle de l'ordonnance affichée, mais
+  // une question peut demander un CALCUL (ex: vision de près = sphère + add)
+  // au lieu d'une simple recopie — q.answerOverride fournit alors la bonne
+  // réponse à la place de la valeur brute de l'ordonnance, champ par champ.
+  const expectedVal = (eye, field) => {
+    const override = q.answerOverride?.[eye]?.[field]
+    const raw = override !== undefined ? override : q.ordonnance[eye][field]
+    return field === 'axe' ? (parseInt(raw) || 0) : (parseOrdoVal(raw) ?? 0)
+  }
+  const visibleFields = q.onlyFields || ['sph', 'cyl', 'axe', 'add']
+
   const verify = async (force = false) => {
     if (saving) return
     if (!force && Date.now() - numpadClosedAtRef.current < 500) return
-    const od = q.ordonnance.od
-    const og = q.ordonnance.og
+    if (force) setTimedOut(true)
+    // Pas de "!hasCyl ||" ici : quand la vraie ordonnance n'a pas de cylindre/axe
+    // (valeur null), parseOrdoVal/parseInt renvoient 0 — le formé doit donc
+    // explicitement laisser le champ à 0 pour valider, comme demandé (l'écran
+    // de saisie affiche toujours les mêmes champs, identique sur chaque
+    // question — sauf onlyFields, qui réduit volontairement le formulaire).
     const r = {
       od: {
-        sph: near(vals.od.sph, parseOrdoVal(od.sph) ?? 0),
-        cyl: !hasCyl || near(vals.od.cyl, parseOrdoVal(od.cyl) ?? 0),
-        axe: !hasCyl || Math.round(vals.od.axe) === (parseInt(od.axe) || 0),
-        add: near(vals.od.add, parseOrdoVal(od.add) ?? 0),
+        sph: near(vals.od.sph, expectedVal('od', 'sph')),
+        cyl: near(vals.od.cyl, expectedVal('od', 'cyl')),
+        axe: Math.round(vals.od.axe) === expectedVal('od', 'axe'),
+        add: near(vals.od.add, expectedVal('od', 'add')),
       },
       og: {
-        sph: near(vals.og.sph, parseOrdoVal(og.sph) ?? 0),
-        cyl: !hasCyl || near(vals.og.cyl, parseOrdoVal(og.cyl) ?? 0),
-        axe: !hasCyl || Math.round(vals.og.axe) === (parseInt(og.axe) || 0),
-        add: near(vals.og.add, parseOrdoVal(og.add) ?? 0),
+        sph: near(vals.og.sph, expectedVal('og', 'sph')),
+        cyl: near(vals.og.cyl, expectedVal('og', 'cyl')),
+        axe: Math.round(vals.og.axe) === expectedVal('og', 'axe'),
+        add: near(vals.og.add, expectedVal('og', 'add')),
       },
     }
     setResults(r)
     setShowResult(true)
-    const fields = [r.od.sph, r.od.cyl, r.od.axe, r.od.add, r.og.sph, r.og.cyl, r.og.axe, r.og.add]
+    const fields = visibleFields.flatMap(f => [r.od[f], r.og[f]])
     const perfect = fields.every(Boolean)
     setSaving(true)
     try {
@@ -1285,24 +1390,24 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
     }
   }
 
-  const remaining = useQuizCountdown({ onExpire: () => verify(true), enabled: !checking && !existing && !answered })
+  const remaining = useQuizCountdown({ onExpire: () => verify(true), enabled: !checking && !existing && !answered, moduleId, qIdx, seconds: q.timeLimitSec || QUIZ_TIME_LIMIT_SEC })
 
   if (checking) return <QuizChecking />
   if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
-  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} />
+  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   const corrLabel = {
     od: {
-      sph: fmtDiop(parseOrdoVal(q.ordonnance.od.sph) ?? 0),
-      cyl: hasCyl ? fmtDiop(parseOrdoVal(q.ordonnance.od.cyl) ?? 0) : '',
-      axe: hasCyl ? fmtAxe(parseInt(q.ordonnance.od.axe) || 0) : '',
-      add: fmtAdd(parseOrdoVal(q.ordonnance.od.add) ?? 0),
+      sph: fmtDiop(expectedVal('od', 'sph')),
+      cyl: fmtDiop(expectedVal('od', 'cyl')),
+      axe: fmtAxe(expectedVal('od', 'axe')),
+      add: fmtAdd(expectedVal('od', 'add')),
     },
     og: {
-      sph: fmtDiop(parseOrdoVal(q.ordonnance.og.sph) ?? 0),
-      cyl: hasCyl ? fmtDiop(parseOrdoVal(q.ordonnance.og.cyl) ?? 0) : '',
-      axe: hasCyl ? fmtAxe(parseInt(q.ordonnance.og.axe) || 0) : '',
-      add: fmtAdd(parseOrdoVal(q.ordonnance.og.add) ?? 0),
+      sph: fmtDiop(expectedVal('og', 'sph')),
+      cyl: fmtDiop(expectedVal('og', 'cyl')),
+      axe: fmtAxe(expectedVal('og', 'axe')),
+      add: fmtAdd(expectedVal('og', 'add')),
     },
   }
 
@@ -1317,12 +1422,16 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
     : activeField.field === 'add' ? { title: `Add — ${eyeLabel(activeField.eye)}`, mode: 'diopter-positive', max: 4 }
     : { title: `${activeField.field === 'sph' ? 'Sphère' : 'Cylindre'} — ${eyeLabel(activeField.eye)}`, mode: 'diopter-signed', max: 8 }
 
+  // Toujours les 4 lignes par défaut, écran de saisie identique sur chaque
+  // question — quand la vraie ordonnance n'a pas de cylindre/axe, le formé
+  // doit laisser 0. q.onlyFields réduit exceptionnellement le formulaire
+  // (ex: Q20 quiz J2 — juste la sphère, pour un calcul de vision de près).
   const rows = [
-    { key: 'sph', label: 'Sphère',   mode: 'diopter-signed',   show: true },
-    { key: 'cyl', label: 'Cylindre', mode: 'diopter-signed',   show: hasCyl },
-    { key: 'axe', label: 'Axe',      mode: 'degrees',          show: hasCyl },
-    { key: 'add', label: 'Add',      mode: 'diopter-positive', show: true },
-  ].filter(r => r.show)
+    { key: 'sph', label: 'Sphère',   mode: 'diopter-signed' },
+    { key: 'cyl', label: 'Cylindre', mode: 'diopter-signed' },
+    { key: 'axe', label: 'Axe',      mode: 'degrees' },
+    { key: 'add', label: 'Add',      mode: 'diopter-positive' },
+  ].filter(r => visibleFields.includes(r.key))
 
   return (
     <div style={{ height: '100dvh', overflow: 'hidden', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
@@ -1393,21 +1502,27 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
 // Va jusqu'à ±30 (au lieu de ±8) : la vraie limite (7,25 / −8,00) doit être
 // trouvée par le formé au milieu d'une plage bien plus large, pas devinée
 // parce que la roulette s'arrête pile à la bonne valeur.
-const SPH_POS_MAX_VALS = Array.from({ length: 121 }, (_, i) => {
-  const v = parseFloat((i * 0.25).toFixed(3))
+// Sens inversé (demande du 17/08) : l'index 0 est maintenant l'extrémité de
+// la plage (±30,00) et 0,00 se trouve au dernier index — WHEEL_ZERO_IDX est
+// donc la position de départ des roulettes (au lieu de l'index 0 avant).
+const WHEEL_LEN = 121
+const WHEEL_ZERO_IDX = WHEEL_LEN - 1
+const SPH_POS_MAX_VALS = Array.from({ length: WHEEL_LEN }, (_, i) => {
+  const v = parseFloat(((WHEEL_ZERO_IDX - i) * 0.25).toFixed(3))
   return { val: v, label: v > 0.001 ? `+${v.toFixed(2).replace('.', ',')}` : '0,00' }
 })
-const SPH_NEG_MAX_VALS = Array.from({ length: 121 }, (_, i) => {
-  const v = parseFloat((-i * 0.25).toFixed(3))
+const SPH_NEG_MAX_VALS = Array.from({ length: WHEEL_LEN }, (_, i) => {
+  const v = parseFloat((-(WHEEL_ZERO_IDX - i) * 0.25).toFixed(3))
   return { val: v, label: v < -0.001 ? `−${Math.abs(v).toFixed(2).replace('.', ',')}` : '0,00' }
 })
 
 function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
   const { checking, existing } = useExistingQuizAnswer({ moduleId, qIdx, pName })
-  const [posIdx, setPosIdx] = useState(0)
-  const [negIdx, setNegIdx] = useState(0)
+  const [posIdx, setPosIdx] = useState(WHEEL_ZERO_IDX)
+  const [negIdx, setNegIdx] = useState(WHEEL_ZERO_IDX)
   const [answered, setAnswered] = useState(false)
   const [isCorrect, setIsCorrect] = useState(null)
+  const [timedOut, setTimedOut] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const near = (a, b) => Math.abs(a - b) < 0.001
@@ -1430,11 +1545,11 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
     }
   }
 
-  const remaining = useQuizCountdown({ onExpire: handleSubmit, enabled: !checking && !existing && !answered })
+  const remaining = useQuizCountdown({ onExpire: () => { setTimedOut(true); handleSubmit() }, enabled: !checking && !existing && !answered, moduleId, qIdx, seconds: q.timeLimitSec || QUIZ_TIME_LIMIT_SEC })
 
   if (checking) return <QuizChecking />
   if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
-  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} />
+  if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   return (
     <div style={{ height: '100dvh', overflow: 'hidden', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
@@ -1497,10 +1612,12 @@ function QuizQCMAnswer({ pName, q, qIdx, quiz, moduleId }) {
   const [lastIsCorrect, setLastIsCorrect] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(false)
+  const [timedOut, setTimedOut] = useState(false)
 
   const handleAnswer = async (optIdx) => {
     if (answered || saving) return
     if (!pName?.trim()) { setSaveError(true); return }
+    if (optIdx === -1) setTimedOut(true)
     setSaving(true)
     setSaveError(false)
     const isCorrect = optIdx === q.correct
@@ -1519,11 +1636,11 @@ function QuizQCMAnswer({ pName, q, qIdx, quiz, moduleId }) {
     setSaving(false)
   }
 
-  const remaining = useQuizCountdown({ onExpire: () => handleAnswer(-1), enabled: !checking && !existing && !answered })
+  const remaining = useQuizCountdown({ onExpire: () => handleAnswer(-1), enabled: !checking && !existing && !answered, moduleId, qIdx, seconds: q.timeLimitSec || QUIZ_TIME_LIMIT_SEC })
 
   if (checking) return <QuizChecking />
   if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
-  if (answered) return <QuizResultScreen isCorrect={lastIsCorrect} pName={pName} moduleId={moduleId} />
+  if (answered) return <QuizResultScreen isCorrect={lastIsCorrect} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   return (
     <div style={{
@@ -1698,6 +1815,11 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
           {displayedScore}<span style={{ fontSize: 32, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>/{total}</span>
         </div>
         <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>bonne{correct !== 1 ? 's' : ''} réponse{correct !== 1 ? 's' : ''}</div>
+        {total > 0 && (
+          <div style={{ fontSize: 15, fontWeight: 800, color: '#00abe9', marginTop: 8 }}>
+            {Math.round((correct / total) * 100)}% de bonnes réponses
+          </div>
+        )}
       </div>
 
       {/* XP badge */}

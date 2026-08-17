@@ -485,13 +485,13 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
             : (total !== 1 ? 'participants ont répondu' : 'participant a répondu')
           }
         </div>
-        {total > 0 && (
-          <button onClick={handleRevealNow} style={{
-            background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.35)',
-            color: '#4ade80', padding: '12px 24px', borderRadius: 12,
-            fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-          }}>Révéler les réponses →</button>
-        )}
+        <button onClick={handleRevealNow} style={{
+          background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.35)',
+          color: '#4ade80', padding: '12px 24px', borderRadius: 12,
+          fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+        }}>
+          {total > 0 ? 'Révéler les réponses →' : 'Passer (sans réponse) →'}
+        </button>
       </div>
     </div>
   )

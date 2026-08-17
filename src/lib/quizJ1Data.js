@@ -38,12 +38,13 @@ export const QUIZ_J1 = [
     hint: 'La fabrication sur place en 10 minutes',
     autoCorrect: ['10 min', '10min'],
   },
-  // Q4 — 5 piliers (5 encadrés)
+  // Q4 — 5 piliers (5 encadrés) — 2min30 (au lieu des 90s standards, 5 cases à remplir)
   {
     type: 'text-open-multi',
     fields: 5,
     question: 'Quels sont les 5 points clés qui permettent de remplir la promesse Lunettes Pour Tous ?',
     hint: 'Examen de vue gratuit · Fabrication sur place · 10 minutes · Prix bas · 0 € reste à charge',
+    timeLimitSec: 150,
     autoCorrectEach: [
       ['examen'],
       ['fabrication'],
@@ -52,13 +53,14 @@ export const QUIZ_J1 = [
       ['reste'],
     ],
   },
-  // Q5 — 4 problèmes de vue (8 encadrés : problème / définition, par ligne)
+  // Q5 — 4 problèmes de vue (8 encadrés : problème / définition, par ligne) — 2min30
   {
     type: 'text-open-pairs',
     pairs: 4,
     pairLabels: ['Problème de vue', 'Définition'],
     question: 'Citez les 4 problèmes de vue et leur définition.',
     hint: 'Myope → Flou de loin · Hypermétrope → Flou à toutes distances · Astigmate → Déformé à toutes distances · Presbyte → Flou de près (à partir de 45 ans en moyenne)',
+    timeLimitSec: 150,
     answerPairs: [
       { keys: ['myop'], defKeys: ['flou de loin'] },
       { keys: ['hyperm'], defKeys: ['flou à toute', 'flou a toute'] },
@@ -157,12 +159,6 @@ export const QUIZ_J1 = [
     correctPosVal: 7.25,
     correctNegVal: -8,
   },
-  // Q15 — signification de Plan — classement après Q15
-  {
-    question: "Votre client a 'Plan' dans la colonne Sphère de son ordonnance. Quel est son profil ?",
-    options: ['Myope', 'Presbyte', 'Astigmate', 'Ni myope ni hypermétrope'],
-    correct: 3,
-  },
   // Q16 — catégories de montures (3 encadrés, ordre libre)
   {
     type: 'text-open-multi',
@@ -212,11 +208,5 @@ export const QUIZ_J1 = [
     options: ['10 minutes', '9 jours', '24 heures', 'Impossible à fabriquer'],
     correct: 0,
     hideOrdoLabels: true,
-  },
-  // Q20 — vrai/faux
-  {
-    question: 'Un enfant peut être presbyte.',
-    options: ['VRAI', 'FAUX'],
-    correct: 1,
   },
 ]

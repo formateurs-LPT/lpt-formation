@@ -392,6 +392,16 @@ function VerreProgAnime({ color, size = 360 }) {
 function CoursProgressif11({ onPrev, onNext, onBack }) {
   const COLOR = '#c9a227'
   const isMobile = useIsMobile()
+  const [revealed, setRevealed] = useState(false)
+  const included = ITEMS_PROGRESSIF_11.slice(0, 4)
+  const arguments_ = ITEMS_PROGRESSIF_11.slice(4)
+
+  const toggleReveal = async () => {
+    const next = !revealed
+    setRevealed(next)
+    await setSharedState({ offres_prog11_revealed: next })
+  }
+
   return (
     <>
       <style>{STYLES}</style>
@@ -414,14 +424,42 @@ function CoursProgressif11({ onPrev, onNext, onBack }) {
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Parcours 1=1 · Verre progressif</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 24 }}>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 20 }}>
               Le verre progressif<br /><span style={{ color: COLOR }}>dans l'offre 1=1</span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {ITEMS_PROGRESSIF_11.map((item, i) => (
-                <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.1)`, borderLeft: `3px solid ${COLOR}`, borderRadius: 14, padding: '14px 20px' }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{item.text}</div>
-                  {item.sub && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>{item.sub}</div>}
+            {/* Ce que comprend l'offre — toujours affiché sur diffuseur tant que
+                non révélé ; ici côté formateur c'est juste dimmed une fois
+                révélé pour indiquer que ce n'est plus ce qui est à l'écran. */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14, opacity: revealed ? 0.35 : 1, transition: 'opacity .3s' }}>
+              {included.map((item, i) => (
+                <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.1)`, borderLeft: `3px solid ${COLOR}`, borderRadius: 14, padding: '12px 18px' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{item.text}</div>
+                  {item.sub && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>{item.sub}</div>}
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={toggleReveal}
+              style={{
+                width: '100%', padding: '13px 20px', borderRadius: 12, marginBottom: 14,
+                background: revealed ? 'rgba(255,255,255,0.08)' : `linear-gradient(135deg, ${COLOR}, #b8871a)`,
+                border: revealed ? '1px solid rgba(255,255,255,0.15)' : 'none',
+                color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                boxShadow: revealed ? 'none' : `0 6px 24px ${COLOR}45`,
+              }}
+            >
+              {revealed ? '← Masquer les arguments' : '💥 Révéler les arguments →'}
+            </button>
+            {/* Arguments de vente — highlight une fois révélés (= ce qui est
+                affiché en gros sur le diffuseur en ce moment) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, opacity: revealed ? 1 : 0.35, transition: 'opacity .3s' }}>
+              {arguments_.map((item, i) => (
+                <div key={i} style={{
+                  background: revealed ? `${COLOR}18` : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${revealed ? `${COLOR}55` : 'rgba(255,255,255,0.1)'}`,
+                  borderLeft: `3px solid ${COLOR}`, borderRadius: 14, padding: '12px 18px',
+                }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{item.text}</div>
                 </div>
               ))}
             </div>
@@ -778,13 +816,13 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
             : (total !== 1 ? 'participants ont répondu' : 'participant a répondu')
           }
         </div>
-        {total > 0 && (
-          <button onClick={handleRevealNow} style={{
-            background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.35)',
-            color: '#4ade80', padding: '12px 24px', borderRadius: 12,
-            fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-          }}>Révéler les réponses →</button>
-        )}
+        <button onClick={handleRevealNow} style={{
+          background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.35)',
+          color: '#4ade80', padding: '12px 24px', borderRadius: 12,
+          fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+        }}>
+          {total > 0 ? 'Révéler les réponses →' : 'Passer (sans réponse) →'}
+        </button>
       </div>
     </div>
   )
@@ -1002,6 +1040,7 @@ export default function ModuleOffres({ pName, onBack }) {
 
   const goProgressif11 = async () => {
     await sbUpdate('sessions', { active_module: 'offres', module_page: 3 }, `code=eq.${getActiveSessionCode()}`)
+    await setSharedState({ offres_prog11_revealed: false })
     setPhase('progressif-11')
   }
 
