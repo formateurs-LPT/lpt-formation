@@ -10,6 +10,7 @@ import { getManagers, canonicalMagasinLabel } from '@/lib/managersData'
 import { DIRECTEURS } from '@/lib/directeursData'
 import { PUBLIC_ORIGIN } from '@/lib/sessionCode'
 import { themeForAnswer, DIRECT_THEME_MODULES, TRANSVERSAL_MODULE_IDS } from '@/lib/quizThemeMap'
+import { extractPrenom } from '@/lib/participantNames'
 
 // ── Constantes ────────────────────────────────────────────────────
 
@@ -57,11 +58,6 @@ function formatDuration(seconds) {
   const m = Math.round((seconds % 3600) / 60)
   if (h > 0) return `${h}h${String(m).padStart(2, '0')}`
   return `${m}min`
-}
-
-function extractPrenom(fullName) {
-  const parts = (fullName || '').split(' ').filter(w => w !== w.toUpperCase())
-  return parts.join(' ') || (fullName || '').split(' ')[0]
 }
 
 /** Adresse mail LPT : 1ère lettre du prénom + nom de famille, sans accents/espaces */

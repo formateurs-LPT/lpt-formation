@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import { getTrainerAvatarSrc } from '@/lib/constants'
 import { fetchOnlineParticipantsList, markParticipantLeft } from '@/lib/participantPresence'
+import { extractPrenom } from '@/lib/participantNames'
 import { setRoomSharedState, getRoomSharedState, sbSelect, getSharedState, setSharedState, getWeeklySharedState, setWeeklySharedState } from '@/lib/supabase'
 import { useIsMobile } from '@/lib/useIsMobile'
 
@@ -240,7 +241,7 @@ function ParticipantsPanel({ sessionCode, onClose }) {
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor, transition: 'background .3s' }} title={pageLabel} />
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'block' }}>{p.name}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'block' }}>{extractPrenom(p.name)}</span>
                     <span style={{ fontSize: 10, color: onPage ? '#4ade80' : !fresh ? 'rgba(255,255,255,0.3)' : '#fbbf24', fontWeight: 500, fontStyle: !tabVisible && fresh ? 'italic' : 'normal' }}>
                       {pageLabel}
                     </span>

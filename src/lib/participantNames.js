@@ -28,6 +28,12 @@ export function rhFullName(c) {
   return entreeDisplayName(c)
 }
 
+/** Extrait le prénom d'un nom stocké « NOM Prénom » (NOM en majuscules) */
+export function extractPrenom(fullName) {
+  const parts = (fullName || '').split(' ').filter(w => w !== w.toUpperCase())
+  return parts.join(' ') || (fullName || '').split(' ')[0]
+}
+
 /** Clés de connexion : nom + prénom obligatoires (pas de prénom seul) */
 export function loginKeysForEntry(c) {
   const keys = new Set()
