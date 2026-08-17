@@ -266,6 +266,30 @@ function NationalRankingTab({ pName }) {
   )
 }
 
+// Regroupement "Mes quiz" par journée — même découpage que les parcours
+// Onboarding France/Belgique (OnboardingView.js / OnboardingViewBelgique.js).
+const QUIZ_DAY_GROUPS = [
+  { label: 'Journée 1', badge: '1', moduleIds: ['entreprise', 'optique', 'types-verres', 'montures', 'quiz-j1'] },
+  { label: 'Journée 2', badge: '2', moduleIds: ['trame-accueil', 'offres', 'quiz-j2'] },
+  { label: 'Journée 3', badge: '3', moduleIds: ['pdm', 'parcours-rembourses', 'remboursement-france', 'lpt-sante', 'mutuelles-inami'] },
+  { label: 'Journée 4', badge: '4', moduleIds: ['retraits', 'ajustages', 'raz', 'montage', 'montures-outlet'] },
+]
+
+function groupQuizHistoryByDay(quizHistory) {
+  const byModuleId = {}
+  for (const h of quizHistory || []) byModuleId[h.moduleId] = h
+  const used = new Set()
+  const groups = []
+  for (const { label, badge, moduleIds } of QUIZ_DAY_GROUPS) {
+    const items = moduleIds.map(id => byModuleId[id]).filter(Boolean)
+    items.forEach(h => used.add(h.moduleId))
+    if (items.length) groups.push({ label, badge, items })
+  }
+  const rest = (quizHistory || []).filter(h => !used.has(h.moduleId))
+  if (rest.length) groups.push({ label: 'Autres', badge: '•', items: rest })
+  return groups
+}
+
 function DashboardScreen({ pName, myEntry, ranking, myProfile, quizHistory, badges }) {
   const [tab, setTab] = useState('profil') // profil | historique | national
   const firstName = (pName || '').split(' ')[0] || 'toi'
@@ -379,24 +403,41 @@ function DashboardScreen({ pName, myEntry, ranking, myProfile, quizHistory, badg
           )}
         </>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
           {!quizHistory?.length ? (
             <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)', padding: '32px 0' }}>
               Aucun quiz fait pour l'instant.
             </div>
-          ) : quizHistory.map(h => {
-            const color = h.pct >= 70 ? '#16a34a' : h.pct >= 40 ? '#d97706' : '#dc2626'
-            return (
-              <div key={h.moduleId} style={{
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: 14, padding: '14px 16px',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-              }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{h.label}</div>
-                <div style={{ fontSize: 13, fontWeight: 800, color }}>{h.correct}/{h.total} · {h.pct}%</div>
+          ) : groupQuizHistoryByDay(quizHistory).map(group => (
+            <div key={group.label}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span style={{
+                  width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                  background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.3)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 800, color: '#00abe9',
+                }}>{group.badge}</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {group.label}
+                </span>
               </div>
-            )
-          })}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {group.items.map(h => {
+                  const color = h.pct >= 70 ? '#16a34a' : h.pct >= 40 ? '#d97706' : '#dc2626'
+                  return (
+                    <div key={h.moduleId} style={{
+                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+                      borderRadius: 14, padding: '14px 16px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                    }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{h.label}</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color }}>{h.correct}/{h.total} · {h.pct}%</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
