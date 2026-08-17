@@ -527,7 +527,7 @@ const APP_UPDATES = [
         tag: 'Nouveauté',
         items: [
           'Bouton 🔑 dans la barre du haut (desktop et mobile) : affiche le code de la semaine, sa date de mise à jour, et permet de le modifier — partagé et modifiable par tous les formateurs',
-          'Bouton "📺 Diffuseur" pour l\'afficher sur le grand écran (mockup iPhone avec identifiant et mot de passe de la semaine)',
+          'Bouton "📺 Diffuseur" pour l\'afficher sur le grand écran — reproduction fidèle du vrai écran de connexion K\'Formation, avec l\'identifiant et le mot de passe de la semaine',
         ],
       },
       {
