@@ -12,7 +12,7 @@ export const SESSION_CODE = process.env.NEXT_PUBLIC_SESSION_CODE ?? ''
 export const TRAINER_STATE_WEEKLY_KEY = '__weekly__'
 
 /** Champs stockés sur __weekly__ (pas par salle) */
-const WEEKLY_STATE_KEYS = new Set(['entrees_data', 'ob_data', 'ob_date', 'ob_day', 'lpt_idees'])
+const WEEKLY_STATE_KEYS = new Set(['entrees_data', 'ob_data', 'ob_date', 'ob_day', 'lpt_idees', 'kformation_password', 'kformation_password_updated_at'])
 
 /** Filtre PostgREST pour valeurs avec espaces / accents */
 export function pgEq(column, value) {

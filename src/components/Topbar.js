@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import { getTrainerAvatarSrc } from '@/lib/constants'
 import { fetchOnlineParticipantsList, markParticipantLeft } from '@/lib/participantPresence'
-import { setRoomSharedState, getRoomSharedState, sbSelect, getSharedState, setSharedState } from '@/lib/supabase'
+import { setRoomSharedState, getRoomSharedState, sbSelect, getSharedState, setSharedState, getWeeklySharedState, setWeeklySharedState } from '@/lib/supabase'
 import { useIsMobile } from '@/lib/useIsMobile'
 
 function useFullscreen() {
@@ -326,8 +326,134 @@ function ParticipantsPanel({ sessionCode, onClose }) {
   )
 }
 
+/**
+ * Mot de passe K'Formation de la semaine — partagé entre tous les comptes
+ * formateur (stocké sur la clé __weekly__ de trainer_state, pas par salle).
+ */
+function KFormationPasswordPanel({ onClose }) {
+  const [password, setPassword] = useState('')
+  const [updatedAt, setUpdatedAt] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [editValue, setEditValue] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    getWeeklySharedState().then(s => {
+      setPassword(s?.kformation_password || '')
+      setUpdatedAt(s?.kformation_password_updated_at || null)
+    }).catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  const startEdit = () => {
+    setEditValue(password)
+    setEditing(true)
+  }
+
+  const handleSave = async () => {
+    const clean = editValue.replace(/\D/g, '').slice(0, 6)
+    if (clean.length !== 6 || saving) return
+    setSaving(true)
+    const now = new Date().toISOString()
+    await setWeeklySharedState({ kformation_password: clean, kformation_password_updated_at: now }).catch(() => {})
+    setPassword(clean)
+    setUpdatedAt(now)
+    setEditing(false)
+    setSaving(false)
+  }
+
+  const formattedDate = updatedAt
+    ? new Date(updatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : null
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)' }} />
+      <div style={{
+        position: 'fixed', top: 'calc(56px + env(safe-area-inset-top, 0px))', right: 16, zIndex: 1000,
+        background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16,
+        width: 260, boxShadow: '0 16px 48px rgba(0,0,0,0.5)', overflow: 'hidden',
+      }}>
+        <div style={{
+          padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.07)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>🔑 Mot de passe K&apos;Formation</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>✕</button>
+        </div>
+        <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {loading ? (
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Chargement…</span>
+          ) : editing ? (
+            <>
+              <input
+                autoFocus
+                value={editValue}
+                onChange={e => setEditValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onKeyDown={e => { if (e.key === 'Enter') handleSave() }}
+                placeholder="123456"
+                inputMode="numeric"
+                maxLength={6}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 10,
+                  border: '1.5px solid #334155', background: '#0f172a',
+                  fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: 6, textAlign: 'center',
+                  fontFamily: 'monospace', outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={handleSave}
+                  disabled={editValue.length !== 6 || saving}
+                  style={{
+                    flex: 1, padding: '10px 0', borderRadius: 10,
+                    background: editValue.length === 6 ? '#0089ba' : '#334155',
+                    color: '#fff', border: 'none', fontSize: 12, fontWeight: 700,
+                    cursor: editValue.length === 6 ? 'pointer' : 'default', fontFamily: 'inherit',
+                  }}
+                >
+                  {saving ? '⏳' : 'Enregistrer'}
+                </button>
+                <button
+                  onClick={() => setEditing(false)}
+                  style={{
+                    padding: '10px 14px', borderRadius: 10, background: '#1e293b',
+                    border: '1px solid #334155', color: '#94a3b8', fontSize: 12, fontWeight: 600,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  Annuler
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: 8, fontFamily: 'monospace', textAlign: 'center' }}>
+                {password || '------'}
+              </div>
+              <div style={{ fontSize: 11, color: formattedDate ? 'rgba(255,255,255,0.45)' : '#f59e0b', textAlign: 'center' }}>
+                {formattedDate ? `Mis à jour le ${formattedDate}` : 'Jamais mis à jour'}
+              </div>
+              <button
+                onClick={startEdit}
+                style={{
+                  padding: '9px 0', borderRadius: 10, background: 'rgba(0,137,186,0.12)',
+                  border: '1px solid rgba(0,137,186,0.3)', color: '#0089ba', fontSize: 12, fontWeight: 700,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                ✎ Modifier
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </>
+  )
+}
+
 /* Menu hamburger mobile — panneau qui descend depuis le haut */
-function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onStartSession, onTVMode, onLogout, onClose, onShowParticipants, onQr, qrActive, qrBusy }) {
+function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onStartSession, onTVMode, onLogout, onClose, onShowParticipants, onQr, qrActive, qrBusy, onKPassword }) {
   const code = (sessionCode || '').trim()
   return (
     <>
@@ -406,6 +532,17 @@ function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession,
               {qrBusy ? '⏳' : '📱'} {qrActive ? 'Masquer QR diffuseur' : 'Afficher QR diffuseur'}
             </button>
           )}
+          {isTrainer && onKPassword && (
+            <button onClick={() => { onClose(); onKPassword() }} style={{
+              width: '100%', padding: '13px 16px', borderRadius: 10,
+              background: 'transparent', border: '1px solid #e5e7eb',
+              color: '#9ca3af', fontSize: 14, fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}>
+              🔑 Mot de passe K&apos;Formation
+            </button>
+          )}
           <FullscreenButton />
           <button onClick={() => { onClose(); onLogout() }} style={{
             width: '100%', padding: '13px 16px', borderRadius: 10,
@@ -423,6 +560,7 @@ function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession,
 export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onLogout, onTVMode, onStartSession }) {
   const [showPanel, setShowPanel] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
+  const [showKPassword, setShowKPassword] = useState(false)
   const [qrActive, setQrActive] = useState(false)
   const [qrBusy, setQrBusy] = useState(false)
   const isMobile = useIsMobile(640)
@@ -522,6 +660,7 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
             onQr={isTrainer ? toggleQR : undefined}
             qrActive={qrActive}
             qrBusy={qrBusy}
+            onKPassword={isTrainer ? () => setShowKPassword(true) : undefined}
           />
         )}
 
@@ -530,6 +669,10 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
             sessionCode={code}
             onClose={() => setShowPanel(false)}
           />
+        )}
+
+        {showKPassword && isTrainer && (
+          <KFormationPasswordPanel onClose={() => setShowKPassword(false)} />
         )}
       </>
     )
@@ -618,6 +761,18 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
           </button>
         )}
         {isTrainer && (
+          <button
+            onClick={() => setShowKPassword(true)}
+            title="Mot de passe K'Formation de la semaine"
+            style={{
+              background: 'transparent', border: '1px solid #d1d5db',
+              color: '#9ca3af', fontSize: 12, padding: '5px 10px', borderRadius: 20, cursor: 'pointer',
+            }}
+          >
+            🔑
+          </button>
+        )}
+        {isTrainer && (
           <button onClick={onLogout} style={{
             background: 'transparent', border: '1px solid #d1d5db',
             color: '#6b7280', fontSize: 12, padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
@@ -632,6 +787,10 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
           sessionCode={code}
           onClose={() => setShowPanel(false)}
         />
+      )}
+
+      {showKPassword && isTrainer && (
+        <KFormationPasswordPanel onClose={() => setShowKPassword(false)} />
       )}
     </div>
   )
