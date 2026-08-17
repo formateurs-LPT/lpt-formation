@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState, clearQuizStarts } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { NextPagePreview } from '@/lib/trainerPreview'
@@ -820,6 +820,7 @@ export default function ModulePDM({ pName, onBack }) {
 
   const handleLaunchQuiz = async () => {
     await setSharedState({ quiz_show_correction: false }).catch(() => {})
+    await clearQuizStarts(getActiveSessionCode(), 'pdm').catch(() => {})
     await sbUpdate('sessions', { module_page: 100 }, 'code=eq.' + getActiveSessionCode())
     setQuizQ(0)
     setQuizLaunched(true)

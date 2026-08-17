@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbDelete, getActiveSessionCode, setSharedState } from '@/lib/supabase'
+import { sbUpdate, sbDelete, getActiveSessionCode, setSharedState, clearQuizStarts } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers, normalizeNameKey } from '@/lib/participantNames'
 import { fetchOpenAnswers } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
@@ -614,6 +614,7 @@ export default function ModuleQuizJ1({ pName, onBack }) {
 
   const handleStart = async () => {
     await setSharedState({ quiz_show_correction: false, quiz_interstitial_q: null, quiz_final_phase: null })
+    await clearQuizStarts(getActiveSessionCode(), MODULE_ID).catch(() => {})
     await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(0)
     setStarted(true)

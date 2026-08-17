@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, fetchOpenAnswers, setSharedState } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, fetchOpenAnswers, setSharedState, clearQuizStarts } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
@@ -502,6 +502,7 @@ export default function ModuleRetraits({ pName, onBack, onTerminate }) {
   }
   const handleLaunchQuiz = async () => {
     await setSharedState({ quiz_show_correction: false }).catch(() => {})
+    await clearQuizStarts(sc(), 'retraits').catch(() => {})
     await sbUpdate('sessions', { active_module: 'retraits', module_page: 100 }, 'code=eq.' + sc())
     setQuizQ(0)
     setQuizLaunched(true)

@@ -2,7 +2,7 @@
 // fix: getActiveSessionCode pour sync TV
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbDelete, sbSelect, getActiveSessionCode, setSharedState, getRoomSharedState, fetchOpenAnswers } from '@/lib/supabase'
+import { sbUpdate, sbDelete, sbSelect, getActiveSessionCode, setSharedState, getRoomSharedState, fetchOpenAnswers, clearQuizStarts } from '@/lib/supabase'
 import { fetchOnlineParticipantCount, fetchOnlineParticipantsList } from '@/lib/participantPresence'
 import { fetchTrainerQuizAnswers, normalizeNameKey } from '@/lib/participantNames'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
@@ -1857,6 +1857,7 @@ export default function ModuleOptique({ pName, onBack, onTerminate }) {
     try {
       await sbUpdate('sessions', { active_module: 'optique', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
       await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: null, quiz_show_correction: false, quiz_ordo_show: false })
+      await clearQuizStarts(getActiveSessionCode(), 'optique').catch(() => {})
     } catch { /* best-effort */ }
     setQuizQ(0)
     setQuizLaunched(true)

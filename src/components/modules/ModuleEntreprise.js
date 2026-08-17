@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState, fetchOpenAnswers } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState, fetchOpenAnswers, clearQuizStarts } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
@@ -1727,6 +1727,7 @@ export default function ModuleEntreprise({ pName, onBack, onTerminate }) {
         quiz_show_correction: false,
       })
     } catch { /* best-effort */ }
+    await clearQuizStarts(getActiveSessionCode(), 'entreprise').catch(() => {})
     setQuizMode('quiz')
     setQuizQ(0)
   }

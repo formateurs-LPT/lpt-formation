@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers, clearQuizStarts } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
@@ -60,9 +60,11 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
   const [answers, setAnswers] = useState([])
   const [validations, setValidations] = useState({})
   const [connectedCount, setConnectedCount] = useState(0)
+  const autoValidatedRef = useRef(new Set())
 
   useEffect(() => {
     setValidations({})
+    autoValidatedRef.current = new Set()
     const code = getActiveSessionCode()
     const poll = async () => {
       const rows = await fetchOpenAnswers(code, `${MODULE_ID}:${quizQ}`)
@@ -72,6 +74,24 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
     const t = setInterval(poll, 1500)
     return () => clearInterval(t)
   }, [quizQ])
+
+  // Auto-correction : seule la question text-open-multi à mots-clés
+  // (autoCorrectEach) en bénéficie — les autres questions libres de ce quiz
+  // restent volontairement à valider à la main (cf. commentaire plus bas).
+  useEffect(() => {
+    const kwsEach = q?.autoCorrectEach
+    if (!kwsEach?.length) return
+    answers.forEach(row => {
+      const name = row.participant_name
+      if (autoValidatedRef.current.has(name) || name in validations) return
+      const parts = (row.answer || '').split('||').map(p => p.trim().toLowerCase()).filter(Boolean)
+      const isCorrect = kwsEach.every(group => group.some(kw => parts.some(p => p.includes(kw.toLowerCase()))))
+      if (!isCorrect) return
+      autoValidatedRef.current.add(name)
+      handleValidate(name, true)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answers, q])
 
   // Tant que tout le monde n'a pas répondu, pas de correction sur le
   // diffuseur — sinon un formé qui traîne peut lire les réponses des autres.
@@ -603,6 +623,7 @@ export default function ModuleQuizFinal({ pName, onBack }) {
 
   const handleStart = async () => {
     await setSharedState({ quiz_show_correction: false, quiz_interstitial_q: null, quiz_final_phase: null })
+    await clearQuizStarts(getActiveSessionCode(), MODULE_ID).catch(() => {})
     await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(0)
     setStarted(true)

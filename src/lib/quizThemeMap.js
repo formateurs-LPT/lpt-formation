@@ -25,31 +25,35 @@ export const DIRECT_THEME_MODULES = new Set([
   'mutuelles-inami',
 ])
 
-// Index = question_idx (0-based) dans src/lib/quizJ1Data.js (QUIZ_J1, 20 questions)
+// Index = question_idx (0-based) dans src/lib/quizJ1Data.js (QUIZ_J1, 18 questions).
+// Réaligné le 17/08 : 2 questions ("Plan", "enfant presbyte vrai/faux") ont été
+// supprimées du quiz, ce qui décalait tous les thèmes après leur position —
+// toujours vérifier ce nombre contre QUIZ_J1.length après une suppression/ajout.
 const QUIZ_J1_THEMES = [
-  'entreprise',            // Q1  — année d'ouverture du 1er magasin
-  'entreprise',            // Q2  — fondateurs
-  'entreprise',            // Q3  — différenciateur (fabrication 10 min)
-  'entreprise',            // Q4  — 5 points clés de la promesse LPT
-  'optique',               // Q5  — 4 problèmes de vue + définitions
-  'optique',               // Q6  — problèmes de vue trouvés dans la Sphère
-  'optique',               // Q7  — presbytie (lecture petits caractères)
-  'optique',               // Q8  — ordonnance à remplir
-  'optique',               // Q9  — ordonnance à remplir
-  'optique',               // Q10 — ordonnance à remplir (add, presbytie)
-  'optique',               // Q11 — qcm + ordonnance (myopie)
-  'optique',               // Q12 — qcm + ordonnance (hypermétropie)
-  'optique',               // Q13 — qcm + ordonnance (presbytie VP unifocale)
-  'entreprise',            // Q14 — puissance maximale de sphère fabriquée en 10 min
-  'optique',               // Q15 — signification de "Plan"
-  'montures',              // Q16 — catégories de montures (matière)
-  'optique',               // Q17 — qcm + ordonnance (myopie + astigmatisme)
-  'optique',               // Q18 — qcm + ordonnance (hypermétropie + astigmatisme + presbytie)
-  'entreprise',            // Q19 — délai de fabrication (forte correction)
-  'optique',               // Q20 — enfant presbyte (vrai/faux)
+  'entreprise',            // 0 — année d'ouverture du 1er magasin
+  'entreprise',            // 1 — fondateurs
+  'entreprise',            // 2 — différenciateur (fabrication 10 min)
+  'entreprise',            // 3 — 5 points clés de la promesse LPT
+  'optique',               // 4 — 4 problèmes de vue + définitions
+  'optique',               // 5 — problèmes de vue trouvés dans la Sphère
+  'optique',               // 6 — presbytie (lecture petits caractères)
+  'optique',               // 7 — ordonnance à remplir
+  'optique',               // 8 — ordonnance à remplir
+  'optique',               // 9 — ordonnance à remplir (add, presbytie)
+  'optique',               // 10 — qcm + ordonnance (myopie)
+  'optique',               // 11 — qcm + ordonnance (hypermétropie)
+  'optique',               // 12 — qcm + ordonnance (presbytie VP unifocale)
+  'entreprise',            // 13 — puissance maximale de sphère fabriquée en 10 min
+  'montures',              // 14 — catégories de montures (matière)
+  'optique',               // 15 — qcm + ordonnance (myopie + astigmatisme)
+  'optique',               // 16 — qcm + ordonnance (hypermétropie + astigmatisme + presbytie)
+  'entreprise',            // 17 — délai de fabrication (forte correction)
 ]
 
-// Index = question_idx (0-based) dans src/lib/quizFinalData.js (QUIZ_FINAL_QUESTIONS, 34 questions)
+// Index = question_idx (0-based) dans src/lib/quizFinalData.js (QUIZ_FINAL_QUESTIONS, 32 questions).
+// Réaligné le 17/08 : les questions "valeur ADD" et "OG sur ordonnance" ont été
+// supprimées, ce qui décalait tous les thèmes après leur position — toujours
+// vérifier ce nombre contre QUIZ_FINAL_QUESTIONS.length après une suppression/ajout.
 const QUIZ_FINAL_THEMES = [
   'trame-accueil',         // 0  — première phrase de la trame d'accueil
   'trame-accueil',         // 1  — proposition systématique en fin de trame
@@ -62,32 +66,33 @@ const QUIZ_FINAL_THEMES = [
   'optique',               // 8  — astigmatisme
   'optique',               // 9  — hypermétropie
   'optique',               // 10 — OD sur ordonnance
-  'optique',               // 11 — corrections indiquées (qcm-ordonnance)
-  'optique',               // 12 — valeur ADD
-  'optique',               // 13 — correction indiquée (qcm-ordonnance)
-  'offres',                // 14 — offre Classique
-  'offres',                // 15 — parcours 1=1
-  'offres',                // 16 — Pack Plan
-  'offres',                // 17 — parcours Suprême
-  'verre-progressif',      // 18 — délai de fabrication verre progressif
-  'verre-progressif',      // 19 — trouble visuel recommandé
-  'verre-progressif',      // 20 — zones de vision
-  'remboursement-france',  // 21 — conditions de remboursement
-  'remboursement-france',  // 22 — âge délai renouvellement 2 ans
-  'remboursement-france',  // 23 — validité ordonnance (30 ans)
-  'remboursement-france',  // 24 — reste à charge après remboursement complet
-  'remboursement-france',  // 25 — renouvellement adapté (+16 ans)
-  'optique',               // 26 — OG sur ordonnance
-  'montures',              // 27 — matière entrée de gamme
-  'remboursement-france',  // 28 — CSS remplace quel élément
-  'entreprise',            // 29 — 5 éléments de l'accessibilité LPT
-  'verre-progressif',      // 30 — garantie adaptation 100 jours
-  'optique',               // 31 — reconnaître un presbyte sans ordonnance
-  'verre-progressif',      // 32 — arguments de vente verre progressif
-  'trame-accueil',         // 33 — trame d'accueil complète
+  'optique',               // 11 — corrections indiquées (qcm-ordonnance myopie+astig)
+  'optique',               // 12 — correction indiquée (qcm-ordonnance hypermétropie)
+  'offres',                // 13 — offre Classique
+  'offres',                // 14 — parcours 1=1
+  'offres',                // 15 — Pack Plan
+  'offres',                // 16 — parcours Suprême
+  'verre-progressif',      // 17 — délai de fabrication verre progressif
+  'verre-progressif',      // 18 — trouble visuel recommandé
+  'verre-progressif',      // 19 — zones de vision
+  'remboursement-france',  // 20 — conditions de remboursement
+  'remboursement-france',  // 21 — âge délai renouvellement 2 ans
+  'remboursement-france',  // 22 — validité ordonnance (30 ans)
+  'remboursement-france',  // 23 — reste à charge après remboursement complet
+  'remboursement-france',  // 24 — renouvellement adapté (+16 ans)
+  'montures',              // 25 — matière entrée de gamme
+  'remboursement-france',  // 26 — CSS remplace quel élément
+  'entreprise',            // 27 — 5 éléments de l'accessibilité LPT
+  'verre-progressif',      // 28 — garantie adaptation 100 jours
+  'optique',               // 29 — reconnaître un presbyte sans ordonnance
+  'verre-progressif',      // 30 — arguments de vente verre progressif
+  'trame-accueil',         // 31 — trame d'accueil complète
 ]
 
-// Index = question_idx (0-based) dans src/lib/quizJ2Data.js (QUIZ_J2, 20 questions)
+// Index = question_idx (0-based) dans src/lib/quizJ2Data.js (QUIZ_J2, 19 questions).
+// Réaligné le 17/08 : la question "2nde paire offerte pack 95€" a été supprimée,
+// ce qui décalait tous les thèmes après sa position — toujours vérifier ce
+// nombre contre QUIZ_J2.length après une suppression/ajout.
 const QUIZ_J2_THEMES = [
   'trame-accueil',         // 0  — case manquante de la trame d'accueil
   'offres',                // 1  — matériaux monture offre 1=1
@@ -100,15 +105,14 @@ const QUIZ_J2_THEMES = [
   'verre-progressif',      // 8  — 5 arguments de vente verre progressif
   'offres',                // 9  — composition paire à 10€
   'offres',                // 10 — réduction 2nde paire (offre classique)
-  'offres',                // 11 — 2nde paire offerte (pack 95€)
-  'offres',                // 12 — qu'est-ce que le pack plan
-  'montures',              // 13 — matériau montures 5-15€
-  'montures',              // 14 — matériau monture conseillé (qcm-ordonnance)
-  'verre-progressif',      // 15 — 3 zones de vision du progressif
-  'entreprise',            // 16 — âge examen de vue en magasin
-  'entreprise',            // 17 — coût de l'examen de vue
-  'verre-progressif',      // 18 — conseil verre 2nde paire (couture)
-  'optique',               // 19 — calcul vision de près
+  'offres',                // 11 — qu'est-ce que le pack plan
+  'montures',              // 12 — matériau montures 5-15€
+  'montures',              // 13 — matériau monture conseillé (qcm-ordonnance)
+  'verre-progressif',      // 14 — 3 zones de vision du progressif
+  'entreprise',            // 15 — âge examen de vue en magasin
+  'entreprise',            // 16 — coût de l'examen de vue
+  'verre-progressif',      // 17 — conseil verre 2nde paire (couture)
+  'optique',               // 18 — calcul vision de près
 ]
 
 const TRANSVERSAL_THEME_MAPS = {

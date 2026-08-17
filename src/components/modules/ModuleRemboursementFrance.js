@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState, fetchOpenAnswers } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState, fetchOpenAnswers, clearQuizStarts } from '@/lib/supabase'
 import { MODULE_DATA, TIERS_PAYANT_QUIZ } from '@/lib/modulesData'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
@@ -1029,6 +1029,7 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
 
   const handleStartQuiz = async () => {
     await setSharedState({ quiz_show_correction: false }).catch(() => {})
+    await clearQuizStarts(getActiveSessionCode(), MODULE_ID).catch(() => {})
     setQuizQ(0)
     await syncAndWrite({ module_page: 100 })
   }

@@ -487,6 +487,25 @@ export async function ensureQuestionStartTimestamp(roomCode, qKey) {
   return fresh?.quiz_starts?.[qKey] || null
 }
 
+/**
+ * Purge les horodatages `quiz_starts` d'un module (préfixe `${moduleId}:`).
+ * À appeler à chaque (re)lancement d'un quiz : sans ça, relancer un module déjà
+ * joué dans la même salle (retour en arrière du formateur, reprise après
+ * coupure...) réutilise l'horodatage périmé de la 1ère fois → le compte à
+ * rebours affiche 0 et déclenche un timeout instantané pour tout le monde,
+ * formé comme diffuseur.
+ */
+export async function clearQuizStarts(roomCode, moduleId) {
+  if (!moduleId) return null
+  const prefix = `${moduleId}:`
+  return mutateRoomState(roomCode, (state) => {
+    const starts = state?.quiz_starts
+    if (!starts) return {}
+    const kept = Object.fromEntries(Object.entries(starts).filter(([k]) => !k.startsWith(prefix)))
+    return { quiz_starts: kept }
+  })
+}
+
 // ── Réponses libres aux questions ouvertes ────────────────────────
 export async function insertOpenAnswer({
   sessionCode,

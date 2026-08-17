@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers, clearQuizStarts } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
@@ -1033,6 +1033,7 @@ export default function ModuleTypesVerres({ pName, onBack, onTerminate }) {
 
   const handleLaunchQuiz = async () => {
     await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false })
+    await clearQuizStarts(getActiveSessionCode(), 'types-verres').catch(() => {})
     await sbUpdate('sessions', { module_page: 100 }, 'code=eq.' + getActiveSessionCode())
     setQuizQ(0)
     setQuizLaunched(true)

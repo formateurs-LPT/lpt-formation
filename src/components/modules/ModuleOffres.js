@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState, clearQuizStarts } from '@/lib/supabase'
 import { useIsMobile } from '@/lib/useIsMobile'
 import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
@@ -1051,6 +1051,7 @@ export default function ModuleOffres({ pName, onBack }) {
 
   const startQuiz = async () => {
     await setSharedState({ quiz_show_correction: false }).catch(() => {})
+    await clearQuizStarts(getActiveSessionCode(), 'offres').catch(() => {})
     await sbUpdate('sessions', { active_module: 'offres', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(0)
     setPhase('quiz')
@@ -1064,6 +1065,11 @@ export default function ModuleOffres({ pName, onBack }) {
   }
 
   const handleEndQuiz = async () => {
+    // quiz_final_phase est un flag PARTAGÉ (pas propre à ce module) utilisé par
+    // Quiz J1/J2/Final/Optique pour leur propre podium de fin ('podium'/'rate'/
+    // 'ended'). S'il est resté à 'ended' d'un quiz précédent dans la même salle,
+    // le diffuseur affiche l'écran d'accueil au lieu du bilan de CE quiz.
+    await setSharedState({ quiz_final_phase: null }).catch(() => {})
     try { await sbUpdate('sessions', { active_module: 'offres', module_page: 200 }, `code=eq.${getActiveSessionCode()}`) } catch { /* best-effort */ }
     setPhase('results')
   }

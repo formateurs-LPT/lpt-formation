@@ -1941,11 +1941,13 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
   // ne pas remonter un thème sur une poignée de questions non représentative
   // (même logique que la suggestion automatique d'acquis dans FicheCollab).
   const weakThemes = useMemo(() => {
+    const relevantThemes = new Set(catMeta.themes || THEMES_FRANCE)
     return Object.entries(groupThemeStats)
+      .filter(([theme]) => relevantThemes.has(theme))
       .map(([theme, s]) => ({ theme, correct: s.correct, total: s.total, rate: s.total ? s.correct / s.total : 0 }))
       .filter(t => t.total >= 3)
       .sort((a, b) => a.rate - b.rate)
-  }, [groupThemeStats])
+  }, [groupThemeStats, catMeta.themes])
 
   const buildGroupMailto = (group) => {
     const emails   = group.managers.map(m => m.email).join(',')
