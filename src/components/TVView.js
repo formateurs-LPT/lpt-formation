@@ -114,6 +114,53 @@ function TVModuleQuestionsView({ sessionCode, moduleId, moduleLabel, singleId })
   )
 }
 
+/**
+ * Question d'un formé diffusée en overlay — au-dessus de n'importe quel écran
+ * (module actif ou pas), contrairement à TVModuleQuestionsView qui ne
+ * s'affichait QUE quand aucun module n'était en cours (!activeModule). Un
+ * formateur cliquant sur "Afficher sur TV" pendant un module ne voyait donc
+ * jamais rien apparaître sur le diffuseur (incident du 18/08).
+ */
+function TVQuestionOverlay({ sessionCode, singleId }) {
+  const [answer, setAnswer] = useState(null)
+  useEffect(() => {
+    if (!sessionCode || !singleId) return
+    let cancelled = false
+    const load = async () => {
+      try {
+        const state = await getRoomSharedState(sessionCode)
+        if (!cancelled) setAnswer(state?.[singleId]?.answer || null)
+      } catch {}
+    }
+    load()
+    const id = setInterval(load, 4000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [sessionCode, singleId])
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 850,
+      background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 60, pointerEvents: 'none',
+    }}>
+      <div style={{
+        background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 100%)',
+        border: '2px solid rgba(0,171,233,0.4)', borderLeft: '8px solid #00abe9',
+        borderRadius: 24, padding: '48px 56px', maxWidth: 900, width: '100%',
+        boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#00abe9', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 24 }}>
+          ❓ Question d&apos;un formé
+        </div>
+        <div style={{ fontSize: 32, fontWeight: 700, color: '#fff', lineHeight: 1.5 }}>
+          {answer || '…'}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Keyframes ─────────────────────────────────────────────────────
 const STYLES = `
   html, body { overflow: hidden !important; height: 100% !important; margin: 0; }
@@ -9291,6 +9338,7 @@ export default function TVView() {
         <FullscreenButton />
         <TVPeerQuizScreen sharedState={sharedState} />
         {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+        {sharedState?.tv_screen === 'module_questions' && sharedState?.mq_single_id && <TVQuestionOverlay sessionCode={sessionCode} singleId={sharedState.mq_single_id} />}
         {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         <TVAnnotationCanvas key="peer-quiz" />
       </>
@@ -9305,6 +9353,7 @@ export default function TVView() {
         <FullscreenButton />
         <TVFreeQuizScreen sharedState={sharedState} />
         {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+        {sharedState?.tv_screen === 'module_questions' && sharedState?.mq_single_id && <TVQuestionOverlay sessionCode={sessionCode} singleId={sharedState.mq_single_id} />}
         {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         <TVAnnotationCanvas key="free-quiz" />
       </>
@@ -9321,6 +9370,7 @@ export default function TVView() {
           <FullscreenButton />
           <TVMiniJeuRules />
           {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+          {sharedState?.tv_screen === 'module_questions' && sharedState?.mq_single_id && <TVQuestionOverlay sessionCode={sessionCode} singleId={sharedState.mq_single_id} />}
         {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         </>
       )
@@ -9332,6 +9382,7 @@ export default function TVView() {
           <FullscreenButton />
           <TVMiniJeuDebrief sharedState={sharedState} />
           {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+          {sharedState?.tv_screen === 'module_questions' && sharedState?.mq_single_id && <TVQuestionOverlay sessionCode={sessionCode} singleId={sharedState.mq_single_id} />}
         {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         </>
       )
@@ -9348,6 +9399,7 @@ export default function TVView() {
             theme={sharedState.minijeu_theme}
           />
           {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+          {sharedState?.tv_screen === 'module_questions' && sharedState?.mq_single_id && <TVQuestionOverlay sessionCode={sessionCode} singleId={sharedState.mq_single_id} />}
         {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         </>
       )
@@ -9359,6 +9411,7 @@ export default function TVView() {
           <FullscreenButton />
           <TVMiniJeuQuestions />
           {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+          {sharedState?.tv_screen === 'module_questions' && sharedState?.mq_single_id && <TVQuestionOverlay sessionCode={sessionCode} singleId={sharedState.mq_single_id} />}
         {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         </>
       )
@@ -9399,6 +9452,7 @@ export default function TVView() {
           }
         </div>
         {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+        {sharedState?.tv_screen === 'module_questions' && sharedState?.mq_single_id && <TVQuestionOverlay sessionCode={sessionCode} singleId={sharedState.mq_single_id} />}
         {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
         <TVAnnotationCanvas key="no-module" />
       </>
@@ -9543,6 +9597,7 @@ export default function TVView() {
       </div>
 
       {sharedState?.tv_qr_overlay && <TVQrOverlay roomCode={sessionCode} />}
+      {sharedState?.tv_screen === 'module_questions' && sharedState?.mq_single_id && <TVQuestionOverlay sessionCode={sessionCode} singleId={sharedState.mq_single_id} />}
         {sharedState?.tv_kpassword_overlay && <TVKPasswordOverlay />}
       <TVAnnotationCanvas key={`module-${activeModule}`} />
     </>
