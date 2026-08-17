@@ -1067,34 +1067,48 @@ function AppUpdateModal({ update, onClose }) {
   )
 }
 
-function AppUpdatesWidget() {
-  const [selected, setSelected] = useState(null)
+// Liste de toutes les mises à jour — ouverte depuis l'éclair ⚡ de la barre du
+// haut (plus de tuile dédiée dans le tableau de bord, ça prenait trop de place).
+function AppUpdatesListModal({ onClose, onSelect }) {
   return (
-    <>
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.7)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '20px',
+        backdropFilter: 'blur(4px)',
+      }}
+    >
       <div style={{
-        background: 'var(--card)', border: '1px solid var(--border)',
-        borderLeft: '4px solid #a78bfa',
-        borderRadius: 'var(--r)', padding: '18px 24px',
-        marginBottom: 16,
+        background: '#0a1628', borderRadius: 24,
+        border: '1px solid rgba(255,255,255,0.1)',
+        width: '100%', maxWidth: 560,
+        maxHeight: '90vh', overflowY: 'auto',
+        padding: '32px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(167,139,250,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>⚡</div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Mises à jour de l'app</div>
-              <div style={{ fontSize: 11, color: 'var(--text-s)' }}>Nouveautés et corrections</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Mises à jour de l'app</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Nouveautés et corrections</div>
             </div>
           </div>
-          <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(167,139,250,0.12)', color: '#7c3aed', border: '1px solid rgba(167,139,250,0.25)', borderRadius: 20, padding: '3px 10px', letterSpacing: 0.5 }}>
-            {APP_UPDATES.length} entrée{APP_UPDATES.length > 1 ? 's' : ''}
-          </span>
+          <button onClick={onClose} style={{
+            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.5)', width: 32, height: 32, borderRadius: 10,
+            fontSize: 16, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>×</button>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {APP_UPDATES.map(u => (
             <div
               key={u.id}
-              onClick={() => setSelected(u)}
+              onClick={() => onSelect(u)}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '10px 14px', borderRadius: 10,
@@ -1106,7 +1120,7 @@ function AppUpdatesWidget() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', minWidth: 90 }}>{u.date}</span>
-                <span style={{ fontSize: 13, color: 'var(--text-s)' }}>{u.title}</span>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{u.title}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{
@@ -1120,9 +1134,7 @@ function AppUpdatesWidget() {
           ))}
         </div>
       </div>
-
-      {selected && <AppUpdateModal update={selected} onClose={() => setSelected(null)} />}
-    </>
+    </div>
   )
 }
 
@@ -1557,6 +1569,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
   const [selectedUpdate, setSelectedUpdate] = useState(null)
+  const [showUpdatesList, setShowUpdatesList] = useState(false)
   const [roomModalOpen, setRoomModalOpen] = useState(false)
   const [roomLoading, setRoomLoading] = useState(false)
   const [activeRoomCode, setActiveRoomCode] = useState('')
@@ -2078,7 +2091,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
       <div className="dash-wrap">
         <DashHeader
           pName={pName}
-          onUpdatesClick={() => setSelectedUpdate(APP_UPDATES[0])}
+          onUpdatesClick={() => setShowUpdatesList(true)}
           activeRoomCode={activeRoomCode}
           onOpenTv={onOpenTv}
           onOpenRoom={handleOpenRoomClick}
@@ -2093,6 +2106,12 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           onPendingChange={setSonnettePending}
           trainerName={pName}
         />
+        {showUpdatesList && (
+          <AppUpdatesListModal
+            onClose={() => setShowUpdatesList(false)}
+            onSelect={u => { setShowUpdatesList(false); setSelectedUpdate(u) }}
+          />
+        )}
         {selectedUpdate && <AppUpdateModal update={selectedUpdate} onClose={() => setSelectedUpdate(null)} />}
 
         {/* OB Banner */}
@@ -2213,8 +2232,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
 
         </div>
-
-        <AppUpdatesWidget />
 
         {/* Planning + Shortcuts + Fiches */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
