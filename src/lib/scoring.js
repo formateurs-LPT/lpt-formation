@@ -26,11 +26,13 @@ export function buildParticipantRanking({ quizAnswers = [], openAnswers = [], mo
 
   // Quiz de module — une réponse comptée par (module, question) et par formé
   const seenQuiz = new Set()
+  const quizModulePairs = new Set() // "collaborateur|module_id" déjà couvert par quiz_answers
   for (const r of quizAnswers) {
     if (!r?.collaborateur || !r?.module_id) continue
     const key = `${r.collaborateur}|${r.module_id}|${r.question_idx}`
     if (seenQuiz.has(key)) continue
     seenQuiz.add(key)
+    quizModulePairs.add(`${r.collaborateur}|${r.module_id}`)
     bump(r.collaborateur, !!r.is_correct)
   }
 
@@ -50,10 +52,15 @@ export function buildParticipantRanking({ quizAnswers = [], openAnswers = [], mo
   // Exercices notés (ex: saisie interactive) — score/total connus directement.
   // Une ligne par (collaborateur, module_id, semaine) : on garde le total le plus
   // élevé par module plutôt que la première ligne rencontrée (ordre non garanti).
+  // Exclut les module_id déjà couverts par quiz_answers : le dashboard formé
+  // (PersonalResultsScreen) enregistre aussi un résumé module_results à la fin
+  // d'un quiz classique, en plus des réponses détaillées — sans cette exclusion,
+  // chaque bonne réponse de quiz était comptée deux fois (quiz_answers + résumé).
   const bestModule = {}
   for (const r of moduleResults) {
     if (!r?.collaborateur || !r?.module_id) continue
     const key = `${r.collaborateur}|${r.module_id}`
+    if (quizModulePairs.has(key)) continue
     const score = r.score || 0
     const total = r.score_total ?? r.total ?? score
     if (!bestModule[key] || total > bestModule[key].total) bestModule[key] = { score, total }
