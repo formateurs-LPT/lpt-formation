@@ -690,7 +690,13 @@ function MCQController({ quizQ, onNext, onEnd, onBack }) {
   const q = TYPES_VERRES_QUIZ[quizQ]
   const isLast = quizQ >= TYPES_VERRES_QUIZ.length - 1
 
-  useEffect(() => { setCorrectionPhase(false) }, [quizQ])
+  // setLiveAnswers([]) ici aussi : sans ça, les réponses de la question
+  // précédente restent en mémoire le temps que le poll (juste en dessous)
+  // aille rechercher celles de la nouvelle question — l'auto-avance pouvait
+  // alors se déclencher instantanément sur Q2 (ou toute question suivante)
+  // en comparant liveAnswers.length de l'ANCIENNE question à connectedCount,
+  // empêchant les formés de répondre (incident du 18/08).
+  useEffect(() => { setCorrectionPhase(false); setLiveAnswers([]) }, [quizQ])
 
   useEffect(() => {
     const poll = async () => {

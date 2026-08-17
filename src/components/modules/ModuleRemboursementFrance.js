@@ -591,12 +591,19 @@ function RembfrTextOpenController({ quizQ, onNext, onEnd, onBack }) {
 
     const autoValidate = (rows) => {
       const kws = q?.autoCorrect
-      if (!kws?.length) return
+      const kwsEach = q?.autoCorrectEach // text-open-multi : un groupe de mots-clés par case attendue
+      if (!kws?.length && !kwsEach?.length) return
       for (const row of rows) {
         const name = row.participant_name
         if (autoValidatedRef.current.has(name)) continue
-        const text = (row.answer || '').trim().toLowerCase()
-        if (kws.some(kw => text.includes(kw.toLowerCase()))) {
+        const raw = (row.answer || '').trim()
+        const text = raw.toLowerCase()
+        const matchOr = kws?.length && kws.some(kw => text.includes(kw.toLowerCase()))
+        const matchEach = kwsEach?.length && (() => {
+          const parts = raw.split('||').map(p => p.trim().toLowerCase()).filter(Boolean)
+          return kwsEach.every(group => group.some(kw => parts.some(p => p.includes(kw.toLowerCase()))))
+        })()
+        if (matchOr || matchEach) {
           autoValidatedRef.current.add(name)
           setValidating(v => ({ ...v, [name]: true }))
           saveModuleQuizAnswer({ sessionCode: getActiveSessionCode(), moduleId: MODULE_ID, questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
@@ -683,7 +690,16 @@ function RembfrTextOpenController({ quizQ, onNext, onEnd, onBack }) {
               borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
             }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: BUBBLE_COLORS[i % BUBBLE_COLORS.length], minWidth: 80, flexShrink: 0 }}>{row.participant_name}</span>
-              <span style={{ flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>{row.answer}</span>
+              <span style={{ flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>
+                {q?.type === 'text-open-multi'
+                  ? (row.answer || '').split('||').map((v, vi) => (
+                      <span key={vi} style={{ marginRight: 14 }}>
+                        {q.fieldLabels?.[vi] && <span style={{ color: 'rgba(255,255,255,0.4)' }}>{q.fieldLabels[vi]} : </span>}
+                        {v.trim() || '—'}
+                      </span>
+                    ))
+                  : row.answer}
+              </span>
               <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                 {/* Boutons toujours visibles — modifiables même après une validation automatique */}
                 <button onClick={() => handleValidate(row, true)} title="Marquer correct" style={{ background: status === 'correct' ? 'rgba(34,197,94,0.4)' : 'rgba(34,197,94,0.15)', border: `1.5px solid ${status === 'correct' ? '#4ade80' : 'rgba(34,197,94,0.35)'}`, color: '#4ade80', padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓</button>
@@ -807,8 +823,123 @@ function RembfrMCQController({ quizQ, onNext, onEnd, onBack }) {
   )
 }
 
+// ── Group Results View (vue formateur après quiz) ─────────────────
+function GroupResultsView({ onTerminate }) {
+  const [answers, setAnswers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchAnswers = async () => {
+      const rows = await fetchTrainerQuizAnswers(
+        `session_code=eq.${getActiveSessionCode()}&module_id=eq.${MODULE_ID}`
+      )
+      setAnswers(rows || [])
+      setLoading(false)
+    }
+    fetchAnswers()
+  }, [])
+
+  const participantNames = [...new Set((answers || []).map(r => r.collaborateur))]
+  const participantCount = participantNames.length
+
+  const questionStats = TIERS_PAYANT_QUIZ.map((q, idx) => {
+    const qAnswers = answers.filter(r => r.question_idx === idx)
+    const wrongCount = qAnswers.filter(r => !r.is_correct).length
+    const total = qAnswers.length
+    const pctWrong = total > 0 ? Math.round((wrongCount / total) * 100) : 0
+    return { idx, question: q.question, pctWrong, total }
+  }).sort((a, b) => b.pctWrong - a.pctWrong)
+
+  const getPriority = (pct) => {
+    if (pct >= 50) return { icon: '🔴', label: 'À retravailler en priorité', color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)' }
+    if (pct >= 25) return { icon: '🟡', label: 'À consolider', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)' }
+    return { icon: '🟢', label: 'Bien maîtrisé', color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)' }
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '24px 40px',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Bilan du quiz · Remboursement optique en France</span>
+        </div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginRight: 6 }}>{participantCount}</span>
+          participant{participantCount !== 1 ? 's' : ''}
+        </div>
+      </div>
+
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{
+          display: 'inline-block',
+          background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.35)',
+          borderRadius: 20, padding: '6px 24px',
+          fontSize: 12, fontWeight: 700, color: '#f59e0b', letterSpacing: 1.5, textTransform: 'uppercase',
+          marginBottom: 12,
+        }}>Résultats du groupe</div>
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Points à retravailler</h1>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>Trié par taux d'erreur décroissant</p>
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 760, alignSelf: 'center', width: '100%' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 15, padding: 40 }}>Chargement…</div>
+        ) : questionStats.map((stat) => {
+          const priority = getPriority(stat.pctWrong)
+          return (
+            <div key={stat.idx} style={{
+              background: priority.bg,
+              border: `1px solid ${priority.border}`,
+              borderRadius: 18, padding: '18px 22px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                <div style={{ flex: 1, marginRight: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 16 }}>{priority.icon}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: priority.color, textTransform: 'uppercase', letterSpacing: 1 }}>{priority.label}</span>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>
+                    Q{stat.idx + 1} — {stat.question}
+                  </div>
+                </div>
+                <div style={{ fontSize: 40, fontWeight: 800, color: priority.color, lineHeight: 1, flexShrink: 0 }}>
+                  {stat.pctWrong}%
+                  <div style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.4)', textAlign: 'right' }}>d'erreurs</div>
+                </div>
+              </div>
+              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 4,
+                  width: `${stat.pctWrong}%`,
+                  background: priority.color,
+                  transition: 'width .8s ease',
+                }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 32, gap: 16 }}>
+        <button onClick={onTerminate} style={{
+          background: 'linear-gradient(135deg, #dc2626, #ef4444)',
+          border: 'none', color: '#fff', padding: '14px 42px', borderRadius: 14,
+          fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          boxShadow: '0 6px 24px rgba(220,38,38,0.4)',
+        }}>✓ Terminer le module</button>
+      </div>
+    </div>
+  )
+}
+
 export default function ModuleRemboursementFrance({ pName, onBack }) {
   const [started, setStarted] = useState(false)
+  const [showGroupResults, setShowGroupResults] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
   const syncedRef = useRef(false)
   const [rembfrRevealed, setRembfrRevealed] = useState([])
@@ -910,14 +1041,31 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
   }
 
   const handleEndQuiz = async () => {
+    // quiz_final_phase est un flag PARTAGÉ (pas propre à ce module) utilisé par
+    // Quiz J1/J2/Final/Optique pour leur propre podium de fin ('podium'/'rate'/
+    // 'ended'). S'il est resté à 'ended' d'un quiz précédent dans la même salle,
+    // le diffuseur affichait l'écran d'accueil au lieu du bilan de CE quiz.
+    // Avant : on quittait le module tout de suite après avoir posé
+    // module_page=200, écrasant la valeur avant même que le diffuseur ait pu
+    // afficher le bilan — aucun récapitulatif ne s'affichait jamais
+    // (incident du 18/08).
+    await setSharedState({ quiz_show_correction: false, quiz_final_phase: null }).catch(() => {})
     await syncAndWrite({ module_page: 200 })
+    setShowGroupResults(true)
+  }
+
+  const handleTerminateModule = async () => {
     await handleTerminate()
+  }
+
+  if (showGroupResults) {
+    return <GroupResultsView onTerminate={handleTerminateModule} />
   }
 
   // ── Quiz ─────────────────────────────────────────────────────────
   if (started && quizQ !== null) {
     const q = TIERS_PAYANT_QUIZ[quizQ]
-    if (q?.type === 'text-open') {
+    if (q?.type === 'text-open' || q?.type === 'text-open-multi') {
       return <RembfrTextOpenController quizQ={quizQ} onNext={handleNextQ} onEnd={handleEndQuiz} onBack={handleEndQuiz} />
     }
     return <RembfrMCQController quizQ={quizQ} onNext={handleNextQ} onEnd={handleEndQuiz} onBack={handleEndQuiz} />

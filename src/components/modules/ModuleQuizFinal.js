@@ -171,7 +171,13 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
             }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 2 }}>{row.participant_name}</div>
-                <div style={{ fontSize: 15, color: '#fff', fontWeight: 600 }}>{row.answer}</div>
+                <div style={{ fontSize: 15, color: '#fff', fontWeight: 600 }}>
+                  {q?.type === 'text-open-multi'
+                    ? (row.answer || '').split('||').map((v, vi) => (
+                        <span key={vi} style={{ marginRight: 14 }}>{v.trim() || '—'}</span>
+                      ))
+                    : row.answer}
+                </div>
               </div>
               <button onClick={() => handleValidate(row.participant_name, true)} style={{
                 width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer',
@@ -644,7 +650,7 @@ export default function ModuleQuizFinal({ pName, onBack }) {
   )
 
   const isLast = quizQ >= QUIZ_FINAL_QUESTIONS.length - 1
-  const isTextOpen = QUIZ_FINAL_QUESTIONS[quizQ]?.type === 'text-open'
+  const isTextOpen = QUIZ_FINAL_QUESTIONS[quizQ]?.type === 'text-open' || QUIZ_FINAL_QUESTIONS[quizQ]?.type === 'text-open-multi'
 
   return (
     <>

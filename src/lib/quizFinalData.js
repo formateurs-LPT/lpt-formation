@@ -52,7 +52,7 @@ export const QUIZ_FINAL_QUESTIONS = [
     question: "La presbytie est un trouble visuel lié à :",
     options: [
       "Un choc physique sur l'œil",
-      "L'âge — le cristallin perd de sa souplesse",
+      "L'âge",
       "Une infection oculaire",
       "Une carence en vitamine A",
     ],
@@ -104,16 +104,6 @@ export const QUIZ_FINAL_QUESTIONS = [
       "Presbytie seule",
     ],
     correct: 0,
-  },
-  {
-    question: "Sur une ordonnance, la valeur ADD correspond à :",
-    options: [
-      "L'axe de l'astigmatisme",
-      "La correction de la myopie",
-      "La valeur ajoutée pour la vision de près (presbytie)",
-      "La puissance totale du verre",
-    ],
-    correct: 2,
   },
   {
     type: 'qcm-ordonnance',
@@ -222,14 +212,9 @@ export const QUIZ_FINAL_QUESTIONS = [
   },
   // ── Questions bonus (Q27 → Q30) ──────────────────────────────────
   {
-    question: "Que signifie OG sur une ordonnance ?",
-    options: ["Optique Globale", "Objectif Général", "Oeil Gauche", "Oculaire Gauche"],
+    question: "Parmi ces matériaux de montures, lequel est l'entrée de gamme la plus abordable ?",
+    options: ["Acétate", "Métal", "Injecté"],
     correct: 2,
-  },
-  {
-    question: "Parmi ces matières de montures, laquelle est l'entrée de gamme la plus abordable ?",
-    options: ["Titane", "Acétate", "Métal", "Injecté"],
-    correct: 3,
   },
   {
     question: "La CSS (Complémentaire Santé Solidaire) remplace quel élément du remboursement ?",
@@ -242,9 +227,17 @@ export const QUIZ_FINAL_QUESTIONS = [
     correct: 1,
   },
   {
-    type: 'text-open',
+    type: 'text-open-multi',
+    fields: 5,
     question: "Quels sont les 5 éléments qui nous permettent de faire des lunettes accessibles, en un temps record ?",
-    hint: "Zéro intermédiaire, achat direct fournisseurs, fabrication sur place, large choix de montures, examen de vue gratuit et sans rendez-vous",
+    hint: "Zéro intermédiaire · Achat direct fournisseurs · Fabrication sur place · Large choix de montures · Examen de vue gratuit et sans rendez-vous",
+    autoCorrectEach: [
+      ['intermédiaire', 'intermediaire'],
+      ['direct', 'fournisseur'],
+      ['fabrication', 'sur place', 'boutique'],
+      ['choix', 'montures'],
+      ['examen', 'gratuit'],
+    ],
   },
   // ── Questions texte libre ─────────────────────────────────────────────
   {
@@ -264,7 +257,7 @@ export const QUIZ_FINAL_QUESTIONS = [
   },
   {
     type: 'text-open',
-    question: "Écrivez la trame d'accueil",
+    question: "Écrivez la trame d'accueil en entier (pas juste « bonjour » ou « bienvenue »).",
     hint: "Bonjour et bienvenue chez Lunettes Pour Tous, mon prénom est [...]. Avez-vous votre ordonnance ? Êtes-vous venu(e) avec votre mutuelle ? Avez-vous déjà effectué un examen de vue chez nous ?",
   },
 ]
