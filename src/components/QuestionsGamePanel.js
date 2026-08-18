@@ -21,7 +21,30 @@ import { normalizeNameKey } from '@/lib/participantNames'
  *   bonne réponse : les formés ayant sélectionné exactement la même chose sont
  *   validés automatiquement, les autres restent à valider manuellement
  * - la question ne disparaît jamais toute seule : seul le formateur avance
+ * - type 'od-og' (ex: calcul de la sphère de près) : pas de bonne réponse
+ *   fixe dans les données (ça dépend de l'ordonnance annoncée à l'oral) — le
+ *   formateur saisit lui aussi OD/OG comme "réponse officielle" de la question
+ *   en cours, les formés ayant saisi la même chose sont validés automatiquement
  */
+
+// ── Helpers question OD/OG (ex: "calculez la sphère de près") ──────
+const parseOdOgNum = (s) => {
+  const n = parseFloat((s ?? '').toString().replace(',', '.').trim())
+  return Number.isFinite(n) ? n : null
+}
+const encodeOdOg = (od, og) => `${od}||${og}`
+const decodeOdOg = (str) => {
+  const [od, og] = (str || '').split('||')
+  return { od: (od || '').trim(), og: (og || '').trim() }
+}
+const sameOdOg = (answerStr, officialStr) => {
+  const a = decodeOdOg(answerStr)
+  const b = decodeOdOg(officialStr)
+  const aOd = parseOdOgNum(a.od), aOg = parseOdOgNum(a.og)
+  const bOd = parseOdOgNum(b.od), bOg = parseOdOgNum(b.og)
+  if (aOd == null || aOg == null || bOd == null || bOg == null) return false
+  return Math.abs(aOd - bOd) < 0.01 && Math.abs(aOg - bOg) < 0.01
+}
 
 // ── Vue formateur ──────────────────────────────────────────────────
 export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, questions, onExit, header, bottomPadding = 40 }) {
@@ -30,6 +53,7 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
   const [vfCorrect, setVfCorrect] = useState(null)
   const [visionCorrect, setVisionCorrect] = useState([])
   const [choiceCorrect, setChoiceCorrect] = useState(null)
+  const [odOgCorrect, setOdOgCorrect] = useState({ od: '', og: '' })
   const [onlineNames, setOnlineNames] = useState([])
   const [validatedMap, setValidatedMap] = useState({})
   const [customQText, setCustomQText] = useState('')
@@ -93,6 +117,7 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
     setVfCorrect(null)
     setVisionCorrect([])
     setChoiceCorrect(null)
+    setOdOgCorrect({ od: '', og: '' })
     setSelectedQ(idx)
     setValidatedMap({})
     await setSharedState({ [kQ]: idx, [kVf]: null, [kClear]: Date.now(), [kCustom]: null })
@@ -105,6 +130,7 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
     setVfCorrect(null)
     setVisionCorrect([])
     setChoiceCorrect(null)
+    setOdOgCorrect({ od: '', og: '' })
     await setSharedState({ [kQ]: null, [kVf]: null, [kClear]: Date.now(), [kCustom]: null })
   }
 
@@ -116,6 +142,7 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
       setVfCorrect(null)
       setVisionCorrect([])
       setChoiceCorrect(null)
+      setOdOgCorrect({ od: '', og: '' })
       setSelectedQ(-1)
       setValidatedMap({})
       await setSharedState({ [kQ]: -1, [kCustom]: customQText.trim(), [kVf]: null, [kClear]: Date.now() })
@@ -162,6 +189,7 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
   const isVF = currentQ?.type === 'vrai-faux'
   const isVisionMulti = currentQ?.type === 'vision-multi'
   const isChoice = currentQ?.type === 'choice'
+  const isOdOg = currentQ?.type === 'od-og'
   const visionOptions = (isVisionMulti && currentQ?.options) || VISION_MULTI_OPTIONS
 
   // Auto-validation continue : dès que le formateur répond (VRAI/FAUX, choix,
@@ -175,9 +203,11 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
     const hasOfficialAnswer = isVF ? vfCorrect !== null
       : isChoice ? choiceCorrect !== null
       : isVisionMulti ? visionCorrect.length > 0
+      : isOdOg ? (parseOdOgNum(odOgCorrect.od) != null && parseOdOgNum(odOgCorrect.og) != null)
       : false
     if (!hasOfficialAnswer) return
 
+    const officialOdOg = encodeOdOg(odOgCorrect.od, odOgCorrect.og)
     for (const row of answers) {
       if (row.participant_name in validatedMap) continue
       if (autoValidatingRef.current.has(row.participant_name)) continue
@@ -185,6 +215,7 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
       const matches = isVF ? (row.answer || '').trim() === vfCorrect
         : isChoice ? (row.answer || '').trim() === choiceCorrect
         : isVisionMulti ? sameVisionAnswer(decodeVisionAnswer(row.answer, visionOptions), visionCorrect, visionOptions)
+        : isOdOg ? sameOdOg(row.answer, officialOdOg)
         : false
 
       if (matches) {
@@ -195,7 +226,7 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [answers, vfCorrect, choiceCorrect, visionCorrect, isVF, isChoice, isVisionMulti, currentQ, validatedMap, visionOptions])
+  }, [answers, vfCorrect, choiceCorrect, visionCorrect, odOgCorrect, isVF, isChoice, isVisionMulti, isOdOg, currentQ, validatedMap, visionOptions])
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
@@ -262,6 +293,9 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
                     )}
                     {q.type === 'choice' && (
                       <div style={{ fontSize: 11, color: isSelected ? 'rgba(0,171,233,0.8)' : 'rgba(255,255,255,0.35)', marginTop: 4, fontWeight: 600 }}>→ {q.options.join(' / ')}</div>
+                    )}
+                    {q.type === 'od-og' && (
+                      <div style={{ fontSize: 11, color: isSelected ? 'rgba(0,171,233,0.8)' : 'rgba(255,255,255,0.35)', marginTop: 4, fontWeight: 600 }}>→ Réponse OD / OG</div>
                     )}
                   </div>
                 </div>
@@ -399,6 +433,40 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
                 </div>
               )}
 
+              {/* Saisie OD/OG formateur (ex: calcul sphère de près) — pas de bonne
+                  réponse fixe dans les données, ça dépend de l'ordonnance annoncée
+                  à l'oral : le formateur calcule et saisit la réponse officielle. */}
+              {isOdOg && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Votre réponse (bonne réponse officielle)</div>
+                  <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>OD</div>
+                      <input
+                        value={odOgCorrect.od}
+                        onChange={e => setOdOgCorrect(v => ({ ...v, od: e.target.value }))}
+                        inputMode="decimal" placeholder="+0,00"
+                        style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '2px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: 18, fontWeight: 700, textAlign: 'center', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>OG</div>
+                      <input
+                        value={odOgCorrect.og}
+                        onChange={e => setOdOgCorrect(v => ({ ...v, og: e.target.value }))}
+                        inputMode="decimal" placeholder="+0,00"
+                        style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '2px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: 18, fontWeight: 700, textAlign: 'center', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+                  {parseOdOgNum(odOgCorrect.od) != null && parseOdOgNum(odOgCorrect.og) != null && (
+                    <div style={{ fontSize: 12, color: 'rgba(74,222,128,0.9)', fontWeight: 600 }}>
+                      ✓ Validation automatique active — les formés ayant saisi les mêmes OD/OG passent juste tout seuls.
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Indicateur "Tous ont répondu" */}
               <div style={{ display: 'flex', gap: 8 }}>
                 <div style={{
@@ -455,7 +523,9 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
                 ) : answers.map(row => {
                   const status = validatedMap[row.participant_name]
                   const isValidated = status !== undefined
-                  const displayAnswer = isVisionMulti ? decodeVisionAnswer(row.answer, visionOptions).join(', ') || '—' : row.answer
+                  const displayAnswer = isVisionMulti ? decodeVisionAnswer(row.answer, visionOptions).join(', ') || '—'
+                    : isOdOg ? (() => { const d = decodeOdOg(row.answer); return `OD ${d.od || '—'}  ·  OG ${d.og || '—'}` })()
+                    : row.answer
                   return (
                     <div key={row.participant_name} style={{
                       background: isValidated ? (status ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)') : 'rgba(255,255,255,0.05)',
@@ -507,6 +577,8 @@ export function QuestionsGameTrainerPanel({ pName, moduleId, sharedKeyPrefix, qu
 export function QuestionsGameParticipantView({ pName, moduleId, questionIdx, vfCorrect, clearTs, customQText, questions }) {
   const [selected, setSelected] = useState([])
   const [text, setText] = useState('')
+  const [odVal, setOdVal] = useState('')
+  const [ogVal, setOgVal] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [vfSelected, setVfSelected] = useState(null)
   const [choiceSelected, setChoiceSelected] = useState(null)
@@ -517,6 +589,8 @@ export function QuestionsGameParticipantView({ pName, moduleId, questionIdx, vfC
 
   useEffect(() => {
     setText('')
+    setOdVal('')
+    setOgVal('')
     setSelected([])
     setSubmitted(false)
     setVfSelected(null)
@@ -570,6 +644,7 @@ export function QuestionsGameParticipantView({ pName, moduleId, questionIdx, vfC
   const submitChoice = (answer) => { setChoiceSelected(answer); submitAnswer(answer) }
   const toggleSelect = (opt) => setSelected(prev => prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt])
   const submitVisionMulti = () => { if (selected.length > 0) submitAnswer(encodeVisionAnswer(selected, visionOptions)) }
+  const submitOdOg = () => { if (odVal.trim() && ogVal.trim()) submitAnswer(encodeOdOg(odVal.trim(), ogVal.trim())) }
 
   const bg = { minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 20px 40px' }
 
@@ -618,6 +693,18 @@ export function QuestionsGameParticipantView({ pName, moduleId, questionIdx, vfC
             marginTop: 24, background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.4)',
             borderRadius: 16, padding: '14px 32px', fontSize: 20, fontWeight: 900, color: '#00abe9',
           }}>{choiceSelected}</div>
+        )}
+        {q.type === 'od-og' && (odVal || ogVal) && (
+          <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+            <div style={{ background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 14, padding: '10px 20px', textAlign: 'center' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 2 }}>OD</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#00abe9' }}>{odVal}</div>
+            </div>
+            <div style={{ background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 14, padding: '10px 20px', textAlign: 'center' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 2 }}>OG</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#00abe9' }}>{ogVal}</div>
+            </div>
+          </div>
         )}
         <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #00abe9', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
         <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
@@ -679,6 +766,34 @@ export function QuestionsGameParticipantView({ pName, moduleId, questionIdx, vfC
             border: 'none', color: '#fff', padding: '16px', borderRadius: 16,
             fontSize: 16, fontWeight: 700, cursor: selected.length > 0 ? 'pointer' : 'default', fontFamily: 'inherit',
           }}>{saving ? 'Envoi…' : saveError ? '✗ Réessayer' : '✓ Valider ma sélection'}</button>
+        </div>
+      ) : q.type === 'od-og' ? (
+        <div style={{ width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 8, textAlign: 'center' }}>OD</div>
+              <input
+                value={odVal}
+                onChange={e => setOdVal(e.target.value)}
+                inputMode="decimal" placeholder="+0,00"
+                style={{ width: '100%', padding: '16px', borderRadius: 16, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: 20, fontWeight: 700, textAlign: 'center', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 8, textAlign: 'center' }}>OG</div>
+              <input
+                value={ogVal}
+                onChange={e => setOgVal(e.target.value)}
+                inputMode="decimal" placeholder="+0,00"
+                style={{ width: '100%', padding: '16px', borderRadius: 16, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: 20, fontWeight: 700, textAlign: 'center', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+          </div>
+          <button onClick={submitOdOg} disabled={!odVal.trim() || !ogVal.trim() || saving} style={{
+            background: (odVal.trim() && ogVal.trim()) ? 'linear-gradient(135deg, #0070a8, #00abe9)' : 'rgba(255,255,255,0.08)',
+            border: 'none', color: '#fff', padding: '16px', borderRadius: 16,
+            fontSize: 16, fontWeight: 700, cursor: (odVal.trim() && ogVal.trim()) ? 'pointer' : 'default', fontFamily: 'inherit',
+          }}>{saving ? 'Envoi…' : saveError ? '✗ Réessayer' : '✓ Envoyer'}</button>
         </div>
       ) : (
         <div style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 16 }}>
