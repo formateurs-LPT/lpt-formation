@@ -81,6 +81,16 @@ export function resolveCategoryFromEntree(entree) {
   return MAGASIN_ZONE_DEFAULT_CATEGORY[zone] || null
 }
 
+/**
+ * Convertit une zone formateur ('paris'/'province'/'belgique', cf. trainerMode.js)
+ * en slug de catégorie de salle ('presentiel'/'visio'/'belgique'). Les deux
+ * vocabulaires ne se recouvrent que sur 'belgique' — ne jamais passer une zone
+ * brute là où un categorySlug est attendu (ex: openOrCreateRoom).
+ */
+export function categorySlugFromZone(zone) {
+  return MAGASIN_ZONE_DEFAULT_CATEGORY[zone] || null
+}
+
 /** Liste triée pour UI (création salle, onboarding, liste participant) */
 export function listFormationCategories() {
   return Object.entries(FORMATION_CATEGORIES)

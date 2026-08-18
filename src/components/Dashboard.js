@@ -23,6 +23,7 @@ import GlobalRatingsView from './GlobalRatingsView'
 import PeerQuizTrainer from './PeerQuizGame'
 import FreeQuizTrainer from './FreeQuizGame'
 import { readTrainerMode, setTrainerMode, TRAINER_MODE_META } from '@/lib/trainerMode'
+import { categorySlugFromZone } from '@/lib/formationCategories'
 
 function TrainerModeToggle({ mode, onChange }) {
   const [open, setOpen] = useState(false)
@@ -1767,9 +1768,13 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
       return
     }
     // Mode formateur déjà choisi (présentiel/visio/Belgique, persistant) :
-    // on ouvre direct la salle sans redemander la catégorie.
+    // on ouvre direct la salle sans redemander la catégorie. trainerMode est
+    // une ZONE ('paris'/'province'/'belgique', cf. trainerMode.js) — à
+    // convertir en categorySlug ('presentiel'/'visio'/'belgique') avant
+    // d'appeler handleConfirmRoom, sinon openOrCreateRoom rejette 'paris'/
+    // 'province' comme catégorie invalide (incident du 18/08).
     if (trainerMode) {
-      handleConfirmRoom(trainerMode)
+      handleConfirmRoom(categorySlugFromZone(trainerMode))
       return
     }
     setRoomModalOpen(true)
