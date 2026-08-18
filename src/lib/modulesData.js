@@ -403,44 +403,40 @@ export const OPTIQUE_QUIZ = [
 ]
 
 // ── Exercices saisie ordonnance ───────────────────────────────────
-// Valeurs en nombres (float). axe en entier.
+// Valeurs en nombres (float). axe en entier. add par œil (comme les questions
+// ordonnance-fill des quiz) — le formé saisit l'add OD et l'add OG séparément,
+// même quand les deux valeurs sont identiques sur ces cas d'exemple.
 export const SAISIE_EXERCISES = [
   {
     id: 'ex1', label: 'Cas 1',
-    od: { sphere:  1.50, cylindre: -0.50, axe: 180 },
-    og: { sphere:  1.00, cylindre: -0.25, axe:  30 },
-    add: null,
+    od: { sphere:  1.50, cylindre: -0.50, axe: 180, add: null },
+    og: { sphere:  1.00, cylindre: -0.25, axe:  30, add: null },
   },
   {
     id: 'ex2', label: 'Cas 2',
-    od: { sphere: -3.00, cylindre: -1.00, axe:  20 },
-    og: { sphere: -3.25, cylindre: -1.00, axe: 100 },
-    add: null,
+    od: { sphere: -3.00, cylindre: -1.00, axe:  20, add: null },
+    og: { sphere: -3.25, cylindre: -1.00, axe: 100, add: null },
   },
   {
     id: 'ex3', label: 'Cas 3',
-    od: { sphere:  1.25, cylindre:  0.00, axe:   0 },
-    og: { sphere:  1.50, cylindre: -0.25, axe: 150 },
-    add: 1.50,
+    od: { sphere:  1.25, cylindre:  0.00, axe:   0, add: 1.50 },
+    og: { sphere:  1.50, cylindre: -0.25, axe: 150, add: 1.50 },
   },
   // ── Round 2 (mêmes principes, nouveaux cas) ──
   {
     id: 'ex4', label: 'Cas 4',
-    od: { sphere: -2.00, cylindre: -0.75, axe:  90 },
-    og: { sphere: -1.75, cylindre: -0.50, axe: 160 },
-    add: null,
+    od: { sphere: -2.00, cylindre: -0.75, axe:  90, add: null },
+    og: { sphere: -1.75, cylindre: -0.50, axe: 160, add: null },
   },
   {
     id: 'ex5', label: 'Cas 5',
-    od: { sphere:  2.50, cylindre:  0.00, axe:   0 },
-    og: { sphere:  2.75, cylindre: -0.25, axe:  45 },
-    add: null,
+    od: { sphere:  2.50, cylindre:  0.00, axe:   0, add: null },
+    og: { sphere:  2.75, cylindre: -0.25, axe:  45, add: null },
   },
   {
     id: 'ex6', label: 'Cas 6',
-    od: { sphere: -0.50, cylindre: -1.25, axe:  60 },
-    og: { sphere: -0.75, cylindre: -1.00, axe: 120 },
-    add: 2.00,
+    od: { sphere: -0.50, cylindre: -1.25, axe:  60, add: 2.00 },
+    og: { sphere: -0.75, cylindre: -1.00, axe: 120, add: 2.00 },
   },
 ]
 

@@ -3101,9 +3101,8 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
   // Valeurs brutes (dioptries/degrés) — plus d'indices dans un tableau de
   // molette : la saisie se fait maintenant au clavier numérique (cf. ValueNumpad).
   const initVals = () => ({
-    od: { sph: 0, cyl: 0, axe: 0 },
-    og: { sph: 0, cyl: 0, axe: 0 },
-    add: 0,
+    od: { sph: 0, cyl: 0, axe: 0, add: 0 },
+    og: { sph: 0, cyl: 0, axe: 0, add: 0 },
   })
 
   const [stage, setStage] = useState('r1-entry')
@@ -3114,7 +3113,7 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
   const [vals, setVals] = useState(initVals)
   const [showResult, setShowResult] = useState(false)
   const [results, setResults] = useState(null)
-  const [activeField, setActiveField] = useState(null) // null | { eye:'od'|'og', field:'sph'|'cyl'|'axe' } | { eye:'add' }
+  const [activeField, setActiveField] = useState(null) // null | { eye:'od'|'og', field:'sph'|'cyl'|'axe'|'add' }
   const [roundTally, setRoundTally] = useState({ correct: 0, total: 0 })
   const [roundDone, setRoundDone] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -3155,20 +3154,14 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
     if (showResult) return // verrouillé après vérification, aucune modification possible
     setVals(prev => ({ ...prev, [eye]: { ...prev[eye], [field]: val } }))
   }
-  const setAdd = val => {
-    if (showResult) return
-    setVals(prev => ({ ...prev, add: val }))
-  }
 
   const openNumpad = (eye, field) => {
     if (showResult) return
-    setActiveField(field ? { eye, field } : { eye })
+    setActiveField({ eye, field })
   }
-  const activeValue = !activeField ? 0
-    : activeField.eye === 'add' ? vals.add
-    : vals[activeField.eye][activeField.field]
+  const activeValue = !activeField ? 0 : vals[activeField.eye][activeField.field]
   const numpadConfig = !activeField ? null
-    : activeField.eye === 'add' ? { title: 'Addition (Add)', mode: 'diopter-positive', max: 4 }
+    : activeField.field === 'add' ? { title: `Addition (Add) — ${activeField.eye === 'od' ? 'Œil droit' : 'Œil gauche'}`, mode: 'diopter-positive', max: 4 }
     : activeField.field === 'axe' ? { title: `Axe — ${activeField.eye === 'od' ? 'Œil droit' : 'Œil gauche'} (0° – 180°)`, mode: 'degrees', max: 180 }
     : { title: `${activeField.field === 'sph' ? 'Sphère' : 'Cylindre'} — ${activeField.eye === 'od' ? 'Œil droit' : 'Œil gauche'}`, mode: 'diopter-signed', max: 8 }
 
@@ -3181,23 +3174,24 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
         sph: near(vals.od.sph, ex.od.sphere),
         cyl: near(vals.od.cyl, ex.od.cylindre),
         axe: Math.round(vals.od.axe) === ex.od.axe,
+        // Une addition saisie alors qu'il n'y en a pas sur le cas est une erreur (comparaison à 0)
+        add: near(vals.od.add, ex.od.add ?? 0),
       },
       og: {
         sph: near(vals.og.sph, ex.og.sphere),
         cyl: near(vals.og.cyl, ex.og.cylindre),
         axe: Math.round(vals.og.axe) === ex.og.axe,
+        add: near(vals.og.add, ex.og.add ?? 0),
       },
-      // Une addition saisie alors qu'il n'y en a pas sur le cas est une erreur (comparaison à 0)
-      add: near(vals.add, ex.add ?? 0),
     }
     setResults(r)
     setShowResult(true)
   }
 
-  const totalFields = 7 // OD sph/cyl/axe + OG sph/cyl/axe + add (l'add compte toujours, y compris "doit rester à 0")
+  const totalFields = 8 // OD sph/cyl/axe/add + OG sph/cyl/axe/add
   const correctCount = results
-    ? [results.od.sph, results.od.cyl, results.od.axe,
-       results.og.sph, results.og.cyl, results.og.axe, results.add].filter(Boolean).length
+    ? [results.od.sph, results.od.cyl, results.od.axe, results.od.add,
+       results.og.sph, results.og.cyl, results.og.axe, results.og.add].filter(Boolean).length
     : 0
   const perfect = showResult && correctCount === totalFields
 
@@ -3239,9 +3233,8 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
 
   // Labels de la bonne réponse (pour feedback)
   const corrLabel = {
-    od: { sph: fmtDiop(ex.od.sphere), cyl: fmtDiop(ex.od.cylindre), axe: fmtAxe(ex.od.axe) },
-    og: { sph: fmtDiop(ex.og.sphere), cyl: fmtDiop(ex.og.cylindre), axe: fmtAxe(ex.og.axe) },
-    add: fmtAdd(ex.add ?? 0),
+    od: { sph: fmtDiop(ex.od.sphere), cyl: fmtDiop(ex.od.cylindre), axe: fmtAxe(ex.od.axe), add: fmtAdd(ex.od.add ?? 0) },
+    og: { sph: fmtDiop(ex.og.sphere), cyl: fmtDiop(ex.og.cylindre), axe: fmtAxe(ex.og.axe), add: fmtAdd(ex.og.add ?? 0) },
   }
 
   // ── Écran d'attente une fois les 3 cas du round envoyés ──
@@ -3332,12 +3325,13 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
             <ValueBox value={vals.og.axe} mode="degrees" locked={showResult} isCorrect={results?.og?.axe} showResult={showResult} correctLabel={corrLabel.og.axe} onClick={() => openNumpad('og', 'axe')} />
           </div>
 
-          {/* Add — toujours modifiable, même quand le cas n'en a pas (une valeur saisie à tort compte faux) ;
-              pas d'indice sur la présence ou non d'une addition sur ce cas. */}
+          {/* Add — chaque œil a sa propre case à remplir, toujours modifiable
+              même quand le cas n'en a pas (une valeur saisie à tort compte
+              faux) ; pas d'indice sur la présence ou non d'une addition. */}
           <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 10, marginBottom: 16, alignItems: 'center' }}>
             <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>Add</div>
-            <ValueBox value={vals.add} mode="diopter-positive" locked={showResult} isCorrect={results?.add} showResult={showResult} correctLabel={corrLabel.add} onClick={() => openNumpad('add', null)} />
-            <ValueBox value={vals.add} mode="diopter-positive" locked={showResult} isCorrect={results?.add} showResult={showResult} correctLabel={corrLabel.add} onClick={() => openNumpad('add', null)} />
+            <ValueBox value={vals.od.add} mode="diopter-positive" locked={showResult} isCorrect={results?.od?.add} showResult={showResult} correctLabel={corrLabel.od.add} onClick={() => openNumpad('od', 'add')} />
+            <ValueBox value={vals.og.add} mode="diopter-positive" locked={showResult} isCorrect={results?.og?.add} showResult={showResult} correctLabel={corrLabel.og.add} onClick={() => openNumpad('og', 'add')} />
           </div>
         </div>
 
@@ -3394,8 +3388,7 @@ function SaisieInteractiveMobile({ page, pageIndex, total, pName, moduleId }) {
           max={numpadConfig.max}
           currentValue={activeValue}
           onConfirm={v => {
-            if (activeField.eye === 'add') setAdd(v)
-            else setEye(activeField.eye, activeField.field, v)
+            setEye(activeField.eye, activeField.field, v)
             setActiveField(null)
             numpadClosedAtRef.current = Date.now()
           }}

@@ -851,6 +851,12 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
 
   const goStage = async (next) => {
     setStage(next)
+    // results est encore celui de l'étape qu'on quitte (ex: tout le monde a
+    // fini le round 1) — sans ce reset synchrone, l'effet d'auto-passage
+    // ci-dessous le voit encore "complet" pour le round 2 avant que le poll
+    // n'ait eu le temps de repartir de zéro, et saute directement à la
+    // correction du round 2 sans laisser le temps de saisir (incident du 18/08).
+    setResults([])
     autoAdvancedRef.current = new Set()
     await setSharedState({ saisie_stage: next }).catch(() => {})
   }
@@ -1023,13 +1029,11 @@ function SaisieInteractivePage({ page, trainerAvatar, pName, onBack, onPrev, onN
                     <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
                       <PrescLine eye={eye} />
                     </span>
+                    {eye.add != null && (
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#4ade80' }}>{fmtAdd(eye.add)}</span>
+                    )}
                   </div>
                 ))}
-                {ex.add != null && (
-                  <div style={{ marginTop: 4, fontSize: 14, fontWeight: 600, color: '#4ade80' }}>
-                    {fmtAdd(ex.add)}
-                  </div>
-                )}
               </div>
 
               {/* Grille recap */}

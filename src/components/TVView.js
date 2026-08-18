@@ -2422,13 +2422,11 @@ function TVSaisieInteractive({ page, pageIndex, total, moduleLabel, saisieStage,
                     <span style={{ fontSize: 26, fontWeight: 700, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
                       <TVPrescLine eye={eye} />
                     </span>
+                    {eye.add != null && (
+                      <span style={{ fontSize: 16, fontWeight: 700, color: '#4ade80' }}>Add +{eye.add.toFixed(2).replace('.', ',')}</span>
+                    )}
                   </div>
                 ))}
-                {ex.add != null && (
-                  <div style={{ fontSize: 18, fontWeight: 700, color: '#4ade80', marginTop: 4 }}>
-                    Add +{ex.add.toFixed(2).replace('.', ',')}
-                  </div>
-                )}
               </div>
 
               {/* Grille détail */}
