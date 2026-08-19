@@ -1749,7 +1749,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
   const [activeSecondsMap, setActiveSecondsMap] = useState({}) // { name: secondes d'activité écran cette semaine }
   const [activeSecondsAvg, setActiveSecondsAvg] = useState(0) // moyenne du groupe
   const [groupThemeStats, setGroupThemeStats] = useState({}) // { theme: { correct, total } } — agrégé sur tout le groupe
-  const [showWeakThemes, setShowWeakThemes] = useState(true)
+  const [showWeakThemes, setShowWeakThemes] = useState(false)
   const weekDate = getWeekDate()
   const catMeta  = CATEGORY_META[categoryKey] || {}
 
@@ -2227,7 +2227,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
             <span style={{ fontSize: 11, color: '#64748b', transform: showWeakThemes ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>▾</span>
           </div>
           {showWeakThemes && (
-            <div style={{ padding: '4px 16px 14px', display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 168, overflowY: 'auto' }}>
+            <div style={{ padding: '4px 16px 14px', display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 120, overflowY: 'auto' }}>
               {weakThemes.map(t => {
                 const pct = Math.round(t.rate * 100)
                 const color = pct >= 70 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626'
