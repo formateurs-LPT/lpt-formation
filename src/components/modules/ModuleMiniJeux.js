@@ -530,8 +530,16 @@ export default function ModuleMiniJeux({ pName, onBack }) {
 
   const handleSelectGame = async (game) => {
     if (game === 'questions' || game === 'questions-j2') {
-      setView(game)
+      // Écrit et ATTEND avant de monter QuestionsGameTrainerPanel (setView) :
+      // ce panneau fait lui-même un setSharedState de reset à son montage
+      // (mjq_q/mjq2_q à null...). setRoomSharedState est un lire-puis-écrire
+      // sans verrou — si les deux écritures partent en même temps, celle du
+      // panneau peut lire l'état AVANT celle-ci et écraser minijeu_phase/
+      // minijeu_game en réécrivant par-dessus l'ancien état (le jeu ne
+      // s'active jamais côté diffuseur/formés, incident du 19/08). Attendre
+      // ici avant setView() les rend séquentielles au lieu de concurrentes.
       await setSharedState({ minijeu_phase: 'questions', minijeu_game: game }).catch(() => {})
+      setView(game)
       return
     }
     setView('rules')
@@ -653,17 +661,20 @@ export default function ModuleMiniJeux({ pName, onBack }) {
       setView('list')
       await setSharedState({ minijeu_phase: 'idle', minijeu_game: null }).catch(() => {})
     } else if (view === 'questions') {
-      setView('list')
+      // Attendre avant setView('list') : ce dernier démonte QuestionsGameTrainerPanel,
+      // dont l'effet de nettoyage écrit lui aussi dans le shared state — même
+      // risque de course que dans handleSelectGame (cf. commentaire là-bas).
       await setSharedState({
         minijeu_phase: 'idle', minijeu_game: null,
         mjq_q: null, mjq_vf_correct: null, mjq_clear_ts: null, mjq_custom_q_text: null,
       }).catch(() => {})
-    } else if (view === 'questions-j2') {
       setView('list')
+    } else if (view === 'questions-j2') {
       await setSharedState({
         minijeu_phase: 'idle', minijeu_game: null,
         mjq2_q: null, mjq2_vf_correct: null, mjq2_clear_ts: null, mjq2_custom_q_text: null,
       }).catch(() => {})
+      setView('list')
     } else {
       onBack()
     }
