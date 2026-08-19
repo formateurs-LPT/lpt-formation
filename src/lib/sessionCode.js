@@ -53,12 +53,18 @@ export function resolveRoomStateCode() {
   const params = new URLSearchParams(window.location.search)
   const mode = params.get('mode')
 
-  // TV diffusion (priorité absolue)
+  // TV diffusion (priorité absolue) — le ?room= explicite de l'URL doit
+  // toujours gagner sur un vieux code resté en localStorage sur CET appareil
+  // (ex: quelqu'un a un jour ouvert une salle en tant que formateur depuis ce
+  // même navigateur). Avant ce fix, ce résidu passait AVANT le ?room=, donc le
+  // diffuseur restait bloqué sur une salle sans rapport (parfois celle d'un
+  // AUTRE formateur actif en même temps) sans jamais suivre la vraie salle,
+  // même après un rechargement complet — incident du 19/08.
   if (mode === 'tv') {
-    const stored = readTrainerActiveRoomCode()
     const urlCode = getTvUrlRoomCode()
-    if (stored && isDynamicRoomCode(stored)) return stored
+    const stored = readTrainerActiveRoomCode()
     if (urlCode && isDynamicRoomCode(urlCode)) return urlCode
+    if (stored && isDynamicRoomCode(stored)) return stored
   }
 
   // Accès direct ?mode=participant (raccourci téléphones dédiés) : priorité
