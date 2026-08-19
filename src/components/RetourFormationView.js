@@ -2227,7 +2227,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
             <span style={{ fontSize: 11, color: '#64748b', transform: showWeakThemes ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>▾</span>
           </div>
           {showWeakThemes && (
-            <div style={{ padding: '4px 16px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ padding: '4px 16px 14px', display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 168, overflowY: 'auto' }}>
               {weakThemes.map(t => {
                 const pct = Math.round(t.rate * 100)
                 const color = pct >= 70 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626'
