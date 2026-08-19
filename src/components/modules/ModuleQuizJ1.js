@@ -190,6 +190,11 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
     await Promise.all([
       sbDelete('open_answers', `session_code=eq.${encodeURIComponent(code)}&page_id=eq.${encodeURIComponent(`quiz-j1:${quizQ}`)}`),
       sbDelete('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${MODULE_ID}&question_idx=eq.${quizQ}`),
+      // Si CE bouton est utilisé parce qu'un formé "tombe direct sur la
+      // correction", c'est souvent que quiz_show_correction est resté
+      // bloqué à true depuis la question précédente — effacer seulement les
+      // réponses ne réglait pas le vrai problème (incident du 19/08).
+      setSharedState({ quiz_show_correction: false }),
     ]).catch(() => {})
     setAnswers([])
     setValidations({})
@@ -378,7 +383,14 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
   const handleResetQuestion = async () => {
     if (!window.confirm('Effacer toutes les réponses de cette question et repartir à zéro ?')) return
     const code = getActiveSessionCode()
-    await sbDelete('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${MODULE_ID}&question_idx=eq.${quizQ}`).catch(() => {})
+    await Promise.all([
+      sbDelete('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${MODULE_ID}&question_idx=eq.${quizQ}`),
+      // Si CE bouton est utilisé parce qu'un formé "tombe direct sur la
+      // correction", c'est souvent que quiz_show_correction est resté
+      // bloqué à true depuis la question précédente — effacer seulement les
+      // réponses ne réglait pas le vrai problème (incident du 19/08).
+      setSharedState({ quiz_show_correction: false }),
+    ]).catch(() => {})
     setLiveAnswers([])
   }
 
@@ -634,14 +646,18 @@ export default function ModuleQuizJ1({ pName, onBack }) {
   const handleEndQuiz = async () => {
     try {
       await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 200 }, `code=eq.${getActiveSessionCode()}`)
-      await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: 'podium' }).catch(() => {})
+      await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: 'podium', quiz_show_correction: false }).catch(() => {})
     } catch { /* best-effort */ }
     setShowGroupResults(true)
   }
 
   const handleTerminate = async () => {
     try {
-      await setSharedState({ quiz_final_phase: 'ended' }).catch(() => {})
+      // quiz_show_correction reste sinon parfois bloqué à true si le quiz se
+      // termine (ou est quitté) pendant que la correction d'une question est
+      // affichée — le prochain quiz lancé dans cette salle en hériterait
+      // (formés jetés direct sur un écran de correction, incident du 19/08).
+      await setSharedState({ quiz_final_phase: 'ended', quiz_show_correction: false }).catch(() => {})
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     } catch { /* best-effort */ }
     onBack()
