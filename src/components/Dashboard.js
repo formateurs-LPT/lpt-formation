@@ -483,6 +483,43 @@ function SessionsHistoryView({ pName, onBack, onToast }) {
 // ── Changelog data ───────────────────────────────────────────────
 const APP_UPDATES = [
   {
+    id: '2026-08-20',
+    date: '17 → 20 août 2026',
+    title: 'Quiz Jour 2 (Q19) corrigé, auto-passage à la correction fiabilisé sur les 13 quiz',
+    tag: 'Correctif',
+    tagColor: '#22d3ee',
+    sections: [
+      {
+        title: 'Quiz — formés jetés direct sur la correction',
+        accent: '#ef4444',
+        tag: 'Correctif',
+        items: [
+          'Le drapeau qui affiche la correction pouvait rester bloqué à "activé" d\'une question — voire d\'un quiz — à l\'autre : un formé retombait alors direct sur la correction sans avoir pu répondre',
+          'Remis à zéro systématiquement en changeant de question, en quittant un quiz, ou en le terminant (Quiz Jour 1 & Jour 2)',
+          'Bouton "🔄 Réinitialiser" ajouté sur Quiz Jour 2 (déjà présent sur Jour 1) : efface les réponses de la question en cours si une ancienne réponse traîne en base',
+        ],
+      },
+      {
+        title: 'Quiz Jour 2 — Q19 invisible côté formateur',
+        accent: '#f59e0b',
+        tag: 'Correctif',
+        items: [
+          'L\'ordonnance et le compteur juste/faux ne s\'affichaient jamais côté formateur pour "calcul de la vision de près" — seul le QCM/ordonnance classique était prévu, pas ce type de question à cases à remplir',
+        ],
+      },
+      {
+        title: 'Auto-passage à la correction — uniformisé sur les 13 quiz',
+        accent: '#10b981',
+        tag: 'Amélioration',
+        items: [
+          'Même mécanique partout désormais : passage automatique à la correction dès que tous les formés réellement connectés (présence active, pas juste "présents dans l\'app") ont répondu',
+          'Liste "n\'ont pas encore répondu" visible côté formateur (jamais sur le diffuseur) pour repérer qui bloque',
+          'Lien "⚠️ Forcer la correction" toujours disponible en secours si le décompte de connectés est faussé (ex: un collaborateur resté marqué "connecté" sans jamais répondre)',
+        ],
+      },
+    ],
+  },
+  {
     id: '2026-08-17',
     date: '13 → 17 août 2026',
     title: 'Scoring fiabilisé, retour de formation accéléré, mot de passe K\'Formation, Quiz Jour 2',
