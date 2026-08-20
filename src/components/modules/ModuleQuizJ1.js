@@ -619,7 +619,7 @@ export default function ModuleQuizJ1({ pName, onBack }) {
   const handleBack = async () => {
     try {
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
-      await setSharedState({ quiz_final_phase: null, quiz_interstitial_q: null }).catch(() => {})
+      await setSharedState({ quiz_final_phase: null, quiz_interstitial_q: null, quiz_show_correction: false }).catch(() => {})
     } catch { /* best-effort */ }
     onBack()
   }

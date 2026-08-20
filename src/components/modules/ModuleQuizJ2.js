@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState, clearQuizStarts } from '@/lib/supabase'
+import { sbUpdate, sbDelete, getActiveSessionCode, setSharedState, clearQuizStarts } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOpenAnswers } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
@@ -181,6 +181,24 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
 
   const correctCount = Object.values(validations).filter(Boolean).length
 
+  // Filet de sécurité : si une ancienne réponse traîne déjà en base pour
+  // cette question, ou si quiz_show_correction est resté bloqué à true
+  // depuis la question précédente, le formé tombe direct sur la correction
+  // sans avoir pu répondre (cf. incident du 19/08 sur Quiz Jour 1). Ce
+  // bouton efface tout pour cette question et repart à zéro.
+  const handleResetQuestion = async () => {
+    if (!window.confirm('Effacer toutes les réponses de cette question et repartir à zéro ?')) return
+    const code = getActiveSessionCode()
+    await Promise.all([
+      sbDelete('open_answers', `session_code=eq.${encodeURIComponent(code)}&page_id=eq.${encodeURIComponent(`${MODULE_ID}:${quizQ}`)}`),
+      sbDelete('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${MODULE_ID}&question_idx=eq.${quizQ}`),
+      setSharedState({ quiz_show_correction: false }),
+    ]).catch(() => {})
+    setAnswers([])
+    setValidations({})
+    autoValidatedRef.current = new Set()
+  }
+
   const pendingCount = answers.filter(row => !(row.participant_name in validations)).length
   const confirmSkipPending = () => {
     if (pendingCount === 0) return true
@@ -209,8 +227,13 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz Jour 2 — Vue formateur</span>
         </div>
-        <div style={{ background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 20px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {answers.length > 0 && (
+            <button onClick={handleResetQuestion} title="Efface les réponses de cette question (utile si un formé tombe direct sur la correction)" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '6px 14px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>🔄 Réinitialiser</button>
+          )}
+          <div style={{ background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 20px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
           Q{quizQ + 1} / {QUIZ_J2.length}
+          </div>
         </div>
       </div>
 
@@ -334,6 +357,20 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
     await setSharedState({ quiz_ordo_show: next }).catch(() => {})
   }
 
+  // Filet de sécurité : si une ancienne réponse traîne déjà en base pour
+  // cette question, ou si quiz_show_correction est resté bloqué à true
+  // depuis la question précédente, le formé tombe direct sur la correction
+  // sans avoir pu répondre (cf. incident du 19/08 sur Quiz Jour 1).
+  const handleResetQuestion = async () => {
+    if (!window.confirm('Effacer toutes les réponses de cette question et repartir à zéro ?')) return
+    const code = getActiveSessionCode()
+    await Promise.all([
+      sbDelete('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${MODULE_ID}&question_idx=eq.${quizQ}`),
+      setSharedState({ quiz_show_correction: false }),
+    ]).catch(() => {})
+    setLiveAnswers([])
+  }
+
   const bg = { minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }
 
   return (
@@ -345,8 +382,13 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz Jour 2 — Vue formateur</span>
         </div>
-        <div style={{ background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 20px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {liveAnswers.length > 0 && (
+            <button onClick={handleResetQuestion} title="Efface les réponses de cette question (utile si un formé tombe direct sur la correction)" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '6px 14px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>🔄 Réinitialiser</button>
+          )}
+          <div style={{ background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 20px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
           Q{quizQ + 1} / {QUIZ_J2.length}
+          </div>
         </div>
       </div>
 
@@ -356,7 +398,7 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
       </div>
 
       {/* Ordonnance preview */}
-      {type === 'qcm-ordonnance' && <OrdoPreview q={q} />}
+      {(type === 'qcm-ordonnance' || type === 'ordonnance-fill') && <OrdoPreview q={q} />}
 
       {/* Barres réponses (QCM) */}
       {hasOptions && (
@@ -385,6 +427,22 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Compteur fill (ex: ordonnance-fill) */}
+      {!hasOptions && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
+          <div style={{ display: 'flex', gap: 32 }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 44, fontWeight: 800, color: '#4ade80' }}>{correctCount}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>CORRECT{correctCount > 1 ? 'S' : ''}</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 44, fontWeight: 800, color: '#ef4444' }}>{total - correctCount}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>INCORRECT{total - correctCount > 1 ? 'S' : ''}</div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -524,7 +582,7 @@ export default function ModuleQuizJ2({ pName, onBack }) {
   const handleBack = async () => {
     try {
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
-      await setSharedState({ quiz_final_phase: null, quiz_interstitial_q: null }).catch(() => {})
+      await setSharedState({ quiz_final_phase: null, quiz_interstitial_q: null, quiz_show_correction: false }).catch(() => {})
     } catch { /* best-effort */ }
     onBack()
   }
@@ -550,14 +608,17 @@ export default function ModuleQuizJ2({ pName, onBack }) {
   const handleEndQuiz = async () => {
     try {
       await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 200 }, `code=eq.${getActiveSessionCode()}`)
-      await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: 'podium' }).catch(() => {})
+      await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: 'podium', quiz_show_correction: false }).catch(() => {})
     } catch { /* best-effort */ }
     setShowGroupResults(true)
   }
 
   const handleTerminate = async () => {
     try {
-      await setSharedState({ quiz_final_phase: 'ended' }).catch(() => {})
+      // quiz_show_correction reste sinon parfois bloqué à true si le quiz se
+      // termine (ou est quitté) pendant qu'une correction est affichée — le
+      // prochain quiz lancé dans cette salle en hériterait (incident du 19/08).
+      await setSharedState({ quiz_final_phase: 'ended', quiz_show_correction: false }).catch(() => {})
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     } catch { /* best-effort */ }
     onBack()
