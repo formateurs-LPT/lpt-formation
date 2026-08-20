@@ -3,8 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers, clearQuizStarts } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
-import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
+import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { QUIZ_FINAL_QUESTIONS } from '@/lib/quizFinalData'
 
 // quiz_final_phase values (same mechanism as ModuleOptique):
@@ -59,7 +59,6 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
   const q = QUIZ_FINAL_QUESTIONS[quizQ]
   const [answers, setAnswers] = useState([])
   const [validations, setValidations] = useState({})
-  const [connectedCount, setConnectedCount] = useState(0)
   const autoValidatedRef = useRef(new Set())
 
   useEffect(() => {
@@ -93,15 +92,6 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answers, q])
 
-  // Tant que tout le monde n'a pas répondu, pas de correction sur le
-  // diffuseur — sinon un formé qui traîne peut lire les réponses des autres.
-  useEffect(() => {
-    const poll = async () => setConnectedCount(await fetchOnlineParticipantCount(getActiveSessionCode()))
-    poll()
-    const t = setInterval(poll, 5000)
-    return () => clearInterval(t)
-  }, [])
-
   const handleValidate = async (name, isCorrect) => {
     try {
       await saveModuleQuizAnswer({
@@ -118,7 +108,16 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
 
   const validatedCount = Object.keys(validations).length
   const correctCount = Object.values(validations).filter(Boolean).length
-  const allAnswered = connectedCount > 0 && answers.length >= connectedCount
+
+  // Auto-passage à la correction dès que tous les formés connectés ont
+  // répondu — le bouton reste bloqué tant que ce n'est pas le cas, avec un
+  // lien "Forcer" en secours si le décompte est erroné.
+  const { connectedCount, notAnswered } = useAutoRevealCorrection({
+    answeredNames: answers.map(row => row.participant_name),
+    resetKey: quizQ,
+    onReveal: () => setSharedState({ quiz_show_correction: true }).catch(() => {}),
+  })
+  const allAnswered = connectedCount > 0 && notAnswered.length === 0
 
   // Ce quiz n'a pas d'auto-correction : chaque réponse doit être validée à la main.
   // Une réponse non validée n'est jamais comptée (ni juste ni fausse) si on avance
@@ -214,12 +213,22 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
         })}
       </div>
 
+      <NotAnsweredList notAnswered={notAnswered} />
+
       {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, marginTop: 12 }}>
         {pendingCount > 0 && (
           <div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24', marginRight: 'auto' }}>
             ⚠️ {pendingCount} réponse{pendingCount > 1 ? 's' : ''} pas encore validée{pendingCount > 1 ? 's' : ''}
           </div>
+        )}
+        {!allAnswered && answers.length > 0 && (
+          <button
+            onClick={() => { if (window.confirm('Forcer l\'affichage de la correction maintenant ? Les formés qui n\'ont pas encore répondu verront les réponses des autres.')) setSharedState({ quiz_show_correction: true }).catch(() => {}) }}
+            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+          >
+            ⚠️ Forcer la correction
+          </button>
         )}
         {answers.length > 0 && (
           <button
@@ -286,6 +295,12 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
 
   const total = liveAnswers.length
   const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+
+  const { notAnswered } = useAutoRevealCorrection({
+    answeredNames: liveAnswers.map(r => r.collaborateur),
+    resetKey: quizQ,
+    onReveal: () => setSharedState({ quiz_show_correction: true }).catch(() => {}),
+  })
 
   return (
     <div style={{
@@ -368,6 +383,8 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
           )
         })}
       </div>
+
+      <NotAnsweredList notAnswered={notAnswered} />
 
       {/* Footer */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28 }}>

@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState, fetchOpenAnswers, clearQuizStarts } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
-import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
+import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { ENTREPRISE_PAGES as PAGES, ENTREPRISE_QUIZ } from '@/lib/modulesData'
 import ZeroInterChain from '@/components/ZeroInterChain'
 
@@ -1266,34 +1266,17 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
   const [openAnswers, setOpenAnswers] = useState([])
   const [validating, setValidating] = useState({})
   const [validated, setValidated] = useState({})
-  const [connectedCount, setConnectedCount] = useState(0)
   const autoValidatedRef = useRef(new Set())
-  const autoRevealedRef = useRef(false)
 
   const q = ENTREPRISE_QUIZ[quizQ]
   const isLast = quizQ >= ENTREPRISE_QUIZ.length - 1
   const pageId = `entreprise:${quizQ}`
 
   useEffect(() => {
-    const poll = async () => setConnectedCount(await fetchOnlineParticipantCount(getActiveSessionCode()))
-    poll()
-    const t = setInterval(poll, 5000)
-    return () => clearInterval(t)
-  }, [])
-
-  useEffect(() => {
-    if (!autoRevealedRef.current && connectedCount > 0 && openAnswers.length >= connectedCount) {
-      autoRevealedRef.current = true
-      setSharedState({ quiz_show_correction: true }).catch(() => {})
-    }
-  }, [openAnswers.length, connectedCount])
-
-  useEffect(() => {
     setOpenAnswers([])
     setValidating({})
     setValidated({})
     autoValidatedRef.current = new Set()
-    autoRevealedRef.current = false
 
     const stripAccents = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
@@ -1367,7 +1350,19 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
     return (answer || '').split('||').map(s => s.trim()).filter(Boolean).join(' // ')
   }
 
-  const allAnswered = connectedCount > 0 && openAnswers.length >= connectedCount
+  const handleShowCorrectionForce = async () => {
+    await setSharedState({ quiz_show_correction: true }).catch(() => {})
+  }
+
+  // Auto-passage à la correction dès que tous les formés connectés ont
+  // répondu — le bouton reste bloqué tant que ce n'est pas le cas, avec un
+  // lien "Forcer" en secours si le décompte est erroné.
+  const { connectedCount, notAnswered } = useAutoRevealCorrection({
+    answeredNames: openAnswers.map(row => row.participant_name),
+    resetKey: quizQ,
+    onReveal: handleShowCorrectionForce,
+  })
+  const allAnswered = connectedCount > 0 && notAnswered.length === 0
 
   const handleShowCorrection = async () => {
     if (!allAnswered) return
@@ -1477,8 +1472,18 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
         </div>
       )}
 
+      <NotAnsweredList notAnswered={notAnswered} />
+
       {/* Navigation */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 28 }}>
+        {!allAnswered && openAnswers.length > 0 && (
+          <button
+            onClick={() => { if (window.confirm('Forcer l\'affichage de la correction maintenant ? Les formés qui n\'ont pas encore répondu verront les réponses des autres.')) handleShowCorrectionForce() }}
+            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+          >
+            ⚠️ Forcer la correction
+          </button>
+        )}
         {openAnswers.length > 0 && (
           <button
             onClick={handleShowCorrection}

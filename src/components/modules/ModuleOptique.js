@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { sbUpdate, sbDelete, sbSelect, getActiveSessionCode, setSharedState, getRoomSharedState, fetchOpenAnswers, clearQuizStarts } from '@/lib/supabase'
-import { fetchOnlineParticipantCount, fetchOnlineParticipantsList } from '@/lib/participantPresence'
-import { fetchTrainerQuizAnswers, normalizeNameKey } from '@/lib/participantNames'
+import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
+import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
+import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { OPTIQUE_PAGES as PAGES, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, OPTIQUE_QUIZ, ENTRAINEMENT_QUESTIONS } from '@/lib/modulesData'
 import { TRAINER_AVATARS } from '@/lib/constants'
 import { NextPagePreview } from '@/lib/trainerPreview'
@@ -1154,21 +1155,10 @@ function TextOpenControllerOptique({ quizQ, isLast, onNext, onEnd, onBack }) {
   const [openAnswers, setOpenAnswers] = useState([])
   const [validating, setValidating]   = useState({})
   const [validated, setValidated]     = useState({})
-  const [connectedCount, setConnectedCount] = useState(0)
   const autoValidatedRef              = useRef(new Set())
 
   const q      = OPTIQUE_QUIZ[quizQ]
   const pageId = `optique:${quizQ}`
-
-  // Tant que tout le monde n'a pas répondu, on ne peut pas révéler la
-  // correction sur le diffuseur : un formé qui traîne pourrait sinon lire
-  // les réponses des autres et tricher.
-  useEffect(() => {
-    const poll = async () => setConnectedCount(await fetchOnlineParticipantCount(getActiveSessionCode()))
-    poll()
-    const t = setInterval(poll, 5000)
-    return () => clearInterval(t)
-  }, [])
 
   useEffect(() => {
     setOpenAnswers([])
@@ -1221,7 +1211,19 @@ function TextOpenControllerOptique({ quizQ, isLast, onNext, onEnd, onBack }) {
     }
   }
 
-  const allAnswered = connectedCount > 0 && openAnswers.length >= connectedCount
+  const handleShowCorrectionForce = async () => {
+    await setSharedState({ quiz_show_correction: true }).catch(() => {})
+  }
+
+  // Auto-passage à la correction dès que tous les formés connectés ont
+  // répondu — le bouton reste bloqué tant que ce n'est pas le cas, avec un
+  // lien "Forcer" en secours si le décompte est erroné.
+  const { connectedCount, notAnswered } = useAutoRevealCorrection({
+    answeredNames: openAnswers.map(row => row.participant_name),
+    resetKey: quizQ,
+    onReveal: handleShowCorrectionForce,
+  })
+  const allAnswered = connectedCount > 0 && notAnswered.length === 0
 
   const handleShowCorrection = async () => {
     if (!allAnswered) return
@@ -1318,11 +1320,21 @@ function TextOpenControllerOptique({ quizQ, isLast, onNext, onEnd, onBack }) {
         })}
       </div>
 
+      <NotAnsweredList notAnswered={notAnswered} />
+
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, marginTop: 28, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
         {pendingCount > 0 && (
           <div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24', marginRight: 'auto' }}>
             ⚠️ {pendingCount} réponse{pendingCount > 1 ? 's' : ''} pas encore validée{pendingCount > 1 ? 's' : ''}
           </div>
+        )}
+        {!allAnswered && openAnswers.length > 0 && (
+          <button
+            onClick={() => { if (window.confirm('Forcer l\'affichage de la correction maintenant ? Les formés qui n\'ont pas encore répondu verront les réponses des autres.')) handleShowCorrectionForce() }}
+            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+          >
+            ⚠️ Forcer la correction
+          </button>
         )}
         {openAnswers.length > 0 && (
           <button
@@ -1362,8 +1374,6 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
 
 function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
   const [liveAnswers, setLiveAnswers]     = useState([])
-  const [connectedCount, setConnectedCount] = useState(0)
-  const [onlineNames, setOnlineNames]     = useState([])
   const [correctionPhase, setCorrectionPhase] = useState(false)
   const [ordoShown, setOrdoShown]         = useState(false)
 
@@ -1390,33 +1400,6 @@ function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
     return () => clearInterval(t)
   }, [quizQ])
 
-  // Poll participants connectés (toutes les 5s)
-  useEffect(() => {
-    const poll = async () => {
-      const n = await fetchOnlineParticipantCount(getActiveSessionCode())
-      setConnectedCount(n)
-    }
-    poll()
-    const t = setInterval(poll, 5000)
-    return () => clearInterval(t)
-  }, [])
-
-  // Qui n'a pas encore répondu — visible uniquement ici, jamais sur le diffuseur
-  useEffect(() => {
-    const poll = async () => {
-      const list = await fetchOnlineParticipantsList(getActiveSessionCode())
-      setOnlineNames((list || []).map(p => p.name).filter(Boolean))
-    }
-    poll()
-    const t = setInterval(poll, 5000)
-    return () => clearInterval(t)
-  }, [])
-
-  // Pas de révélation automatique : si une réponse d'un test/répétition
-  // précédent traînait déjà en base pour cette question, la correction
-  // s'affichait instantanément et les formés n'avaient jamais l'occasion
-  // de répondre. Seul le clic du formateur sur "Révéler les réponses"
-  // (plus bas) déclenche la correction — jamais automatique.
   const handleRevealNow = async () => {
     setCorrectionPhase(true)
     await setSharedState({ quiz_show_correction: true, quiz_ordo_show: false }).catch(() => {})
@@ -1462,18 +1445,17 @@ function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
   const counts         = (q.options || []).map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
   const wrongAnswerers = liveAnswers.filter(r => !r.is_correct)
   const correctCount   = liveAnswers.filter(r => r.is_correct).length
-  const answeredKeys   = new Set(liveAnswers.map(r => normalizeNameKey(r.collaborateur)))
-  const notAnswered    = onlineNames.filter(n => !answeredKeys.has(normalizeNameKey(n)))
 
   // Passe automatiquement à la correction dès que tous les formés actuellement
   // connectés ont répondu — comparaison par nom (pas juste un compte) pour ne
   // pas se faire piéger par une vieille réponse traînant en base (voir le
   // commentaire sur handleRevealNow un peu plus haut).
-  useEffect(() => {
-    if (correctionPhase || onlineNames.length === 0 || notAnswered.length > 0) return
-    handleRevealNow()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notAnswered.length, onlineNames.length, correctionPhase])
+  const { connectedCount, notAnswered } = useAutoRevealCorrection({
+    answeredNames: liveAnswers.map(r => r.collaborateur),
+    resetKey: quizQ,
+    enabled: !correctionPhase,
+    onReveal: handleRevealNow,
+  })
 
   const bg = { minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }
   const headerLogo = (
@@ -1624,19 +1606,7 @@ function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
         })}
       </div>
 
-      {/* Qui n'a pas encore répondu — visible uniquement sur cet écran formateur */}
-      {notAnswered.length > 0 && (
-        <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 14, padding: '12px 16px', marginTop: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-            ⏳ N&apos;ont pas encore répondu ({notAnswered.length})
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {notAnswered.map(name => (
-              <span key={name} style={{ background: 'rgba(245,158,11,0.14)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: '#fbbf24' }}>{name}</span>
-            ))}
-          </div>
-        </div>
-      )}
+      <NotAnsweredList notAnswered={notAnswered} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28 }}>
         <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>

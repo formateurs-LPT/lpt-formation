@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState, clearQuizStarts } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
-import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
+import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import { PROGRESSIF_PAGES, PROGRESSIF_QUIZ } from '@/lib/modulesData'
 import { useIsMobile } from '@/lib/useIsMobile'
@@ -655,7 +655,6 @@ function JeuObjectionsPage({ page, pName, onPrev, onNext, onBack, isFirst, isLas
 // ── Quiz Controller ───────────────────────────────────────────────
 function QuizController({ quizQ, onNext, onEnd, onBack }) {
   const [liveAnswers, setLiveAnswers] = useState([])
-  const [connectedCount, setConnectedCount] = useState(0)
   const [correctionPhase, setCorrectionPhase] = useState(false)
   const q = PROGRESSIF_QUIZ[quizQ]
   const isLast = quizQ >= PROGRESSIF_QUIZ.length - 1
@@ -664,7 +663,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   // précédente restent en mémoire le temps que le poll (juste en dessous)
   // aille rechercher celles de la nouvelle question — l'auto-avance pouvait
   // alors se déclencher instantanément sur Q2 (ou toute question suivante)
-  // en comparant liveAnswers.length de l'ANCIENNE question à connectedCount,
+  // en comparant liveAnswers de l'ANCIENNE question aux connectés,
   // empêchant les formés de répondre (incident du 18/08).
   useEffect(() => { setCorrectionPhase(false); setLiveAnswers([]) }, [quizQ])
 
@@ -680,19 +679,15 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
     return () => clearInterval(t)
   }, [quizQ])
 
-  useEffect(() => {
-    const poll = async () => setConnectedCount(await fetchOnlineParticipantCount(getActiveSessionCode()))
-    poll()
-    const t = setInterval(poll, 5000)
-    return () => clearInterval(t)
-  }, [])
-
-  useEffect(() => {
-    if (!correctionPhase && connectedCount > 0 && liveAnswers.length >= connectedCount) {
+  const { connectedCount, notAnswered } = useAutoRevealCorrection({
+    answeredNames: liveAnswers.map(r => r.collaborateur),
+    resetKey: quizQ,
+    enabled: !correctionPhase,
+    onReveal: () => {
       setCorrectionPhase(true)
       setSharedState({ quiz_show_correction: true }).catch(() => {})
-    }
-  }, [liveAnswers.length, connectedCount, correctionPhase])
+    },
+  })
 
   const handleRevealNow = async () => {
     setCorrectionPhase(true)
@@ -818,6 +813,8 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
           )
         })}
       </div>
+
+      <NotAnsweredList notAnswered={notAnswered} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28 }}>
         <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
