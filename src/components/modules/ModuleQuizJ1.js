@@ -2,10 +2,10 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { sbUpdate, sbDelete, getActiveSessionCode, setSharedState, clearQuizStarts } from '@/lib/supabase'
-import { fetchTrainerQuizAnswers, normalizeNameKey } from '@/lib/participantNames'
+import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOpenAnswers } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
-import { fetchOnlineParticipantCount, fetchOnlineParticipantsList } from '@/lib/participantPresence'
+import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { QUIZ_J1 } from '@/lib/quizJ1Data'
 
 const MODULE_ID = 'quiz-j1'
@@ -93,17 +93,7 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
   const q = QUIZ_J1[quizQ]
   const [answers, setAnswers] = useState([])
   const [validations, setValidations] = useState({})
-  const [connectedCount, setConnectedCount] = useState(0)
   const autoValidatedRef = useRef(new Set())
-
-  // Tant que tout le monde n'a pas répondu, pas de correction sur le
-  // diffuseur — sinon un formé qui traîne peut lire les réponses des autres.
-  useEffect(() => {
-    const poll = async () => setConnectedCount(await fetchOnlineParticipantCount(getActiveSessionCode()))
-    poll()
-    const t = setInterval(poll, 5000)
-    return () => clearInterval(t)
-  }, [])
 
   useEffect(() => {
     setValidations({})
@@ -211,7 +201,15 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
     )
   }
 
-  const allAnswered = connectedCount > 0 && answers.length >= connectedCount
+  // Auto-passage à la correction dès que tous les formés connectés ont
+  // soumis une réponse — le bouton reste bloqué tant que ce n'est pas le
+  // cas, avec un lien "Forcer" en secours si le décompte est erroné.
+  const { connectedCount, notAnswered } = useAutoRevealCorrection({
+    answeredNames: answers.map(row => row.participant_name),
+    resetKey: quizQ,
+    onReveal: () => setSharedState({ quiz_show_correction: true }).catch(() => {}),
+  })
+  const allAnswered = connectedCount > 0 && notAnswered.length === 0
 
   const formatAnswer = (answer) => {
     if (!answer) return '—'
@@ -291,11 +289,21 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
         })}
       </div>
 
+      <NotAnsweredList notAnswered={notAnswered} />
+
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
         {pendingCount > 0 && (
           <div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24', marginRight: 'auto' }}>
             ⚠️ {pendingCount} réponse{pendingCount > 1 ? 's' : ''} pas encore validée{pendingCount > 1 ? 's' : ''}
           </div>
+        )}
+        {!allAnswered && answers.length > 0 && (
+          <button
+            onClick={() => { if (window.confirm('Forcer l\'affichage de la correction maintenant ? Les formés qui n\'ont pas encore répondu verront les réponses des autres.')) setSharedState({ quiz_show_correction: true }).catch(() => {}) }}
+            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+          >
+            ⚠️ Forcer la correction
+          </button>
         )}
         {answers.length > 0 && (
           <button
@@ -328,7 +336,6 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
   const q = QUIZ_J1[quizQ]
   const type = q.type || 'qcm'
   const [liveAnswers, setLiveAnswers] = useState([])
-  const [onlineNames, setOnlineNames] = useState([])
   const [ordoShown, setOrdoShown] = useState(false)
 
   useEffect(() => { setOrdoShown(false) }, [quizQ])
@@ -346,22 +353,8 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
     return () => clearInterval(t)
   }, [quizQ])
 
-  // Qui n'a pas encore répondu — visible uniquement ici, jamais sur le diffuseur
-  useEffect(() => {
-    const code = getActiveSessionCode()
-    const poll = async () => {
-      const list = await fetchOnlineParticipantsList(code)
-      setOnlineNames((list || []).map(p => p.name).filter(Boolean))
-    }
-    poll()
-    const t = setInterval(poll, 5000)
-    return () => clearInterval(t)
-  }, [])
-
   const total = liveAnswers.length
   const correctCount = liveAnswers.filter(r => r.is_correct).length
-  const answeredKeys = new Set(liveAnswers.map(r => normalizeNameKey(r.collaborateur)))
-  const notAnswered = onlineNames.filter(n => !answeredKeys.has(normalizeNameKey(n)))
 
   const hasOptions = !!q.options
   const counts = hasOptions ? q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length) : []
@@ -370,6 +363,14 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
   const handleShowCorrection = async () => {
     await setSharedState({ quiz_show_correction: true }).catch(() => {})
   }
+
+  // Auto-passage à la correction dès que tous les formés connectés ont
+  // répondu — avec lien "Forcer" en secours si le décompte est erroné.
+  const { notAnswered } = useAutoRevealCorrection({
+    answeredNames: liveAnswers.map(r => r.collaborateur),
+    resetKey: quizQ,
+    onReveal: handleShowCorrection,
+  })
   const handleToggleOrdo = async () => {
     const next = !ordoShown
     setOrdoShown(next)
@@ -469,19 +470,7 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
         </div>
       )}
 
-      {/* Qui n'a pas encore répondu — visible uniquement sur cet écran formateur */}
-      {notAnswered.length > 0 && (
-        <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 14, padding: '12px 16px', marginTop: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-            ⏳ N&apos;ont pas encore répondu ({notAnswered.length})
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {notAnswered.map(name => (
-              <span key={name} style={{ background: 'rgba(245,158,11,0.14)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: '#fbbf24' }}>{name}</span>
-            ))}
-          </div>
-        </div>
-      )}
+      <NotAnsweredList notAnswered={notAnswered} />
 
       {/* Footer */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>

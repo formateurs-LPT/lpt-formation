@@ -5,6 +5,7 @@ import { sbUpdate, sbDelete, getActiveSessionCode, setSharedState, clearQuizStar
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOpenAnswers } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
+import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { QUIZ_J2 } from '@/lib/quizJ2Data'
 
 const MODULE_ID = 'quiz-j2'
@@ -217,6 +218,17 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
     return answer
   }
 
+  // Auto-passage à la correction dès que tous les formés connectés ont
+  // soumis une réponse (pas besoin d'être déjà validée ✓/✗) — le bouton
+  // "Voir la correction" reste bloqué tant que ce n'est pas le cas, avec un
+  // lien "Forcer" en secours si le décompte de connectés est erroné.
+  const { connectedCount, notAnswered } = useAutoRevealCorrection({
+    answeredNames: answers.map(row => row.participant_name),
+    resetKey: quizQ,
+    onReveal: () => setSharedState({ quiz_show_correction: true }).catch(() => {}),
+  })
+  const allAnswered = connectedCount > 0 && notAnswered.length === 0
+
   const bg = { minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', padding: '24px clamp(14px, 4vw, 48px) 40px' }
 
   return (
@@ -232,7 +244,7 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
             <button onClick={handleResetQuestion} title="Efface les réponses de cette question (utile si un formé tombe direct sur la correction)" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '6px 14px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>🔄 Réinitialiser</button>
           )}
           <div style={{ background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 20px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-          Q{quizQ + 1} / {QUIZ_J2.length}
+            Q{quizQ + 1} / {QUIZ_J2.length}
           </div>
         </div>
       </div>
@@ -298,15 +310,35 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
         })}
       </div>
 
+      <NotAnsweredList notAnswered={notAnswered} />
+
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
         {pendingCount > 0 && (
           <div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24', marginRight: 'auto' }}>
             ⚠️ {pendingCount} réponse{pendingCount > 1 ? 's' : ''} pas encore validée{pendingCount > 1 ? 's' : ''}
           </div>
         )}
+        {answers.length > 0 && !allAnswered && (
+          <button
+            onClick={() => { if (window.confirm('Certains formés connectés n\'ont pas encore répondu — révéler maintenant leur montrera les réponses des autres avant qu\'ils aient répondu. Forcer quand même ?')) setSharedState({ quiz_show_correction: true }).catch(() => {}) }}
+            title="Sécurité : à utiliser si un formé reste marqué « connecté » sans jamais répondre"
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+          >⚠️ Forcer la correction</button>
+        )}
         {answers.length > 0 && (
-          <button onClick={() => setSharedState({ quiz_show_correction: true }).catch(() => {})} style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', padding: '14px 28px', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-            🎯 Voir la correction
+          <button
+            onClick={() => allAnswered && setSharedState({ quiz_show_correction: true }).catch(() => {})}
+            disabled={!allAnswered}
+            title={!allAnswered ? 'En attente de toutes les réponses — révéler maintenant permettrait à ceux qui n\'ont pas répondu de voir les réponses des autres' : undefined}
+            style={{
+              background: allAnswered ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${allAnswered ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.12)'}`,
+              color: allAnswered ? '#fbbf24' : 'rgba(255,255,255,0.3)',
+              padding: '14px 28px', borderRadius: 14, fontSize: 15, fontWeight: 700,
+              cursor: allAnswered ? 'pointer' : 'default', fontFamily: 'inherit',
+            }}
+          >
+            {allAnswered ? '🎯 Voir la correction' : `⏳ En attente (${answers.length}/${connectedCount || '?'})`}
           </button>
         )}
         {isLast ? (
@@ -371,6 +403,16 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
     setLiveAnswers([])
   }
 
+  // Auto-passage à la correction dès que tous les formés connectés ont
+  // répondu — pas de blocage ici (contrairement au texte libre) : les
+  // options sont déjà visibles sur le téléphone de chacun, donc revoir la
+  // correction en avance ne montre rien qu'ils ne pourraient déjà déduire.
+  const { connectedCount, notAnswered } = useAutoRevealCorrection({
+    answeredNames: liveAnswers.map(r => r.collaborateur),
+    resetKey: quizQ,
+    onReveal: handleShowCorrection,
+  })
+
   const bg = { minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }
 
   return (
@@ -387,7 +429,7 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
             <button onClick={handleResetQuestion} title="Efface les réponses de cette question (utile si un formé tombe direct sur la correction)" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '6px 14px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>🔄 Réinitialiser</button>
           )}
           <div style={{ background: 'rgba(0,171,233,0.2)', border: '1px solid rgba(0,171,233,0.4)', borderRadius: 20, padding: '6px 20px', fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-          Q{quizQ + 1} / {QUIZ_J2.length}
+            Q{quizQ + 1} / {QUIZ_J2.length}
           </div>
         </div>
       </div>
@@ -430,7 +472,7 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
         </div>
       )}
 
-      {/* Compteur fill (ex: ordonnance-fill) */}
+      {/* Compteur (questions sans options — ordonnance-fill) */}
       {!hasOptions && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
           <div style={{ display: 'flex', gap: 32 }}>
@@ -445,6 +487,8 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
           </div>
         </div>
       )}
+
+      <NotAnsweredList notAnswered={notAnswered} />
 
       {/* Footer */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)' }}>

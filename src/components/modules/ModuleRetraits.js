@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, fetchOpenAnswers, setSharedState, clearQuizStarts } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
-import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
+import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import { RETRAITS_PAGES, RETRAITS_QUIZ } from '@/lib/modulesData'
 
@@ -240,7 +240,6 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   const [openAnswers, setOpenAnswers] = useState([])
   const [validating, setValidating] = useState({})
   const [validated, setValidated] = useState({})
-  const [connectedCount, setConnectedCount] = useState(0)
 
   const q = RETRAITS_QUIZ[quizQ]
   const isLast = quizQ >= RETRAITS_QUIZ.length - 1
@@ -259,15 +258,6 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
     return () => clearInterval(t)
   }, [quizQ, pageId])
 
-  // Tant que tout le monde n'a pas répondu, pas de correction sur le
-  // diffuseur — sinon un formé qui traîne peut lire les réponses des autres.
-  useEffect(() => {
-    const poll = async () => setConnectedCount(await fetchOnlineParticipantCount(getActiveSessionCode()))
-    poll()
-    const t = setInterval(poll, 5000)
-    return () => clearInterval(t)
-  }, [])
-
   const handleValidate = async (row, isCorrect) => {
     if (validating[row.participant_name]) return
     setValidating(v => ({ ...v, [row.participant_name]: true }))
@@ -279,7 +269,19 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
     }
   }
 
-  const allAnswered = connectedCount > 0 && openAnswers.length >= connectedCount
+  const handleShowCorrectionForce = async () => {
+    await setSharedState({ quiz_show_correction: true }).catch(() => {})
+  }
+
+  // Auto-passage à la correction dès que tous les formés connectés ont
+  // répondu — le bouton reste bloqué tant que ce n'est pas le cas, avec un
+  // lien "Forcer" en secours si le décompte est erroné.
+  const { connectedCount, notAnswered } = useAutoRevealCorrection({
+    answeredNames: openAnswers.map(row => row.participant_name),
+    resetKey: quizQ,
+    onReveal: handleShowCorrectionForce,
+  })
+  const allAnswered = connectedCount > 0 && notAnswered.length === 0
 
   const handleShowCorrection = async () => {
     if (!allAnswered) return
@@ -365,7 +367,18 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
           ⚠️ {pendingCount} réponse{pendingCount > 1 ? 's' : ''} pas encore validée{pendingCount > 1 ? 's' : ''}
         </div>
       )}
+
+      <NotAnsweredList notAnswered={notAnswered} />
+
       <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 28 }}>
+        {!allAnswered && openAnswers.length > 0 && (
+          <button
+            onClick={() => { if (window.confirm('Forcer l\'affichage de la correction maintenant ? Les formés qui n\'ont pas encore répondu verront les réponses des autres.')) handleShowCorrectionForce() }}
+            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+          >
+            ⚠️ Forcer la correction
+          </button>
+        )}
         {openAnswers.length > 0 && (
           <button
             onClick={handleShowCorrection}

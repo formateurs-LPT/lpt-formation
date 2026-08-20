@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, clearQuizStarts } from '@/lib/supabase'
 import { useIsMobile } from '@/lib/useIsMobile'
-import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { OFFRES_QUIZ } from '@/lib/modulesData'
 import { NextPagePreview } from '@/lib/trainerPreview'
 
@@ -587,7 +587,6 @@ function Cours11({ onPrev, onNext, onBack }) {
 // ── Quiz Controller (vue formateur) ──────────────────────────────
 function QuizController({ quizQ, onNext, onEnd, onBack }) {
   const [liveAnswers, setLiveAnswers] = useState([])
-  const [connectedCount, setConnectedCount] = useState(0)
   const [correctionPhase, setCorrectionPhase] = useState(false)
   const q = OFFRES_QUIZ[quizQ]
   const isLast = quizQ >= OFFRES_QUIZ.length - 1
@@ -609,20 +608,16 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
     return () => clearInterval(t)
   }, [quizQ])
 
-  useEffect(() => {
-    const poll = async () => setConnectedCount(await fetchOnlineParticipantCount(getActiveSessionCode()))
-    poll()
-    const t = setInterval(poll, 5000)
-    return () => clearInterval(t)
-  }, [])
-
-  // Auto-révèle la correction quand tout le monde a répondu
-  useEffect(() => {
-    if (!correctionPhase && connectedCount > 0 && liveAnswers.length >= connectedCount) {
+  // Auto-révèle la correction quand tous les formés connectés ont répondu
+  const { connectedCount, notAnswered } = useAutoRevealCorrection({
+    answeredNames: liveAnswers.map(r => r.collaborateur),
+    resetKey: quizQ,
+    enabled: !correctionPhase,
+    onReveal: () => {
       setCorrectionPhase(true)
       setSharedState({ quiz_show_correction: true }).catch(() => {})
-    }
-  }, [liveAnswers.length, connectedCount, correctionPhase])
+    },
+  })
 
   const handleRevealNow = async () => {
     setCorrectionPhase(true)
@@ -806,6 +801,8 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
           )
         })}
       </div>
+
+      <NotAnsweredList notAnswered={notAnswered} />
 
       {/* Footer */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28 }}>

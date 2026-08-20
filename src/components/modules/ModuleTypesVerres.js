@@ -3,8 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers, clearQuizStarts } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
-import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
+import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import TrainerAvatar from '@/components/TrainerAvatar'
 import { TYPES_VERRES_PAGES as PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
@@ -483,7 +483,6 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
   const [openAnswers, setOpenAnswers] = useState([])
   const [validating, setValidating] = useState({})
   const [validated, setValidated] = useState({})
-  const [connectedCount, setConnectedCount] = useState(0)
   const autoValidatedRef = useRef(new Set())
 
   const q = TYPES_VERRES_QUIZ[quizQ]
@@ -503,15 +502,6 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
     const t = setInterval(poll, 2000)
     return () => clearInterval(t)
   }, [quizQ, pageId])
-
-  // Tant que tout le monde n'a pas répondu, pas de correction sur le
-  // diffuseur — sinon un formé qui traîne peut lire les réponses des autres.
-  useEffect(() => {
-    const poll = async () => setConnectedCount(await fetchOnlineParticipantCount(getActiveSessionCode()))
-    poll()
-    const t = setInterval(poll, 5000)
-    return () => clearInterval(t)
-  }, [])
 
   // Auto-validation
   useEffect(() => {
@@ -566,7 +556,19 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
     }
   }
 
-  const allAnswered = connectedCount > 0 && openAnswers.length >= connectedCount
+  const handleShowCorrectionForce = async () => {
+    await setSharedState({ quiz_show_correction: true }).catch(() => {})
+  }
+
+  // Auto-passage à la correction dès que tous les formés connectés ont
+  // répondu — le bouton reste bloqué tant que ce n'est pas le cas, avec un
+  // lien "Forcer" en secours si le décompte est erroné.
+  const { connectedCount, notAnswered } = useAutoRevealCorrection({
+    answeredNames: openAnswers.map(row => row.participant_name),
+    resetKey: quizQ,
+    onReveal: handleShowCorrectionForce,
+  })
+  const allAnswered = connectedCount > 0 && notAnswered.length === 0
 
   const handleShowCorrection = async () => {
     if (!allAnswered) return
@@ -655,7 +657,17 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
         </div>
       )}
 
+      <NotAnsweredList notAnswered={notAnswered} />
+
       <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 28 }}>
+        {!allAnswered && openAnswers.length > 0 && (
+          <button
+            onClick={() => { if (window.confirm('Forcer l\'affichage de la correction maintenant ? Les formés qui n\'ont pas encore répondu verront les réponses des autres.')) handleShowCorrectionForce() }}
+            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+          >
+            ⚠️ Forcer la correction
+          </button>
+        )}
         {openAnswers.length > 0 && (
           <button
             onClick={handleShowCorrection}
@@ -685,7 +697,6 @@ function TextOpenController({ quizQ, onNext, onEnd, onBack }) {
 // ── Contrôleur QCM (vrai / faux) ──────────────────────────────────
 function MCQController({ quizQ, onNext, onEnd, onBack }) {
   const [liveAnswers, setLiveAnswers] = useState([])
-  const [connectedCount, setConnectedCount] = useState(0)
   const [correctionPhase, setCorrectionPhase] = useState(false)
   const q = TYPES_VERRES_QUIZ[quizQ]
   const isLast = quizQ >= TYPES_VERRES_QUIZ.length - 1
@@ -694,7 +705,7 @@ function MCQController({ quizQ, onNext, onEnd, onBack }) {
   // précédente restent en mémoire le temps que le poll (juste en dessous)
   // aille rechercher celles de la nouvelle question — l'auto-avance pouvait
   // alors se déclencher instantanément sur Q2 (ou toute question suivante)
-  // en comparant liveAnswers.length de l'ANCIENNE question à connectedCount,
+  // en comparant liveAnswers de l'ANCIENNE question aux connectés,
   // empêchant les formés de répondre (incident du 18/08).
   useEffect(() => { setCorrectionPhase(false); setLiveAnswers([]) }, [quizQ])
 
@@ -710,19 +721,15 @@ function MCQController({ quizQ, onNext, onEnd, onBack }) {
     return () => clearInterval(t)
   }, [quizQ])
 
-  useEffect(() => {
-    const poll = async () => setConnectedCount(await fetchOnlineParticipantCount(getActiveSessionCode()))
-    poll()
-    const t = setInterval(poll, 5000)
-    return () => clearInterval(t)
-  }, [])
-
-  useEffect(() => {
-    if (!correctionPhase && connectedCount > 0 && liveAnswers.length >= connectedCount) {
+  const { connectedCount, notAnswered } = useAutoRevealCorrection({
+    answeredNames: liveAnswers.map(r => r.collaborateur),
+    resetKey: quizQ,
+    enabled: !correctionPhase,
+    onReveal: () => {
       setCorrectionPhase(true)
       setSharedState({ quiz_show_correction: true }).catch(() => {})
-    }
-  }, [liveAnswers.length, connectedCount, correctionPhase])
+    },
+  })
 
   const handleRevealNow = async () => {
     setCorrectionPhase(true)
@@ -849,6 +856,8 @@ function MCQController({ quizQ, onNext, onEnd, onBack }) {
           )
         })}
       </div>
+
+      <NotAnsweredList notAnswered={notAnswered} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28 }}>
         <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
