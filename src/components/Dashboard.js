@@ -1635,6 +1635,7 @@ const FICHES = [
   { label: 'Fiche SAV', href: '/fiche-sav', icon: '🔧', color: '#f87171', sub: 'Retraits · Ajustages · RAZ' },
   { label: 'Fiche Belgique', href: '/fiche-belgique', icon: '🇧🇪', color: '#e63946', sub: 'Onboarding belge récap' },
   { label: 'Fiche accès LPT', href: '/fiche-acces', icon: '🔑', color: '#0089ba', sub: 'Gmail · Slack · LPTBot' },
+  { label: 'Fiche Contrôle Qualité', href: '/fiche-controle-qualite', icon: '🔍', color: '#06b6d4', sub: 'Montures · Verres unifocal & progressif' },
 ]
 
 function FichesAnnexesWidget() {
