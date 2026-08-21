@@ -77,16 +77,16 @@ export const MANAGERS = {
     { name: 'Myriam OUFRASSI',  email: 'moufrassi@lunettespourtous.com' },
   ],
   'bordeaux bègles': [
-    { name: 'Victoria DUCROCQ VELAY', email: 'vducrocqvelay@lunettespourtous.com' },
+    { name: 'Victoria DUCROCQ', email: 'vducrocq@lunettespourtous.com' },
   ],
   'bordeaux begles': [
-    { name: 'Victoria DUCROCQ VELAY', email: 'vducrocqvelay@lunettespourtous.com' },
+    { name: 'Victoria DUCROCQ', email: 'vducrocq@lunettespourtous.com' },
   ],
   'bègles': [
-    { name: 'Victoria DUCROCQ VELAY', email: 'vducrocqvelay@lunettespourtous.com' },
+    { name: 'Victoria DUCROCQ', email: 'vducrocq@lunettespourtous.com' },
   ],
   'begles': [
-    { name: 'Victoria DUCROCQ VELAY', email: 'vducrocqvelay@lunettespourtous.com' },
+    { name: 'Victoria DUCROCQ', email: 'vducrocq@lunettespourtous.com' },
   ],
   'lille': [
     { name: 'Julien MACALOU', email: 'jmacalou@lunettespourtous.com' },
