@@ -6,12 +6,17 @@ import { useState, useEffect, useRef } from 'react'
 // droit du sujet), là où l'animation du verre vient se poser. ────────
 const PHOTO_W  = 1654
 const PHOTO_H  = 951
-const EYE_L    = { x: 733, y: 466 }
-const EYE_R    = { x: 929, y: 466 } // repère uniquement pour la mesure d'écart pupillaire
-const FRAME_R  = 68                 // rayon du verre de la monture sur la photo (cerclage rond)
+const PUPIL_L  = { x: 727, y: 445 } // pupille de l'œil droit du sujet (à gauche à l'écran)
+const PUPIL_R  = { x: 929, y: 445 } // pupille de l'autre œil, repère pour l'écart pupillaire
+const FRAME_C  = { x: 725, y: 458 } // centre géométrique du verre de la monture sur la photo
+const FRAME_R  = 70                 // rayon du verre de la monture sur la photo (cerclage rond)
 const LENS_R   = 190                // rayon du verre brut avant découpe
 const LENS_INIT = { x: 300, y: 610 }
 const FRAME_PERIM = 2 * Math.PI * FRAME_R
+// Décalage de la pupille par rapport au centre géométrique de la monture : le
+// point optique (le point du verre à faire coïncider avec la pupille) n'est
+// pas forcément au centre exact du verre, d'où ce décalage local du repère.
+const PUPIL_OFFSET = { x: PUPIL_L.x - FRAME_C.x, y: PUPIL_L.y - FRAME_C.y }
 
 export const PDM_ANIM_STEP_LABELS = [
   'Le verre brut',
@@ -80,16 +85,16 @@ export function PDMAnimationSVG({ animStep }) {
     return () => { if (dashRafRef.current) cancelAnimationFrame(dashRafRef.current) }
   }, [animStep])
 
-  const lensX = (animStep >= 5 && animStep !== 7) ? EYE_L.x : LENS_INIT.x
-  const lensY = (animStep >= 5 && animStep !== 7) ? EYE_L.y : LENS_INIT.y
+  const lensX = (animStep >= 5 && animStep !== 7) ? FRAME_C.x : LENS_INIT.x
+  const lensY = (animStep >= 5 && animStep !== 7) ? FRAME_C.y : LENS_INIT.y
 
   const dotOpacity     = animStep >= 1 ? 1 : 0
   const measureOpacity = animStep >= 4 ? 1 : 0
   const contourOpacity = animStep >= 6 && animStep < 8 ? 1 : 0
   const showText       = animStep === 2
 
-  const pdY = EYE_L.y - 80 // ligne d'écart pupillaire, au-dessus des yeux
-  const hX  = EYE_L.x - FRAME_R - 105 // ligne de hauteur, à gauche de la monture
+  const pdY = PUPIL_L.y - 80 // ligne d'écart pupillaire, au-dessus des yeux
+  const hX  = FRAME_C.x - FRAME_R - 105 // ligne de hauteur, à gauche de la monture
 
   return (
     <div style={{ position: 'relative', width: '100%', maxWidth: 620, margin: '0 auto', borderRadius: 16, overflow: 'hidden', background: 'rgba(3,17,42,0.6)' }}>
@@ -117,28 +122,28 @@ export function PDMAnimationSVG({ animStep }) {
         {/* ── Mesures (step 4+) ── */}
         <g opacity={measureOpacity} style={{ transition: 'opacity 0.6s ease' }}>
           {/* Ecart pupillaire */}
-          <line x1={EYE_L.x} y1={pdY} x2={EYE_R.x} y2={pdY} stroke="#00abe9" strokeWidth="3"/>
-          <line x1={EYE_L.x} y1={pdY - 10} x2={EYE_L.x} y2={pdY + 10} stroke="#00abe9" strokeWidth="3"/>
-          <line x1={EYE_R.x} y1={pdY - 10} x2={EYE_R.x} y2={pdY + 10} stroke="#00abe9" strokeWidth="3"/>
-          <polygon points={`${EYE_L.x},${pdY - 5} ${EYE_L.x + 22},${pdY} ${EYE_L.x},${pdY + 5}`} fill="#00abe9"/>
-          <polygon points={`${EYE_R.x},${pdY - 5} ${EYE_R.x - 22},${pdY} ${EYE_R.x},${pdY + 5}`} fill="#00abe9"/>
-          <text x={(EYE_L.x + EYE_R.x) / 2} y={pdY - 16} textAnchor="middle" fontSize={20} fill="#00abe9"
+          <line x1={PUPIL_L.x} y1={pdY} x2={PUPIL_R.x} y2={pdY} stroke="#00abe9" strokeWidth="3"/>
+          <line x1={PUPIL_L.x} y1={pdY - 10} x2={PUPIL_L.x} y2={pdY + 10} stroke="#00abe9" strokeWidth="3"/>
+          <line x1={PUPIL_R.x} y1={pdY - 10} x2={PUPIL_R.x} y2={pdY + 10} stroke="#00abe9" strokeWidth="3"/>
+          <polygon points={`${PUPIL_L.x},${pdY - 5} ${PUPIL_L.x + 22},${pdY} ${PUPIL_L.x},${pdY + 5}`} fill="#00abe9"/>
+          <polygon points={`${PUPIL_R.x},${pdY - 5} ${PUPIL_R.x - 22},${pdY} ${PUPIL_R.x},${pdY + 5}`} fill="#00abe9"/>
+          <text x={(PUPIL_L.x + PUPIL_R.x) / 2} y={pdY - 16} textAnchor="middle" fontSize={20} fill="#00abe9"
             fontFamily="system-ui,sans-serif" fontWeight="700">
             Écart pupillaire
           </text>
           {/* Hauteur — ligne a gauche de la monture, connecteurs pointilles vers le verre */}
-          <line x1={EYE_L.x - FRAME_R} y1={EYE_L.y - FRAME_R}
-                x2={hX} y2={EYE_L.y - FRAME_R}
+          <line x1={FRAME_C.x - FRAME_R} y1={FRAME_C.y - FRAME_R}
+                x2={hX} y2={FRAME_C.y - FRAME_R}
                 stroke="#22c55e" strokeWidth="2" strokeDasharray="6 5" opacity="0.7"/>
-          <line x1={EYE_L.x - FRAME_R} y1={EYE_L.y + FRAME_R}
-                x2={hX} y2={EYE_L.y + FRAME_R}
+          <line x1={FRAME_C.x - FRAME_R} y1={FRAME_C.y + FRAME_R}
+                x2={hX} y2={FRAME_C.y + FRAME_R}
                 stroke="#22c55e" strokeWidth="2" strokeDasharray="6 5" opacity="0.7"/>
-          <line x1={hX} y1={EYE_L.y - FRAME_R} x2={hX} y2={EYE_L.y + FRAME_R} stroke="#22c55e" strokeWidth="3"/>
-          <polygon points={`${hX - 8},${EYE_L.y - FRAME_R} ${hX + 8},${EYE_L.y - FRAME_R} ${hX},${EYE_L.y - FRAME_R + 14}`} fill="#22c55e"/>
-          <polygon points={`${hX - 8},${EYE_L.y + FRAME_R} ${hX + 8},${EYE_L.y + FRAME_R} ${hX},${EYE_L.y + FRAME_R - 14}`} fill="#22c55e"/>
-          <text x={hX - 22} y={EYE_L.y + 6} textAnchor="middle" fontSize={18} fill="#22c55e"
+          <line x1={hX} y1={FRAME_C.y - FRAME_R} x2={hX} y2={FRAME_C.y + FRAME_R} stroke="#22c55e" strokeWidth="3"/>
+          <polygon points={`${hX - 8},${FRAME_C.y - FRAME_R} ${hX + 8},${FRAME_C.y - FRAME_R} ${hX},${FRAME_C.y - FRAME_R + 14}`} fill="#22c55e"/>
+          <polygon points={`${hX - 8},${FRAME_C.y + FRAME_R} ${hX + 8},${FRAME_C.y + FRAME_R} ${hX},${FRAME_C.y + FRAME_R - 14}`} fill="#22c55e"/>
+          <text x={hX - 22} y={FRAME_C.y + 6} textAnchor="middle" fontSize={18} fill="#22c55e"
             fontFamily="system-ui,sans-serif" fontWeight="700"
-            transform={`rotate(-90 ${hX - 22} ${EYE_L.y + 6})`}>
+            transform={`rotate(-90 ${hX - 22} ${FRAME_C.y + 6})`}>
             Hauteur
           </text>
         </g>
@@ -152,13 +157,16 @@ export function PDMAnimationSVG({ animStep }) {
             cx={-(lensR * 0.30)} cy={-(lensR * 0.25)}
             fill="rgba(255,255,255,0.1)" transform="rotate(-22 0 0)"
           />
-          <circle r={15} fill="#f59e0b" opacity={dotOpacity}
-            style={{ transition: 'opacity 0.6s' }} filter="url(#pdma-dot)"/>
-          <g opacity={dotOpacity} style={{ transition: 'opacity 0.6s' }}>
-            <line x1={-40} y1={0} x2={-20} y2={0} stroke="#f59e0b" strokeWidth="3" opacity="0.7"/>
-            <line x1={20}  y1={0} x2={40}  y2={0} stroke="#f59e0b" strokeWidth="3" opacity="0.7"/>
-            <line x1={0} y1={-40} x2={0} y2={-20} stroke="#f59e0b" strokeWidth="3" opacity="0.7"/>
-            <line x1={0} y1={20}  x2={0} y2={40}  stroke="#f59e0b" strokeWidth="3" opacity="0.7"/>
+          {/* Point optique — placé sur la pupille réelle, pas forcément au centre du verre */}
+          <g style={{ transform: `translate(${PUPIL_OFFSET.x}px, ${PUPIL_OFFSET.y}px)` }}>
+            <circle r={15} fill="#f59e0b" opacity={dotOpacity}
+              style={{ transition: 'opacity 0.6s' }} filter="url(#pdma-dot)"/>
+            <g opacity={dotOpacity} style={{ transition: 'opacity 0.6s' }}>
+              <line x1={-40} y1={0} x2={-20} y2={0} stroke="#f59e0b" strokeWidth="3" opacity="0.7"/>
+              <line x1={20}  y1={0} x2={40}  y2={0} stroke="#f59e0b" strokeWidth="3" opacity="0.7"/>
+              <line x1={0} y1={-40} x2={0} y2={-20} stroke="#f59e0b" strokeWidth="3" opacity="0.7"/>
+              <line x1={0} y1={20}  x2={0} y2={40}  stroke="#f59e0b" strokeWidth="3" opacity="0.7"/>
+            </g>
           </g>
           <circle
             r={FRAME_R}
