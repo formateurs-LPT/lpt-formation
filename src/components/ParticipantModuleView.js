@@ -347,6 +347,7 @@ function DashboardScreen({ pName, myEntry, ranking, myProfile, quizHistory, badg
         ))}
       </div>
 
+      <div key={tab} style={{ animation: 'dashTabIn .25s ease' }}>
       {tab === 'national' ? (
         <NationalRankingTab pName={pName} />
       ) : tab === 'profil' ? (
@@ -455,6 +456,8 @@ function DashboardScreen({ pName, myEntry, ranking, myProfile, quizHistory, badg
           ))}
         </div>
       )}
+      </div>
+      <style>{`@keyframes dashTabIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }`}</style>
     </div>
   )
 }

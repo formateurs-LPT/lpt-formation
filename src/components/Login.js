@@ -9,6 +9,7 @@ export default function Login({ onTrainerLogin, onParticipantJoin }) {
   const [trainerCode, setTrainerCode] = useState('')
   const [nom, setNom] = useState('')
   const [prenom, setPrenom] = useState('')
+  const [joining, setJoining] = useState(false)
 
   useEffect(() => {
     setIsJoinMode(new URLSearchParams(window.location.search).get('join') === '1')
@@ -18,11 +19,20 @@ export default function Login({ onTrainerLogin, onParticipantJoin }) {
     onTrainerLogin(trainerId, trainerCode)
   }
 
-  const handleJoin = () => {
-    onParticipantJoin(nom, prenom)
+  const handleJoin = async () => {
+    if (joining) return
+    setJoining(true)
+    try {
+      await onParticipantJoin(nom, prenom)
+    } finally {
+      // Si la connexion a réussi, ce composant a déjà été démonté (changement
+      // de vue côté parent) — ce reset ne s'applique donc que sur échec
+      // (identifiant inconnu, salle fermée...), pour permettre de réessayer.
+      setJoining(false)
+    }
   }
 
-  const canJoin = nom.trim() && prenom.trim()
+  const canJoin = nom.trim() && prenom.trim() && !joining
 
   return (
     <div id="landing">
@@ -98,12 +108,20 @@ export default function Login({ onTrainerLogin, onParticipantJoin }) {
           </div>
           <button
             className="gbtn"
-            style={{ width: '100%', marginTop: 10, opacity: canJoin ? 1 : 0.55 }}
+            style={{
+              width: '100%', marginTop: 10, opacity: (nom.trim() && prenom.trim()) ? 1 : 0.55,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              cursor: canJoin ? 'pointer' : 'default',
+            }}
             onClick={handleJoin}
             disabled={!canJoin}
           >
-            Rejoindre →
+            {joining && (
+              <span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid #fff', borderRadius: '50%', display: 'inline-block', animation: 'loginSpin .7s linear infinite' }} />
+            )}
+            {joining ? 'Connexion…' : 'Rejoindre →'}
           </button>
+          <style>{`@keyframes loginSpin { to { transform: rotate(360deg); } }`}</style>
           <p className="hint">
             Scannez le QR du formateur ou saisissez nom et prénom (ligne bleue « Connexion : … »)
           </p>
