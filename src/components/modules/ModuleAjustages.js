@@ -7,8 +7,8 @@ import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import { AJUSTAGES_PAGES, AJUSTAGES_QUIZ } from '@/lib/modulesData'
+import { QUIZ_BUBBLE_COLORS as BUBBLE_COLORS } from '@/lib/constants'
 
-const BUBBLE_COLORS = ['#00abe9', '#4ade80', '#f59e0b', '#a78bfa', '#f472b6', '#34d399']
 const TOTAL_PAGES = AJUSTAGES_PAGES.length
 
 function BrainstormController({ page, onNext, onBack }) {

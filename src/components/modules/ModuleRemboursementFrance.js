@@ -8,6 +8,7 @@ import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { countVotesPerOption } from '@/lib/quizVotes'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
+import { QUIZ_BUBBLE_COLORS as BUBBLE_COLORS } from '@/lib/constants'
 
 const MODULE_ID = 'remboursement-france'
 const PAGES = MODULE_DATA[MODULE_ID]?.pages || []
@@ -18,8 +19,6 @@ const PAGE_TYPE_LABELS = {
   'rembfr-demarche':  { icon: '📝', label: 'Démarche à suivre' },
   'rembfr-supreme':   { icon: '👑', label: 'Test Suprême' },
 }
-
-const BUBBLE_COLORS = ['#00abe9', '#4ade80', '#f59e0b', '#a78bfa', '#f472b6', '#34d399']
 
 // ── Logos ─────────────────────────────────────────────────────────
 function AmeliproBadge() {

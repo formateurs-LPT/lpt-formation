@@ -1,5 +1,12 @@
 export const TRAINER_CANONICAL = { 'nadège': 'nadege', 'thomas': 'thomas' }
 
+// Palettes réutilisées telles quelles dans la plupart des Module*.js (QCM à
+// 4 options, bulles de réponse texte libre) — centralisées ici pour éviter
+// que chaque fichier les redéfinisse en dur avec le risque de légères
+// divergences accidentelles au fil du temps.
+export const QUIZ_OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
+export const QUIZ_BUBBLE_COLORS = ['#00abe9', '#4ade80', '#f59e0b', '#a78bfa', '#f472b6', '#34d399']
+
 export function getTrainerAvatarKey(pName) {
   const rawKey = (pName || '').toLowerCase().split(/\s+/)[0]
   return TRAINER_CANONICAL[rawKey] || rawKey

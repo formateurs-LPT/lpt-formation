@@ -9,7 +9,7 @@ import { countVotesPerOption } from '@/lib/quizVotes'
 import { PROGRESSIF_PAGES, PROGRESSIF_QUIZ } from '@/lib/modulesData'
 import { useIsMobile } from '@/lib/useIsMobile'
 const ACCENT = '#7c3aed'
-const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
+import { QUIZ_OPTION_COLORS as OPTION_COLORS } from '@/lib/constants'
 
 // ── Keyframes ─────────────────────────────────────────────────────
 const STYLES = `

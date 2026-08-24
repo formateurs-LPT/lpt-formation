@@ -14,7 +14,7 @@ import { QUIZ_FINAL_QUESTIONS } from '@/lib/quizFinalData'
 // 'rate'   → TV shows TVQuizRateReveal
 
 const MODULE_ID = 'quiz-final'
-const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
+import { QUIZ_OPTION_COLORS as OPTION_COLORS } from '@/lib/constants'
 
 const STYLES = `
   @keyframes finalFadeIn {

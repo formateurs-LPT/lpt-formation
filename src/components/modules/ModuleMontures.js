@@ -4,8 +4,7 @@ import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState } from '@/lib/supabase'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import { useIsMobile } from '@/lib/useIsMobile'
-
-const BUBBLE_COLORS = ['#00abe9', '#4ade80', '#f59e0b', '#a78bfa', '#f472b6', '#34d399']
+import { QUIZ_BUBBLE_COLORS as BUBBLE_COLORS } from '@/lib/constants'
 
 // ─── Données par matériau ─────────────────────────────────────
 

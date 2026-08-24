@@ -3,11 +3,10 @@ import { useState, useEffect, useRef } from 'react'
 import { sbUpdate, getActiveSessionCode, setSharedState, getSharedState } from '@/lib/supabase'
 import { MODULE_DATA } from '@/lib/modulesData'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
+import { QUIZ_BUBBLE_COLORS as BUBBLE_COLORS } from '@/lib/constants'
 
 const MODULE_ID = 'lpt-sante'
 const PAGES = MODULE_DATA[MODULE_ID]?.pages || []
-
-const BUBBLE_COLORS = ['#00abe9', '#4ade80', '#f59e0b', '#a78bfa', '#f472b6', '#34d399']
 
 function PageIntroFormateur({ page }) {
   const [answers, setAnswers] = useState([])

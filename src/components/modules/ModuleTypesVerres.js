@@ -10,9 +10,7 @@ import TrainerAvatar from '@/components/TrainerAvatar'
 import { countVotesPerOption } from '@/lib/quizVotes'
 import { TYPES_VERRES_PAGES as PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
 import { useIsMobile } from '@/lib/useIsMobile'
-
-const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
-const BUBBLE_COLORS = ['#00abe9', '#4ade80', '#f59e0b', '#a78bfa', '#f472b6', '#34d399']
+import { QUIZ_OPTION_COLORS as OPTION_COLORS, QUIZ_BUBBLE_COLORS as BUBBLE_COLORS } from '@/lib/constants'
 
 // ── Keyframes injectés une seule fois ─────────────────────────────
 const STYLES = `

@@ -3,8 +3,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { sbUpdate, getActiveSessionCode, fetchOpenAnswers, setSharedState } from '@/lib/supabase'
 import { RAZ_PAGES } from '@/lib/modulesData'
-
-const BUBBLE_COLORS = ['#00abe9', '#4ade80', '#f59e0b', '#a78bfa', '#f472b6', '#34d399']
+import { QUIZ_BUBBLE_COLORS as BUBBLE_COLORS } from '@/lib/constants'
 
 function BrainstormController({ page, onNext, onBack }) {
   const [answers, setAnswers] = useState([])

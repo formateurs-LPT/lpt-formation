@@ -8,9 +8,9 @@ import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCor
 import { countVotesPerOption } from '@/lib/quizVotes'
 import { ENTREPRISE_PAGES as PAGES, ENTREPRISE_QUIZ } from '@/lib/modulesData'
 import ZeroInterChain from '@/components/ZeroInterChain'
+import { QUIZ_OPTION_COLORS as OPTION_COLORS, QUIZ_BUBBLE_COLORS as BUBBLE_COLORS } from '@/lib/constants'
 
 const PAUL_AVATAR = '/assets/avatar_paul.png'
-const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
 // ── Nav formateur ─────────────────────────────────────────────────
 const PAGE_TYPE_LABEL = {
@@ -117,8 +117,6 @@ function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast,
     </div>
   )
 }
-
-const BUBBLE_COLORS = ['#00abe9','#4ade80','#f59e0b','#a78bfa','#f472b6','#34d399']
 
 // ── Page interactive : freins à l'achat ───────────────────────────
 function FreinsPage({ page, navProps }) {

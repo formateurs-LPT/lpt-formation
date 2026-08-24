@@ -10,7 +10,7 @@ import { countVotesPerOption } from '@/lib/quizVotes'
 import { QUIZ_J1 } from '@/lib/quizJ1Data'
 
 const MODULE_ID = 'quiz-j1'
-const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
+import { QUIZ_OPTION_COLORS as OPTION_COLORS } from '@/lib/constants'
 
 const STYLES = `
   @keyframes j1FadeIn {
