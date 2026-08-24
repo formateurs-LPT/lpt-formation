@@ -13,7 +13,7 @@ import AutoEvalParticipant from '@/components/AutoEvalParticipant'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
-import { resolveParticipantName, normalizeNameKey, loadEntreesList, entreeDisplayName } from '@/lib/participantNames'
+import { resolveParticipantName, normalizeNameKey, loadEntreesList, entreeDisplayName, extractPrenom } from '@/lib/participantNames'
 import { mergeRoomSharedField } from '@/lib/roomSharedState'
 import { getLevelInfo, getRankMessage, fetchParticipantRanking, fetchWeeklyGlobalRanking } from '@/lib/scoring'
 import { canParticipantJoinSession, getCategoryJoinDeniedMessage, mapPosteLabel } from '@/lib/formationCategories'
@@ -91,7 +91,7 @@ function WaitingScreen() {
 }
 
 function WelcomeScreenFirst({ pName }) {
-  const firstName = (pName || '').split(' ')[0] || 'toi'
+  const firstName = extractPrenom(pName) || 'toi'
   return (
     <div style={{
       minHeight: '100dvh',
@@ -292,7 +292,7 @@ function groupQuizHistoryByDay(quizHistory) {
 
 function DashboardScreen({ pName, myEntry, ranking, myProfile, quizHistory, badges }) {
   const [tab, setTab] = useState('profil') // profil | historique | national
-  const firstName = (pName || '').split(' ')[0] || 'toi'
+  const firstName = extractPrenom(pName) || 'toi'
   const points = myEntry?.points ?? 0
   const rank = myEntry?.rank
   const levelInfo = getLevelInfo(points)

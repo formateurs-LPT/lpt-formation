@@ -750,7 +750,7 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
           {isTrainer && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginLeft: 2 }}>▾</span>}
         </div>
         <div className={`brole ${isTrainer ? 'trainer' : 'participant'}`}>
-          {isTrainer ? 'Formateur' : pName?.split(' ')[0]}
+          {isTrainer ? 'Formateur' : extractPrenom(pName)}
         </div>
         {isTrainer && onStartSession && (
           <button onClick={onStartSession} style={{
