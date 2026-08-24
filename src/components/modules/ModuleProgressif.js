@@ -977,7 +977,10 @@ export default function ModuleProgressif({ pName, onBack }) {
   const handleTerminate = async () => {
     try {
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
-      await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_retour_responses: {}, prog_retour_revealed: false, prog_objection_idx: null, prog_objection_responses: {}, prog_objection_revealed: false, prog_best_answer: null }).catch(() => {})
+      // quiz_show_correction inclus : sans ça il peut rester bloqué à true si
+      // on quitte pendant qu'une correction est affichée — le prochain quiz
+      // lancé dans cette salle en hériterait (formés jetés direct dessus).
+      await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_retour_responses: {}, prog_retour_revealed: false, prog_objection_idx: null, prog_objection_responses: {}, prog_objection_revealed: false, prog_best_answer: null, quiz_show_correction: false }).catch(() => {})
     } catch { /* best-effort */ }
     onBack()
   }
@@ -985,7 +988,10 @@ export default function ModuleProgressif({ pName, onBack }) {
   const handleBack = async () => {
     try {
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode())
-      await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_retour_responses: {}, prog_retour_revealed: false, prog_objection_idx: null, prog_objection_responses: {}, prog_objection_revealed: false, prog_best_answer: null }).catch(() => {})
+      // quiz_show_correction inclus : sans ça il peut rester bloqué à true si
+      // on quitte pendant qu'une correction est affichée — le prochain quiz
+      // lancé dans cette salle en hériterait (formés jetés direct dessus).
+      await setSharedState({ prog_zone_q: null, prog_zone_responses: {}, prog_retour_responses: {}, prog_retour_revealed: false, prog_objection_idx: null, prog_objection_responses: {}, prog_objection_revealed: false, prog_best_answer: null, quiz_show_correction: false }).catch(() => {})
     } catch { /* best-effort */ }
     onBack()
   }

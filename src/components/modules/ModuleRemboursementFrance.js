@@ -1016,7 +1016,10 @@ export default function ModuleRemboursementFrance({ pName, onBack }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex])
 
-  const resetShared = () => setSharedState({ rembfr_revealed: [], rembfr_demarche_a: 0, rembfr_demarche_b: 0, rembfr_supreme: 0, rembfr_amelipro_clicked: false })
+  // quiz_show_correction inclus : sans ça il peut rester bloqué à true si on
+  // quitte pendant qu'une correction est affichée — le prochain quiz lancé
+  // dans cette salle en hériterait (formés jetés direct sur la correction).
+  const resetShared = () => setSharedState({ rembfr_revealed: [], rembfr_demarche_a: 0, rembfr_demarche_b: 0, rembfr_supreme: 0, rembfr_amelipro_clicked: false, quiz_show_correction: false })
 
   // Polling du flag amelipro (toutes les 3s quand etape A2 est revelée)
   useEffect(() => {

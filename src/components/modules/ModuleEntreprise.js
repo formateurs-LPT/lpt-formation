@@ -1720,6 +1720,10 @@ export default function ModuleEntreprise({ pName, onBack, onTerminate }) {
   const handleBack = async () => {
     try {
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+      // Sans ça, quiz_show_correction peut rester bloqué à true si on quitte
+      // pendant qu'une correction est affichée — le prochain quiz lancé dans
+      // cette salle en hériterait (formés jetés direct sur la correction).
+      await setSharedState({ quiz_show_correction: false }).catch(() => {})
     } catch { /* best-effort */ }
     ;(onTerminate ?? onBack)()
   }
@@ -1740,6 +1744,7 @@ export default function ModuleEntreprise({ pName, onBack, onTerminate }) {
   const handleEndModule = async () => {
     try {
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+      await setSharedState({ quiz_show_correction: false }).catch(() => {})
     } catch { /* best-effort */ }
     ;(onTerminate ?? onBack)()
   }

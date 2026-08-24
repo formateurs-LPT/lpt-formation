@@ -510,7 +510,13 @@ export default function ModuleRetraits({ pName, onBack, onTerminate }) {
     setPage(prev)
   }
   const handleBack = async () => {
-    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + sc()) } catch { /* best-effort */ }
+    try {
+      await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + sc())
+      // Sans ça, quiz_show_correction peut rester bloqué à true si on quitte
+      // pendant qu'une correction est affichée — le prochain quiz lancé dans
+      // cette salle en hériterait (formés jetés direct sur la correction).
+      await setSharedState({ quiz_show_correction: false }).catch(() => {})
+    } catch { /* best-effort */ }
     onBack()
   }
   const handleLaunchQuiz = async () => {
@@ -531,7 +537,10 @@ export default function ModuleRetraits({ pName, onBack, onTerminate }) {
     setShowGroupResults(true)
   }
   const handleTerminate = async () => {
-    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + sc()) } catch { /* best-effort */ }
+    try {
+      await sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + sc())
+      await setSharedState({ quiz_show_correction: false }).catch(() => {})
+    } catch { /* best-effort */ }
     ;(onTerminate ?? onBack)()
   }
 

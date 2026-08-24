@@ -634,7 +634,13 @@ export default function ModuleQuizFinal({ pName, onBack }) {
   }, [])
 
   const handleBack = async () => {
-    try { await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`) } catch { /* best-effort */ }
+    try {
+      await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+      // Sans ça, quiz_show_correction peut rester bloqué à true si on quitte
+      // pendant qu'une correction est affichée — le prochain quiz lancé dans
+      // cette salle en hériterait (formés jetés direct sur la correction).
+      await setSharedState({ quiz_show_correction: false }).catch(() => {})
+    } catch { /* best-effort */ }
     onBack()
   }
 
@@ -667,7 +673,7 @@ export default function ModuleQuizFinal({ pName, onBack }) {
 
   const handleTerminateModule = async () => {
     try {
-      await setSharedState({ quiz_final_phase: 'ended' }).catch(() => {})
+      await setSharedState({ quiz_final_phase: 'ended', quiz_show_correction: false }).catch(() => {})
       await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
     } catch { /* best-effort */ }
     onBack()
