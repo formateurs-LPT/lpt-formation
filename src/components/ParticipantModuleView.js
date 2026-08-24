@@ -11,7 +11,6 @@ import { PeerQuizParticipant } from '@/components/PeerQuizGame'
 import { FreeQuizParticipant } from '@/components/FreeQuizGame'
 import AutoEvalParticipant from '@/components/AutoEvalParticipant'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
-import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName, normalizeNameKey, loadEntreesList, entreeDisplayName, extractPrenom } from '@/lib/participantNames'
@@ -941,42 +940,69 @@ function QuizResultScreen({ isCorrect, pName, moduleId, timedOut }) {
 }
 
 /**
- * Suit combien de formés connectés ont déjà répondu à une question texte
- * libre (open_answers, par page_id) — pour donner un repère de progression
- * pendant l'attente ("En attente de la validation du formateur…" restait
- * sinon un simple spinner muet, sans indice sur si ça avance vraiment).
+ * Suit le score personnel du formé sur ce module (quiz_answers déjà validées
+ * — donc jusqu'à la question précédente, celle en cours n'étant pas encore
+ * corrigée) — strictement individuel, ne révèle jamais rien sur les autres.
  */
-function useAnsweredProgress(pageId) {
-  const [answered, setAnswered] = useState(0)
+function useOwnScoreProgress({ moduleId, pName }) {
+  const [correct, setCorrect] = useState(0)
   const [total, setTotal] = useState(0)
 
   useEffect(() => {
     let cancelled = false
+    const name = (pName || '').trim()
+    if (!moduleId || !name) return
     const poll = async () => {
-      const code = getParticipantSessionCode()
       try {
-        const [rows, count] = await Promise.all([
-          sbSelect('open_answers', `session_code=eq.${code}&page_id=eq.${encodeURIComponent(pageId)}`),
-          fetchOnlineParticipantCount(code),
-        ])
+        const rows = await sbSelect(
+          'quiz_answers',
+          `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${encodeURIComponent(moduleId)}&collaborateur=eq.${encodeURIComponent(name)}`
+        )
         if (cancelled) return
-        setAnswered(new Set((rows || []).map(r => r.participant_name)).size)
-        setTotal(count)
+        const validated = rows || []
+        setTotal(validated.length)
+        setCorrect(validated.filter(r => r.is_correct).length)
       } catch { /* best-effort */ }
     }
     poll()
-    const t = setInterval(poll, 3000)
+    const t = setInterval(poll, 2000)
     return () => { cancelled = true; clearInterval(t) }
-  }, [pageId])
+  }, [moduleId, pName])
 
-  return { answered, total }
+  return { correct, total }
+}
+
+// Anneau de score animé — se remplit en douceur à chaque mise à jour du score.
+function ScoreRing({ correct, total }) {
+  const size = 104
+  const strokeWidth = 9
+  const radius = (size - strokeWidth) / 2
+  const circumference = 2 * Math.PI * radius
+  const pct = total > 0 ? correct / total : 0
+  const offset = circumference * (1 - pct)
+  return (
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={strokeWidth} />
+        <circle
+          cx={size / 2} cy={size / 2} r={radius} fill="none"
+          stroke="#4ade80" strokeWidth={strokeWidth} strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          style={{ transition: 'stroke-dashoffset .6s ease' }}
+        />
+      </svg>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>{correct}/{total}</div>
+      </div>
+    </div>
+  )
 }
 
 // Écran "réponse envoyée" partagé par les 3 types de question texte libre —
-// affiche en plus combien de formés connectés ont déjà répondu.
-function QuizSubmittedWaiting({ moduleId, qIdx, timedOut }) {
-  const { answered, total } = useAnsweredProgress(`${moduleId}:${qIdx}`)
-  const pct = total > 0 ? Math.min(100, Math.round((answered / total) * 100)) : 0
+// affiche en plus le score personnel du formé, strictement individuel.
+function QuizSubmittedWaiting({ moduleId, qIdx, pName, timedOut }) {
+  const { correct, total } = useOwnScoreProgress({ moduleId, pName })
   return (
     <div style={{
       minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
@@ -988,16 +1014,13 @@ function QuizSubmittedWaiting({ moduleId, qIdx, timedOut }) {
         {timedOut ? 'Temps écoulé !' : 'Réponse envoyée !'}
       </div>
       <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>En attente de la validation du formateur…</div>
-      <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
-      {total > 0 && (
-        <div style={{ marginTop: 28, width: '100%', maxWidth: 220 }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginBottom: 6, fontVariantNumeric: 'tabular-nums' }}>
-            {Math.min(answered, total)}/{total} ont répondu
-          </div>
-          <div style={{ height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${pct}%`, background: '#a78bfa', borderRadius: 3, transition: 'width .4s ease' }} />
-          </div>
+      {total > 0 ? (
+        <div style={{ marginTop: 28 }}>
+          <ScoreRing correct={correct} total={total} />
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Ton score</div>
         </div>
+      ) : (
+        <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
       )}
       <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
     </div>
@@ -1053,7 +1076,7 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
   if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   if (effectiveSubmitted) {
-    return <QuizSubmittedWaiting moduleId={moduleId} qIdx={qIdx} timedOut={timedOut} />
+    return <QuizSubmittedWaiting moduleId={moduleId} qIdx={qIdx} pName={pName} timedOut={timedOut} />
   }
 
   return (
@@ -1165,7 +1188,7 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
   if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   if (effectiveSubmitted) {
-    return <QuizSubmittedWaiting moduleId={moduleId} qIdx={qIdx} timedOut={timedOut} />
+    return <QuizSubmittedWaiting moduleId={moduleId} qIdx={qIdx} pName={pName} timedOut={timedOut} />
   }
 
   return (
@@ -1269,7 +1292,7 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
   if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   if (effectiveSubmitted) {
-    return <QuizSubmittedWaiting moduleId={moduleId} qIdx={qIdx} timedOut={timedOut} />
+    return <QuizSubmittedWaiting moduleId={moduleId} qIdx={qIdx} pName={pName} timedOut={timedOut} />
   }
 
   return (
