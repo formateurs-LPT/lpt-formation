@@ -705,7 +705,14 @@ export function useQuizCountdown({ seconds = QUIZ_TIME_LIMIT_SEC, onExpire, enab
   return remaining
 }
 
-function QuizCountdownBadge({ remaining }) {
+// Même badge partout où un compte à rebours de quiz est affiché côté formé
+// (texte libre, QCM, sélection multiple, pavé numérique ordonnance/puissance) —
+// avant, les questions "pavé numérique" utilisaient un style et un emplacement
+// différents (QuizHeaderTimer, dans une barre fixe), ce qui donnait
+// l'impression que le chrono "sautait" d'un endroit à l'autre selon la
+// question. `compact` retire juste la marge basse pour s'insérer dans une
+// barre d'en-tête au lieu du flux de contenu — le style reste identique.
+function QuizCountdownBadge({ remaining, compact = false }) {
   const urgent = remaining <= 15
   const mm = Math.floor(remaining / 60)
   const ss = String(remaining % 60).padStart(2, '0')
@@ -714,9 +721,10 @@ function QuizCountdownBadge({ remaining }) {
       display: 'inline-flex', alignItems: 'center', gap: 6,
       background: urgent ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,0.08)',
       border: `1px solid ${urgent ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.15)'}`,
-      borderRadius: 20, padding: '5px 12px', marginBottom: 14,
+      borderRadius: 20, padding: '5px 12px', marginBottom: compact ? 0 : 14,
       fontSize: 13, fontWeight: 800, color: urgent ? '#f87171' : 'rgba(255,255,255,0.7)',
       fontVariantNumeric: 'tabular-nums', animation: urgent ? 'quizTimerPulse 1s ease-in-out infinite' : 'none',
+      flexShrink: 0,
     }}>
       ⏱ {mm}:{ss}
       <style>{`@keyframes quizTimerPulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }`}</style>
@@ -768,23 +776,6 @@ function useDraftArray(key, initial) {
     try { sessionStorage.removeItem(key) } catch {}
   }
   return [val, setVal, clearDraft]
-}
-
-// Variante compacte pour les en-têtes clairs (pavé numérique / saisie interactive)
-function QuizHeaderTimer({ remaining }) {
-  const urgent = remaining <= 15
-  const mm = Math.floor(remaining / 60)
-  const ss = String(remaining % 60).padStart(2, '0')
-  return (
-    <div style={{
-      background: urgent ? '#dc2626' : 'rgba(0,0,0,0.2)',
-      borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#fff',
-      fontVariantNumeric: 'tabular-nums', animation: urgent ? 'quizTimerPulse 1s ease-in-out infinite' : 'none',
-    }}>
-      ⏱ {mm}:{ss}
-      <style>{`@keyframes quizTimerPulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }`}</style>
-    </div>
-  )
 }
 
 // ── Anti re-réponse après rafraîchissement ─────────────────────────
@@ -1541,7 +1532,7 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
       <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={52} height={18} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
         <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' }}>Saisir l&apos;ordonnance</span>
-        <QuizHeaderTimer remaining={remaining} />
+        <QuizCountdownBadge remaining={remaining} compact />
         <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#fff' }}>Q{qIdx + 1}</div>
       </div>
 
@@ -1659,7 +1650,7 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
       <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={52} height={18} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
         <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' }}>Puissances maximales</span>
-        <QuizHeaderTimer remaining={remaining} />
+        <QuizCountdownBadge remaining={remaining} compact />
         <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#fff' }}>Q{qIdx + 1}</div>
       </div>
 
