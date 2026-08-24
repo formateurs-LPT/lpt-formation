@@ -11,6 +11,7 @@ import { PeerQuizParticipant } from '@/components/PeerQuizGame'
 import { FreeQuizParticipant } from '@/components/FreeQuizGame'
 import AutoEvalParticipant from '@/components/AutoEvalParticipant'
 import { useParticipantPresence } from '@/lib/useParticipantPresence'
+import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { generatePin } from '@/lib/pin'
 import { resolveParticipantName, normalizeNameKey, loadEntreesList, entreeDisplayName, extractPrenom } from '@/lib/participantNames'
@@ -924,6 +925,70 @@ function QuizResultScreen({ isCorrect, pName, moduleId, timedOut }) {
   )
 }
 
+/**
+ * Suit combien de formés connectés ont déjà répondu à une question texte
+ * libre (open_answers, par page_id) — pour donner un repère de progression
+ * pendant l'attente ("En attente de la validation du formateur…" restait
+ * sinon un simple spinner muet, sans indice sur si ça avance vraiment).
+ */
+function useAnsweredProgress(pageId) {
+  const [answered, setAnswered] = useState(0)
+  const [total, setTotal] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    const poll = async () => {
+      const code = getParticipantSessionCode()
+      try {
+        const [rows, count] = await Promise.all([
+          sbSelect('open_answers', `session_code=eq.${code}&page_id=eq.${encodeURIComponent(pageId)}`),
+          fetchOnlineParticipantCount(code),
+        ])
+        if (cancelled) return
+        setAnswered(new Set((rows || []).map(r => r.participant_name)).size)
+        setTotal(count)
+      } catch { /* best-effort */ }
+    }
+    poll()
+    const t = setInterval(poll, 3000)
+    return () => { cancelled = true; clearInterval(t) }
+  }, [pageId])
+
+  return { answered, total }
+}
+
+// Écran "réponse envoyée" partagé par les 3 types de question texte libre —
+// affiche en plus combien de formés connectés ont déjà répondu.
+function QuizSubmittedWaiting({ moduleId, qIdx, timedOut }) {
+  const { answered, total } = useAnsweredProgress(`${moduleId}:${qIdx}`)
+  const pct = total > 0 ? Math.min(100, Math.round((answered / total) * 100)) : 0
+  return (
+    <div style={{
+      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '40px 24px', textAlign: 'center',
+    }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>{timedOut ? '⏱' : '✍️'}</div>
+      <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>
+        {timedOut ? 'Temps écoulé !' : 'Réponse envoyée !'}
+      </div>
+      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>En attente de la validation du formateur…</div>
+      <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
+      {total > 0 && (
+        <div style={{ marginTop: 28, width: '100%', maxWidth: 220 }}>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginBottom: 6, fontVariantNumeric: 'tabular-nums' }}>
+            {Math.min(answered, total)}/{total} ont répondu
+          </div>
+          <div style={{ height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${pct}%`, background: '#a78bfa', borderRadius: 3, transition: 'width .4s ease' }} />
+          </div>
+        </div>
+      )}
+      <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+}
+
 // ── Quiz texte libre ──────────────────────────────────────────────
 function QuizTextOpen({ pName, q, qIdx, moduleId }) {
   const { checking, validated: existingValidated, wasSubmitted } = useExistingOpenAnswer({ moduleId, qIdx, pName })
@@ -973,21 +1038,7 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
   if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   if (effectiveSubmitted) {
-    return (
-      <div style={{
-        minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: '40px 24px', textAlign: 'center',
-      }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>{timedOut ? '⏱' : '✍️'}</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>
-          {timedOut ? 'Temps écoulé !' : 'Réponse envoyée !'}
-        </div>
-        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>En attente de la validation du formateur…</div>
-        <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
-        <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    )
+    return <QuizSubmittedWaiting moduleId={moduleId} qIdx={qIdx} timedOut={timedOut} />
   }
 
   return (
@@ -1098,21 +1149,7 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
   if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   if (effectiveSubmitted) {
-    return (
-      <div style={{
-        minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: '40px 24px', textAlign: 'center',
-      }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>{timedOut ? '⏱' : '✍️'}</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>
-          {timedOut ? 'Temps écoulé !' : 'Réponse envoyée !'}
-        </div>
-        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>En attente de la validation du formateur…</div>
-        <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
-        <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    )
+    return <QuizSubmittedWaiting moduleId={moduleId} qIdx={qIdx} timedOut={timedOut} />
   }
 
   return (
@@ -1215,21 +1252,7 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
   if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   if (effectiveSubmitted) {
-    return (
-      <div style={{
-        minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: '40px 24px', textAlign: 'center',
-      }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>{timedOut ? '⏱' : '✍️'}</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>
-          {timedOut ? 'Temps écoulé !' : 'Réponse envoyée !'}
-        </div>
-        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>En attente de la validation du formateur…</div>
-        <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
-        <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    )
+    return <QuizSubmittedWaiting moduleId={moduleId} qIdx={qIdx} timedOut={timedOut} />
   }
 
   return (
