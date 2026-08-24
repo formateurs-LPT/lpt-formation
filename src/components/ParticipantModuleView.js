@@ -51,6 +51,21 @@ const STYLES = `
     from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+  @keyframes quizScreenIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  /* Retour au toucher sur tous les boutons côté formé — sans ça, rien ne
+     bouge visuellement au tap et l'app donne une impression de prototype
+     figé plutôt que d'une vraie app. Les styles inline existants (couleur,
+     fond...) restent prioritaires, seul transform/transition est ajouté. */
+  button {
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .12s ease;
+  }
+  button:not(:disabled):active {
+    transform: scale(0.96);
+  }
 `
 
 function SessionEndedScreen() {
@@ -1045,6 +1060,7 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
     <div style={{
       minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
       padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+      animation: 'quizScreenIn .3s ease',
     }}>
       <QuizCountdownBadge remaining={remaining} />
       <div style={{
@@ -1156,6 +1172,7 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
     <div style={{
       minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
       padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+      animation: 'quizScreenIn .3s ease',
     }}>
       <QuizCountdownBadge remaining={remaining} />
       <div style={{
@@ -1259,6 +1276,7 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
     <div style={{
       minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
       padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+      animation: 'quizScreenIn .3s ease',
     }}>
       <QuizCountdownBadge remaining={remaining} />
       <div style={{
@@ -1366,6 +1384,7 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
     <div style={{
       minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
       padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+      animation: 'quizScreenIn .3s ease',
     }}>
       <QuizCountdownBadge remaining={remaining} />
       <div style={{
@@ -1553,7 +1572,7 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
   ].filter(r => visibleFields.includes(r.key))
 
   return (
-    <div style={{ height: '100dvh', overflow: 'hidden', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
+    <div style={{ height: '100dvh', overflow: 'hidden', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit', animation: 'quizScreenIn .3s ease' }}>
       {/* Header doré */}
       <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={52} height={18} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
@@ -1671,7 +1690,7 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
   if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   return (
-    <div style={{ height: '100dvh', overflow: 'hidden', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit' }}>
+    <div style={{ height: '100dvh', overflow: 'hidden', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit', animation: 'quizScreenIn .3s ease' }}>
       {/* Header doré */}
       <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={52} height={18} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
@@ -1765,6 +1784,7 @@ function QuizQCMAnswer({ pName, q, qIdx, quiz, moduleId }) {
     <div style={{
       minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
       padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+      animation: 'quizScreenIn .3s ease',
     }}>
       <QuizCountdownBadge remaining={remaining} />
       <div style={{
