@@ -25,6 +25,19 @@ export function filterOnlineParticipants(rows, entrees) {
   return inRh.filter(isParticipantRowOnline)
 }
 
+/**
+ * Expulsion (déconnexion forcée) — dure toute la session/salle en cours, pas
+ * juste 30 minutes : une expulsion qui expire toute seule pendant que la
+ * formation continue n'a aucun sens pour le formateur qui l'a déclenchée
+ * (incident remonté : des formés expulsés revenaient se compter dans les
+ * quiz après un moment). `forced_disconnects` est un état par SALLE
+ * (trainer_state), donc une nouvelle salle (jour suivant, session recréée)
+ * repart naturellement avec aucune expulsion — pas besoin d'expiration ici.
+ */
+export function isKickActive(kickValue) {
+  return !!kickValue
+}
+
 export async function touchParticipantPresence(sessionCode, name) {
   const code = (sessionCode || '').trim()
   const participantName = (name || '').trim()

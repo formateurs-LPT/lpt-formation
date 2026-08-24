@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import {
   PRESENCE_HEARTBEAT_MS,
   isSessionEnded,
+  isKickActive,
   joinParticipant,
   markParticipantLeft,
   markParticipantLeftBeacon,
@@ -11,8 +12,6 @@ import {
 } from './participantPresence'
 import { getRoomSharedState } from './supabase'
 
-const KICK_EXPIRY_MS = 30 * 60 * 1000 // 30 minutes
-
 // Un tel verrouillé/rangé en poche continue de faire tourner ses timers en
 // arrière-plan sur beaucoup de navigateurs mobiles — le heartbeat continue
 // donc de tourner même quand le formé a réellement quitté la formation,
@@ -20,12 +19,6 @@ const KICK_EXPIRY_MS = 30 * 60 * 1000 // 30 minutes
 // répondu" pendant les quiz). Au-delà de ce temps en arrière-plan continu,
 // on le marque explicitement "parti" (left_at) au lieu de le rafraîchir.
 const BACKGROUND_LEFT_MS = 10 * 60 * 1000 // 10 minutes
-
-function isKickActive(kickValue) {
-  if (!kickValue) return false
-  if (kickValue === true) return true // ancienne valeur booléenne
-  return Date.now() - Number(kickValue) < KICK_EXPIRY_MS
-}
 
 function hardDisconnect() {
   if (typeof window === 'undefined') return
@@ -95,6 +88,19 @@ export function useParticipantPresence({
         onSessionEndedRef.current?.()
         return
       }
+      // Le formateur a pu expulser ce participant alors que son onglet était
+      // déjà connecté (heartbeat en cours) — sans cette vérification à chaque
+      // ping (pas seulement au join initial), le heartbeat continuait à
+      // rafraîchir last_seen_at indéfiniment malgré l'expulsion, le faisant
+      // réapparaître "connecté" (et donc recompté dans les quiz) alors que le
+      // formateur l'avait explicitement déconnecté.
+      try {
+        const state = await getRoomSharedState(sessionCode)
+        if (isKickActive(state?.forced_disconnects?.[name])) {
+          hardDisconnect()
+          return
+        }
+      } catch {}
       // En arrière-plan continu depuis trop longtemps : marqué "parti" plutôt
       // que de continuer à rafraîchir last_seen_at (voir BACKGROUND_LEFT_MS).
       if (hiddenAt && Date.now() - hiddenAt > BACKGROUND_LEFT_MS) {

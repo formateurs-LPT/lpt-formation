@@ -482,12 +482,14 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
         setTvScreen(state?.tv_screen || null)
         setPlanningDay(state?.planning_day || null)
         setSharedState_(state || null)
-        // Force-disconnect déclenché par le formateur
-        // Le signal est ignoré si le formé s'est reconnecté après le kick (joined_at > kickTimestamp)
+        // Force-disconnect déclenché par le formateur — dure toute la salle en
+        // cours (pas d'expiration à 30 min, voir isKickActive dans
+        // participantPresence.js). Le signal est ignoré uniquement si le formé
+        // s'est reconnecté volontairement après le kick (joined_at > kickTimestamp).
         const curPName = pNameRef.current
         const kickTimestamp = Number(state?.forced_disconnects?.[curPName]) || 0
         const joinedAt = Number(localStorage.getItem('participant_joined_at')) || 0
-        const kicked = kickTimestamp > joinedAt && Date.now() - kickTimestamp < 30 * 60 * 1000
+        const kicked = kickTimestamp > joinedAt
         if (curPName && kicked) {
           onDisconnect?.()
           return

@@ -2,9 +2,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import { getTrainerAvatarSrc } from '@/lib/constants'
-import { fetchOnlineParticipantsList, markParticipantLeft } from '@/lib/participantPresence'
+import { fetchOnlineParticipantsList, markParticipantLeft, isKickActive } from '@/lib/participantPresence'
 import { extractPrenom } from '@/lib/participantNames'
 import { setRoomSharedState, getRoomSharedState, sbSelect, getSharedState, setSharedState, getWeeklySharedState, setWeeklySharedState } from '@/lib/supabase'
+import { mergeRoomSharedField } from '@/lib/roomSharedState'
 import { useIsMobile } from '@/lib/useIsMobile'
 
 function useFullscreen() {
@@ -70,17 +71,9 @@ function FullscreenButton({ style }) {
   )
 }
 
-const KICK_EXPIRY_MS = 30 * 60 * 1000
-
 function filterKicked(list, fd) {
   if (!fd || !Object.keys(fd).length) return list
-  const now = Date.now()
-  return list.filter(p => {
-    const k = fd[p.name]
-    if (!k) return true
-    if (k === true) return false
-    return now - Number(k) >= KICK_EXPIRY_MS
-  })
+  return list.filter(p => !isKickActive(fd[p.name]))
 }
 
 const PAGE_STALE_MS = 2 * 60 * 1000 // données périmées si pas de heartbeat depuis 2 min (heartbeat toutes les 45s)
@@ -145,7 +138,10 @@ function ParticipantsPanel({ sessionCode, onClose }) {
     setKicking(k => ({ ...k, [name]: true }))
     setParticipants(prev => prev.filter(p => p.name !== name))
     await markParticipantLeft(sessionCode, name).catch(() => {})
-    await setRoomSharedState({ forced_disconnects: { [name]: Date.now() } }, sessionCode).catch(() => {})
+    // Fusionne dans forced_disconnects au lieu de l'écraser — sinon expulser
+    // une 2e personne réautorisait silencieusement la 1ère (setRoomSharedState
+    // remplace la clé entière, pas de fusion profonde côté serveur).
+    await mergeRoomSharedField(sessionCode, 'forced_disconnects', name, Date.now()).catch(() => {})
     setKicking(k => ({ ...k, [name]: false }))
   }
 

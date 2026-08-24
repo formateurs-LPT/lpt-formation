@@ -6020,11 +6020,13 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
     setEntrainementClearTs(sharedState.entrainement_clear_ts ?? null)
     setEntrainementCustomQText(sharedState.entrainement_custom_q_text ?? null)
     setOrdoRevealStep(sharedState.ordo_reveal_step ?? 0)
-    // Force-disconnect déclenché par le formateur
-    // Ignoré si le formé s'est reconnecté après le kick (joined_at > kickTimestamp)
+    // Force-disconnect déclenché par le formateur — dure toute la salle en
+    // cours (pas d'expiration à 30 min, voir isKickActive dans
+    // participantPresence.js). Ignoré uniquement si le formé s'est reconnecté
+    // volontairement après le kick (joined_at > kickTimestamp).
     const kickTimestamp = Number(sharedState.forced_disconnects?.[pName]) || 0
     const joinedAt = Number(typeof window !== 'undefined' && localStorage.getItem('participant_joined_at')) || 0
-    const kicked = kickTimestamp > joinedAt && Date.now() - kickTimestamp < 30 * 60 * 1000
+    const kicked = kickTimestamp > joinedAt
     if (pName && kicked) {
       onDisconnect?.()
       return
