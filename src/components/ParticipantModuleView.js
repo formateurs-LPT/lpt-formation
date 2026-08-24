@@ -3118,7 +3118,7 @@ function ValueNumpad({ title, mode, currentValue, max, onConfirm, onClose }) {
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: APP_BG, borderRadius: '20px 20px 0 0', padding: '18px 18px 40px', boxShadow: '0 -8px 40px rgba(0,0,0,0.25)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: '#555' }}>{title}</span>
-          <button onPointerDown={onClose} style={{ background: 'transparent', border: 'none', fontSize: 22, cursor: 'pointer', color: '#888', padding: '2px 8px' }}>✕</button>
+          <button onPointerDown={onClose} style={{ background: 'transparent', border: 'none', fontSize: 22, cursor: 'pointer', color: '#888', padding: '10px', margin: '-10px', minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
         </div>
         <div style={{ marginBottom: 14, background: '#fff', borderRadius: 12, padding: '12px 20px', fontSize: 30, fontWeight: 800, color: APP_DARK, textAlign: 'center', border: `2px solid ${APP_GOLD}`, fontVariantNumeric: 'tabular-nums' }}>
           {display}
@@ -5829,7 +5829,7 @@ function useParticipantFullscreen() {
 function DisconnectChip({ pName, onDisconnect }) {
   const [open, setOpen] = useState(false)
   const [showIOSGuide, setShowIOSGuide] = useState(false)
-  const prenom = (pName || '').split(' ').pop()
+  const prenom = extractPrenom(pName)
   const { isFS, toggle: toggleFS } = useParticipantFullscreen()
   const isIOS = typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
   const isStandalone = typeof window !== 'undefined' && (window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches)
@@ -5855,7 +5855,7 @@ function DisconnectChip({ pName, onDisconnect }) {
         onClick={() => setOpen(o => !o)}
         style={{
           background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)',
-          borderRadius: 20, padding: '6px 14px',
+          borderRadius: 20, padding: '10px 16px', minHeight: 40,
           color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600,
           cursor: 'pointer', fontFamily: 'inherit',
           backdropFilter: 'blur(8px)',

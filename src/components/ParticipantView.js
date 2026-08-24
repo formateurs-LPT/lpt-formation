@@ -22,7 +22,7 @@ function DisconnectButton({ prenom, onDisconnect }) {
         onClick={() => setOpen(o => !o)}
         style={{
           background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.18)',
-          borderRadius: 20, padding: '7px 16px',
+          borderRadius: 20, padding: '10px 16px', minHeight: 40,
           color: 'rgba(255,255,255,0.75)', fontSize: 13, fontWeight: 600,
           cursor: 'pointer', fontFamily: 'inherit',
           backdropFilter: 'blur(8px)',
