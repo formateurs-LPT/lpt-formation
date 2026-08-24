@@ -6,6 +6,7 @@ import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOpenAnswers } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
+import { countVotesPerOption } from '@/lib/quizVotes'
 import { QUIZ_J1 } from '@/lib/quizJ1Data'
 
 const MODULE_ID = 'quiz-j1'
@@ -357,7 +358,7 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
   const correctCount = liveAnswers.filter(r => r.is_correct).length
 
   const hasOptions = !!q.options
-  const counts = hasOptions ? q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length) : []
+  const counts = hasOptions ? countVotesPerOption(liveAnswers, q.options.length, type === 'qcm-multi') : []
   const correctIdx = hasOptions && !Array.isArray(q.correct) ? q.correct : null
 
   const handleShowCorrection = async () => {

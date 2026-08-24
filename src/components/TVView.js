@@ -13,6 +13,7 @@ import { HeadlightVision } from '@/lib/headlightVision'
 import { TVPeerQuizScreen } from '@/components/PeerQuizGame'
 import { TVFreeQuizScreen } from '@/components/FreeQuizGame'
 import { useQuizCountdown, QUIZ_TIME_LIMIT_SEC } from '@/components/ParticipantModuleView'
+import { countVotesPerOption } from '@/lib/quizVotes'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -7980,7 +7981,7 @@ function TVQuizCorrection({ question, qIdx, total, moduleLabel, sessionCode, mod
   const total_answers = answers.length
   const correct_count = answers.filter(r => r.is_correct).length
   const wrong_count   = total_answers - correct_count
-  const counts = question.options ? question.options.map((_, i) => answers.filter(r => r.answer_idx === i).length) : []
+  const counts = question.options ? countVotesPerOption(answers, question.options.length, question.type === 'qcm-multi') : []
   const showOrdonnance = question.ordonnance && (showOrdo || question.type === 'ordonnance-fill' || question.type === 'qcm-ordonnance')
 
   const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']

@@ -1314,7 +1314,10 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
       const correctArr = [...q.correct].sort()
       const selectedSorted = [...selected].sort()
       const ok = JSON.stringify(correctArr) === JSON.stringify(selectedSorted)
-      const answerIdx = selectedSorted[0] ?? -1
+      // Bitmask (bit i = option i cochée) plutôt que le seul premier index
+      // sélectionné — sinon le graphique de répartition des votes côté
+      // formateur/diffuseur ne comptait que le 1er choix de chaque participant.
+      const answerIdx = selected.reduce((mask, i) => mask | (1 << i), 0)
       await saveModuleQuizAnswer({
         sessionCode: getParticipantSessionCode(),
         moduleId, questionIdx: qIdx,

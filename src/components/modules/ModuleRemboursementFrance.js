@@ -6,6 +6,7 @@ import { MODULE_DATA, TIERS_PAYANT_QUIZ } from '@/lib/modulesData'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
+import { countVotesPerOption } from '@/lib/quizVotes'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 
 const MODULE_ID = 'remboursement-france'
@@ -769,7 +770,7 @@ function RembfrMCQController({ quizQ, onNext, onEnd, onBack }) {
   }, [quizQ])
 
   const total  = liveAnswers.length
-  const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+  const counts = countVotesPerOption(liveAnswers, q.options.length, q.type === 'qcm-multi')
 
   const { notAnswered } = useAutoRevealCorrection({
     answeredNames: liveAnswers.map(r => r.collaborateur),

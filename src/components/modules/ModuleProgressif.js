@@ -5,6 +5,7 @@ import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState, cle
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { NextPagePreview } from '@/lib/trainerPreview'
+import { countVotesPerOption } from '@/lib/quizVotes'
 import { PROGRESSIF_PAGES, PROGRESSIF_QUIZ } from '@/lib/modulesData'
 import { useIsMobile } from '@/lib/useIsMobile'
 const ACCENT = '#7c3aed'
@@ -700,7 +701,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   }
 
   const total = liveAnswers.length
-  const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+  const counts = countVotesPerOption(liveAnswers, q.options.length, q.type === 'qcm-multi')
   const wrongAnswerers = liveAnswers.filter(r => !r.is_correct)
   const correctCount = liveAnswers.filter(r => r.is_correct).length
 

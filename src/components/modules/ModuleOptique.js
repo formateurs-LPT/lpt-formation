@@ -12,6 +12,7 @@ import { TRAINER_AVATARS } from '@/lib/constants'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import { useIsMobile } from '@/lib/useIsMobile'
 import { HeadlightVision } from '@/lib/headlightVision'
+import { countVotesPerOption } from '@/lib/quizVotes'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { QuestionsGameTrainerPanel } from '@/components/QuestionsGamePanel'
 
@@ -1442,7 +1443,7 @@ function QuizControllerMCQ({ quizQ, onNext, onEnd, onBack }) {
 
   const answered       = liveAnswers.length
   const correctArr     = Array.isArray(q.correct) ? q.correct : [q.correct]
-  const counts         = (q.options || []).map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+  const counts         = countVotesPerOption(liveAnswers, (q.options || []).length, q.type === 'qcm-multi')
   const wrongAnswerers = liveAnswers.filter(r => !r.is_correct)
   const correctCount   = liveAnswers.filter(r => r.is_correct).length
 

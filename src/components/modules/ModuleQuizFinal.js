@@ -5,6 +5,7 @@ import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers, clear
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
+import { countVotesPerOption } from '@/lib/quizVotes'
 import { QUIZ_FINAL_QUESTIONS } from '@/lib/quizFinalData'
 
 // quiz_final_phase values (same mechanism as ModuleOptique):
@@ -294,7 +295,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   }
 
   const total = liveAnswers.length
-  const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+  const counts = countVotesPerOption(liveAnswers, q.options.length, q.type === 'qcm-multi')
 
   const { notAnswered } = useAutoRevealCorrection({
     answeredNames: liveAnswers.map(r => r.collaborateur),

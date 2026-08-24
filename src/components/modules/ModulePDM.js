@@ -6,6 +6,7 @@ import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import { PDMAnimationSVG, PDM_ANIM_STEP_LABELS } from '@/lib/pdmAnimationSvg'
+import { countVotesPerOption } from '@/lib/quizVotes'
 import { PDM_PAGES as PAGES, PDM_QUIZ } from '@/lib/modulesData'
 import { useIsMobile } from '@/lib/useIsMobile'
 
@@ -317,7 +318,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   }
 
   const total = liveAnswers.length
-  const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+  const counts = countVotesPerOption(liveAnswers, q.options.length, q.type === 'qcm-multi')
   const wrongAnswerers = liveAnswers.filter(r => !r.is_correct)
   const correctCount = liveAnswers.filter(r => r.is_correct).length
 

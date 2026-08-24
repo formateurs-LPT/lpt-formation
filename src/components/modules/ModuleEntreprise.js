@@ -5,6 +5,7 @@ import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState, fet
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
+import { countVotesPerOption } from '@/lib/quizVotes'
 import { ENTREPRISE_PAGES as PAGES, ENTREPRISE_QUIZ } from '@/lib/modulesData'
 import ZeroInterChain from '@/components/ZeroInterChain'
 
@@ -1533,7 +1534,7 @@ function QuizController({ quizQ, onNext, onEnd, onBack }) {
   }, [quizQ])
 
   const total = liveAnswers.length
-  const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+  const counts = countVotesPerOption(liveAnswers, q.options.length, q.type === 'qcm-multi')
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>

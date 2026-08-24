@@ -7,6 +7,7 @@ import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { NextPagePreview } from '@/lib/trainerPreview'
 import TrainerAvatar from '@/components/TrainerAvatar'
+import { countVotesPerOption } from '@/lib/quizVotes'
 import { TYPES_VERRES_PAGES as PAGES, TYPES_VERRES_QUIZ } from '@/lib/modulesData'
 import { useIsMobile } from '@/lib/useIsMobile'
 
@@ -742,7 +743,7 @@ function MCQController({ quizQ, onNext, onEnd, onBack }) {
   }
 
   const total = liveAnswers.length
-  const counts = q.options.map((_, i) => liveAnswers.filter(r => r.answer_idx === i).length)
+  const counts = countVotesPerOption(liveAnswers, q.options.length, q.type === 'qcm-multi')
   const wrongAnswerers = liveAnswers.filter(r => !r.is_correct)
   const correctCount = liveAnswers.filter(r => r.is_correct).length
 
