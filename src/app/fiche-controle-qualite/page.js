@@ -160,12 +160,15 @@ export default function FicheControleQualite() {
           /* globals.css cache tout par défaut pour l'export "rapport" (.print-report-area) —
              sans ceci, cette fiche s'imprime en pages vides (fond sombre, aucun contenu). */
           .print-page, .print-page * { visibility: visible !important; }
-          .print-page { background: ${BG} !important; padding: 6px 0 0 !important; min-height: 0 !important; }
+          .print-page {
+            background: ${BG} !important; padding: 6px 0 0 !important; min-height: 0 !important;
+            zoom: 0.6; /* fait tenir le contenu sur 1-2 pages portrait au lieu de 5 en paysage */
+          }
           .print-section { break-inside: auto; page-break-inside: auto; }
           .print-card { break-inside: avoid !important; page-break-inside: avoid !important; }
-          .print-band { break-before: page !important; page-break-before: always !important; margin-top: 0 !important; }
-          .print-frame-img { height: 140px !important; }
-          @page { size: A4 landscape; margin: 12mm; }
+          .print-band { break-before: auto !important; page-break-before: auto !important; margin-top: 4px !important; }
+          .print-frame-img { height: 170px !important; }
+          @page { size: A4 portrait; margin: 10mm; }
         }
       `}</style>
 
