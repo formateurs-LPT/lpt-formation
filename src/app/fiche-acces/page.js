@@ -158,6 +158,9 @@ export default function FicheAcces() {
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           .no-print { display: none !important; }
           body { background: ${BG} !important; color: ${TEXT} !important; margin: 0; }
+          /* globals.css cache tout par défaut pour l'export "rapport" (.print-report-area) —
+             sans ceci, cette fiche s'imprime en pages vides (fond sombre, aucun contenu). */
+          .print-page, .print-page * { visibility: visible !important; }
           .print-page { background: ${BG} !important; padding: 20px 16px !important; }
           .print-section { break-inside: avoid; page-break-inside: avoid; }
           @page { margin: 10mm; background: ${BG}; }

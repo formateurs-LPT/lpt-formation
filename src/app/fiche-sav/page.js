@@ -151,6 +151,9 @@ export default function FicheSAV() {
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           .no-print { display: none !important; }
           html, body { background: ${BG} !important; color: ${TEXT} !important; margin: 0; }
+          /* globals.css cache tout par défaut pour l'export "rapport" (.print-report-area) —
+             sans ceci, cette fiche s'imprime en pages vides (fond sombre, aucun contenu). */
+          .print-page, .print-page * { visibility: visible !important; }
           .print-page { background: ${BG} !important; padding: 6px 0 0 !important; min-height: 0 !important; }
           .print-section { break-inside: auto; page-break-inside: auto; }
           .print-card { break-inside: avoid !important; page-break-inside: avoid !important; }
