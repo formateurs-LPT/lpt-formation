@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { sbSelect, sbDelete, getSharedState, insertSessionHistory, parseSessionHistorySummary, getRuntimeSessionCode, SESSION_CODE } from '@/lib/supabase'
 import PlanningWidget from './PlanningWidget'
 import ShortcutsWidget from './ShortcutsWidget'
+import PenseBeteWidget from './PenseBeteWidget'
 import OnboardingView from './OnboardingView'
 import OnboardingViewBelgique from './OnboardingViewBelgique'
 import EntreesView from './EntreesView'
@@ -2355,11 +2356,12 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
         </div>
 
-        {/* Planning + Shortcuts + Fiches */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
+        {/* Planning + Shortcuts + Fiches + Pense-bête */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 16 }}>
           <PlanningWidget onOpen={() => onOpenPlanning()} />
           <ShortcutsWidget />
           <FichesAnnexesWidget />
+          <PenseBeteWidget pName={pName} />
         </div>
 
       </div>
