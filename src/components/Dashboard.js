@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { sbSelect, sbDelete, getSharedState, insertSessionHistory, parseSessionHistorySummary, getRuntimeSessionCode, SESSION_CODE } from '@/lib/supabase'
 import PlanningWidget from './PlanningWidget'
 import ShortcutsWidget from './ShortcutsWidget'
-import PenseBeteWidget from './PenseBeteWidget'
+import { PenseBeteView, getPenseBeteTasks } from './PenseBeteWidget'
 import OnboardingView from './OnboardingView'
 import OnboardingViewBelgique from './OnboardingViewBelgique'
 import EntreesView from './EntreesView'
@@ -1697,6 +1697,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   const [obReturnJournee, setObReturnJournee] = useState(null)
   const [obReturnView, setObReturnView] = useState('onboarding')
   const [ideeCount, setIdeeCount] = useState(0)
+  const [penseBeteTodoCount, setPenseBeteTodoCount] = useState(0)
   const [showSonnette, setShowSonnette] = useState(false)
   const [sonnettePending, setSonnettePending] = useState(0)
   const [trainerMode, setTrainerModeState] = useState(null)
@@ -1722,6 +1723,11 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   useEffect(() => {
     loadIdeesFromSupabase().then(list => setIdeeCount(list.length)).catch(() => {})
   }, [])
+
+  const refreshPenseBeteCount = () => {
+    try { setPenseBeteTodoCount(getPenseBeteTasks(pName).filter(t => !t.done).length) } catch {}
+  }
+  useEffect(() => { refreshPenseBeteCount() }, [pName])
 
   useEffect(() => {
     loadTileStats()
@@ -1908,6 +1914,14 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
   if (activeView === 'idees') {
     return <div id="dashboard"><IdeesView onBack={() => setActiveView('home')} pName={pName} /></div>
+  }
+
+  if (activeView === 'pense-bete') {
+    return (
+      <div id="dashboard">
+        <PenseBeteView pName={pName} onBack={() => { setActiveView('home'); refreshPenseBeteCount() }} />
+      </div>
+    )
   }
 
   if (activeView === 'retour-formation') {
@@ -2310,6 +2324,16 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-sub">Idées notées durant les formations</div>
           </div>
 
+          <div className="dash-tile" onClick={() => setActiveView('pense-bete')} style={{ borderColor: 'rgba(255,255,255,0.16)' }}>
+            <div className="dash-tile-top">
+              <div className="dash-tile-icon">📌</div>
+              <span className="dash-tile-link">Ouvrir →</span>
+            </div>
+            <div className="dash-tile-count">{penseBeteTodoCount}</div>
+            <div className="dash-tile-label">Pense-bête</div>
+            <div className="dash-tile-sub">Tâches à faire · privé, pour toi seul</div>
+          </div>
+
           <div className="dash-tile" onClick={() => setActiveView('retour-formation')} style={{ borderColor: 'rgba(99,102,241,0.35)' }}>
             <div className="dash-tile-top">
               <div className="dash-tile-icon">📝</div>
@@ -2356,12 +2380,11 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
         </div>
 
-        {/* Planning + Shortcuts + Fiches + Pense-bête */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 16 }}>
+        {/* Planning + Shortcuts + Fiches */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
           <PlanningWidget onOpen={() => onOpenPlanning()} />
           <ShortcutsWidget />
           <FichesAnnexesWidget />
-          <PenseBeteWidget pName={pName} />
         </div>
 
       </div>
