@@ -6,7 +6,7 @@ import { useIsMobile } from '@/lib/useIsMobile'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { countVotesPerOption } from '@/lib/quizVotes'
-import { OFFRES_QUIZ } from '@/lib/modulesData'
+import { OFFRES_QUIZ, LPT_CARE_OFFERS } from '@/lib/modulesData'
 import { NextPagePreview } from '@/lib/trainerPreview'
 
 import { QUIZ_OPTION_COLORS as OPTION_COLORS } from '@/lib/constants'
@@ -65,7 +65,7 @@ const ITEMS_PACK_PLAN = [
 ]
 
 // ── Page Classique (formateur) ───────────────────────────────────
-function CoursClassique({ onNext, onPrev, onBack }) {
+function CoursClassique({ onNext, onPrev, onBack, isBelgique }) {
   const COLOR = '#00abe9'
   const isMobile = useIsMobile()
   const [step, setStep] = useState(0)
@@ -167,7 +167,7 @@ function CoursClassique({ onNext, onPrev, onBack }) {
       <div style={{ flexShrink: 0 }}>
         <NextPagePreview nextPage={{ type: 'offres-pack-plan', label: 'Pack Plan 95€', color: '#00abe9' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
-          <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '13px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← Progressif</button>
+          <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '13px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{isBelgique ? '← LPT Care' : '← Progressif'}</button>
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={hide} disabled={step === 0} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: step === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', padding: '13px 22px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: step === 0 ? 'default' : 'pointer', fontFamily: 'inherit' }}>← Masquer</button>
             {allRevealed ? (
@@ -390,7 +390,7 @@ function VerreProgAnime({ color, size = 360 }) {
   )
 }
 
-function CoursProgressif11({ onPrev, onNext, onBack }) {
+function CoursProgressif11({ onPrev, onNext, onBack, isBelgique }) {
   const COLOR = '#c9a227'
   const isMobile = useIsMobile()
   const [revealed, setRevealed] = useState(false)
@@ -467,14 +467,146 @@ function CoursProgressif11({ onPrev, onNext, onBack }) {
           </div>
         </div>
         <div style={{ flexShrink: 0 }}>
-          <NextPagePreview nextPage={{ type: 'offres-classique', label: 'Parcours Classique', color: '#00abe9' }} />
+          {isBelgique
+            ? <NextPagePreview nextPage={{ type: 'offres-lpt-care', label: 'LPT Care — abonnement', color: '#22c55e' }} />
+            : <NextPagePreview nextPage={{ type: 'offres-classique', label: 'Parcours Classique', color: '#00abe9' }} />
+          }
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
             <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '13px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← Unifocal</button>
-            <button onClick={onNext} style={{ background: `linear-gradient(135deg, #00abe9, #0090c5)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,171,233,0.45)' }}>Parcours Classique →</button>
+            {isBelgique
+              ? <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.45)' }}>LPT Care →</button>
+              : <button onClick={onNext} style={{ background: `linear-gradient(135deg, #00abe9, #0090c5)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,171,233,0.45)' }}>Parcours Classique →</button>
+            }
           </div>
         </div>
       </div>
     </>
+  )
+}
+
+// ── Page LPT Care (formateur) — abonnement Belgique ──────────────
+function LptCareCircle({ offer, selected, onClick }) {
+  const isSelected = selected === offer.key
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+        background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+        opacity: selected && !isSelected ? 0.5 : 1, transition: 'opacity .25s',
+      }}
+    >
+      <div style={{
+        width: 96, height: 96, borderRadius: '50%',
+        background: isSelected ? offer.color : `${offer.color}22`,
+        border: `3px solid ${offer.color}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: isSelected ? `0 0 32px ${offer.color}70` : 'none',
+        transform: isSelected ? 'scale(1.06)' : 'scale(1)',
+        transition: 'all .25s',
+      }}>
+        <span style={{ fontSize: 15, fontWeight: 900, color: isSelected ? '#fff' : offer.color, letterSpacing: 0.5 }}>{offer.label}</span>
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{offer.price}</div>
+    </button>
+  )
+}
+
+function CoursLptCare({ onPrev, onNext, onBack }) {
+  const isMobile = useIsMobile()
+  const [selected, setSelected] = useState(null)
+
+  useEffect(() => {
+    setSharedState({ offres_care_selected: null }).catch(() => {})
+    return () => { setSharedState({ offres_care_selected: null }).catch(() => {}) }
+  }, [])
+
+  const selectOffer = async (key) => {
+    const next = selected === key ? null : key
+    setSelected(next)
+    await setSharedState({ offres_care_selected: next }).catch(() => {})
+  }
+
+  const offer = LPT_CARE_OFFERS.find(o => o.key === selected)
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #04220f 100%)', display: 'flex', flexDirection: 'column', padding: isMobile ? '16px 14px 14px' : '24px 40px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · LPT Care (Belgique)</span>
+        </div>
+        <button onClick={onBack}
+          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .2s', letterSpacing: .3 }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+        >✕ Quitter</button>
+      </div>
+
+      <div style={{ textAlign: 'center', marginBottom: 28, flexShrink: 0 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Nouveauté Belgique</div>
+        <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', marginBottom: 6 }}>LPT Care — Les 3 offres d&apos;abonnement</div>
+        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', maxWidth: 560, margin: '0 auto', lineHeight: 1.5 }}>
+          Trois formules, un seul principe : ne plus jamais être sans lunettes. Cliquez sur une offre pour l&apos;afficher au groupe.
+        </p>
+      </div>
+
+      {/* Cercles */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: isMobile ? 24 : 56, marginBottom: 28, flexShrink: 0 }}>
+        {LPT_CARE_OFFERS.map(o => (
+          <LptCareCircle key={o.key} offer={o} selected={selected} onClick={() => selectOffer(o.key)} />
+        ))}
+      </div>
+
+      {/* Détail de l'offre sélectionnée */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {!offer ? (
+          <div style={{
+            border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 16, padding: '40px 24px',
+            textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: 14, maxWidth: 560, margin: '0 auto',
+          }}>
+            Sélectionnez START, FLEX ou ONE ci-dessus pour afficher le détail — le contenu apparaît en même temps sur le diffuseur.
+          </div>
+        ) : (
+          <div style={{ maxWidth: 640, margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: 18 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: offer.color }}>{offer.tagline}</div>
+              <div style={{ fontSize: 32, fontWeight: 900, color: '#fff', marginTop: 6 }}>{offer.price}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{offer.formule} · {offer.total}</div>
+            </div>
+            {offer.intro && (
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', textAlign: 'center', marginBottom: 16, lineHeight: 1.5 }}>{offer.intro}</div>
+            )}
+            {offer.bulletsIntro && (
+              <div style={{ fontSize: 12, fontWeight: 700, color: offer.color, marginBottom: 8 }}>{offer.bulletsIntro}</div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {offer.bullets.map((b, i) => (
+                <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderLeft: `3px solid ${offer.color}`, borderRadius: 12, padding: '10px 16px', fontSize: 13, color: '#fff', lineHeight: 1.5 }}>
+                  {b}
+                </div>
+              ))}
+            </div>
+            {offer.exclusions && (
+              <div style={{ marginTop: 10, fontSize: 12, color: '#f87171', fontWeight: 600 }}>⛔ {offer.exclusions}</div>
+            )}
+            {offer.footnote && (
+              <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{offer.footnote}</div>
+            )}
+            <div style={{ marginTop: 14, fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{offer.payment}</div>
+          </div>
+        )}
+      </div>
+
+      <div style={{ flexShrink: 0, marginTop: 16 }}>
+        <NextPagePreview nextPage={{ type: 'offres-classique', label: 'Parcours Classique', color: '#00abe9' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
+          <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '13px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← Progressif</button>
+          <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #00abe9, #0090c5)', border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(0,171,233,0.45)' }}>Parcours Classique →</button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -1001,8 +1133,8 @@ function Lobby({ onStart, onBack }) {
 }
 
 // ── Composant principal ───────────────────────────────────────────
-export default function ModuleOffres({ pName, onBack }) {
-  // phase: 'lobby' | 'classique' | 'pack-plan' | 'un-pour-un' | 'quiz' | 'results'
+export default function ModuleOffres({ pName, onBack, isBelgique }) {
+  // phase: 'lobby' | 'classique' | 'pack-plan' | 'un-pour-un' | 'lpt-care' | 'quiz' | 'results'
   const [phase, setPhase] = useState('lobby')
   const [quizQ, setQuizQ] = useState(0)
 
@@ -1048,6 +1180,12 @@ export default function ModuleOffres({ pName, onBack }) {
     setPhase('progressif-11')
   }
 
+  const goLptCare = async () => {
+    await sbUpdate('sessions', { active_module: 'offres', module_page: 5 }, `code=eq.${getActiveSessionCode()}`)
+    await setSharedState({ offres_care_selected: null })
+    setPhase('lpt-care')
+  }
+
   const goPackPlan = async () => {
     await sbUpdate('sessions', { active_module: 'offres', module_page: 4 }, `code=eq.${getActiveSessionCode()}`)
     setPhase('pack-plan')
@@ -1089,8 +1227,9 @@ export default function ModuleOffres({ pName, onBack }) {
   if (phase === 'lobby')         return <Lobby onStart={go11} onBack={handleBack} />
   if (phase === 'un-pour-un')    return <Cours11 onPrev={goLobby} onNext={goUnifocal11} onBack={handleBack} />
   if (phase === 'unifocal-11')   return <CoursUnifocal11 onPrev={go11} onNext={goProgressif11} onBack={handleBack} />
-  if (phase === 'progressif-11') return <CoursProgressif11 onPrev={goUnifocal11} onNext={goClassique} onBack={handleBack} />
-  if (phase === 'classique')     return <CoursClassique onNext={goPackPlan} onPrev={goProgressif11} onBack={handleBack} />
+  if (phase === 'progressif-11') return <CoursProgressif11 onPrev={goUnifocal11} onNext={isBelgique ? goLptCare : goClassique} onBack={handleBack} isBelgique={isBelgique} />
+  if (phase === 'lpt-care')      return <CoursLptCare onPrev={goProgressif11} onNext={goClassique} onBack={handleBack} />
+  if (phase === 'classique')     return <CoursClassique onNext={goPackPlan} onPrev={isBelgique ? goLptCare : goProgressif11} onBack={handleBack} />
   if (phase === 'pack-plan')     return <CoursPackPlan onNext={startQuiz} onPrev={goClassique} onBack={handleBack} />
   if (phase === 'results')   return <GroupResultsView onTerminate={handleTerminateModule} />
 

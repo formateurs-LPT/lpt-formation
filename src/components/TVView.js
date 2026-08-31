@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE, MONTAGE_TRAITEMENTS } from '@/lib/modulesData'
+import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE, MONTAGE_TRAITEMENTS, LPT_CARE_OFFERS } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, getRoomSharedState, setRoomSharedState, getWeeklySharedState } from '@/lib/supabase'
 import { fetchOnlineParticipantsList } from '@/lib/participantPresence'
@@ -4330,6 +4330,74 @@ function TVOffresPackPlan({ step = 0 }) {
   )
 }
 
+// ── TV Offres : LPT Care (abonnement Belgique) ───────────────────
+function TVOffresLptCare({ selected }) {
+  const offer = LPT_CARE_OFFERS.find(o => o.key === selected)
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #04220f 100%)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '48px 64px' }}>
+      <div style={{ textAlign: 'center', marginBottom: 40 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 10 }}>Nouveauté Belgique</div>
+        <div style={{ fontSize: 44, fontWeight: 900, color: '#fff' }}>LPT Care — Les 3 offres d&apos;abonnement</div>
+        {!offer && (
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', marginTop: 14 }}>Ne plus jamais être sans lunettes.</p>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 90, marginBottom: offer ? 48 : 0 }}>
+        {LPT_CARE_OFFERS.map(o => {
+          const isSelected = o.key === selected
+          return (
+            <div key={o.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, opacity: selected && !isSelected ? 0.4 : 1, transition: 'opacity .3s' }}>
+              <div style={{
+                width: 140, height: 140, borderRadius: '50%',
+                background: isSelected ? o.color : `${o.color}22`,
+                border: `5px solid ${o.color}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: isSelected ? `0 0 56px ${o.color}80` : 'none',
+                transform: isSelected ? 'scale(1.08)' : 'scale(1)',
+                transition: 'all .3s',
+              }}>
+                <span style={{ fontSize: 24, fontWeight: 900, color: isSelected ? '#fff' : o.color, letterSpacing: 1 }}>{o.label}</span>
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', textAlign: 'center' }}>{o.price}</div>
+            </div>
+          )
+        })}
+      </div>
+
+      {offer && (
+        <div key={offer.key} style={{ maxWidth: 820, margin: '0 auto', width: '100%', animation: 'successPop .4s cubic-bezier(0.22,1,0.36,1)' }}>
+          <div style={{ textAlign: 'center', marginBottom: 20 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: offer.color }}>{offer.tagline}</div>
+            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', marginTop: 6 }}>{offer.formule} · {offer.total}</div>
+          </div>
+          {offer.intro && (
+            <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', textAlign: 'center', marginBottom: 20, lineHeight: 1.5 }}>{offer.intro}</div>
+          )}
+          {offer.bulletsIntro && (
+            <div style={{ fontSize: 15, fontWeight: 700, color: offer.color, marginBottom: 10, textAlign: 'center' }}>{offer.bulletsIntro}</div>
+          )}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            {offer.bullets.map((b, i) => (
+              <div key={i} style={{
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+                borderLeft: `4px solid ${offer.color}`, borderRadius: 14, padding: '14px 20px',
+                fontSize: 15, color: '#fff', lineHeight: 1.4,
+              }}>
+                {b}
+              </div>
+            ))}
+          </div>
+          {offer.exclusions && (
+            <div style={{ marginTop: 16, textAlign: 'center', fontSize: 15, color: '#f87171', fontWeight: 700 }}>⛔ {offer.exclusions}</div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── TV Mini Jeu : écran règles ────────────────────────────────────
 const TV_RULES_ACCUEIL = [
   { icon: '🎰', text: 'La machine désigne aléatoirement un Vendeur et un Client parmi les participants connectés' },
@@ -7075,7 +7143,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
   )
 }
 
-function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, troublesRevealed, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, saisieStage, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progRetourRevealed, progObjectionIdx, progObjectionResponses, progObjectionRevealed, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresClassiqueStep, offresPackPlanStep, offresProg11Revealed, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, tiersPayantAnswersRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, monturesMateriauxResponses, revealMonturesMateriaux, sessionCode, onAmeliProClick }) {
+function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opticienPlaying, troublesSelected, troublesRevealed, audioUnlocked, ordoPlaying, ordoRevealStep, ordoHeadlightDemo, ordoHeadlightCyl, ordoHeadlightAxe, saisieStage, freinsResponses, revealFreins, prixResponses, ventesResponses, promesseResponses, revealPromesse, progZoneQ, progZoneResponses, progZoneShowCorrect, progRetourResponses, progRetourRevealed, progObjectionIdx, progObjectionResponses, progObjectionRevealed, progBestAnswer, progAnatomieReveal, trameStep, offres11Step, offresCareSelected, offresClassiqueStep, offresPackPlanStep, offresProg11Revealed, modelePoint, revealPrix, revealVentes, revealLabo, mutuellesRevealed, inamiRevealed, partenaRevealed, rembfrRevealed, rembfrDemarcheA, rembfrDemarcheB, rembfrSupreme, parcoursRevealed, tiersPayantRevealed, tiersPayantAnswersRevealed, lptsPecScenario, brainstormRevealed, monturesPrixRevealed, monturesMateriauxResponses, revealMonturesMateriaux, sessionCode, onAmeliProClick }) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -7115,6 +7183,7 @@ function TVContentPage({ page, pageIndex, total, moduleLabel, troublesPhase, opt
   if (page.type === 'offres-unifocal-11')   return <TVOffresUnifocal11 />
   if (page.type === 'offres-progressif-11') return <TVOffresProgressif11 revealed={offresProg11Revealed} />
   if (page.type === 'offres-pack-plan')   return <TVOffresPackPlan step={offresPackPlanStep} />
+  if (page.type === 'offres-lpt-care')    return <TVOffresLptCare selected={offresCareSelected} />
   if (page.type === 'correction-scale') return <TVCorrectionScale    page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} />
   if (page.type === 'ordonnance')        return <TVOrdonnance         page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} ordoPlaying={ordoPlaying} ordoRevealStep={ordoRevealStep} audioUnlocked={audioUnlocked} ordoHeadlightDemo={ordoHeadlightDemo} ordoHeadlightCyl={ordoHeadlightCyl} ordoHeadlightAxe={ordoHeadlightAxe} />
   if (page.type === 'saisie-interactive') return <TVSaisieInteractive page={page} pageIndex={pageIndex} total={total} moduleLabel={moduleLabel} saisieStage={saisieStage} sessionCode={sessionCode} />
@@ -9139,6 +9208,7 @@ export default function TVView() {
   const [trameStep, setTrameStep]                       = useState(null)
   // Offres 1=1
   const [offres11Step, setOffres11Step]                 = useState(0)
+  const [offresCareSelected, setOffresCareSelected]     = useState(null)
   const [offresClassiqueStep, setOffresClassiqueStep]   = useState(0)
   const [offresPackPlanStep, setOffresPackPlanStep]     = useState(0)
   const [offresProg11Revealed, setOffresProg11Revealed] = useState(false)
@@ -9192,6 +9262,7 @@ export default function TVView() {
     setTvScreen(sharedState.tv_screen || null)
     setTrameStep(sharedState.trame_step ?? null)
     setOffres11Step(sharedState.offres_11_step ?? 0)
+    setOffresCareSelected(sharedState.offres_care_selected ?? null)
     setOffresClassiqueStep(sharedState.offres_classique_step ?? 0)
     setOffresPackPlanStep(sharedState.offres_pack_plan_step ?? 0)
     setOffresProg11Revealed(!!sharedState.offres_prog11_revealed)
@@ -9568,6 +9639,7 @@ export default function TVView() {
             progAnatomieReveal={progAnatomieReveal}
             trameStep={trameStep}
             offres11Step={offres11Step}
+            offresCareSelected={offresCareSelected}
             offresClassiqueStep={offresClassiqueStep}
             offresPackPlanStep={offresPackPlanStep}
             offresProg11Revealed={offresProg11Revealed}

@@ -23,6 +23,7 @@ export const NEXT_PAGE_LABELS = {
   'force-lpt':         { label: 'Points clés',        icon: '💡' },
   'offres-classique':  { label: 'Offre Classique',    icon: '👓' },
   'offres-1-1':        { label: 'Offre 1=1',          icon: '👓' },
+  'offres-lpt-care':   { label: 'LPT Care (Belgique)', icon: '💳' },
   'impact':            { label: 'Impact visuel',      icon: '👁️' },
   'probleme':          { label: 'Problème visuel',    icon: '🔍' },
   'machines':          { label: 'Points clés',        icon: '⚙️' },

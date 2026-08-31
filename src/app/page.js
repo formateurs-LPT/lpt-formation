@@ -530,6 +530,7 @@ export default function Page() {
         <ModuleOffres
           pName={pName}
           onBack={handleBackToModules}
+          isBelgique={moduleReturnTo === 'onboarding-modules-belgique'}
         />
       )}
       {view === 'module-entreprise' && (
