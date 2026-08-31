@@ -7,24 +7,28 @@ import '@xyflow/react/dist/style.css'
 import { APP_FLOW_NODES, APP_FLOW_EDGES } from '@/lib/appFlowData'
 
 const KIND_STYLE = {
-  root:   { border: '#e2e8f0', bg: 'rgba(226,232,240,0.08)', text: '#f1f5f9' },
-  branch: { border: '#00abe9', bg: 'rgba(0,171,233,0.1)',    text: '#7dd3fc' },
-  module: { border: 'rgba(255,255,255,0.25)', bg: 'rgba(255,255,255,0.04)', text: '#fff' },
-  quiz:   { border: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  text: '#fbbf24' },
-  tool:   { border: '#7c3aed', bg: 'rgba(124,58,237,0.12)',  text: '#c4b5fd' },
+  root:    { border: '#e2e8f0', bg: 'rgba(226,232,240,0.08)', text: '#f1f5f9' },
+  branch:  { border: '#00abe9', bg: 'rgba(0,171,233,0.1)',    text: '#7dd3fc' },
+  module:  { border: 'rgba(255,255,255,0.25)', bg: 'rgba(255,255,255,0.04)', text: '#fff' },
+  quiz:    { border: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  text: '#fbbf24' },
+  tool:    { border: '#7c3aed', bg: 'rgba(124,58,237,0.12)',  text: '#c4b5fd' },
+  admin:   { border: '#14b8a6', bg: 'rgba(20,184,166,0.1)',   text: '#5eead4' },
+  planned: { border: 'rgba(255,255,255,0.2)', bg: 'transparent', text: 'rgba(255,255,255,0.45)', dashed: true },
 }
 
 const FLAG_EMOJI = { fr: '🇫🇷', be: '🇧🇪' }
 
 function FlowNode({ data }) {
   const style = KIND_STYLE[data.kind] || KIND_STYLE.module
+  const small = !!data.sub
   return (
     <div
       title={data.note || undefined}
       style={{
-        minWidth: 160, maxWidth: 180, padding: '10px 14px', borderRadius: 12,
-        background: style.bg, border: `1.5px solid ${style.border}`,
+        minWidth: small ? 140 : 160, maxWidth: small ? 160 : 180, padding: small ? '7px 12px' : '10px 14px', borderRadius: 12,
+        background: style.bg, border: `1.5px ${style.dashed ? 'dashed' : 'solid'} ${style.border}`,
         boxShadow: data.kind === 'root' || data.kind === 'branch' ? `0 0 18px ${style.border}30` : 'none',
+        opacity: small ? 0.9 : 1,
         position: 'relative', fontFamily: 'inherit',
       }}
     >
@@ -36,7 +40,7 @@ function FlowNode({ data }) {
       )}
 
       <div style={{
-        fontSize: data.kind === 'root' || data.kind === 'branch' ? 13 : 12,
+        fontSize: data.kind === 'root' || data.kind === 'branch' ? 13 : small ? 11 : 12,
         fontWeight: data.kind === 'root' || data.kind === 'branch' ? 800 : 700,
         color: style.text, lineHeight: 1.3,
       }}>
@@ -57,6 +61,10 @@ function FlowNode({ data }) {
         </div>
       )}
 
+      {data.kind === 'planned' && (
+        <div style={{ marginTop: 6, fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.4)' }}>🔜 Pas encore branché</div>
+      )}
+
       {data.isolated && (
         <div style={{ marginTop: 6, fontSize: 10, fontWeight: 700, color: '#f87171' }}>⚠ Hors parcours Onboarding</div>
       )}
@@ -68,10 +76,12 @@ const NODE_TYPES = { flowNode: FlowNode }
 
 function Legend() {
   const items = [
-    { kind: 'branch', label: 'Point d\'entrée / branche' },
-    { kind: 'module', label: 'Module de formation' },
-    { kind: 'quiz',   label: 'Quiz' },
-    { kind: 'tool',   label: 'Outil de session' },
+    { kind: 'branch',  label: 'Point d\'entrée / branche' },
+    { kind: 'module',  label: 'Module de formation' },
+    { kind: 'quiz',    label: 'Quiz' },
+    { kind: 'tool',    label: 'Outil de session' },
+    { kind: 'admin',   label: 'Outil formateur (hors session)' },
+    { kind: 'planned', label: 'Prévu, pas encore fonctionnel' },
   ]
   return (
     <div style={{
@@ -106,8 +116,8 @@ export default function AppFlowView({ onBack }) {
     position: { x: n.x, y: n.y },
     data: n,
     draggable: true,
-    width: 180,
-    height: n.kind === 'root' || n.kind === 'branch' ? 46 : 66,
+    width: n.sub ? 160 : 180,
+    height: n.kind === 'root' || n.kind === 'branch' ? 46 : n.sub ? 50 : 66,
   })), [])
 
   const edges = useMemo(() => APP_FLOW_EDGES.map((e, i) => ({
