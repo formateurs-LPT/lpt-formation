@@ -39,8 +39,8 @@ export const QUIZ_FINAL_QUESTIONS = [
   },
   {
     type: 'text-open',
-    question: "La promesse des 10 minutes est valable dans quels cas ?",
-    hint: "Avec ou sans ordonnance",
+    question: "Dans quelles situations la promesse des 10 minutes ne s'applique-t-elle pas ?",
+    hint: "Verres progressifs (fabrication en 9 jours) et fortes corrections nécessitant un verre hors stock (24 à 48h)",
   },
   // ── Troubles visuels ─────────────────────────────────────────────
   {
@@ -126,7 +126,7 @@ export const QUIZ_FINAL_QUESTIONS = [
     options: [
       "Une paire à -50 % du tarif normal",
       "Deuxième paire identique offerte sans conditions",
-      "Deuxième paire offerte au même niveau de gamme",
+      "Deuxième paire offerte, de même qualité que la première",
       "Deux paires au prix d'une, verres uniquement",
     ],
     correct: 2,
@@ -259,5 +259,6 @@ export const QUIZ_FINAL_QUESTIONS = [
     type: 'text-open',
     question: "Écrivez la trame d'accueil en entier (pas juste « bonjour » ou « bienvenue »).",
     hint: "Bonjour et bienvenue chez Lunettes Pour Tous, mon prénom est [...]. Avez-vous votre ordonnance ? Êtes-vous venu(e) avec votre mutuelle ? Avez-vous déjà effectué un examen de vue chez nous ?",
+    timeLimitSec: 150,
   },
 ]

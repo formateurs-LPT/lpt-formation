@@ -367,7 +367,7 @@ export const OPTIQUE_QUIZ = [
   {
     type: 'text-open',
     question: 'À quoi sert la valeur ADD sur une ordonnance ?',
-    hint: 'à calculer la vision de près',
+    hint: "Elle s'ajoute à la sphère pour calculer la vision de près : Sphère + ADD = résultat pour la VP",
     autoCorrect: ['vision de près', 'vision de pres', 'voir de près', 'voir de pres', 'presbytie'],
   },
   // Q17
@@ -1256,7 +1256,7 @@ export const TIERS_PAYANT_QUIZ = [
   {
     type: 'text-open',
     question: 'À quoi sert lyleoo ?',
-    hint: 'Plateforme de gestion des Prises En Charge (PEC) avec les mutuelles',
+    hint: 'Générer une ordonnance suite à un examen de vue réalisé par nos opticiens — valable uniquement si le client a ses droits ouverts',
   },
   {
     type: 'text-open',
