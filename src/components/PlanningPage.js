@@ -22,9 +22,9 @@ const STORES_BY_ZONE = {
   ],
 }
 
-const TRAINERS = ['Kevin','Quentin','Nadège','Thomas']
+const TRAINERS = ['Kevin','Quentin','Nadège','Thomas','Valentine','Matteo','Jonathan']
 
-const TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777', Thomas: '#f59e0b' }
+const TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777', Thomas: '#f59e0b', Valentine: '#22c55e', Matteo: '#fb923c', Jonathan: '#14b8a6' }
 
 function trainerColor(name) {
   return TRAINER_COLORS[name] || '#64748b'
@@ -97,10 +97,10 @@ function CreateModal({ onClose, onCreated }) {
         {/* Formateur */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Formateur</div>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             {TRAINERS.map(t => (
               <button key={t} onClick={() => setTrainer(t)} style={{
-                flex: 1, padding: '12px 0', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
+                flex: '1 1 100px', padding: '12px 0', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
                 fontWeight: 700, fontSize: 14, transition: 'all .15s',
                 background: trainer === t ? `${trainerColor(t)}22` : 'rgba(255,255,255,0.04)',
                 border: `2px solid ${trainer === t ? trainerColor(t) : 'rgba(255,255,255,0.1)'}`,
