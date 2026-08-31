@@ -505,7 +505,7 @@ export const LPT_CARE_OFFERS = [
       'Fin de contrat : restitution, rachat 39€ ou ré-abonnement avec paire neuve',
     ],
     exclusions: 'Sans progressifs, sans solaires',
-    footnote: '🧒 Déclinaison Kids à l\'étude (casse illimitée, corrections qui évoluent vite)',
+    footnote: null,
     payment: '💳 Prélèvement mensuel LPT (SEPA)',
   },
   {
@@ -541,6 +541,8 @@ export const LPT_CARE_OFFERS = [
     intro: 'Le tout compris full option. Changez de lunettes quand vous voulez.',
     bulletsIntro: 'Tout Flex, plus :',
     bullets: [
+      'Toutes les montures',
+      'Tous les verres et traitements',
       '🔄 Échange illimité : changez de paire quand vous voulez, nouveau choix à chaque fois — l\'ancienne revient (clause anti-abus)',
       '🚀 Garantie illimitée, en priorité : casse, perte, vue qui change — sans compter (clause anti-abus)',
       '⚡ Priority Pass : coupe-file en magasin',
