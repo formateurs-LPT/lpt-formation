@@ -1,10 +1,12 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { sbSelect, sbDelete, getSharedState, insertSessionHistory, parseSessionHistorySummary, getRuntimeSessionCode, SESSION_CODE } from '@/lib/supabase'
 import PlanningWidget from './PlanningWidget'
 import ShortcutsWidget from './ShortcutsWidget'
 import { PenseBeteView, getPenseBeteTasks } from './PenseBeteWidget'
+const AppFlowView = dynamic(() => import('./AppFlowView'), { ssr: false })
 import OnboardingView from './OnboardingView'
 import OnboardingViewBelgique from './OnboardingViewBelgique'
 import EntreesView from './EntreesView'
@@ -1924,6 +1926,10 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     )
   }
 
+  if (activeView === 'app-flow') {
+    return <AppFlowView onBack={() => setActiveView('home')} />
+  }
+
   if (activeView === 'retour-formation') {
     return (
       <RetourFormationView
@@ -2332,6 +2338,16 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-count">{penseBeteTodoCount}</div>
             <div className="dash-tile-label">Pense-bête</div>
             <div className="dash-tile-sub">Tâches à faire · privé, pour toi seul</div>
+          </div>
+
+          <div className="dash-tile" onClick={() => setActiveView('app-flow')} style={{ borderColor: 'rgba(0,171,233,0.3)' }}>
+            <div className="dash-tile-top">
+              <div className="dash-tile-icon">🗺️</div>
+              <span className="dash-tile-link">Explorer →</span>
+            </div>
+            <div className="dash-tile-count" style={{ fontSize: 22 }}>App Flow</div>
+            <div className="dash-tile-label">Cartographie de l&apos;app</div>
+            <div className="dash-tile-sub">Vue d&apos;ensemble des parcours de formation</div>
           </div>
 
           <div className="dash-tile" onClick={() => setActiveView('retour-formation')} style={{ borderColor: 'rgba(99,102,241,0.35)' }}>
