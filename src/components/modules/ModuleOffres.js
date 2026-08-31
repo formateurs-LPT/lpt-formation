@@ -485,29 +485,30 @@ function CoursProgressif11({ onPrev, onNext, onBack, isBelgique }) {
 }
 
 // ── Page LPT Care (formateur) — abonnement Belgique ──────────────
-function LptCareCircle({ offer, selected, onClick }) {
+function LptCareCircle({ offer, selected, onClick, compact }) {
   const isSelected = selected === offer.key
+  const size = compact ? 58 : 96
   return (
     <button
       onClick={onClick}
       style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: compact ? 6 : 10,
         background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
         opacity: selected && !isSelected ? 0.5 : 1, transition: 'opacity .25s',
       }}
     >
       <div style={{
-        width: 96, height: 96, borderRadius: '50%',
+        width: size, height: size, borderRadius: '50%',
         background: isSelected ? offer.color : `${offer.color}22`,
-        border: `3px solid ${offer.color}`,
+        border: `${compact ? 2 : 3}px solid ${offer.color}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         boxShadow: isSelected ? `0 0 32px ${offer.color}70` : 'none',
         transform: isSelected ? 'scale(1.06)' : 'scale(1)',
         transition: 'all .25s',
       }}>
-        <span style={{ fontSize: 15, fontWeight: 900, color: isSelected ? '#fff' : offer.color, letterSpacing: 0.5 }}>{offer.label}</span>
+        <span style={{ fontSize: compact ? 11 : 15, fontWeight: 900, color: isSelected ? '#fff' : offer.color, letterSpacing: 0.5, transition: 'font-size .25s' }}>{offer.label}</span>
       </div>
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{offer.price}</div>
+      <div style={{ fontSize: compact ? 11 : 13, fontWeight: 700, color: '#fff', transition: 'font-size .25s' }}>{offer.price}</div>
     </button>
   )
 }
@@ -528,10 +529,11 @@ function CoursLptCare({ onPrev, onNext, onBack }) {
   }
 
   const offer = LPT_CARE_OFFERS.find(o => o.key === selected)
+  const compact = !!offer
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #04220f 100%)', display: 'flex', flexDirection: 'column', padding: isMobile ? '16px 14px 14px' : '24px 40px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: compact ? 12 : 24, flexShrink: 0, transition: 'margin .25s' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
@@ -544,18 +546,20 @@ function CoursLptCare({ onPrev, onNext, onBack }) {
         >✕ Quitter</button>
       </div>
 
-      <div style={{ textAlign: 'center', marginBottom: 28, flexShrink: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Nouveauté Belgique</div>
-        <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', marginBottom: 6 }}>LPT Care — Les 3 offres d&apos;abonnement</div>
-        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', maxWidth: 560, margin: '0 auto', lineHeight: 1.5 }}>
-          Trois formules, un seul principe : ne plus jamais être sans lunettes. Cliquez sur une offre pour l&apos;afficher au groupe.
-        </p>
-      </div>
+      {!compact && (
+        <div style={{ textAlign: 'center', marginBottom: 28, flexShrink: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Nouveauté Belgique</div>
+          <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', marginBottom: 6 }}>LPT Care — Les 3 offres d&apos;abonnement</div>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', maxWidth: 560, margin: '0 auto', lineHeight: 1.5 }}>
+            Trois formules, un seul principe : ne plus jamais être sans lunettes. Cliquez sur une offre pour l&apos;afficher au groupe.
+          </p>
+        </div>
+      )}
 
       {/* Cercles */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: isMobile ? 24 : 56, marginBottom: 28, flexShrink: 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: compact ? 20 : (isMobile ? 24 : 56), marginBottom: compact ? 16 : 28, flexShrink: 0, transition: 'gap .25s, margin .25s' }}>
         {LPT_CARE_OFFERS.map(o => (
-          <LptCareCircle key={o.key} offer={o} selected={selected} onClick={() => selectOffer(o.key)} />
+          <LptCareCircle key={o.key} offer={o} selected={selected} onClick={() => selectOffer(o.key)} compact={compact} />
         ))}
       </div>
 

@@ -4333,34 +4333,36 @@ function TVOffresPackPlan({ step = 0 }) {
 // ── TV Offres : LPT Care (abonnement Belgique) ───────────────────
 function TVOffresLptCare({ selected }) {
   const offer = LPT_CARE_OFFERS.find(o => o.key === selected)
+  const compact = !!offer
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #04220f 100%)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '48px 64px' }}>
-      <div style={{ textAlign: 'center', marginBottom: 40 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 10 }}>Nouveauté Belgique</div>
-        <div style={{ fontSize: 44, fontWeight: 900, color: '#fff' }}>LPT Care — Les 3 offres d&apos;abonnement</div>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #04220f 100%)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: compact ? '28px 56px' : '48px 64px', transition: 'padding .3s' }}>
+      <div style={{ textAlign: 'center', marginBottom: compact ? 14 : 40, transition: 'margin .3s' }}>
+        <div style={{ fontSize: compact ? 12 : 15, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 3, marginBottom: compact ? 4 : 10, transition: 'font-size .3s, margin .3s' }}>Nouveauté Belgique</div>
+        <div style={{ fontSize: compact ? 24 : 44, fontWeight: 900, color: '#fff', transition: 'font-size .3s' }}>LPT Care — Les 3 offres d&apos;abonnement</div>
         {!offer && (
           <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', marginTop: 14 }}>Ne plus jamais être sans lunettes.</p>
         )}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 90, marginBottom: offer ? 48 : 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: compact ? 28 : 90, marginBottom: compact ? 20 : 0, transition: 'gap .3s, margin .3s' }}>
         {LPT_CARE_OFFERS.map(o => {
           const isSelected = o.key === selected
+          const size = compact ? 64 : 140
           return (
-            <div key={o.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, opacity: selected && !isSelected ? 0.4 : 1, transition: 'opacity .3s' }}>
+            <div key={o.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: compact ? 8 : 16, opacity: selected && !isSelected ? 0.4 : 1, transition: 'opacity .3s, gap .3s' }}>
               <div style={{
-                width: 140, height: 140, borderRadius: '50%',
+                width: size, height: size, borderRadius: '50%',
                 background: isSelected ? o.color : `${o.color}22`,
-                border: `5px solid ${o.color}`,
+                border: `${compact ? 3 : 5}px solid ${o.color}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: isSelected ? `0 0 56px ${o.color}80` : 'none',
                 transform: isSelected ? 'scale(1.08)' : 'scale(1)',
                 transition: 'all .3s',
               }}>
-                <span style={{ fontSize: 24, fontWeight: 900, color: isSelected ? '#fff' : o.color, letterSpacing: 1 }}>{o.label}</span>
+                <span style={{ fontSize: compact ? 13 : 24, fontWeight: 900, color: isSelected ? '#fff' : o.color, letterSpacing: 1, transition: 'font-size .3s' }}>{o.label}</span>
               </div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', textAlign: 'center' }}>{o.price}</div>
+              <div style={{ fontSize: compact ? 13 : 20, fontWeight: 800, color: '#fff', textAlign: 'center', transition: 'font-size .3s' }}>{o.price}</div>
             </div>
           )
         })}
@@ -4368,29 +4370,29 @@ function TVOffresLptCare({ selected }) {
 
       {offer && (
         <div key={offer.key} style={{ maxWidth: 820, margin: '0 auto', width: '100%', animation: 'successPop .4s cubic-bezier(0.22,1,0.36,1)' }}>
-          <div style={{ textAlign: 'center', marginBottom: 20 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: offer.color }}>{offer.tagline}</div>
-            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', marginTop: 6 }}>{offer.formule} · {offer.total}</div>
+          <div style={{ textAlign: 'center', marginBottom: 12 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: offer.color }}>{offer.tagline}</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>{offer.formule} · {offer.total}</div>
           </div>
           {offer.intro && (
-            <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', textAlign: 'center', marginBottom: 20, lineHeight: 1.5 }}>{offer.intro}</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', textAlign: 'center', marginBottom: 12, lineHeight: 1.4 }}>{offer.intro}</div>
           )}
           {offer.bulletsIntro && (
-            <div style={{ fontSize: 15, fontWeight: 700, color: offer.color, marginBottom: 10, textAlign: 'center' }}>{offer.bulletsIntro}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: offer.color, marginBottom: 6, textAlign: 'center' }}>{offer.bulletsIntro}</div>
           )}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             {offer.bullets.map((b, i) => (
               <div key={i} style={{
                 background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
-                borderLeft: `4px solid ${offer.color}`, borderRadius: 14, padding: '14px 20px',
-                fontSize: 15, color: '#fff', lineHeight: 1.4,
+                borderLeft: `3px solid ${offer.color}`, borderRadius: 10, padding: '9px 14px',
+                fontSize: 13, color: '#fff', lineHeight: 1.3,
               }}>
                 {b}
               </div>
             ))}
           </div>
           {offer.exclusions && (
-            <div style={{ marginTop: 16, textAlign: 'center', fontSize: 15, color: '#f87171', fontWeight: 700 }}>⛔ {offer.exclusions}</div>
+            <div style={{ marginTop: 10, textAlign: 'center', fontSize: 13, color: '#f87171', fontWeight: 700 }}>⛔ {offer.exclusions}</div>
           )}
         </div>
       )}
