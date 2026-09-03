@@ -217,6 +217,7 @@ export default function StoreFollowupView({ pName, onBack }) {
   const [sectionId, setSectionId] = useState(null)
   const [collaborateurId, setCollaborateurId] = useState(null)
   const [progress, setProgress] = useState({}) // `${collaborateurId}:${itemId}` -> { status, note }
+  const [saveError, setSaveError] = useState(false)
 
   const store = STORES.find(s => s.id === storeId) || null
   const section = store?.sections.find(s => s.id === sectionId) || null
@@ -241,17 +242,16 @@ export default function StoreFollowupView({ pName, onBack }) {
     const current = progress[key] || { status: 'non_acquis', note: '' }
     const next = { ...current, ...patch }
     setProgress(p => ({ ...p, [key]: next }))
-    try {
-      await sbUpsert('store_followup_progress', {
-        store: storeId,
-        collaborateur: collabId,
-        item_id: itemId,
-        status: next.status,
-        note: next.note || null,
-        updated_by: pName || null,
-        updated_at: new Date().toISOString(),
-      }, 'store,collaborateur,item_id')
-    } catch { /* best-effort */ }
+    const result = await sbUpsert('store_followup_progress', {
+      store: storeId,
+      collaborateur: collabId,
+      item_id: itemId,
+      status: next.status,
+      note: next.note || null,
+      updated_by: pName || null,
+      updated_at: new Date().toISOString(),
+    }, 'store,collaborateur,item_id')
+    setSaveError(result === null)
   }
 
   const handleCycleStatus = (itemId) => {
@@ -267,6 +267,15 @@ export default function StoreFollowupView({ pName, onBack }) {
   if (collaborateur && section && store) {
     return (
       <div id="dashboard">
+        {saveError && (
+          <div style={{
+            position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 999,
+            background: '#dc2626', color: '#fff', padding: '10px 20px', borderRadius: 12,
+            fontSize: 13, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          }}>
+            ⚠️ Échec de la sauvegarde — la table Supabase existe-t-elle ? Ce changement n&apos;est pas enregistré.
+          </div>
+        )}
         <CollaborateurFiche
           store={store}
           sectionId={sectionId}
