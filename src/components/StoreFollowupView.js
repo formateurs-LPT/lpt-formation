@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { sbSelect, sbUpsert } from '@/lib/supabase'
 import {
   STORES, SKILL_ITEMS, STATUS_META, STATUS_ORDER, nextStatus, collaborateurFullName,
-  formatDateFr, tenureLabel,
+  formatDateFr, tenureLabel, teamAge, TEAM_LABELS,
 } from '@/lib/storeFollowupData'
 
 // Couleurs alignées sur le logiciel de planning (CVO vert, MO rouge, SAV
@@ -82,6 +82,27 @@ function StoreGrid({ onSelectStore, onBack }) {
   )
 }
 
+// Indicateur pour formateurs/responsables : âge moyen d'une équipe
+// (ancienneté moyenne), affiché en haut à droite de la page magasin.
+function TeamAgeBadge({ sectionId, collaborateurs }) {
+  const age = teamAge(collaborateurs)
+  if (!age) return null
+  return (
+    <div style={{
+      background: `${age.color}12`, border: `1px solid ${age.color}45`,
+      borderRadius: 14, padding: '10px 16px', minWidth: 168,
+    }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+        {TEAM_LABELS[sectionId] || sectionId}
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 800, color: age.color, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span>{age.icon}</span> {age.label}
+      </div>
+      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 3 }}>Ancienneté moy. {age.avgLabel}</div>
+    </div>
+  )
+}
+
 // ── Écran 2 : détail d'un magasin (sections + collaborateurs) ──────
 function StoreDetail({ store, progress, onSelectCollaborateur, onBack }) {
   const pctFor = (collabId, sectionId) => {
@@ -95,19 +116,27 @@ function StoreDetail({ store, progress, onSelectCollaborateur, onBack }) {
     <div className="dash-wrap">
       <BackBtn onClick={onBack}>← Tous les magasins</BackBtn>
 
-      <div style={{ display: 'flex', gap: 28, alignItems: 'center', flexWrap: 'wrap', marginBottom: 32 }}>
-        {store.photo && (
-          <div style={{
-            flexShrink: 0, width: 300, borderRadius: 18, overflow: 'hidden',
-            border: '2px solid rgba(34,197,94,0.4)', boxShadow: '0 0 32px rgba(34,197,94,0.2)',
-          }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={store.photo} alt={`Magasin ${store.label}`} style={{ width: '100%', height: 220, objectFit: 'cover', objectPosition: 'center 30%', display: 'block' }} />
+      <div style={{ display: 'flex', gap: 28, alignItems: 'center', flexWrap: 'wrap', marginBottom: 32, justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', gap: 28, alignItems: 'center', flexWrap: 'wrap' }}>
+          {store.photo && (
+            <div style={{
+              flexShrink: 0, width: 300, borderRadius: 18, overflow: 'hidden',
+              border: '2px solid rgba(34,197,94,0.4)', boxShadow: '0 0 32px rgba(34,197,94,0.2)',
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={store.photo} alt={`Magasin ${store.label}`} style={{ width: '100%', height: 220, objectFit: 'cover', objectPosition: 'center 30%', display: 'block' }} />
+            </div>
+          )}
+          <div>
+            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: '#e8edf3' }}>🏬 {store.label}</h2>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b8099' }}>Sélectionnez un collaborateur pour voir sa fiche de suivi</p>
           </div>
-        )}
-        <div>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: '#e8edf3' }}>🏬 {store.label}</h2>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b8099' }}>Sélectionnez un collaborateur pour voir sa fiche de suivi</p>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignSelf: 'flex-start' }}>
+          {store.sections.map(section => (
+            <TeamAgeBadge key={section.id} sectionId={section.id} collaborateurs={section.collaborateurs} />
+          ))}
         </div>
       </div>
 

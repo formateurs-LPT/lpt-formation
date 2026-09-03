@@ -94,17 +94,44 @@ export function formatDateFr(isoDate) {
   return `${d}/${m}/${y}`
 }
 
-// Ancienneté en mois/années, à partir d'une date d'entrée ISO (YYYY-MM-DD).
-export function tenureLabel(isoDate) {
-  if (!isoDate) return null
+function monthsSince(isoDate) {
   const start = new Date(isoDate)
   const now = new Date()
   let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth())
   if (now.getDate() < start.getDate()) months -= 1
-  if (months < 0) return 'Pas encore arrivé·e'
+  return Math.max(months, 0)
+}
+
+function formatMonths(months) {
   if (months < 1) return "< 1 mois"
-  if (months < 12) return `${months} mois`
-  const years = Math.floor(months / 12)
-  const rem = months % 12
+  const rounded = Math.round(months)
+  if (rounded < 12) return `${rounded} mois`
+  const years = Math.floor(rounded / 12)
+  const rem = rounded % 12
   return rem === 0 ? `${years} an${years > 1 ? 's' : ''}` : `${years} an${years > 1 ? 's' : ''} ${rem} mois`
+}
+
+// Ancienneté en mois/années, à partir d'une date d'entrée ISO (YYYY-MM-DD).
+export function tenureLabel(isoDate) {
+  if (!isoDate) return null
+  return formatMonths(monthsSince(isoDate))
+}
+
+// ── Estimation de l'âge d'une équipe (indicateur formateur/responsable) ──
+export const TEAM_LABELS = { cvo: 'Équipe vente', 'mo-sav': 'Équipe support' }
+
+const TEAM_AGE_TIERS = [
+  { max: 6,        label: 'Jeune équipe',         icon: '🌱', color: '#00abe9' },
+  { max: 18,       label: 'Équipe équilibrée',    icon: '⚖️', color: '#f59e0b' },
+  { max: Infinity, label: 'Équipe expérimentée',  icon: '🏆', color: '#22c55e' },
+]
+
+// Moyenne simple de l'ancienneté (en mois) des collaborateurs d'une section
+// qui ont une date d'entrée renseignée. Retourne null si aucune donnée.
+export function teamAge(collaborateurs) {
+  const months = (collaborateurs || []).filter(c => c.entree).map(c => monthsSince(c.entree))
+  if (!months.length) return null
+  const avg = months.reduce((a, b) => a + b, 0) / months.length
+  const tier = TEAM_AGE_TIERS.find(t => avg < t.max) || TEAM_AGE_TIERS[TEAM_AGE_TIERS.length - 1]
+  return { avgMonths: avg, avgLabel: formatMonths(avg), ...tier }
 }
