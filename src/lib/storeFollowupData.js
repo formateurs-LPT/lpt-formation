@@ -7,6 +7,7 @@ export const STORES = [
   {
     id: 'bayonne',
     label: 'Bayonne',
+    photo: '/assets/store-bayonne.jpg',
     sections: [
       {
         id: 'cvo',

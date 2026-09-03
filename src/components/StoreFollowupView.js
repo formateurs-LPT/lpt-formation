@@ -74,10 +74,20 @@ function StoreDetail({ store, progress, onSelectCollaborateur, onBack }) {
   return (
     <div className="dash-wrap">
       <BackBtn onClick={onBack}>← Tous les magasins</BackBtn>
-      <div className="dash-header">
+
+      <div style={{ display: 'flex', gap: 28, alignItems: 'center', flexWrap: 'wrap', marginBottom: 32 }}>
+        {store.photo && (
+          <div style={{
+            flexShrink: 0, width: 300, borderRadius: 18, overflow: 'hidden',
+            border: '2px solid rgba(34,197,94,0.4)', boxShadow: '0 0 32px rgba(34,197,94,0.2)',
+          }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={store.photo} alt={`Magasin ${store.label}`} style={{ width: '100%', height: 220, objectFit: 'cover', objectPosition: 'center 30%', display: 'block' }} />
+          </div>
+        )}
         <div>
-          <h2>🏬 {store.label}</h2>
-          <p>Sélectionnez un collaborateur pour voir sa fiche de suivi</p>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: '#e8edf3' }}>🏬 {store.label}</h2>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b8099' }}>Sélectionnez un collaborateur pour voir sa fiche de suivi</p>
         </div>
       </div>
 
