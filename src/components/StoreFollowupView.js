@@ -5,6 +5,25 @@ import {
   STORES, SKILL_ITEMS, STATUS_META, STATUS_ORDER, nextStatus, collaborateurFullName,
 } from '@/lib/storeFollowupData'
 
+// Couleurs alignées sur le logiciel de planning (CVO vert, MO rouge, SAV
+// jaune/orange) — adaptées en tons pastel/sourds pour rester lisibles sur
+// fond sombre. La section MO/SAV n'étant pas scindée dans notre roster,
+// elle reprend un dégradé rouge → orange (MO + SAV).
+const SECTION_COLORS = {
+  cvo: {
+    bar: '#6fcf8e',
+    bg: 'rgba(111,207,142,0.07)',
+    border: 'rgba(111,207,142,0.28)',
+    hoverBorder: 'rgba(111,207,142,0.55)',
+  },
+  'mo-sav': {
+    bar: 'linear-gradient(180deg, #e8756b, #f0a758)',
+    bg: 'linear-gradient(135deg, rgba(232,117,107,0.08), rgba(240,167,88,0.08))',
+    border: 'rgba(232,117,107,0.28)',
+    hoverBorder: 'rgba(240,167,88,0.55)',
+  },
+}
+
 function BackBtn({ onClick, children }) {
   return (
     <button onClick={onClick} style={{
@@ -100,21 +119,24 @@ function StoreDetail({ store, progress, onSelectCollaborateur, onBack }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
             {section.collaborateurs.map(c => {
               const pct = pctFor(c.id, section.id)
+              const colors = SECTION_COLORS[section.id] || SECTION_COLORS.cvo
               return (
                 <button
                   key={c.id}
                   onClick={() => onSelectCollaborateur(section.id, c.id)}
                   style={{
-                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 14, padding: '16px 20px', cursor: 'pointer', fontFamily: 'inherit',
+                    position: 'relative', overflow: 'hidden',
+                    background: colors.bg, border: `1px solid ${colors.border}`,
+                    borderRadius: 14, padding: '16px 20px 16px 24px', cursor: 'pointer', fontFamily: 'inherit',
                     minWidth: 200, textAlign: 'left', transition: 'all .18s',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,171,233,0.4)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = colors.hoverBorder }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border }}
                 >
+                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: colors.bar }} />
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 3 }}>{collaborateurFullName(c)}</div>
                   <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>{c.contrat}</div>
-                  <div style={{ height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#22c55e' : '#00abe9', transition: 'width .3s' }} />
                   </div>
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 5 }}>{pct}% acquis</div>
