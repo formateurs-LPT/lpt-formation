@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { sbSelect, sbUpsert } from '@/lib/supabase'
 import {
   STORES, SKILL_ITEMS, STATUS_META, STATUS_ORDER, nextStatus, collaborateurFullName,
+  formatDateFr, tenureLabel,
 } from '@/lib/storeFollowupData'
 
 // Couleurs alignées sur le logiciel de planning (CVO vert, MO rouge, SAV
@@ -135,7 +136,9 @@ function StoreDetail({ store, progress, onSelectCollaborateur, onBack }) {
                 >
                   <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: colors.bar }} />
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 3 }}>{collaborateurFullName(c)}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>{c.contrat}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>
+                    {c.contrat}{c.entree && ` · ${tenureLabel(c.entree)} d'ancienneté`}
+                  </div>
                   <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#22c55e' : '#00abe9', transition: 'width .3s' }} />
                   </div>
@@ -221,7 +224,11 @@ function CollaborateurFiche({ store, sectionId, collaborateur, progress, onCycle
       <div className="dash-header">
         <div>
           <h2>{collaborateurFullName(collaborateur)}</h2>
-          <p>{store.label} · {collaborateur.contrat} · {acquisCount}/{items.length} items acquis</p>
+          <p>
+            {store.label} · {collaborateur.contrat}
+            {collaborateur.entree && ` · Entrée le ${formatDateFr(collaborateur.entree)} (${tenureLabel(collaborateur.entree)})`}
+            {' '}· {acquisCount}/{items.length} items acquis
+          </p>
         </div>
       </div>
 
