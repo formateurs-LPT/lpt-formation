@@ -7,6 +7,7 @@ import PlanningWidget from './PlanningWidget'
 import ShortcutsWidget from './ShortcutsWidget'
 import { PenseBeteView, getPenseBeteTasks } from './PenseBeteWidget'
 const AppFlowView = dynamic(() => import('./AppFlowView'), { ssr: false })
+import StoreFollowupView from './StoreFollowupView'
 import OnboardingView from './OnboardingView'
 import OnboardingViewBelgique from './OnboardingViewBelgique'
 import EntreesView from './EntreesView'
@@ -1930,6 +1931,10 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     return <AppFlowView onBack={() => setActiveView('home')} />
   }
 
+  if (activeView === 'suivi-magasin') {
+    return <div id="dashboard"><StoreFollowupView pName={pName} onBack={() => setActiveView('home')} /></div>
+  }
+
   if (activeView === 'retour-formation') {
     return (
       <RetourFormationView
@@ -2348,6 +2353,16 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-count" style={{ fontSize: 22 }}>App Flow</div>
             <div className="dash-tile-label">Cartographie de l&apos;app</div>
             <div className="dash-tile-sub">Vue d&apos;ensemble des parcours de formation</div>
+          </div>
+
+          <div className="dash-tile" onClick={() => setActiveView('suivi-magasin')} style={{ borderColor: 'rgba(34,197,94,0.3)' }}>
+            <div className="dash-tile-top">
+              <div className="dash-tile-icon">🏬</div>
+              <span className="dash-tile-link" style={{ color: '#4ade80' }}>Ouvrir →</span>
+            </div>
+            <div className="dash-tile-count" style={{ fontSize: 22, color: '#4ade80' }}>Suivi magasin</div>
+            <div className="dash-tile-label">Suivi terrain</div>
+            <div className="dash-tile-sub">Montée en compétences par magasin et collaborateur</div>
           </div>
 
           <div className="dash-tile" onClick={() => setActiveView('retour-formation')} style={{ borderColor: 'rgba(99,102,241,0.35)' }}>
