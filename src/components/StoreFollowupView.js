@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { sbSelect, sbUpsert } from '@/lib/supabase'
 import {
   STORES, SKILL_ITEMS, STATUS_META, STATUS_ORDER, nextStatus, collaborateurFullName,
-  formatDateFr, tenureLabel, teamAge, TEAM_LABELS,
+  formatDateFr, tenureLabel, teamAge, TEAM_LABELS, ITEM_GUIDES,
 } from '@/lib/storeFollowupData'
 
 // Couleurs alignées sur le logiciel de planning (CVO vert, MO rouge, SAV
@@ -183,18 +183,101 @@ function StoreDetail({ store, progress, onSelectCollaborateur, onBack }) {
 }
 
 // ── Écran 3 : fiche d'un collaborateur ──────────────────────────────
+// Fenêtre "trame d'audit" — question à poser / consigne pour l'item, avec
+// les réponses attendues quand il y en a (offres, verres, traitements…).
+function GuideModal({ item, guide, onClose }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20,
+          padding: '28px 32px', width: '100%', maxWidth: 560, maxHeight: '80vh', overflowY: 'auto',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+            📋 Trame d&apos;audit
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', textTransform: 'none', letterSpacing: 0, marginTop: 4 }}>{item.label}</div>
+          </div>
+          <button onClick={onClose} style={{
+            background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 8, width: 32, height: 32,
+            cursor: 'pointer', color: 'rgba(255,255,255,0.5)', fontSize: 16, flexShrink: 0,
+          }}>✕</button>
+        </div>
+
+        {guide ? (
+          <>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, marginBottom: (guide.options || guide.optionGroups) ? 20 : 0 }}>
+              {guide.instruction}
+            </p>
+            {guide.options && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {guide.options.map(o => (
+                  <span key={o} style={{
+                    background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.3)',
+                    borderRadius: 20, padding: '6px 14px', fontSize: 13, fontWeight: 600, color: '#7dd3fc',
+                  }}>{o}</span>
+                ))}
+              </div>
+            )}
+            {guide.optionGroups && guide.optionGroups.map(group => (
+              <div key={group.label} style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{group.label}</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {group.options.map(o => (
+                    <span key={o} style={{
+                      background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.3)',
+                      borderRadius: 20, padding: '6px 14px', fontSize: 13, fontWeight: 600, color: '#7dd3fc',
+                    }}>{o}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </>
+        ) : (
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', margin: 0 }}>
+            Trame pas encore rédigée pour cet item.
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function ItemRow({ item, entry, onCycleStatus, onSaveNote }) {
   const [noteOpen, setNoteOpen] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
   const [draftNote, setDraftNote] = useState(entry?.note || '')
   const status = entry?.status || 'non_acquis'
   const meta = STATUS_META[status]
+  const guide = ITEM_GUIDES[item.id]
 
   useEffect(() => { setDraftNote(entry?.note || '') }, [entry?.note])
 
   return (
     <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px', marginBottom: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ flex: 1, fontSize: 14, color: '#fff', fontWeight: 600 }}>{item.label}</span>
+        <button
+          onClick={() => setGuideOpen(true)}
+          title="Voir la trame d'audit"
+          style={{
+            flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
+            fontFamily: 'inherit', fontSize: 14, color: '#fff', fontWeight: 600, padding: 0,
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}
+        >
+          {item.label}
+          <span style={{ fontSize: 11, color: guide ? '#00abe9' : 'rgba(255,255,255,0.25)' }}>📋</span>
+        </button>
+        {guideOpen && <GuideModal item={item} guide={guide} onClose={() => setGuideOpen(false)} />}
         <button
           onClick={() => setNoteOpen(v => !v)}
           title="Note"

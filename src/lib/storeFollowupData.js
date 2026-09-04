@@ -71,6 +71,59 @@ export const SKILL_ITEMS = {
   ],
 }
 
+// Trame d'audit par item — la question à poser / consigne pour le formateur
+// ou le manager, affichée dans une fenêtre au clic sur l'item. Fournie par
+// Kevin pour la partie CVO ; la partie MO/SAV sera complétée plus tard (les
+// items sans entrée ici affichent un message "pas encore rédigée").
+export const ITEM_GUIDES = {
+  'lecture-ordonnance': {
+    instruction: "Demander au formateur d'ouvrir le backend afin de faire lire une suite d'ordonnances, pour s'assurer que le CVO sait lire et comprendre les ordonnances.",
+  },
+  'trame-accueil': {
+    instruction: "Comme pour le module Trame d'accueil, faire apparaître la trame devant le formateur et la faire « réciter » au CVO.",
+  },
+  'offres': {
+    instruction: "Afficher les 4 offres devant le formateur et demander au CVO de les présenter.",
+    options: ['1=1 (avec ou sans remboursement)', 'Suprême', 'Classique', 'Pack Plan'],
+  },
+  'types-verres': {
+    instruction: 'Faire nommer chaque type de verre.',
+    options: ['Unifocal', 'Progressifs', 'Proximité', 'Clariteens', 'ZenProtect'],
+  },
+  'traitements': {
+    instruction: 'Faire nommer les traitements et ce que chacun comprend.',
+    optionGroups: [
+      { label: 'Traitements verres', options: ['Basic — anti-rayure', 'Premium — anti-rayure, anti-reflet, anti-salissures, hydrophobe', 'Digital Protect Pro — + anti-lumière bleue'] },
+      { label: 'Traitements solaires', options: ['UV Protect cat. 3', 'Polarisé', 'Transition'] },
+    ],
+  },
+  'montures': {
+    instruction: 'Faire nommer les 3 matériaux de montures.',
+    options: ['Plastique injecté', 'Acétate de cellulose', 'Métal'],
+  },
+  'tiers-payants': {
+    instruction: "Le formateur fait tout à l'oral et navigue sur le backend.",
+  },
+  'backend-cvo': {
+    instruction: 'Le formateur navigue sur le backend.',
+  },
+  'parcours-telephone': {
+    instruction: 'Le formateur doit analyser pendant la vente.',
+  },
+  'lpt-vision': {
+    instruction: "En parler pendant l'audit en montrant les propres PDM du CVO en question. Discuter de ce qui est bien ou moins bien et comment améliorer — éventuellement le suivre sur le terrain.",
+  },
+  'lpt-sante': {
+    instruction: 'Suivi et analyse sur le terrain.',
+  },
+  'slack': {
+    instruction: 'Vérifier sur le terrain si le CVO utilise bien Slack Tiers Payant quand le moment se présente.',
+  },
+  'granit': {
+    instruction: 'Lui demander de parler du process Granit et analyser sa réponse.',
+  },
+}
+
 export const STATUS_ORDER = ['non_acquis', 'en_cours', 'acquis']
 
 export const STATUS_META = {
