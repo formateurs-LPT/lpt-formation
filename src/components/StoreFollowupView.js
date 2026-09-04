@@ -265,18 +265,19 @@ function ItemRow({ item, entry, onCycleStatus, onSaveNote }) {
   return (
     <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px', marginBottom: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{ flex: 1, fontSize: 14, color: '#fff', fontWeight: 600 }}>{item.label}</span>
         <button
           onClick={() => setGuideOpen(true)}
           title="Voir la trame d'audit"
           style={{
-            flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
-            fontFamily: 'inherit', fontSize: 14, color: '#fff', fontWeight: 600, padding: 0,
-            display: 'flex', alignItems: 'center', gap: 8,
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: guide ? 'rgba(0,171,233,0.15)' : 'rgba(255,255,255,0.06)',
+            border: '1px solid ' + (guide ? 'rgba(0,171,233,0.4)' : 'rgba(255,255,255,0.12)'),
+            color: guide ? '#00abe9' : 'rgba(255,255,255,0.4)',
+            borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontFamily: 'inherit',
+            fontSize: 12, fontWeight: 700, flexShrink: 0,
           }}
-        >
-          {item.label}
-          <span style={{ fontSize: 11, color: guide ? '#00abe9' : 'rgba(255,255,255,0.25)' }}>📋</span>
-        </button>
+        >📋 Trame</button>
         {guideOpen && <GuideModal item={item} guide={guide} onClose={() => setGuideOpen(false)} />}
         <button
           onClick={() => setNoteOpen(v => !v)}
