@@ -3,6 +3,8 @@
 // par magasin. La progression réelle (statut/notes par collaborateur) vit
 // dans Supabase (table store_followup_progress) — jamais ici.
 
+import { TRAME_ACCUEIL_POINTS } from './modulesData'
+
 export const STORES = [
   {
     id: 'bayonne',
@@ -75,20 +77,74 @@ export const SKILL_ITEMS = {
 // ou le manager, affichée dans une fenêtre au clic sur l'item. Fournie par
 // Kevin pour la partie CVO ; la partie MO/SAV sera complétée plus tard (les
 // items sans entrée ici affichent un message "pas encore rédigée").
+//
+// Quand c'est possible, le "bloc" de contenu reprend le vrai contenu des
+// modules de formation (mêmes textes que ce que voit un formé), affiché en
+// un bloc statique — pas de reveal progressif, juste un repère visuel pour
+// le formateur/manager pendant l'audit. `missingNote` signale quand une
+// partie du contenu demandé n'existe encore dans aucun module.
 export const ITEM_GUIDES = {
   'lecture-ordonnance': {
     instruction: "Demander au formateur d'ouvrir le backend afin de faire lire une suite d'ordonnances, pour s'assurer que le CVO sait lire et comprendre les ordonnances.",
   },
   'trame-accueil': {
-    instruction: "Comme pour le module Trame d'accueil, faire apparaître la trame devant le formateur et la faire « réciter » au CVO.",
+    instruction: "Faire réciter la trame au CVO — voici le contenu exact du module Trame d'accueil.",
+    steps: TRAME_ACCUEIL_POINTS.map(p => ({ num: p.num, emoji: p.emoji, color: p.color, text: p.text })),
   },
   'offres': {
-    instruction: "Afficher les 4 offres devant le formateur et demander au CVO de les présenter.",
-    options: ['1=1 (avec ou sans remboursement)', 'Suprême', 'Classique', 'Pack Plan'],
+    instruction: 'Faire présenter chacune des 4 offres par le CVO — contenu repris des modules Offres et Parcours remboursés.',
+    sections: [
+      {
+        label: 'Suprême', color: '#8B7186',
+        bullets: [
+          '1 paire achetée, une paire offerte',
+          'Choix sur tout le magasin (montures et verres)',
+          'Verres Origine France Garantie',
+          'Uniquement avec tiers payant complet',
+          'Non compatible avec la CSS',
+        ],
+      },
+      {
+        label: '1=1', color: '#6aad54',
+        bullets: [
+          '1 paire achetée',
+          'Deuxième paire offerte — de même qualité que la première',
+          'Éligible sur tout le magasin — monture et verres au choix',
+          'Même en solaire',
+        ],
+      },
+      {
+        label: 'Classique', color: '#00abe9',
+        bullets: [
+          '1 paire achetée',
+          'Deuxième paire à -20 %',
+          '10 € en 10 minutes — uniquement dans ce parcours',
+        ],
+      },
+      {
+        label: 'Pack Plan', color: '#00abe9',
+        bullets: [
+          '2 paires de lunettes',
+          'Monture au choix',
+          'Traitement au choix',
+          'Solaire inclus — sauf polarisé',
+        ],
+      },
+    ],
   },
   'types-verres': {
-    instruction: 'Faire nommer chaque type de verre.',
-    options: ['Unifocal', 'Progressifs', 'Proximité', 'Clariteens', 'ZenProtect'],
+    instruction: 'Faire nommer et décrire chaque type de verre — contenu repris du module Types de verres.',
+    sections: [
+      {
+        label: 'Unifocal', color: '#00abe9',
+        bullets: ["Correction la plus simple : une seule correction sur toute la surface, pas de zone de flou. Pour un seul problème à corriger, ou pour une paire dédiée à une distance précise chez un presbyte."],
+      },
+      {
+        label: 'Progressif (Pulsar Next)', color: '#7c3aed',
+        bullets: ['Verre progressif haut de gamme. Corrige la vision de loin, intermédiaire et de près en une seule paire. Zone de flou réduite au maximum, adaptation plus rapide, confort supérieur aux progressifs classiques.'],
+      },
+    ],
+    missingNote: "Proximité, Clariteens et ZenProtect n'ont pas encore de fiche dans le module Types de verres — à compléter.",
   },
   'traitements': {
     instruction: 'Faire nommer les traitements et ce que chacun comprend.',
@@ -96,10 +152,24 @@ export const ITEM_GUIDES = {
       { label: 'Traitements verres', options: ['Basic — anti-rayure', 'Premium — anti-rayure, anti-reflet, anti-salissures, hydrophobe', 'Digital Protect Pro — + anti-lumière bleue'] },
       { label: 'Traitements solaires', options: ['UV Protect cat. 3', 'Polarisé', 'Transition'] },
     ],
+    missingNote: "Pas de module dédié aux traitements dans l'app pour l'instant — contenu basé sur ta description, pas sur une vraie slide.",
   },
   'montures': {
-    instruction: 'Faire nommer les 3 matériaux de montures.',
-    options: ['Plastique injecté', 'Acétate de cellulose', 'Métal'],
+    instruction: 'Faire nommer les 3 matériaux de montures — contenu repris du module Connaissances Montures.',
+    sections: [
+      {
+        label: 'Acétate de cellulose', color: '#00abe9',
+        bullets: ['Naturel — fibre de bois ou fibre de coton', 'Premium — large choix de coloris & motifs', 'Modèle unique — chaque paire diffère selon sa plaque', 'Ajustable à chaud — hypoallergénique', 'Prix : de 30 € à 90 €'],
+      },
+      {
+        label: 'Métal', color: '#94a3b8',
+        bullets: ['Léger & fin — discret sur le visage', 'Résistant — alliage métallique et revêtement anti-allergique', 'Ajustable facilement — plaquettes et branches réglables', 'Prix : de 30 € à 90 €'],
+      },
+      {
+        label: 'Plastique injecté', color: '#4ade80',
+        bullets: ['Moulé à chaud — injecté en série dans un moule industriel', 'Léger & résistant — très bonne durabilité au quotidien', 'Accessible — meilleur rapport qualité/prix de la gamme', 'Prix : 5 € ou 15 €'],
+      },
+    ],
   },
   'tiers-payants': {
     instruction: "Le formateur fait tout à l'oral et navigue sur le backend.",

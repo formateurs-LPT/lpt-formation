@@ -215,9 +215,47 @@ function GuideModal({ item, guide, onClose }) {
 
         {guide ? (
           <>
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, marginBottom: (guide.options || guide.optionGroups) ? 20 : 0 }}>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, marginBottom: 20 }}>
               {guide.instruction}
             </p>
+
+            {/* Script séquentiel (ex: Trame d'accueil) — contenu réel du module */}
+            {guide.steps && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                {guide.steps.map(s => (
+                  <div key={s.num} style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 12,
+                    background: 'rgba(255,255,255,0.04)', border: `1px solid ${s.color}40`,
+                    borderLeft: `3px solid ${s.color}`, borderRadius: 12, padding: '12px 16px',
+                  }}>
+                    <span style={{ fontSize: 16, flexShrink: 0 }}>{s.emoji}</span>
+                    <span style={{ fontSize: 14, color: '#fff', lineHeight: 1.5 }}>{s.text}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Blocs par catégorie (ex: les 4 offres, les 3 matériaux) — contenu réel du module */}
+            {guide.sections && guide.sections.map(section => (
+              <div key={section.label} style={{ marginBottom: 16 }}>
+                <div style={{
+                  display: 'inline-block', fontSize: 12, fontWeight: 800, color: section.color,
+                  background: `${section.color}18`, border: `1px solid ${section.color}45`,
+                  borderRadius: 8, padding: '3px 10px', marginBottom: 8,
+                }}>{section.label}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {section.bullets.map((b, i) => (
+                    <div key={i} style={{
+                      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                      borderLeft: `3px solid ${section.color}`, borderRadius: 10, padding: '9px 14px',
+                      fontSize: 13, color: '#fff', lineHeight: 1.5,
+                    }}>{b}</div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Pastilles simples (quand il n'y a pas encore de vrai contenu module) */}
             {guide.options && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {guide.options.map(o => (
@@ -241,6 +279,15 @@ function GuideModal({ item, guide, onClose }) {
                 </div>
               </div>
             ))}
+
+            {guide.missingNote && (
+              <div style={{
+                marginTop: 16, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+                borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#fbbf24', lineHeight: 1.5,
+              }}>
+                ⚠️ {guide.missingNote}
+              </div>
+            )}
           </>
         ) : (
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', margin: 0 }}>
