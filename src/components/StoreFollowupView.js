@@ -105,11 +105,14 @@ function TeamAgeBadge({ sectionId, collaborateurs }) {
 
 // ── Écran 2 : détail d'un magasin (sections + collaborateurs) ──────
 function StoreDetail({ store, progress, onSelectCollaborateur, onBack }) {
+  // Moyenne des notes (/5) sur tous les items, notes manquantes comptées à 0 —
+  // distingue "pas encore audité" (0%) de "en cours partout" (progression
+  // visible), contrairement à un simple % d'items acquis.
   const pctFor = (collabId, sectionId) => {
     const items = SKILL_ITEMS[sectionId] || []
     if (!items.length) return 0
-    const acquis = items.filter(it => progress[`${collabId}:${it.id}`]?.status === 'acquis').length
-    return Math.round((acquis / items.length) * 100)
+    const total = items.reduce((sum, it) => sum + (progress[`${collabId}:${it.id}`]?.score || 0), 0)
+    return Math.round((total / (items.length * 5)) * 100)
   }
 
   return (
@@ -171,7 +174,7 @@ function StoreDetail({ store, progress, onSelectCollaborateur, onBack }) {
                   <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#22c55e' : '#00abe9', transition: 'width .3s' }} />
                   </div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 5 }}>{pct}% acquis</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 5 }}>{pct}% de maîtrise</div>
                 </button>
               )
             })}
