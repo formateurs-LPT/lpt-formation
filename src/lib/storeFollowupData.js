@@ -194,17 +194,33 @@ export const ITEM_GUIDES = {
   },
 }
 
-export const STATUS_ORDER = ['non_acquis', 'en_cours', 'acquis']
-
 export const STATUS_META = {
   non_acquis: { label: 'Non acquis', color: '#64748b', bg: 'rgba(100,116,139,0.12)' },
   en_cours:   { label: 'En cours',   color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
   acquis:     { label: 'Acquis',     color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
 }
 
-export function nextStatus(status) {
-  const i = STATUS_ORDER.indexOf(status)
-  return STATUS_ORDER[(i + 1) % STATUS_ORDER.length]
+// ── Notation par item (1 à 5) ────────────────────────────────────
+// Le formateur/manager attribue une note à l'issue de l'échange sur un item ;
+// le statut (non acquis / en cours / acquis) en découle automatiquement, il
+// n'est plus modifiable directement — ça évite de cliquer "Acquis" sans
+// vraiment avoir creusé le sujet, et rend l'historique parlant (progression
+// des notes d'une visite à l'autre plutôt qu'un simple statut répété).
+export const SCORE_ORDER = [1, 2, 3, 4, 5]
+
+export const SCORE_LABELS = {
+  1: 'Ne sait pas répondre',
+  2: 'Confus, réponses erronées',
+  3: 'Partiel, hésite encore',
+  4: 'Maîtrise, quelques imprécisions',
+  5: 'Maîtrise complète, autonome',
+}
+
+export function scoreToStatus(score) {
+  if (score == null) return null
+  if (score <= 2) return 'non_acquis'
+  if (score === 3) return 'en_cours'
+  return 'acquis'
 }
 
 export function collaborateurFullName(c) {

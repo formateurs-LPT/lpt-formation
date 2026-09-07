@@ -1,8 +1,8 @@
 'use client'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { sbSelect, sbUpsert } from '@/lib/supabase'
 import {
-  STORES, SKILL_ITEMS, STATUS_META, STATUS_ORDER, nextStatus, collaborateurFullName,
+  STORES, SKILL_ITEMS, STATUS_META, SCORE_ORDER, SCORE_LABELS, scoreToStatus, collaborateurFullName,
   formatDateFr, tenureLabel, teamAge, TEAM_LABELS, ITEM_GUIDES, todayISO,
 } from '@/lib/storeFollowupData'
 
@@ -299,16 +299,71 @@ function GuideModal({ item, guide, onClose }) {
   )
 }
 
-function ItemRow({ item, entry, pastEntries, onCycleStatus, onSaveNote }) {
+// Sélecteur de note 1-5 : la note pilote le statut, on ne peut plus le
+// changer directement (évite un "Acquis" cliqué sans avoir vraiment évalué).
+function ScorePicker({ score, onSetScore }) {
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef(null)
+  const status = scoreToStatus(score)
+  const meta = status ? STATUS_META[status] : null
+
+  useEffect(() => {
+    if (!open) return
+    const onDocClick = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [open])
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          background: meta ? meta.bg : 'rgba(255,255,255,0.06)',
+          border: `1.5px solid ${meta ? meta.color : 'rgba(255,255,255,0.18)'}`,
+          color: meta ? meta.color : 'rgba(255,255,255,0.4)',
+          borderRadius: 20, padding: '6px 16px', fontSize: 12, fontWeight: 700,
+          cursor: 'pointer', fontFamily: 'inherit', minWidth: 130,
+        }}
+      >{meta ? `${meta.label} · ${score}/5` : 'Non évalué'}</button>
+      {open && (
+        <div style={{
+          position: 'absolute', top: '110%', right: 0, zIndex: 50, minWidth: 260,
+          background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12,
+          padding: 8, display: 'flex', flexDirection: 'column', gap: 4,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
+        }}>
+          {SCORE_ORDER.map(n => {
+            const m = STATUS_META[scoreToStatus(n)]
+            const selected = score === n
+            return (
+              <button
+                key={n}
+                onClick={() => { onSetScore(n); setOpen(false) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left',
+                  background: selected ? `${m.color}22` : 'transparent',
+                  border: `1px solid ${selected ? m.color : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: 8, padding: '7px 10px', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                <span style={{ fontWeight: 800, color: m.color, fontSize: 13, width: 14, flexShrink: 0 }}>{n}</span>
+                <span style={{ fontSize: 12, color: '#fff' }}>{SCORE_LABELS[n]}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote }) {
   const [noteOpen, setNoteOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [draftNote, setDraftNote] = useState(entry?.note || '')
-  const status = entry?.status || 'non_acquis'
-  const meta = STATUS_META[status]
   const guide = ITEM_GUIDES[item.id]
-  const today = todayISO()
-  const isToday = !entry?.audit_date || entry.audit_date === today
   const history = pastEntries || []
 
   useEffect(() => { setDraftNote(entry?.note || '') }, [entry?.note])
@@ -318,9 +373,9 @@ function ItemRow({ item, entry, pastEntries, onCycleStatus, onSaveNote }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <span style={{ fontSize: 14, color: '#fff', fontWeight: 600 }}>{item.label}</span>
-          {!isToday && (
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
-              Dernière évaluation : {formatDateFr(entry.audit_date)}
+          {entry?.score != null && (
+            <div style={{ fontSize: 10, color: '#22c55e', marginTop: 2, fontWeight: 600 }}>
+              ✅ Réalisé le {formatDateFr(entry.audit_date)}
             </div>
           )}
         </div>
@@ -360,14 +415,7 @@ function ItemRow({ item, entry, pastEntries, onCycleStatus, onSaveNote }) {
             borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 14, flexShrink: 0,
           }}
         >📝</button>
-        <button
-          onClick={() => onCycleStatus(item.id)}
-          style={{
-            background: meta.bg, border: `1.5px solid ${meta.color}`, color: meta.color,
-            borderRadius: 20, padding: '6px 16px', fontSize: 12, fontWeight: 700,
-            cursor: 'pointer', fontFamily: 'inherit', minWidth: 100, flexShrink: 0,
-          }}
-        >{meta.label}</button>
+        <ScorePicker score={entry?.score} onSetScore={(n) => onSetScore(item.id, n)} />
       </div>
       {noteOpen && (
         <div style={{ marginTop: 10 }}>
@@ -396,7 +444,7 @@ function ItemRow({ item, entry, pastEntries, onCycleStatus, onSaveNote }) {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: h.note ? 4 : 0 }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>{formatDateFr(h.audit_date)}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: hMeta.color }}>{hMeta.label}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: hMeta.color }}>{hMeta.label}{h.score != null && ` · ${h.score}/5`}</span>
                   {h.updated_by && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>· {h.updated_by}</span>}
                 </div>
                 {h.note && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{h.note}</div>}
@@ -409,7 +457,7 @@ function ItemRow({ item, entry, pastEntries, onCycleStatus, onSaveNote }) {
   )
 }
 
-function CollaborateurFiche({ store, sectionId, collaborateur, progress, history, onCycleStatus, onSaveNote, onBack }) {
+function CollaborateurFiche({ store, sectionId, collaborateur, progress, history, onSetScore, onSaveNote, onBack }) {
   const items = SKILL_ITEMS[sectionId] || []
   const categories = useMemo(() => {
     const groups = {}
@@ -445,7 +493,7 @@ function CollaborateurFiche({ store, sectionId, collaborateur, progress, history
               item={item}
               entry={progress[`${collaborateur.id}:${item.id}`]}
               pastEntries={history[`${collaborateur.id}:${item.id}`]}
-              onCycleStatus={onCycleStatus}
+              onSetScore={onSetScore}
               onSaveNote={onSaveNote}
             />
           ))}
@@ -486,7 +534,7 @@ export default function StoreFollowupView({ pName, onBack }) {
       const hist = {}
       for (const [key, entries] of Object.entries(byKey)) {
         const [latest, ...rest] = entries
-        map[key] = { status: latest.status, note: latest.note || '', audit_date: latest.audit_date }
+        map[key] = { status: latest.status, score: latest.score ?? null, note: latest.note || '', audit_date: latest.audit_date }
         hist[key] = rest
       }
       setProgress(map)
@@ -497,7 +545,7 @@ export default function StoreFollowupView({ pName, onBack }) {
 
   const persist = async (collabId, itemId, patch) => {
     const key = `${collabId}:${itemId}`
-    const current = progress[key] || { status: 'non_acquis', note: '' }
+    const current = progress[key] || { status: 'non_acquis', score: null, note: '' }
     const today = todayISO()
     const next = { ...current, ...patch, audit_date: today }
 
@@ -514,6 +562,7 @@ export default function StoreFollowupView({ pName, onBack }) {
       item_id: itemId,
       audit_date: today,
       status: next.status,
+      score: next.score ?? null,
       note: next.note || null,
       updated_by: pName || null,
       updated_at: new Date().toISOString(),
@@ -521,10 +570,9 @@ export default function StoreFollowupView({ pName, onBack }) {
     setSaveError(result === null)
   }
 
-  const handleCycleStatus = (itemId) => {
-    const key = `${collaborateurId}:${itemId}`
-    const current = progress[key]?.status || 'non_acquis'
-    persist(collaborateurId, itemId, { status: nextStatus(current) })
+  // La note (1-5) pilote seule le statut — pas de modification directe.
+  const handleSetScore = (itemId, score) => {
+    persist(collaborateurId, itemId, { score, status: scoreToStatus(score) })
   }
 
   const handleSaveNote = (itemId, note) => {
@@ -549,7 +597,7 @@ export default function StoreFollowupView({ pName, onBack }) {
           collaborateur={collaborateur}
           progress={progress}
           history={history}
-          onCycleStatus={handleCycleStatus}
+          onSetScore={handleSetScore}
           onSaveNote={handleSaveNote}
           onBack={() => setCollaborateurId(null)}
         />
