@@ -258,3 +258,12 @@ export function teamAge(collaborateurs) {
   const tier = TEAM_AGE_TIERS.find(t => avg < t.max) || TEAM_AGE_TIERS[TEAM_AGE_TIERS.length - 1]
   return { avgMonths: avg, avgLabel: formatMonths(avg), ...tier }
 }
+
+// ── Historique d'audits ──────────────────────────────────────────
+// Un audit par jour (pas par clic) : plusieurs modifications le même jour
+// affinent l'évaluation du jour, mais un nouveau jour crée une nouvelle
+// entrée d'historique — rien n'est jamais écrasé d'une visite à l'autre.
+export function todayISO() {
+  return new Date().toISOString().slice(0, 10)
+}
+

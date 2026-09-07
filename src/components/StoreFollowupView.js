@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { sbSelect, sbUpsert } from '@/lib/supabase'
 import {
   STORES, SKILL_ITEMS, STATUS_META, STATUS_ORDER, nextStatus, collaborateurFullName,
-  formatDateFr, tenureLabel, teamAge, TEAM_LABELS, ITEM_GUIDES,
+  formatDateFr, tenureLabel, teamAge, TEAM_LABELS, ITEM_GUIDES, todayISO,
 } from '@/lib/storeFollowupData'
 
 // Couleurs alignées sur le logiciel de planning (CVO vert, MO rouge, SAV
@@ -299,20 +299,31 @@ function GuideModal({ item, guide, onClose }) {
   )
 }
 
-function ItemRow({ item, entry, onCycleStatus, onSaveNote }) {
+function ItemRow({ item, entry, pastEntries, onCycleStatus, onSaveNote }) {
   const [noteOpen, setNoteOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [draftNote, setDraftNote] = useState(entry?.note || '')
   const status = entry?.status || 'non_acquis'
   const meta = STATUS_META[status]
   const guide = ITEM_GUIDES[item.id]
+  const today = todayISO()
+  const isToday = !entry?.audit_date || entry.audit_date === today
+  const history = pastEntries || []
 
   useEffect(() => { setDraftNote(entry?.note || '') }, [entry?.note])
 
   return (
     <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px', marginBottom: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ flex: 1, fontSize: 14, color: '#fff', fontWeight: 600 }}>{item.label}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ fontSize: 14, color: '#fff', fontWeight: 600 }}>{item.label}</span>
+          {!isToday && (
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
+              Dernière évaluation : {formatDateFr(entry.audit_date)}
+            </div>
+          )}
+        </div>
         <button
           onClick={() => setGuideOpen(true)}
           title="Voir la trame d'audit"
@@ -326,6 +337,19 @@ function ItemRow({ item, entry, onCycleStatus, onSaveNote }) {
           }}
         >📋 Trame</button>
         {guideOpen && <GuideModal item={item} guide={guide} onClose={() => setGuideOpen(false)} />}
+        {history.length > 0 && (
+          <button
+            onClick={() => setHistoryOpen(v => !v)}
+            title="Historique des audits précédents"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              background: historyOpen ? 'rgba(167,139,250,0.18)' : 'rgba(255,255,255,0.06)',
+              border: '1px solid ' + (historyOpen ? 'rgba(167,139,250,0.5)' : 'rgba(255,255,255,0.12)'),
+              color: '#c4b5fd', borderRadius: 8, padding: '7px 10px', cursor: 'pointer',
+              fontFamily: 'inherit', fontSize: 12, fontWeight: 700, flexShrink: 0,
+            }}
+          >🕐 {history.length}</button>
+        )}
         <button
           onClick={() => setNoteOpen(v => !v)}
           title="Note"
@@ -361,11 +385,31 @@ function ItemRow({ item, entry, onCycleStatus, onSaveNote }) {
           />
         </div>
       )}
+      {historyOpen && history.length > 0 && (
+        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {history.map(h => {
+            const hMeta = STATUS_META[h.status] || STATUS_META.non_acquis
+            return (
+              <div key={h.audit_date} style={{
+                background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.18)',
+                borderRadius: 10, padding: '8px 12px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: h.note ? 4 : 0 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>{formatDateFr(h.audit_date)}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: hMeta.color }}>{hMeta.label}</span>
+                  {h.updated_by && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>· {h.updated_by}</span>}
+                </div>
+                {h.note && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{h.note}</div>}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
 
-function CollaborateurFiche({ store, sectionId, collaborateur, progress, onCycleStatus, onSaveNote, onBack }) {
+function CollaborateurFiche({ store, sectionId, collaborateur, progress, history, onCycleStatus, onSaveNote, onBack }) {
   const items = SKILL_ITEMS[sectionId] || []
   const categories = useMemo(() => {
     const groups = {}
@@ -400,6 +444,7 @@ function CollaborateurFiche({ store, sectionId, collaborateur, progress, onCycle
               key={item.id}
               item={item}
               entry={progress[`${collaborateur.id}:${item.id}`]}
+              pastEntries={history[`${collaborateur.id}:${item.id}`]}
               onCycleStatus={onCycleStatus}
               onSaveNote={onSaveNote}
             />
@@ -415,7 +460,11 @@ export default function StoreFollowupView({ pName, onBack }) {
   const [storeId, setStoreId] = useState(null)
   const [sectionId, setSectionId] = useState(null)
   const [collaborateurId, setCollaborateurId] = useState(null)
-  const [progress, setProgress] = useState({}) // `${collaborateurId}:${itemId}` -> { status, note }
+  // progress : `${collaborateurId}:${itemId}` -> entrée la plus récente (celle
+  // affichée/éditée). history : même clé -> entrées plus anciennes (audits
+  // précédents), jamais écrasées.
+  const [progress, setProgress] = useState({})
+  const [history, setHistory] = useState({})
   const [saveError, setSaveError] = useState(false)
 
   const store = STORES.find(s => s.id === storeId) || null
@@ -425,13 +474,23 @@ export default function StoreFollowupView({ pName, onBack }) {
   useEffect(() => {
     if (!storeId) return
     let cancelled = false
-    sbSelect('store_followup_progress', `store=eq.${encodeURIComponent(storeId)}`).then(rows => {
+    sbSelect('store_followup_progress', `store=eq.${encodeURIComponent(storeId)}&order=audit_date.desc`).then(rows => {
       if (cancelled) return
-      const map = {}
+      const byKey = {}
       for (const r of (rows || [])) {
-        map[`${r.collaborateur}:${r.item_id}`] = { status: r.status, note: r.note || '' }
+        const key = `${r.collaborateur}:${r.item_id}`
+        if (!byKey[key]) byKey[key] = []
+        byKey[key].push(r)
+      }
+      const map = {}
+      const hist = {}
+      for (const [key, entries] of Object.entries(byKey)) {
+        const [latest, ...rest] = entries
+        map[key] = { status: latest.status, note: latest.note || '', audit_date: latest.audit_date }
+        hist[key] = rest
       }
       setProgress(map)
+      setHistory(hist)
     }).catch(() => {})
     return () => { cancelled = true }
   }, [storeId])
@@ -439,17 +498,26 @@ export default function StoreFollowupView({ pName, onBack }) {
   const persist = async (collabId, itemId, patch) => {
     const key = `${collabId}:${itemId}`
     const current = progress[key] || { status: 'non_acquis', note: '' }
-    const next = { ...current, ...patch }
+    const today = todayISO()
+    const next = { ...current, ...patch, audit_date: today }
+
+    // Si la dernière valeur connue datait d'un jour précédent, elle bascule
+    // dans l'historique local (visible immédiatement, sans recharger).
+    if (current.audit_date && current.audit_date !== today) {
+      setHistory(h => ({ ...h, [key]: [current, ...(h[key] || [])] }))
+    }
     setProgress(p => ({ ...p, [key]: next }))
+
     const result = await sbUpsert('store_followup_progress', {
       store: storeId,
       collaborateur: collabId,
       item_id: itemId,
+      audit_date: today,
       status: next.status,
       note: next.note || null,
       updated_by: pName || null,
       updated_at: new Date().toISOString(),
-    }, 'store,collaborateur,item_id')
+    }, 'store,collaborateur,item_id,audit_date')
     setSaveError(result === null)
   }
 
@@ -480,6 +548,7 @@ export default function StoreFollowupView({ pName, onBack }) {
           sectionId={sectionId}
           collaborateur={collaborateur}
           progress={progress}
+          history={history}
           onCycleStatus={handleCycleStatus}
           onSaveNote={handleSaveNote}
           onBack={() => setCollaborateurId(null)}
