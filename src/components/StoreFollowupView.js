@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { sbSelect, sbUpsert } from '@/lib/supabase'
+import { sbSelect, sbUpsert, sbDelete } from '@/lib/supabase'
 import {
   STORES, SKILL_ITEMS, STATUS_META, SCORE_ORDER, SCORE_LABELS, scoreToStatus, collaborateurFullName,
   formatDateFr, tenureLabel, teamAge, TEAM_LABELS, ITEM_GUIDES, todayISO,
@@ -302,6 +302,43 @@ function GuideModal({ item, guide, onClose }) {
   )
 }
 
+// Confirmation avant une action irréversible (reset d'un item).
+function ConfirmModal({ title, message, onConfirm, onCancel }) {
+  return (
+    <div
+      onClick={onCancel}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16,
+          padding: '24px 28px', width: '100%', maxWidth: 400,
+        }}
+      >
+        <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginBottom: 8 }}>{title}</div>
+        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, marginBottom: 20 }}>{message}</p>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onCancel} style={{
+            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+            color: 'rgba(255,255,255,0.7)', padding: '8px 16px', borderRadius: 10,
+            fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}>Annuler</button>
+          <button onClick={onConfirm} style={{
+            background: 'rgba(220,38,38,0.15)', border: '1px solid #dc2626',
+            color: '#f87171', padding: '8px 16px', borderRadius: 10,
+            fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          }}>Réinitialiser</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Sélecteur de note 1-5 : la note pilote le statut, on ne peut plus le
 // changer directement (évite un "Acquis" cliqué sans avoir vraiment évalué).
 function ScorePicker({ score, onSetScore }) {
@@ -361,10 +398,11 @@ function ScorePicker({ score, onSetScore }) {
   )
 }
 
-function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote }) {
+function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onReset }) {
   const [noteOpen, setNoteOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false)
   const [draftNote, setDraftNote] = useState(entry?.note || '')
   const guide = ITEM_GUIDES[item.id]
   const history = pastEntries || []
@@ -418,6 +456,25 @@ function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote }) {
             borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 14, flexShrink: 0,
           }}
         >📝</button>
+        {(entry?.score != null || entry?.note) && (
+          <button
+            onClick={() => setConfirmResetOpen(true)}
+            title="Réinitialiser cet item"
+            style={{
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+              color: 'rgba(255,255,255,0.4)', borderRadius: 8, width: 32, height: 32,
+              cursor: 'pointer', fontSize: 14, flexShrink: 0,
+            }}
+          >↺</button>
+        )}
+        {confirmResetOpen && (
+          <ConfirmModal
+            title="Réinitialiser cet item ?"
+            message={`Êtes-vous sûr de vouloir revenir à zéro pour "${item.label}" ? La note, le statut, la note libre et tout l'historique de cet item seront définitivement supprimés.`}
+            onCancel={() => setConfirmResetOpen(false)}
+            onConfirm={() => { setConfirmResetOpen(false); onReset(item.id) }}
+          />
+        )}
         <ScorePicker score={entry?.score} onSetScore={(n) => onSetScore(item.id, n)} />
       </div>
       {noteOpen && (
@@ -460,7 +517,7 @@ function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote }) {
   )
 }
 
-function CollaborateurFiche({ store, sectionId, collaborateur, progress, history, onSetScore, onSaveNote, onBack }) {
+function CollaborateurFiche({ store, sectionId, collaborateur, progress, history, onSetScore, onSaveNote, onReset, onBack }) {
   const items = SKILL_ITEMS[sectionId] || []
   const categories = useMemo(() => {
     const groups = {}
@@ -497,6 +554,7 @@ function CollaborateurFiche({ store, sectionId, collaborateur, progress, history
               entry={progress[`${collaborateur.id}:${item.id}`]}
               pastEntries={history[`${collaborateur.id}:${item.id}`]}
               onSetScore={onSetScore}
+              onReset={onReset}
               onSaveNote={onSaveNote}
             />
           ))}
@@ -582,6 +640,19 @@ export default function StoreFollowupView({ pName, onBack }) {
     persist(collaborateurId, itemId, { note })
   }
 
+  // Supprime définitivement toute trace de cet item (note, statut, historique)
+  // pour ce collaborateur — utile pour annuler un test ou une erreur de saisie.
+  const handleReset = async (itemId) => {
+    const key = `${collaborateurId}:${itemId}`
+    setProgress(p => { const n = { ...p }; delete n[key]; return n })
+    setHistory(h => { const n = { ...h }; delete n[key]; return n })
+    const ok = await sbDelete(
+      'store_followup_progress',
+      `store=eq.${encodeURIComponent(storeId)}&collaborateur=eq.${encodeURIComponent(collaborateurId)}&item_id=eq.${encodeURIComponent(itemId)}`
+    )
+    setSaveError(!ok)
+  }
+
   if (collaborateur && section && store) {
     return (
       <div id="dashboard">
@@ -602,6 +673,7 @@ export default function StoreFollowupView({ pName, onBack }) {
           history={history}
           onSetScore={handleSetScore}
           onSaveNote={handleSaveNote}
+          onReset={handleReset}
           onBack={() => setCollaborateurId(null)}
         />
       </div>
