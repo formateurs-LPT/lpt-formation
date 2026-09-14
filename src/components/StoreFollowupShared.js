@@ -159,6 +159,16 @@ export function StoreDetail({ store, progress, onSelectCollaborateur, onBack }) 
 // Fenêtre "trame d'audit" — question à poser / consigne pour l'item, avec
 // les réponses attendues quand il y en a (offres, verres, traitements…).
 export function GuideModal({ item, guide, onClose }) {
+  // guide.steps (trame d'accueil) : contenu masqué par défaut — c'est au
+  // collaborateur de réciter de mémoire, le formateur/manager ne révèle
+  // chaque point que pour corriger à l'oral une fois la réponse donnée.
+  const [revealed, setRevealed] = useState(new Set())
+  const toggleReveal = (num) => setRevealed(r => {
+    const n = new Set(r)
+    n.has(num) ? n.delete(num) : n.add(num)
+    return n
+  })
+
   return (
     <div
       onClick={onClose}
@@ -192,19 +202,38 @@ export function GuideModal({ item, guide, onClose }) {
               {guide.instruction}
             </p>
 
-            {/* Script séquentiel (ex: Trame d'accueil) — contenu réel du module */}
+            {/* Script séquentiel (ex: Trame d'accueil) — contenu masqué par
+                défaut : au collaborateur de le réciter, révélé point par
+                point uniquement pour la correction orale du formateur/manager. */}
             {guide.steps && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-                {guide.steps.map(s => (
-                  <div key={s.num} style={{
-                    display: 'flex', alignItems: 'flex-start', gap: 12,
-                    background: 'rgba(255,255,255,0.04)', border: `1px solid ${s.color}40`,
-                    borderLeft: `3px solid ${s.color}`, borderRadius: 12, padding: '12px 16px',
-                  }}>
-                    <span style={{ fontSize: 16, flexShrink: 0 }}>{s.emoji}</span>
-                    <span style={{ fontSize: 14, color: '#fff', lineHeight: 1.5 }}>{s.text}</span>
-                  </div>
-                ))}
+                {guide.steps.map(s => {
+                  const isRevealed = revealed.has(s.num)
+                  return (
+                    <div key={s.num} style={{
+                      background: 'rgba(255,255,255,0.04)', border: `1px solid ${s.color}40`,
+                      borderLeft: `3px solid ${s.color}`, borderRadius: 12, padding: '12px 16px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 16, flexShrink: 0 }}>{s.emoji}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.5)', flex: 1 }}>Point {s.num}</span>
+                        <button
+                          onClick={() => toggleReveal(s.num)}
+                          style={{
+                            background: isRevealed ? 'rgba(255,255,255,0.08)' : `${s.color}25`,
+                            border: `1px solid ${isRevealed ? 'rgba(255,255,255,0.15)' : s.color + '60'}`,
+                            color: isRevealed ? 'rgba(255,255,255,0.6)' : s.color,
+                            borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontFamily: 'inherit',
+                            fontSize: 11, fontWeight: 700, flexShrink: 0,
+                          }}
+                        >{isRevealed ? '🙈 Masquer' : '👁 Voir la réponse'}</button>
+                      </div>
+                      {isRevealed && (
+                        <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.5, marginTop: 10 }}>{s.text}</div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
 

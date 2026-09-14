@@ -87,7 +87,7 @@ export const ITEM_GUIDES = {
   // 'lecture-ordonnance' n'utilise plus ce format : voir OrdonnanceExercise.js
   // (exercice interactif de lecture d'ordonnances, pas une simple trame).
   'trame-accueil': {
-    instruction: "Faire réciter la trame au CVO — voici le contenu exact du module Trame d'accueil.",
+    instruction: "Faire réciter les 4 points de la trame au CVO, de mémoire — le contenu reste masqué ci-dessous. Clique sur \"Voir la réponse\" point par point pour corriger à l'oral.",
     steps: TRAME_ACCUEIL_POINTS.map(p => ({ num: p.num, emoji: p.emoji, color: p.color, text: p.text })),
   },
   'offres': {
