@@ -234,7 +234,7 @@ function norm(s) {
  * "toulouse" dès que le mot "blagnac" est présent) sans jamais fusionner deux magasins
  * différents d'une même ville.
  */
-function matchMagasinKey(magasin) {
+export function matchMagasinKey(magasin) {
   if (!magasin) return null
   const n = norm(magasin)
 

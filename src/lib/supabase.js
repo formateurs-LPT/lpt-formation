@@ -21,6 +21,13 @@ export function pgEq(column, value) {
   return `${column}=eq.${encodeURIComponent('"' + v + '"')}`
 }
 
+/** Liste de valeurs pour un filtre PostgREST `in.()`, même échappement que pgEq */
+export function pgInList(values) {
+  return values
+    .map(v => encodeURIComponent('"' + String(v).replace(/"/g, '""') + '"'))
+    .join(',')
+}
+
 /**
  * Code session effectif : salle active (localStorage) puis fallback .env / LPT2026.
  * @param {'any'|'trainer'|'participant'} role
@@ -320,6 +327,18 @@ export async function sbDelete(table, filter) {
 export async function getTrainerFromDB(login) {
   try {
     const rows = await sbSelect('trainers', `login=eq.${encodeURIComponent(login)}&active=eq.true`)
+    return rows?.[0] || null
+  } catch { return null }
+}
+
+// ── Manager auth (store_managers) — le code est comparé côté Postgrest,
+// jamais reçu/comparé côté client (contrairement aux PIN formateurs). ──
+export async function getManagerFromDB(login, code) {
+  try {
+    const rows = await sbSelect(
+      'store_managers',
+      `login=eq.${encodeURIComponent(login)}&code=eq.${encodeURIComponent(code)}&active=eq.true`
+    )
     return rows?.[0] || null
   } catch { return null }
 }
