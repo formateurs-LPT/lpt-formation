@@ -159,10 +159,12 @@ export function StoreDetail({ store, progress, onSelectCollaborateur, onBack }) 
 // Fenêtre "trame d'audit" — question à poser / consigne pour l'item, avec
 // les réponses attendues quand il y en a (offres, verres, traitements…).
 export function GuideModal({ item, guide, onClose }) {
-  // guide.steps (trame d'accueil) : contenu masqué par défaut — c'est au
-  // collaborateur de réciter de mémoire, le formateur/manager ne révèle
-  // chaque point que pour corriger à l'oral une fois la réponse donnée.
+  // guide.steps (trame d'accueil) : le collaborateur remplit sa réponse
+  // point par point (texte libre, non enregistré — sert uniquement le temps
+  // de la correction), le formateur/manager révèle ensuite la bonne réponse
+  // pour comparer et corriger à l'oral.
   const [revealed, setRevealed] = useState(new Set())
+  const [answers, setAnswers] = useState({})
   const toggleReveal = (num) => setRevealed(r => {
     const n = new Set(r)
     n.has(num) ? n.delete(num) : n.add(num)
@@ -214,7 +216,7 @@ export function GuideModal({ item, guide, onClose }) {
                       background: 'rgba(255,255,255,0.04)', border: `1px solid ${s.color}40`,
                       borderLeft: `3px solid ${s.color}`, borderRadius: 12, padding: '12px 16px',
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
                         <span style={{ fontSize: 16, flexShrink: 0 }}>{s.emoji}</span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.5)', flex: 1 }}>Point {s.num}</span>
                         <button
@@ -228,8 +230,23 @@ export function GuideModal({ item, guide, onClose }) {
                           }}
                         >{isRevealed ? '🙈 Masquer' : '👁 Voir la réponse'}</button>
                       </div>
+                      <textarea
+                        value={answers[s.num] || ''}
+                        onChange={e => setAnswers(a => ({ ...a, [s.num]: e.target.value }))}
+                        placeholder="Ce que répond le collaborateur…"
+                        rows={2}
+                        style={{
+                          width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.05)',
+                          border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 12px',
+                          color: '#fff', fontSize: 13, fontFamily: 'inherit', resize: 'vertical', outline: 'none',
+                        }}
+                      />
                       {isRevealed && (
-                        <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.5, marginTop: 10 }}>{s.text}</div>
+                        <div style={{
+                          fontSize: 13, color: '#4ade80', lineHeight: 1.5, marginTop: 8,
+                          background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
+                          borderRadius: 8, padding: '8px 12px',
+                        }}>✅ {s.text}</div>
                       )}
                     </div>
                   )
