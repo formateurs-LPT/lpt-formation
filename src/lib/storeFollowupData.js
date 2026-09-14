@@ -87,7 +87,7 @@ export const ITEM_GUIDES = {
   // 'lecture-ordonnance' n'utilise plus ce format : voir OrdonnanceExercise.js
   // (exercice interactif de lecture d'ordonnances, pas une simple trame).
   'trame-accueil': {
-    instruction: "Le CVO répond point par point (le collaborateur ou toi-même saisit sa réponse) — clique sur \"Voir la réponse\" pour comparer et corriger à l'oral avec lui.",
+    instruction: "Le CVO répond point par point (le collaborateur ou toi-même saisit sa réponse). Valide une fois les 4 réponses données, puis affiche la trame pour corriger à l'oral avec lui.",
     steps: TRAME_ACCUEIL_POINTS.map(p => ({ num: p.num, emoji: p.emoji, color: p.color, text: p.text })),
   },
   'offres': {

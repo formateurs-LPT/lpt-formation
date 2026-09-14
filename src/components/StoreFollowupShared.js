@@ -161,15 +161,13 @@ export function StoreDetail({ store, progress, onSelectCollaborateur, onBack }) 
 export function GuideModal({ item, guide, onClose }) {
   // guide.steps (trame d'accueil) : le collaborateur remplit sa réponse
   // point par point (texte libre, non enregistré — sert uniquement le temps
-  // de la correction), le formateur/manager révèle ensuite la bonne réponse
-  // pour comparer et corriger à l'oral.
-  const [revealed, setRevealed] = useState(new Set())
+  // de la correction). Aucun bouton de réponse visible pendant la saisie —
+  // il faut valider d'abord (pour éviter la tentation de regarder avant
+  // d'avoir répondu), la trame ne se révèle qu'ensuite, sur clic du
+  // formateur/manager, pour corriger à l'oral avec le collaborateur.
   const [answers, setAnswers] = useState({})
-  const toggleReveal = (num) => setRevealed(r => {
-    const n = new Set(r)
-    n.has(num) ? n.delete(num) : n.add(num)
-    return n
-  })
+  const [validated, setValidated] = useState(false)
+  const [revealed, setRevealed] = useState(false)
 
   return (
     <div
@@ -204,14 +202,14 @@ export function GuideModal({ item, guide, onClose }) {
               {guide.instruction}
             </p>
 
-            {/* Script séquentiel (ex: Trame d'accueil) — contenu masqué par
-                défaut : au collaborateur de le réciter, révélé point par
-                point uniquement pour la correction orale du formateur/manager. */}
+            {/* Script séquentiel (ex: Trame d'accueil) — le collaborateur
+                répond point par point, sans pouvoir consulter la réponse
+                avant d'avoir validé (pas de bouton de révélation visible
+                pendant la saisie). */}
             {guide.steps && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-                {guide.steps.map(s => {
-                  const isRevealed = revealed.has(s.num)
-                  return (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+                  {guide.steps.map(s => (
                     <div key={s.num} style={{
                       background: 'rgba(255,255,255,0.04)', border: `1px solid ${s.color}40`,
                       borderLeft: `3px solid ${s.color}`, borderRadius: 12, padding: '12px 16px',
@@ -219,29 +217,22 @@ export function GuideModal({ item, guide, onClose }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
                         <span style={{ fontSize: 16, flexShrink: 0 }}>{s.emoji}</span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.5)', flex: 1 }}>Point {s.num}</span>
-                        <button
-                          onClick={() => toggleReveal(s.num)}
-                          style={{
-                            background: isRevealed ? 'rgba(255,255,255,0.08)' : `${s.color}25`,
-                            border: `1px solid ${isRevealed ? 'rgba(255,255,255,0.15)' : s.color + '60'}`,
-                            color: isRevealed ? 'rgba(255,255,255,0.6)' : s.color,
-                            borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontFamily: 'inherit',
-                            fontSize: 11, fontWeight: 700, flexShrink: 0,
-                          }}
-                        >{isRevealed ? '🙈 Masquer' : '👁 Voir la réponse'}</button>
                       </div>
                       <textarea
                         value={answers[s.num] || ''}
                         onChange={e => setAnswers(a => ({ ...a, [s.num]: e.target.value }))}
                         placeholder="Ce que répond le collaborateur…"
                         rows={2}
+                        disabled={validated}
                         style={{
-                          width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.05)',
+                          width: '100%', boxSizing: 'border-box',
+                          background: validated ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
                           border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 12px',
-                          color: '#fff', fontSize: 13, fontFamily: 'inherit', resize: 'vertical', outline: 'none',
+                          color: validated ? 'rgba(255,255,255,0.6)' : '#fff', fontSize: 13,
+                          fontFamily: 'inherit', resize: 'vertical', outline: 'none',
                         }}
                       />
-                      {isRevealed && (
+                      {revealed && (
                         <div style={{
                           fontSize: 13, color: '#4ade80', lineHeight: 1.5, marginTop: 8,
                           background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
@@ -249,9 +240,31 @@ export function GuideModal({ item, guide, onClose }) {
                         }}>✅ {s.text}</div>
                       )}
                     </div>
-                  )
-                })}
-              </div>
+                  ))}
+                </div>
+
+                {!validated && (
+                  <button
+                    onClick={() => setValidated(true)}
+                    style={{
+                      width: '100%', padding: '11px', background: '#00abe9', border: 'none', color: '#fff',
+                      borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                      marginBottom: 20,
+                    }}
+                  >Valider</button>
+                )}
+                {validated && !revealed && (
+                  <button
+                    onClick={() => setRevealed(true)}
+                    style={{
+                      width: '100%', padding: '11px', background: 'rgba(34,197,94,0.15)',
+                      border: '1px solid rgba(34,197,94,0.5)', color: '#4ade80',
+                      borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                      marginBottom: 20,
+                    }}
+                  >👁 Voir les réponses</button>
+                )}
+              </>
             )}
 
             {/* Blocs par catégorie (ex: les 4 offres, les 3 matériaux) — contenu réel du module */}
