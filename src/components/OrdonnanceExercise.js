@@ -37,8 +37,8 @@ function PrescriptionPaper({ o }) {
 
       <div style={{ marginBottom: 8, fontWeight: 700 }}>Verres et monture :</div>
       <div style={{ marginBottom: 10 }}>{o.typeVerres}</div>
-      <div>Œil droit : {formatEyeLine(o.od)}</div>
-      <div style={{ marginBottom: 20 }}>Œil gauche : {formatEyeLine(o.og)}</div>
+      <div>Œil droit : {formatEyeLine(o.od, o.order)}</div>
+      <div style={{ marginBottom: 20 }}>Œil gauche : {formatEyeLine(o.og, o.order)}</div>
 
       <div style={{ textAlign: 'right', fontSize: 12, color: '#333', marginBottom: 20 }}>
         <div style={{ fontWeight: 700 }}>{o.docteur.nom}</div>
@@ -139,7 +139,7 @@ export default function OrdonnanceExercise({ onClose }) {
             </div>
             <div style={{ flex: '1 1 260px', minWidth: 240 }}>
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 14 }}>
-                D&apos;après cette ordonnance, le collaborateur est :
+                D&apos;après cette ordonnance, le client est :
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
                 {ORDONNANCE_CATEGORIES.map(cat => {

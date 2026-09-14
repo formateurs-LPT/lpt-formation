@@ -5,14 +5,14 @@
 // classification humaine sur les 50 profils.
 
 const DOCTEURS = [
-  { nom: 'Docteur Michel BASILI', rpps: '10101338951', adeli: '331737577' },
+  { nom: 'Docteur Laurence FABIEN', rpps: '10500112233', adeli: '339900112' },
   { nom: 'Docteur Claire FONTENELLE', rpps: '10287456123', adeli: '330894512' },
   { nom: 'Docteur Julien MOREAU', rpps: '10394712658', adeli: '331256478' },
   { nom: 'Docteur Nadia BENALI', rpps: '10456123789', adeli: '330678912' },
 ]
 
 const CENTRES = [
-  { nom: 'SELAS CENTRE MEDICAL OPHTALMO EXPERT BOUSCAT', adresse: '22 rue Raymond Lavigne', cp: '33110', ville: 'LE BOUSCAT', tel: '05 56 01 65 90' },
+  { nom: 'CENTRE VISION PARC', adresse: '5 rue des Tilleuls', cp: '33200', ville: 'BORDEAUX', tel: '05 56 99 00 11' },
   { nom: 'CENTRE OPHTALMOLOGIQUE SAINT-JEAN', adresse: '14 avenue de la République', cp: '64100', ville: 'BAYONNE', tel: '05 59 42 18 30' },
   { nom: 'CABINET OPHTALMOLOGIQUE DES ARCADES', adresse: '8 place des Arcades', cp: '31000', ville: 'TOULOUSE', tel: '05 61 23 45 67' },
 ]
@@ -104,6 +104,11 @@ const PROFILES = [
   [-1.50, -0.50, 30, 2.00, -0.75, 150, 1.75],
 ]
 
+// La plupart des ordonnances écrivent "Sphère (Cylindre Axe°)" — quelques-unes
+// gardent l'ordre "(Axe° Cylindre) Sphère" de l'ordonnance de référence, pour
+// habituer les collaborateurs aux deux présentations qu'ils croiseront en vrai.
+const ORDER_OVERRIDES = new Set([14, 18, 23, 27, 42, 46, 49])
+
 function computeAnswers(od, og) {
   const set = new Set()
   if (od.sph < 0 || og.sph < 0) set.add('myope')
@@ -128,6 +133,7 @@ export const ORDONNANCES = PROFILES.map((p, i) => {
     od, og,
     typeVerres: add > 0 ? 'Progressifs' : 'Unifocal',
     answers: computeAnswers(od, og),
+    order: ORDER_OVERRIDES.has(i) ? 'cyl-first' : 'sph-first',
   }
 })
 
@@ -149,11 +155,18 @@ function fmtSigned(v) {
   return v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2)
 }
 
-export function formatEyeLine(eye) {
-  const parts = []
-  if (eye.cyl !== 0) parts.push(`(${eye.axe}° ${eye.cyl.toFixed(2)})`)
-  parts.push(fmtSigned(eye.sph))
-  let line = parts.join(' ')
+// order: 'sph-first' (Sphère (Cylindre Axe°) — ordre le plus courant) ou
+// 'cyl-first' ((Axe° Cylindre) Sphère — comme l'ordonnance de référence).
+export function formatEyeLine(eye, order = 'sph-first') {
+  const sph = fmtSigned(eye.sph)
+  let line
+  if (eye.cyl === 0) {
+    line = sph
+  } else if (order === 'cyl-first') {
+    line = `(${eye.axe}° ${eye.cyl.toFixed(2)}) ${sph}`
+  } else {
+    line = `${sph} (${eye.cyl.toFixed(2)} ${eye.axe}°)`
+  }
   if (eye.add > 0) line += `, Addition ${fmtSigned(eye.add)}`
   return line
 }
