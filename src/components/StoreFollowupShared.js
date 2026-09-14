@@ -4,6 +4,7 @@ import {
   SKILL_ITEMS, STATUS_META, SCORE_ORDER, SCORE_LABELS, scoreToStatus, collaborateurFullName,
   formatDateFr, tenureLabel, teamAge, TEAM_LABELS, ITEM_GUIDES,
 } from '@/lib/storeFollowupData'
+import OrdonnanceExercise from './OrdonnanceExercise'
 
 // UI partagée entre la vue formateur (StoreFollowupView) et la vue manager
 // (/manager) — un seul et même rendu du suivi de compétences, quel que soit
@@ -373,6 +374,7 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
   const [historyOpen, setHistoryOpen] = useState(false)
   const [confirmResetOpen, setConfirmResetOpen] = useState(false)
   const [draftNote, setDraftNote] = useState(entry?.note || '')
+  const isOrdonnanceExercise = item.id === 'lecture-ordonnance'
   const guide = ITEM_GUIDES[item.id]
   const history = pastEntries || []
 
@@ -391,17 +393,21 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
         </div>
         <button
           onClick={() => setGuideOpen(true)}
-          title="Voir la trame d'audit"
+          title={isOrdonnanceExercise ? "Lancer l'exercice" : "Voir la trame d'audit"}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
-            background: guide ? 'rgba(0,171,233,0.15)' : 'rgba(255,255,255,0.06)',
-            border: '1px solid ' + (guide ? 'rgba(0,171,233,0.4)' : 'rgba(255,255,255,0.12)'),
-            color: guide ? '#00abe9' : 'rgba(255,255,255,0.4)',
+            background: (guide || isOrdonnanceExercise) ? 'rgba(0,171,233,0.15)' : 'rgba(255,255,255,0.06)',
+            border: '1px solid ' + ((guide || isOrdonnanceExercise) ? 'rgba(0,171,233,0.4)' : 'rgba(255,255,255,0.12)'),
+            color: (guide || isOrdonnanceExercise) ? '#00abe9' : 'rgba(255,255,255,0.4)',
             borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontFamily: 'inherit',
             fontSize: 12, fontWeight: 700, flexShrink: 0,
           }}
-        >📋 Trame</button>
-        {guideOpen && <GuideModal item={item} guide={guide} onClose={() => setGuideOpen(false)} />}
+        >{isOrdonnanceExercise ? '🩺 Exercice' : '📋 Trame'}</button>
+        {guideOpen && (
+          isOrdonnanceExercise
+            ? <OrdonnanceExercise onClose={() => setGuideOpen(false)} />
+            : <GuideModal item={item} guide={guide} onClose={() => setGuideOpen(false)} />
+        )}
         {history.length > 0 && (
           <button
             onClick={() => setHistoryOpen(v => !v)}

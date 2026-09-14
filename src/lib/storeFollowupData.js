@@ -84,9 +84,8 @@ export const SKILL_ITEMS = {
 // le formateur/manager pendant l'audit. `missingNote` signale quand une
 // partie du contenu demandé n'existe encore dans aucun module.
 export const ITEM_GUIDES = {
-  'lecture-ordonnance': {
-    instruction: "Demander au formateur d'ouvrir le backend afin de faire lire une suite d'ordonnances, pour s'assurer que le CVO sait lire et comprendre les ordonnances.",
-  },
+  // 'lecture-ordonnance' n'utilise plus ce format : voir OrdonnanceExercise.js
+  // (exercice interactif de lecture d'ordonnances, pas une simple trame).
   'trame-accueil': {
     instruction: "Faire réciter la trame au CVO — voici le contenu exact du module Trame d'accueil.",
     steps: TRAME_ACCUEIL_POINTS.map(p => ({ num: p.num, emoji: p.emoji, color: p.color, text: p.text })),
