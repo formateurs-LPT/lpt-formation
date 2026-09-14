@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   pickRandomOrdonnances, formatOrdonnanceDate, formatEyeLine, ORDONNANCE_CATEGORIES,
 } from '@/lib/ordonnancesData'
@@ -55,16 +55,28 @@ function PrescriptionPaper({ o }) {
   )
 }
 
-export default function OrdonnanceExercise({ onClose }) {
+export default function OrdonnanceExercise({ onClose, onFinish }) {
   const [questions] = useState(() => pickRandomOrdonnances(5))
   const [qIndex, setQIndex] = useState(0)
   const [selected, setSelected] = useState(new Set())
   const [validated, setValidated] = useState(false)
   const [results, setResults] = useState([])
+  const reportedRef = useRef(false)
 
   const finished = qIndex >= questions.length
   const current = !finished ? questions[qIndex] : null
   const isCorrect = current && validated ? setsEqual(selected, new Set(current.answers)) : null
+
+  // Note (1-5) attribuée automatiquement selon le nombre de bonnes réponses
+  // sur les 5 questions — 0/5 est plancher à 1 (l'échelle de notation n'a pas
+  // de 0). Ne se déclenche qu'une fois, à l'arrivée sur l'écran de résultat.
+  useEffect(() => {
+    if (!finished || reportedRef.current) return
+    reportedRef.current = true
+    const score = Math.max(1, Math.min(5, results.filter(Boolean).length))
+    onFinish?.(score)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished])
 
   const toggle = (key) => {
     if (validated) return
@@ -124,8 +136,8 @@ export default function OrdonnanceExercise({ onClose }) {
             <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 8 }}>
               {scoreCount} / {questions.length} bonnes réponses
             </div>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 24 }}>
-              Attribue maintenant une note à l&apos;item &quot;Lecture ordonnance&quot; en fonction de cette performance.
+            <p style={{ fontSize: 13, color: '#4ade80', fontWeight: 700, marginBottom: 24 }}>
+              ✅ Note {Math.max(1, Math.min(5, scoreCount))}/5 attribuée automatiquement à &quot;Lecture ordonnance&quot;.
             </p>
             <button onClick={onClose} style={{
               background: '#00abe9', border: 'none', color: '#fff', padding: '10px 24px',

@@ -92,6 +92,12 @@ export const ITEM_GUIDES = {
   },
   'offres': {
     instruction: 'Faire présenter chacune des 4 offres par le CVO — contenu repris des modules Offres et Parcours remboursés.',
+    questions: [
+      'Peux-tu me citer les 4 offres proposées en magasin ?',
+      "Quelle est la particularité de l'offre Suprême ?",
+      "Dans quel cas conseillerais-tu l'offre 1=1 plutôt que la Classique ?",
+      'Qu\'est-ce qui différencie le Pack Plan des autres offres ?',
+    ],
     sections: [
       {
         label: 'Suprême', color: '#8B7186',
@@ -133,6 +139,11 @@ export const ITEM_GUIDES = {
   },
   'types-verres': {
     instruction: 'Faire nommer et décrire chaque type de verre — contenu repris du module Types de verres.',
+    questions: [
+      'Quels types de verres peux-tu me citer ?',
+      'Quelle est la différence entre un verre unifocal et un verre progressif ?',
+      'À qui proposerais-tu un verre progressif Pulsar Next ?',
+    ],
     sections: [
       {
         label: 'Unifocal', color: '#00abe9',
@@ -147,6 +158,11 @@ export const ITEM_GUIDES = {
   },
   'traitements': {
     instruction: 'Faire nommer les traitements et ce que chacun comprend.',
+    questions: [
+      'Quels traitements peux-tu proposer sur les verres ?',
+      'Que comprend le traitement Premium par rapport au Basic ?',
+      'Quels traitements solaires connais-tu ?',
+    ],
     optionGroups: [
       { label: 'Traitements verres', options: ['Basic — anti-rayure', 'Premium — anti-rayure, anti-reflet, anti-salissures, hydrophobe', 'Digital Protect Pro — + anti-lumière bleue'] },
       { label: 'Traitements solaires', options: ['UV Protect cat. 3', 'Polarisé', 'Transition'] },
@@ -155,6 +171,11 @@ export const ITEM_GUIDES = {
   },
   'montures': {
     instruction: 'Faire nommer les 3 matériaux de montures — contenu repris du module Connaissances Montures.',
+    questions: [
+      'Quels sont les 3 matériaux de montures que l\'on retrouve en magasin ?',
+      "Quel est l'avantage de l'acétate de cellulose ?",
+      'Pourquoi proposer une monture en plastique injecté à un client avec un petit budget ?',
+    ],
     sections: [
       {
         label: 'Acétate de cellulose', color: '#00abe9',
@@ -172,24 +193,52 @@ export const ITEM_GUIDES = {
   },
   'tiers-payants': {
     instruction: "Le formateur fait tout à l'oral et navigue sur le backend.",
+    questions: [
+      "Comment vérifies-tu les droits d'un client au tiers payant ?",
+      "Que fais-tu si le tiers payant du client n'apparaît pas dans le backend ?",
+    ],
   },
   'backend-cvo': {
     instruction: 'Le formateur navigue sur le backend.',
+    questions: [
+      'Montre-moi comment tu crées une nouvelle commande dans le backend.',
+      "Comment retrouves-tu le dossier d'un client déjà venu en magasin ?",
+    ],
   },
   'parcours-telephone': {
     instruction: 'Le formateur doit analyser pendant la vente.',
+    questions: [
+      'Comment démarres-tu un appel avec un client qui souhaite prendre rendez-vous ?',
+      'Que dis-tu à un client qui appelle uniquement pour connaître les prix ?',
+    ],
   },
   'lpt-vision': {
     instruction: "En parler pendant l'audit en montrant les propres PDM du CVO en question. Discuter de ce qui est bien ou moins bien et comment améliorer — éventuellement le suivre sur le terrain.",
+    questions: [
+      'Peux-tu me montrer tes derniers PDM sur LPT VISION ?',
+      'Qu\'est-ce qui explique tes résultats sur les dernières semaines ?',
+    ],
   },
   'lpt-sante': {
     instruction: 'Suivi et analyse sur le terrain.',
+    questions: [
+      'Comment utilises-tu LPT SANTÉ au quotidien ?',
+      'Peux-tu me montrer un dossier santé que tu as suivi récemment ?',
+    ],
   },
   'slack': {
     instruction: 'Vérifier sur le terrain si le CVO utilise bien Slack Tiers Payant quand le moment se présente.',
+    questions: [
+      'Dans quel cas utilises-tu le canal Slack Tiers Payant ?',
+      'Peux-tu me montrer un message que tu as envoyé récemment sur ce canal ?',
+    ],
   },
   'granit': {
     instruction: 'Lui demander de parler du process Granit et analyser sa réponse.',
+    questions: [
+      'Peux-tu m\'expliquer le process Granit ?',
+      'Dans quelle situation utilises-tu Granit ?',
+    ],
   },
 }
 

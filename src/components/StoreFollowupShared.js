@@ -202,6 +202,25 @@ export function GuideModal({ item, guide, onClose }) {
               {guide.instruction}
             </p>
 
+            {/* Questions à poser à l'oral par le manager/formateur — le
+                contenu qui suit (sections/optionGroups) sert de référence
+                pour corriger les réponses du collaborateur. */}
+            {guide.questions && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+                  🗣️ Questions à poser
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {guide.questions.map((q, i) => (
+                    <div key={i} style={{
+                      background: 'rgba(0,171,233,0.06)', border: '1px solid rgba(0,171,233,0.2)',
+                      borderRadius: 10, padding: '9px 14px', fontSize: 13, color: '#fff', lineHeight: 1.5,
+                    }}>{q}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Script séquentiel (ex: Trame d'accueil) — le collaborateur
                 répond point par point, sans pouvoir consulter la réponse
                 avant d'avoir validé (pas de bouton de révélation visible
@@ -434,6 +453,7 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
   const [confirmResetOpen, setConfirmResetOpen] = useState(false)
   const [draftNote, setDraftNote] = useState(entry?.note || '')
   const isOrdonnanceExercise = item.id === 'lecture-ordonnance'
+  const isTrameAccueil = item.id === 'trame-accueil'
   const guide = ITEM_GUIDES[item.id]
   const history = pastEntries || []
 
@@ -452,7 +472,7 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
         </div>
         <button
           onClick={() => setGuideOpen(true)}
-          title={isOrdonnanceExercise ? "Lancer l'exercice" : "Voir la trame d'audit"}
+          title={isOrdonnanceExercise ? "Lancer l'exercice" : isTrameAccueil ? "Voir la trame d'audit" : "Lancer l'exercice"}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             background: (guide || isOrdonnanceExercise) ? 'rgba(0,171,233,0.15)' : 'rgba(255,255,255,0.06)',
@@ -461,10 +481,10 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
             borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontFamily: 'inherit',
             fontSize: 12, fontWeight: 700, flexShrink: 0,
           }}
-        >{isOrdonnanceExercise ? '🩺 Exercice' : '📋 Trame'}</button>
+        >{isOrdonnanceExercise ? '🩺 Exercice' : isTrameAccueil ? '📋 Trame' : '🎯 Lancer l\'exercice'}</button>
         {guideOpen && (
           isOrdonnanceExercise
-            ? <OrdonnanceExercise onClose={() => setGuideOpen(false)} />
+            ? <OrdonnanceExercise onClose={() => setGuideOpen(false)} onFinish={(score) => onSetScore(item.id, score)} />
             : <GuideModal item={item} guide={guide} onClose={() => setGuideOpen(false)} />
         )}
         {history.length > 0 && (
