@@ -184,7 +184,7 @@ function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving, onT
           <button
             type="button"
             onClick={onToggleMode}
-            title="Changer le mode (présentiel / visio)"
+            title="Changer la catégorie (présentiel Paris / visio Province / présentiel Belgique)"
             style={{
               background: meta.bg, border: `1px solid ${meta.border}`,
               borderRadius: 8, padding: '3px 10px',
@@ -658,20 +658,20 @@ export default function EntreesView({ onBack, onToast, pName }) {
     if (next.length === 0) setShowResults(false)
   }
 
+  // Cycle Présentiel Paris → Visio Province → Présentiel Belgique → … — permet
+  // de forcer manuellement n'importe quel profil dans n'importe quelle
+  // catégorie (ex : un collaborateur belge qui doit rejoindre une salle visio
+  // France exceptionnellement). Si le cran atteint correspond à la catégorie
+  // déduite automatiquement du magasin, on retire le forçage plutôt que de le
+  // fixer explicitement, pour ne marquer "✎ forcé" que quand c'est réellement
+  // un override.
+  const CAT_CYCLE = ['paris', 'province', 'belgique']
   const handleToggleMode = async (index) => {
     const c = entrees[index]
     const current = effectiveCat(c)
-    // Cycle : paris → province/belgique auto → paris → …
-    // Si forcé en paris mais auto = visio : retirer le forcage (revenir à l'auto)
-    // Si forcé en visio ou auto = visio : forcer paris
-    // Si auto = paris et pas de force : forcer province
-    let newForce
-    if (current === 'paris') {
-      const auto = classifyMagasin(c.magasin)
-      newForce = (auto !== 'paris') ? null : 'province' // retirer le forcage si auto est visio, sinon forcer province
-    } else {
-      newForce = 'paris'
-    }
+    const auto = classifyMagasin(c.magasin)
+    const nextCat = CAT_CYCLE[(CAT_CYCLE.indexOf(current) + 1) % CAT_CYCLE.length]
+    const newForce = (nextCat === auto) ? null : nextCat
     const next = [...entrees]
     next[index] = { ...c, _forceCat: newForce }
     setEntrees(next)
