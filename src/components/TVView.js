@@ -2545,7 +2545,7 @@ const B_ROT = [-5, 3, -2, 6, -4, 1, -7, 4, -1, 5, -3, 7]       // rotation deg
 const B_RAD = [20, 26, 18, 28, 22, 16, 24, 20, 26, 18, 22, 16]  // borderRadius px
 
 // ── Composant partagé : layout TV pour questions libres ───────────
-function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting, revealBanner, answerCount = 0, participantCount = 0 }) {
+function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting, revealBanner, topLeftBanner, answerCount = 0, participantCount = 0 }) {
   return (
     <div style={{
       height: '100vh', overflow: 'hidden',
@@ -2553,6 +2553,7 @@ function TVBubbleScreen({ page, pageIndex, total, accent, children, waiting, rev
       display: 'flex', flexDirection: 'column',
       position: 'relative',
     }}>
+      {topLeftBanner}
       {/* Topbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -2661,6 +2662,32 @@ function TVEntreprisePrix({ page, pageIndex, total, prixResponses, revealPrix, s
   }, [sessionCode])
   const shouldShow = !!revealPrix
 
+  // Moyenne des réponses (nombres uniquement, saisie déjà filtrée aux chiffres
+  // côté formé) — affichée en haut à gauche dès la publication des réponses,
+  // pour comparer d'un coup d'œil avec la vraie fourchette de prix.
+  const prixValues = entries.map(([, resp]) => parseInt(resp.text, 10)).filter(n => !isNaN(n))
+  const prixMoyen = prixValues.length ? Math.round(prixValues.reduce((a, b) => a + b, 0) / prixValues.length) : null
+
+  const topLeftBanner = (shouldShow && prixMoyen != null) ? (
+    <div style={{
+      position: 'absolute', top: 24, left: 32, zIndex: 5,
+      background: 'rgba(5,20,55,0.9)', border: `1.5px solid ${accent}80`,
+      borderRadius: 16, padding: '14px 22px',
+      backdropFilter: 'blur(16px)', boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+      animation: 'bubbleIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both',
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>
+        Moyenne du groupe
+      </div>
+      <div style={{ fontSize: 30, fontWeight: 900, color: '#fff', lineHeight: 1 }}>
+        {prixMoyen} <span style={{ fontSize: 18, color: accent }}>€</span>
+      </div>
+      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
+        Prix d&apos;une paire de lunettes, selon vous
+      </div>
+    </div>
+  ) : null
+
   const prixBanner = revealPrix ? (
     <div style={{
       position: 'absolute', bottom: 0, left: 0, right: 0,
@@ -2679,7 +2706,7 @@ function TVEntreprisePrix({ page, pageIndex, total, prixResponses, revealPrix, s
   ) : null
 
   return (
-    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!shouldShow} answerCount={entries.length} participantCount={participantCount} revealBanner={prixBanner}>
+    <TVBubbleScreen page={page} pageIndex={pageIndex} total={total} accent={accent} waiting={!shouldShow} answerCount={entries.length} participantCount={participantCount} revealBanner={prixBanner} topLeftBanner={topLeftBanner}>
       {entries.map(([pName, resp], i) => (
         <div key={pName} style={{
           background: 'rgba(5,20,55,0.88)',
