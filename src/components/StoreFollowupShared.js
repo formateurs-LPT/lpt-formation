@@ -31,6 +31,91 @@ export const SECTION_COLORS = {
   },
 }
 
+// Moyenne des notes (/5) sur tous les items d'une section, notes manquantes
+// comptées à 0 — distingue "pas encore audité" (0%) de "en cours partout"
+// (progression visible), contrairement à un simple % d'items acquis.
+// Extrait en fonction partagée pour que la carte collaborateur ET la
+// statistique d'en-tête (taux de maîtrise moyen) utilisent exactement le
+// même calcul, sans jamais pouvoir diverger.
+export function pctFor(progress, collabId, sectionId) {
+  const items = SKILL_ITEMS[sectionId] || []
+  if (!items.length) return 0
+  const total = items.reduce((sum, it) => sum + (progress[`${collabId}:${it.id}`]?.score || 0), 0)
+  return Math.round((total / (items.length * 5)) * 100)
+}
+
+function initials(c) {
+  const a = (c.prenom || '').trim().charAt(0)
+  const b = (c.nom || '').trim().charAt(0)
+  return (a + b).toUpperCase() || '?'
+}
+
+// ── En-tête magasin partagé : photo + nom + 3 statistiques ──────────
+// Utilisé à l'identique par la vue formateur (StoreDetail) et la vue manager
+// (/manager) pour garantir la même charte visuelle. `subtitle` et `right`
+// permettent à chaque page d'injecter son propre contenu (salutation,
+// bouton déconnexion, consigne...) sans dupliquer la structure commune.
+export function StoreHeader({ store, progress, subtitle, right }) {
+  const allCollaborateurs = store.sections.flatMap(s => s.collaborateurs)
+  const totalHeadcount = allCollaborateurs.length
+
+  const pctValues = store.sections.flatMap(s => s.collaborateurs.map(c => pctFor(progress, c.id, s.id)))
+  const avgPct = pctValues.length ? Math.round(pctValues.reduce((a, b) => a + b, 0) / pctValues.length) : 0
+
+  const age = teamAge(allCollaborateurs)
+
+  const stats = [
+    { icon: '👥', label: 'Effectif total', value: `${totalHeadcount}`, sub: totalHeadcount > 1 ? 'collaborateurs' : 'collaborateur' },
+    { icon: '🎯', label: 'Taux de maîtrise moyen', value: `${avgPct}%`, sub: 'toutes équipes' },
+    { icon: age?.icon || '📅', label: 'Ancienneté moyenne', value: age ? age.avgLabel : '—', sub: age ? age.label : 'non renseignée' },
+  ]
+
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+          {store.photo && (
+            <div style={{
+              flexShrink: 0, width: 56, height: 56, borderRadius: 14, overflow: 'hidden',
+              border: '1.5px solid rgba(255,255,255,0.12)',
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={store.photo} alt={`Magasin ${store.label}`} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', display: 'block' }} />
+            </div>
+          )}
+          <div>
+            <h2 style={{ margin: 0, fontSize: 21, fontWeight: 700, color: '#e8edf3', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>🏬</span> {store.label}
+            </h2>
+            {subtitle && <p style={{ margin: '3px 0 0', fontSize: 13, color: '#6b8099' }}>{subtitle}</p>}
+          </div>
+        </div>
+        {right}
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+        {stats.map(s => (
+          <div key={s.label} style={{
+            flex: '1 1 180px', minWidth: 160,
+            background: 'linear-gradient(145deg, #0f1923 0%, #162030 55%, #0d2438 100%)',
+            border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '14px 16px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <div style={{
+                width: 30, height: 30, borderRadius: 9, background: 'rgba(0,171,233,0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0,
+              }}>{s.icon}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', lineHeight: 1.3 }}>{s.label}</div>
+            </div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{s.value}</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 3 }}>{s.sub}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function BackBtn({ onClick, children }) {
   return (
     <button onClick={onClick} style={{
@@ -66,56 +151,70 @@ export function TeamAgeBadge({ sectionId, collaborateurs }) {
 // progression — le cœur réutilisable, indépendant du header qui l'entoure
 // (le formateur et le manager ont chacun leur propre header).
 export function SectionsList({ store, progress, onSelectCollaborateur }) {
-  // Moyenne des notes (/5) sur tous les items, notes manquantes comptées à 0 —
-  // distingue "pas encore audité" (0%) de "en cours partout" (progression
-  // visible), contrairement à un simple % d'items acquis.
-  const pctFor = (collabId, sectionId) => {
-    const items = SKILL_ITEMS[sectionId] || []
-    if (!items.length) return 0
-    const total = items.reduce((sum, it) => sum + (progress[`${collabId}:${it.id}`]?.score || 0), 0)
-    return Math.round((total / (items.length * 5)) * 100)
-  }
-
   return (
     <>
-      {store.sections.map(section => (
-        <div key={section.id} style={{ marginBottom: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 14 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 800, color: '#fff', margin: 0 }}>{section.label}</h3>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{section.sub}</span>
+      {store.sections.map(section => {
+        const colors = SECTION_COLORS[section.id] || SECTION_COLORS.cvo
+        const isEmpty = section.collaborateurs.length === 0
+        return (
+          <div key={section.id} style={{ marginBottom: 32 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 800, color: '#fff', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {section.label} · {section.sub}
+            </h3>
+            {isEmpty ? (
+              <div style={{
+                border: '1.5px dashed rgba(255,255,255,0.12)', borderRadius: 14, padding: '18px 20px',
+                fontSize: 13, color: 'rgba(255,255,255,0.3)', fontStyle: 'italic',
+              }}>
+                Aucun collaborateur dans cette équipe pour le moment.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                {section.collaborateurs.map(c => {
+                  const pct = pctFor(progress, c.id, section.id)
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => onSelectCollaborateur(section.id, c.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        background: 'rgba(255,255,255,0.03)', border: `1px solid ${colors.border}`,
+                        borderRadius: 14, padding: '12px 16px', cursor: 'pointer', fontFamily: 'inherit',
+                        flex: '1 1 260px', minWidth: 240, maxWidth: 340, textAlign: 'left', transition: 'all .18s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = colors.hoverBorder; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+                    >
+                      <div style={{
+                        flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.06)', border: `1.5px solid ${colors.hoverBorder}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 800, color: '#fff',
+                      }}>{initials(c)}</div>
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {collaborateurFullName(c)}
+                        </div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {c.contrat}{c.entree && ` · ${tenureLabel(c.entree)} d'ancienneté`}
+                        </div>
+                        <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${pct}%`, background: colors.bar, transition: 'width .3s' }} />
+                        </div>
+                      </div>
+
+                      <div style={{ flexShrink: 0, fontSize: 13, fontWeight: 800, color: '#fff', minWidth: 34, textAlign: 'right' }}>
+                        {pct}%
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-            {section.collaborateurs.map(c => {
-              const pct = pctFor(c.id, section.id)
-              const colors = SECTION_COLORS[section.id] || SECTION_COLORS.cvo
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => onSelectCollaborateur(section.id, c.id)}
-                  style={{
-                    position: 'relative', overflow: 'hidden',
-                    background: colors.bg, border: `1px solid ${colors.border}`,
-                    borderRadius: 14, padding: '16px 20px 16px 24px', cursor: 'pointer', fontFamily: 'inherit',
-                    minWidth: 200, textAlign: 'left', transition: 'all .18s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = colors.hoverBorder }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border }}
-                >
-                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: colors.bar }} />
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 3 }}>{collaborateurFullName(c)}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>
-                    {c.contrat}{c.entree && ` · ${tenureLabel(c.entree)} d'ancienneté`}
-                  </div>
-                  <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#22c55e' : '#00abe9', transition: 'width .3s' }} />
-                  </div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 5 }}>{pct}% de maîtrise</div>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </>
   )
 }
@@ -126,29 +225,7 @@ export function StoreDetail({ store, progress, onSelectCollaborateur, onBack }) 
     <div className="dash-wrap">
       <BackBtn onClick={onBack}>← Tous les magasins</BackBtn>
 
-      <div style={{ display: 'flex', gap: 28, alignItems: 'center', flexWrap: 'wrap', marginBottom: 32, justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', gap: 28, alignItems: 'center', flexWrap: 'wrap' }}>
-          {store.photo && (
-            <div style={{
-              flexShrink: 0, width: 300, borderRadius: 18, overflow: 'hidden',
-              border: '2px solid rgba(34,197,94,0.4)', boxShadow: '0 0 32px rgba(34,197,94,0.2)',
-            }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={store.photo} alt={`Magasin ${store.label}`} style={{ width: '100%', height: 220, objectFit: 'cover', objectPosition: 'center 30%', display: 'block' }} />
-            </div>
-          )}
-          <div>
-            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: '#e8edf3' }}>🏬 {store.label}</h2>
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b8099' }}>Sélectionnez un collaborateur pour voir sa fiche de suivi</p>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignSelf: 'flex-start' }}>
-          {store.sections.map(section => (
-            <TeamAgeBadge key={section.id} sectionId={section.id} collaborateurs={section.collaborateurs} />
-          ))}
-        </div>
-      </div>
+      <StoreHeader store={store} progress={progress} subtitle="Sélectionnez un collaborateur pour voir sa fiche de suivi" />
 
       <SectionsList store={store} progress={progress} onSelectCollaborateur={onSelectCollaborateur} />
     </div>

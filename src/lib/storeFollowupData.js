@@ -40,6 +40,43 @@ export const STORES = [
       },
     ],
   },
+  // Magasin fictif — bac à sable pour tester le dashboard manager sans
+  // toucher aux vraies données Bayonne. Aucune photo (le header gère déjà
+  // l'absence de photo). Noms, contrats et anciennetés volontairement variés
+  // (courts/longs, récents/anciens) pour éprouver l'affichage.
+  {
+    id: 'magasin-test',
+    label: 'Magasin Test',
+    sections: [
+      {
+        id: 'cvo',
+        label: 'CVO',
+        sub: 'Vendeurs',
+        collaborateurs: [
+          { id: 'camille-lefebvre',        prenom: 'Camille',     nom: 'Lefebvre',           contrat: '35h', entree: '2026-09-10' },
+          { id: 'hugo-tanguy-lecomte',      prenom: 'Hugo',        nom: 'Tanguy-Lecomte',     contrat: '35h', entree: '2026-08-20' },
+          { id: 'ines-abdellaoui',          prenom: 'Inès',        nom: 'Abdellaoui',         contrat: '24h', entree: '2026-07-15' },
+          { id: 'maxence-ferreira-silva',   prenom: 'Maxence',     nom: 'Ferreira-Silva',     contrat: '35h', entree: '2026-03-16' },
+          { id: 'zoe-rousseau',             prenom: 'Zoé',         nom: 'Rousseau',           contrat: '24h', entree: '2025-09-16' },
+          { id: 'nathanael-kouassi',        prenom: 'Nathanaël',   nom: 'Kouassi',            contrat: '35h', entree: '2024-09-16' },
+          { id: 'lisa-marie-vasseur',       prenom: 'Lisa-Marie',  nom: 'Vasseur',            contrat: '35h', entree: '2023-09-16' },
+          { id: 'rayan-el-amrani',          prenom: 'Rayan',       nom: 'El Amrani',          contrat: '24h', entree: '2021-09-16' },
+        ],
+      },
+      {
+        id: 'mo-sav',
+        label: 'MO/SAV',
+        sub: 'Monteurs · SAV',
+        collaborateurs: [
+          { id: 'elodie-chevallier',       prenom: 'Élodie',      nom: 'Chevallier',         contrat: '35h', entree: '2026-08-16' },
+          { id: 'theo-da-costa',           prenom: 'Théo',        nom: 'Da Costa',           contrat: '35h', entree: '2026-05-16' },
+          { id: 'manon-pires-goncalves',   prenom: 'Manon',       nom: 'Pires-Gonçalves',    contrat: '35h', entree: '2025-09-16' },
+          { id: 'yanis-boucherit',         prenom: 'Yanis',       nom: 'Boucherit',          contrat: '35h', entree: '2024-09-16' },
+          { id: 'aurelie-lemoine',         prenom: 'Aurélie',     nom: 'Lemoine',            contrat: '35h', entree: '2022-09-16' },
+        ],
+      },
+    ],
+  },
 ]
 
 // Items de suivi par section — regroupés par catégorie pour l'affichage.
