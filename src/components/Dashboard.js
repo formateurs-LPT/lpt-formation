@@ -1424,6 +1424,13 @@ function IdeesView({ onBack, pName }) {
     return acc
   }, {})
 
+  // Plus récent en premier, à tous les niveaux (modules, pages dans un module,
+  // idées dans une page) — sinon l'ordre dépend juste de l'ordre d'insertion
+  // (première idée jamais notée sur ce module/page), pas de l'activité récente.
+  const mostRecentTs = (idees) => Math.max(...idees.map(i => new Date(i.timestamp).getTime()))
+  const sortEntriesByMostRecent = (entries, idsOf) =>
+    [...entries].sort(([, a], [, b]) => mostRecentTs(idsOf(b)) - mostRecentTs(idsOf(a)))
+
   const pendingGrouped = groupByModule(pending)
   const validatedGrouped = groupByModule(validated)
   const doneGrouped = groupByModule(done)
@@ -1518,7 +1525,7 @@ function IdeesView({ onBack, pName }) {
       validated: { title: 'Aucune idée validée pour l\'instant', sub: 'Validez des idées depuis l\'onglet "En attente de vote"' },
       done:      { title: 'Aucune idée réalisée pour l\'instant', sub: 'Cliquez sur "C\'est fait !" dans l\'onglet "Validées à réaliser"' },
     }
-    const entries = Object.entries(grouped)
+    const entries = sortEntriesByMostRecent(Object.entries(grouped), pages => Object.values(pages).flat())
     if (entries.length === 0) return (
       <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--text-s)' }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>{c.empty}</div>
@@ -1537,7 +1544,7 @@ function IdeesView({ onBack, pName }) {
               </span>
             </div>
             <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {Object.entries(pages).map(([pageLabel, pageIdees]) => (
+              {sortEntriesByMostRecent(Object.entries(pages), idees => idees).map(([pageLabel, pageIdees]) => (
                 <div key={pageLabel}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-s)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ height: 1, flex: 1, background: 'var(--border)' }} />
@@ -1545,7 +1552,7 @@ function IdeesView({ onBack, pName }) {
                     <div style={{ height: 1, flex: 1, background: 'var(--border)' }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {pageIdees.sort((a, b) => a.timestamp > b.timestamp ? 1 : -1).map(idee => (
+                    {[...pageIdees].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).map(idee => (
                       <IdeeCard key={idee.id} idee={idee} status={status} />
                     ))}
                   </div>
