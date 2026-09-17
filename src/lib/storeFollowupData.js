@@ -90,6 +90,8 @@ export const SKILL_ITEMS = {
     { id: 'traitements',        label: 'Traitements',                  category: 'Compétences' },
     { id: 'montures',           label: 'Montures',                     category: 'Compétences' },
     { id: 'tiers-payants',      label: 'Tiers payants compréhension',  category: 'Compétences' },
+    { id: 'verres-progressifs', label: 'Verres progressifs',           category: 'Compétences' },
+    { id: 'prises-mesures',     label: 'Prises de mesures',            category: 'Compétences' },
     { id: 'backend-cvo',        label: 'Backend',                      category: 'Compétences' },
     { id: 'parcours-telephone', label: 'Parcours téléphone',           category: 'Maîtrise des outils' },
     { id: 'lpt-vision',         label: 'LPT VISION',                   category: 'Maîtrise des outils' },
@@ -106,6 +108,8 @@ export const SKILL_ITEMS = {
     { id: 'raz',             label: 'RAZ',                                   category: 'Compétences' },
     { id: 'suivi-commande',  label: 'Statut suivi de commande',              category: 'Compétences' },
     { id: 'reglage-monture', label: 'Réglage monture',                       category: 'Compétences' },
+    { id: 'verres-progressifs', label: 'Verres progressifs',                 category: 'Compétences' },
+    { id: 'prises-mesures',  label: 'Prises de mesures',                     category: 'Compétences' },
     { id: 'backend-mosav',   label: 'Backend',                               category: 'Compétences' },
   ],
 }
@@ -234,6 +238,28 @@ export const ITEM_GUIDES = {
       "Comment vérifies-tu les droits d'un client au tiers payant ?",
       "Que fais-tu si le tiers payant du client n'apparaît pas dans le backend ?",
     ],
+  },
+  'verres-progressifs': {
+    instruction: 'Faire réciter ce que le collaborateur a retenu de la formation visio Verres progressifs — contenu repris du module Types de verres.',
+    questions: [
+      'Quelle est la différence entre un verre progressif et un verre unifocal ?',
+      'Quels sont les avantages du Pulsar Next par rapport à un progressif classique ?',
+      'À qui proposerais-tu un verre progressif Pulsar Next ?',
+    ],
+    sections: [
+      {
+        label: 'Progressif (Pulsar Next)', color: '#7c3aed',
+        bullets: ['Verre progressif haut de gamme. Corrige la vision de loin, intermédiaire et de près en une seule paire. Zone de flou réduite au maximum, adaptation plus rapide, confort supérieur aux progressifs classiques.'],
+      },
+    ],
+  },
+  'prises-mesures': {
+    instruction: 'Faire réciter ce que le collaborateur a retenu de la formation visio Prises de mesures.',
+    questions: [
+      'Quelles mesures dois-tu prendre pour équiper un client de verres progressifs ?',
+      'Comment vérifies-tu qu\'une monture est bien ajustée avant la prise de mesures ?',
+    ],
+    missingNote: "Pas de module dédié aux prises de mesures dans l'app pour l'instant — à compléter avec le contenu réel de la formation visio.",
   },
   'backend-cvo': {
     instruction: 'Le formateur navigue sur le backend.',

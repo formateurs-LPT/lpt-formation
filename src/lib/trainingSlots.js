@@ -13,6 +13,16 @@ export const TRAINING_HOURS = ['10:00', '11:00', '12:00', '13:00', '14:00', '15:
 
 export const SLOT_CAPACITY = 10
 
+// Relie chaque thème de formation visio à l'item de compétence correspondant
+// dans storeFollowupData.js (SKILL_ITEMS) — permet, une fois la formation
+// passée, de noter directement le collaborateur sur cette compétence depuis
+// la liste des inscriptions, sans repasser par Suivi magasin.
+export const THEME_TO_SKILL_ITEM = {
+  'tiers-payant': 'tiers-payants',
+  'verres-progressifs': 'verres-progressifs',
+  'prises-mesures': 'prises-mesures',
+}
+
 export function formatSlotDate(dateISO) {
   const d = new Date(`${dateISO}T00:00:00`)
   const s = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })

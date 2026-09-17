@@ -13,7 +13,9 @@ import OnboardingViewBelgique from './OnboardingViewBelgique'
 import EntreesView from './EntreesView'
 import RoomOpenModal from './RoomOpenModal'
 import { TRAINER_AVATARS, TRAINER_CANONICAL, getTrainerAvatarKey } from '@/lib/constants'
-import { TRAINING_THEMES, formatSlotDate, formatHeure, todayISODateLocal } from '@/lib/trainingSlots'
+import { TRAINING_THEMES, formatSlotDate, formatHeure, todayISODateLocal, THEME_TO_SKILL_ITEM } from '@/lib/trainingSlots'
+import { ItemRow } from '@/components/StoreFollowupShared'
+import { useStoreFollowupProgress } from '@/lib/useStoreFollowupProgress'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
 import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName, endActiveRoom } from '@/lib/sessionRoom'
@@ -1387,9 +1389,66 @@ function inscriptionsLastSeenKey(pName) {
   return `lpt_inscriptions_vu_${getTrainerAvatarKey(pName)}`
 }
 
+// Raccourci "Noter" — plutôt que de renvoyer le formateur vers Suivi magasin
+// pour chercher le collaborateur, ouvre directement le même ItemRow (trame,
+// note, historique, score) sur l'item de compétence relié au thème de la
+// formation qu'il vient d'animer.
+function NoterModal({ magasin, collaborateurId, collaborateurNom, itemId, itemLabel, pName, onClose }) {
+  const { progress, history, saveError, setScore, saveNote, reset } = useStoreFollowupProgress(magasin, pName)
+  const key = `${collaborateurId}:${itemId}`
+  const item = { id: itemId, label: itemLabel, category: 'Compétences' }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20,
+          padding: '26px 28px', width: '100%', maxWidth: 520,
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1.5 }}>Noter la compétence</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 4 }}>{collaborateurNom}</div>
+          </div>
+          <button onClick={onClose} style={{
+            background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 8, width: 32, height: 32,
+            cursor: 'pointer', color: 'rgba(255,255,255,0.5)', fontSize: 16, flexShrink: 0,
+          }}>✕</button>
+        </div>
+
+        {saveError && (
+          <div style={{
+            background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.4)', color: '#f87171',
+            borderRadius: 10, padding: '10px 14px', fontSize: 13, marginBottom: 14,
+          }}>⚠️ Échec de la sauvegarde — réessayez.</div>
+        )}
+
+        <ItemRow
+          item={item}
+          entry={progress[key]}
+          pastEntries={history[key]}
+          onSetScore={(itId, score) => setScore(collaborateurId, itId, score)}
+          onSaveNote={(itId, note) => saveNote(collaborateurId, itId, note)}
+          onReset={(itId) => reset(collaborateurId, itId)}
+        />
+      </div>
+    </div>
+  )
+}
+
 function InscriptionsView({ onBack, pName }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
+  const [noterTarget, setNoterTarget] = useState(null)
 
   useEffect(() => {
     // Ne montre que les formations pas encore passées — une fois la date
@@ -1408,8 +1467,8 @@ function InscriptionsView({ onBack, pName }) {
   const groups = {}
   for (const r of rows) {
     const key = `${r.session_date}__${r.session_heure}__${r.theme}__${r.magasin}`
-    if (!groups[key]) groups[key] = { ...r, noms: [] }
-    groups[key].noms.push(r.collaborateur_nom)
+    if (!groups[key]) groups[key] = { ...r, collabs: [] }
+    groups[key].collabs.push({ id: r.collaborateur_id, nom: r.collaborateur_nom })
   }
   const list = Object.values(groups)
 
@@ -1431,20 +1490,51 @@ function InscriptionsView({ onBack, pName }) {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {list.map((g, i) => (
-            <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '14px 18px' }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>
-                {formatSlotDate(g.session_date)} · {formatHeure(g.session_heure)} — {themeLabel(g.theme)}
+          {list.map((g, i) => {
+            const itemId = THEME_TO_SKILL_ITEM[g.theme]
+            return (
+              <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '14px 18px' }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>
+                  {formatSlotDate(g.session_date)} · {formatHeure(g.session_heure)} — {themeLabel(g.theme)}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-s)', marginTop: 2, marginBottom: 8 }}>
+                  {g.magasin}{g.registered_by && ` · Inscrit par ${g.registered_by}`}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {g.collabs.map(c => (
+                    <div key={c.id} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      background: 'var(--bg)', borderRadius: 8, padding: '7px 10px 7px 12px',
+                    }}>
+                      <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{c.nom}</span>
+                      {itemId && (
+                        <button
+                          onClick={() => setNoterTarget({
+                            magasin: g.magasin, collaborateurId: c.id, collaborateurNom: c.nom,
+                            itemId, itemLabel: themeLabel(g.theme),
+                          })}
+                          style={{
+                            background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.35)',
+                            color: '#0089ba', borderRadius: 8, padding: '5px 12px', fontSize: 12, fontWeight: 700,
+                            cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+                          }}
+                        >✓ Noter</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 4 }}>
-                {g.magasin} · {g.noms.join(', ')}
-              </div>
-              {g.registered_by && (
-                <div style={{ fontSize: 11, color: 'var(--text-s)', marginTop: 4 }}>Inscrit par {g.registered_by}</div>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
+      )}
+
+      {noterTarget && (
+        <NoterModal
+          {...noterTarget}
+          pName={pName}
+          onClose={() => setNoterTarget(null)}
+        />
       )}
     </div>
   )
