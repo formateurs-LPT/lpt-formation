@@ -434,6 +434,12 @@ export async function setWeeklySharedState(patch) {
   return result
 }
 
+// Verrou optimiste (mutateRoomState) plutôt qu'un simple lire-modifier-écrire :
+// pendant un quiz en direct, plusieurs appareils (formés + formateur) écrivent
+// le même état de salle à quelques centaines de ms d'intervalle — un
+// lire-modifier-écrire naïf peut perdre silencieusement l'un des deux (ex :
+// le clic "Voir la correction" du formateur écrasé par une écriture concurrente,
+// le diffuseur restant alors bloqué sur la question — incident du 15/09).
 export async function setRoomSharedState(patch, roomCode) {
   if (!patch || typeof patch !== 'object') return null
   const code = (roomCode || resolveRoomStateCode()).trim()
@@ -442,7 +448,7 @@ export async function setRoomSharedState(patch, roomCode) {
     return null
   }
   console.log('[setRoomSharedState] ✏️', code, patch)
-  const result = await upsertTrainerStateByKey(code, patch)
+  const result = await mutateRoomState(code, () => patch)
   if (!result) console.error('[setRoomSharedState] ❌ échec', code)
   return result
 }

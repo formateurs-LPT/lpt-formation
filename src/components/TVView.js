@@ -1045,8 +1045,11 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
         </div>
       </div>
 
-      {/* Zone principale — marge droite pour laisser place à la carte avatar */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '12px 340px 48px 56px', gap: 32 }}>
+      {/* Zone principale — marge droite pour laisser place à la carte avatar.
+          Espacements resserrés pour tenir sur un écran/fenêtre pas en plein
+          écran (l'Addition, dernier bloc de la pile, sortait du cadre visible
+          sur les fenêtres de moins de ~750px de haut — incident du 15/09). */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '8px 340px 24px 56px', gap: 20 }}>
 
         {/* Titre */}
         <div>
@@ -1060,7 +1063,7 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
             <div key={col.key} style={{
               background: `${col.color}0d`, border: `1px solid ${col.color}28`,
               borderTop: `4px solid ${col.color}`, borderRadius: 18,
-              padding: '28px 28px 22px',
+              padding: '18px 24px 14px',
               opacity: showCard(i) ? 1 : 0,
               transform: showCard(i) ? 'translateY(0)' : 'translateY(20px)',
               transition: 'all 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
@@ -1089,7 +1092,7 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
           transition: 'all 0.5s ease',
           flex: 1,
         }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
             Exemple d&apos;ordonnance
           </div>
 
@@ -1098,7 +1101,7 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
             <div style={{ display: 'grid', gridTemplateColumns: '100px repeat(3, 1fr)', background: 'rgba(255,255,255,0.04)' }}>
               <div />
               {ORD_COLS.map(col => (
-                <div key={col.key} style={{ padding: '14px 28px', fontSize: 14, fontWeight: 800, color: col.color, textTransform: 'uppercase', letterSpacing: 1, borderLeft: '1px solid rgba(255,255,255,0.07)' }}>
+                <div key={col.key} style={{ padding: '9px 28px', fontSize: 14, fontWeight: 800, color: col.color, textTransform: 'uppercase', letterSpacing: 1, borderLeft: '1px solid rgba(255,255,255,0.07)' }}>
                   {col.label}
                 </div>
               ))}
@@ -1106,10 +1109,10 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
 
             {/* Ligne OD */}
             <div style={{ display: 'grid', gridTemplateColumns: '100px repeat(3, 1fr)', borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
-              <div style={{ padding: '20px 28px', fontSize: 16, fontWeight: 800, color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center' }}>OD</div>
+              <div style={{ padding: '13px 28px', fontSize: 16, fontWeight: 800, color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center' }}>OD</div>
               {ORD_COLS.map((col, ci) => (
                 <div key={col.key} style={{
-                  padding: '20px 28px', borderLeft: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center',
+                  padding: '13px 28px', borderLeft: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center',
                   opacity: showCell(ci) ? 1 : 0, transform: showCell(ci) ? 'translateX(0)' : 'translateX(-12px)', transition: 'all 0.35s ease',
                 }}>
                   <span style={{ fontSize: 28, fontWeight: 700, color: col.color, fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.od[col.key]}</span>
@@ -1119,10 +1122,10 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
 
             {/* Ligne OG */}
             <div style={{ display: 'grid', gridTemplateColumns: '100px repeat(3, 1fr)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-              <div style={{ padding: '20px 28px', fontSize: 16, fontWeight: 800, color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center' }}>OG</div>
+              <div style={{ padding: '13px 28px', fontSize: 16, fontWeight: 800, color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center' }}>OG</div>
               {ORD_COLS.map((col, ci) => (
                 <div key={col.key} style={{
-                  padding: '20px 28px', borderLeft: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center',
+                  padding: '13px 28px', borderLeft: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center',
                   opacity: showCell(ci) ? 1 : 0, transform: showCell(ci) ? 'translateX(0)' : 'translateX(-12px)', transition: 'all 0.35s ease',
                 }}>
                   <span style={{ fontSize: 28, fontWeight: 700, color: col.color, fontVariantNumeric: 'tabular-nums' }}>{ORD_EXAMPLE.og[col.key]}</span>
@@ -1133,8 +1136,8 @@ function TVOrdonnance({ page, pageIndex, total, moduleLabel, ordoPlaying, ordoRe
 
           {/* Addition */}
           <div style={{
-            marginTop: 18, display: 'flex', alignItems: 'center', gap: 24,
-            padding: '18px 28px',
+            marginTop: 12, display: 'flex', alignItems: 'center', gap: 24,
+            padding: '13px 28px',
             background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 18,
             opacity: showAdd ? 1 : 0, transform: showAdd ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s ease',
           }}>
