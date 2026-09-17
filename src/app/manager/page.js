@@ -7,6 +7,7 @@ import { matchMagasinKey } from '@/lib/managersData'
 import { classifyMagasin } from '@/lib/formationCategories'
 import { useStoreFollowupProgress } from '@/lib/useStoreFollowupProgress'
 import { SectionsList, CollaborateurFiche, StoreHeader } from '@/components/StoreFollowupShared'
+import TrainingRegistrationTile from '@/components/TrainingRegistrationTile'
 
 // Page autonome (comme /rapport, /bilan-formation) — aucune dépendance à
 // page.js/Dashboard.js, donc aucun risque pour le flux formateur/participant/TV.
@@ -201,6 +202,8 @@ function ManagerDashboard({ session, onLogout }) {
             }}>Se déconnecter</button>
           }
         />
+
+        <TrainingRegistrationTile store={store} session={session} />
 
         <NewHiresTile store={store} entreesData={entreesData} />
 

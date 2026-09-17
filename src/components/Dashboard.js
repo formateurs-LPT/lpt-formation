@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import { sbSelect, sbDelete, getSharedState, insertSessionHistory, parseSessionHistorySummary, getRuntimeSessionCode, SESSION_CODE } from '@/lib/supabase'
@@ -12,7 +12,8 @@ import OnboardingView from './OnboardingView'
 import OnboardingViewBelgique from './OnboardingViewBelgique'
 import EntreesView from './EntreesView'
 import RoomOpenModal from './RoomOpenModal'
-import { TRAINER_AVATARS, TRAINER_CANONICAL } from '@/lib/constants'
+import { TRAINER_AVATARS, TRAINER_CANONICAL, getTrainerAvatarKey } from '@/lib/constants'
+import { TRAINING_THEMES, formatSlotDate, formatHeure } from '@/lib/trainingSlots'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
 import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName, endActiveRoom } from '@/lib/sessionRoom'
@@ -1379,6 +1380,73 @@ function AddIdeeModal({ pName, onClose, onSaved }) {
   )
 }
 
+// Marque toutes les inscriptions comme vues POUR CE FORMATEUR (localStorage,
+// par appareil) — jamais partagé, pour que Kevin ouvrir la liste n'efface
+// pas la notification de Quentin (et inversement).
+function inscriptionsLastSeenKey(pName) {
+  return `lpt_inscriptions_vu_${getTrainerAvatarKey(pName)}`
+}
+
+function InscriptionsView({ onBack, pName }) {
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    sbSelect('training_registrations', 'order=session_date.asc,session_heure.asc').then(r => {
+      setRows(r || [])
+      setLoading(false)
+    }).catch(() => setLoading(false))
+    try { localStorage.setItem(inscriptionsLastSeenKey(pName), new Date().toISOString()) } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const themeLabel = (id) => TRAINING_THEMES.find(t => t.id === id)?.label || id
+
+  const groups = {}
+  for (const r of rows) {
+    const key = `${r.session_date}__${r.session_heure}__${r.theme}__${r.magasin}`
+    if (!groups[key]) groups[key] = { ...r, noms: [] }
+    groups[key].noms.push(r.collaborateur_nom)
+  }
+  const list = Object.values(groups)
+
+  return (
+    <div className="dash-wrap">
+      <button className="detail-back" onClick={onBack}>← Retour</button>
+      <div className="dash-header">
+        <div>
+          <h2>📬 Inscriptions formations</h2>
+          <p>Prochaines sessions organisées par les managers, triées par date</p>
+        </div>
+      </div>
+      {loading ? (
+        <p style={{ color: 'var(--text-s)' }}>Chargement…</p>
+      ) : list.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--text-s)' }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
+          <div style={{ fontSize: 15, fontWeight: 600 }}>Aucune inscription pour l&apos;instant</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {list.map((g, i) => (
+            <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '14px 18px' }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>
+                {formatSlotDate(g.session_date)} · {formatHeure(g.session_heure)} — {themeLabel(g.theme)}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 4 }}>
+                {g.magasin} · {g.noms.join(', ')}
+              </div>
+              {g.registered_by && (
+                <div style={{ fontSize: 11, color: 'var(--text-s)', marginTop: 4 }}>Inscrit par {g.registered_by}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function IdeesView({ onBack, pName }) {
   const [idees, setIdees] = useState([])
   const [loading, setLoading] = useState(true)
@@ -1707,6 +1775,8 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   const [obReturnJournee, setObReturnJournee] = useState(null)
   const [obReturnView, setObReturnView] = useState('onboarding')
   const [ideeCount, setIdeeCount] = useState(0)
+  const [inscriptionsCount, setInscriptionsCount] = useState(0)
+  const inscriptionsToastedRef = useRef(false)
   const [penseBeteTodoCount, setPenseBeteTodoCount] = useState(0)
   const [showSonnette, setShowSonnette] = useState(false)
   const [sonnettePending, setSonnettePending] = useState(0)
@@ -1739,12 +1809,31 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   }
   useEffect(() => { refreshPenseBeteCount() }, [pName])
 
+  // Compte les inscriptions plus récentes que la dernière consultation DE CE
+  // FORMATEUR (horodatage local, cf. inscriptionsLastSeenKey) — jamais
+  // partagé, pour que Kevin et Quentin gardent chacun leur propre badge.
+  const refreshInscriptionsCount = async (allowToast) => {
+    try {
+      const rows = await sbSelect('training_registrations', 'select=created_at')
+      let lastSeen = 0
+      try { lastSeen = new Date(localStorage.getItem(inscriptionsLastSeenKey(pName)) || 0).getTime() } catch {}
+      const unseen = (rows || []).filter(r => new Date(r.created_at).getTime() > lastSeen).length
+      setInscriptionsCount(unseen)
+      if (allowToast && unseen > 0 && !inscriptionsToastedRef.current) {
+        inscriptionsToastedRef.current = true
+        onToast?.(`Vous avez reçu ${unseen} nouvelle${unseen > 1 ? 's' : ''} inscription${unseen > 1 ? 's' : ''}`)
+      }
+    } catch {}
+  }
+
   useEffect(() => {
     loadTileStats()
     refreshActiveRoom()
+    refreshInscriptionsCount(true)
     const interval = setInterval(() => {
       loadTileStats()
       refreshActiveRoom()
+      refreshInscriptionsCount(false)
     }, 15000)
     return () => clearInterval(interval)
   }, [pName])
@@ -1924,6 +2013,10 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
   if (activeView === 'idees') {
     return <div id="dashboard"><IdeesView onBack={() => setActiveView('home')} pName={pName} /></div>
+  }
+
+  if (activeView === 'inscriptions') {
+    return <div id="dashboard"><InscriptionsView onBack={() => { setActiveView('home'); refreshInscriptionsCount(false) }} pName={pName} /></div>
   }
 
   if (activeView === 'pense-bete') {
@@ -2330,6 +2423,22 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-count">{sessionCount}</div>
             <div className="dash-tile-label">Sessions réalisées</div>
             <div className="dash-tile-sub">{sessionLast}</div>
+          </div>
+
+          <div
+            className="dash-tile"
+            onClick={() => setActiveView('inscriptions')}
+            style={inscriptionsCount > 0 ? {
+              borderColor: 'rgba(245,158,11,0.6)', boxShadow: '0 0 24px rgba(245,158,11,0.25)',
+            } : undefined}
+          >
+            <div className="dash-tile-top">
+              <div className="dash-tile-icon">📬</div>
+              <span className="dash-tile-link">Voir tout →</span>
+            </div>
+            <div className="dash-tile-count" style={inscriptionsCount > 0 ? { color: '#f59e0b' } : undefined}>{inscriptionsCount}</div>
+            <div className="dash-tile-label">Inscriptions formations</div>
+            <div className="dash-tile-sub">Nouvelles inscriptions à traiter</div>
           </div>
 
           <div className="dash-tile" onClick={() => setActiveView('idees')}>
