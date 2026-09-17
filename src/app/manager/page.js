@@ -6,7 +6,7 @@ import { mergeEntreesIntoRoster } from '@/lib/storeRosterMerge'
 import { matchMagasinKey } from '@/lib/managersData'
 import { classifyMagasin } from '@/lib/formationCategories'
 import { useStoreFollowupProgress } from '@/lib/useStoreFollowupProgress'
-import { SectionsList, CollaborateurFiche, TeamAgeBadge } from '@/components/StoreFollowupShared'
+import { SectionsList, CollaborateurFiche, StoreHeader } from '@/components/StoreFollowupShared'
 
 // Page autonome (comme /rapport, /bilan-formation) — aucune dépendance à
 // page.js/Dashboard.js, donc aucun risque pour le flux formateur/participant/TV.
@@ -155,7 +155,6 @@ function ManagerDashboard({ session, onLogout }) {
   }
 
   const store = mergeEntreesIntoRoster(baseStore, entreesData)
-  const totalHeadcount = store.sections.reduce((n, s) => n + s.collaborateurs.length, 0)
   const firstName = (session.displayName || '').split(' ')[0]
   const section = store.sections.find(s => s.id === sectionId) || null
   const collaborateur = section?.collaborateurs.find(c => c.id === collaborateurId) || null
@@ -190,35 +189,18 @@ function ManagerDashboard({ session, onLogout }) {
   return (
     <div id="dashboard">
       <div className="dash-wrap">
-        <div style={{ display: 'flex', gap: 28, alignItems: 'center', flexWrap: 'wrap', marginBottom: 32, justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', gap: 28, alignItems: 'center', flexWrap: 'wrap' }}>
-            {store.photo && (
-              <div style={{
-                flexShrink: 0, width: 300, borderRadius: 18, overflow: 'hidden',
-                border: '2px solid rgba(34,197,94,0.4)', boxShadow: '0 0 32px rgba(34,197,94,0.2)',
-              }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={store.photo} alt={`Magasin ${store.label}`} style={{ width: '100%', height: 220, objectFit: 'cover', objectPosition: 'center 30%', display: 'block' }} />
-              </div>
-            )}
-            <div>
-              <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: '#e8edf3' }}>🏬 {store.label}</h2>
-              <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b8099' }}>
-                Bonjour {firstName} 👋 · {totalHeadcount} collaborateur{totalHeadcount > 1 ? 's' : ''}
-              </p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            {store.sections.map(s => (
-              <TeamAgeBadge key={s.id} sectionId={s.id} collaborateurs={s.collaborateurs} />
-            ))}
+        <StoreHeader
+          store={store}
+          progress={progress}
+          subtitle={`Bonjour ${firstName} 👋`}
+          right={
             <button onClick={onLogout} style={{
               background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
               color: 'rgba(255,255,255,0.7)', padding: '8px 16px', borderRadius: 10,
-              fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', height: 'fit-content',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', height: 'fit-content', flexShrink: 0,
             }}>Se déconnecter</button>
-          </div>
-        </div>
+          }
+        />
 
         <NewHiresTile store={store} entreesData={entreesData} />
 
