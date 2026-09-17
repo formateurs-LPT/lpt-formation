@@ -13,7 +13,7 @@ import OnboardingViewBelgique from './OnboardingViewBelgique'
 import EntreesView from './EntreesView'
 import RoomOpenModal from './RoomOpenModal'
 import { TRAINER_AVATARS, TRAINER_CANONICAL, getTrainerAvatarKey } from '@/lib/constants'
-import { TRAINING_THEMES, formatSlotDate, formatHeure } from '@/lib/trainingSlots'
+import { TRAINING_THEMES, formatSlotDate, formatHeure, todayISODateLocal } from '@/lib/trainingSlots'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
 import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName, endActiveRoom } from '@/lib/sessionRoom'
@@ -1392,7 +1392,10 @@ function InscriptionsView({ onBack, pName }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    sbSelect('training_registrations', 'order=session_date.asc,session_heure.asc').then(r => {
+    // Ne montre que les formations pas encore passées — une fois la date
+    // dépassée, on considère que c'est fait et ça ne doit plus polluer la
+    // liste ni le compteur.
+    sbSelect('training_registrations', `session_date=gte.${todayISODateLocal()}&order=session_date.asc,session_heure.asc`).then(r => {
       setRows(r || [])
       setLoading(false)
     }).catch(() => setLoading(false))
@@ -1776,6 +1779,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   const [obReturnView, setObReturnView] = useState('onboarding')
   const [ideeCount, setIdeeCount] = useState(0)
   const [inscriptionsCount, setInscriptionsCount] = useState(0)
+  const [inscriptionsPending, setInscriptionsPending] = useState(0)
   const inscriptionsToastedRef = useRef(false)
   const [penseBeteTodoCount, setPenseBeteTodoCount] = useState(0)
   const [showSonnette, setShowSonnette] = useState(false)
@@ -1809,12 +1813,21 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   }
   useEffect(() => { refreshPenseBeteCount() }, [pName])
 
-  // Compte les inscriptions plus récentes que la dernière consultation DE CE
-  // FORMATEUR (horodatage local, cf. inscriptionsLastSeenKey) — jamais
-  // partagé, pour que Kevin et Quentin gardent chacun leur propre badge.
+  // Deux nombres distincts, volontairement découplés :
+  // - "pending" = inscriptions pas encore passées (session_date à venir) —
+  //   chiffre stable affiché sur la tuile, ne retombe pas à zéro juste parce
+  //   qu'on a consulté la liste ; une fois la date dépassée, ça disparaît du
+  //   compte tout seul (plus besoin de marquer "fait" à la main).
+  // - "unseen" = inscriptions plus récentes que la dernière consultation DE
+  //   CE FORMATEUR (horodatage local, cf. inscriptionsLastSeenKey) — pilote
+  //   uniquement le halo/toast "nouveau", jamais partagé entre Kevin/Quentin.
   const refreshInscriptionsCount = async (allowToast) => {
     try {
-      const rows = await sbSelect('training_registrations', 'select=created_at')
+      const rows = await sbSelect('training_registrations', 'select=created_at,session_date')
+      const today = todayISODateLocal()
+      const pending = (rows || []).filter(r => r.session_date >= today).length
+      setInscriptionsPending(pending)
+
       let lastSeen = 0
       try { lastSeen = new Date(localStorage.getItem(inscriptionsLastSeenKey(pName)) || 0).getTime() } catch {}
       const unseen = (rows || []).filter(r => new Date(r.created_at).getTime() > lastSeen).length
@@ -2436,9 +2449,9 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
               <div className="dash-tile-icon">📬</div>
               <span className="dash-tile-link">Voir tout →</span>
             </div>
-            <div className="dash-tile-count" style={inscriptionsCount > 0 ? { color: '#f59e0b' } : undefined}>{inscriptionsCount}</div>
+            <div className="dash-tile-count" style={inscriptionsCount > 0 ? { color: '#f59e0b' } : undefined}>{inscriptionsPending}</div>
             <div className="dash-tile-label">Inscriptions formations</div>
-            <div className="dash-tile-sub">Nouvelles inscriptions à traiter</div>
+            <div className="dash-tile-sub">Collaborateur{inscriptionsPending > 1 ? 's' : ''} en attente de formation</div>
           </div>
 
           <div className="dash-tile" onClick={() => setActiveView('idees')}>

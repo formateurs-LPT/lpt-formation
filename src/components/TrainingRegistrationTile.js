@@ -289,16 +289,35 @@ export default function TrainingRegistrationTile({ store, session }) {
       <button
         onClick={() => setModalOpen(true)}
         style={{
-          display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left',
-          background: 'rgba(0,171,233,0.08)', border: '1.5px solid rgba(0,171,233,0.3)',
-          borderRadius: 16, padding: '16px 20px', cursor: 'pointer', fontFamily: 'inherit',
-          marginBottom: 20,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+          width: '100%', textAlign: 'left', fontFamily: 'inherit', cursor: 'pointer',
+          background: 'linear-gradient(135deg, #0d1f35 0%, #0a2a40 60%, #004d6e 100%)',
+          border: '1px solid rgba(0,171,233,0.25)', borderRadius: 18, padding: '20px 26px',
+          marginBottom: 20, transition: 'all .2s',
         }}
+        onMouseOver={e => { e.currentTarget.style.boxShadow = '0 10px 32px rgba(0,171,233,0.18)'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.borderColor = 'rgba(0,171,233,0.5)' }}
+        onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(0,171,233,0.25)' }}
       >
-        <span style={{ fontSize: 24 }}>📅</span>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Inscrire en formation</div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Tiers payant, verres progressifs, prises de mesures…</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+            background: 'rgba(0,171,233,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24,
+          }}>📅</div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 3 }}>
+              Formations complémentaires
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#fff' }}>Inscrire un collaborateur</div>
+            <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+              Tiers payant · Verres progressifs · Prises de mesures
+            </div>
+          </div>
+        </div>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+          fontSize: 13.5, fontWeight: 700, color: '#00abe9', whiteSpace: 'nowrap',
+        }}>
+          Inscrire <span style={{ fontSize: 16 }}>→</span>
         </div>
       </button>
       {modalOpen && (
