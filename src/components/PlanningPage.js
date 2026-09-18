@@ -558,7 +558,10 @@ export default function PlanningPage({ pName, onBack }) {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, alignItems: 'start' }}>
               {Object.entries(STATUS_STYLE).map(([statusKey, meta]) => {
-                const items = filtered.filter(d => statusOf(d) === statusKey)
+                let items = filtered.filter(d => statusOf(d) === statusKey)
+                if (statusKey === 'done') {
+                  items = [...items].sort((a, b) => (b.end_date || '').localeCompare(a.end_date || '')).slice(0, 5)
+                }
                 return (
                   <div key={statusKey} style={{
                     background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)',
