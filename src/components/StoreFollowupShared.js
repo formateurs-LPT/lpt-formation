@@ -172,35 +172,48 @@ export function SectionsList({ store, progress, onSelectCollaborateur }) {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
                 {section.collaborateurs.map(c => {
                   const pct = pctFor(progress, c.id, section.id)
+                  const alt = c.alternant
+                  const border = alt ? 'rgba(167,139,250,0.4)' : colors.border
+                  const hoverBorder = alt ? '#a78bfa' : colors.hoverBorder
                   return (
                     <button
                       key={c.id}
                       onClick={() => onSelectCollaborateur(section.id, c.id)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 12,
-                        background: 'rgba(255,255,255,0.03)', border: `1px solid ${colors.border}`,
+                        background: 'rgba(255,255,255,0.03)', border: `1px solid ${border}`,
                         borderRadius: 14, padding: '12px 16px', cursor: 'pointer', fontFamily: 'inherit',
                         flex: '1 1 260px', minWidth: 240, maxWidth: 340, textAlign: 'left', transition: 'all .18s',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = colors.hoverBorder; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = hoverBorder; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = border; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
                     >
                       <div style={{
                         flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
-                        background: 'rgba(255,255,255,0.06)', border: `1.5px solid ${colors.hoverBorder}`,
+                        background: alt ? 'rgba(167,139,250,0.14)' : 'rgba(255,255,255,0.06)',
+                        border: `1.5px solid ${hoverBorder}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 13, fontWeight: 800, color: '#fff',
                       }}>{initials(c)}</div>
 
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {collaborateurFullName(c)}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {collaborateurFullName(c)}
+                          </div>
+                          {alt && (
+                            <span style={{
+                              flexShrink: 0, fontSize: 9, fontWeight: 800, color: '#c4b5fd',
+                              background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.4)',
+                              borderRadius: 20, padding: '1px 7px', textTransform: 'uppercase', letterSpacing: 0.4,
+                            }}>Alternant</span>
+                          )}
                         </div>
                         <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {c.contrat}{c.entree && ` · ${tenureLabel(c.entree)} d'ancienneté`}
                         </div>
                         <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${pct}%`, background: colors.bar, transition: 'width .3s' }} />
+                          <div style={{ height: '100%', width: `${pct}%`, background: alt ? '#a78bfa' : colors.bar, transition: 'width .3s' }} />
                         </div>
                       </div>
 
@@ -666,7 +679,16 @@ export function CollaborateurFiche({ store, sectionId, collaborateur, progress, 
       <BackBtn onClick={onBack}>← {store.label}</BackBtn>
       <div className="dash-header">
         <div>
-          <h2>{collaborateurFullName(collaborateur)}</h2>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {collaborateurFullName(collaborateur)}
+            {collaborateur.alternant && (
+              <span style={{
+                fontSize: 11, fontWeight: 800, color: '#c4b5fd',
+                background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.4)',
+                borderRadius: 20, padding: '2px 10px', textTransform: 'uppercase', letterSpacing: 0.5,
+              }}>Alternant</span>
+            )}
+          </h2>
           <p>
             {store.label} · {collaborateur.contrat}
             {collaborateur.entree && ` · Entrée le ${formatDateFr(collaborateur.entree)} (${tenureLabel(collaborateur.entree)})`}
