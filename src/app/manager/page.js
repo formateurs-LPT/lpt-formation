@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { getManagerFromDB, getWeeklySharedState, sbSelect, pgInList } from '@/lib/supabase'
 import { STORES } from '@/lib/storeFollowupData'
 import { mergeEntreesIntoRoster } from '@/lib/storeRosterMerge'
@@ -14,9 +15,10 @@ import TrainingRegistrationTile from '@/components/TrainingRegistrationTile'
 const SESSION_KEY = 'manager_session' // { login, magasin, displayName }
 
 const inputStyle = {
-  width: '100%', boxSizing: 'border-box', padding: '11px 14px', marginBottom: 12,
-  background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.15)',
+  width: '100%', boxSizing: 'border-box', padding: '12px 14px', marginBottom: 12,
+  background: 'rgba(255,255,255,0.07)', border: '1.5px solid rgba(255,255,255,0.15)',
   borderRadius: 10, color: '#fff', fontSize: 14, fontFamily: 'inherit', outline: 'none',
+  transition: 'border-color .2s, background .2s',
 }
 
 function ManagerLogin({ onLogin }) {
@@ -39,36 +41,51 @@ function ManagerLogin({ onLogin }) {
   }
 
   return (
-    <div id="dashboard" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+    <div style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+      background: 'linear-gradient(160deg,#0f1923 0%,#1a2535 60%,#00abe9 100%)',
+    }}>
       <form onSubmit={submit} style={{
-        background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20,
-        padding: '36px 32px', width: '100%', maxWidth: 360,
+        background: 'linear-gradient(175deg,#0099d0 0%,#0d2538 42%,#091520 100%)',
+        border: '1px solid rgba(255,255,255,0.1)', borderRadius: 22, width: '100%', maxWidth: 400,
+        boxShadow: '0 28px 80px rgba(0,0,0,0.5)', overflow: 'hidden', position: 'relative',
       }}>
-        <div style={{ fontSize: 28, marginBottom: 8 }}>🏬</div>
-        <h2 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700, color: '#fff' }}>Espace manager</h2>
-        <p style={{ margin: '0 0 24px', fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>Suivi des compétences de votre équipe</p>
-        <input
-          value={login}
-          onChange={e => setLogin(e.target.value)}
-          placeholder="Identifiant"
-          autoCapitalize="off"
-          autoCorrect="off"
-          style={inputStyle}
-        />
-        <input
-          value={code}
-          onChange={e => setCode(e.target.value)}
-          placeholder="Code magasin"
-          type="password"
-          inputMode="numeric"
-          style={inputStyle}
-        />
-        {error && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 12 }}>{error}</div>}
-        <button type="submit" disabled={loading} style={{
-          width: '100%', padding: '11px', background: '#00abe9', color: '#fff', border: 'none',
-          borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: loading ? 'default' : 'pointer',
-          fontFamily: 'inherit', opacity: loading ? 0.6 : 1,
-        }}>{loading ? 'Connexion…' : 'Se connecter'}</button>
+        <div style={{ position: 'absolute', top: -70, right: -70, width: 220, height: 220, background: 'rgba(255,255,255,0.05)', borderRadius: '50%', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: -80, left: -40, width: 260, height: 260, background: 'rgba(0,171,233,0.08)', borderRadius: '50%', pointerEvents: 'none' }} />
+
+        <div style={{ padding: '36px 36px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="Lunettes Pour Tous" width={140} height={52} style={{ objectFit: 'contain', margin: '0 auto 20px' }} />
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 6 }}>Suivi magasin</div>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#fff' }}>Espace manager</h2>
+        </div>
+
+        <div style={{ padding: '4px 36px 36px', position: 'relative', zIndex: 1 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Connexion</div>
+          <input
+            value={login}
+            onChange={e => setLogin(e.target.value)}
+            placeholder="Identifiant"
+            autoCapitalize="off"
+            autoCorrect="off"
+            style={inputStyle}
+          />
+          <input
+            value={code}
+            onChange={e => setCode(e.target.value)}
+            placeholder="Code magasin"
+            type="password"
+            inputMode="numeric"
+            style={{ ...inputStyle, marginBottom: 0 }}
+          />
+          {error && <div style={{ color: '#f87171', fontSize: 13, marginTop: 12, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '9px 12px' }}>{error}</div>}
+          <button type="submit" disabled={loading} style={{
+            width: '100%', marginTop: 18, padding: '13px', border: 'none', borderRadius: 12,
+            fontSize: 14.5, fontWeight: 700, fontFamily: 'inherit', color: '#fff',
+            cursor: loading ? 'default' : 'pointer', transition: 'all .2s',
+            background: loading ? 'rgba(255,255,255,0.15)' : 'linear-gradient(135deg, #0089ba, #00abe9)',
+            boxShadow: loading ? 'none' : '0 6px 22px rgba(0,171,233,0.35)',
+          }}>{loading ? 'Connexion…' : 'Se connecter →'}</button>
+        </div>
       </form>
     </div>
   )
