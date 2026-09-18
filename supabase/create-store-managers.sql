@@ -32,6 +32,10 @@ end $$;
 
 -- Pilote Bayonne — ajouter d'autres managers plus tard directement dans
 -- cette table (Table Editor Supabase), pas besoin de redéployer le code.
+-- Format de code retenu : préfixe "LPT" (majuscules obligatoires, la
+-- comparaison est sensible à la casse) + code postal du magasin.
 insert into public.store_managers (login, code, magasin, display_name)
-values ('cdeny', '64600', 'bayonne', 'Charlotte Deny')
+values
+  ('cdeny', 'LPT64600', 'bayonne', 'Charlotte Deny'),
+  ('mbabin', 'LPT64600', 'bayonne', 'Maryline Babin')
 on conflict (login) do nothing;
