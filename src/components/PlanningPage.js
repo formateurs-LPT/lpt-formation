@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbSelect, sbInsert, sbDelete } from '@/lib/supabase'
+import { sbSelect, sbInsert, sbUpdate, sbDelete } from '@/lib/supabase'
 
 // ── Données statiques ─────────────────────────────────────────
 const STORES_BY_ZONE = {
@@ -21,6 +21,8 @@ const STORES_BY_ZONE = {
     'Namur','Charleroi','Ixelles','Fripiers','Liège',
   ],
 }
+
+const ALL_STORES = Object.values(STORES_BY_ZONE).flat()
 
 const TRAINERS = ['Kevin','Quentin','Nadège','Thomas','Valentine','Matteo','Jonathan']
 
@@ -158,6 +160,121 @@ function CreateModal({ onClose, onCreated }) {
           boxShadow: canSubmit ? '0 6px 24px rgba(0,171,233,0.35)' : 'none', transition: 'all .2s',
         }}>{loading ? 'Enregistrement…' : '✓ Créer le déplacement'}</button>
       </div>
+    </div>
+  )
+}
+
+// ── Édition rapide (directement depuis la carte) ──────────────
+function EditCardForm({ dep, onCancel, onSaved }) {
+  const [trainer, setTrainer] = useState(dep.trainer)
+  const [store, setStore]     = useState(dep.store)
+  const [startDate, setStart] = useState(dep.start_date)
+  const [endDate, setEnd]     = useState(dep.end_date)
+  const [saving, setSaving]   = useState(false)
+  const [error, setError]     = useState('')
+
+  const canSave = trainer && store && startDate && endDate && startDate <= endDate
+
+  const save = async () => {
+    if (!canSave) return
+    setSaving(true)
+    const ok = await sbUpdate('planning_deployments', {
+      trainer, store, start_date: startDate, end_date: endDate,
+    }, `id=eq.${dep.id}`)
+    setSaving(false)
+    if (ok) onSaved()
+    else setError('Erreur lors de la mise à jour.')
+  }
+
+  const inputStyle = {
+    width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
+    color: '#fff', borderRadius: 8, padding: '8px 10px', fontSize: 12.5,
+    fontFamily: 'inherit', outline: 'none', colorScheme: 'dark', boxSizing: 'border-box',
+  }
+
+  return (
+    <div onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <select value={trainer} onChange={e => setTrainer(e.target.value)} style={inputStyle}>
+        {TRAINERS.map(t => <option key={t} value={t}>{t}</option>)}
+      </select>
+      <select value={store} onChange={e => setStore(e.target.value)} style={inputStyle}>
+        {ALL_STORES.map(s => <option key={s} value={s}>{s}</option>)}
+      </select>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input type="date" value={startDate} onChange={e => setStart(e.target.value)} style={inputStyle} />
+        <input type="date" value={endDate} onChange={e => setEnd(e.target.value)} style={inputStyle} />
+      </div>
+      {error && <div style={{ color: '#f87171', fontSize: 11 }}>{error}</div>}
+      <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+        <button onClick={save} disabled={!canSave || saving} style={{
+          flex: 1, padding: '8px', borderRadius: 8, fontFamily: 'inherit',
+          fontSize: 12.5, fontWeight: 700, cursor: canSave ? 'pointer' : 'default',
+          background: canSave ? 'linear-gradient(135deg, #0089ba, #00abe9)' : 'rgba(255,255,255,0.07)',
+          border: 'none', color: canSave ? '#fff' : 'rgba(255,255,255,0.3)',
+        }}>{saving ? '…' : '✓ Enregistrer'}</button>
+        <button onClick={onCancel} style={{
+          padding: '8px 12px', borderRadius: 8, fontFamily: 'inherit',
+          fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+          color: 'rgba(255,255,255,0.5)',
+        }}>Annuler</button>
+      </div>
+    </div>
+  )
+}
+
+// ── Carte déplacement ──────────────────────────────────────────
+function DeploymentCard({ dep, isSelected, onClick, onSaved }) {
+  const [editing, setEditing] = useState(false)
+  const st = STATUS_STYLE[statusOf(dep)]
+  const c = trainerColor(dep.trainer)
+
+  if (editing) {
+    return (
+      <div style={{
+        background: 'rgba(0,171,233,0.06)',
+        borderTop: '1px solid rgba(0,171,233,0.3)', borderRight: '1px solid rgba(0,171,233,0.3)',
+        borderBottom: '1px solid rgba(0,171,233,0.3)', borderLeft: `4px solid ${c}`,
+        borderRadius: 14, padding: '14px 16px',
+      }}>
+        <EditCardForm dep={dep} onCancel={() => setEditing(false)} onSaved={() => { setEditing(false); onSaved() }} />
+      </div>
+    )
+  }
+
+  return (
+    <div onClick={onClick}
+      style={{
+        background: isSelected ? 'rgba(0,171,233,0.08)' : 'rgba(255,255,255,0.04)',
+        borderTop: `1px solid ${isSelected ? 'rgba(0,171,233,0.35)' : 'rgba(255,255,255,0.08)'}`,
+        borderRight: `1px solid ${isSelected ? 'rgba(0,171,233,0.35)' : 'rgba(255,255,255,0.08)'}`,
+        borderBottom: `1px solid ${isSelected ? 'rgba(0,171,233,0.35)' : 'rgba(255,255,255,0.08)'}`,
+        borderLeft: `4px solid ${c}`,
+        borderRadius: 14, padding: '16px 18px', position: 'relative',
+        cursor: 'pointer', transition: 'all .15s',
+        display: 'flex', flexDirection: 'column', gap: 8, minHeight: 108,
+      }}
+      onMouseEnter={e => !isSelected && (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
+      onMouseLeave={e => !isSelected && (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+    >
+      <button onClick={e => { e.stopPropagation(); setEditing(true) }} title="Modifier ce déplacement" style={{
+        position: 'absolute', top: 10, right: 10,
+        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+        color: 'rgba(255,255,255,0.45)', width: 26, height: 26, borderRadius: 8,
+        cursor: 'pointer', fontSize: 12, fontFamily: 'inherit', display: 'flex',
+        alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#00abe9'; e.currentTarget.style.borderColor = 'rgba(0,171,233,0.4)' }}
+        onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)' }}
+      >✏️</button>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingRight: 30 }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: c, boxShadow: `0 0 6px ${c}`, flexShrink: 0 }} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: c }}>{dep.trainer}</span>
+        <div style={{ background: st.bg, border: `1px solid ${st.border}`, borderRadius: 20, padding: '2px 8px', fontSize: 10, fontWeight: 700, color: st.color }}>{st.label}</div>
+      </div>
+      <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{dep.store}</div>
+      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 'auto' }}>{fmtDate(dep.start_date)} → {fmtDate(dep.end_date)}</div>
     </div>
   )
 }
@@ -368,6 +485,12 @@ export default function PlanningPage({ pName, onBack }) {
     loadDeployments()
   }
 
+  const onCardSaved = async () => {
+    const rows = await sbSelect('planning_deployments', 'order=start_date.desc')
+    setDeployments(rows || [])
+    setSelected(prev => prev ? (rows || []).find(r => r.id === prev.id) || null : null)
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
 
@@ -420,9 +543,9 @@ export default function PlanningPage({ pName, onBack }) {
       </div>
 
       {/* Contenu */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: selected ? '1fr 1fr' : '1fr', gap: 0, overflow: 'hidden', padding: '20px 32px 24px' }}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: selected ? 'minmax(320px, 1fr) 420px' : '1fr', gap: 0, overflow: 'hidden', padding: '20px 32px 24px' }}>
 
-        {/* Liste */}
+        {/* Grille de cartes */}
         <div style={{ overflowY: 'auto', paddingRight: selected ? 16 : 0 }}>
           {loading ? (
             <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', padding: 60, fontSize: 14 }}>Chargement…</div>
@@ -433,37 +556,16 @@ export default function PlanningPage({ pName, onBack }) {
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Créez votre premier déplacement avec le bouton ci-dessus</div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {filtered.map(dep => {
-                const st = STATUS_STYLE[statusOf(dep)]
-                const c = trainerColor(dep.trainer)
-                const isSelected = selected?.id === dep.id
-                return (
-                  <div key={dep.id} onClick={() => setSelected(isSelected ? null : dep)}
-                    style={{
-                      background: isSelected ? 'rgba(0,171,233,0.08)' : 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${isSelected ? 'rgba(0,171,233,0.35)' : 'rgba(255,255,255,0.08)'}`,
-                      borderLeft: `4px solid ${c}`,
-                      borderRadius: 14, padding: '16px 20px',
-                      cursor: 'pointer', transition: 'all .15s',
-                      display: 'grid', gridTemplateColumns: '1fr auto',
-                      alignItems: 'center', gap: 12,
-                    }}
-                    onMouseEnter={e => !isSelected && (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
-                    onMouseLeave={e => !isSelected && (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: c }}>{dep.trainer}</span>
-                        <div style={{ background: st.bg, border: `1px solid ${st.border}`, borderRadius: 20, padding: '2px 8px', fontSize: 10, fontWeight: 700, color: st.color }}>{st.label}</div>
-                      </div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{dep.store}</div>
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{fmtDate(dep.start_date)} → {fmtDate(dep.end_date)}</div>
-                    </div>
-                    <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.2)' }}>{isSelected ? '◀' : '▶'}</div>
-                  </div>
-                )
-              })}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 14 }}>
+              {filtered.map(dep => (
+                <DeploymentCard
+                  key={dep.id}
+                  dep={dep}
+                  isSelected={selected?.id === dep.id}
+                  onClick={() => setSelected(selected?.id === dep.id ? null : dep)}
+                  onSaved={onCardSaved}
+                />
+              ))}
             </div>
           )}
         </div>
