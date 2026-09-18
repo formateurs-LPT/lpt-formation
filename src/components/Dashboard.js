@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
-import { sbSelect, sbDelete, getSharedState, insertSessionHistory, parseSessionHistorySummary, getRuntimeSessionCode, SESSION_CODE } from '@/lib/supabase'
+import { sbSelect, sbUpdate, sbDelete, getSharedState, insertSessionHistory, parseSessionHistorySummary, getRuntimeSessionCode, SESSION_CODE } from '@/lib/supabase'
 import PlanningWidget from './PlanningWidget'
 import ShortcutsWidget from './ShortcutsWidget'
 import { PenseBeteView, getPenseBeteTasks } from './PenseBeteWidget'
@@ -13,7 +13,7 @@ import OnboardingViewBelgique from './OnboardingViewBelgique'
 import EntreesView from './EntreesView'
 import RoomOpenModal from './RoomOpenModal'
 import { TRAINER_AVATARS, TRAINER_CANONICAL, getTrainerAvatarKey } from '@/lib/constants'
-import { TRAINING_THEMES, formatSlotDate, formatHeure, todayISODateLocal, THEME_TO_SKILL_ITEM } from '@/lib/trainingSlots'
+import { TRAINING_THEMES, formatSlotDate, formatHeure, THEME_TO_SKILL_ITEM } from '@/lib/trainingSlots'
 import { ItemRow } from '@/components/StoreFollowupShared'
 import { useStoreFollowupProgress } from '@/lib/useStoreFollowupProgress'
 import { PLANNING_JOURS } from '@/lib/planningData'
@@ -1453,10 +1453,10 @@ function InscriptionsView({ onBack, pName }) {
 
   const load = () => {
     setLoading(true)
-    // Ne montre que les formations pas encore passées — une fois la date
-    // dépassée, on considère que c'est fait et ça ne doit plus polluer la
-    // liste ni le compteur.
-    sbSelect('training_registrations', `session_date=gte.${todayISODateLocal()}&order=session_date.asc,session_heure.asc`).then(r => {
+    // Ne montre que les formations pas encore clôturées (bouton "Terminé")
+    // — une fois close, elle ne doit plus polluer la liste ni le compteur,
+    // peu importe la date de session.
+    sbSelect('training_registrations', `completed_at=is.null&order=session_date.asc,session_heure.asc`).then(r => {
       setRows(r || [])
       setLoading(false)
     }).catch(() => setLoading(false))
@@ -1476,11 +1476,28 @@ function InscriptionsView({ onBack, pName }) {
     load()
   }
 
+  // Clôture la formation : reprend la dernière note enregistrée sur la
+  // compétence liée (via NoterModal) comme "taux de réussite" figé, pour que
+  // l'historique reste correct même si la note est modifiée plus tard.
+  const markTermine = async (reg, itemId, nom) => {
+    let score = null
+    if (itemId) {
+      const progRows = await sbSelect(
+        'store_followup_progress',
+        `store=eq.${encodeURIComponent(reg.magasin)}&collaborateur=eq.${encodeURIComponent(reg.collaborateur_id)}&item_id=eq.${encodeURIComponent(itemId)}&order=audit_date.desc`
+      )
+      score = progRows?.[0]?.score ?? null
+    }
+    if (score == null && !confirm(`${nom} n'a pas encore été noté(e) sur cette compétence. Clore quand même la formation, sans taux de réussite ?`)) return
+    await sbUpdate('training_registrations', { completed_at: new Date().toISOString(), completed_by: pName, score }, `id=eq.${reg.id}`)
+    load()
+  }
+
   const groups = {}
   for (const r of rows) {
     const key = `${r.session_date}__${r.session_heure}__${r.theme}__${r.magasin}`
     if (!groups[key]) groups[key] = { ...r, collabs: [] }
-    groups[key].collabs.push({ regId: r.id, id: r.collaborateur_id, nom: r.collaborateur_nom })
+    groups[key].collabs.push({ reg: r, id: r.collaborateur_id, nom: r.collaborateur_nom })
   }
   const list = Object.values(groups)
 
@@ -1533,9 +1550,18 @@ function InscriptionsView({ onBack, pName }) {
                             }}
                           >✓ Noter</button>
                         )}
+                        <button
+                          onClick={() => markTermine(c.reg, itemId, c.nom)}
+                          title="Marquer cette formation comme terminée"
+                          style={{
+                            background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.35)',
+                            color: '#4ade80', borderRadius: 8, padding: '5px 12px', fontSize: 12, fontWeight: 700,
+                            cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+                          }}
+                        >✓ Terminé</button>
                         {canDelete && (
                           <button
-                            onClick={() => deleteRegistration(c.regId, c.nom)}
+                            onClick={() => deleteRegistration(c.reg.id, c.nom)}
                             title="Supprimer cette inscription"
                             style={{
                               background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
@@ -1938,9 +1964,8 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   //   uniquement le halo/toast "nouveau", jamais partagé entre Kevin/Quentin.
   const refreshInscriptionsCount = async (allowToast) => {
     try {
-      const rows = await sbSelect('training_registrations', 'select=created_at,session_date')
-      const today = todayISODateLocal()
-      const pending = (rows || []).filter(r => r.session_date >= today).length
+      const rows = await sbSelect('training_registrations', 'select=created_at,completed_at')
+      const pending = (rows || []).filter(r => !r.completed_at).length
       setInscriptionsPending(pending)
 
       let lastSeen = 0

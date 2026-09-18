@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { sbSelect, sbInsert } from '@/lib/supabase'
 import {
   TRAINING_THEMES, TRAINING_HOURS, SLOT_CAPACITY,
-  getUpcomingMondays, formatHeure, todayISODateLocal,
+  getUpcomingMondays, formatHeure,
 } from '@/lib/trainingSlots'
 import { collaborateurFullName } from '@/lib/storeFollowupData'
 
@@ -239,7 +239,7 @@ function UpcomingRegistrationsPanel({ store, refreshKey }) {
     setLoading(true)
     sbSelect(
       'training_registrations',
-      `magasin=eq.${encodeURIComponent(store.id)}&session_date=gte.${todayISODateLocal()}&order=session_date.asc,session_heure.asc`
+      `magasin=eq.${encodeURIComponent(store.id)}&completed_at=is.null&order=session_date.asc,session_heure.asc`
     ).then(r => { if (!cancelled) { setRows(r || []); setLoading(false) } }).catch(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [store.id, refreshKey])

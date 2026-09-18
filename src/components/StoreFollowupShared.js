@@ -4,7 +4,13 @@ import {
   SKILL_ITEMS, STATUS_META, SCORE_ORDER, SCORE_LABELS, scoreToStatus, collaborateurFullName,
   formatDateFr, tenureLabel, teamAge, TEAM_LABELS, ITEM_GUIDES,
 } from '@/lib/storeFollowupData'
+import { sbSelect } from '@/lib/supabase'
+import { TRAINING_THEMES } from '@/lib/trainingSlots'
 import OrdonnanceExercise from './OrdonnanceExercise'
+
+function trainingThemeLabel(id) {
+  return TRAINING_THEMES.find(t => t.id === id)?.label || id
+}
 
 // UI partagée entre la vue formateur (StoreFollowupView) et la vue manager
 // (/manager) — un seul et même rendu du suivi de compétences, quel que soit
@@ -151,7 +157,7 @@ export function TeamAgeBadge({ sectionId, collaborateurs }) {
 // progression) — utilisée à la fois dans les sections CVO/MO-SAV normales
 // et dans le groupe "Apprentis" à part, d'où l'usage explicite de
 // sectionId plutôt que de le déduire d'un contexte de section.
-function CollaborateurCard({ c, sectionId, colors, progress, onSelectCollaborateur }) {
+function CollaborateurCard({ c, sectionId, colors, progress, onSelectCollaborateur, completed }) {
   const pct = pctFor(progress, c.id, sectionId)
   const alt = c.alternant
   const border = alt ? 'rgba(167,139,250,0.4)' : colors.border
@@ -183,6 +189,12 @@ function CollaborateurCard({ c, sectionId, colors, progress, onSelectCollaborate
         <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {c.contrat}{c.entree && ` · ${tenureLabel(c.entree)} d'ancienneté`}
         </div>
+        {completed && (
+          <div style={{ fontSize: 10, color: '#4ade80', marginBottom: 6, lineHeight: 1.4 }}>
+            ✅ {trainingThemeLabel(completed.theme)} · {formatDateFr(completed.session_date)}
+            {completed.score != null && ` · ${Math.round(completed.score / 5 * 100)}%`}
+          </div>
+        )}
         <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${pct}%`, background: alt ? '#a78bfa' : colors.bar, transition: 'width .3s' }} />
         </div>
@@ -208,6 +220,24 @@ export function SectionsList({ store, progress, onSelectCollaborateur }) {
       .filter(c => c.alternant)
       .map(c => ({ collaborateur: c, sectionId: section.id }))
   )
+
+  // Dernière formation visio complémentaire clôturée par collaborateur —
+  // affichée comme historique sur sa tuile (une seule requête pour tout le
+  // magasin, indépendante du reste du suivi de compétences).
+  const [completedByCollab, setCompletedByCollab] = useState({})
+  useEffect(() => {
+    let cancelled = false
+    sbSelect('training_registrations', `magasin=eq.${encodeURIComponent(store.id)}&completed_at=not.is.null&order=completed_at.desc`)
+      .then(rows => {
+        if (cancelled) return
+        const map = {}
+        for (const r of (rows || [])) {
+          if (!map[r.collaborateur_id]) map[r.collaborateur_id] = r
+        }
+        setCompletedByCollab(map)
+      }).catch(() => {})
+    return () => { cancelled = true }
+  }, [store.id])
 
   return (
     <>
@@ -235,6 +265,7 @@ export function SectionsList({ store, progress, onSelectCollaborateur }) {
                   <CollaborateurCard
                     key={c.id} c={c} sectionId={section.id} colors={colors}
                     progress={progress} onSelectCollaborateur={onSelectCollaborateur}
+                    completed={completedByCollab[c.id]}
                   />
                 ))}
               </div>
@@ -254,6 +285,7 @@ export function SectionsList({ store, progress, onSelectCollaborateur }) {
                 key={collaborateur.id} c={collaborateur} sectionId={sectionId}
                 colors={SECTION_COLORS[sectionId] || SECTION_COLORS.cvo}
                 progress={progress} onSelectCollaborateur={onSelectCollaborateur}
+                completed={completedByCollab[collaborateur.id]}
               />
             ))}
           </div>
