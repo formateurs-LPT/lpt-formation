@@ -147,15 +147,76 @@ export function TeamAgeBadge({ sectionId, collaborateurs }) {
   )
 }
 
+// Tuile collaborateur (avatar + nom + contrat/ancienneté + barre de
+// progression) — utilisée à la fois dans les sections CVO/MO-SAV normales
+// et dans le groupe "Apprentis" à part, d'où l'usage explicite de
+// sectionId plutôt que de le déduire d'un contexte de section.
+function CollaborateurCard({ c, sectionId, colors, progress, onSelectCollaborateur }) {
+  const pct = pctFor(progress, c.id, sectionId)
+  const alt = c.alternant
+  const border = alt ? 'rgba(167,139,250,0.4)' : colors.border
+  const hoverBorder = alt ? '#a78bfa' : colors.hoverBorder
+  return (
+    <button
+      onClick={() => onSelectCollaborateur(sectionId, c.id)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        background: 'rgba(255,255,255,0.03)', border: `1px solid ${border}`,
+        borderRadius: 14, padding: '12px 16px', cursor: 'pointer', fontFamily: 'inherit',
+        flex: '1 1 260px', minWidth: 240, maxWidth: 340, textAlign: 'left', transition: 'all .18s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = hoverBorder; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = border; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+    >
+      <div style={{
+        flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
+        background: alt ? 'rgba(167,139,250,0.14)' : 'rgba(255,255,255,0.06)',
+        border: `1.5px solid ${hoverBorder}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 13, fontWeight: 800, color: '#fff',
+      }}>{initials(c)}</div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {collaborateurFullName(c)}
+        </div>
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {c.contrat}{c.entree && ` · ${tenureLabel(c.entree)} d'ancienneté`}
+        </div>
+        <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${pct}%`, background: alt ? '#a78bfa' : colors.bar, transition: 'width .3s' }} />
+        </div>
+      </div>
+
+      <div style={{ flexShrink: 0, fontSize: 13, fontWeight: 800, color: '#fff', minWidth: 34, textAlign: 'right' }}>
+        {pct}%
+      </div>
+    </button>
+  )
+}
+
 // Grille des sections (CVO / MO-SAV) + tuiles collaborateurs avec barre de
 // progression — le cœur réutilisable, indépendant du header qui l'entoure
-// (le formateur et le manager ont chacun leur propre header).
+// (le formateur et le manager ont chacun leur propre header). Les
+// apprentis/alternants sont sortis de leur section d'origine et regroupés
+// sous un titre "Apprentis" à part, pour bien les distinguer visuellement —
+// leur sectionId réel (cvo/mo-sav) est conservé pour la fiche détail
+// (compétences affichées) et le calcul de progression.
 export function SectionsList({ store, progress, onSelectCollaborateur }) {
+  const apprentis = store.sections.flatMap(section =>
+    (section.collaborateurs || [])
+      .filter(c => c.alternant)
+      .map(c => ({ collaborateur: c, sectionId: section.id }))
+  )
+
   return (
     <>
       {store.sections.map(section => {
         const colors = SECTION_COLORS[section.id] || SECTION_COLORS.cvo
-        const isEmpty = section.collaborateurs.length === 0
+        const collaborateurs = (section.collaborateurs || []).filter(c => !c.alternant)
+        // Section entièrement composée d'apprentis : déjà affichée plus bas.
+        if (section.collaborateurs.length > 0 && collaborateurs.length === 0) return null
+        const isEmpty = collaborateurs.length === 0
         return (
           <div key={section.id} style={{ marginBottom: 32 }}>
             <h3 style={{ fontSize: 14, fontWeight: 800, color: '#fff', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
@@ -170,64 +231,34 @@ export function SectionsList({ store, progress, onSelectCollaborateur }) {
               </div>
             ) : (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                {section.collaborateurs.map(c => {
-                  const pct = pctFor(progress, c.id, section.id)
-                  const alt = c.alternant
-                  const border = alt ? 'rgba(167,139,250,0.4)' : colors.border
-                  const hoverBorder = alt ? '#a78bfa' : colors.hoverBorder
-                  return (
-                    <button
-                      key={c.id}
-                      onClick={() => onSelectCollaborateur(section.id, c.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 12,
-                        background: 'rgba(255,255,255,0.03)', border: `1px solid ${border}`,
-                        borderRadius: 14, padding: '12px 16px', cursor: 'pointer', fontFamily: 'inherit',
-                        flex: '1 1 260px', minWidth: 240, maxWidth: 340, textAlign: 'left', transition: 'all .18s',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = hoverBorder; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = border; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
-                    >
-                      <div style={{
-                        flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
-                        background: alt ? 'rgba(167,139,250,0.14)' : 'rgba(255,255,255,0.06)',
-                        border: `1.5px solid ${hoverBorder}`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 13, fontWeight: 800, color: '#fff',
-                      }}>{initials(c)}</div>
-
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {collaborateurFullName(c)}
-                          </div>
-                          {alt && (
-                            <span style={{
-                              flexShrink: 0, fontSize: 9, fontWeight: 800, color: '#c4b5fd',
-                              background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.4)',
-                              borderRadius: 20, padding: '1px 7px', textTransform: 'uppercase', letterSpacing: 0.4,
-                            }}>Alternant</span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {c.contrat}{c.entree && ` · ${tenureLabel(c.entree)} d'ancienneté`}
-                        </div>
-                        <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${pct}%`, background: alt ? '#a78bfa' : colors.bar, transition: 'width .3s' }} />
-                        </div>
-                      </div>
-
-                      <div style={{ flexShrink: 0, fontSize: 13, fontWeight: 800, color: '#fff', minWidth: 34, textAlign: 'right' }}>
-                        {pct}%
-                      </div>
-                    </button>
-                  )
-                })}
+                {collaborateurs.map(c => (
+                  <CollaborateurCard
+                    key={c.id} c={c} sectionId={section.id} colors={colors}
+                    progress={progress} onSelectCollaborateur={onSelectCollaborateur}
+                  />
+                ))}
               </div>
             )}
           </div>
         )
       })}
+
+      {apprentis.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 800, color: '#c4b5fd', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Apprentis
+          </h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+            {apprentis.map(({ collaborateur, sectionId }) => (
+              <CollaborateurCard
+                key={collaborateur.id} c={collaborateur} sectionId={sectionId}
+                colors={SECTION_COLORS[sectionId] || SECTION_COLORS.cvo}
+                progress={progress} onSelectCollaborateur={onSelectCollaborateur}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </>
   )
 }
