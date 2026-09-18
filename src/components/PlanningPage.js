@@ -556,16 +556,40 @@ export default function PlanningPage({ pName, onBack }) {
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Créez votre premier déplacement avec le bouton ci-dessus</div>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 14 }}>
-              {filtered.map(dep => (
-                <DeploymentCard
-                  key={dep.id}
-                  dep={dep}
-                  isSelected={selected?.id === dep.id}
-                  onClick={() => setSelected(selected?.id === dep.id ? null : dep)}
-                  onSaved={onCardSaved}
-                />
-              ))}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, alignItems: 'start' }}>
+              {Object.entries(STATUS_STYLE).map(([statusKey, meta]) => {
+                const items = filtered.filter(d => statusOf(d) === statusKey)
+                return (
+                  <div key={statusKey} style={{
+                    background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: 18, padding: 16,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: meta.color, boxShadow: `0 0 6px ${meta.color}`, flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.6 }}>{meta.label}</span>
+                      <span style={{
+                        marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: meta.color,
+                        background: meta.bg, border: `1px solid ${meta.border}`, borderRadius: 20, padding: '2px 9px',
+                      }}>{items.length}</span>
+                    </div>
+                    {items.length === 0 ? (
+                      <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: 12, padding: '24px 0' }}>Aucun déplacement</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {items.map(dep => (
+                          <DeploymentCard
+                            key={dep.id}
+                            dep={dep}
+                            isSelected={selected?.id === dep.id}
+                            onClick={() => setSelected(selected?.id === dep.id ? null : dep)}
+                            onSaved={onCardSaved}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
