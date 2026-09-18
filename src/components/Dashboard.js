@@ -1449,8 +1449,10 @@ function InscriptionsView({ onBack, pName }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [noterTarget, setNoterTarget] = useState(null)
+  const canDelete = getTrainerAvatarKey(pName) === 'kevin'
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true)
     // Ne montre que les formations pas encore passées — une fois la date
     // dépassée, on considère que c'est fait et ça ne doit plus polluer la
     // liste ni le compteur.
@@ -1458,17 +1460,27 @@ function InscriptionsView({ onBack, pName }) {
       setRows(r || [])
       setLoading(false)
     }).catch(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    load()
     try { localStorage.setItem(inscriptionsLastSeenKey(pName), new Date().toISOString()) } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const themeLabel = (id) => TRAINING_THEMES.find(t => t.id === id)?.label || id
 
+  const deleteRegistration = async (regId, nom) => {
+    if (!confirm(`Supprimer l'inscription de ${nom} ?`)) return
+    await sbDelete('training_registrations', `id=eq.${regId}`)
+    load()
+  }
+
   const groups = {}
   for (const r of rows) {
     const key = `${r.session_date}__${r.session_heure}__${r.theme}__${r.magasin}`
     if (!groups[key]) groups[key] = { ...r, collabs: [] }
-    groups[key].collabs.push({ id: r.collaborateur_id, nom: r.collaborateur_nom })
+    groups[key].collabs.push({ regId: r.id, id: r.collaborateur_id, nom: r.collaborateur_nom })
   }
   const list = Object.values(groups)
 
@@ -1507,19 +1519,32 @@ function InscriptionsView({ onBack, pName }) {
                       background: 'var(--bg)', borderRadius: 8, padding: '7px 10px 7px 12px',
                     }}>
                       <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{c.nom}</span>
-                      {itemId && (
-                        <button
-                          onClick={() => setNoterTarget({
-                            magasin: g.magasin, collaborateurId: c.id, collaborateurNom: c.nom,
-                            itemId, itemLabel: themeLabel(g.theme),
-                          })}
-                          style={{
-                            background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.35)',
-                            color: '#0089ba', borderRadius: 8, padding: '5px 12px', fontSize: 12, fontWeight: 700,
-                            cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
-                          }}
-                        >✓ Noter</button>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        {itemId && (
+                          <button
+                            onClick={() => setNoterTarget({
+                              magasin: g.magasin, collaborateurId: c.id, collaborateurNom: c.nom,
+                              itemId, itemLabel: themeLabel(g.theme),
+                            })}
+                            style={{
+                              background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.35)',
+                              color: '#0089ba', borderRadius: 8, padding: '5px 12px', fontSize: 12, fontWeight: 700,
+                              cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+                            }}
+                          >✓ Noter</button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => deleteRegistration(c.regId, c.nom)}
+                            title="Supprimer cette inscription"
+                            style={{
+                              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                              color: '#f87171', borderRadius: 8, padding: '5px 9px', fontSize: 12, fontWeight: 700,
+                              cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+                            }}
+                          >🗑️</button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
