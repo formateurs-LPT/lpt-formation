@@ -37,8 +37,11 @@ export default function Login({ onTrainerLogin, onParticipantJoin }) {
   return (
     <div id="landing">
       <div className="lcard">
+        <div className="lcard-orb"></div>
         <div className="lcard-head">
-          <Image src="/assets/logo-lpt.png" alt="Lunettes Pour Tous" width={56} height={56} className="lcard-logo" />
+          <div style={{ margin: '0 auto 18px', position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center' }}>
+            <Image src="/assets/logo-lpt-blanc.png" alt="Lunettes Pour Tous" width={160} height={60} style={{ objectFit: 'contain' }} />
+          </div>
           <h1>Formation</h1>
           <p className="lcard-sub">Lunettes Pour Tous</p>
         </div>
@@ -49,7 +52,7 @@ export default function Login({ onTrainerLogin, onParticipantJoin }) {
               <div className="lcard-section-label">Accès formateur</div>
               {!showTrainerPanel ? (
                 <button className="rbtn trainer" onClick={() => setShowTrainerPanel(true)}>
-                  <span className="rbtn-icon">🎓</span>
+                  <span style={{ fontSize: 22 }}>🎓</span>
                   <div>Espace Formateur<span className="sub">Connexion avec identifiant et code</span></div>
                 </button>
               ) : (
