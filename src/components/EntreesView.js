@@ -123,13 +123,15 @@ function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving, onT
   const pin = generatePin(fullName)
   const [nom, setNom] = useState(c.nom || '')
   const [prenom, setPrenom] = useState(c.prenom || '')
+  const [magasin, setMagasin] = useState(c.magasin || '')
 
   useEffect(() => {
     if (editing) {
       setNom(c.nom || '')
       setPrenom(c.prenom || '')
+      setMagasin(c.magasin || '')
     }
-  }, [editing, c.nom, c.prenom])
+  }, [editing, c.nom, c.prenom, c.magasin])
 
   return (
     <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--rs)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
@@ -153,7 +155,14 @@ function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving, onT
               value={prenom}
               onChange={e => setPrenom(e.target.value)}
             />
-            <button type="button" className="btn1" style={{ fontSize: 12, padding: '6px 12px' }} disabled={saving} onClick={() => onSave(nom, prenom)}>
+            <input
+              className="finput"
+              style={{ flex: '1 1 140px', fontSize: 13, padding: '8px 10px' }}
+              placeholder="Magasin"
+              value={magasin}
+              onChange={e => setMagasin(e.target.value)}
+            />
+            <button type="button" className="btn1" style={{ fontSize: 12, padding: '6px 12px' }} disabled={saving} onClick={() => onSave(nom, prenom, magasin)}>
               {saving ? '…' : 'OK'}
             </button>
             <button type="button" className="btn2" style={{ fontSize: 12, padding: '6px 10px' }} disabled={saving} onClick={onCancelEdit}>
@@ -206,7 +215,7 @@ function CollabCard({ c, editing, onStartEdit, onCancelEdit, onSave, saving, onT
             className="btn2"
             style={{ fontSize: 11, padding: '4px 10px' }}
             onClick={onStartEdit}
-            title="Modifier le nom"
+            title="Modifier le nom, prénom ou magasin"
           >
             ✏️
           </button>
@@ -353,7 +362,7 @@ function GroupSection({ title, items, editingIndex, savingIndex, onStartEdit, on
           saving={savingIndex === index}
           onStartEdit={() => onStartEdit(index)}
           onCancelEdit={onCancelEdit}
-          onSave={(nom, prenom) => onSave(index, nom, prenom)}
+          onSave={(nom, prenom, magasin) => onSave(index, nom, prenom, magasin)}
           onToggleMode={() => onToggleMode(index)}
           onDelete={() => onDelete(index)}
         />
@@ -441,9 +450,10 @@ export default function EntreesView({ onBack, onToast, pName }) {
     return setSharedState(patch)
   }
 
-  const handleSaveCollab = async (index, nom, prenom) => {
+  const handleSaveCollab = async (index, nom, prenom, magasin) => {
     const nomT = (nom || '').trim()
     const prenomT = (prenom || '').trim()
+    const magasinT = (magasin ?? entrees[index]?.magasin ?? '').trim().toUpperCase()
     if (!nomT && !prenomT) {
       onToast('Nom ou prénom requis')
       return
@@ -461,6 +471,7 @@ export default function EntreesView({ onBack, onToast, pName }) {
       nom: nomT,
       prenom: prenomT,
       fullName,
+      magasin: magasinT,
     }
     setEntrees(next)
 
@@ -484,11 +495,14 @@ export default function EntreesView({ onBack, onToast, pName }) {
     }
     setSavingIndex(null)
     setEditingIndex(null)
+    const magasinChanged = (old.magasin || '') !== magasinT
     if (synced) {
       onToast(
         oldCanonical !== fullName
           ? `Nom mis à jour. Connexion : « ${fullName} »`
-          : 'Nom mis à jour (liste RH synchronisée)'
+          : magasinChanged
+            ? `Magasin mis à jour : ${magasinT || '(vide)'}`
+            : 'Fiche mise à jour (liste RH synchronisée)'
       )
     } else {
       onToast('Nom mis à jour localement — sync Supabase échouée')
