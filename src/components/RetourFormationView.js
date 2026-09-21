@@ -1044,6 +1044,14 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
             <div style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9' }}>{name}</div>
+            <span style={{
+              fontSize: 11, fontWeight: 700, color: entree.magasin ? '#38bdf8' : '#f87171',
+              background: entree.magasin ? 'rgba(56,189,248,0.12)' : 'rgba(248,113,113,0.12)',
+              border: `1px solid ${entree.magasin ? 'rgba(56,189,248,0.35)' : 'rgba(248,113,113,0.35)'}`,
+              borderRadius: 20, padding: '3px 10px',
+            }}>
+              {entree.magasin ? canonicalMagasinLabel(entree.magasin) : 'Magasin non renseigné'}
+            </span>
             {lastEditor && lastEditor !== trainerName && (
               <span style={{ fontSize: 11, color: '#818cf8', fontWeight: 600 }}>
                 🔄 dernière saisie par {lastEditor}
