@@ -106,6 +106,11 @@ export const MANAGERS = {
   'la canebière': [
     { name: 'Fadji HAKIM', email: 'fhakim@lunettespourtous.com' },
   ],
+  // Coquille fréquente (double "n") saisie dans les entrées RH — sans cet
+  // alias, aucune clé ne correspond et le rapport reste "manager non renseigné".
+  'cannebiere': [
+    { name: 'Fadji HAKIM', email: 'fhakim@lunettespourtous.com' },
+  ],
   'marseille terrasses': [
     { name: 'Mathias DARMON', email: 'mdarmon@lunettespourtous.com' },
   ],
