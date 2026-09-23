@@ -401,6 +401,7 @@ function ManagerDashboard({ session, onLogout }) {
           onSaveNote={(itemId, note) => saveNote(collaborateurId, itemId, note)}
           onReset={(itemId) => reset(collaborateurId, itemId)}
           onBack={() => setCollaborateurId(null)}
+          role="manager"
         />
       </div>
     )

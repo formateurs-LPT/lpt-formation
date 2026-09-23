@@ -8,6 +8,7 @@ import {
 import { sbSelect } from '@/lib/supabase'
 import { TRAINING_THEMES } from '@/lib/trainingSlots'
 import OrdonnanceExercise from './OrdonnanceExercise'
+import CollaborateurNotesSection from './CollaborateurNotesSection'
 
 function trainingThemeLabel(id) {
   return TRAINING_THEMES.find(t => t.id === id)?.label || id
@@ -887,7 +888,7 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
   )
 }
 
-export function CollaborateurFiche({ store, sectionId, collaborateur, progress, history, onSetScore, onSaveNote, onReset, onBack }) {
+export function CollaborateurFiche({ store, sectionId, collaborateur, progress, history, onSetScore, onSaveNote, onReset, onBack, pName, role = 'formateur' }) {
   const items = SKILL_ITEMS[sectionId] || []
   const categories = useMemo(() => {
     const groups = {}
@@ -939,6 +940,8 @@ export function CollaborateurFiche({ store, sectionId, collaborateur, progress, 
           ))}
         </div>
       ))}
+
+      <CollaborateurNotesSection store={store} collaborateur={collaborateur} pName={pName} role={role} />
     </div>
   )
 }

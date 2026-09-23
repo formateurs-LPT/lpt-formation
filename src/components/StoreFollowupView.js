@@ -86,6 +86,8 @@ export default function StoreFollowupView({ pName, onBack }) {
           onSaveNote={(itemId, note) => saveNote(collaborateurId, itemId, note)}
           onReset={(itemId) => reset(collaborateurId, itemId)}
           onBack={() => setCollaborateurId(null)}
+          pName={pName}
+          role="formateur"
         />
       </div>
     )
