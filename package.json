@@ -15,5 +15,8 @@
     "react": "^19",
     "react-dom": "^19",
     "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "exceljs": "^4.4.0"
   }
 }

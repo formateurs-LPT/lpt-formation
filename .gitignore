@@ -19,3 +19,6 @@ npm-debug.log*
 
 # outil local (vérifie si un commit est déjà déployé avant de relancer vercel --prod)
 .claude-scripts/
+
+# fichiers sources RH (données personnelles collaborateurs) — jamais dans git
+/data/
