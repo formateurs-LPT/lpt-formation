@@ -14,6 +14,7 @@ import {
   declencherTestSortie, validerNouvelEntrant,
 } from '@/lib/collaborateursApi'
 import { getReportingsHebdo } from '@/lib/notesTerrainApi'
+import DemandesInterventionView from '@/components/DemandesInterventionView'
 
 // Page autonome (comme /rapport, /bilan-formation) — aucune dépendance à
 // page.js/Dashboard.js, donc aucun risque pour le flux formateur/participant/TV.
@@ -434,6 +435,13 @@ function ManagerDashboard({ session, onLogout }) {
         />
 
         <HistoriqueReportingsSection reportings={reportings} />
+
+        {magasinId && (
+          <div style={{ marginTop: 8 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 800, color: '#fff', margin: '0 0 14px' }}>🆘 Demandes d&apos;intervention</h3>
+            <DemandesInterventionView magasinIds={[magasinId]} login={session.login} role="manager" />
+          </div>
+        )}
       </div>
 
       {enAttenteValidation.length > 0 && (

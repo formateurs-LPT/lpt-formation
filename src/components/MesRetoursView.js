@@ -8,6 +8,7 @@ import {
   getReportingsHebdo, saveReportingHebdo, markReportingEnvoye, currentWeekBounds,
 } from '@/lib/notesTerrainApi'
 import { uploadPieceJointe, getSignedUrl } from '@/lib/storageApi'
+import { getDemandesIntervention, rattacherReporting, notifierReportingRattache } from '@/lib/directionApi'
 
 function fmtDate(iso) {
   if (!iso) return '—'
@@ -62,11 +63,16 @@ export default function MesRetoursView({ store, pName, onBack }) {
   const [mailTo, setMailTo] = useState('reporting@lunettespourtous.com')
   const [mailBody, setMailBody] = useState('')
   const [selectedReporting, setSelectedReporting] = useState(null)
+  const [demandeOuverte, setDemandeOuverte] = useState(null) // demande d'intervention ouverte sur ce magasin, si existe
+  const [rattacherDemande, setRattacherDemande] = useState(false)
 
   const load = async (mId) => {
-    const [n, r] = await Promise.all([getNotesTerrain(mId), getReportingsHebdo(mId)])
+    const [n, r, demandes] = await Promise.all([
+      getNotesTerrain(mId), getReportingsHebdo(mId), getDemandesIntervention({ magasinIds: [mId] }),
+    ])
     setNotes(n)
     setReportings(r)
+    setDemandeOuverte(demandes.find(d => d.statut !== 'cloturee') || null)
   }
 
   useEffect(() => {
@@ -124,6 +130,10 @@ export default function MesRetoursView({ store, pName, onBack }) {
     if (!reportingDraft?.trim()) return
     const row = await saveReportingHebdo({ formateurId, magasinId, contenuGenere: reportingDraft.trim() })
     setSavedReporting(row)
+    if (rattacherDemande && demandeOuverte && row?.id) {
+      await rattacherReporting(demandeOuverte.id, row.id)
+      await notifierReportingRattache({ ...demandeOuverte, reporting_id: row.id })
+    }
     await load(magasinId)
   }
 
@@ -228,6 +238,12 @@ export default function MesRetoursView({ store, pName, onBack }) {
                 rows={8} className="finput"
                 style={{ width: '100%', resize: 'vertical', boxSizing: 'border-box', marginBottom: 12, fontFamily: 'inherit' }}
               />
+              {demandeOuverte && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-s)', marginBottom: 12, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={rattacherDemande} onChange={e => setRattacherDemande(e.target.checked)} />
+                  Rattacher à la demande d&apos;intervention en cours ({demandeOuverte.motif || 'sans motif précisé'})
+                </label>
+              )}
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <button onClick={enregistrerReporting} className="gbtn">✓ Enregistrer le reporting</button>
                 {(savedReporting || reportingDraft) && (

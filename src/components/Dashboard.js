@@ -24,6 +24,7 @@ import { isTrainerAccount } from '@/lib/participantNames'
 import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees, addIdee } from '@/components/IdeesButton'
 import { MODULE_DATA } from '@/lib/modulesData'
 import { getQuizResultats, periodBounds } from '@/lib/collaborateursApi'
+import DemandesInterventionView from '@/components/DemandesInterventionView'
 
 // Comptes autorisés à voir "Résultats des tests" (script 2) — structure
 // volontairement simple pour être modifiable en un instant plus tard.
@@ -2343,6 +2344,23 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     return <div id="dashboard"><ResultatsTestsView onBack={() => setActiveView('home')} pName={pName} /></div>
   }
 
+  if (activeView === 'demandes-intervention') {
+    return (
+      <div id="dashboard">
+        <div className="dash-wrap">
+          <button className="detail-back" onClick={() => setActiveView('home')}>← Retour</button>
+          <div className="dash-header">
+            <div>
+              <h2>🆘 Demandes d&apos;intervention</h2>
+              <p>Réseau entier, tous magasins confondus</p>
+            </div>
+          </div>
+          <DemandesInterventionView login={getTrainerAvatarKey(pName)} role="formateur" />
+        </div>
+      </div>
+    )
+  }
+
   if (activeView === 'auto-eval') {
     return <AutoEvalView onBack={() => setActiveView('home')} />
   }
@@ -2801,6 +2819,16 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
               <div className="dash-tile-sub">Tests de sortie · nouveaux entrants</div>
             </div>
           )}
+
+          <div className="dash-tile" onClick={() => setActiveView('demandes-intervention')} style={{ borderColor: 'rgba(251,191,36,0.35)' }}>
+            <div className="dash-tile-top">
+              <div className="dash-tile-icon">🆘</div>
+              <span className="dash-tile-link" style={{ color: '#fbbf24' }}>Accéder →</span>
+            </div>
+            <div className="dash-tile-count" style={{ color: '#fbbf24' }}>—</div>
+            <div className="dash-tile-label">Demandes d&apos;intervention</div>
+            <div className="dash-tile-sub">Réseau entier</div>
+          </div>
 
           <div className="dash-tile" onClick={() => setActiveView('auto-eval')} style={{ borderColor: 'rgba(16,185,129,0.35)' }}>
             <div className="dash-tile-top">
