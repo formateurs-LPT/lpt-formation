@@ -1,8 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { sbSelect } from '@/lib/supabase'
 import {
   getDemandesIntervention, getMessagesDemande, postMessageDemande, notifierNouveauMessage,
-  reouvrirDemande, cloturerDemande,
+  reouvrirDemande, cloturerDemande, createDemandeIntervention, isMagasinBelgique, BELGIQUE_ONLY_LOGINS,
 } from '@/lib/directionApi'
 
 function fmtDateTime(iso) {
@@ -14,6 +15,74 @@ function fmtDateTime(iso) {
 const STATUT_META = {
   ouverte: { label: 'Ouverte', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.35)' },
   cloturee: { label: 'Clôturée', color: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.15)' },
+}
+
+/**
+ * Formulaire de création d'une demande d'intervention — utilisable aussi bien
+ * depuis la vue magasin Direction que depuis le dashboard manager (script 5,
+ * étendu pour laisser le manager déclencher lui-même une demande).
+ */
+export function DemandeInterventionModal({ magasinDbId, magasinNom, formateurOptions, demandeurLogin, demandeurRole, onClose, onCreated }) {
+  const [motif, setMotif] = useState('')
+  const [delai, setDelai] = useState('')
+  const [actions, setActions] = useState('')
+  const [formateurId, setFormateurId] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [done, setDone] = useState(false)
+
+  const submit = async () => {
+    if (!magasinDbId) return
+    setSaving(true)
+    await createDemandeIntervention({
+      magasinId: magasinDbId,
+      demandeurLogin, demandeurRole,
+      motif, delaiSouhaite: delai, actionsAttendues: actions,
+      formateurSouhaiteId: formateurId || null,
+    })
+    setSaving(false)
+    setDone(true)
+    onCreated?.()
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, padding: 28, width: '100%', maxWidth: 480 }}>
+        {done ? (
+          <>
+            <div style={{ fontSize: 36, marginBottom: 12, textAlign: 'center' }}>✅</div>
+            <p style={{ color: '#fff', textAlign: 'center', marginBottom: 20 }}>Demande envoyée pour {magasinNom}.</p>
+            <button onClick={onClose} className="gbtn" style={{ width: '100%' }}>Fermer</button>
+          </>
+        ) : (
+          <>
+            <h3 style={{ fontSize: 17, fontWeight: 800, color: '#fff', marginBottom: 4 }}>Demander une intervention</h3>
+            <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', marginBottom: 18 }}>{magasinNom}</p>
+            <textarea value={motif} onChange={e => setMotif(e.target.value)} placeholder="Motif" rows={2} className="finput" style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical' }} />
+            <input value={delai} onChange={e => setDelai(e.target.value)} placeholder="Délai souhaité (ex: sous 2 semaines)" className="finput" style={{ width: '100%', boxSizing: 'border-box' }} />
+            <textarea value={actions} onChange={e => setActions(e.target.value)} placeholder="Actions attendues" rows={2} className="finput" style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical' }} />
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 8 }}>Formateur souhaité</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
+              <button onClick={() => setFormateurId('')} style={{
+                padding: '7px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                background: formateurId === '' ? 'rgba(0,171,233,0.2)' : 'rgba(255,255,255,0.06)',
+                border: `1px solid ${formateurId === '' ? '#00abe9' : 'rgba(255,255,255,0.15)'}`,
+                color: formateurId === '' ? '#00abe9' : 'rgba(255,255,255,0.6)',
+              }}>N&apos;importe lequel</button>
+              {formateurOptions.map(t => (
+                <button key={t.id} onClick={() => setFormateurId(t.id)} style={{
+                  padding: '7px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                  background: formateurId === t.id ? 'rgba(0,171,233,0.2)' : 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${formateurId === t.id ? '#00abe9' : 'rgba(255,255,255,0.15)'}`,
+                  color: formateurId === t.id ? '#00abe9' : 'rgba(255,255,255,0.6)',
+                }}>{t.display_name}</button>
+              ))}
+            </div>
+            <button onClick={submit} disabled={saving} className="gbtn" style={{ width: '100%' }}>{saving ? 'Envoi…' : 'Envoyer la demande'}</button>
+          </>
+        )}
+      </div>
+    </div>
+  )
 }
 
 // Détail d'une demande + chat de groupe. `canManage` (direction uniquement)
@@ -109,10 +178,13 @@ function DemandeDetail({ demande, login, role, canManage, onBack, onUpdated }) {
  * utilisé par formateur et directeur retail) ; `canManage` (direction
  * uniquement) affiche les actions de cycle de vie sur le détail.
  */
-export default function DemandesInterventionView({ magasinIds, login, role, canManage = false }) {
+export default function DemandesInterventionView({ magasinIds, login, role, canManage = false, canCreate = false, magasinId, magasinNom }) {
   const [demandes, setDemandes] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
+  const [showCreate, setShowCreate] = useState(false)
+  const [trainers, setTrainers] = useState([])
+  const [isBelgique, setIsBelgique] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -121,6 +193,16 @@ export default function DemandesInterventionView({ magasinIds, login, role, canM
     setLoading(false)
   }
   useEffect(() => { load() }, [JSON.stringify(magasinIds)]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!canCreate || !magasinId) return
+    let cancelled = false
+    sbSelect('trainers', 'select=id,login,display_name,active').then(rows => { if (!cancelled) setTrainers((rows || []).filter(t => t.active)) }).catch(() => {})
+    isMagasinBelgique(magasinId).then(v => { if (!cancelled) setIsBelgique(v) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [canCreate, magasinId])
+
+  const formateurOptions = trainers.filter(t => isBelgique ? BELGIQUE_ONLY_LOGINS.includes(t.login) : !BELGIQUE_ONLY_LOGINS.includes(t.login))
 
   if (selected) {
     return (
@@ -155,6 +237,11 @@ export default function DemandesInterventionView({ magasinIds, login, role, canM
 
   return (
     <div>
+      {canCreate && magasinId && (
+        <button onClick={() => setShowCreate(true)} className="gbtn" style={{ marginBottom: 16 }}>
+          🆘 Nouvelle demande d&apos;intervention
+        </button>
+      )}
       {loading ? (
         <p style={{ color: 'var(--text-s)' }}>Chargement…</p>
       ) : demandes.length === 0 ? (
@@ -181,6 +268,16 @@ export default function DemandesInterventionView({ magasinIds, login, role, canM
             </div>
           )}
         </>
+      )}
+
+      {showCreate && (
+        <DemandeInterventionModal
+          magasinDbId={magasinId} magasinNom={magasinNom}
+          formateurOptions={formateurOptions}
+          demandeurLogin={login} demandeurRole={role}
+          onClose={() => setShowCreate(false)}
+          onCreated={load}
+        />
       )}
     </div>
   )

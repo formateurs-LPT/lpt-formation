@@ -3,6 +3,11 @@
 // précédents (collaborateursApi.js, notesTerrainApi.js).
 import { sbSelect, sbInsert, sbUpdate } from '@/lib/supabase'
 
+// Formateurs Belgique = uniquement Thomas/Jonathan ; ailleurs = tous sauf eux.
+// Partagé entre l'espace Direction et le dashboard manager (tous deux peuvent
+// créer une demande d'intervention et doivent filtrer le formateur pareil).
+export const BELGIQUE_ONLY_LOGINS = ['thomas', 'jonathan']
+
 // ── Auth Direction ────────────────────────────────────────────────────
 // Même logique que getManagerFromDB (code comparé côté Postgrest, jamais
 // reçu/comparé côté client) — cohérent avec le reste de l'app.

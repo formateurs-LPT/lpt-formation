@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { sbSelect } from '@/lib/supabase'
 import {
   getDirectorFromDB, getDirectorRegions, getMagasinsByRegionIds, getAllMagasins, getAllRegions,
-  tauxMaitriseMoyen, createDemandeIntervention, isMagasinBelgique,
+  tauxMaitriseMoyen, isMagasinBelgique, BELGIQUE_ONLY_LOGINS,
 } from '@/lib/directionApi'
 import { getReportingsHebdo } from '@/lib/notesTerrainApi'
 import { STORES } from '@/lib/storeFollowupData'
@@ -12,12 +12,9 @@ import { mergeEntreesIntoRoster } from '@/lib/storeRosterMerge'
 import { getWeeklySharedState } from '@/lib/supabase'
 import { useStoreFollowupProgress } from '@/lib/useStoreFollowupProgress'
 import { SectionsList, CollaborateurFiche, StoreHeader } from '@/components/StoreFollowupShared'
-import DemandesInterventionView from '@/components/DemandesInterventionView'
+import DemandesInterventionView, { DemandeInterventionModal } from '@/components/DemandesInterventionView'
 
 const SESSION_KEY = 'direction_session' // { login, displayName, role, regions: [{id, nom}] }
-
-// Formateurs Belgique = uniquement Thomas/Jonathan ; ailleurs = tous sauf eux.
-const BELGIQUE_ONLY_LOGINS = ['thomas', 'jonathan']
 
 const inputStyle = {
   width: '100%', boxSizing: 'border-box', padding: '12px 14px', marginBottom: 12,
@@ -230,73 +227,10 @@ function StoreDirectionView({ store: baseStore, session, onBack }) {
         <DemandeInterventionModal
           magasinNom={store.label} magasinDbId={baseStore.dbId}
           formateurOptions={formateurOptions}
-          session={session}
+          demandeurLogin={session.login} demandeurRole={session.role}
           onClose={() => setShowDemandeModal(false)}
         />
       )}
-    </div>
-  )
-}
-
-function DemandeInterventionModal({ magasinDbId, magasinNom, formateurOptions, session, onClose }) {
-  const [motif, setMotif] = useState('')
-  const [delai, setDelai] = useState('')
-  const [actions, setActions] = useState('')
-  const [formateurId, setFormateurId] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [done, setDone] = useState(false)
-
-  const submit = async () => {
-    if (!magasinDbId) return
-    setSaving(true)
-    await createDemandeIntervention({
-      magasinId: magasinDbId,
-      demandeurLogin: session.login,
-      demandeurRole: session.role,
-      motif, delaiSouhaite: delai, actionsAttendues: actions,
-      formateurSouhaiteId: formateurId || null,
-    })
-    setSaving(false)
-    setDone(true)
-  }
-
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, padding: 28, width: '100%', maxWidth: 480 }}>
-        {done ? (
-          <>
-            <div style={{ fontSize: 36, marginBottom: 12, textAlign: 'center' }}>✅</div>
-            <p style={{ color: '#fff', textAlign: 'center', marginBottom: 20 }}>Demande envoyée pour {magasinNom}.</p>
-            <button onClick={onClose} className="gbtn" style={{ width: '100%' }}>Fermer</button>
-          </>
-        ) : (
-          <>
-            <h3 style={{ fontSize: 17, fontWeight: 800, color: '#fff', marginBottom: 4 }}>Demander une intervention</h3>
-            <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', marginBottom: 18 }}>{magasinNom}</p>
-            <textarea value={motif} onChange={e => setMotif(e.target.value)} placeholder="Motif" rows={2} className="finput" style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical' }} />
-            <input value={delai} onChange={e => setDelai(e.target.value)} placeholder="Délai souhaité (ex: sous 2 semaines)" className="finput" style={{ width: '100%', boxSizing: 'border-box' }} />
-            <textarea value={actions} onChange={e => setActions(e.target.value)} placeholder="Actions attendues" rows={2} className="finput" style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical' }} />
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 8 }}>Formateur souhaité</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
-              <button onClick={() => setFormateurId('')} style={{
-                padding: '7px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                background: formateurId === '' ? 'rgba(0,171,233,0.2)' : 'rgba(255,255,255,0.06)',
-                border: `1px solid ${formateurId === '' ? '#00abe9' : 'rgba(255,255,255,0.15)'}`,
-                color: formateurId === '' ? '#00abe9' : 'rgba(255,255,255,0.6)',
-              }}>N&apos;importe lequel</button>
-              {formateurOptions.map(t => (
-                <button key={t.id} onClick={() => setFormateurId(t.id)} style={{
-                  padding: '7px 14px', borderRadius: 20, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                  background: formateurId === t.id ? 'rgba(0,171,233,0.2)' : 'rgba(255,255,255,0.06)',
-                  border: `1px solid ${formateurId === t.id ? '#00abe9' : 'rgba(255,255,255,0.15)'}`,
-                  color: formateurId === t.id ? '#00abe9' : 'rgba(255,255,255,0.6)',
-                }}>{t.display_name}</button>
-              ))}
-            </div>
-            <button onClick={submit} disabled={saving} className="gbtn" style={{ width: '100%' }}>{saving ? 'Envoi…' : 'Envoyer la demande'}</button>
-          </>
-        )}
-      </div>
     </div>
   )
 }

@@ -423,6 +423,21 @@ function ManagerDashboard({ session, onLogout }) {
           }
         />
 
+        {magasinId && (
+          <div style={{
+            background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.35)',
+            borderRadius: 16, padding: '18px 20px', marginBottom: 4,
+          }}>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: '#fbbf24', margin: '0 0 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              🆘 Demandes d&apos;intervention
+            </h3>
+            <DemandesInterventionView
+              magasinIds={[magasinId]} login={session.login} role="manager"
+              canCreate magasinId={magasinId} magasinNom={store.label}
+            />
+          </div>
+        )}
+
         <TrainingRegistrationTile store={store} session={session} />
 
         <NouvelEntrantSection collaborateurs={nouveauxEntrants} onDeclencher={handleDeclencherTest} />
@@ -436,13 +451,6 @@ function ManagerDashboard({ session, onLogout }) {
         />
 
         <HistoriqueReportingsSection reportings={reportings} />
-
-        {magasinId && (
-          <div style={{ marginTop: 8 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 800, color: '#fff', margin: '0 0 14px' }}>🆘 Demandes d&apos;intervention</h3>
-            <DemandesInterventionView magasinIds={[magasinId]} login={session.login} role="manager" />
-          </div>
-        )}
       </div>
 
       {enAttenteValidation.length > 0 && (
