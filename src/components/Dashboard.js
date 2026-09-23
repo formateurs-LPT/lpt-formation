@@ -23,6 +23,11 @@ import { isDynamicRoomCode, setTrainerActiveRoomCode } from '@/lib/sessionCode'
 import { isTrainerAccount } from '@/lib/participantNames'
 import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees, addIdee } from '@/components/IdeesButton'
 import { MODULE_DATA } from '@/lib/modulesData'
+import { getQuizResultats, periodBounds } from '@/lib/collaborateursApi'
+
+// Comptes autorisés à voir "Résultats des tests" (script 2) — structure
+// volontairement simple pour être modifiable en un instant plus tard.
+const ALLOWED_RESULTATS_LOGINS = ['kevin', 'quentin']
 import SonnettePanel from './SonnettePanel'
 import RetourFormationView from './RetourFormationView'
 import AutoEvalView from './AutoEvalView'
@@ -1591,6 +1596,143 @@ function InscriptionsView({ onBack, pName }) {
   )
 }
 
+const RESULTATS_PERIODS = [
+  { id: 'semaine', label: 'Semaine' },
+  { id: 'mois', label: 'Mois' },
+  { id: 'trimestre', label: 'Trimestre' },
+  { id: 'annee', label: 'Année' },
+  { id: 'custom', label: 'Dates libres' },
+]
+
+// Page "Résultats des tests" — réservée à Kevin/Quentin (ALLOWED_RESULTATS_LOGINS).
+// Double vérification volontaire : le lien de nav est déjà caché pour les
+// autres comptes, mais le composant se protège aussi lui-même au rendu, au
+// cas où cette vue serait atteinte autrement qu'en cliquant la tuile.
+function ResultatsTestsView({ onBack, pName }) {
+  const allowed = ALLOWED_RESULTATS_LOGINS.includes(getTrainerAvatarKey(pName))
+  const [period, setPeriod] = useState('mois')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
+  const [resultats, setResultats] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!allowed) return
+    setLoading(true)
+    const { from, to } = periodBounds(period, customFrom, customTo)
+    getQuizResultats({ from, to }).then(rows => { setResultats(rows); setLoading(false) }).catch(() => setLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowed, period, customFrom, customTo])
+
+  if (!allowed) {
+    return (
+      <div className="dash-wrap">
+        <button className="detail-back" onClick={onBack}>← Retour</button>
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-s)' }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+          <div style={{ fontSize: 15, fontWeight: 600 }}>Accès non autorisé</div>
+        </div>
+      </div>
+    )
+  }
+
+  const total = resultats.length
+  const reussis = resultats.filter(r => r.reussite).length
+  const tauxReussite = total > 0 ? Math.round((reussis / total) * 100) : 0
+  const scores = resultats.map(r => r.score).filter(s => s != null)
+  const scoreMoyen = scores.length > 0 ? Math.round((scores.reduce((a, b) => a + Number(b), 0) / scores.length) * 10) / 10 : null
+
+  const fmtDate = (iso) => {
+    try { return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) }
+    catch { return '—' }
+  }
+
+  return (
+    <div className="dash-wrap">
+      <button className="detail-back" onClick={onBack}>← Retour</button>
+      <div className="dash-header">
+        <div>
+          <h2>📊 Résultats des tests</h2>
+          <p>Tests de sortie des nouveaux entrants, tous magasins</p>
+        </div>
+      </div>
+
+      {/* Filtre de période */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20, alignItems: 'center' }}>
+        {RESULTATS_PERIODS.map(p => (
+          <button key={p.id} onClick={() => setPeriod(p.id)} style={{
+            padding: '7px 16px', borderRadius: 20, cursor: 'pointer', fontFamily: 'inherit',
+            fontSize: 12.5, fontWeight: 700, transition: 'all .15s',
+            background: period === p.id ? 'rgba(0,171,233,0.15)' : 'var(--card)',
+            border: `1px solid ${period === p.id ? '#00abe9' : 'var(--border)'}`,
+            color: period === p.id ? '#00abe9' : 'var(--text-s)',
+          }}>{p.label}</button>
+        ))}
+        {period === 'custom' && (
+          <>
+            <input type="date" className="finput" style={{ width: 150, marginBottom: 0 }} value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+            <span style={{ color: 'var(--text-m)' }}>→</span>
+            <input type="date" className="finput" style={{ width: 150, marginBottom: 0 }} value={customTo} onChange={e => setCustomTo(e.target.value)} />
+          </>
+        )}
+      </div>
+
+      {/* Cartes stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 28 }}>
+        {[
+          { label: 'Taux de réussite', value: total > 0 ? `${tauxReussite}%` : '—', color: '#4ade80' },
+          { label: 'Tests passés', value: total, color: '#00abe9' },
+          { label: 'Score moyen', value: scoreMoyen != null ? scoreMoyen : '—', color: '#a78bfa' },
+        ].map((s, i) => (
+          <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px' }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, marginBottom: 4 }}>{s.value}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-s)' }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Liste */}
+      {loading ? (
+        <p style={{ color: 'var(--text-s)' }}>Chargement…</p>
+      ) : resultats.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--text-s)' }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
+          <div style={{ fontSize: 15, fontWeight: 600 }}>Aucun résultat sur cette période</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {resultats.map(r => (
+            <div key={r.id} style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 18px',
+            }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+                background: r.reussite ? 'rgba(74,222,128,0.15)' : 'rgba(239,68,68,0.15)',
+                color: r.reussite ? '#4ade80' : '#f87171',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800,
+              }}>{(r.prenom?.[0] || '?')}{(r.nom?.[0] || '')}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{r.prenom} {r.nom}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-s)' }}>{r.magasin} · {fmtDate(r.date_passation)}</div>
+              </div>
+              {r.score != null && (
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-s)', flexShrink: 0 }}>{r.score}</div>
+              )}
+              <div style={{
+                flexShrink: 0, padding: '4px 12px', borderRadius: 20, fontSize: 11.5, fontWeight: 700,
+                background: r.reussite ? 'rgba(74,222,128,0.12)' : 'rgba(239,68,68,0.12)',
+                border: `1px solid ${r.reussite ? 'rgba(74,222,128,0.35)' : 'rgba(239,68,68,0.35)'}`,
+                color: r.reussite ? '#4ade80' : '#f87171',
+              }}>{r.reussite ? 'Réussi' : 'Échoué'}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function IdeesView({ onBack, pName }) {
   const [idees, setIdees] = useState([])
   const [loading, setLoading] = useState(true)
@@ -2197,6 +2339,10 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     )
   }
 
+  if (activeView === 'resultats-tests') {
+    return <div id="dashboard"><ResultatsTestsView onBack={() => setActiveView('home')} pName={pName} /></div>
+  }
+
   if (activeView === 'auto-eval') {
     return <AutoEvalView onBack={() => setActiveView('home')} />
   }
@@ -2643,6 +2789,18 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-label">Retour de formation</div>
             <div className="dash-tile-sub">Fiches de suivi par collaborateur</div>
           </div>
+
+          {ALLOWED_RESULTATS_LOGINS.includes(getTrainerAvatarKey(pName)) && (
+            <div className="dash-tile" onClick={() => setActiveView('resultats-tests')} style={{ borderColor: 'rgba(167,139,250,0.35)' }}>
+              <div className="dash-tile-top">
+                <div className="dash-tile-icon">📊</div>
+                <span className="dash-tile-link" style={{ color: '#a78bfa' }}>Accéder →</span>
+              </div>
+              <div className="dash-tile-count" style={{ color: '#a78bfa' }}>—</div>
+              <div className="dash-tile-label">Résultats des tests</div>
+              <div className="dash-tile-sub">Tests de sortie · nouveaux entrants</div>
+            </div>
+          )}
 
           <div className="dash-tile" onClick={() => setActiveView('auto-eval')} style={{ borderColor: 'rgba(16,185,129,0.35)' }}>
             <div className="dash-tile-top">

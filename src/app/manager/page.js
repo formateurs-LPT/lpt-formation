@@ -9,6 +9,10 @@ import { classifyMagasin } from '@/lib/formationCategories'
 import { useStoreFollowupProgress } from '@/lib/useStoreFollowupProgress'
 import { SectionsList, CollaborateurFiche, StoreHeader } from '@/components/StoreFollowupShared'
 import TrainingRegistrationTile from '@/components/TrainingRegistrationTile'
+import {
+  getMagasinIdBySlug, getNouveauxCollaborateurs, getCollaborateursEnAttenteValidation,
+  declencherTestSortie, validerNouvelEntrant,
+} from '@/lib/collaborateursApi'
 
 // Page autonome (comme /rapport, /bilan-formation) — aucune dépendance à
 // page.js/Dashboard.js, donc aucun risque pour le flux formateur/participant/TV.
@@ -146,10 +150,108 @@ function NewHiresTile({ store, entreesData }) {
   )
 }
 
+// ── Nouvel entrant → test de sortie (nouveau schéma collaborateurs) ──────
+// Distinct de NewHiresTile ci-dessus (qui vient de l'ancien système
+// entrees_data + comptes rendus de formation) : ici on pilote le statut
+// 'nouveau' → déclenchement du test → validation manager, sur la nouvelle
+// table `collaborateurs`.
+function NouvelEntrantSection({ collaborateurs, onDeclencher }) {
+  if (!collaborateurs.length) return null
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 800, color: '#fff', margin: '0 0 14px' }}>🎓 Nouveaux entrants — test de sortie</h3>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+        {collaborateurs.map(c => (
+          <div key={c.id} style={{
+            background: 'rgba(245,158,11,0.08)', border: '1.5px solid rgba(245,158,11,0.35)',
+            borderRadius: 16, padding: '16px 20px', minWidth: 240, flex: '1 1 260px',
+          }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{c.prenom} {c.nom}</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginBottom: 12 }}>{c.poste}</div>
+            {c.test_declenche_at ? (
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: '#fbbf24' }}>⏳ Test en cours…</div>
+            ) : (
+              <button onClick={() => onDeclencher(c.id)} style={{
+                width: '100%', padding: '10px', borderRadius: 10, border: 'none',
+                background: 'linear-gradient(135deg, #d97706, #f59e0b)', color: '#fff',
+                fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              }}>Déclencher le test de sortie</button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Modale de validation — un nouvel entrant a fini son test, le manager doit
+// accuser réception avant qu'il ne rejoigne officiellement l'équipe (statut
+// 'actif'). Traite les collaborateurs en attente un par un.
+function ValidationNouvelEntrantModal({ collaborateur, onValider }) {
+  const [saving, setSaving] = useState(false)
+  if (!collaborateur) return null
+
+  const handleOk = async () => {
+    setSaving(true)
+    await onValider(collaborateur.id)
+    setSaving(false)
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 1000,
+      background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+    }}>
+      <div style={{
+        background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20,
+        padding: '32px', width: '100%', maxWidth: 440, textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 40, marginBottom: 16 }}>🎉</div>
+        <p style={{ fontSize: 15, color: '#fff', lineHeight: 1.6, marginBottom: 24 }}>
+          <strong>{collaborateur.prenom}</strong> vient de finir son test de fin de formation,
+          il va être ajouté à la liste de vos collaborateurs.
+        </p>
+        <button onClick={handleOk} disabled={saving} style={{
+          width: '100%', padding: '13px', borderRadius: 12, border: 'none',
+          background: 'linear-gradient(135deg, #0089ba, #00abe9)', color: '#fff',
+          fontSize: 14, fontWeight: 700, cursor: saving ? 'default' : 'pointer', fontFamily: 'inherit',
+          opacity: saving ? 0.6 : 1,
+        }}>{saving ? '…' : 'OK'}</button>
+      </div>
+    </div>
+  )
+}
+
+// Écran temporaire affiché après déclenchement du test — le test de sortie
+// lui-même (contenu, quiz) sera construit dans un prochain script.
+function TestEnCoursPage({ collaborateur, onBack }) {
+  return (
+    <div id="dashboard" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ textAlign: 'center', maxWidth: 420 }}>
+        <div style={{ fontSize: 48, marginBottom: 20 }}>🚧</div>
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Chantier en cours</h2>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, marginBottom: 28 }}>
+          Le test de sortie de <strong>{collaborateur.prenom}</strong> arrive bientôt. Revenez un peu plus tard.
+        </p>
+        <button onClick={onBack} style={{
+          background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+          color: 'rgba(255,255,255,0.75)', padding: '10px 22px', borderRadius: 10,
+          fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+        }}>← Retour</button>
+      </div>
+    </div>
+  )
+}
+
 function ManagerDashboard({ session, onLogout }) {
   const [entreesData, setEntreesData] = useState([])
   const [sectionId, setSectionId] = useState(null)
   const [collaborateurId, setCollaborateurId] = useState(null)
+  const [magasinId, setMagasinId] = useState(null)
+  const [nouveauxEntrants, setNouveauxEntrants] = useState([])
+  const [enAttenteValidation, setEnAttenteValidation] = useState([])
+  const [testEnCoursCollab, setTestEnCoursCollab] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -159,7 +261,43 @@ function ManagerDashboard({ session, onLogout }) {
     return () => { cancelled = true }
   }, [])
 
+  const refreshNouvelEntrant = async (id) => {
+    const [nouveaux, attente] = await Promise.all([
+      getNouveauxCollaborateurs(id),
+      getCollaborateursEnAttenteValidation(id),
+    ])
+    setNouveauxEntrants(nouveaux)
+    setEnAttenteValidation(attente)
+  }
+
+  useEffect(() => {
+    let cancelled = false
+    getMagasinIdBySlug(session.magasin).then(id => {
+      if (cancelled || !id) return
+      setMagasinId(id)
+      refreshNouvelEntrant(id)
+    }).catch(() => {})
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.magasin])
+
+  const handleDeclencherTest = async (collabId) => {
+    await declencherTestSortie(collabId)
+    const collab = nouveauxEntrants.find(c => c.id === collabId)
+    setTestEnCoursCollab(collab || null)
+    if (magasinId) refreshNouvelEntrant(magasinId)
+  }
+
+  const handleValiderEntrant = async (collabId) => {
+    await validerNouvelEntrant(collabId)
+    if (magasinId) refreshNouvelEntrant(magasinId)
+  }
+
   const { progress, history, saveError, setScore, saveNote, reset } = useStoreFollowupProgress(session.magasin, session.displayName)
+
+  if (testEnCoursCollab) {
+    return <TestEnCoursPage collaborateur={testEnCoursCollab} onBack={() => setTestEnCoursCollab(null)} />
+  }
 
   const baseStore = STORES.find(s => s.id === session.magasin)
   if (!baseStore) {
@@ -222,6 +360,8 @@ function ManagerDashboard({ session, onLogout }) {
 
         <TrainingRegistrationTile store={store} session={session} />
 
+        <NouvelEntrantSection collaborateurs={nouveauxEntrants} onDeclencher={handleDeclencherTest} />
+
         <NewHiresTile store={store} entreesData={entreesData} />
 
         <SectionsList
@@ -230,6 +370,10 @@ function ManagerDashboard({ session, onLogout }) {
           onSelectCollaborateur={(secId, collabId) => { setSectionId(secId); setCollaborateurId(collabId) }}
         />
       </div>
+
+      {enAttenteValidation.length > 0 && (
+        <ValidationNouvelEntrantModal collaborateur={enAttenteValidation[0]} onValider={handleValiderEntrant} />
+      )}
     </div>
   )
 }
