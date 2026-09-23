@@ -1395,6 +1395,12 @@ function inscriptionsLastSeenKey(pName) {
   return `lpt_inscriptions_vu_${getTrainerAvatarKey(pName)}`
 }
 
+// Même logique, pour les demandes d'intervention (manager/direction) — badge
+// et toast propres à CE formateur, jamais partagés entre Kevin/Quentin/etc.
+function demandesInterventionLastSeenKey(pName) {
+  return `lpt_demandes_intervention_vu_${getTrainerAvatarKey(pName)}`
+}
+
 // Raccourci "Noter" — plutôt que de renvoyer le formateur vers Suivi magasin
 // pour chercher le collaborateur, ouvre directement le même ItemRow (trame,
 // note, historique, score) sur l'item de compétence relié au thème de la
@@ -2065,6 +2071,9 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   const [inscriptionsCount, setInscriptionsCount] = useState(0)
   const [inscriptionsPending, setInscriptionsPending] = useState(0)
   const inscriptionsToastedRef = useRef(false)
+  const [demandesInterventionCount, setDemandesInterventionCount] = useState(0)
+  const [demandesInterventionPending, setDemandesInterventionPending] = useState(0)
+  const demandesInterventionToastedRef = useRef(false)
   const [penseBeteTodoCount, setPenseBeteTodoCount] = useState(0)
   const [showSonnette, setShowSonnette] = useState(false)
   const [sonnettePending, setSonnettePending] = useState(0)
@@ -2122,14 +2131,36 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     } catch {}
   }
 
+  // Même principe que refreshInscriptionsCount : "pending" = demandes pas
+  // encore clôturées (chiffre stable sur la tuile), "unseen" = créées depuis
+  // la dernière consultation de CE formateur (pilote le halo + le toast).
+  const refreshDemandesInterventionCount = async (allowToast) => {
+    try {
+      const rows = await sbSelect('demandes_intervention', 'select=created_at,statut')
+      const pending = (rows || []).filter(r => r.statut !== 'cloturee').length
+      setDemandesInterventionPending(pending)
+
+      let lastSeen = 0
+      try { lastSeen = new Date(localStorage.getItem(demandesInterventionLastSeenKey(pName)) || 0).getTime() } catch {}
+      const unseen = (rows || []).filter(r => new Date(r.created_at).getTime() > lastSeen).length
+      setDemandesInterventionCount(unseen)
+      if (allowToast && unseen > 0 && !demandesInterventionToastedRef.current) {
+        demandesInterventionToastedRef.current = true
+        onToast?.(`Vous avez reçu ${unseen} nouvelle${unseen > 1 ? 's' : ''} demande${unseen > 1 ? 's' : ''} d'intervention`)
+      }
+    } catch {}
+  }
+
   useEffect(() => {
     loadTileStats()
     refreshActiveRoom()
     refreshInscriptionsCount(true)
+    refreshDemandesInterventionCount(true)
     const interval = setInterval(() => {
       loadTileStats()
       refreshActiveRoom()
       refreshInscriptionsCount(false)
+      refreshDemandesInterventionCount(false)
     }, 15000)
     return () => clearInterval(interval)
   }, [pName])
@@ -2820,14 +2851,29 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             </div>
           )}
 
-          <div className="dash-tile" onClick={() => setActiveView('demandes-intervention')} style={{ borderColor: 'rgba(251,191,36,0.35)' }}>
+          <div
+            className="dash-tile"
+            onClick={() => {
+              setActiveView('demandes-intervention')
+              try { localStorage.setItem(demandesInterventionLastSeenKey(pName), new Date().toISOString()) } catch {}
+              setDemandesInterventionCount(0)
+            }}
+            style={demandesInterventionCount > 0 ? {
+              borderColor: 'rgba(251,191,36,0.6)', boxShadow: '0 0 24px rgba(251,191,36,0.25)',
+            } : { borderColor: 'rgba(251,191,36,0.35)' }}
+          >
             <div className="dash-tile-top">
               <div className="dash-tile-icon">🆘</div>
               <span className="dash-tile-link" style={{ color: '#fbbf24' }}>Accéder →</span>
             </div>
-            <div className="dash-tile-count" style={{ color: '#fbbf24' }}>—</div>
+            <div className="dash-tile-count" style={{ color: '#fbbf24' }}>{demandesInterventionPending || '—'}</div>
             <div className="dash-tile-label">Demandes d&apos;intervention</div>
-            <div className="dash-tile-sub">Réseau entier</div>
+            <div className="dash-tile-sub">
+              Réseau entier
+              {demandesInterventionCount > 0 && (
+                <span style={{ color: '#fbbf24', fontWeight: 700 }}> · {demandesInterventionCount} nouvelle{demandesInterventionCount > 1 ? 's' : ''}</span>
+              )}
+            </div>
           </div>
 
           <div className="dash-tile" onClick={() => setActiveView('auto-eval')} style={{ borderColor: 'rgba(16,185,129,0.35)' }}>

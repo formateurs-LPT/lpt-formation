@@ -104,7 +104,15 @@ export async function getDemandesIntervention({ magasinIds } = {}) {
     ...d,
     magasinNom: magasinById[d.magasin_id] || '—',
     formateurNom: d.formateur_souhaite_id ? (trainerById[d.formateur_souhaite_id] || '—') : "N'importe lequel",
+    formateurAccepteNom: d.formateur_accepte_id ? (trainerById[d.formateur_accepte_id] || '—') : null,
   }))
+}
+
+/** Un formateur accepte une demande ouverte : passe en 'en_cours', trace qui et quand. */
+export async function accepterDemande({ id, formateurId }) {
+  return sbUpdate('demandes_intervention', {
+    statut: 'en_cours', formateur_accepte_id: formateurId, accepte_at: new Date().toISOString(),
+  }, `id=eq.${id}`)
 }
 
 export async function getDemande(id) {

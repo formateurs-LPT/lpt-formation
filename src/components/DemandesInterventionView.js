@@ -1,9 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { sbSelect } from '@/lib/supabase'
+import { sbSelect, getTrainerFromDB } from '@/lib/supabase'
 import {
   getDemandesIntervention, getMessagesDemande, postMessageDemande, notifierNouveauMessage,
   reouvrirDemande, cloturerDemande, createDemandeIntervention, isMagasinBelgique, BELGIQUE_ONLY_LOGINS,
+  accepterDemande,
 } from '@/lib/directionApi'
 
 function fmtDateTime(iso) {
@@ -14,6 +15,7 @@ function fmtDateTime(iso) {
 
 const STATUT_META = {
   ouverte: { label: 'Ouverte', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.35)' },
+  en_cours: { label: 'En cours', color: '#38bdf8', bg: 'rgba(56,189,248,0.12)', border: 'rgba(56,189,248,0.35)' },
   cloturee: { label: 'Clôturée', color: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.15)' },
 }
 
@@ -92,6 +94,7 @@ function DemandeDetail({ demande, login, role, canManage, onBack, onUpdated }) {
   const [texte, setTexte] = useState('')
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [accepting, setAccepting] = useState(false)
 
   const load = async () => {
     setMessages(await getMessagesDemande(demande.id))
@@ -107,6 +110,25 @@ function DemandeDetail({ demande, login, role, canManage, onBack, onUpdated }) {
     setTexte('')
     await load()
     setSending(false)
+  }
+
+  // Le formateur accepte : passe la demande en "en_cours" et poste un message
+  // de confirmation dans le chat de groupe (vu par le manager/DR/directeur
+  // qui a fait la demande — c'est ce message + le badge de statut qui leur
+  // servent d'accusé de réception).
+  const accepter = async () => {
+    setAccepting(true)
+    const trainer = await getTrainerFromDB(login)
+    if (trainer?.id) {
+      await accepterDemande({ id: demande.id, formateurId: trainer.id })
+      await postMessageDemande({
+        demandeId: demande.id, auteurLogin: login, auteurRole: role,
+        contenu: `✅ ${trainer.display_name} a accepté cette demande et va s'en occuper.`,
+      })
+      await notifierNouveauMessage(demande, login)
+    }
+    setAccepting(false)
+    onUpdated()
   }
 
   const st = STATUT_META[demande.statut] || STATUT_META.ouverte
@@ -126,7 +148,16 @@ function DemandeDetail({ demande, login, role, canManage, onBack, onUpdated }) {
         {demande.delai_souhaite && <p style={{ fontSize: 13, color: 'var(--text-s)', marginBottom: 6 }}><strong>Délai souhaité :</strong> {demande.delai_souhaite}</p>}
         {demande.actions_attendues && <p style={{ fontSize: 13, color: 'var(--text-s)', marginBottom: 6 }}><strong>Actions attendues :</strong> {demande.actions_attendues}</p>}
         <p style={{ fontSize: 13, color: 'var(--text-s)' }}><strong>Formateur :</strong> {demande.formateurNom}</p>
+        {demande.formateurAccepteNom && (
+          <p style={{ fontSize: 12, color: '#38bdf8', marginTop: 6 }}>✅ Acceptée par {demande.formateurAccepteNom} le {fmtDateTime(demande.accepte_at)}</p>
+        )}
         {demande.reporting_id && <p style={{ fontSize: 12, color: '#4ade80', marginTop: 6 }}>📎 Reporting rattaché</p>}
+
+        {role === 'formateur' && demande.statut === 'ouverte' && (
+          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+            <button onClick={accepter} disabled={accepting} className="gbtn">{accepting ? 'Confirmation…' : '✅ Accepter la demande'}</button>
+          </div>
+        )}
 
         {canManage && (
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
