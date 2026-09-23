@@ -79,6 +79,58 @@ export const STORES = [
       },
     ],
   },
+  {
+    id: 'toulon-avenue-83',
+    label: 'Toulon Avenue 83',
+    sections: [
+      {
+        id: 'opto',
+        label: 'OPTO',
+        sub: 'Opticiens',
+        collaborateurs: [
+          { id: 'arthur-moyon',   prenom: 'Arthur',  nom: 'Moyon',   contrat: '24h' },
+          { id: 'esteban-salinas', prenom: 'Esteban', nom: 'Salinas', contrat: '39h' },
+        ],
+      },
+      {
+        id: 'cvo',
+        label: 'CVO',
+        sub: 'Vendeurs',
+        collaborateurs: [
+          { id: 'dylan-lelievre',       prenom: 'Dylan',     nom: 'Lelièvre',      contrat: '35h' },
+          { id: 'jade-amara',           prenom: 'Jade',      nom: 'Amara',         contrat: '35h' },
+          { id: 'noa-giaya',            prenom: 'Noa',       nom: 'Giaya',         contrat: '35h' },
+          { id: 'vanille-cappelle',     prenom: 'Vanille',   nom: 'Cappelle',      contrat: '35h' },
+          { id: 'luna-amagat',          prenom: 'Luna',      nom: 'Amagat',        contrat: '35h' },
+          { id: 'ornella-chaix',        prenom: 'Ornella',   nom: 'Chaix',         contrat: '35h' },
+          { id: 'maily-michee',         prenom: 'Maïly',     nom: 'Michée',        contrat: '35h30' },
+          { id: 'hortense-de-lambert',  prenom: 'Hortense',  nom: 'De Lambert',    contrat: '35h' },
+          { id: 'thaiss-windenberger',  prenom: 'Thaïss',    nom: 'Windenberger',  contrat: '28h' },
+          { id: 'juliette-pheulpin',    prenom: 'Juliette',  nom: 'Pheulpin',      contrat: '28h' },
+          { id: 'thomas-benhallal',     prenom: 'Thomas',    nom: 'Benhallal',     contrat: '24h' },
+          { id: 'melina-lecoq',         prenom: 'Melina',    nom: 'Lecoq',         contrat: '24h' },
+        ],
+      },
+      {
+        id: 'mo-sav',
+        label: 'MO/SAV',
+        sub: 'Monteurs · SAV',
+        collaborateurs: [
+          { id: 'leia-brun-gauthier',   prenom: 'Leia',      nom: 'Brun-Gauthier', contrat: '35h' },
+          { id: 'yannis-adeler',        prenom: 'Yannis',    nom: 'Adeler',        contrat: '35h' },
+          { id: 'joshua-meziane-mana',  prenom: 'Joshua',    nom: 'Meziane Mana',  contrat: '35h' },
+          { id: 'terry-emery',          prenom: 'Terry',     nom: 'Emery',         contrat: '35h' },
+          { id: 'maelle-isch',          prenom: 'Maelle',    nom: 'Isch',          contrat: '35h' },
+          { id: 'lilou-parcilie',       prenom: 'Lilou',     nom: 'Parcilie',      contrat: '35h' },
+          { id: 'ilona-pendu',          prenom: 'Ilona',     nom: 'Pendu',         contrat: '35h' },
+          { id: 'damien-vasseur',       prenom: 'Damien',    nom: 'Vasseur',       contrat: '35h' },
+          { id: 'kassandra-smith',      prenom: 'Kassandra', nom: 'Smith',         contrat: '28h' },
+          { id: 'noemie-vernale',       prenom: 'Noëmie',    nom: 'Vernale',       contrat: '24h' },
+          { id: 'amine-el-attar',       prenom: 'Amine',     nom: 'El Attar',      contrat: '35h' },
+        ],
+      },
+    ],
+  },
   // Laboratoire de fabrication des verres progressifs — annexe du magasin
   // Paris Châtelet, pas un magasin de vente. Aucun collaborateur pour
   // l'instant (liste à venir), et pas encore d'items de compétence tant que
@@ -134,6 +186,8 @@ export const SKILL_ITEMS = {
   ],
   // À détailler une fois les étapes du process de montage fournies par Kevin.
   labo: [],
+  // Idem — items de compétence OPTO à détailler plus tard.
+  opto: [],
 }
 
 // Trame d'audit par item — la question à poser / consigne pour le formateur
@@ -390,7 +444,7 @@ export function tenureLabel(isoDate) {
 }
 
 // ── Estimation de l'âge d'une équipe (indicateur formateur/responsable) ──
-export const TEAM_LABELS = { cvo: 'Équipe vente', 'mo-sav': 'Équipe support', labo: 'Équipe laboratoire' }
+export const TEAM_LABELS = { cvo: 'Équipe vente', 'mo-sav': 'Équipe support', labo: 'Équipe laboratoire', opto: 'Équipe optique' }
 
 const TEAM_AGE_TIERS = [
   { max: 6,        label: 'Jeune équipe',         icon: '🌱', color: '#00abe9' },
