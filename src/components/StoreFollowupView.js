@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { STORES } from '@/lib/storeFollowupData'
 import { useStoreFollowupProgress } from '@/lib/useStoreFollowupProgress'
 import { StoreDetail, CollaborateurFiche, BackBtn } from '@/components/StoreFollowupShared'
+import MesRetoursView from '@/components/MesRetoursView'
 
 // ── Écran 1 : grille des magasins ──────────────────────────────────
 // Reste local (jamais exporté vers le module partagé) : un manager n'a accès
@@ -55,6 +56,7 @@ export default function StoreFollowupView({ pName, onBack }) {
   const [storeId, setStoreId] = useState(null)
   const [sectionId, setSectionId] = useState(null)
   const [collaborateurId, setCollaborateurId] = useState(null)
+  const [showMesRetours, setShowMesRetours] = useState(false)
 
   const { progress, history, saveError, setScore, saveNote, reset } = useStoreFollowupProgress(storeId, pName)
 
@@ -89,6 +91,14 @@ export default function StoreFollowupView({ pName, onBack }) {
     )
   }
 
+  if (store && showMesRetours) {
+    return (
+      <div id="dashboard">
+        <MesRetoursView store={store} pName={pName} onBack={() => setShowMesRetours(false)} />
+      </div>
+    )
+  }
+
   if (store) {
     return (
       <div id="dashboard">
@@ -97,6 +107,7 @@ export default function StoreFollowupView({ pName, onBack }) {
           progress={progress}
           onSelectCollaborateur={(secId, collabId) => { setSectionId(secId); setCollaborateurId(collabId) }}
           onBack={() => { setStoreId(null); setSectionId(null) }}
+          onOpenMesRetours={() => setShowMesRetours(true)}
         />
       </div>
     )

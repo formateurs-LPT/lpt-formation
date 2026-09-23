@@ -31,14 +31,18 @@ function stripCivilite(str) {
 function parseRHTable(rawText) {
   const POSTES = [
     'Conseiller Vente Optique','Monteur Optique SAV','Opticien Lunetier',
-    'Store Manager','Assistant RH','Employé Logistique Polyvalent'
+    'Store Manager','Assistant RH','Employé Logistique Polyvalent','Téléconseiller'
   ]
-  const DATE_RE = /\d{2}\/\d{2}\/\d{2,4}/
+  const DATE_RE = /\d{1,2}\/\d{1,2}\/\d{2,4}/
 
   let text = rawText
     .replace(/Contrat\s*/gi, ' ')
     .replace(/Date début\s*/gi, '')
     .replace(/NOM\s+Prénom\s+[\s\S]*?Téléphone\s*/i, '')
+    // "Apprenti Conseiller Vente Optique" -> "Conseiller Vente Optique" — sinon
+    // "Apprenti" traîne après le retrait du poste et se fait absorber par le
+    // regex du magasin (qui matche large sur mots + espaces/retours à la ligne).
+    .replace(/Apprenti[e]?\s+/gi, '')
 
   const chunks = text.split(DATE_RE)
   const results = []
@@ -46,7 +50,9 @@ function parseRHTable(rawText) {
   chunks.forEach((chunk, i) => {
     if (i === 0) return
     const rawBefore = chunks[i - 1]
-    const before = rawBefore.replace(/^[\d\s]{8,}\n/m, '').trim()
+    // Numéro de tél. de la ligne précédente qui déborde sur ce chunk — formats
+    // à espaces (06 12 34 56 78) ou à points (06.12.34.56.78).
+    const before = rawBefore.replace(/^[\d\s.]{8,}\n/m, '').trim()
 
     let poste = '', textBeforePoste = before
     for (const p of POSTES) {

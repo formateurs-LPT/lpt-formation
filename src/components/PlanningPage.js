@@ -20,6 +20,9 @@ const STORES_BY_ZONE = {
   'Belgique': [
     'Namur','Charleroi','Ixelles','Fripiers','Liège',
   ],
+  'Annexes': [
+    'Laboratoire Progressif',
+  ],
 }
 
 const ALL_STORES = Object.values(STORES_BY_ZONE).flat()

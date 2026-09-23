@@ -79,6 +79,24 @@ export const STORES = [
       },
     ],
   },
+  // Laboratoire de fabrication des verres progressifs — annexe du magasin
+  // Paris Châtelet, pas un magasin de vente. Aucun collaborateur pour
+  // l'instant (liste à venir), et pas encore d'items de compétence tant que
+  // les étapes du process de montage n'ont pas été détaillées.
+  {
+    id: 'laboratoire-progressif',
+    label: 'Laboratoire Progressif',
+    photo: '/assets/labo-progressif-chatelet.jpg',
+    annexeDe: 'Paris Châtelet',
+    sections: [
+      {
+        id: 'labo',
+        label: 'Laboratoire',
+        sub: 'Montage verres progressifs',
+        collaborateurs: [],
+      },
+    ],
+  },
 ]
 
 // Items de suivi par section — regroupés par catégorie pour l'affichage.
@@ -114,6 +132,8 @@ export const SKILL_ITEMS = {
     { id: 'prises-mesures',  label: 'Prises de mesures',                     category: 'Compétences' },
     { id: 'backend-mosav',   label: 'Backend',                               category: 'Compétences' },
   ],
+  // À détailler une fois les étapes du process de montage fournies par Kevin.
+  labo: [],
 }
 
 // Trame d'audit par item — la question à poser / consigne pour le formateur
@@ -370,7 +390,7 @@ export function tenureLabel(isoDate) {
 }
 
 // ── Estimation de l'âge d'une équipe (indicateur formateur/responsable) ──
-export const TEAM_LABELS = { cvo: 'Équipe vente', 'mo-sav': 'Équipe support' }
+export const TEAM_LABELS = { cvo: 'Équipe vente', 'mo-sav': 'Équipe support', labo: 'Équipe laboratoire' }
 
 const TEAM_AGE_TIERS = [
   { max: 6,        label: 'Jeune équipe',         icon: '🌱', color: '#00abe9' },

@@ -13,6 +13,7 @@ import {
   getMagasinIdBySlug, getNouveauxCollaborateurs, getCollaborateursEnAttenteValidation,
   declencherTestSortie, validerNouvelEntrant,
 } from '@/lib/collaborateursApi'
+import { getReportingsHebdo } from '@/lib/notesTerrainApi'
 
 // Page autonome (comme /rapport, /bilan-formation) — aucune dépendance à
 // page.js/Dashboard.js, donc aucun risque pour le flux formateur/participant/TV.
@@ -244,6 +245,66 @@ function TestEnCoursPage({ collaborateur, onBack }) {
   )
 }
 
+function fmtDateLongFr(isoDate) {
+  if (!isoDate) return '—'
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+// Lecture seule — même requête réutilisable (getReportingsHebdo, filtrable
+// par magasin_id) que celle prévue pour DR/directeur retail au script 5 ;
+// rien de spécifique au rôle manager n'est codé ici.
+function HistoriqueReportingsSection({ reportings }) {
+  const [selected, setSelected] = useState(null)
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 800, color: '#fff', margin: '0 0 14px' }}>📊 Historique des reportings</h3>
+      {reportings.length === 0 ? (
+        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, fontStyle: 'italic' }}>Aucun reporting pour l&apos;instant.</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {reportings.map(r => (
+            <button key={r.id} onClick={() => setSelected(r)} style={{
+              textAlign: 'left', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 12, padding: '12px 16px', cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
+                Semaine du {fmtDateLongFr(r.semaine_debut)} au {fmtDateLongFr(r.semaine_fin)}
+              </div>
+              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                {r.auteur} {r.envoye_at ? '· envoyé' : '· non envoyé'}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+      {selected && (
+        <div onClick={() => setSelected(null)} style={{
+          position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 18,
+            padding: 26, width: '100%', maxWidth: 560, maxHeight: '80vh', overflowY: 'auto',
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', marginBottom: 4 }}>{selected.auteur}</div>
+            <h3 style={{ fontSize: 17, fontWeight: 800, color: '#fff', marginBottom: 14 }}>
+              Semaine du {fmtDateLongFr(selected.semaine_debut)} au {fmtDateLongFr(selected.semaine_fin)}
+            </h3>
+            <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: 18 }}>
+              {selected.contenu_genere}
+            </div>
+            <button onClick={() => setSelected(null)} style={{
+              background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+              color: 'rgba(255,255,255,0.75)', padding: '9px 18px', borderRadius: 10,
+              fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}>Fermer</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ManagerDashboard({ session, onLogout }) {
   const [entreesData, setEntreesData] = useState([])
   const [sectionId, setSectionId] = useState(null)
@@ -252,6 +313,7 @@ function ManagerDashboard({ session, onLogout }) {
   const [nouveauxEntrants, setNouveauxEntrants] = useState([])
   const [enAttenteValidation, setEnAttenteValidation] = useState([])
   const [testEnCoursCollab, setTestEnCoursCollab] = useState(null)
+  const [reportings, setReportings] = useState([])
 
   useEffect(() => {
     let cancelled = false
@@ -276,6 +338,7 @@ function ManagerDashboard({ session, onLogout }) {
       if (cancelled || !id) return
       setMagasinId(id)
       refreshNouvelEntrant(id)
+      getReportingsHebdo(id).then(r => { if (!cancelled) setReportings(r) })
     }).catch(() => {})
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -369,6 +432,8 @@ function ManagerDashboard({ session, onLogout }) {
           progress={progress}
           onSelectCollaborateur={(secId, collabId) => { setSectionId(secId); setCollaborateurId(collabId) }}
         />
+
+        <HistoriqueReportingsSection reportings={reportings} />
       </div>
 
       {enAttenteValidation.length > 0 && (

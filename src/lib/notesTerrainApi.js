@@ -1,0 +1,101 @@
+// Couche données — script 3 (suivi terrain : notes quotidiennes + reporting
+// hebdo partagé). Même schéma relationnel que collaborateursApi.js.
+import { sbSelect, sbInsert, sbUpdate, getTrainerFromDB } from '@/lib/supabase'
+import { getTrainerAvatarKey } from '@/lib/constants'
+
+/** Résout le pName affiché en session vers l'id trainers (uuid) réel. */
+export async function getFormateurId(pName) {
+  const row = await getTrainerFromDB(getTrainerAvatarKey(pName))
+  return row?.id || null
+}
+
+/** Notes terrain d'un magasin, tous formateurs, avec le nom de l'auteur résolu. */
+export async function getNotesTerrain(magasinId) {
+  if (!magasinId) return []
+  const [notes, trainers] = await Promise.all([
+    sbSelect('notes_terrain', `magasin_id=eq.${magasinId}&order=date.desc,created_at.desc`),
+    sbSelect('trainers', 'select=id,display_name'),
+  ])
+  const nameById = Object.fromEntries((trainers || []).map(t => [t.id, t.display_name]))
+  return (notes || []).map(n => ({ ...n, auteur: nameById[n.formateur_id] || 'Formateur' }))
+}
+
+export async function addNoteTerrain({ magasinId, formateurId, typeNote = 'texte', contenu, audioUrl, piecesJointes }) {
+  return sbInsert('notes_terrain', {
+    magasin_id: magasinId,
+    formateur_id: formateurId,
+    type_note: typeNote,
+    contenu: contenu || null,
+    audio_url: audioUrl || null,
+    pieces_jointes: piecesJointes || [],
+  })
+}
+
+/** Lundi 00h00 de la semaine de `d` (comme le reste de l'app). */
+export function startOfWeek(d = new Date()) {
+  const day = d.getDay()
+  const diff = (day === 0 ? -6 : 1) - day
+  const start = new Date(d)
+  start.setDate(d.getDate() + diff)
+  start.setHours(0, 0, 0, 0)
+  return start
+}
+
+function toISODate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export function currentWeekBounds() {
+  const start = startOfWeek()
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)
+  return { debut: toISODate(start), fin: toISODate(end) }
+}
+
+/** Notes de CE formateur, sur ce magasin, pour la semaine en cours — base de
+ * la génération du reporting (script 3, étape 3). */
+export async function getNotesSemaine(magasinId, formateurId) {
+  if (!magasinId || !formateurId) return []
+  const { debut, fin } = currentWeekBounds()
+  const rows = await sbSelect(
+    'notes_terrain',
+    `magasin_id=eq.${magasinId}&formateur_id=eq.${formateurId}&date=gte.${debut}&date=lte.${fin}&order=date.asc`
+  )
+  return rows || []
+}
+
+/** Reportings hebdo d'un magasin, tous formateurs — réutilisable telle
+ * quelle pour manager/DR/directeur retail (script 5), filtrable par magasin_id. */
+export async function getReportingsHebdo(magasinId) {
+  if (!magasinId) return []
+  const [reportings, trainers] = await Promise.all([
+    sbSelect('reportings_hebdo', `magasin_id=eq.${magasinId}&order=semaine_debut.desc`),
+    sbSelect('trainers', 'select=id,display_name'),
+  ])
+  const nameById = Object.fromEntries((trainers || []).map(t => [t.id, t.display_name]))
+  return (reportings || []).map(r => ({ ...r, auteur: nameById[r.formateur_id] || 'Formateur' }))
+}
+
+// sbInsert répond en `return=minimal` (juste true/false, pas la ligne créée)
+// — on rappelle juste après pour récupérer l'id réel, nécessaire ensuite
+// pour marquer envoye_at au moment de l'envoi du mail.
+export async function saveReportingHebdo({ formateurId, magasinId, contenuGenere }) {
+  const { debut, fin } = currentWeekBounds()
+  const ok = await sbInsert('reportings_hebdo', {
+    formateur_id: formateurId,
+    magasin_id: magasinId,
+    semaine_debut: debut,
+    semaine_fin: fin,
+    contenu_genere: contenuGenere,
+  })
+  if (!ok) return null
+  const rows = await sbSelect(
+    'reportings_hebdo',
+    `formateur_id=eq.${formateurId}&magasin_id=eq.${magasinId}&semaine_debut=eq.${debut}&order=created_at.desc&limit=1`
+  )
+  return rows?.[0] || null
+}
+
+export async function markReportingEnvoye(reportingId) {
+  return sbUpdate('reportings_hebdo', { envoye_at: new Date().toISOString() }, `id=eq.${reportingId}`)
+}

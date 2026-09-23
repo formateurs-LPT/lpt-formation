@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
+import Image from 'next/image'
 import {
   SKILL_ITEMS, STATUS_META, SCORE_ORDER, SCORE_LABELS, scoreToStatus, collaborateurFullName,
   formatDateFr, tenureLabel, teamAge, TEAM_LABELS, ITEM_GUIDES,
@@ -34,6 +35,12 @@ export const SECTION_COLORS = {
     bg: 'linear-gradient(135deg, rgba(232,117,107,0.08), rgba(240,167,88,0.08))',
     border: 'rgba(232,117,107,0.28)',
     hoverBorder: 'rgba(240,167,88,0.55)',
+  },
+  labo: {
+    bar: '#a78bfa',
+    bg: 'rgba(167,139,250,0.08)',
+    border: 'rgba(167,139,250,0.28)',
+    hoverBorder: 'rgba(167,139,250,0.55)',
   },
 }
 
@@ -295,13 +302,169 @@ export function SectionsList({ store, progress, onSelectCollaborateur }) {
   )
 }
 
+// Bannière dédiée au Laboratoire Progressif (annexe Paris Châtelet, pas un
+// magasin de vente) — reprend le traitement "photo plein cadre assombrie +
+// dégradé" déjà utilisé pour ce même labo sur le diffuseur TV (module
+// Présentation entreprise), pour une DA plus moderne qu'une simple carte.
+function LaboProgressifBanner({ store }) {
+  return (
+    <div style={{
+      position: 'relative', overflow: 'hidden', height: 320, borderRadius: 24,
+      marginBottom: 28, border: '1px solid rgba(167,139,250,0.25)',
+      boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
+    }}>
+      {store.photo && (
+        <Image
+          src={store.photo} alt={store.label} fill priority
+          style={{ objectFit: 'cover', objectPosition: 'center 40%', filter: 'brightness(0.45) saturate(1.1)' }}
+        />
+      )}
+      {/* Dégradé de lisibilité, du bas (opaque) vers le haut (transparent) */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(to top, rgba(8,6,15,0.97) 0%, rgba(8,6,15,0.65) 45%, rgba(20,10,35,0.15) 100%)',
+      }} />
+      {/* Halo violet en haut à gauche, pour rappeler l'accent du reste de l'app */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'radial-gradient(circle at 12% 0%, rgba(124,58,237,0.35), transparent 55%)',
+      }} />
+      <div style={{ position: 'absolute', inset: 0, zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '0 40px 32px' }}>
+        <div style={{ width: 44, height: 4, borderRadius: 2, marginBottom: 18, background: 'linear-gradient(90deg, #1e3a8a 0%, #1e3a8a 33%, #fff 33%, #fff 66%, #dc2626 66%)' }} />
+        <div style={{
+          display: 'inline-flex', alignSelf: 'flex-start',
+          background: 'rgba(124,58,237,0.22)', border: '1px solid rgba(167,139,250,0.5)',
+          borderRadius: 20, padding: '5px 18px', marginBottom: 14,
+          fontSize: 11, fontWeight: 700, color: '#c4b5fd', textTransform: 'uppercase', letterSpacing: 2,
+        }}>
+          Annexe · {store.annexeDe || 'Paris Châtelet'}
+        </div>
+        <h2 style={{ fontSize: 34, fontWeight: 900, color: '#fff', margin: '0 0 12px', lineHeight: 1.1 }}>
+          {store.label}
+        </h2>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.65, margin: 0, maxWidth: 520 }}>
+          Fabrication interne des verres progressifs — OFG le jour même pour Paris, 24/48h pour le reste de la France et la Belgique.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// Couleurs formateur — mêmes valeurs que Planning déplacements
+// (src/components/PlanningPage.js), pour reconnaître un formateur d'un coup
+// d'œil quel que soit l'écran où on le croise.
+const LABO_TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777', Thomas: '#f59e0b', Valentine: '#22c55e', Matteo: '#fb923c', Jonathan: '#14b8a6' }
+function laboTrainerColor(name) { return LABO_TRAINER_COLORS[name] || '#64748b' }
+
+function laboFmtDateShort(d) {
+  if (!d) return '—'
+  const [, m, day] = d.split('-')
+  return `${day}/${m}`
+}
+
+const LABO_STATUS_COLS = [
+  { key: 'active',   label: 'En cours', color: '#4ade80' },
+  { key: 'upcoming', label: 'Prévu',    color: '#00abe9' },
+  { key: 'done',     label: 'Passé',    color: 'rgba(255,255,255,0.4)' },
+]
+
+// Tuile "Formateurs sur site" — même logique de statut que Planning
+// déplacements (src/components/PlanningPage.js), mais filtrée sur ce seul
+// magasin/annexe et condensée en 3 colonnes, pour rester lisible imbriquée
+// dans la fiche Suivi magasin plutôt que dans l'écran plein page dédié.
+function LaboPlanningTile({ magasin }) {
+  const [deployments, setDeployments] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    sbSelect('planning_deployments', `store=eq.${encodeURIComponent(magasin)}&order=start_date.desc`)
+      .then(rows => { if (!cancelled) { setDeployments(rows || []); setLoading(false) } })
+      .catch(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [magasin])
+
+  const today = new Date().toISOString().slice(0, 10)
+  const statusOf = (dep) => (dep.end_date < today ? 'done' : dep.start_date > today ? 'upcoming' : 'active')
+
+  const groups = { active: [], upcoming: [], done: [] }
+  for (const dep of deployments) groups[statusOf(dep)].push(dep)
+
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <h3 style={{ fontSize: 14, fontWeight: 800, color: '#fff', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        👷 Formateurs sur site
+      </h3>
+      {loading ? (
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Chargement…</div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+          {LABO_STATUS_COLS.map(col => (
+            <div key={col.key} style={{
+              background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 16, padding: 16,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: col.color, flexShrink: 0 }} />
+                <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 }}>{col.label}</span>
+                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: col.color }}>{groups[col.key].length}</span>
+              </div>
+              {groups[col.key].length === 0 ? (
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>Aucun</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {groups[col.key].map(dep => {
+                    const c = laboTrainerColor(dep.trainer)
+                    return (
+                      <div key={dep.id} style={{
+                        display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5,
+                        borderLeft: `3px solid ${c}`, paddingLeft: 8,
+                      }}>
+                        <span style={{ fontWeight: 700, color: c }}>{dep.trainer}</span>
+                        <span style={{ color: 'rgba(255,255,255,0.4)' }}>
+                          {laboFmtDateShort(dep.start_date)} → {laboFmtDateShort(dep.end_date)}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Écran 2 : détail d'un magasin (sections + collaborateurs) — formateur ──
-export function StoreDetail({ store, progress, onSelectCollaborateur, onBack }) {
+// `onOpenMesRetours` est optionnel et n'est fourni que par la vue formateur
+// (StoreFollowupView.js) — la vue manager (app/manager/page.js) ne le passe
+// pas, donc rien ne change pour elle (script 3, étape 2.1 : ajout sans
+// toucher au reste de la page).
+export function StoreDetail({ store, progress, onSelectCollaborateur, onBack, onOpenMesRetours }) {
+  const isLabo = store.id === 'laboratoire-progressif'
   return (
     <div className="dash-wrap">
-      <BackBtn onClick={onBack}>← Tous les magasins</BackBtn>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
+        <BackBtn onClick={onBack}>← Tous les magasins</BackBtn>
+        {onOpenMesRetours && (
+          <button onClick={onOpenMesRetours} style={{
+            background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.3)',
+            color: '#00abe9', padding: '8px 16px', borderRadius: 10, fontSize: 12.5,
+            fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          }}>📓 Mes retours</button>
+        )}
+      </div>
 
-      <StoreHeader store={store} progress={progress} subtitle="Sélectionnez un collaborateur pour voir sa fiche de suivi" />
+      {isLabo ? (
+        <>
+          <LaboProgressifBanner store={store} />
+          <LaboPlanningTile magasin={store.label} />
+        </>
+      ) : (
+        <StoreHeader store={store} progress={progress} subtitle="Sélectionnez un collaborateur pour voir sa fiche de suivi" />
+      )}
 
       <SectionsList store={store} progress={progress} onSelectCollaborateur={onSelectCollaborateur} />
     </div>
