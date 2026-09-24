@@ -21,7 +21,7 @@ function StoreTile({ store, color, onSelect }) {
         background: `linear-gradient(155deg, ${color.bg} 0%, rgba(255,255,255,0.03) 65%)`,
         border: `1px solid ${color.border}`, borderRadius: 18, padding: '20px 20px 18px',
         cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all .2s',
-        minWidth: 200, flex: '1 1 200px', display: 'flex', flexDirection: 'column', gap: 14,
+        minWidth: 200, maxWidth: 260, flex: '1 1 200px', display: 'flex', flexDirection: 'column', gap: 14,
         boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
       }}
       onMouseEnter={e => {
@@ -88,6 +88,13 @@ function StoreGrid({ onSelectStore, onBack }) {
         <div>
           <h2>🏬 Suivi magasin</h2>
           <p>Suivi de la montée en compétences des collaborateurs, magasin par magasin</p>
+        </div>
+        <div style={{
+          background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.3)',
+          borderRadius: 14, padding: '10px 18px', textAlign: 'center', flexShrink: 0,
+        }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: '#00abe9', lineHeight: 1.1 }}>{STORES.length}</div>
+          <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.5)', fontWeight: 600, whiteSpace: 'nowrap' }}>magasins réseau LPT</div>
         </div>
       </div>
       {STORE_REGION_GROUPS.map(group => (
