@@ -2529,9 +2529,9 @@ export const STORES = [
   },
 
   // Laboratoire de fabrication des verres progressifs — annexe du magasin
-  // Paris Châtelet, pas un magasin de vente. Aucun collaborateur pour
-  // l'instant (liste à venir), et pas encore d'items de compétence tant que
-  // les étapes du process de montage n'ont pas été détaillées.
+  // Paris Châtelet, pas un magasin de vente. Deux postes distincts : Monteur
+  // Prog (montage) et Opérateur Prog (fabrication) — pas encore d'items de
+  // compétence tant que les étapes du process n'ont pas été détaillées.
   {
     id: 'laboratoire-progressif',
     label: 'Laboratoire Progressif',
@@ -2539,10 +2539,26 @@ export const STORES = [
     annexeDe: 'Paris Châtelet',
     sections: [
       {
-        id: 'labo',
-        label: 'Laboratoire',
-        sub: 'Montage verres progressifs',
-        collaborateurs: [],
+        id: 'monteur-prog',
+        label: 'Monteur Prog',
+        sub: 'Montage',
+        collaborateurs: [
+          { id: 'meddy-gouda',    prenom: 'Meddy',   nom: 'Gouda' },
+          { id: 'nihail-satouri', prenom: 'Nihail',  nom: 'Satouri' },
+          { id: 'myriam-merabet', prenom: 'Myriam',  nom: 'Merabet' },
+        ],
+      },
+      {
+        id: 'operateur-prog',
+        label: 'Opérateur Prog',
+        sub: 'Fabrication',
+        collaborateurs: [
+          { id: 'anthony-okoko',              prenom: 'Anthony',  nom: 'Okoko' },
+          { id: 'hoel-yvert',                 prenom: 'Hoel',     nom: 'Yvert' },
+          { id: 'faycal-hamzaoui',            prenom: 'Fayçal',   nom: 'Hamzaoui' },
+          { id: 'geoffrey-perier',            prenom: 'Geoffrey', nom: 'Perier' },
+          { id: 'antonino-bernardo-mota-labo', prenom: 'Antonino', nom: 'Bernardo Mota' },
+        ],
       },
     ],
   },
@@ -2630,6 +2646,8 @@ export const SKILL_ITEMS = {
   'apprenti-alternant': [],
   autre: [],
   'non-renseigne': [],
+  'monteur-prog': [],
+  'operateur-prog': [],
 }
 
 // Trame d'audit par item — la question à poser / consigne pour le formateur
@@ -2890,6 +2908,7 @@ export const TEAM_LABELS = {
   cvo: 'Équipe vente', 'mo-sav': 'Équipe support', labo: 'Équipe laboratoire', opto: 'Équipe optique',
   mo: 'Équipe montage', sav: 'Équipe SAV', manager: 'Encadrement', referent: 'Référents',
   'apprenti-alternant': 'Équipe en formation', autre: 'Autres postes', 'non-renseigne': 'Poste non renseigné',
+  'monteur-prog': 'Équipe montage progressifs', 'operateur-prog': 'Équipe fabrication progressifs',
 }
 
 const TEAM_AGE_TIERS = [
