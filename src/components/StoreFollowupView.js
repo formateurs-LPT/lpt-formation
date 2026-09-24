@@ -1,11 +1,82 @@
 'use client'
 import { useState } from 'react'
-import { STORES } from '@/lib/storeFollowupData'
+import { STORES, STORE_REGION_GROUPS, STORE_ANNEXES } from '@/lib/storeFollowupData'
 import { useStoreFollowupProgress } from '@/lib/useStoreFollowupProgress'
 import { StoreDetail, CollaborateurFiche, BackBtn } from '@/components/StoreFollowupShared'
 import MesRetoursView from '@/components/MesRetoursView'
 
-// ── Écran 1 : grille des magasins ──────────────────────────────────
+function storeInitials(label) {
+  const words = label.replace(/\(.*\)/, '').trim().split(/\s+/).filter(Boolean)
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase()
+  return (words[0] || '').slice(0, 2).toUpperCase()
+}
+
+function StoreTile({ store, color, onSelect }) {
+  const totalCollabs = store.sections.reduce((n, s) => n + s.collaborateurs.length, 0)
+  return (
+    <button
+      onClick={onSelect}
+      style={{
+        position: 'relative', overflow: 'hidden',
+        background: `linear-gradient(155deg, ${color.bg} 0%, rgba(255,255,255,0.03) 65%)`,
+        border: `1px solid ${color.border}`, borderRadius: 18, padding: '20px 20px 18px',
+        cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all .2s',
+        minWidth: 200, flex: '1 1 200px', display: 'flex', flexDirection: 'column', gap: 14,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = 'translateY(-3px)'
+        e.currentTarget.style.borderColor = color.color
+        e.currentTarget.style.boxShadow = `0 10px 28px -8px ${color.color}66`
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = 'translateY(0)'
+        e.currentTarget.style.borderColor = color.border
+        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.2)'
+      }}
+    >
+      <div style={{
+        position: 'absolute', top: -22, right: -22, width: 90, height: 90, borderRadius: '50%',
+        background: color.color, opacity: 0.12, pointerEvents: 'none',
+      }} />
+      <div style={{
+        width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+        background: `${color.color}26`, border: `1.5px solid ${color.color}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 13, fontWeight: 800, color: color.color,
+      }}>{storeInitials(store.label)}</div>
+      <div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginBottom: 4, lineHeight: 1.25 }}>{store.label}</div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span>👥</span> {totalCollabs} collaborateur{totalCollabs > 1 ? 's' : ''}
+        </div>
+      </div>
+    </button>
+  )
+}
+
+function RegionSection({ group, stores, onSelectStore }) {
+  const storesById = Object.fromEntries(stores.map(s => [s.id, s]))
+  const ordered = group.storeIds.map(id => storesById[id]).filter(Boolean)
+  if (!ordered.length) return null
+  return (
+    <div style={{ marginBottom: 30 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+        <span style={{ fontSize: 20 }}>{group.emoji}</span>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: group.color, letterSpacing: 0.2 }}>{group.label}</h3>
+        <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${group.border}, transparent)` }} />
+        <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>{ordered.length} magasin{ordered.length > 1 ? 's' : ''}</span>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
+        {ordered.map(store => (
+          <StoreTile key={store.id} store={store} color={group} onSelect={() => onSelectStore(store.id)} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Écran 1 : grille des magasins, groupée par région ──────────────
 // Reste local (jamais exporté vers le module partagé) : un manager n'a accès
 // qu'à son propre magasin et ne doit avoir aucun chemin de code, même
 // accidentel, vers le sélecteur multi-magasins du formateur.
@@ -19,34 +90,10 @@ function StoreGrid({ onSelectStore, onBack }) {
           <p>Suivi de la montée en compétences des collaborateurs, magasin par magasin</p>
         </div>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-        {STORES.map(store => {
-          const totalCollabs = store.sections.reduce((n, s) => n + s.collaborateurs.length, 0)
-          return (
-            <button
-              key={store.id}
-              onClick={() => onSelectStore(store.id)}
-              style={{
-                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 18, padding: '22px 32px', cursor: 'pointer', fontFamily: 'inherit',
-                minWidth: 220, textAlign: 'left', transition: 'all .18s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = '#00abe9'; e.currentTarget.style.background = 'rgba(0,171,233,0.08)' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-            >
-              <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{store.label}</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{totalCollabs} collaborateur{totalCollabs > 1 ? 's' : ''}</div>
-            </button>
-          )
-        })}
-        <div style={{
-          border: '2px dashed rgba(255,255,255,0.15)', borderRadius: 18, padding: '22px 32px',
-          minWidth: 220, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'rgba(255,255,255,0.3)', fontSize: 13, textAlign: 'center',
-        }}>
-          + D&apos;autres magasins à venir
-        </div>
-      </div>
+      {STORE_REGION_GROUPS.map(group => (
+        <RegionSection key={group.id} group={group} stores={STORES} onSelectStore={onSelectStore} />
+      ))}
+      <RegionSection group={STORE_ANNEXES} stores={STORES} onSelectStore={onSelectStore} />
     </div>
   )
 }

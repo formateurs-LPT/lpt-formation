@@ -42,43 +42,6 @@ export const STORES = [
       },
     ],
   },
-  // Magasin fictif — bac à sable pour tester le dashboard manager sans
-  // toucher aux vraies données Bayonne. Aucune photo (le header gère déjà
-  // l'absence de photo). Noms, contrats et anciennetés volontairement variés
-  // (courts/longs, récents/anciens) pour éprouver l'affichage.
-  {
-    id: 'magasin-test',
-    label: 'Magasin Test',
-    sections: [
-      {
-        id: 'cvo',
-        label: 'CVO',
-        sub: 'Vendeurs',
-        collaborateurs: [
-          { id: 'camille-lefebvre',        prenom: 'Camille',     nom: 'Lefebvre',           contrat: '35h', entree: '2026-09-10' },
-          { id: 'hugo-tanguy-lecomte',      prenom: 'Hugo',        nom: 'Tanguy-Lecomte',     contrat: '35h', entree: '2026-08-20' },
-          { id: 'ines-abdellaoui',          prenom: 'Inès',        nom: 'Abdellaoui',         contrat: '24h', entree: '2026-07-15' },
-          { id: 'maxence-ferreira-silva',   prenom: 'Maxence',     nom: 'Ferreira-Silva',     contrat: '35h', entree: '2026-03-16' },
-          { id: 'zoe-rousseau',             prenom: 'Zoé',         nom: 'Rousseau',           contrat: '24h', entree: '2025-09-16' },
-          { id: 'nathanael-kouassi',        prenom: 'Nathanaël',   nom: 'Kouassi',            contrat: '35h', entree: '2024-09-16' },
-          { id: 'lisa-marie-vasseur',       prenom: 'Lisa-Marie',  nom: 'Vasseur',            contrat: '35h', entree: '2023-09-16' },
-          { id: 'rayan-el-amrani',          prenom: 'Rayan',       nom: 'El Amrani',          contrat: '24h', entree: '2021-09-16' },
-        ],
-      },
-      {
-        id: 'mo-sav',
-        label: 'MO/SAV',
-        sub: 'Monteurs · SAV',
-        collaborateurs: [
-          { id: 'elodie-chevallier',       prenom: 'Élodie',      nom: 'Chevallier',         contrat: '35h', entree: '2026-08-16' },
-          { id: 'theo-da-costa',           prenom: 'Théo',        nom: 'Da Costa',           contrat: '35h', entree: '2026-05-16' },
-          { id: 'manon-pires-goncalves',   prenom: 'Manon',       nom: 'Pires-Gonçalves',    contrat: '35h', entree: '2025-09-16' },
-          { id: 'yanis-boucherit',         prenom: 'Yanis',       nom: 'Boucherit',          contrat: '35h', entree: '2024-09-16' },
-          { id: 'aurelie-lemoine',         prenom: 'Aurélie',     nom: 'Lemoine',            contrat: '35h', entree: '2022-09-16' },
-        ],
-      },
-    ],
-  },
   {
     id: 'toulon-avenue-83',
     label: 'Toulon Avenue 83',
@@ -2584,6 +2547,42 @@ export const STORES = [
     ],
   },
 ]
+
+// Regroupement des magasins par région pour l'écran "Suivi magasin" (grille
+// formateur) — répartition donnée par Kevin, distincte du découpage Direction
+// (regions/magasin_regions en base, utilisé pour les tableaux de bord
+// direction/DR). Purement un habillage d'affichage ici, aucun lien DB.
+export const STORE_REGION_GROUPS = [
+  {
+    id: 'belgique', label: 'Belgique', emoji: '🇧🇪',
+    color: '#f5b942', bg: 'rgba(245,185,66,0.08)', border: 'rgba(245,185,66,0.35)',
+    storeIds: ['charleroi', 'namur', 'ixelles', 'fripiers', 'liege'],
+  },
+  {
+    id: 'nord', label: 'Région Nord (Paris compris)', emoji: '🌆',
+    color: '#00abe9', bg: 'rgba(0,171,233,0.08)', border: 'rgba(0,171,233,0.35)',
+    storeIds: [
+      'nantes', 'lille', 'reims', 'rouen', 'strasbourg', 'rennes',
+      'creteil', 'belle-epine', 'cergy', 'bastille', 'chatelet', 'commerce', 'italie-2', 'montparnasse', 'st-lazare',
+    ],
+  },
+  {
+    id: 'sud', label: 'Région Sud', emoji: '☀️',
+    color: '#fb7185', bg: 'rgba(251,113,133,0.08)', border: 'rgba(251,113,133,0.35)',
+    storeIds: [
+      'bordeaux', 'begles', 'bayonne', 'nice', 'lyon', 'toulon-mayol', 'toulon-avenue-83',
+      'marseille-tdp', 'marseille-cannebiere', 'montpellier-comedie', 'montpellier-odysseum',
+      'toulouse-blagnac', 'toulouse-capitole',
+    ],
+  },
+]
+
+// Annexes hors région (labo, entrepôt) — affichées à part sur la grille.
+export const STORE_ANNEXES = {
+  label: 'Annexes', emoji: '🧪',
+  color: '#a78bfa', bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.35)',
+  storeIds: ['laboratoire-progressif', 'beauchamps-labo-entrepot'],
+}
 
 // Items de suivi par section — regroupés par catégorie pour l'affichage.
 // "Grands titres" fournis par Kevin, à détailler plus finement plus tard.
