@@ -6,6 +6,7 @@ import {
 import {
   getFormateurId, getNotesTerrain, addNoteTerrain, getNotesSemaine,
   getReportingsHebdo, saveReportingHebdo, markReportingEnvoye, currentWeekBounds,
+  genererSyntheseSiNecessaire,
 } from '@/lib/notesTerrainApi'
 import { uploadPieceJointe, getSignedUrl } from '@/lib/storageApi'
 import { getDemandesIntervention, rattacherReporting, notifierReportingRattache } from '@/lib/directionApi'
@@ -82,7 +83,14 @@ export default function MesRetoursView({ store, pName, onBack }) {
       if (cancelled) return
       setMagasinId(mId)
       setFormateurId(fId)
-      if (mId) await load(mId)
+      if (mId) {
+        // Synthèse hebdo auto (tous formateurs) — pour l'instant réservée au
+        // Labo Progressif, seul magasin où plusieurs formateurs peuvent se
+        // succéder dans la même semaine sans repasser par le même "Mes
+        // retours" individuel.
+        if (store.id === 'laboratoire-progressif') await genererSyntheseSiNecessaire(mId)
+        await load(mId)
+      }
       setLoading(false)
     })()
     return () => { cancelled = true }

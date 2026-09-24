@@ -65,7 +65,9 @@ export async function getNotesSemaine(magasinId, formateurId) {
 }
 
 /** Reportings hebdo d'un magasin, tous formateurs — réutilisable telle
- * quelle pour manager/DR/directeur retail (script 5), filtrable par magasin_id. */
+ * quelle pour manager/DR/directeur retail (script 5), filtrable par magasin_id.
+ * `formateur_id` null = synthèse hebdo auto-générée (tous formateurs confondus,
+ * cf. genererSyntheseSiNecessaire), pas le reporting d'un formateur en particulier. */
 export async function getReportingsHebdo(magasinId) {
   if (!magasinId) return []
   const [reportings, trainers] = await Promise.all([
@@ -73,7 +75,70 @@ export async function getReportingsHebdo(magasinId) {
     sbSelect('trainers', 'select=id,display_name'),
   ])
   const nameById = Object.fromEntries((trainers || []).map(t => [t.id, t.display_name]))
-  return (reportings || []).map(r => ({ ...r, auteur: nameById[r.formateur_id] || 'Formateur' }))
+  return (reportings || []).map(r => ({
+    ...r,
+    auteur: r.formateur_id ? (nameById[r.formateur_id] || 'Formateur') : '🧩 Synthèse d\'équipe',
+  }))
+}
+
+/** Notes de TOUS les formateurs sur ce magasin, pour la semaine en cours —
+ * base de la synthèse hebdo auto-générée (contrairement à getNotesSemaine,
+ * qui ne prend que celles d'un formateur donné). */
+export async function getNotesSemaineTousFormateurs(magasinId) {
+  if (!magasinId) return []
+  const { debut, fin } = currentWeekBounds()
+  const [notes, trainers] = await Promise.all([
+    sbSelect('notes_terrain', `magasin_id=eq.${magasinId}&date=gte.${debut}&date=lte.${fin}&order=date.asc`),
+    sbSelect('trainers', 'select=id,display_name'),
+  ])
+  const nameById = Object.fromEntries((trainers || []).map(t => [t.id, t.display_name]))
+  return (notes || []).map(n => ({ ...n, auteur: nameById[n.formateur_id] || 'Formateur' }))
+}
+
+/** Vendredi 18h00 de la semaine en cours (même semaine que currentWeekBounds). */
+function fridayEveningThisWeek() {
+  const { debut } = currentWeekBounds()
+  const friday = new Date(`${debut}T00:00:00`)
+  friday.setDate(friday.getDate() + 4)
+  friday.setHours(18, 0, 0, 0)
+  return friday
+}
+
+/**
+ * Génère la synthèse hebdo (tous formateurs confondus) pour un magasin,
+ * une seule fois par semaine, à partir du moment où on est vendredi 18h ou
+ * après. Pas de vrai cron serveur (export statique, pas d'edge function
+ * déployée) : le check se fait côté client, à l'ouverture de "Mes retours"
+ * — la génération arrive donc dès la première visite après vendredi 18h,
+ * pas pile à l'heure, mais avant que "le prochain formateur" ne la consulte.
+ * Idempotent : si une synthèse existe déjà pour cette semaine, ne fait rien.
+ */
+export async function genererSyntheseSiNecessaire(magasinId) {
+  if (!magasinId) return null
+  if (new Date() < fridayEveningThisWeek()) return null
+
+  const { debut, fin } = currentWeekBounds()
+  const existing = await sbSelect(
+    'reportings_hebdo',
+    `magasin_id=eq.${magasinId}&semaine_debut=eq.${debut}&formateur_id=is.null`
+  )
+  if (existing?.length) return existing[0]
+
+  const notes = await getNotesSemaineTousFormateurs(magasinId)
+  if (!notes.length) return null
+
+  const lignes = notes.map(n => `- ${n.date} (${n.auteur}) : ${n.contenu || '(pièce jointe sans texte)'}`)
+  const contenuGenere = `Synthèse de la semaine du ${debut} au ${fin} :\n\n${lignes.join('\n')}`
+
+  const ok = await sbInsert('reportings_hebdo', {
+    formateur_id: null, magasin_id: magasinId, semaine_debut: debut, semaine_fin: fin, contenu_genere: contenuGenere,
+  })
+  if (!ok) return null
+  const rows = await sbSelect(
+    'reportings_hebdo',
+    `magasin_id=eq.${magasinId}&semaine_debut=eq.${debut}&formateur_id=is.null&order=created_at.desc&limit=1`
+  )
+  return rows?.[0] || null
 }
 
 // sbInsert répond en `return=minimal` (juste true/false, pas la ligne créée)
