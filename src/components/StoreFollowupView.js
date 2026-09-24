@@ -65,7 +65,7 @@ function RegionSection({ group, stores, onSelectStore }) {
         <span style={{ fontSize: 20 }}>{group.emoji}</span>
         <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: group.color, letterSpacing: 0.2 }}>{group.label}</h3>
         <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${group.border}, transparent)` }} />
-        <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>{ordered.length} magasin{ordered.length > 1 ? 's' : ''}</span>
+        <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>{ordered.length} {group.unitLabel || 'magasin'}{ordered.length > 1 ? 's' : ''}</span>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
         {ordered.map(store => (
@@ -81,6 +81,9 @@ function RegionSection({ group, stores, onSelectStore }) {
 // qu'à son propre magasin et ne doit avoir aucun chemin de code, même
 // accidentel, vers le sélecteur multi-magasins du formateur.
 function StoreGrid({ onSelectStore, onBack }) {
+  // Le Labo Progressif et Beauchamps sont des annexes (labo/entrepôt), pas
+  // des magasins de vente — exclus du décompte réseau.
+  const magasinsCount = STORES.filter(s => !STORE_ANNEXES.storeIds.includes(s.id)).length
   return (
     <div className="dash-wrap">
       <BackBtn onClick={onBack}>← Retour au tableau de bord</BackBtn>
@@ -93,7 +96,7 @@ function StoreGrid({ onSelectStore, onBack }) {
           background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.3)',
           borderRadius: 14, padding: '10px 18px', textAlign: 'center', flexShrink: 0,
         }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: '#00abe9', lineHeight: 1.1 }}>{STORES.length}</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: '#00abe9', lineHeight: 1.1 }}>{magasinsCount}</div>
           <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.5)', fontWeight: 600, whiteSpace: 'nowrap' }}>magasins réseau LPT</div>
         </div>
       </div>

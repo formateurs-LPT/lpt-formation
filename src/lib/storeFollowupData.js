@@ -2578,8 +2578,10 @@ export const STORE_REGION_GROUPS = [
 ]
 
 // Annexes hors région (labo, entrepôt) — affichées à part sur la grille.
+// Ne comptent PAS comme des magasins de vente (ni dans le total réseau, ni
+// dans le libellé de cette section).
 export const STORE_ANNEXES = {
-  label: 'Annexes', emoji: '🧪',
+  label: 'Annexes', emoji: '🧪', unitLabel: 'annexe',
   color: '#a78bfa', bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.35)',
   storeIds: ['laboratoire-progressif', 'beauchamps-labo-entrepot'],
 }
