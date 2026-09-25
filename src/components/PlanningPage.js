@@ -168,12 +168,13 @@ function CreateModal({ onClose, onCreated }) {
 }
 
 // ── Édition rapide (directement depuis la carte) ──────────────
-function EditCardForm({ dep, onCancel, onSaved }) {
+function EditCardForm({ dep, onCancel, onSaved, onDeleted }) {
   const [trainer, setTrainer] = useState(dep.trainer)
   const [store, setStore]     = useState(dep.store)
   const [startDate, setStart] = useState(dep.start_date)
   const [endDate, setEnd]     = useState(dep.end_date)
   const [saving, setSaving]   = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError]     = useState('')
 
   const canSave = trainer && store && startDate && endDate && startDate <= endDate
@@ -187,6 +188,18 @@ function EditCardForm({ dep, onCancel, onSaved }) {
     setSaving(false)
     if (ok) onSaved()
     else setError('Erreur lors de la mise à jour.')
+  }
+
+  // Supprimer directement depuis l'édition rapide — avant, seul le panneau
+  // détail (ouvert en cliquant ailleurs sur la carte) avait cette option,
+  // introuvable pour qui clique sur le crayon en pensant corriger une erreur.
+  const remove = async () => {
+    if (!confirm('Supprimer ce déplacement et toutes ses notes ?')) return
+    setDeleting(true)
+    await sbDelete('planning_notes', `deployment_id=eq.${dep.id}`)
+    const ok = await sbDelete('planning_deployments', `id=eq.${dep.id}`)
+    if (ok) onDeleted()
+    else { setDeleting(false); setError('Erreur lors de la suppression.') }
   }
 
   const inputStyle = {
@@ -221,13 +234,19 @@ function EditCardForm({ dep, onCancel, onSaved }) {
           background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
           color: 'rgba(255,255,255,0.5)',
         }}>Annuler</button>
+        <button onClick={remove} disabled={deleting} title="Supprimer ce déplacement" style={{
+          padding: '8px 12px', borderRadius: 8, fontFamily: 'inherit',
+          fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+          color: '#f87171', flexShrink: 0,
+        }}>{deleting ? '…' : '🗑️'}</button>
       </div>
     </div>
   )
 }
 
 // ── Carte déplacement ──────────────────────────────────────────
-function DeploymentCard({ dep, isSelected, onClick, onSaved }) {
+function DeploymentCard({ dep, isSelected, onClick, onSaved, onDeleted }) {
   const [editing, setEditing] = useState(false)
   const st = STATUS_STYLE[statusOf(dep)]
   const c = trainerColor(dep.trainer)
@@ -240,7 +259,7 @@ function DeploymentCard({ dep, isSelected, onClick, onSaved }) {
         borderBottom: '1px solid rgba(0,171,233,0.3)', borderLeft: `4px solid ${c}`,
         borderRadius: 14, padding: '14px 16px',
       }}>
-        <EditCardForm dep={dep} onCancel={() => setEditing(false)} onSaved={() => { setEditing(false); onSaved() }} />
+        <EditCardForm dep={dep} onCancel={() => setEditing(false)} onSaved={() => { setEditing(false); onSaved() }} onDeleted={onDeleted} />
       </div>
     )
   }
@@ -289,6 +308,7 @@ function DeploymentDetail({ dep, onDelete, onClose }) {
   const [noteText, setNoteText] = useState('')
   const [saving, setSaving]     = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const printRef = useRef(null)
   const color = trainerColor(dep.trainer)
   const status = statusOf(dep)
@@ -321,8 +341,9 @@ function DeploymentDetail({ dep, onDelete, onClose }) {
     if (!confirm('Supprimer ce déplacement et toutes ses notes ?')) return
     setDeleting(true)
     await sbDelete('planning_notes', `deployment_id=eq.${dep.id}`)
-    await sbDelete('planning_deployments', `id=eq.${dep.id}`)
-    onDelete()
+    const ok = await sbDelete('planning_deployments', `id=eq.${dep.id}`)
+    if (ok) onDelete()
+    else { setDeleting(false); setDeleteError('Erreur lors de la suppression.') }
   }
 
   const generatePDF = () => {
@@ -439,6 +460,7 @@ function DeploymentDetail({ dep, onDelete, onClose }) {
           )}
         </div>
 
+        {deleteError && <div style={{ color: '#f87171', fontSize: 12, marginBottom: 10 }}>{deleteError}</div>}
         {/* Footer actions */}
         <div style={{ display: 'flex', gap: 10, flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 16 }}>
           <button onClick={generatePDF} style={{
@@ -589,6 +611,7 @@ export default function PlanningPage({ pName, onBack }) {
                             isSelected={selected?.id === dep.id}
                             onClick={() => setSelected(selected?.id === dep.id ? null : dep)}
                             onSaved={onCardSaved}
+                            onDeleted={onDelete}
                           />
                         ))}
                       </div>
