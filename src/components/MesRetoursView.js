@@ -6,7 +6,7 @@ import {
 import {
   getFormateurId, getNotesTerrain, addNoteTerrain, getNotesSemaine,
   getReportingsHebdo, saveReportingHebdo, markReportingEnvoye, currentWeekBounds,
-  genererSyntheseSiNecessaire,
+  genererSyntheseSiNecessaire, updateNoteTerrain, deleteNoteTerrain,
 } from '@/lib/notesTerrainApi'
 import { uploadPieceJointe, getSignedUrl } from '@/lib/storageApi'
 import { getDemandesIntervention, rattacherReporting, notifierReportingRattache } from '@/lib/directionApi'
@@ -45,6 +45,55 @@ function Attachment({ path }) {
   )
 }
 
+// Note de terrain — modification ouverte à tout formateur, suppression
+// réservée à l'auteur original (même politique que les notes de suivi
+// collaborateur, script 4).
+function NoteTerrainRow({ note, canDelete, onSave, onDelete }) {
+  const [editing, setEditing] = useState(false)
+  const [text, setText] = useState(note.contenu || '')
+
+  const save = async () => {
+    if (!text.trim() || text === note.contenu) { setEditing(false); return }
+    await onSave(note.id, text.trim())
+    setEditing(false)
+  }
+
+  return (
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 6 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9' }}>{note.auteur} · {fmtDate(note.date)}</div>
+        {!editing && (
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button onClick={() => setEditing(true)} className="btn2" style={{ padding: '4px 10px', fontSize: 11 }}>Modifier</button>
+            {canDelete && (
+              <button onClick={() => onDelete(note.id)} className="btn2" style={{ padding: '4px 10px', fontSize: 11, color: '#f87171' }}>Supprimer</button>
+            )}
+          </div>
+        )}
+      </div>
+      {editing ? (
+        <div>
+          <textarea
+            value={text} onChange={e => setText(e.target.value)} rows={3} className="finput"
+            style={{ width: '100%', resize: 'vertical', boxSizing: 'border-box', marginBottom: 8, fontFamily: 'inherit' }}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={save} className="gbtn" style={{ padding: '4px 12px', fontSize: 12 }}>Enregistrer</button>
+            <button onClick={() => { setText(note.contenu || ''); setEditing(false) }} className="btn2" style={{ padding: '4px 12px', fontSize: 12 }}>Annuler</button>
+          </div>
+        </div>
+      ) : (
+        note.contenu && <div style={{ fontSize: 13.5, color: 'var(--text)', lineHeight: 1.55, marginBottom: note.pieces_jointes?.length ? 10 : 0 }}>{note.contenu}</div>
+      )}
+      {!editing && note.pieces_jointes?.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {note.pieces_jointes.map((p, i) => <Attachment key={i} path={p} />)}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function MesRetoursView({ store, pName, onBack }) {
   const [magasinId, setMagasinId] = useState(null)
   const [formateurId, setFormateurId] = useState(null)
@@ -74,6 +123,16 @@ export default function MesRetoursView({ store, pName, onBack }) {
     setNotes(n)
     setReportings(r)
     setDemandeOuverte(demandes.find(d => d.statut !== 'cloturee') || null)
+  }
+
+  const handleSaveNote = async (id, contenu) => {
+    await updateNoteTerrain({ id, contenu })
+    await load(magasinId)
+  }
+
+  const handleDeleteNote = async (id) => {
+    await deleteNoteTerrain({ id, requesterId: formateurId })
+    await load(magasinId)
   }
 
   useEffect(() => {
@@ -209,17 +268,12 @@ export default function MesRetoursView({ store, pName, onBack }) {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {notes.map(n => (
-              <div key={n.id} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 16px' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', marginBottom: 6 }}>
-                  {n.auteur} · {fmtDate(n.date)}
-                </div>
-                {n.contenu && <div style={{ fontSize: 13.5, color: 'var(--text)', lineHeight: 1.55, marginBottom: n.pieces_jointes?.length ? 10 : 0 }}>{n.contenu}</div>}
-                {n.pieces_jointes?.length > 0 && (
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {n.pieces_jointes.map((p, i) => <Attachment key={i} path={p} />)}
-                  </div>
-                )}
-              </div>
+              <NoteTerrainRow
+                key={n.id} note={n}
+                canDelete={n.formateur_id === formateurId}
+                onSave={handleSaveNote}
+                onDelete={handleDeleteNote}
+              />
             ))}
           </div>
         )}

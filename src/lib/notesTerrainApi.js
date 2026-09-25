@@ -1,6 +1,6 @@
 // Couche données — script 3 (suivi terrain : notes quotidiennes + reporting
 // hebdo partagé). Même schéma relationnel que collaborateursApi.js.
-import { sbSelect, sbInsert, sbUpdate, getTrainerFromDB } from '@/lib/supabase'
+import { sbSelect, sbInsert, sbUpdate, sbDelete, getTrainerFromDB } from '@/lib/supabase'
 import { getTrainerAvatarKey } from '@/lib/constants'
 
 /** Résout le pName affiché en session vers l'id trainers (uuid) réel. */
@@ -29,6 +29,18 @@ export async function addNoteTerrain({ magasinId, formateurId, typeNote = 'texte
     audio_url: audioUrl || null,
     pieces_jointes: piecesJointes || [],
   })
+}
+
+/** Modification ouverte à tout formateur — même politique que les notes de
+ * suivi collaborateur (script 4). */
+export async function updateNoteTerrain({ id, contenu }) {
+  return sbUpdate('notes_terrain', { contenu }, `id=eq.${id}`)
+}
+
+/** Suppression réservée à l'auteur original — filtre sur formateur_id en
+ * plus de l'id, même politique que les notes de suivi collaborateur. */
+export async function deleteNoteTerrain({ id, requesterId }) {
+  return sbDelete('notes_terrain', `id=eq.${id}&formateur_id=eq.${requesterId}`)
 }
 
 /** Lundi 00h00 de la semaine de `d` (comme le reste de l'app). */
