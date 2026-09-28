@@ -1,7 +1,7 @@
 // Couche données — script 5 (Espace Direction : régions, comptes,
 // demandes d'intervention, chat). Même schéma relationnel que les scripts
 // précédents (collaborateursApi.js, notesTerrainApi.js).
-import { sbSelect, sbInsert, sbUpdate } from '@/lib/supabase'
+import { sbSelect, sbInsert, sbUpdate, sbDelete } from '@/lib/supabase'
 
 // Formateurs Belgique = uniquement Thomas/Jonathan ; ailleurs = tous sauf eux.
 // Partagé entre l'espace Direction et le dashboard manager (tous deux peuvent
@@ -153,6 +153,16 @@ export async function cloturerDemande(id) {
  * direction via canManage). */
 export async function annulerDemande(id) {
   return sbUpdate('demandes_intervention', { statut: 'annulee' }, `id=eq.${id}`)
+}
+
+/** Suppression définitive — contrairement à annuler (qui garde une trace
+ * visible dans l'historique), retire complètement la demande de tous les
+ * dashboards. Les messages associés partent en cascade (FK ON DELETE
+ * CASCADE) ; les notifications n'ont pas de FK vers cette table donc on les
+ * nettoie explicitement. */
+export async function supprimerDemande(id) {
+  await sbDelete('notifications', `reference_id=eq.${id}`)
+  return sbDelete('demandes_intervention', `id=eq.${id}`)
 }
 
 export async function rattacherReporting(demandeId, reportingId) {

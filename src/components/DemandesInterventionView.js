@@ -4,7 +4,7 @@ import { sbSelect, getTrainerFromDB } from '@/lib/supabase'
 import {
   getDemandesIntervention, getMessagesDemande, postMessageDemande, notifierNouveauMessage,
   reouvrirDemande, cloturerDemande, createDemandeIntervention, isMagasinBelgique, BELGIQUE_ONLY_LOGINS,
-  accepterDemande, annulerDemande,
+  accepterDemande, annulerDemande, supprimerDemande,
 } from '@/lib/directionApi'
 
 function fmtDateTime(iso) {
@@ -97,6 +97,7 @@ function DemandeDetail({ demande, login, role, canManage, onBack, onUpdated }) {
   const [loading, setLoading] = useState(true)
   const [accepting, setAccepting] = useState(false)
   const [annulling, setAnnulling] = useState(false)
+  const [deletingDemande, setDeletingDemande] = useState(false)
 
   const load = async () => {
     setMessages(await getMessagesDemande(demande.id))
@@ -150,8 +151,19 @@ function DemandeDetail({ demande, login, role, canManage, onBack, onUpdated }) {
     onUpdated()
   }
 
+  // Suppression définitive — contrairement à annuler, retire complètement la
+  // demande (et son chat) de tous les dashboards. Demandé après coup car une
+  // demande annulée restait quand même visible dans son onglet "Annulées".
+  const supprimer = async () => {
+    if (!confirm('Supprimer définitivement cette demande et tout son historique de discussion ? Cette action est irréversible.')) return
+    setDeletingDemande(true)
+    await supprimerDemande(demande.id)
+    onUpdated()
+  }
+
   const st = STATUT_META[demande.statut] || STATUT_META.ouverte
   const peutAnnuler = (role === 'formateur' || role === 'manager') && ['ouverte', 'en_cours'].includes(demande.statut)
+  const peutSupprimer = role === 'formateur' || role === 'manager' || canManage
 
   return (
     <div>
@@ -191,6 +203,15 @@ function DemandeDetail({ demande, login, role, canManage, onBack, onUpdated }) {
             ) : (
               <button onClick={async () => { await cloturerDemande(demande.id); onUpdated() }} className="btn2">✓ Clôturer</button>
             )}
+          </div>
+        )}
+
+        {peutSupprimer && (
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+            <button onClick={supprimer} disabled={deletingDemande} style={{
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171',
+              padding: '7px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}>{deletingDemande ? 'Suppression…' : '🗑️ Supprimer définitivement'}</button>
           </div>
         )}
       </div>
