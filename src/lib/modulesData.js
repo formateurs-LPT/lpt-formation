@@ -1276,7 +1276,7 @@ export const MONTURES_QUIZ = [
   { type: 'text-open', question: 'Citez un avantage et un inconvénient de la monture en acétate.', hint: 'Avantage : hypoallergénique, coloris variés, premium / Inconvénient : plus lourd que métal & injecté' },
   { type: 'text-open', question: 'Quel est le principal avantage du métal par rapport aux autres matériaux en termes de port ?', hint: 'Plus léger et plus fin — discret sur le visage' },
   { type: 'text-open', question: 'Comment ajuste-t-on une monture en métal ? Quels éléments sont réglables ?', hint: 'À froid — plaquettes et branches réglables' },
-  { type: 'text-open', question: 'Quel risque allergique existe avec le métal ? Quelle solution proposons-nous ?', hint: 'Allergie au nickel — modèles en titane (sans nickel) disponibles' },
+  { type: 'text-open', question: 'Quel risque allergique existe avec le métal ? Quelle solution proposons-nous ?', hint: 'Allergie au nickel — revêtement anti-allergique proposé sur la plupart des modèles' },
   { type: 'text-open', question: 'Comment est fabriquée une monture en plastique injecté ? Qu\'est-ce que cela implique pour le design ?', hint: 'Moulée en série dans un moule industriel — couleur uniforme, pas de veinage ni motif dans la masse' },
   { type: 'text-open', question: 'Quel type de client ciblez-vous avec une monture en plastique injecté ? Pourquoi ?', hint: 'Budget serré, enfants, clients qui cassent régulièrement — meilleur rapport qualité/prix de la gamme' },
 ]

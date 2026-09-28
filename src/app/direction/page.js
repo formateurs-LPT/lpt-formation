@@ -85,7 +85,7 @@ function TopBar({ title, subtitle, onLogout, onBack }) {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
       <div>
         {onBack && <button onClick={onBack} className="detail-back" style={{ marginBottom: 6 }}>← Retour</button>}
-        <h2 style={{ margin: 0 }}>{title}</h2>
+        <h2 style={{ margin: 0, color: '#fff' }}>{title}</h2>
         {subtitle && <p style={{ color: 'var(--text-s)', fontSize: 13, margin: '4px 0 0' }}>{subtitle}</p>}
       </div>
       <button onClick={onLogout} className="btn2">Se déconnecter</button>
