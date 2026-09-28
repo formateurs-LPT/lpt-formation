@@ -215,3 +215,9 @@ export async function genererReportingStructure({ magasinId, formateurId, semain
 export async function markReportingEnvoye(reportingId) {
   return sbUpdate('reportings_hebdo', { envoye_at: new Date().toISOString() }, `id=eq.${reportingId}`)
 }
+
+/** Suppression réservée à l'auteur — filtre sur formateur_id en plus de
+ * l'id, même politique que les notes de terrain. */
+export async function deleteReportingHebdo({ id, formateurId }) {
+  return sbDelete('reportings_hebdo', `id=eq.${id}&formateur_id=eq.${formateurId}`)
+}

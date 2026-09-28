@@ -1,9 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
 import {
-  getFormateurId, getCollaborateurDbId, getCollaborateurEmails,
+  getFormateurId, getCollaborateurDbId,
   getNotesCollaborateur, addNoteCollaborateur, updateNoteCollaborateur, deleteNoteCollaborateur,
-  getRetoursNotes, addRetourNote, deleteRetourNote, envoyerRetourIndividuel,
+  getRetoursNotes, addRetourNote, deleteRetourNote, getMotsMessages,
 } from '@/lib/notesCollaborateurApi'
 
 function fmtDate(iso) {
@@ -60,58 +60,36 @@ function NoteRow({ note, canDelete, readOnly, onSave, onDelete }) {
   )
 }
 
-function RetourIndividuelModal({ collaborateurId, collaborateurNom, formateurId, storeLabel, onClose }) {
+// "Mots" pour ce collaborateur — évolution de l'ancien "Retour individuel"
+// (mailto:) : les brouillons de la semaine (retours_individuels_notes,
+// inchangé) partent automatiquement au collaborateur, avec notif in-app et
+// ouverture d'un fil de discussion, quand le formateur publie son reporting
+// hebdomadaire (MesRetoursView.js → envoyerMotsMagasin). Rien à envoyer
+// manuellement ici — juste écrire et laisser filer.
+function MotsModal({ collaborateurId, collaborateurNom, formateurId, onClose }) {
   const [drafts, setDrafts] = useState([])
+  const [historique, setHistorique] = useState([])
   const [draftText, setDraftText] = useState('')
   const [loading, setLoading] = useState(true)
-  const [apercu, setApercu] = useState(null)
-  const [emails, setEmails] = useState({ collaborateurEmail: null, managerEmails: [] })
-  const [destinataires, setDestinataires] = useState('')
-  const [sending, setSending] = useState(false)
-  const [sent, setSent] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      const [d, em] = await Promise.all([getRetoursNotes(collaborateurId), getCollaborateurEmails(collaborateurId)])
-      if (cancelled) return
-      setDrafts(d)
-      setEmails(em)
-      setDestinataires([em.collaborateurEmail, ...em.managerEmails].filter(Boolean).join(', '))
-      setLoading(false)
-    })()
-    return () => { cancelled = true }
-  }, [collaborateurId])
+  const load = async () => {
+    const [d, h] = await Promise.all([getRetoursNotes(collaborateurId), getMotsMessages(collaborateurId)])
+    setDrafts(d)
+    setHistorique(h)
+    setLoading(false)
+  }
+  useEffect(() => { load() }, [collaborateurId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const addDraft = async () => {
     if (!draftText.trim()) return
     await addRetourNote({ collaborateurId, formateurId, contenu: draftText.trim() })
     setDraftText('')
-    setDrafts(await getRetoursNotes(collaborateurId))
+    await load()
   }
 
   const removeDraft = async (id) => {
     await deleteRetourNote(id)
-    setDrafts(await getRetoursNotes(collaborateurId))
-  }
-
-  const genererApercu = () => {
-    const lignes = drafts.map(d => `- ${d.contenu}`)
-    setApercu(`Bonjour ${collaborateurNom},\n\nVoici mon retour suite à mon passage chez ${storeLabel} :\n\n${lignes.join('\n')}`)
-  }
-
-  const envoyer = async () => {
-    if (!apercu?.trim()) return
-    setSending(true)
-    const ok = await envoyerRetourIndividuel({ collaborateurId, formateurId, contenuFinal: apercu.trim() })
-    if (ok) {
-      const subject = encodeURIComponent(`Retour individuel — ${collaborateurNom}`)
-      const body = encodeURIComponent(apercu.trim())
-      window.location.href = `mailto:${destinataires}?subject=${subject}&body=${body}`
-      setSent(true)
-      setDrafts([])
-    }
-    setSending(false)
+    await load()
   }
 
   return (
@@ -123,23 +101,40 @@ function RetourIndividuelModal({ collaborateurId, collaborateurNom, formateurId,
         background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 18,
         padding: 26, width: '100%', maxWidth: 600, maxHeight: '85vh', overflowY: 'auto',
       }}>
-        <h3 style={{ fontSize: 17, fontWeight: 800, color: '#fff', marginBottom: 4 }}>💬 Retour individuel</h3>
-        <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', marginBottom: 18 }}>{collaborateurNom} — {storeLabel}</p>
+        <h3 style={{ fontSize: 17, fontWeight: 800, color: '#fff', marginBottom: 4 }}>✏️ Mots pour {collaborateurNom}</h3>
+        <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', marginBottom: 18 }}>
+          Partent automatiquement à {collaborateurNom} (notif + chat) quand tu publies ton reporting de la semaine.
+        </p>
 
         {loading ? (
           <p style={{ color: 'rgba(255,255,255,0.5)' }}>Chargement…</p>
-        ) : sent ? (
-          <div>
-            <p style={{ color: '#4ade80', fontSize: 14, fontWeight: 700, marginBottom: 14 }}>✓ Retour envoyé et archivé.</p>
-            <button onClick={onClose} className="btn2">Fermer</button>
-          </div>
-        ) : apercu === null ? (
+        ) : (
           <>
+            {historique.length > 0 && (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+                  Fil de discussion
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20, maxHeight: 220, overflowY: 'auto' }}>
+                  {historique.map(m => (
+                    <div key={m.id} style={{
+                      alignSelf: m.auteur === 'formateur' ? 'flex-end' : 'flex-start',
+                      background: m.auteur === 'formateur' ? 'rgba(0,171,233,0.15)' : 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 12px', maxWidth: '85%',
+                    }}>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>{m.auteur === 'formateur' ? 'Toi' : collaborateurNom}</div>
+                      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{m.contenu}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
             <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-              Brouillons de la semaine
+              Mots en attente (pas encore envoyés)
             </div>
             {drafts.length === 0 ? (
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontStyle: 'italic', marginBottom: 16 }}>Aucune note pour l&apos;instant.</p>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontStyle: 'italic', marginBottom: 16 }}>Aucun mot pour l&apos;instant.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
                 {drafts.map(d => (
@@ -157,31 +152,12 @@ function RetourIndividuelModal({ collaborateurId, collaborateurNom, formateurId,
             )}
             <textarea
               value={draftText} onChange={e => setDraftText(e.target.value)}
-              placeholder="Ajouter une note pour ce retour…" rows={2} className="finput"
+              placeholder="Écrire un mot pour ce collaborateur…" rows={2} className="finput"
               style={{ width: '100%', resize: 'vertical', boxSizing: 'border-box', marginBottom: 10, fontFamily: 'inherit' }}
             />
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <button onClick={addDraft} disabled={!draftText.trim()} className="btn2">+ Ajouter la note</button>
-              <button onClick={genererApercu} disabled={drafts.length === 0} className="gbtn" style={{ marginLeft: 'auto' }}>Aperçu du retour</button>
-            </div>
-          </>
-        ) : (
-          <>
-            <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 4 }}>Destinataire(s)</label>
-            <input
-              value={destinataires} onChange={e => setDestinataires(e.target.value)}
-              className="finput" style={{ width: '100%', boxSizing: 'border-box', marginBottom: 14 }}
-            />
-            <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 4 }}>Message</label>
-            <textarea
-              value={apercu} onChange={e => setApercu(e.target.value)}
-              rows={10} className="finput"
-              style={{ width: '100%', resize: 'vertical', boxSizing: 'border-box', marginBottom: 16, fontFamily: 'inherit' }}
-            />
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <button onClick={envoyer} disabled={sending} className="gbtn" style={{ flex: 1 }}>{sending ? 'Envoi…' : 'Envoyer'}</button>
-              <button onClick={() => setApercu(null)} className="btn2">← Retour aux brouillons</button>
-              <button onClick={onClose} className="btn2">Annuler</button>
+              <button onClick={addDraft} disabled={!draftText.trim()} className="gbtn">+ Ajouter le mot</button>
+              <button onClick={onClose} className="btn2" style={{ marginLeft: 'auto' }}>Fermer</button>
             </div>
           </>
         )}
@@ -247,7 +223,7 @@ export default function CollaborateurNotesSection({ store, collaborateur, pName,
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
         <h3 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', margin: 0 }}>📝 Notes de suivi</h3>
         {!isManager && (
-          <button onClick={() => setShowRetour(true)} className="btn2">💬 Retour individuel</button>
+          <button onClick={() => setShowRetour(true)} className="btn2">✏️ Mots pour ce collaborateur</button>
         )}
       </div>
 
@@ -281,11 +257,10 @@ export default function CollaborateurNotesSection({ store, collaborateur, pName,
       )}
 
       {showRetour && (
-        <RetourIndividuelModal
+        <MotsModal
           collaborateurId={collaborateurId}
           collaborateurNom={`${collaborateur.prenom} ${collaborateur.nom}`}
           formateurId={formateurId}
-          storeLabel={store.label}
           onClose={() => setShowRetour(false)}
         />
       )}

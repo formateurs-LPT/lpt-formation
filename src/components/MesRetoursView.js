@@ -7,10 +7,11 @@ import {
   getFormateurId, getNotesTerrain, addNoteTerrain,
   getReportingsHebdo, saveReportingHebdo, markReportingEnvoye, currentWeekBounds,
   genererSyntheseSiNecessaire, updateNoteTerrain, deleteNoteTerrain,
-  genererReportingStructure, updateReportingStructure,
+  genererReportingStructure, updateReportingStructure, deleteReportingHebdo,
 } from '@/lib/notesTerrainApi'
 import { uploadPieceJointe, getSignedUrl } from '@/lib/storageApi'
 import { getDemandesIntervention, rattacherReporting, notifierReportingRattache } from '@/lib/directionApi'
+import { envoyerMotsMagasin } from '@/lib/notesCollaborateurApi'
 import { POLES, RUBRIQUES, poleMeta, rubriqueMeta, structureToPlainText } from '@/lib/poles'
 import CollaborateurMentionPicker from './CollaborateurMentionPicker'
 import VoiceNoteRecorder from './VoiceNoteRecorder'
@@ -292,6 +293,9 @@ export default function MesRetoursView({ store, pName, onBack }) {
       await rattacherReporting(demandeOuverte.id, row.id)
       await notifierReportingRattache({ ...demandeOuverte, reporting_id: row.id })
     }
+    // Chaque collaborateur ayant des mots en attente (CollaborateurNotesSection.js)
+    // les reçoit maintenant : notif + fil de discussion, plus rien à envoyer à la main.
+    await envoyerMotsMagasin({ magasinId, formateurId })
     await load(magasinId)
     setPublishing(false)
   }
@@ -304,6 +308,13 @@ export default function MesRetoursView({ store, pName, onBack }) {
     await updateReportingStructure(selectedReporting.id, selectedReporting.contenu_structure)
     await load(magasinId)
     setUpdatingSelected(false)
+  }
+
+  const handleDeleteSelectedReporting = async () => {
+    if (!selectedReporting || !window.confirm('Supprimer ce reporting définitivement ?')) return
+    await deleteReportingHebdo({ id: selectedReporting.id, formateurId })
+    setSelectedReporting(null)
+    await load(magasinId)
   }
 
   const ouvrirMail = () => {
@@ -504,6 +515,7 @@ export default function MesRetoursView({ store, pName, onBack }) {
           onChange={next => setSelectedReporting(prev => prev ? { ...prev, contenu_structure: next } : prev)}
           onClose={() => setSelectedReporting(null)}
           onPublish={selectedReporting.formateur_id === formateurId ? handleUpdateSelectedReporting : undefined}
+          onDelete={selectedReporting.formateur_id === formateurId ? handleDeleteSelectedReporting : undefined}
           publishing={updatingSelected}
           published
         />

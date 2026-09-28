@@ -343,7 +343,7 @@ export function ReportingPrintDocument({ reporting, magasinNom }) {
 export default function ReportingDetailView({
   reporting, magasinNom, canEdit = false, onChange, onClose,
   onPublish, publishing = false, published = false,
-  onOpenMail, canToggleDone = false,
+  onOpenMail, canToggleDone = false, onDelete,
 }) {
   const structure = reporting?.contenu_structure
   const hasStructure = structure && Array.isArray(structure.sections)
@@ -526,6 +526,9 @@ export default function ReportingDetailView({
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {onOpenMail && <button onClick={onOpenMail} className="btn2" style={{ fontSize: 12.5 }}>✉️ Mail</button>}
           <button onClick={handleExportPdf} disabled={exportingPdf} className="btn2" style={{ fontSize: 12.5 }}>{exportingPdf ? 'Export…' : '⬇ PDF'}</button>
+          {canEdit && published && onDelete && (
+            <button onClick={onDelete} className="btn2" style={{ fontSize: 12.5, color: '#f87171' }}>🗑️ Supprimer</button>
+          )}
           {canEdit && onPublish && (
             <button onClick={onPublish} disabled={publishing} className="gbtn" style={{ fontSize: 12.5 }}>
               {publishing ? '…' : published ? '✓ Mettre à jour' : '✓ Publier'}

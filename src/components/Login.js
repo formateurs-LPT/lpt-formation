@@ -153,6 +153,11 @@ export default function Login({ onTrainerLogin, onParticipantJoin }) {
               <p className="hint">
                 Scannez le QR du formateur ou saisissez nom et prénom (ligne bleue « Connexion : … »)
               </p>
+              {!isJoinMode && (
+                <Link href="/collaborateur" className="hint" style={{ display: 'block', marginTop: 14, color: '#00abe9', textDecoration: 'none' }}>
+                  Voir les reportings de mon magasin →
+                </Link>
+              )}
             </>
           )}
         </div>
