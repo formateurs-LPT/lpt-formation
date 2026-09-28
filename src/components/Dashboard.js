@@ -2701,35 +2701,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           <div className="ob-banner-arrow">→</div>
         </div>
 
-        {/* Planning banner */}
-        <div
-          onClick={() => setActiveView('planning')}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: 'linear-gradient(135deg, #0d1f35 0%, #0a2a40 60%, #004d6e 100%)',
-            border: '1px solid rgba(0,171,233,0.18)',
-            borderRadius: 'var(--r)', padding: '18px 24px',
-            cursor: 'pointer', marginBottom: 16, transition: 'all .2s',
-          }}
-          onMouseOver={e => { e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,.4)'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.borderColor = 'rgba(0,171,233,0.4)' }}
-          onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(0,171,233,0.18)' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,171,233,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00abe9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(0,171,233,0.75)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>4 jours · Onboarding intensif</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>Planning formation</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>Diffusez le programme du jour sur les écrans</div>
-            </div>
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#00abe9' }}>Voir →</div>
-        </div>
-
-
         {/* Main tiles */}
         <div className="dash-tiles">
           <div className="dash-tile" onClick={() => setActiveView('entrees')}>
