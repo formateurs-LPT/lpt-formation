@@ -4,7 +4,7 @@ import { sbSelect, getTrainerFromDB } from '@/lib/supabase'
 import {
   getDemandesIntervention, getMessagesDemande, postMessageDemande, notifierNouveauMessage,
   reouvrirDemande, cloturerDemande, createDemandeIntervention, isMagasinBelgique, BELGIQUE_ONLY_LOGINS,
-  accepterDemande,
+  accepterDemande, annulerDemande,
 } from '@/lib/directionApi'
 
 function fmtDateTime(iso) {
@@ -17,6 +17,7 @@ const STATUT_META = {
   ouverte: { label: 'Ouverte', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.35)' },
   en_cours: { label: 'En cours', color: '#38bdf8', bg: 'rgba(56,189,248,0.12)', border: 'rgba(56,189,248,0.35)' },
   cloturee: { label: 'Clôturée', color: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.15)' },
+  annulee: { label: 'Annulée', color: '#f87171', bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.25)' },
 }
 
 /**
@@ -95,6 +96,7 @@ function DemandeDetail({ demande, login, role, canManage, onBack, onUpdated }) {
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
   const [accepting, setAccepting] = useState(false)
+  const [annulling, setAnnulling] = useState(false)
 
   const load = async () => {
     setMessages(await getMessagesDemande(demande.id))
@@ -131,7 +133,25 @@ function DemandeDetail({ demande, login, role, canManage, onBack, onUpdated }) {
     onUpdated()
   }
 
+  // Annulation — ouverte au formateur ET au manager (contrairement à
+  // clôturer/rouvrir, réservés à la direction), pour retirer une demande qui
+  // n'a plus lieu d'être (erreur, doublon, test) sans la faire passer pour
+  // "traitée" côté clôturer.
+  const annuler = async () => {
+    if (!confirm('Annuler cette demande d\'intervention ?')) return
+    setAnnulling(true)
+    await annulerDemande(demande.id)
+    await postMessageDemande({
+      demandeId: demande.id, auteurLogin: login, auteurRole: role,
+      contenu: `✕ ${login} a annulé cette demande.`,
+    })
+    await notifierNouveauMessage(demande, login)
+    setAnnulling(false)
+    onUpdated()
+  }
+
   const st = STATUT_META[demande.statut] || STATUT_META.ouverte
+  const peutAnnuler = (role === 'formateur' || role === 'manager') && ['ouverte', 'en_cours'].includes(demande.statut)
 
   return (
     <div>
@@ -153,11 +173,16 @@ function DemandeDetail({ demande, login, role, canManage, onBack, onUpdated }) {
         )}
         {demande.reporting_id && <p style={{ fontSize: 12, color: '#4ade80', marginTop: 6 }}>📎 Reporting rattaché</p>}
 
-        {role === 'formateur' && demande.statut === 'ouverte' && (
-          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-            <button onClick={accepter} disabled={accepting} className="gbtn">{accepting ? 'Confirmation…' : '✅ Accepter la demande'}</button>
+        {(role === 'formateur' && demande.statut === 'ouverte') || peutAnnuler ? (
+          <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+            {role === 'formateur' && demande.statut === 'ouverte' && (
+              <button onClick={accepter} disabled={accepting} className="gbtn">{accepting ? 'Confirmation…' : '✅ Accepter la demande'}</button>
+            )}
+            {peutAnnuler && (
+              <button onClick={annuler} disabled={annulling} className="btn2" style={{ color: '#f87171' }}>{annulling ? '…' : '✕ Annuler la demande'}</button>
+            )}
           </div>
-        )}
+        ) : null}
 
         {canManage && (
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
@@ -246,8 +271,9 @@ export default function DemandesInterventionView({ magasinIds, login, role, canM
     )
   }
 
-  const ouvertes = demandes.filter(d => d.statut !== 'cloturee')
+  const ouvertes = demandes.filter(d => d.statut === 'ouverte' || d.statut === 'en_cours')
   const cloturees = demandes.filter(d => d.statut === 'cloturee')
+  const annulees = demandes.filter(d => d.statut === 'annulee')
 
   const Card = ({ d }) => {
     const st = STATUT_META[d.statut] || STATUT_META.ouverte
@@ -291,10 +317,18 @@ export default function DemandesInterventionView({ magasinIds, login, role, canM
             </div>
           )}
           {cloturees.length > 0 && (
-            <div>
+            <div style={{ marginBottom: annulees.length > 0 ? 20 : 0 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-s)', textTransform: 'uppercase', marginBottom: 10 }}>Clôturées ({cloturees.length})</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {cloturees.map(d => <Card key={d.id} d={d} />)}
+              </div>
+            </div>
+          )}
+          {annulees.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-s)', textTransform: 'uppercase', marginBottom: 10 }}>Annulées ({annulees.length})</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {annulees.map(d => <Card key={d.id} d={d} />)}
               </div>
             </div>
           )}

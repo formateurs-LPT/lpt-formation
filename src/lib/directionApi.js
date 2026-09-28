@@ -147,6 +147,14 @@ export async function cloturerDemande(id) {
   return sbUpdate('demandes_intervention', { statut: 'cloturee' }, `id=eq.${id}`)
 }
 
+/** Annulation — distincte de la clôture (résolue) : la demande était une
+ * erreur/un doublon/n'a plus lieu d'être, pas "traitée". Ouverte au
+ * formateur ET au manager (contrairement à clôturer/rouvrir, réservés à la
+ * direction via canManage). */
+export async function annulerDemande(id) {
+  return sbUpdate('demandes_intervention', { statut: 'annulee' }, `id=eq.${id}`)
+}
+
 export async function rattacherReporting(demandeId, reportingId) {
   return sbUpdate('demandes_intervention', { reporting_id: reportingId }, `id=eq.${demandeId}`)
 }
