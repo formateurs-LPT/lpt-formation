@@ -55,6 +55,12 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .brole.trainer{background:var(--lpt-l);color:var(--lpt-d)}
 .brole.participant{background:var(--green-l);color:var(--green-d)}
 
+/* Statut générique (envoyé/non envoyé, en attente...) — pastille discrète,
+   manquait jusqu'ici (texte brut partout où utilisé). */
+.badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.badge.ok{background:var(--green-l);color:var(--green-d)}
+.badge.pending{background:rgba(255,255,255,0.06);color:var(--text-s);border:1px solid var(--border)}
+
 /* ── TRAINER VIEW ── */
 #tv{display:block}
 .tlayout{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 58px)}

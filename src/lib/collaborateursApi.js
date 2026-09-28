@@ -10,6 +10,14 @@ export async function getMagasinIdBySlug(slug) {
   return rows?.[0]?.id || null
 }
 
+/** Tous les collaborateurs actifs d'un magasin — source du @mention dans les
+ * notes terrain (script refonte reporting hebdo). */
+export async function getCollaborateursByMagasin(magasinId) {
+  if (!magasinId) return []
+  const rows = await sbSelect('collaborateurs', `magasin_id=eq.${magasinId}&order=prenom.asc`)
+  return rows || []
+}
+
 /** Collaborateurs avec statut='nouveau' pour ce magasin — pas encore testés. */
 export async function getNouveauxCollaborateurs(magasinId) {
   if (!magasinId) return []

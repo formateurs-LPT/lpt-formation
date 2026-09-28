@@ -13,8 +13,9 @@ import {
   getMagasinIdBySlug, getNouveauxCollaborateurs, getCollaborateursEnAttenteValidation,
   declencherTestSortie, validerNouvelEntrant,
 } from '@/lib/collaborateursApi'
-import { getReportingsHebdo } from '@/lib/notesTerrainApi'
+import { getReportingsHebdo, updateReportingStructure } from '@/lib/notesTerrainApi'
 import DemandesInterventionView from '@/components/DemandesInterventionView'
+import ReportingDetailView from '@/components/ReportingDetailView'
 
 // Page autonome (comme /rapport, /bilan-formation) — aucune dépendance à
 // page.js/Dashboard.js, donc aucun risque pour le flux formateur/participant/TV.
@@ -254,7 +255,7 @@ function fmtDateLongFr(isoDate) {
 // Lecture seule — même requête réutilisable (getReportingsHebdo, filtrable
 // par magasin_id) que celle prévue pour DR/directeur retail au script 5 ;
 // rien de spécifique au rôle manager n'est codé ici.
-function HistoriqueReportingsSection({ reportings }) {
+function HistoriqueReportingsSection({ reportings, magasinNom }) {
   const [selected, setSelected] = useState(null)
   return (
     <div style={{ marginBottom: 28 }}>
@@ -271,36 +272,25 @@ function HistoriqueReportingsSection({ reportings }) {
               <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
                 Semaine du {fmtDateLongFr(r.semaine_debut)} au {fmtDateLongFr(r.semaine_fin)}
               </div>
-              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
-                {r.auteur} {r.envoye_at ? '· envoyé' : '· non envoyé'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)' }}>{r.auteur}</span>
+                <span className={`badge ${r.envoye_at ? 'ok' : 'pending'}`}>{r.envoye_at ? 'Envoyé' : 'Non envoyé'}</span>
               </div>
             </button>
           ))}
         </div>
       )}
       {selected && (
-        <div onClick={() => setSelected(null)} style={{
-          position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-        }}>
-          <div onClick={e => e.stopPropagation()} style={{
-            background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 18,
-            padding: 26, width: '100%', maxWidth: 560, maxHeight: '80vh', overflowY: 'auto',
-          }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', marginBottom: 4 }}>{selected.auteur}</div>
-            <h3 style={{ fontSize: 17, fontWeight: 800, color: '#fff', marginBottom: 14 }}>
-              Semaine du {fmtDateLongFr(selected.semaine_debut)} au {fmtDateLongFr(selected.semaine_fin)}
-            </h3>
-            <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: 18 }}>
-              {selected.contenu_genere}
-            </div>
-            <button onClick={() => setSelected(null)} style={{
-              background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-              color: 'rgba(255,255,255,0.75)', padding: '9px 18px', borderRadius: 10,
-              fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            }}>Fermer</button>
-          </div>
-        </div>
+        <ReportingDetailView
+          reporting={selected}
+          magasinNom={magasinNom}
+          onClose={() => setSelected(null)}
+          canToggleDone
+          onChange={async (next) => {
+            setSelected(prev => prev ? { ...prev, contenu_structure: next } : prev)
+            await updateReportingStructure(selected.id, next)
+          }}
+        />
       )}
     </div>
   )
@@ -450,7 +440,7 @@ function ManagerDashboard({ session, onLogout }) {
           onSelectCollaborateur={(secId, collabId) => { setSectionId(secId); setCollaborateurId(collabId) }}
         />
 
-        <HistoriqueReportingsSection reportings={reportings} />
+        <HistoriqueReportingsSection reportings={reportings} magasinNom={store.label} />
       </div>
 
       {enAttenteValidation.length > 0 && (

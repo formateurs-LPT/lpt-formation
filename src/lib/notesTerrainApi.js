@@ -20,7 +20,7 @@ export async function getNotesTerrain(magasinId) {
   return (notes || []).map(n => ({ ...n, auteur: nameById[n.formateur_id] || 'Formateur' }))
 }
 
-export async function addNoteTerrain({ magasinId, formateurId, typeNote = 'texte', contenu, audioUrl, piecesJointes }) {
+export async function addNoteTerrain({ magasinId, formateurId, typeNote = 'texte', contenu, audioUrl, piecesJointes, pole, rubrique, collaborateursCites, motDeLaFin }) {
   return sbInsert('notes_terrain', {
     magasin_id: magasinId,
     formateur_id: formateurId,
@@ -28,6 +28,10 @@ export async function addNoteTerrain({ magasinId, formateurId, typeNote = 'texte
     contenu: contenu || null,
     audio_url: audioUrl || null,
     pieces_jointes: piecesJointes || [],
+    pole: pole || null,
+    rubrique: rubrique || null,
+    collaborateurs_cites: collaborateursCites?.length ? collaborateursCites : null,
+    mot_de_la_fin: !!motDeLaFin,
   })
 }
 
@@ -156,7 +160,7 @@ export async function genererSyntheseSiNecessaire(magasinId) {
 // sbInsert répond en `return=minimal` (juste true/false, pas la ligne créée)
 // — on rappelle juste après pour récupérer l'id réel, nécessaire ensuite
 // pour marquer envoye_at au moment de l'envoi du mail.
-export async function saveReportingHebdo({ formateurId, magasinId, contenuGenere }) {
+export async function saveReportingHebdo({ formateurId, magasinId, contenuGenere, contenuStructure }) {
   const { debut, fin } = currentWeekBounds()
   const ok = await sbInsert('reportings_hebdo', {
     formateur_id: formateurId,
@@ -164,6 +168,7 @@ export async function saveReportingHebdo({ formateurId, magasinId, contenuGenere
     semaine_debut: debut,
     semaine_fin: fin,
     contenu_genere: contenuGenere,
+    contenu_structure: contenuStructure || null,
   })
   if (!ok) return null
   const rows = await sbSelect(
@@ -171,6 +176,40 @@ export async function saveReportingHebdo({ formateurId, magasinId, contenuGenere
     `formateur_id=eq.${formateurId}&magasin_id=eq.${magasinId}&semaine_debut=eq.${debut}&order=created_at.desc&limit=1`
   )
   return rows?.[0] || null
+}
+
+/** Republie un reporting déjà enregistré (après édition manuelle en Étape 3
+ * de la refonte : modifier/supprimer/réordonner un point avant publication). */
+export async function updateReportingStructure(reportingId, contenuStructure) {
+  return sbUpdate('reportings_hebdo', { contenu_structure: contenuStructure }, `id=eq.${reportingId}`)
+}
+
+const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
+
+/**
+ * Appelle l'edge function reporting-generate (clé Groq gardée côté serveur,
+ * jamais exposée au client). Retourne { ok:true, contenuStructure } ou
+ * { ok:false, error }. N'écrit rien en base elle-même — c'est à l'appelant
+ * de saveReportingHebdo ensuite. En cas d'échec, les notes sources ne sont
+ * jamais touchées (la fonction ne fait que lire).
+ */
+export async function genererReportingStructure({ magasinId, formateurId, semaineDebut, semaineFin }) {
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/reporting-generate`, {
+      method: 'POST',
+      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ magasinId, formateurId, semaineDebut, semaineFin }),
+    })
+    const data = await res.json().catch(() => null)
+    if (!res.ok || !data || data.error) {
+      return { ok: false, error: data?.error || `Génération indisponible (${res.status}).` }
+    }
+    if (!data.contenuStructure) return { ok: false, error: 'Aucune note cette semaine — rien à générer.' }
+    return { ok: true, contenuStructure: data.contenuStructure }
+  } catch {
+    return { ok: false, error: 'Génération impossible — vérifiez la connexion. Les notes sont intactes.' }
+  }
 }
 
 export async function markReportingEnvoye(reportingId) {

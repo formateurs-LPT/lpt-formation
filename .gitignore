@@ -22,3 +22,6 @@ npm-debug.log*
 
 # fichiers sources RH (données personnelles collaborateurs) — jamais dans git
 /data/
+
+# cache local du CLI Supabase (supabase functions deploy)
+supabase/.temp/
