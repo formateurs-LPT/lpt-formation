@@ -331,6 +331,81 @@ export async function getTrainerFromDB(login) {
   } catch { return null }
 }
 
+// ── RH auth (rh_accounts) ──────────────────────────────────────────────────
+export async function getRhAccountFromDB(login, code) {
+  try {
+    const rows = await sbSelect(
+      'rh_accounts',
+      `login=eq.${encodeURIComponent(login)}&code=eq.${encodeURIComponent(code)}&active=eq.true`
+    )
+    return rows?.[0] || null
+  } catch { return null }
+}
+
+// ── Insert avec retour de la ligne créée ──────────────────────────────────
+export async function sbInsertReturn(table, data) {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: { ...sbHeaders(), Prefer: 'return=representation' },
+      body: JSON.stringify(data),
+    })
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}))
+      console.error('[sbInsertReturn]', table, r.status, err?.message)
+      return null
+    }
+    const rows = await r.json()
+    return Array.isArray(rows) ? rows[0] ?? null : rows ?? null
+  } catch (e) {
+    console.error('[sbInsertReturn] network error', table, e)
+    return null
+  }
+}
+
+// ── RH — entrées hebdomadaires ─────────────────────────────────────────────
+export async function getEntreesRhByWeek(semaineLundi) {
+  try {
+    return await sbSelect('entrees_rh', `semaine_lundi=eq.${semaineLundi}&order=created_at.asc`) || []
+  } catch { return [] }
+}
+
+export async function addEntreeRh(data) {
+  return sbInsertReturn('entrees_rh', data)
+}
+
+export async function updateEntreeRh(id, data) {
+  try {
+    await sbUpdate('entrees_rh', { ...data, updated_at: new Date().toISOString() }, `id=eq.${id}`)
+    return true
+  } catch { return false }
+}
+
+export async function deleteEntreeRh(id) {
+  try {
+    await sbDelete('entrees_rh', `id=eq.${id}`)
+    return true
+  } catch { return false }
+}
+
+// ── RH — documents ─────────────────────────────────────────────────────────
+export async function getDossiersEntree(entreeId) {
+  try {
+    return await sbSelect('dossiers_documents_entrant', `entree_id=eq.${entreeId}`) || []
+  } catch { return [] }
+}
+
+export async function upsertDocument(entreeId, typeDocument, rempli) {
+  try {
+    await sbUpsert(
+      'dossiers_documents_entrant',
+      { entree_id: entreeId, type_document: typeDocument, rempli, updated_at: new Date().toISOString() },
+      'entree_id,type_document'
+    )
+    return true
+  } catch { return false }
+}
+
 // ── Manager auth (store_managers) — le code est comparé côté Postgrest,
 // jamais reçu/comparé côté client (contrairement aux PIN formateurs). ──
 export async function getManagerFromDB(login, code) {
