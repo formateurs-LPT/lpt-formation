@@ -46,10 +46,10 @@ export async function validerNouvelEntrant(collaborateurId) {
   return sbUpdate('collaborateurs', { statut: 'actif', manager_a_valide: true }, `id=eq.${collaborateurId}`)
 }
 
-function stripAccents(s) {
+export function stripAccents(s) {
   return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
 }
-function slugifyName(prenom, nom) {
+export function slugifyName(prenom, nom) {
   return stripAccents(`${prenom} ${nom}`).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 }
 

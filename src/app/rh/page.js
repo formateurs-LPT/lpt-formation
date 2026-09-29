@@ -1,20 +1,27 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { getTrainerCredentials } from '@/lib/env'
 import {
   apiGetEntreesRhByWeek, apiAddEntreeRh, apiUpdateEntreeRh, apiDeleteEntreeRh,
   apiGetDossiersEntree, apiUpsertDocumentEntree,
-  apiGetCandidats, apiAddCandidat, apiUpdateCandidat,
+  apiGetCandidats, apiAddCandidat, apiUpdateCandidat, apiDeleteCandidat,
   apiAddHistorique, apiGetHistorique,
   apiGetDossiersCandidats, apiUpsertDocumentCandidat,
   apiValiderCandidat, apiSyncFormateur,
+  apiCheckCandidatArchive, apiArchiverCandidat,
+  apiGetManagerByMagasinId, apiNotifier,
+  apiGetEntretiensByCandidat, apiCreerEntretien, apiContreProposerEntretien,
+  apiConfirmerContreProposition, apiSupprimerEntretien,
 } from '@/lib/rhApi'
-import { STORES } from '@/lib/storeFollowupData'
+import { STORES, STORE_REGION_GROUPS } from '@/lib/storeFollowupData'
+import { getMagasinIdBySlug, slugifyName, stripAccents } from '@/lib/collaborateursApi'
+import { uploadPieceJointe, getSignedUrl, RH_DOCUMENTS_BUCKET } from '@/lib/storageApi'
 
 const SESSION_KEY = 'rh_session'
 const RH_DISPLAY_NAMES = { kevin: 'Kevin Dupuy', quentin: 'Quentin Bahougne' }
 const STORE_OPTIONS = STORES.map(s => ({ id: s.id, label: s.label }))
+const POSTE_OPTIONS = ['CVO', 'MO/SAV', 'OPTICIEN', 'STORE MANAGER', 'Alternant']
 
 // ── Documents ─────────────────────────────────────────────────────────────────
 const DOCS_TOUJOURS = [
@@ -86,6 +93,31 @@ function weekDateRange(mondayStr) {
   return `${fmt(d)} – ${fmt(v)}`
 }
 
+// ── Entretiens de recrutement ───────────────────────────────────────────────
+function fmtDateTime(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+/** Déduit le magasin (id relationnel) et le manager destinataire à partir du
+ * libellé de magasin saisi sur la fiche candidat (même logique que
+ * session.magasin ailleurs dans l'app : STORES.id === magasins.slug). */
+async function resolveManagerForCandidat(magasinLabel) {
+  const store = STORES.find(s => s.label === magasinLabel)
+  if (!store) return { magasinId: null, manager: null }
+  const magasinId = await getMagasinIdBySlug(store.id)
+  if (!magasinId) return { magasinId: null, manager: null }
+  const manager = await apiGetManagerByMagasinId(magasinId)
+  return { magasinId, manager }
+}
+/** Région (Nord/Sud/Belgique, cf. STORE_REGION_GROUPS déjà utilisé par
+ * l'écran "Suivi magasin") du magasin porté par un candidat/une entrée. */
+function magasinRegionId(magasinLabel) {
+  const store = STORES.find(s => s.label === magasinLabel)
+  if (!store) return null
+  return STORE_REGION_GROUPS.find(g => g.storeIds.includes(store.id))?.id || null
+}
+const REGION_FILTERS = [{ id: 'tous', label: 'Toutes régions', emoji: '🗺️' }, ...STORE_REGION_GROUPS]
+
 // ── Styles ────────────────────────────────────────────────────────────────────
 const CSS = {
   input: { width:'100%', boxSizing:'border-box', padding:'10px 12px', background:'#f8fafc', border:'1.5px solid #e2e8f0', borderRadius:8, color:'#1e293b', fontSize:14, fontFamily:'inherit', outline:'none' },
@@ -123,6 +155,49 @@ function StatutPill({ statut }) {
   return <span style={{ display:'inline-flex', padding:'3px 10px', borderRadius:20, fontSize:11.5, fontWeight:700, background:c.bg, color:c.color, border:`1px solid ${c.border}` }}>{STATUT_LABELS[statut] || statut}</span>
 }
 
+// Ligne "document requis" du dossier RH — coche manuelle tant qu'aucun
+// fichier n'est attaché ; glisser-déposer (ou clic) pour attacher un
+// fichier, ce qui coche automatiquement "Reçu" ; Voir/Supprimer une fois attaché.
+function DocumentDropRow({ label, rempli, path, uploading, onToggle, onFiles, onRemove }) {
+  const [dragOver, setDragOver] = useState(false)
+  const inputRef = useRef(null)
+  const hasFile = !!path
+  return (
+    <div
+      onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={e => { e.preventDefault(); setDragOver(false); onFiles(e.dataTransfer.files) }}
+      style={{
+        display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 14px', marginBottom:6, borderRadius:8, gap:10,
+        background:dragOver ? '#eaf3fd' : (rempli ? '#f0fdf4' : '#f8fafc'),
+        border:`1.5px dashed ${dragOver ? '#00abe9' : (rempli ? '#86efac' : '#e2e8f0')}`,
+      }}
+    >
+      <div onClick={() => !hasFile && onToggle()} style={{ display:'flex', alignItems:'center', gap:10, cursor:hasFile ? 'default' : 'pointer', minWidth:0, flex:1 }}>
+        <div style={{ width:18, height:18, borderRadius:4, flexShrink:0, background:rempli?'#22c55e':'#fff', border:`2px solid ${rempli?'#22c55e':'#cbd5e1'}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          {rempli && <span style={{ color:'#fff', fontSize:11, fontWeight:700 }}>✓</span>}
+        </div>
+        <span style={{ fontSize:13.5, color:rempli?'#166534':'#374151' }}>{label}</span>
+      </div>
+      <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+        {uploading ? (
+          <span style={{ fontSize:11.5, color:'#94a3b8' }}>Envoi…</span>
+        ) : hasFile ? (
+          <>
+            <FileViewButton path={path} />
+            <button type="button" onClick={onRemove} title="Supprimer" style={{ ...CSS.btn, padding:'5px 9px', background:'#fef2f2', color:'#ef4444', fontSize:12 }}>🗑️</button>
+          </>
+        ) : (
+          <label style={{ fontSize:11.5, fontWeight:600, color:'#0089ba', cursor:'pointer' }} onClick={e => e.stopPropagation()}>
+            📎 Joindre
+            <input ref={inputRef} type="file" accept=".pdf,.doc,.docx,image/*" style={{ display:'none' }} onChange={e => onFiles(e.target.files)} />
+          </label>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Fiche documents (entree ou candidat) ──────────────────────────────────────
 function FicheDocuments({ entity, entityType, onClose, onStatutChange }) {
   const [dossiers, setDossiers] = useState([])
@@ -136,26 +211,39 @@ function FicheDocuments({ entity, entityType, onClose, onStatutChange }) {
 
   useEffect(() => { load() }, [load])
 
-  const toggle = async (typeDoc, currentVal) => {
-    const newVal = !currentVal
-    setDossiers(prev => prev.map(d => d.type_document === typeDoc ? { ...d, rempli: newVal } : d))
-    if (entityType === 'entree') {
-      await apiUpsertDocumentEntree(entity.id, typeDoc, newVal)
-      const allDocs = await apiGetDossiersEntree(entity.id)
-      const newStatut = computeStatut(entity, allDocs)
-      await apiUpdateEntreeRh(entity.id, { statut_documents: newStatut })
-      onStatutChange?.(entity.id, newStatut); setDossiers(allDocs)
-    } else {
-      await apiUpsertDocumentCandidat(entity.id, typeDoc, newVal)
-      const allDocs = await apiGetDossiersCandidats(entity.id)
-      const newStatut = computeStatut(entity, allDocs)
-      await apiUpdateCandidat(entity.id, { statut_documents: newStatut })
-      onStatutChange?.(entity.id, newStatut); setDossiers(allDocs)
-    }
+  const [uploadingDoc, setUploadingDoc] = useState(null) // type_document en cours d'envoi
+
+  // rempli obligatoire ; fichierUrl optionnel — undefined = ne touche pas au
+  // fichier déjà attaché (cochage manuel), string|null = attache/retire un fichier.
+  const applyChange = async (typeDoc, rempli, fichierUrl) => {
+    setDossiers(prev => prev.map(d => d.type_document === typeDoc
+      ? { ...d, rempli, ...(fichierUrl !== undefined ? { fichier_url: fichierUrl } : {}) }
+      : d))
+    const upsertFn = entityType === 'entree' ? apiUpsertDocumentEntree : apiUpsertDocumentCandidat
+    const getFn = entityType === 'entree' ? apiGetDossiersEntree : apiGetDossiersCandidats
+    const updateFn = entityType === 'entree' ? apiUpdateEntreeRh : apiUpdateCandidat
+    await upsertFn(entity.id, typeDoc, rempli, fichierUrl)
+    const allDocs = await getFn(entity.id)
+    const newStatut = computeStatut(entity, allDocs)
+    await updateFn(entity.id, { statut_documents: newStatut })
+    onStatutChange?.(entity.id, newStatut); setDossiers(allDocs)
   }
 
+  const toggle = (typeDoc, currentVal) => applyChange(typeDoc, !currentVal)
+
+  const uploadDoc = async (typeDoc, files) => {
+    const file = files?.[0]
+    if (!file) return
+    setUploadingDoc(typeDoc)
+    const path = await uploadPieceJointe(file, { prefix: typeDoc, bucket: RH_DOCUMENTS_BUCKET })
+    setUploadingDoc(null)
+    if (path) await applyChange(typeDoc, true, path)
+  }
+
+  const removeDoc = typeDoc => applyChange(typeDoc, false, null)
+
   const docs = getDocsRequis(entity)
-  const getDoc = id => dossiers.find(d => d.type_document === id) || { rempli: false }
+  const getDoc = id => dossiers.find(d => d.type_document === id) || { rempli: false, fichier_url: null }
   const statut = computeStatut(entity, dossiers)
 
   return (
@@ -173,15 +261,16 @@ function FicheDocuments({ entity, entityType, onClose, onStatutChange }) {
             {docs.map(doc => {
               const d = getDoc(doc.id)
               return (
-                <div key={doc.id} onClick={() => toggle(doc.id, d.rempli)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 14px', marginBottom:6, borderRadius:8, background:d.rempli?'#f0fdf4':'#f8fafc', border:`1.5px solid ${d.rempli?'#86efac':'#e2e8f0'}`, cursor:'pointer' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                    <div style={{ width:18, height:18, borderRadius:4, flexShrink:0, background:d.rempli?'#22c55e':'#fff', border:`2px solid ${d.rempli?'#22c55e':'#cbd5e1'}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      {d.rempli && <span style={{ color:'#fff', fontSize:11, fontWeight:700 }}>✓</span>}
-                    </div>
-                    <span style={{ fontSize:13.5, color:d.rempli?'#166534':'#374151' }}>{doc.label}</span>
-                  </div>
-                  <span style={{ fontSize:11.5, fontWeight:600, color:d.rempli?'#16a34a':'#94a3b8' }}>{d.rempli ? 'Reçu' : 'En attente'}</span>
-                </div>
+                <DocumentDropRow
+                  key={doc.id}
+                  label={doc.label}
+                  rempli={d.rempli}
+                  path={d.fichier_url}
+                  uploading={uploadingDoc === doc.id}
+                  onToggle={() => toggle(doc.id, d.rempli)}
+                  onFiles={files => uploadDoc(doc.id, files)}
+                  onRemove={() => removeDoc(doc.id)}
+                />
               )
             })}
           </div>
@@ -207,6 +296,7 @@ function CandidatFormModal({ initial, session, onSave, onClose }) {
     nom: initial?.nom || '', prenom: initial?.prenom || '',
     telephone: initial?.telephone || '', email: initial?.email || '',
     magasin: initial?.magasin || '', poste_vise: initial?.poste_vise || '',
+    heures_envisagees: initial?.heures_envisagees || '',
     mode_domicile: initial?.mode_domicile || 'personnel',
     rqth_applicable: initial?.rqth_applicable || false,
     contact_urgence_nom: initial?.contact_urgence_nom || '',
@@ -214,13 +304,34 @@ function CandidatFormModal({ initial, session, onSave, onClose }) {
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [cvFile, setCvFile] = useState(null)
+  const [cvRemoved, setCvRemoved] = useState(false)
+  const [lettreFile, setLettreFile] = useState(null)
+  const [lettreRemoved, setLettreRemoved] = useState(false)
+  const [archiveWarning, setArchiveWarning] = useState(null)
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const checkArchive = async () => {
+    if (isEdit || !form.nom.trim() || !form.prenom.trim()) return
+    const match = await apiCheckCandidatArchive(slugifyName(form.prenom, form.nom))
+    setArchiveWarning(match)
+  }
 
   const submit = async e => {
     e.preventDefault()
     if (!form.nom.trim() || !form.prenom.trim() || !form.telephone.trim()) { setError('Nom, prénom et téléphone sont obligatoires.'); return }
     setSaving(true); setError('')
-    await onSave({ ...form, nom: form.nom.trim().toUpperCase(), prenom: form.prenom.trim(), cree_par: session.login })
+    let cv_url = cvRemoved ? null : (initial?.cv_url || null)
+    if (cvFile) {
+      const path = await uploadPieceJointe(cvFile, { prefix: 'cv', bucket: RH_DOCUMENTS_BUCKET })
+      if (path) cv_url = path
+    }
+    let lettre_motivation_url = lettreRemoved ? null : (initial?.lettre_motivation_url || null)
+    if (lettreFile) {
+      const path = await uploadPieceJointe(lettreFile, { prefix: 'lettre', bucket: RH_DOCUMENTS_BUCKET })
+      if (path) lettre_motivation_url = path
+    }
+    await onSave({ ...form, cv_url, lettre_motivation_url, nom: form.nom.trim().toUpperCase(), prenom: form.prenom.trim(), cree_par: session.login })
     setSaving(false)
   }
 
@@ -228,9 +339,15 @@ function CandidatFormModal({ initial, session, onSave, onClose }) {
     <Modal title={isEdit ? 'Modifier le candidat' : 'Ajouter un candidat'} onClose={onClose} width={580}>
       <form onSubmit={submit}>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 16px' }}>
-          <Field label="Nom"><input style={CSS.input} value={form.nom} onChange={e => set('nom', e.target.value)} placeholder="NOM" /></Field>
-          <Field label="Prénom"><input style={CSS.input} value={form.prenom} onChange={e => set('prenom', e.target.value)} placeholder="Prénom" /></Field>
+          <Field label="Nom"><input style={CSS.input} value={form.nom} onChange={e => set('nom', e.target.value)} onBlur={checkArchive} placeholder="NOM" /></Field>
+          <Field label="Prénom"><input style={CSS.input} value={form.prenom} onChange={e => set('prenom', e.target.value)} onBlur={checkArchive} placeholder="Prénom" /></Field>
         </div>
+        {archiveWarning && (
+          <div style={{ background:'#fff7ed', border:'1px solid #fed7aa', borderRadius:10, padding:'10px 14px', marginBottom:14, fontSize:13, color:'#9a3412' }}>
+            ⚠️ Ce candidat a déjà été refusé le {new Date(archiveWarning.date_refus).toLocaleDateString('fr-FR')}
+            {archiveWarning.motif ? <> — <em>{archiveWarning.motif}</em></> : null}
+          </div>
+        )}
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 16px' }}>
           <Field label="Téléphone"><input style={CSS.input} value={form.telephone} onChange={e => set('telephone', e.target.value)} placeholder="06 xx xx xx xx" /></Field>
           <Field label="Email (optionnel)"><input style={CSS.input} type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@example.com" /></Field>
@@ -242,7 +359,31 @@ function CandidatFormModal({ initial, session, onSave, onClose }) {
               {STORE_OPTIONS.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
             </select>
           </Field>
-          <Field label="Poste visé"><input style={CSS.input} value={form.poste_vise} onChange={e => set('poste_vise', e.target.value)} placeholder="CVO, Opticien…" /></Field>
+          <Field label="Poste visé">
+            <select style={CSS.input} value={form.poste_vise} onChange={e => set('poste_vise', e.target.value)}>
+              <option value="">— Choisir —</option>
+              {POSTE_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </Field>
+        </div>
+        <div style={{ marginBottom:16 }}>
+          <Field label="Heures envisagées (contrat)"><input style={{ ...CSS.input, maxWidth:200 }} value={form.heures_envisagees} onChange={e => set('heures_envisagees', e.target.value)} placeholder="Ex: 35" /></Field>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }}>
+          <FileDropSlot
+            label="CV — fortement recommandé"
+            path={!cvFile && !cvRemoved ? (initial?.cv_url || null) : null}
+            staged={!!cvFile}
+            onFiles={files => { const f = files?.[0]; if (f) { setCvFile(f); setCvRemoved(false) } }}
+            onRemove={() => { setCvFile(null); setCvRemoved(true) }}
+          />
+          <FileDropSlot
+            label="Lettre de motivation (optionnelle)"
+            path={!lettreFile && !lettreRemoved ? (initial?.lettre_motivation_url || null) : null}
+            staged={!!lettreFile}
+            onFiles={files => { const f = files?.[0]; if (f) { setLettreFile(f); setLettreRemoved(false) } }}
+            onRemove={() => { setLettreFile(null); setLettreRemoved(true) }}
+          />
         </div>
         <div style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:10, padding:'12px 14px', marginBottom:14 }}>
           <div style={{ ...CSS.label, marginBottom:8 }}>Domicile</div>
@@ -322,7 +463,7 @@ function ValiderRecrutementModal({ candidat, session, onConfirm, onClose }) {
   const s0 = getMondayStr(0); const s1 = getMondayStr(1)
   const [semaine, setSemaine] = useState(null)
   const [form, setForm] = useState({
-    date_entree: s0, heures: '',
+    date_entree: s0, heures: candidat.heures_envisagees || '',
     contact_urgence_nom: candidat.contact_urgence_nom || '',
     contact_urgence_telephone: candidat.contact_urgence_telephone || '',
   })
@@ -377,7 +518,155 @@ function ValiderRecrutementModal({ candidat, session, onConfirm, onClose }) {
   )
 }
 
-function FicheCandidatModal({ candidat: init, session, onClose, onUpdate }) {
+// ── Fichiers RH (CV, lettre de motivation, dossier) — glisser-déposer,
+// consultation et suppression, bucket privé rh-documents ────────────────────
+function FileViewButton({ path, label = '📄 Voir' }) {
+  const [loading, setLoading] = useState(false)
+  const open = async () => {
+    setLoading(true)
+    const url = await getSignedUrl(path, 3600, RH_DOCUMENTS_BUCKET)
+    setLoading(false)
+    if (url) window.open(url, '_blank')
+  }
+  return <button type="button" onClick={open} disabled={loading} style={{ ...CSS.btn, padding:'5px 10px', background:'#f0f9ff', color:'#0089ba', fontSize:12 }}>{loading ? '…' : label}</button>
+}
+
+/** Zone glisser-déposer réutilisable : `path` (fichier déjà stocké, mode
+ * "fiche") affiche Voir/Supprimer ; `staged` (fichier choisi localement mais
+ * pas encore uploadé, mode "création") affiche juste Supprimer. */
+function FileDropSlot({ label, path, staged, uploading, onFiles, onRemove, accept = '.pdf,.doc,.docx,image/*' }) {
+  const [dragOver, setDragOver] = useState(false)
+  const inputRef = useRef(null)
+  const attached = !!path || !!staged
+  return (
+    <div
+      onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={e => { e.preventDefault(); setDragOver(false); onFiles(e.dataTransfer.files) }}
+      onClick={() => !attached && inputRef.current?.click()}
+      style={{
+        border:`1.5px dashed ${dragOver ? '#00abe9' : (attached ? '#86efac' : '#cbd5e1')}`,
+        borderRadius:10, padding:'10px 12px', background:dragOver ? '#eaf3fd' : (attached ? '#f0fdf4' : '#f8fafc'),
+        cursor:attached ? 'default' : 'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, minHeight:40,
+      }}
+    >
+      <div style={{ fontSize:12.5, color:attached ? '#166534' : '#94a3b8', fontWeight:600, minWidth:0 }}>
+        {uploading ? 'Envoi…' : attached ? `✓ ${label} ajouté(e)` : `${label} — glisser-déposer ou cliquer`}
+      </div>
+      {attached && !uploading && (
+        <div style={{ display:'flex', gap:6, flexShrink:0 }} onClick={e => e.stopPropagation()}>
+          {path && <FileViewButton path={path} />}
+          <button type="button" onClick={onRemove} title="Supprimer" style={{ ...CSS.btn, padding:'5px 9px', background:'#fef2f2', color:'#ef4444', fontSize:12 }}>🗑️</button>
+        </div>
+      )}
+      <input ref={inputRef} type="file" accept={accept} style={{ display:'none' }} onChange={e => onFiles(e.target.files)} />
+    </div>
+  )
+}
+
+// ── Planification d'entretien ────────────────────────────────────────────────
+function EntretienPlanifierModal({ candidat, session, onClose, onCreated }) {
+  const [resolving, setResolving] = useState(true)
+  const [magasinId, setMagasinId] = useState(null)
+  const [manager, setManager] = useState(null)
+  const [date, setDate] = useState('')
+  const [heure, setHeure] = useState('10:00')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    resolveManagerForCandidat(candidat.magasin).then(res => {
+      if (cancelled) return
+      setMagasinId(res.magasinId); setManager(res.manager); setResolving(false)
+    })
+    return () => { cancelled = true }
+  }, [candidat.magasin])
+
+  const submit = async () => {
+    if (!date || !heure) { setError('Choisissez une date et une heure.'); return }
+    if (!magasinId) { setError('Magasin introuvable — impossible de planifier.'); return }
+    setSaving(true); setError('')
+    const dateHeureProposee = new Date(`${date}T${heure}:00`).toISOString()
+    const entretien = await apiCreerEntretien({
+      candidatId: candidat.id, magasinId, managerId: manager?.id || null,
+      demandeurLogin: session.login, dateHeureProposee,
+    })
+    if (entretien && manager?.login) await apiNotifier(manager.login, 'demande_entretien', entretien.id)
+    setSaving(false)
+    if (entretien) onCreated(entretien); else setError("Échec de la création de l'entretien.")
+  }
+
+  return (
+    <Modal title="Planifier un entretien" onClose={onClose} width={440}>
+      <div style={{ marginBottom:16, padding:'12px 14px', background:'#f0f9ff', border:'1px solid #bae6fd', borderRadius:10 }}>
+        <div style={{ fontWeight:700, color:'#0369a1' }}>{candidat.prenom} {candidat.nom}</div>
+        <div style={{ fontSize:12.5, color:'#0369a1', marginTop:2 }}>{candidat.magasin || '—'} · {candidat.poste_vise || '—'}</div>
+      </div>
+      <Field label="Manager destinataire">
+        <input style={{ ...CSS.input, background:'#f1f5f9', color:'#64748b' }} readOnly
+          value={resolving ? 'Recherche…' : (manager?.display_name || 'Aucun manager trouvé pour ce magasin')} />
+      </Field>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 14px' }}>
+        <Field label="Date"><input style={CSS.input} type="date" value={date} onChange={e => setDate(e.target.value)} /></Field>
+        <Field label="Heure"><input style={CSS.input} type="time" value={heure} onChange={e => setHeure(e.target.value)} /></Field>
+      </div>
+      {error && <div style={{ color:'#ef4444', fontSize:13, marginBottom:12, padding:'8px 12px', background:'#fef2f2', borderRadius:8 }}>{error}</div>}
+      <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+        <button onClick={onClose} style={{ ...CSS.btn, background:'#f1f5f9', color:'#475569' }}>Annuler</button>
+        <button disabled={saving || resolving} onClick={submit} style={{ ...CSS.btn, background:saving?'#94a3b8':'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff' }}>
+          {saving ? 'Envoi…' : 'Envoyer la demande →'}
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
+function EntretienStatusCard({ entretien, onConfirmerContreProposition, onSupprimer, deleting }) {
+  const decision = entretien.decision_candidat
+  if (decision === 'accepte') {
+    return (
+      <div style={{ background:'#f0fdf4', border:'1px solid #86efac', borderRadius:10, padding:'12px 14px', marginBottom:16 }}>
+        <div style={{ fontWeight:700, color:'#166534', fontSize:13.5 }}>✓ Candidat accepté par le manager</div>
+        <div style={{ fontSize:12, color:'#16a34a', marginTop:2 }}>Entretien du {fmtDateTime(entretien.date_heure_proposee)} · décision le {fmtDateTime(entretien.decision_at)}</div>
+        {entretien.note_entretien && <div style={{ fontSize:12.5, color:'#166534', marginTop:6, fontStyle:'italic' }}>« {entretien.note_entretien} »</div>}
+      </div>
+    )
+  }
+  if (decision === 'refuse') {
+    return (
+      <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:10, padding:'12px 14px', marginBottom:16 }}>
+        <div style={{ fontWeight:700, color:'#b91c1c', fontSize:13.5 }}>✕ Candidat refusé par le manager</div>
+        <div style={{ fontSize:12, color:'#dc2626', marginTop:2 }}>Entretien du {fmtDateTime(entretien.date_heure_proposee)} · décision le {fmtDateTime(entretien.decision_at)}</div>
+        {entretien.note_entretien && <div style={{ fontSize:12.5, color:'#b91c1c', marginTop:6, fontStyle:'italic' }}>« {entretien.note_entretien} »</div>}
+      </div>
+    )
+  }
+  if (entretien.statut === 'contre_proposition_en_attente') {
+    return (
+      <div style={{ background:'#fff7ed', border:'1px solid #fed7aa', borderRadius:10, padding:'12px 14px', marginBottom:16 }}>
+        <div style={{ fontWeight:700, color:'#c2410c', fontSize:13.5 }}>Le manager propose un autre créneau</div>
+        <div style={{ fontSize:13, color:'#9a3412', marginTop:4 }}>{fmtDateTime(entretien.date_heure_contre_proposee)}</div>
+        {entretien.commentaire_manager && <div style={{ fontSize:12.5, color:'#9a3412', marginTop:4, fontStyle:'italic' }}>« {entretien.commentaire_manager} »</div>}
+        <div style={{ display:'flex', gap:8, marginTop:10 }}>
+          <button onClick={onConfirmerContreProposition} style={{ ...CSS.btn, padding:'7px 12px', background:'linear-gradient(135deg,#16a34a,#22c55e)', color:'#fff', fontSize:12.5 }}>Confirmer ce créneau</button>
+          <button onClick={onSupprimer} disabled={deleting} style={{ ...CSS.btn, padding:'7px 12px', background:'#fef2f2', color:'#ef4444', fontSize:12.5 }}>{deleting ? '…' : 'Supprimer la demande'}</button>
+        </div>
+      </div>
+    )
+  }
+  const label = entretien.statut === 'acceptee'
+    ? `Entretien confirmé le ${fmtDateTime(entretien.date_heure_proposee)} — en attente de la décision du manager`
+    : `En attente de réponse du manager · créneau proposé le ${fmtDateTime(entretien.date_heure_proposee)}`
+  return (
+    <div style={{ background:'#f0f9ff', border:'1px solid #bae6fd', borderRadius:10, padding:'12px 14px', marginBottom:16 }}>
+      <div style={{ fontSize:13, color:'#0369a1', fontWeight:600 }}>{label}</div>
+      <button onClick={onSupprimer} disabled={deleting} style={{ ...CSS.btn, padding:'6px 12px', background:'#fef2f2', color:'#ef4444', fontSize:12, marginTop:10 }}>{deleting ? '…' : 'Supprimer la demande'}</button>
+    </div>
+  )
+}
+
+function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDeleted }) {
   const [candidat, setCandidat] = useState(init)
   const [historique, setHistorique] = useState([])
   const [showDocs, setShowDocs] = useState(false)
@@ -385,10 +674,72 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate }) {
   const [showRefuser, setShowRefuser] = useState(false)
   const [showValider, setShowValider] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
+  const [entretiens, setEntretiens] = useState([])
+  const [showPlanifier, setShowPlanifier] = useState(false)
+  const [planifyBlockedMsg, setPlanifyBlockedMsg] = useState('')
+  const [deletingEntretien, setDeletingEntretien] = useState(false)
+  const [showDeleteCandidat, setShowDeleteCandidat] = useState(false)
+  const [deletingCandidat, setDeletingCandidat] = useState(false)
+  const [uploadingCv, setUploadingCv] = useState(false)
+  const [uploadingLettre, setUploadingLettre] = useState(false)
 
   useEffect(() => { apiGetHistorique(candidat.id).then(setHistorique) }, [candidat.id])
+  useEffect(() => { apiGetEntretiensByCandidat(candidat.id).then(setEntretiens) }, [candidat.id])
 
   const push = updated => { setCandidat(updated); onUpdate(updated) }
+  const entretien = entretiens[0] || null // le plus récent (order=created_at.desc)
+
+  const uploadCandidatFile = async (files, field, setUploading) => {
+    const file = files?.[0]
+    if (!file) return
+    setUploading(true)
+    const path = await uploadPieceJointe(file, { prefix: field === 'cv_url' ? 'cv' : 'lettre', bucket: RH_DOCUMENTS_BUCKET })
+    if (path) { await apiUpdateCandidat(candidat.id, { [field]: path }); push({ ...candidat, [field]: path }) }
+    setUploading(false)
+  }
+  const removeCandidatFile = async field => {
+    await apiUpdateCandidat(candidat.id, { [field]: null })
+    push({ ...candidat, [field]: null })
+  }
+
+  const handlePlanifierClick = () => {
+    if (!candidat.cv_url) { setPlanifyBlockedMsg('Ajoute le CV du candidat avant de planifier l’entretien.'); return }
+    setPlanifyBlockedMsg(''); setShowPlanifier(true)
+  }
+
+  const supprimerEntretien = async () => {
+    if (!entretien) return
+    setDeletingEntretien(true)
+    await apiSupprimerEntretien(entretien.id)
+    setEntretiens(await apiGetEntretiensByCandidat(candidat.id))
+    setDeletingEntretien(false)
+  }
+
+  const confirmerContreProposition = async () => {
+    if (!entretien) return
+    await apiConfirmerContreProposition(entretien.id, entretien.date_heure_contre_proposee)
+    if (entretien.manager_id) {
+      const managers = await apiGetManagerByMagasinId(entretien.magasin_id)
+      if (managers?.login) await apiNotifier(managers.login, 'entretien_confirme', entretien.id)
+    }
+    setEntretiens(await apiGetEntretiensByCandidat(candidat.id))
+  }
+
+  const supprimerCandidat = async () => {
+    setDeletingCandidat(true)
+    const estRefuse = candidat.statut === 'refuse' || entretien?.decision_candidat === 'refuse'
+    if (estRefuse) {
+      await apiArchiverCandidat({
+        nom: candidat.nom, prenom: candidat.prenom,
+        slug: slugifyName(candidat.prenom, candidat.nom),
+        motif: entretien?.note_entretien || null,
+        archive_par_login: session.login,
+      })
+    }
+    await apiDeleteCandidat(candidat.id)
+    setDeletingCandidat(false)
+    onDeleted(candidat.id)
+  }
 
   const avancer = async (next, commentaire) => {
     await apiAddHistorique({ candidat_id: candidat.id, statut_precedent: candidat.statut, statut_nouveau: next, commentaire: commentaire || null, auteur: session.login })
@@ -434,19 +785,52 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate }) {
           {candidat.entree_id && <span style={{ fontSize:12, color:'#16a34a', fontWeight:600 }}>✓ Passé en entrée de la semaine</span>}
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:16 }}>
-          {[['Téléphone', candidat.telephone], ['Email', candidat.email || '—'], ['Magasin', candidat.magasin || '—'], ['Poste', candidat.poste_vise || '—']].map(([l, v]) => (
+          {[['Téléphone', candidat.telephone], ['Email', candidat.email || '—'], ['Magasin', candidat.magasin || '—'], ['Poste', candidat.poste_vise || '—'], ['Heures envisagées', candidat.heures_envisagees ? `${candidat.heures_envisagees}h` : '—']].map(([l, v]) => (
             <div key={l} style={{ background:'#f8fafc', borderRadius:8, padding:'8px 12px' }}>
               <div style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:0.5, marginBottom:2 }}>{l}</div>
               <div style={{ fontSize:13.5, color:'#0f172a', fontWeight:500 }}>{v}</div>
             </div>
           ))}
         </div>
-        <div style={{ display:'flex', gap:8, marginBottom:20, flexWrap:'wrap' }}>
+        <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap', alignItems:'center' }}>
           <button onClick={() => setShowDocs(true)} style={{ ...CSS.btn, padding:'7px 14px', background:'#f0f9ff', color:'#0089ba', fontSize:12.5, display:'flex', alignItems:'center', gap:8 }}>
             Documents <StatusBadge statut={candidat.statut_documents} />
           </button>
           {isActif && <button onClick={() => setShowEdit(true)} style={{ ...CSS.btn, padding:'7px 14px', background:'#f8fafc', color:'#475569', fontSize:12.5, border:'1px solid #e2e8f0' }}>Modifier</button>}
         </div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }}>
+          <FileDropSlot
+            label="CV"
+            path={candidat.cv_url}
+            uploading={uploadingCv}
+            onFiles={files => uploadCandidatFile(files, 'cv_url', setUploadingCv)}
+            onRemove={() => removeCandidatFile('cv_url')}
+          />
+          <FileDropSlot
+            label="Lettre de motivation"
+            path={candidat.lettre_motivation_url}
+            uploading={uploadingLettre}
+            onFiles={files => uploadCandidatFile(files, 'lettre_motivation_url', setUploadingLettre)}
+            onRemove={() => removeCandidatFile('lettre_motivation_url')}
+          />
+        </div>
+
+        {entretien ? (
+          <EntretienStatusCard
+            entretien={entretien}
+            deleting={deletingEntretien}
+            onConfirmerContreProposition={confirmerContreProposition}
+            onSupprimer={supprimerEntretien}
+          />
+        ) : isActif && (
+          <div style={{ marginBottom:16 }}>
+            <button onClick={handlePlanifierClick} style={{ ...CSS.btn, padding:'9px 16px', background:'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff', fontSize:13 }}>
+              📅 Planifier un entretien avec le manager
+            </button>
+            {planifyBlockedMsg && <div style={{ color:'#c2410c', fontSize:12.5, marginTop:8, padding:'8px 12px', background:'#fff7ed', borderRadius:8, border:'1px solid #fed7aa' }}>{planifyBlockedMsg}</div>}
+          </div>
+        )}
+
         {historique.length > 0 && (
           <div style={{ marginBottom:20 }}>
             <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>Historique</div>
@@ -474,22 +858,47 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate }) {
             ) : null}
           </div>
         )}
+        <div style={{ paddingTop:12, marginTop:12, borderTop:'1px solid #f1f5f9' }}>
+          <button onClick={() => setShowDeleteCandidat(true)} style={{ ...CSS.btn, padding:'7px 12px', background:'none', color:'#94a3b8', fontSize:12, border:'1px solid #e2e8f0' }}>🗑️ Supprimer ce candidat</button>
+        </div>
       </Modal>
       {showDocs && <FicheDocuments entity={candidat} entityType="candidat" onClose={() => setShowDocs(false)} onStatutChange={(_, s) => { const u = {...candidat, statut_documents: s}; setCandidat(u); onUpdate(u) }} />}
       {showAvancer && <AvancerStatutModal candidat={candidat} onConfirm={avancer} onClose={() => setShowAvancer(false)} />}
       {showRefuser && <RefuserModal candidat={candidat} onConfirm={refuser} onClose={() => setShowRefuser(false)} />}
       {showValider && <ValiderRecrutementModal candidat={candidat} session={session} onConfirm={valider} onClose={() => setShowValider(false)} />}
       {showEdit && <CandidatFormModal initial={candidat} session={session} onClose={() => setShowEdit(false)} onSave={async data => { await apiUpdateCandidat(candidat.id, data); const u={...candidat,...data}; setCandidat(u); onUpdate(u); setShowEdit(false) }} />}
+      {showPlanifier && (
+        <EntretienPlanifierModal
+          candidat={candidat} session={session}
+          onClose={() => setShowPlanifier(false)}
+          onCreated={async () => { setShowPlanifier(false); setEntretiens(await apiGetEntretiensByCandidat(candidat.id)) }}
+        />
+      )}
+      {showDeleteCandidat && (
+        <Modal title="Supprimer le candidat" onClose={() => setShowDeleteCandidat(false)} width={420}>
+          <p style={{ margin:'0 0 20px', color:'#475569', fontSize:14, lineHeight:1.6 }}>
+            Supprimer <strong>{candidat.prenom} {candidat.nom}</strong> ?<br />Action irréversible.
+            {(candidat.statut === 'refuse' || entretien?.decision_candidat === 'refuse') && (
+              <><br /><span style={{ color:'#c2410c' }}>Ce candidat sera archivé (nom, prénom, motif) pour être détecté en cas de nouvelle candidature.</span></>
+            )}
+          </p>
+          <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+            <button onClick={() => setShowDeleteCandidat(false)} style={{ ...CSS.btn, background:'#f1f5f9', color:'#475569' }}>Annuler</button>
+            <button onClick={supprimerCandidat} disabled={deletingCandidat} style={{ ...CSS.btn, background:deletingCandidat?'#94a3b8':'#ef4444', color:'#fff' }}>{deletingCandidat ? '…' : 'Supprimer'}</button>
+          </div>
+        </Modal>
+      )}
     </>
   )
 }
 
-function RecrutementView({ session }) {
+function RecrutementView({ session, regionFilter }) {
   const [candidats, setCandidats] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [fiche, setFiche] = useState(null)
   const [showRefuses, setShowRefuses] = useState(false)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     apiGetCandidats().then(rows => { setCandidats(rows); setLoading(false) })
@@ -505,15 +914,23 @@ function RecrutementView({ session }) {
   }
 
   const handleUpdate = updated => setCandidats(prev => prev.map(c => c.id === updated.id ? updated : c))
+  const handleDeleted = id => { setCandidats(prev => prev.filter(c => c.id !== id)); setFiche(null) }
 
-  const actifs = candidats.filter(c => !['valide','refuse'].includes(c.statut))
-  const refuses = candidats.filter(c => c.statut === 'refuse')
-  const valides = candidats.filter(c => c.statut === 'valide')
-  const enAttente = candidats.filter(c => c.statut === 'entretien_manager').length
+  const searchNorm = stripAccents(search.trim()).toLowerCase()
+  const visibles = candidats.filter(c => {
+    if (regionFilter && regionFilter !== 'tous' && magasinRegionId(c.magasin) !== regionFilter) return false
+    if (searchNorm && !stripAccents(`${c.prenom} ${c.nom}`).toLowerCase().includes(searchNorm)) return false
+    return true
+  })
+
+  const actifs = visibles.filter(c => !['valide','refuse'].includes(c.statut))
+  const refuses = visibles.filter(c => c.statut === 'refuse')
+  const valides = visibles.filter(c => c.statut === 'valide')
+  const enAttente = visibles.filter(c => c.statut === 'entretien_manager').length
 
   return (
     <div>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20, flexWrap:'wrap', gap:12 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14, flexWrap:'wrap', gap:12 }}>
         <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
           <div style={{ background:'#fff', border:'1.5px solid #e2e8f0', borderRadius:10, padding:'10px 16px', textAlign:'center' }}>
             <div style={{ fontSize:22, fontWeight:800, color:'#0f172a' }}>{actifs.length}</div>
@@ -533,13 +950,27 @@ function RecrutementView({ session }) {
         </button>
       </div>
 
+      <div style={{ position:'relative', marginBottom:20, maxWidth:340 }}>
+        <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', fontSize:14 }}>🔍</span>
+        <input
+          style={{ ...CSS.input, paddingLeft:34 }}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Rechercher un candidat (nom, prénom)…"
+        />
+      </div>
+
       {loading ? <div style={{ textAlign:'center', padding:'48px 0', color:'#94a3b8' }}>Chargement…</div> : (
         <>
           {actifs.length === 0 && !refuses.length && (
             <div style={{ textAlign:'center', padding:'56px 24px', background:'#fff', borderRadius:14, border:'1.5px solid #e2e8f0' }}>
               <div style={{ fontSize:36, marginBottom:12 }}>👥</div>
-              <div style={{ fontSize:15, fontWeight:600, color:'#64748b', marginBottom:6 }}>Aucun candidat en cours</div>
-              <div style={{ fontSize:13, color:'#94a3b8' }}>Ajoutez un premier candidat pour démarrer le pipeline.</div>
+              <div style={{ fontSize:15, fontWeight:600, color:'#64748b', marginBottom:6 }}>
+                {candidats.length === 0 ? 'Aucun candidat en cours' : 'Aucun candidat ne correspond au filtre'}
+              </div>
+              <div style={{ fontSize:13, color:'#94a3b8' }}>
+                {candidats.length === 0 ? 'Ajoutez un premier candidat pour démarrer le pipeline.' : 'Essayez une autre région ou un autre nom.'}
+              </div>
             </div>
           )}
           {PIPELINE.map(statut => {
@@ -591,7 +1022,7 @@ function RecrutementView({ session }) {
         </>
       )}
       {showAdd && <CandidatFormModal session={session} onSave={handleAdd} onClose={() => setShowAdd(false)} />}
-      {fiche && <FicheCandidatModal candidat={fiche} session={session} onClose={() => setFiche(null)} onUpdate={u => { handleUpdate(u); setFiche(u) }} />}
+      {fiche && <FicheCandidatModal candidat={fiche} session={session} onClose={() => setFiche(null)} onUpdate={u => { handleUpdate(u); setFiche(u) }} onDeleted={handleDeleted} />}
     </div>
   )
 }
@@ -683,7 +1114,7 @@ function EntreeForm({ initial, semaineLundi, session, onSave, onClose }) {
   )
 }
 
-function EntreesView({ session }) {
+function EntreesView({ session, regionFilter }) {
   const [activeWeek, setActiveWeek] = useState('current')
   const [entrees, setEntrees] = useState([])
   const [loading, setLoading] = useState(true)
@@ -723,7 +1154,12 @@ function EntreesView({ session }) {
     { id:'current', label:`Semaine ${getISOWeek(s0)}`, sub:weekDateRange(s0) },
     { id:'next',    label:`Semaine ${getISOWeek(s1)}`, sub:weekDateRange(s1) },
   ]
-  const complet = entrees.filter(e => e.statut_documents==='complet').length
+  // Filtre région purement d'affichage — `entrees` (données brutes, non
+  // filtrées) reste la source utilisée par `sync` pour trainer_state.
+  const visibleEntrees = (!regionFilter || regionFilter === 'tous')
+    ? entrees
+    : entrees.filter(e => magasinRegionId(e.magasin) === regionFilter)
+  const complet = visibleEntrees.filter(e => e.statut_documents==='complet').length
 
   return (
     <div>
@@ -738,17 +1174,17 @@ function EntreesView({ session }) {
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14, flexWrap:'wrap', gap:10 }}>
         <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
           <div style={{ background:'#fff', border:'1.5px solid #e2e8f0', borderRadius:10, padding:'10px 16px', textAlign:'center' }}>
-            <div style={{ fontSize:22, fontWeight:800, color:'#0f172a' }}>{entrees.length}</div>
-            <div style={{ fontSize:11, color:'#64748b', fontWeight:600 }}>entrant{entrees.length>1?'s':''}</div>
+            <div style={{ fontSize:22, fontWeight:800, color:'#0f172a' }}>{visibleEntrees.length}</div>
+            <div style={{ fontSize:11, color:'#64748b', fontWeight:600 }}>entrant{visibleEntrees.length>1?'s':''}</div>
           </div>
-          {entrees.length > 0 && <>
+          {visibleEntrees.length > 0 && <>
             <div style={{ background:'#dcfce7', border:'1.5px solid #86efac', borderRadius:10, padding:'10px 16px', textAlign:'center' }}>
               <div style={{ fontSize:22, fontWeight:800, color:'#15803d' }}>{complet}</div>
               <div style={{ fontSize:11, color:'#16a34a', fontWeight:600 }}>complet{complet>1?'s':''}</div>
             </div>
             <div style={{ background:'#fff7ed', border:'1.5px solid #fed7aa', borderRadius:10, padding:'10px 16px', textAlign:'center' }}>
-              <div style={{ fontSize:22, fontWeight:800, color:'#c2410c' }}>{entrees.length-complet}</div>
-              <div style={{ fontSize:11, color:'#ea580c', fontWeight:600 }}>incomplet{entrees.length-complet>1?'s':''}</div>
+              <div style={{ fontSize:22, fontWeight:800, color:'#c2410c' }}>{visibleEntrees.length-complet}</div>
+              <div style={{ fontSize:11, color:'#ea580c', fontWeight:600 }}>incomplet{visibleEntrees.length-complet>1?'s':''}</div>
             </div>
           </>}
         </div>
@@ -758,10 +1194,10 @@ function EntreesView({ session }) {
       </div>
       <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #e2e8f0', overflow:'hidden' }}>
         {loading ? <div style={{ textAlign:'center', padding:'48px 0', color:'#94a3b8' }}>Chargement…</div> :
-         !entrees.length ? (
+         !visibleEntrees.length ? (
           <div style={{ textAlign:'center', padding:'56px 24px', color:'#94a3b8' }}>
             <div style={{ fontSize:36, marginBottom:12 }}>📋</div>
-            <div style={{ fontSize:15, fontWeight:600, color:'#64748b', marginBottom:6 }}>Aucun entrant cette semaine</div>
+            <div style={{ fontSize:15, fontWeight:600, color:'#64748b', marginBottom:6 }}>{entrees.length === 0 ? 'Aucun entrant cette semaine' : 'Aucun entrant dans cette région'}</div>
           </div>
          ) : (
           <div style={{ overflowX:'auto' }}>
@@ -774,7 +1210,7 @@ function EntreesView({ session }) {
                 </tr>
               </thead>
               <tbody>
-                {entrees.map((e, i) => (
+                {visibleEntrees.map((e, i) => (
                   <tr key={e.id} onClick={() => setShowFiche(e)} style={{ borderBottom:'1px solid #f1f5f9', background:i%2===0?'#fff':'#fafbfc', cursor:'pointer' }}>
                     <td style={{ padding:'12px 14px', fontWeight:700, color:'#0f172a', whiteSpace:'nowrap' }}>{e.prenom} {e.nom}</td>
                     <td style={{ padding:'12px 14px', color:'#475569' }}>{e.magasin}</td>
@@ -811,6 +1247,7 @@ function EntreesView({ session }) {
 function RhDashboard({ session, onLogout }) {
   const [activeTab, setActiveTab] = useState('recrutement')
   const [counts, setCounts] = useState({ recrutement: null, entrees: null })
+  const [regionFilter, setRegionFilter] = useState('tous')
 
   useEffect(() => {
     const s0 = getMondayStr(0)
@@ -852,8 +1289,27 @@ function RhDashboard({ session, onLogout }) {
         </div>
       </div>
 
-      <div style={{ maxWidth:1100, margin:'0 auto', padding:'24px 20px' }}>
-        {activeTab === 'recrutement' ? <RecrutementView session={session} /> : <EntreesView session={session} />}
+      <div style={{ maxWidth:1100, margin:'0 auto', padding:'16px 20px 0', display:'flex', gap:8, flexWrap:'wrap' }}>
+        {REGION_FILTERS.map(r => (
+          <button
+            key={r.id}
+            onClick={() => setRegionFilter(r.id)}
+            style={{
+              ...CSS.btn, padding:'7px 14px', fontSize:12.5, display:'flex', alignItems:'center', gap:6,
+              background: regionFilter === r.id ? (r.color ? r.bg : '#eaf3fd') : '#fff',
+              color: regionFilter === r.id ? (r.color || '#0089ba') : '#64748b',
+              border: `1.5px solid ${regionFilter === r.id ? (r.border || '#00abe9') : '#e2e8f0'}`,
+            }}
+          >
+            <span>{r.emoji}</span>{r.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ maxWidth:1100, margin:'0 auto', padding:'20px 20px 24px' }}>
+        {activeTab === 'recrutement'
+          ? <RecrutementView session={session} regionFilter={regionFilter} />
+          : <EntreesView session={session} regionFilter={regionFilter} />}
       </div>
     </div>
   )

@@ -1,18 +1,19 @@
 'use client'
 import Image from 'next/image'
-import { IconHome, IconUsers, IconSend, IconBarChart, IconHelpCircle, IconChevronRight } from './ManagerIcons'
+import { IconHome, IconUsers, IconSend, IconBarChart, IconHelpCircle, IconChevronRight, IconUserPlus } from './ManagerIcons'
 
 const NAV_ITEMS = [
   { id: 'accueil', label: 'Accueil', Icon: IconHome },
   { id: 'equipe', label: 'Mon équipe', Icon: IconUsers },
   { id: 'demandes', label: 'Demandes', Icon: IconSend },
+  { id: 'recrutement', label: 'Recrutement', Icon: IconUserPlus },
   { id: 'reporting', label: 'Reporting', Icon: IconBarChart },
 ]
 
 // Navigation latérale du dashboard manager — remplace le long scroll unique
-// par de vrais écrans séparés (Accueil / Mon équipe / Demandes / Reporting),
-// à l'image d'un vrai produit SaaS plutôt que d'une simple page magasin.
-export default function ManagerSidebar({ active, onNavigate, demandesCount, firstName, storeLabel, onLogout }) {
+// par de vrais écrans séparés (Accueil / Mon équipe / Demandes / Recrutement /
+// Reporting), à l'image d'un vrai produit SaaS plutôt que d'une simple page magasin.
+export default function ManagerSidebar({ active, onNavigate, demandesCount, recrutementCount, firstName, storeLabel, onLogout }) {
   return (
     <div style={{
       width: 232, flexShrink: 0, minHeight: '100vh', background: '#fff',
@@ -48,6 +49,12 @@ export default function ManagerSidebar({ active, onNavigate, demandesCount, firs
                   background: '#fee2e2', color: '#dc2626', fontSize: 10.5, fontWeight: 800,
                   borderRadius: 20, padding: '1px 7px', minWidth: 16, textAlign: 'center',
                 }}>{demandesCount}</span>
+              )}
+              {id === 'recrutement' && recrutementCount > 0 && (
+                <span style={{
+                  background: '#fee2e2', color: '#dc2626', fontSize: 10.5, fontWeight: 800,
+                  borderRadius: 20, padding: '1px 7px', minWidth: 16, textAlign: 'center',
+                }}>{recrutementCount}</span>
               )}
             </button>
           )
