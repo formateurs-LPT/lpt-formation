@@ -71,6 +71,10 @@ export default function Login({ onTrainerLogin, onParticipantJoin }) {
                 <span style={{ fontSize: 22 }}>🧭</span>
                 <div>Direction<span className="sub">Directeur retail ou régional</span></div>
               </Link>
+              <Link href="/rh" className="rbtn" style={{ textDecoration: 'none' }}>
+                <span style={{ fontSize: 22 }}>👥</span>
+                <div>Ressources humaines<span className="sub">Gestion des nouveaux entrants</span></div>
+              </Link>
             </>
           )}
 
