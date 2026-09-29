@@ -38,6 +38,41 @@ export async function validerNouvelEntrant(collaborateurId) {
   return sbUpdate('collaborateurs', { statut: 'actif', manager_a_valide: true }, `id=eq.${collaborateurId}`)
 }
 
+function stripAccents(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
+function slugifyName(prenom, nom) {
+  return stripAccents(`${prenom} ${nom}`).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+}
+
+/** Relie un nom saisi dans l'ancien système (entrees_data, "NOM Prenom") au
+ * collaborateur correspondant du nouveau schéma relationnel, pour brancher
+ * le flux test de sortie sur la tuile "Nouveaux collaborateurs" (qui ne vient
+ * pas de la table collaborateurs). Tolérant casse/accents ; pas de lien
+ * garanti si le collaborateur n'a pas encore été migré dans la table. */
+export async function findCollaborateurByName(magasinId, prenom, nom) {
+  if (!magasinId || !prenom || !nom) return null
+  const slug = slugifyName(prenom, nom)
+  const rows = await sbSelect('collaborateurs', `magasin_id=eq.${magasinId}&slug=eq.${encodeURIComponent(slug)}`)
+  return rows?.[0] || null
+}
+
+/** Comme findCollaborateurByName, mais crée la fiche (statut 'nouveau') si
+ * elle n'existe pas encore — pour que le bouton "Lancer le test de sortie"
+ * soit toujours disponible sur la tuile "Nouveaux collaborateurs", même
+ * avant que quelqu'un n'ait migré la personne dans la table collaborateurs. */
+export async function getOrCreateCollaborateurForEntree(magasinId, prenom, nom, poste) {
+  const existing = await findCollaborateurByName(magasinId, prenom, nom)
+  if (existing) return existing
+  const slug = slugifyName(prenom, nom)
+  const ok = await sbInsert('collaborateurs', {
+    magasin_id: magasinId, slug, prenom, nom, poste: poste || null, statut: 'nouveau',
+  })
+  if (!ok) return null
+  const rows = await sbSelect('collaborateurs', `magasin_id=eq.${magasinId}&slug=eq.${encodeURIComponent(slug)}`)
+  return rows?.[0] || null
+}
+
 // ── Résultats des tests (page formateur Kevin/Quentin) ──────────────────
 
 /** Bornes de dates pour chaque préréglage de période. */

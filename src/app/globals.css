@@ -330,7 +330,71 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   --green-l: rgba(34,197,94,0.12);
   --red-l: rgba(239,68,68,0.12);
   --orange-l: rgba(245,158,11,0.12);
+  /* Valeurs par défaut (sombres) des éléments partagés formateur/manager
+     (StoreHeader, BackBtn, ItemRow, CollaborateurFiche) — reprennent
+     exactement les couleurs historiques pour ne rien changer côté
+     formateur/direction. Le dashboard manager les surcharge ci-dessous. */
+  --dh-text: #e8edf3;
+  --dh-subtitle: #6b8099;
+  --dh-text-soft: rgba(255,255,255,0.45);
+  --dh-text-faint: rgba(255,255,255,0.35);
+  --dh-stat-bg: linear-gradient(145deg, #0f1923 0%, #162030 55%, #0d2438 100%);
+  --dh-stat-border: rgba(255,255,255,0.07);
+  --dh-icon-bg: rgba(0,171,233,0.15);
+  --dh-photo-border: rgba(255,255,255,0.12);
+  --dh-btn-bg: rgba(255,255,255,0.07);
+  --dh-btn-border: rgba(255,255,255,0.15);
+  --dh-btn-text: rgba(255,255,255,0.7);
+  --dh-row-bg: rgba(255,255,255,0.03);
+  --dh-row-border: rgba(255,255,255,0.08);
+  --dh-text-note: rgba(255,255,255,0.5);
+  --dh-badge-bg: rgba(255,255,255,0.05);
+  --pill-bg: rgba(255,255,255,0.06);
+  --pill-border: rgba(255,255,255,0.15);
+  --pill-text: rgba(255,255,255,0.6);
 }
+
+/* ── MANAGER — thème clair, DA alignée sur SUPER10 Academy (interface
+   e-learning de l'équipe com) : fond gris très clair, cartes blanches,
+   accent bleu, textes sombres. Scoping via classe dédiée pour ne pas
+   toucher au dashboard formateur/direction (qui restent en sombre). ── */
+#dashboard.manager-light-theme {
+  background: #f5f6f8;
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --text: #14161a;
+  --text-s: #6b7280;
+  --text-m: #9aa1ac;
+  --lpt-l: rgba(0,137,186,0.10);
+  --lpt-ll: rgba(0,137,186,0.06);
+  --green-l: #dcfce7;
+  --red-l: #fee2e2;
+  --orange-l: #fef3c7;
+  --dh-text: #14161a;
+  --dh-subtitle: #6b7280;
+  --dh-text-soft: #6b7280;
+  --dh-text-faint: #9aa1ac;
+  --dh-stat-bg: #ffffff;
+  --dh-stat-border: #e5e7eb;
+  --dh-icon-bg: #f0f1f3;
+  --dh-photo-border: #e5e7eb;
+  --dh-btn-bg: #ffffff;
+  --dh-btn-border: #e5e7eb;
+  --dh-btn-text: #374151;
+  --dh-row-bg: #ffffff;
+  --dh-row-border: #e5e7eb;
+  --dh-text-note: #6b7280;
+  --dh-badge-bg: #f3f4f6;
+  --pill-bg: #f3f4f6;
+  --pill-border: #e5e7eb;
+  --pill-text: #4b5563;
+}
+#dashboard.manager-light-theme .finput{background:#fff;color:#14161a;border-color:#e5e7eb}
+#dashboard.manager-light-theme .finput::placeholder{color:#9aa1ac}
+#dashboard.manager-light-theme .finput:focus{border-color:#0089ba;background:#fff}
+#dashboard.manager-light-theme .btn2{background:#fff;color:#14161a;border-color:#e5e7eb}
+#dashboard.manager-light-theme .btn2:hover{background:#f5f6f8;border-color:#c7cbd1}
 
 /* ── IMPRESSION — n'imprime que le compte rendu (.print-report-area), pas le
    reste de la page qui reste dans le DOM derrière la modale ── */

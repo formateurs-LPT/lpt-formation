@@ -9,6 +9,7 @@ import { sbSelect } from '@/lib/supabase'
 import { TRAINING_THEMES } from '@/lib/trainingSlots'
 import OrdonnanceExercise from './OrdonnanceExercise'
 import CollaborateurNotesSection from './CollaborateurNotesSection'
+import { RegistrationModal } from './TrainingRegistrationTile'
 
 function trainingThemeLabel(id) {
   return TRAINING_THEMES.find(t => t.id === id)?.label || id
@@ -22,27 +23,130 @@ function trainingThemeLabel(id) {
 
 // Couleurs alignées sur le logiciel de planning (CVO vert, MO rouge, SAV
 // jaune/orange) — adaptées en tons pastel/sourds pour rester lisibles sur
-// fond sombre. La section MO/SAV n'étant pas scindée dans notre roster,
-// elle reprend un dégradé rouge → orange (MO + SAV).
+// fond sombre. Une entrée par sectionId utilisé dans storeFollowupData.js
+// (tous magasins confondus, y compris le lot 1) pour que le code couleur
+// soit homogène partout — plus aucune section ne doit retomber sur le vert
+// CVO par défaut faute d'entrée dédiée.
+// `text` = couleur solide utilisable comme `color` CSS (titres, libellés) —
+// distincte de `bar`, qui peut être un dégradé (valide en `background`, pas
+// en `color` : un texte avec `color: linear-gradient(...)` ne s'affiche pas,
+// il retombe sur le noir par défaut, invisible sur fond sombre).
 export const SECTION_COLORS = {
   cvo: {
     bar: '#6fcf8e',
+    text: '#6fcf8e',
     bg: 'rgba(111,207,142,0.07)',
     border: 'rgba(111,207,142,0.28)',
     hoverBorder: 'rgba(111,207,142,0.55)',
   },
   'mo-sav': {
     bar: 'linear-gradient(180deg, #e8756b, #f0a758)',
+    text: '#f87171',
     bg: 'linear-gradient(135deg, rgba(232,117,107,0.08), rgba(240,167,88,0.08))',
     border: 'rgba(232,117,107,0.28)',
     hoverBorder: 'rgba(240,167,88,0.55)',
   },
+  mo: {
+    bar: '#e8756b',
+    text: '#e8756b',
+    bg: 'rgba(232,117,107,0.07)',
+    border: 'rgba(232,117,107,0.28)',
+    hoverBorder: 'rgba(232,117,107,0.55)',
+  },
+  sav: {
+    bar: '#f0a758',
+    text: '#f0a758',
+    bg: 'rgba(240,167,88,0.07)',
+    border: 'rgba(240,167,88,0.28)',
+    hoverBorder: 'rgba(240,167,88,0.55)',
+  },
+  opto: {
+    bar: '#00abe9',
+    text: '#00abe9',
+    bg: 'rgba(0,171,233,0.07)',
+    border: 'rgba(0,171,233,0.28)',
+    hoverBorder: 'rgba(0,171,233,0.55)',
+  },
+  // Référence unique pour "Apprentis" — reprise à l'identique par
+  // CollaborateurCard pour les alternants marqués `c.alternant` (Bayonne)
+  // et par les sections `apprenti-alternant` (lot 1), pour un rendu homogène.
+  'apprenti-alternant': {
+    bar: '#a78bfa',
+    text: '#a78bfa',
+    bg: 'rgba(167,139,250,0.07)',
+    border: 'rgba(167,139,250,0.28)',
+    hoverBorder: 'rgba(167,139,250,0.55)',
+  },
+  manager: {
+    bar: '#fbbf24',
+    text: '#fbbf24',
+    bg: 'rgba(251,191,36,0.07)',
+    border: 'rgba(251,191,36,0.28)',
+    hoverBorder: 'rgba(251,191,36,0.55)',
+  },
+  referent: {
+    bar: '#22d3ee',
+    text: '#22d3ee',
+    bg: 'rgba(34,211,238,0.07)',
+    border: 'rgba(34,211,238,0.28)',
+    hoverBorder: 'rgba(34,211,238,0.55)',
+  },
+  'monteur-prog': {
+    bar: '#f59e0b',
+    text: '#f59e0b',
+    bg: 'rgba(245,158,11,0.07)',
+    border: 'rgba(245,158,11,0.28)',
+    hoverBorder: 'rgba(245,158,11,0.55)',
+  },
+  'operateur-prog': {
+    bar: '#14b8a6',
+    text: '#14b8a6',
+    bg: 'rgba(20,184,166,0.07)',
+    border: 'rgba(20,184,166,0.28)',
+    hoverBorder: 'rgba(20,184,166,0.55)',
+  },
+  autre: {
+    bar: '#94a3b8',
+    text: '#94a3b8',
+    bg: 'rgba(148,163,184,0.07)',
+    border: 'rgba(148,163,184,0.28)',
+    hoverBorder: 'rgba(148,163,184,0.55)',
+  },
+  'non-renseigne': {
+    bar: '#64748b',
+    text: '#64748b',
+    bg: 'rgba(100,116,139,0.06)',
+    border: 'rgba(100,116,139,0.22)',
+    hoverBorder: 'rgba(100,116,139,0.4)',
+  },
   labo: {
     bar: '#a78bfa',
+    text: '#a78bfa',
     bg: 'rgba(167,139,250,0.08)',
     border: 'rgba(167,139,250,0.28)',
     hoverBorder: 'rgba(167,139,250,0.55)',
   },
+}
+
+// Même code couleur par métier que SECTION_COLORS, mais recalibré pour un
+// fond clair (dashboard manager, DA alignée sur SUPER10 Academy) : textes
+// plus saturés/foncés pour rester lisibles sur blanc, `solid` ajouté pour
+// les avatars ronds (texte blanc dessus, donc besoin d'un aplat franc plutôt
+// que d'une teinte pastel).
+export const SECTION_COLORS_LIGHT = {
+  cvo: { text: '#16a34a', solid: '#22c55e', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.25)', hoverBorder: 'rgba(34,197,94,0.5)' },
+  'mo-sav': { text: '#dc2626', solid: '#ef4444', bg: 'rgba(239,68,68,0.07)', border: 'rgba(239,68,68,0.22)', hoverBorder: 'rgba(239,68,68,0.45)' },
+  mo: { text: '#dc2626', solid: '#ef4444', bg: 'rgba(239,68,68,0.07)', border: 'rgba(239,68,68,0.22)', hoverBorder: 'rgba(239,68,68,0.45)' },
+  sav: { text: '#d97706', solid: '#f59e0b', bg: 'rgba(217,119,6,0.08)', border: 'rgba(217,119,6,0.25)', hoverBorder: 'rgba(217,119,6,0.5)' },
+  opto: { text: '#0284c7', solid: '#0ea5e9', bg: 'rgba(2,132,199,0.08)', border: 'rgba(2,132,199,0.25)', hoverBorder: 'rgba(2,132,199,0.5)' },
+  'apprenti-alternant': { text: '#7c3aed', solid: '#8b5cf6', bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.25)', hoverBorder: 'rgba(124,58,237,0.5)' },
+  manager: { text: '#b45309', solid: '#f59e0b', bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.3)', hoverBorder: 'rgba(251,191,36,0.55)' },
+  referent: { text: '#0891b2', solid: '#22d3ee', bg: 'rgba(34,211,238,0.08)', border: 'rgba(34,211,238,0.25)', hoverBorder: 'rgba(34,211,238,0.5)' },
+  'monteur-prog': { text: '#b45309', solid: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)', hoverBorder: 'rgba(245,158,11,0.5)' },
+  'operateur-prog': { text: '#0d9488', solid: '#14b8a6', bg: 'rgba(20,184,166,0.08)', border: 'rgba(20,184,166,0.25)', hoverBorder: 'rgba(20,184,166,0.5)' },
+  autre: { text: '#64748b', solid: '#94a3b8', bg: 'rgba(100,116,139,0.08)', border: 'rgba(100,116,139,0.22)', hoverBorder: 'rgba(100,116,139,0.4)' },
+  'non-renseigne': { text: '#64748b', solid: '#94a3b8', bg: 'rgba(100,116,139,0.06)', border: 'rgba(100,116,139,0.18)', hoverBorder: 'rgba(100,116,139,0.35)' },
+  labo: { text: '#7c3aed', solid: '#8b5cf6', bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.25)', hoverBorder: 'rgba(124,58,237,0.5)' },
 }
 
 // Moyenne des notes (/5) sur tous les items d'une section, notes manquantes
@@ -69,7 +173,10 @@ function initials(c) {
 // (/manager) pour garantir la même charte visuelle. `subtitle` et `right`
 // permettent à chaque page d'injecter son propre contenu (salutation,
 // bouton déconnexion, consigne...) sans dupliquer la structure commune.
-export function StoreHeader({ store, progress, subtitle, right }) {
+// `hero` (utilisé uniquement par le dashboard manager) remplace la petite
+// vignette par une bannière pleine largeur avec la photo en fond — le
+// formateur/direction gardent le format compact d'origine par défaut.
+export function StoreHeader({ store, progress, subtitle, right, hero = false }) {
   const allCollaborateurs = store.sections.flatMap(s => s.collaborateurs)
   const totalHeadcount = allCollaborateurs.length
 
@@ -86,43 +193,67 @@ export function StoreHeader({ store, progress, subtitle, right }) {
 
   return (
     <div style={{ marginBottom: 28 }}>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-          {store.photo && (
-            <div style={{
-              flexShrink: 0, width: 56, height: 56, borderRadius: 14, overflow: 'hidden',
-              border: '1.5px solid rgba(255,255,255,0.12)',
-            }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={store.photo} alt={`Magasin ${store.label}`} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', display: 'block' }} />
-            </div>
-          )}
-          <div>
-            <h2 style={{ margin: 0, fontSize: 21, fontWeight: 700, color: '#e8edf3', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>🏬</span> {store.label}
+      {hero && store.photo ? (
+        <div style={{
+          position: 'relative', height: 208, borderRadius: 20, overflow: 'hidden',
+          marginBottom: 20, boxShadow: '0 10px 30px rgba(16,24,40,0.14)',
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={store.photo} alt={`Magasin ${store.label}`}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 35%', display: 'block' }}
+          />
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to top, rgba(10,14,20,0.93) 0%, rgba(10,14,20,0.5) 48%, rgba(10,14,20,0.05) 100%)',
+          }} />
+          {right && <div style={{ position: 'absolute', top: 18, right: 18 }}>{right}</div>}
+          <div style={{ position: 'absolute', left: 26, right: 26, bottom: 20 }}>
+            <h2 style={{ margin: 0, fontSize: 27, fontWeight: 800, color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.25)' }}>
+              {store.label}
             </h2>
-            {subtitle && <p style={{ margin: '3px 0 0', fontSize: 13, color: '#6b8099' }}>{subtitle}</p>}
+            {subtitle && <p style={{ margin: '5px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>{subtitle}</p>}
           </div>
         </div>
-        {right}
-      </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+            {store.photo && (
+              <div style={{
+                flexShrink: 0, width: 56, height: 56, borderRadius: 14, overflow: 'hidden',
+                border: '1.5px solid var(--dh-photo-border)',
+              }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={store.photo} alt={`Magasin ${store.label}`} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', display: 'block' }} />
+              </div>
+            )}
+            <div>
+              <h2 style={{ margin: 0, fontSize: 21, fontWeight: 700, color: 'var(--dh-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>🏬</span> {store.label}
+              </h2>
+              {subtitle && <p style={{ margin: '3px 0 0', fontSize: 13, color: 'var(--dh-subtitle)' }}>{subtitle}</p>}
+            </div>
+          </div>
+          {right}
+        </div>
+      )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         {stats.map(s => (
           <div key={s.label} style={{
             flex: '1 1 180px', minWidth: 160,
-            background: 'linear-gradient(145deg, #0f1923 0%, #162030 55%, #0d2438 100%)',
-            border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '14px 16px',
+            background: 'var(--dh-stat-bg)',
+            border: '1px solid var(--dh-stat-border)', borderRadius: 14, padding: '14px 16px',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <div style={{
-                width: 30, height: 30, borderRadius: 9, background: 'rgba(0,171,233,0.15)',
+                width: 30, height: 30, borderRadius: 9, background: 'var(--dh-icon-bg)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0,
               }}>{s.icon}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', lineHeight: 1.3 }}>{s.label}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--dh-text-soft)', lineHeight: 1.3 }}>{s.label}</div>
             </div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 3 }}>{s.sub}</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--dh-text)', lineHeight: 1 }}>{s.value}</div>
+            <div style={{ fontSize: 11, color: 'var(--dh-text-faint)', marginTop: 3 }}>{s.sub}</div>
           </div>
         ))}
       </div>
@@ -133,8 +264,8 @@ export function StoreHeader({ store, progress, subtitle, right }) {
 export function BackBtn({ onClick, children }) {
   return (
     <button onClick={onClick} style={{
-      background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-      color: 'rgba(255,255,255,0.7)', padding: '8px 16px', borderRadius: 10,
+      background: 'var(--dh-btn-bg)', border: '1px solid var(--dh-btn-border)',
+      color: 'var(--dh-btn-text)', padding: '8px 16px', borderRadius: 10,
       fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 20,
     }}>{children}</button>
   )
@@ -168,8 +299,9 @@ export function TeamAgeBadge({ sectionId, collaborateurs }) {
 function CollaborateurCard({ c, sectionId, colors, progress, onSelectCollaborateur, completed }) {
   const pct = pctFor(progress, c.id, sectionId)
   const alt = c.alternant
-  const border = alt ? 'rgba(167,139,250,0.4)' : colors.border
-  const hoverBorder = alt ? '#a78bfa' : colors.hoverBorder
+  const apprentiColors = SECTION_COLORS['apprenti-alternant']
+  const border = alt ? apprentiColors.border : colors.border
+  const hoverBorder = alt ? apprentiColors.hoverBorder : colors.hoverBorder
   return (
     <button
       onClick={() => onSelectCollaborateur(sectionId, c.id)}
@@ -184,7 +316,7 @@ function CollaborateurCard({ c, sectionId, colors, progress, onSelectCollaborate
     >
       <div style={{
         flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
-        background: alt ? 'rgba(167,139,250,0.14)' : 'rgba(255,255,255,0.06)',
+        background: alt ? apprentiColors.bg : 'rgba(255,255,255,0.06)',
         border: `1.5px solid ${hoverBorder}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 13, fontWeight: 800, color: '#fff',
@@ -204,7 +336,7 @@ function CollaborateurCard({ c, sectionId, colors, progress, onSelectCollaborate
           </div>
         )}
         <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${pct}%`, background: alt ? '#a78bfa' : colors.bar, transition: 'width .3s' }} />
+          <div style={{ height: '100%', width: `${pct}%`, background: alt ? apprentiColors.bar : colors.bar, transition: 'width .3s' }} />
         </div>
       </div>
 
@@ -284,7 +416,7 @@ export function SectionsList({ store, progress, onSelectCollaborateur }) {
 
       {apprentis.length > 0 && (
         <div style={{ marginBottom: 32 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 800, color: '#c4b5fd', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 800, color: SECTION_COLORS['apprenti-alternant'].text, margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
             Apprentis
           </h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
@@ -300,6 +432,304 @@ export function SectionsList({ store, progress, onSelectCollaborateur }) {
         </div>
       )}
     </>
+  )
+}
+
+// Regroupement "Apprentis à part" (alternant) partagé entre SectionsList
+// (formateur), ManagerTeamView et la page d'accueil manager (aperçu +
+// répartition par équipe) — un seul endroit qui décide qui va dans quel
+// groupe, pour que les effectifs affichés ne puissent jamais diverger.
+export function computeTeamGroups(store) {
+  const apprentis = store.sections.flatMap(section =>
+    (section.collaborateurs || [])
+      .filter(c => c.alternant)
+      .map(c => ({ ...c, __sectionId: section.id }))
+  )
+
+  const groups = []
+  for (const section of store.sections) {
+    const collaborateurs = (section.collaborateurs || []).filter(c => !c.alternant)
+    if (!collaborateurs.length) continue
+    groups.push({ id: section.id, label: section.label, collaborateurs: collaborateurs.map(c => ({ ...c, __sectionId: section.id })) })
+  }
+  if (apprentis.length) groups.push({ id: 'apprentis', label: 'Apprentis', collaborateurs: apprentis })
+  return groups
+}
+
+// ── Vue manager simplifiée : tuiles par équipe → liste de prénoms ──────
+// Contrairement à SectionsList (formateur), pas de taux de maîtrise, pas de
+// badge formation complémentaire sur cette vue — juste de quoi identifier
+// rapidement qui est dans quelle équipe et ouvrir sa fiche. Même
+// regroupement "Apprentis à part" (alternant) que SectionsList, pour rester
+// cohérent visuellement avec la vue formateur.
+export function ManagerTeamView({ store, onSelectCollaborateur }) {
+  const [activeGroup, setActiveGroup] = useState(null)
+  const groups = computeTeamGroups(store)
+
+  if (!groups.length) {
+    return <p style={{ color: '#9aa1ac', fontSize: 13, fontStyle: 'italic' }}>Aucun collaborateur pour ce magasin.</p>
+  }
+
+  // Palette volontairement en retrait : un métier se reconnaît à un simple
+  // point de couleur (comme un tag), jamais à toute une carte teintée — sur
+  // fond clair, une carte pleinement colorée par section "flashe" et nuit au
+  // rendu sobre/pro recherché pour ce dashboard.
+  if (activeGroup) {
+    const colors = SECTION_COLORS_LIGHT[activeGroup.id] || SECTION_COLORS_LIGHT['apprenti-alternant']
+    return (
+      <div>
+        <BackBtn onClick={() => setActiveGroup(null)}>← Équipes</BackBtn>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '14px 0' }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: colors.solid, flexShrink: 0 }} />
+          <h3 style={{ fontSize: 15, fontWeight: 800, color: '#14161a', margin: 0 }}>{activeGroup.label}</h3>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+          {activeGroup.collaborateurs.map(c => (
+            <button
+              key={c.id}
+              onClick={() => onSelectCollaborateur(c.__sectionId, c.id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                background: '#fff', border: '1px solid #e5e7eb',
+                borderRadius: 14, padding: '12px 16px', cursor: 'pointer', fontFamily: 'inherit',
+                flex: '1 1 220px', minWidth: 200, maxWidth: 300, textAlign: 'left', transition: 'all .15s',
+                boxShadow: '0 1px 2px rgba(16,24,40,0.03)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#c7cbd1'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,24,40,0.07)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(16,24,40,0.03)' }}
+            >
+              <div style={{
+                flexShrink: 0, width: 38, height: 38, borderRadius: '50%',
+                background: '#eef0f2',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 800, color: '#374151',
+              }}>{(c.prenom || '?').charAt(0).toUpperCase()}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#14161a' }}>{c.prenom}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+      {groups.map(g => {
+        const colors = SECTION_COLORS_LIGHT[g.id] || SECTION_COLORS_LIGHT['apprenti-alternant']
+        return (
+          <button
+            key={g.id}
+            onClick={() => setActiveGroup(g)}
+            style={{
+              flex: '1 1 200px', minWidth: 180, maxWidth: 260, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+              background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '18px 20px',
+              boxShadow: '0 1px 2px rgba(16,24,40,0.03)', transition: 'all .15s',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#c7cbd1'; e.currentTarget.style.boxShadow = '0 6px 18px rgba(16,24,40,0.08)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(16,24,40,0.03)'; e.currentTarget.style.transform = 'translateY(0)' }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: colors.solid, flexShrink: 0 }} />
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#14161a' }}>{g.label}</div>
+              </div>
+              <div style={{ fontSize: 12, color: '#9aa1ac' }}>{g.collaborateurs.length} collaborateur{g.collaborateurs.length > 1 ? 's' : ''}</div>
+            </div>
+            <span style={{ fontSize: 16, color: '#c7cbd1' }}>›</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function scoreColor(pct) {
+  if (pct >= 70) return '#22c55e'
+  if (pct >= 40) return '#f59e0b'
+  return '#ef4444'
+}
+
+function masteryTier(pct) {
+  if (pct >= 70) return { label: 'Bonne progression', bg: '#dcfce7', color: '#15803d' }
+  if (pct >= 40) return { label: 'Progression en cours', bg: '#fef3c7', color: '#b45309' }
+  return { label: 'Démarrage', bg: '#f3f4f6', color: '#4b5563' }
+}
+
+const THEME_EMOJI = { 'tiers-payant': '💳', 'verres-progressifs': '👓', 'prises-mesures': '📏' }
+
+function MasteryRing({ pct, size = 74, stroke = 7, color = '#0089ba' }) {
+  const radius = (size - stroke) / 2
+  const circumference = 2 * Math.PI * radius
+  const offset = circumference - (Math.min(100, Math.max(0, pct)) / 100) * circumference
+  return (
+    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#eef0f2" strokeWidth={stroke} />
+      <circle
+        cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={color} strokeWidth={stroke}
+        strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+// ── Page profil manager — remplace la fiche "checklist à cocher" (celle-ci
+// reste utilisée telle quelle par le formateur/direction via CollaborateurFiche,
+// dont ni le code ni le rôle qu'il joue ailleurs ne sont touchés) par une
+// vraie présentation lisible pour un manager : anneau de maîtrise globale,
+// compétences réelles (mêmes données que la checklist, juste présentées en
+// barres) et parcours de formation basé sur les inscriptions
+// `training_registrations` réellement terminées — aucune donnée inventée.
+export function CollaborateurProfilePage({ store, sectionId, collaborateur, progress, session, onBack, role = 'manager' }) {
+  const [trainingRows, setTrainingRows] = useState(null)
+  const [formModalOpen, setFormModalOpen] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    sbSelect('training_registrations', `collaborateur_id=eq.${collaborateur.id}&completed_at=not.is.null&order=completed_at.desc`)
+      .then(rows => { if (!cancelled) setTrainingRows(rows || []) })
+      .catch(() => { if (!cancelled) setTrainingRows([]) })
+    return () => { cancelled = true }
+  }, [collaborateur.id])
+
+  const items = SKILL_ITEMS[sectionId] || []
+  const categories = {}
+  for (const it of items) {
+    if (!categories[it.category]) categories[it.category] = []
+    categories[it.category].push(it)
+  }
+  const acquisCount = items.filter(it => progress[`${collaborateur.id}:${it.id}`]?.status === 'acquis').length
+  const avgPct = items.length
+    ? Math.round((items.reduce((sum, it) => sum + (progress[`${collaborateur.id}:${it.id}`]?.score || 0), 0) / (items.length * 5)) * 100)
+    : 0
+  const tier = masteryTier(avgPct)
+  const sectionColors = SECTION_COLORS_LIGHT[sectionId] || SECTION_COLORS_LIGHT['apprenti-alternant']
+  const sectionLabel = store.sections.find(s => s.id === sectionId)?.label || ''
+
+  return (
+    <div>
+      <BackBtn onClick={onBack}>← Mon équipe</BackBtn>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: '50%', background: sectionColors.solid, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 25, fontWeight: 800, color: '#fff',
+          }}>{initials(collaborateur)}</div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: sectionColors.text, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>{sectionLabel}</div>
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#14161a' }}>{collaborateurFullName(collaborateur)}</h1>
+            <div style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>Magasin de {store.label}</div>
+          </div>
+        </div>
+        <button onClick={() => setFormModalOpen(true)} style={{
+          background: '#0089ba', color: '#fff', border: 'none', borderRadius: 20, padding: '11px 20px',
+          fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+        }}>Former ce collaborateur →</button>
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, marginBottom: 22, fontSize: 12.5, color: '#6b7280' }}>
+        {collaborateur.entree && (
+          <>
+            <span>🕐 {tenureLabel(collaborateur.entree)} d&apos;ancienneté</span>
+            <span>Entrée le {formatDateFr(collaborateur.entree)}</span>
+          </>
+        )}
+        {collaborateur.contrat && <span>{collaborateur.contrat}</span>}
+        <span>📍 {store.label}</span>
+      </div>
+
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap',
+        background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '18px 22px', marginBottom: 28,
+        boxShadow: '0 1px 2px rgba(16,24,40,0.03)',
+      }}>
+        <div style={{ position: 'relative', width: 74, height: 74, flexShrink: 0 }}>
+          <MasteryRing pct={avgPct} />
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 800, color: '#14161a' }}>{avgPct}%</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: '#14161a', marginBottom: 3 }}>Taux de maîtrise global</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#16a34a' }}>
+            ↗ +{avgPct} pts <span style={{ color: '#9aa1ac', fontWeight: 500 }}>depuis son arrivée</span>
+          </div>
+        </div>
+        <div style={{ marginLeft: 'auto', background: tier.bg, color: tier.color, borderRadius: 12, padding: '10px 18px' }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700 }}>{tier.label}</div>
+          <div style={{ fontSize: 11, fontWeight: 500, marginTop: 2, opacity: 0.85 }}>{acquisCount}/{items.length} compétences acquises</div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 800, color: '#14161a', margin: '0 0 14px' }}>Compétences</h3>
+        {Object.entries(categories).map(([category, catItems]) => (
+          <div key={category} style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#9aa1ac', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>{category}</div>
+            <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '4px 20px', boxShadow: '0 1px 2px rgba(16,24,40,0.03)' }}>
+              {catItems.map((item, i) => {
+                const score = progress[`${collaborateur.id}:${item.id}`]?.score || 0
+                const pct = Math.round((score / 5) * 100)
+                const color = scoreColor(pct)
+                return (
+                  <div key={item.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0',
+                    borderTop: i > 0 ? '1px solid #f0f1f3' : 'none',
+                  }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: '#14161a', width: 200, flexShrink: 0 }}>{item.label}</div>
+                    <div style={{ flex: 1, height: 6, background: '#eef0f2', borderRadius: 3, overflow: 'hidden', minWidth: 60 }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 3 }} />
+                    </div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: '#14161a', width: 36, textAlign: 'right', flexShrink: 0 }}>{pct}%</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 800, color: '#14161a', margin: '0 0 16px' }}>Parcours de formation</h3>
+        {trainingRows === null ? (
+          <p style={{ color: '#9aa1ac', fontSize: 13 }}>Chargement…</p>
+        ) : trainingRows.length === 0 ? (
+          <p style={{ color: '#9aa1ac', fontSize: 13, fontStyle: 'italic' }}>Aucune formation complémentaire terminée pour l&apos;instant.</p>
+        ) : (
+          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '4px 20px', boxShadow: '0 1px 2px rgba(16,24,40,0.03)' }}>
+            {trainingRows.map((r, i) => (
+              <div key={r.id} style={{
+                display: 'flex', alignItems: 'center', gap: 14, padding: '13px 0',
+                borderTop: i > 0 ? '1px solid #f0f1f3' : 'none',
+              }}>
+                <div style={{ fontSize: 11.5, color: '#9aa1ac', width: 96, flexShrink: 0 }}>{formatDateFr((r.completed_at || '').slice(0, 10))}</div>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10, background: '#eaf3fd', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+                }}>{THEME_EMOJI[r.theme] || '🎓'}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: '#14161a' }}>{trainingThemeLabel(r.theme)}</div>
+                </div>
+                <span style={{ background: '#dcfce7', color: '#15803d', fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '3px 11px', flexShrink: 0 }}>Terminée</span>
+                {r.score != null && <span style={{ fontSize: 12.5, fontWeight: 700, color: '#14161a', width: 36, textAlign: 'right', flexShrink: 0 }}>{Math.round((r.score / 5) * 100)}%</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <CollaborateurNotesSection store={store} collaborateur={collaborateur} pName={session?.displayName} role={role} />
+
+      {formModalOpen && (
+        <RegistrationModal
+          store={store}
+          session={session}
+          preselectedIds={[collaborateur.id]}
+          onClose={() => setFormModalOpen(false)}
+          onRegistered={() => {}}
+        />
+      )}
+    </div>
   )
 }
 
@@ -763,12 +1193,34 @@ export function ScorePicker({ score, onSetScore }) {
   )
 }
 
-export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onReset }) {
+export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onReset, readOnly = false }) {
   const [noteOpen, setNoteOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [confirmResetOpen, setConfirmResetOpen] = useState(false)
   const [draftNote, setDraftNote] = useState(entry?.note || '')
+
+  // Vue manager : ni exercice, ni notation, ni historique modifiable — juste
+  // le statut de l'item et la note existante en lecture seule. Le manager
+  // n'a pas vocation à mener l'audit lui-même (c'est le rôle du formateur).
+  if (readOnly) {
+    const meta = STATUS_META[scoreToStatus(entry?.score)]
+    return (
+      <div style={{
+        background: 'var(--dh-row-bg)', border: '1px solid var(--dh-row-border)', borderRadius: 12,
+        padding: '12px 16px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+      }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ fontSize: 14, color: 'var(--dh-text)', fontWeight: 600 }}>{item.label}</span>
+          {entry?.note && <div style={{ fontSize: 12, color: 'var(--dh-text-note)', marginTop: 4, lineHeight: 1.5 }}>{entry.note}</div>}
+        </div>
+        <span style={{
+          fontSize: 11.5, fontWeight: 700, padding: '4px 12px', borderRadius: 20, flexShrink: 0,
+          color: meta?.color || 'var(--dh-text-faint)', background: meta?.bg || 'var(--dh-badge-bg)',
+        }}>{meta?.label || 'Non évalué'}</span>
+      </div>
+    )
+  }
   const isOrdonnanceExercise = item.id === 'lecture-ordonnance'
   const isTrameAccueil = item.id === 'trame-accueil'
   const guide = ITEM_GUIDES[item.id]
@@ -906,7 +1358,7 @@ export function CollaborateurFiche({ store, sectionId, collaborateur, progress, 
       <BackBtn onClick={onBack}>← {store.label}</BackBtn>
       <div className="dash-header">
         <div>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--dh-text)' }}>
             {collaborateurFullName(collaborateur)}
             {collaborateur.alternant && (
               <span style={{
@@ -916,7 +1368,7 @@ export function CollaborateurFiche({ store, sectionId, collaborateur, progress, 
               }}>Alternant</span>
             )}
           </h2>
-          <p>
+          <p style={{ color: 'var(--dh-subtitle)' }}>
             {store.label} · {collaborateur.contrat}
             {collaborateur.entree && ` · Entrée le ${formatDateFr(collaborateur.entree)} (${tenureLabel(collaborateur.entree)})`}
             {' '}· {acquisCount}/{items.length} items acquis
@@ -926,7 +1378,7 @@ export function CollaborateurFiche({ store, sectionId, collaborateur, progress, 
 
       {Object.entries(categories).map(([category, catItems]) => (
         <div key={category} style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>{category}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--dh-text-soft)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>{category}</div>
           {catItems.map(item => (
             <ItemRow
               key={item.id}
@@ -936,6 +1388,7 @@ export function CollaborateurFiche({ store, sectionId, collaborateur, progress, 
               onSetScore={onSetScore}
               onReset={onReset}
               onSaveNote={onSaveNote}
+              readOnly={role === 'manager'}
             />
           ))}
         </div>
