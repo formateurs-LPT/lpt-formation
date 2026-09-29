@@ -10,106 +10,48 @@ import {
 import { sbInsert, sbSelect, getSharedState, setSharedState, getActiveSessionCode, insertSessionHistory } from '@/lib/supabase'
 import { classifyMagasin } from '@/lib/formationCategories'
 
-function fixSpaced(str) {
-  let s = str.trim()
-  let prev = ''
-  while (prev !== s) { prev = s; s = s.replace(/(\d) (\d)/g, '$1$2') }
-  return s
-}
+const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 
-// Civilités à retirer du nom (sinon "Monsieur"/"Madame" se retrouve collé au
-// nom de famille et casse la connexion du formé, qui se fait sur nom+prénom).
-const CIVILITES_RE = /^(monsieur|madame|mademoiselle|mme|mlle|mr|m\.)\s+/i
-
-function stripCivilite(str) {
-  let s = str.trim()
-  let prev = ''
-  while (prev !== s) { prev = s; s = s.replace(CIVILITES_RE, '') }
-  return s
-}
-
-function parseRHTable(rawText) {
-  const POSTES = [
-    'Conseiller Vente Optique','Monteur Optique SAV','Opticien Lunetier',
-    'Store Manager','Assistant RH','Employé Logistique Polyvalent','Téléconseiller'
-  ]
-  const DATE_RE = /\d{1,2}\/\d{1,2}\/\d{2,4}/
-
-  let text = rawText
-    .replace(/Contrat\s*/gi, ' ')
-    .replace(/Date début\s*/gi, '')
-    .replace(/NOM\s+Prénom\s+[\s\S]*?Téléphone\s*/i, '')
-    // "Apprenti Conseiller Vente Optique" -> "Conseiller Vente Optique" — sinon
-    // "Apprenti" traîne après le retrait du poste et se fait absorber par le
-    // regex du magasin (qui matche large sur mots + espaces/retours à la ligne).
-    .replace(/Apprenti[e]?\s+/gi, '')
-
-  const chunks = text.split(DATE_RE)
-  const results = []
-
-  chunks.forEach((chunk, i) => {
-    if (i === 0) return
-    const rawBefore = chunks[i - 1]
-    // Numéro de tél. de la ligne précédente qui déborde sur ce chunk — formats
-    // à espaces (06 12 34 56 78) ou à points (06.12.34.56.78).
-    const before = rawBefore.replace(/^[\d\s.]{8,}\n/m, '').trim()
-
-    let poste = '', textBeforePoste = before
-    for (const p of POSTES) {
-      const idx = before.lastIndexOf(p)
-      if (idx !== -1) { poste = p; textBeforePoste = before.substring(0, idx).trim(); break }
-    }
-    if (!poste) {
-      const low = before.toLowerCase()
-      if (low.includes('opticien')) { poste = 'Opticien Lunetier'; textBeforePoste = before.substring(0, before.toLowerCase().lastIndexOf('opticien')).trim() }
-      else if (low.includes('monteur')) { poste = 'Monteur Optique SAV'; textBeforePoste = before.substring(0, before.toLowerCase().lastIndexOf('monteur')).trim() }
-      else if (low.includes('conseiller')) { poste = 'Conseiller Vente Optique'; textBeforePoste = before.substring(0, before.toLowerCase().lastIndexOf('conseiller')).trim() }
-      else if (low.includes('logistique') || low.includes('employé')) { poste = 'Employé Logistique Polyvalent'; textBeforePoste = before.substring(0, Math.max(before.toLowerCase().lastIndexOf('logistique'), before.toLowerCase().lastIndexOf('employ'))).trim() }
-      else if (low.includes('manager')) { poste = 'Store Manager'; textBeforePoste = before.substring(0, before.toLowerCase().lastIndexOf('manager')).trim() }
-      else if (low.includes('assistant')) { poste = 'Assistant RH'; textBeforePoste = before.substring(0, before.toLowerCase().lastIndexOf('assistant')).trim() }
-    }
-
-    const heuresMatch = textBeforePoste.match(/\s+(\d\s?\d)\s*$/)
-    let heures = ''
-    if (heuresMatch) {
-      heures = fixSpaced(heuresMatch[1])
-      textBeforePoste = textBeforePoste.substring(0, textBeforePoste.length - heuresMatch[0].length).trim()
-    }
-
-    let magasin = '', nameText = textBeforePoste
-    const magMatch = textBeforePoste.match(/(LPT[\s\-]+[\w\s\-\'ÀÂÄÉÈÊËÎÏÔÙÛÜ]+|SUPPLY[\s]+[\w\s\-]+|LUNETTES\s+POUR\s+TOUS)/i)
-    if (magMatch) {
-      magasin = fixSpaced(magMatch[0].trim()).toUpperCase()
-      nameText = textBeforePoste.substring(0, textBeforePoste.indexOf(magMatch[0])).trim()
-    }
-
-    nameText = stripCivilite(nameText.replace(/\n/g, ' ').trim().replace(/^[\d\s]+/, '').trim())
-    const words = nameText.split(/\s+/).filter(w => w.length > 0)
-    let nom = '', prenom = '', splitIdx = words.length
-    for (let j = 1; j < words.length; j++) {
-      if (words[j][0] === words[j][0].toUpperCase() && words[j] !== words[j].toUpperCase() && !/^\d/.test(words[j]) && words[j].length > 1) {
-        splitIdx = j; break
-      }
-    }
-    nom = words.slice(0, splitIdx).join(' ')
-    prenom = words.slice(splitIdx).join(' ')
-    if (!prenom && words.length > 1) { prenom = words[words.length - 1]; nom = words.slice(0, -1).join(' ') }
-
-    if (nom && nom !== 'NOM' && nom.length > 1 && !/^\d/.test(nom)) {
-      const nomT = nom.trim()
-      const prenomT = prenom.trim()
-      results.push({
-        nom: nomT,
-        prenom: prenomT,
-        fullName: `${nomT} ${prenomT}`.trim(),
-        magasin: magasin || '',
-        heures,
-        poste,
-      })
-    }
+function fileToDataUri(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
   })
+}
 
-  return results
+/**
+ * Extraction du tableau RH (photo ou texte collé) via l'edge function
+ * entrees-extract (Groq vision, clé jamais exposée au client) — remplace
+ * l'ancien OCR local (Tesseract.js) + parseur regex maison, fragile.
+ * Retourne { ok:true, entrees } ou { ok:false, error }.
+ */
+async function extractEntrees({ image, text }) {
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/entrees-extract`, {
+      method: 'POST',
+      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image, text }),
+    })
+    const data = await res.json().catch(() => null)
+    if (!res.ok || !data || data.error) {
+      return { ok: false, error: data?.error || `Extraction indisponible (${res.status}).` }
+    }
+    if (!data.entrees?.length) return { ok: false, error: 'Aucun collaborateur détecté. Vérifiez le contenu.' }
+    const results = data.entrees.map(e => ({
+      nom: (e.nom || '').trim(),
+      prenom: (e.prenom || '').trim(),
+      fullName: `${(e.nom || '').trim()} ${(e.prenom || '').trim()}`.trim(),
+      magasin: (e.magasin || '').trim().toUpperCase(),
+      heures: (e.heures || '').trim(),
+      poste: (e.poste || '').trim(),
+    })).filter(e => e.nom)
+    return { ok: true, entrees: results }
+  } catch {
+    return { ok: false, error: 'Extraction impossible — vérifiez la connexion.' }
+  }
 }
 
 const CAT_META = {
@@ -389,35 +331,32 @@ export default function EntreesView({ onBack, onToast, pName }) {
   const [editingIndex, setEditingIndex] = useState(null)
   const [savingIndex, setSavingIndex] = useState(null)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
-  const [ocrLoading, setOcrLoading] = useState(false)
-  const [ocrProgress, setOcrProgress] = useState(0)
+  const [extracting, setExtracting] = useState(false)
 
-  // Lecture d'une capture d'écran du tableau RH (OCR local dans le navigateur,
-  // aucune donnée envoyée à l'extérieur). Le texte reconnu est déposé dans la
-  // zone de texte pour relecture avant analyse — l'OCR peut se tromper.
+  // Lecture d'une capture d'écran du tableau RH — envoyée à l'edge function
+  // entrees-extract (Groq vision), qui renvoie directement la liste
+  // structurée. Dispatché et enregistré immédiatement, comme handleParse.
   const handleImageFile = async (file) => {
     if (!file || !file.type?.startsWith('image/')) return
-    setOcrLoading(true)
-    setOcrProgress(0)
+    setExtracting(true)
     try {
-      const { createWorker } = await import('tesseract.js')
-      const worker = await createWorker('fra', 1, {
-        logger: m => {
-          if (m.status === 'recognizing text' && typeof m.progress === 'number') {
-            setOcrProgress(Math.round(m.progress * 100))
-          }
-        },
-      })
-      const { data } = await worker.recognize(file)
-      await worker.terminate()
-      setPasteText((data.text || '').trim())
-      onToast('Image analysée — vérifiez le texte puis cliquez sur "Analyser et dispatcher"')
+      const dataUri = await fileToDataUri(file)
+      const result = await extractEntrees({ image: dataUri })
+      if (!result.ok) {
+        onToast(result.error)
+        return
+      }
+      setEntrees(result.entrees)
+      const synced = await persistEntreesList(result.entrees)
+      setShowResults(true)
+      onToast(synced
+        ? `${result.entrees.length} collaborateurs importés ✓ (liste enregistrée en BDD)`
+        : `${result.entrees.length} collaborateurs importés localement — sync Supabase échouée`)
     } catch (e) {
       console.error(e)
       onToast('Erreur de lecture de l\'image. Réessayez ou collez le texte manuellement.')
     } finally {
-      setOcrLoading(false)
-      setOcrProgress(0)
+      setExtracting(false)
     }
   }
 
@@ -559,34 +498,29 @@ export default function EntreesView({ onBack, onToast, pName }) {
     load()
   }, [])
 
-  const handleParse = () => {
+  const handleParse = async () => {
     const text = pasteText.trim()
     if (!text) { onToast('Collez d\'abord le contenu du tableau'); return }
     setLoading(true)
-    setTimeout(async () => {
-      try {
-        const results = parseRHTable(text)
-        if (results.length === 0) {
-          onToast('Aucun collaborateur détecté. Vérifiez le contenu.')
-          setLoading(false)
-          return
-        }
-        setEntrees(results)
-        localStorage.setItem('entrees_data', JSON.stringify(results)) // cache local
-        const synced = await persistEntreesList(results)
-        setShowResults(true)
-        if (synced) {
-          onToast(`${results.length} collaborateurs importés ✓ (liste enregistrée en BDD)`)
-        } else {
-          onToast(`${results.length} collaborateurs importés localement — sync Supabase échouée (table trainer_state)`)
-        }
-      } catch (e) {
-        console.error(e)
-        onToast('Erreur de lecture. Réessayez.')
-      } finally {
-        setLoading(false)
+    try {
+      const result = await extractEntrees({ text })
+      if (!result.ok) {
+        onToast(result.error)
+        return
       }
-    }, 300)
+      setEntrees(result.entrees)
+      localStorage.setItem('entrees_data', JSON.stringify(result.entrees)) // cache local
+      const synced = await persistEntreesList(result.entrees)
+      setShowResults(true)
+      onToast(synced
+        ? `${result.entrees.length} collaborateurs importés ✓ (liste enregistrée en BDD)`
+        : `${result.entrees.length} collaborateurs importés localement — sync Supabase échouée (table trainer_state)`)
+    } catch (e) {
+      console.error(e)
+      onToast('Erreur de lecture. Réessayez.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleClear = async () => {
@@ -758,10 +692,10 @@ export default function EntreesView({ onBack, onToast, pName }) {
             Collez directement une capture d&apos;écran (Cmd+V), glissez-déposez l&apos;image, ou collez le texte du tableau ci-dessous.
           </p>
 
-          {ocrLoading ? (
+          {extracting ? (
             <div style={{ textAlign: 'center', padding: '32px 0' }}>
               <div style={{ width: 36, height: 36, border: '3px solid var(--lpt-l)', borderTopColor: 'var(--lpt)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 14px' }} />
-              <div style={{ fontSize: 13, color: 'var(--text-s)' }}>Lecture de l&apos;image en cours... {ocrProgress > 0 ? `${ocrProgress}%` : ''}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-s)' }}>Lecture de l&apos;image en cours…</div>
             </div>
           ) : (
             <>

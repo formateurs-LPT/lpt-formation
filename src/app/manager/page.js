@@ -13,8 +13,9 @@ import {
   getMagasinIdBySlug, getNouveauxCollaborateurs, getCollaborateursEnAttenteValidation,
   declencherTestSortie, validerNouvelEntrant, findCollaborateurByName, getOrCreateCollaborateurForEntree,
 } from '@/lib/collaborateursApi'
-import { getReportingsHebdo } from '@/lib/notesTerrainApi'
+import { getReportingsHebdo, updateReportingStructure } from '@/lib/notesTerrainApi'
 import DemandesInterventionView, { DemandeInterventionModal } from '@/components/DemandesInterventionView'
+import ReportingDetailView from '@/components/ReportingDetailView'
 import { isMagasinBelgique, BELGIQUE_ONLY_LOGINS } from '@/lib/directionApi'
 import ManagerSidebar from '@/components/ManagerSidebar'
 import { IconVideo, IconMapPin, IconChevronRight, IconClipboard } from '@/components/ManagerIcons'
@@ -324,7 +325,7 @@ function fmtDateLongFr(isoDate) {
 // Lecture seule — même requête réutilisable (getReportingsHebdo, filtrable
 // par magasin_id) que celle prévue pour DR/directeur retail au script 5 ;
 // rien de spécifique au rôle manager n'est codé ici.
-function HistoriqueReportingsSection({ reportings }) {
+function HistoriqueReportingsSection({ reportings, magasinNom }) {
   const [selected, setSelected] = useState(null)
   return (
     <div style={{ marginBottom: 28 }}>
@@ -341,37 +342,25 @@ function HistoriqueReportingsSection({ reportings }) {
               <div style={{ fontSize: 13, fontWeight: 700, color: '#14161a' }}>
                 Semaine du {fmtDateLongFr(r.semaine_debut)} au {fmtDateLongFr(r.semaine_fin)}
               </div>
-              <div style={{ fontSize: 11.5, color: '#6b7280', marginTop: 2 }}>
-                {r.auteur} {r.envoye_at ? '· envoyé' : '· non envoyé'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                <span style={{ fontSize: 11.5, color: '#9aa1ac' }}>{r.auteur}</span>
+                <span className={`badge ${r.envoye_at ? 'ok' : 'pending'}`}>{r.envoye_at ? 'Envoyé' : 'Non envoyé'}</span>
               </div>
             </button>
           ))}
         </div>
       )}
       {selected && (
-        <div onClick={() => setSelected(null)} style={{
-          position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.5)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-        }}>
-          <div onClick={e => e.stopPropagation()} style={{
-            background: '#fff', border: '1px solid #e5e7eb', borderRadius: 18,
-            padding: 26, width: '100%', maxWidth: 560, maxHeight: '80vh', overflowY: 'auto',
-            boxShadow: '0 24px 60px rgba(16,24,40,0.2)',
-          }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', marginBottom: 4 }}>{selected.auteur}</div>
-            <h3 style={{ fontSize: 17, fontWeight: 800, color: '#14161a', marginBottom: 14 }}>
-              Semaine du {fmtDateLongFr(selected.semaine_debut)} au {fmtDateLongFr(selected.semaine_fin)}
-            </h3>
-            <div style={{ fontSize: 13.5, color: '#374151', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: 18 }}>
-              {selected.contenu_genere}
-            </div>
-            <button onClick={() => setSelected(null)} style={{
-              background: '#fff', border: '1px solid #e5e7eb',
-              color: '#374151', padding: '9px 18px', borderRadius: 10,
-              fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            }}>Fermer</button>
-          </div>
-        </div>
+        <ReportingDetailView
+          reporting={selected}
+          magasinNom={magasinNom}
+          onClose={() => setSelected(null)}
+          canToggleDone
+          onChange={async (next) => {
+            setSelected(prev => prev ? { ...prev, contenu_structure: next } : prev)
+            await updateReportingStructure(selected.id, next)
+          }}
+        />
       )}
     </div>
   )
@@ -717,11 +706,11 @@ function DemandesPage({ magasinId, session, store }) {
   )
 }
 
-function ReportingPage({ reportings }) {
+function ReportingPage({ reportings, magasinNom }) {
   return (
     <div>
       <PageHeader title="Reporting" />
-      <HistoriqueReportingsSection reportings={reportings} />
+      <HistoriqueReportingsSection reportings={reportings} magasinNom={magasinNom} />
     </div>
   )
 }
@@ -858,7 +847,7 @@ function ManagerDashboard({ session, onLogout }) {
           ) : activeNav === 'demandes' ? (
             <DemandesPage magasinId={magasinId} session={session} store={store} />
           ) : activeNav === 'reporting' ? (
-            <ReportingPage reportings={reportings} />
+            <ReportingPage reportings={reportings} magasinNom={store.label} />
           ) : (
             <AccueilPage
               store={store}

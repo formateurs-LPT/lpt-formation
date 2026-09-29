@@ -13,6 +13,7 @@ import { getWeeklySharedState } from '@/lib/supabase'
 import { useStoreFollowupProgress } from '@/lib/useStoreFollowupProgress'
 import { SectionsList, CollaborateurFiche, StoreHeader } from '@/components/StoreFollowupShared'
 import DemandesInterventionView, { DemandeInterventionModal } from '@/components/DemandesInterventionView'
+import ReportingDetailView from '@/components/ReportingDetailView'
 
 const SESSION_KEY = 'direction_session' // { login, displayName, role, regions: [{id, nom}] }
 
@@ -85,7 +86,7 @@ function TopBar({ title, subtitle, onLogout, onBack }) {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
       <div>
         {onBack && <button onClick={onBack} className="detail-back" style={{ marginBottom: 6 }}>← Retour</button>}
-        <h2 style={{ margin: 0 }}>{title}</h2>
+        <h2 style={{ margin: 0, color: '#fff' }}>{title}</h2>
         {subtitle && <p style={{ color: 'var(--text-s)', fontSize: 13, margin: '4px 0 0' }}>{subtitle}</p>}
       </div>
       <button onClick={onLogout} className="btn2">Se déconnecter</button>
@@ -153,18 +154,15 @@ function ReportingsList({ magasinIds }) {
           textAlign: 'left', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12,
           padding: '12px 16px', cursor: 'pointer', fontFamily: 'inherit',
         }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Semaine du {fmtLong(r.semaine_debut)}</div>
-          <div style={{ fontSize: 11.5, color: 'var(--text-s)' }}>{r.auteur} {r.envoye_at ? '· envoyé' : '· non envoyé'}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{r.magasinNom ? `${r.magasinNom} — ` : ''}Semaine du {fmtLong(r.semaine_debut)}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, color: 'var(--text-s)' }}>{r.auteur}</span>
+            <span className={`badge ${r.envoye_at ? 'ok' : 'pending'}`}>{r.envoye_at ? 'Envoyé' : 'Non envoyé'}</span>
+          </div>
         </button>
       ))}
       {selected && (
-        <div onClick={() => setSelected(null)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 18, padding: 26, width: '100%', maxWidth: 560, maxHeight: '80vh', overflowY: 'auto' }}>
-            <h3 style={{ fontSize: 17, fontWeight: 800, color: '#fff', marginBottom: 14 }}>{selected.auteur} — Semaine du {fmtLong(selected.semaine_debut)}</h3>
-            <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: 18 }}>{selected.contenu_genere}</div>
-            <button onClick={() => setSelected(null)} className="btn2">Fermer</button>
-          </div>
-        </div>
+        <ReportingDetailView reporting={selected} magasinNom={selected.magasinNom} onClose={() => setSelected(null)} />
       )}
     </div>
   )

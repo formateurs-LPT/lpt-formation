@@ -39,9 +39,9 @@ const METAL_INFOS = [
   { icon: '💶', label: 'Prix', desc: 'De 30 € à 90 €' },
 ]
 const METAL_NOTES = [
-  { icon: '⚗️', title: "L'alliage", text: "Pas de l'acier pur — un alliage travaillé (souvent nickel, titane ou inox). Plus fin que l'acétate, d'où la légèreté." },
+  { icon: '⚗️', title: "L'alliage", text: "Pas de l'acier pur — un alliage travaillé (souvent nickel ou inox). Plus fin que l'acétate, d'où la légèreté." },
   { icon: '🔧', title: 'Ajustable facilement', text: "Les plaquettes et branches se règlent à froid. C'est l'atout N°1 pour l'adaptation au visage — argument fort en vente." },
-  { icon: '⚠️', title: 'Allergie nickel', text: "À mentionner si le client est sensible. On a des modèles sans nickel (titane). Revêtement anti-allergique sur la plupart." },
+  { icon: '⚠️', title: 'Allergie nickel', text: "À mentionner si le client est sensible. Revêtement anti-allergique sur la plupart." },
   { icon: '💧', title: 'Oxydation', text: "Peut apparaître avec transpiration acide. Recommander l'entretien régulier à l'eau claire. Moins adapté aux grosses corrections (cerclage fin)." },
 ]
 

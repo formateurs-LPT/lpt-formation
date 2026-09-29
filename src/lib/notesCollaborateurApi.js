@@ -1,7 +1,7 @@
 // Couche données — script 4 (notes collaborateur collaboratives + retour
 // individuel). Même schéma relationnel que collaborateursApi.js/notesTerrainApi.js.
 import { sbSelect, sbInsert, sbUpdate, sbDelete } from '@/lib/supabase'
-import { getMagasinIdBySlug } from '@/lib/collaborateursApi'
+import { getMagasinIdBySlug, getCollaborateursByMagasin } from '@/lib/collaborateursApi'
 
 export { getFormateurId } from '@/lib/notesTerrainApi'
 
@@ -102,4 +102,42 @@ export async function envoyerRetourIndividuel({ collaborateurId, formateurId, co
   })
   if (ok) await sbDelete('retours_individuels_notes', `collaborateur_id=eq.${collaborateurId}`)
   return ok
+}
+
+// ── Mots (fil de discussion 1:1 formateur ↔ collaborateur) ──────────────
+
+/** Historique du fil, dans l'ordre chronologique. */
+export async function getMotsMessages(collaborateurId) {
+  if (!collaborateurId) return []
+  const rows = await sbSelect('mots_messages', `collaborateur_id=eq.${collaborateurId}&order=created_at.asc`)
+  return rows || []
+}
+
+export async function addMotMessage({ collaborateurId, formateurId, auteur, contenu }) {
+  return sbInsert('mots_messages', {
+    collaborateur_id: collaborateurId, formateur_id: formateurId || null, auteur, contenu,
+  })
+}
+
+/**
+ * Déclenché à la publication du reporting hebdo (MesRetoursView.js) : pour
+ * chaque collaborateur du magasin ayant des mots en attente (brouillons
+ * retours_individuels_notes non encore envoyés), regroupe ses mots de la
+ * semaine en un message, l'ajoute au fil de discussion, notifie le
+ * collaborateur, puis archive/vide les brouillons (réutilise
+ * envoyerRetourIndividuel telle quelle).
+ */
+export async function envoyerMotsMagasin({ magasinId, formateurId }) {
+  if (!magasinId) return
+  const collaborateurs = await getCollaborateursByMagasin(magasinId)
+  for (const collab of collaborateurs) {
+    const drafts = await getRetoursNotes(collab.id)
+    if (!drafts.length) continue
+    const contenu = drafts.map(d => d.contenu).join('\n\n')
+    await addMotMessage({ collaborateurId: collab.id, formateurId, auteur: 'formateur', contenu })
+    await envoyerRetourIndividuel({ collaborateurId: collab.id, formateurId, contenuFinal: contenu })
+    await sbInsert('notifications', {
+      destinataire_login: collab.slug, type: 'mot_formateur', reference_id: collab.id,
+    })
+  }
 }
