@@ -29,6 +29,20 @@ export async function uploadPieceJointe(file, { magasinId, prefix = 'note', buck
   return path
 }
 
+// Fichier constant "présentation entreprise" (pièce jointe du mail de
+// bienvenue) — chemin fixe dans le bucket rh-documents, remplacé par simple
+// ré-upload (x-upsert) plutôt que via une table de config (parametres_app
+// est réservée en écriture au service role, inaccessible depuis le front RH).
+export const FICHIER_CONSTANT_PRESENTATION = 'constantes/presentation-entreprise.pdf'
+export async function uploadFichierConstant(file) {
+  const res = await fetch(`${SB_URL}/storage/v1/object/${RH_DOCUMENTS_BUCKET}/${FICHIER_CONSTANT_PRESENTATION}`, {
+    method: 'POST',
+    headers: sbHeaders({ 'Content-Type': file.type || 'application/pdf', 'x-upsert': 'true' }),
+    body: file,
+  })
+  return res.ok
+}
+
 /** URL signée temporaire (1h) pour afficher/lire une pièce jointe. */
 export async function getSignedUrl(path, expiresIn = 3600, bucket = NOTES_TERRAIN_BUCKET) {
   if (!path) return null

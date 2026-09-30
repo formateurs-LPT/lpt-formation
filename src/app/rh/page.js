@@ -13,10 +13,13 @@ import {
   apiGetManagerByMagasinId, apiNotifier,
   apiGetEntretiensByCandidat, apiCreerEntretien, apiContreProposerEntretien,
   apiConfirmerContreProposition, apiSupprimerEntretien,
+  apiGetMagasinInfo, apiGetEntree, apiMarquerMailBienvenueEnvoye,
 } from '@/lib/rhApi'
 import { STORES, STORE_REGION_GROUPS } from '@/lib/storeFollowupData'
 import { getMagasinIdBySlug, slugifyName, stripAccents } from '@/lib/collaborateursApi'
-import { uploadPieceJointe, getSignedUrl, RH_DOCUMENTS_BUCKET } from '@/lib/storageApi'
+import { uploadPieceJointe, getSignedUrl, RH_DOCUMENTS_BUCKET, FICHIER_CONSTANT_PRESENTATION, uploadFichierConstant } from '@/lib/storageApi'
+import { buildLptEmail } from '@/components/FicheShareModal'
+import RhSidebar from '@/components/RhSidebar'
 
 const SESSION_KEY = 'rh_session'
 const RH_DISPLAY_NAMES = { kevin: 'Kevin Dupuy', quentin: 'Quentin Bahougne' }
@@ -55,14 +58,16 @@ function computeStatut(entity, dossiers) {
 }
 
 // ── Pipeline ──────────────────────────────────────────────────────────────────
-const PIPELINE = ['a_contacter', 'contacte', 'prise_de_reference', 'entretien_manager']
+// 'a_contacter' n'est plus utilisé (contact toujours fait avant création de
+// la fiche) — gardé dans STATUT_LABELS/STATUT_COLORS pour l'historique/anciennes fiches.
+const PIPELINE = ['contacte', 'prise_de_reference', 'entretien_manager']
 const STATUT_LABELS = {
   a_contacter: 'À contacter', contacte: 'Contacté',
   prise_de_reference: 'Prise de référence', entretien_manager: 'Entretien manager',
   valide: 'Validé', refuse: 'Refusé',
 }
 const STATUT_COLORS = {
-  a_contacter:        { bg: '#f1f5f9', color: '#475569', border: '#e2e8f0' },
+  a_contacter:        { bg: '#f0f1f3', color: '#6b7280', border: '#e5e7eb' },
   contacte:           { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
   prise_de_reference: { bg: '#fdf4ff', color: '#7e22ce', border: '#e9d5ff' },
   entretien_manager:  { bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' },
@@ -79,6 +84,28 @@ function getMondayStr(offsetWeeks = 0) {
   const d = new Date(); const day = d.getDay() || 7
   d.setDate(d.getDate() - (day - 1) + offsetWeeks * 7)
   return toLocalDateStr(d)
+}
+/** Lundi de la semaine contenant une date donnée (yyyy-mm-dd) — pour dériver
+ * semaine_lundi à partir d'une date d'entrée exacte plutôt qu'un choix manuel. */
+function mondayOfDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00'); const day = d.getDay() || 7
+  d.setDate(d.getDate() - (day - 1))
+  return toLocalDateStr(d)
+}
+/** "mardi 21/07/2026" */
+function formatDateLettresJour(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00')
+  const jour = d.toLocaleDateString('fr-FR', { weekday: 'long' })
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  return `${jour} ${dd}/${mm}/${d.getFullYear()}`
+}
+/** Nom du 1er jour ouvré (lun-ven) suivant une date, ex "mercredi". */
+function premierJourOuvreApres(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00')
+  d.setDate(d.getDate() + 1)
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1)
+  return d.toLocaleDateString('fr-FR', { weekday: 'long' })
 }
 function getISOWeek(mondayStr) {
   const d = new Date(mondayStr + 'T12:00:00')
@@ -120,11 +147,12 @@ const REGION_FILTERS = [{ id: 'tous', label: 'Toutes régions', emoji: '🗺️'
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const CSS = {
-  input: { width:'100%', boxSizing:'border-box', padding:'10px 12px', background:'#f8fafc', border:'1.5px solid #e2e8f0', borderRadius:8, color:'#1e293b', fontSize:14, fontFamily:'inherit', outline:'none' },
-  label: { display:'block', fontSize:11.5, fontWeight:700, color:'#64748b', marginBottom:5, textTransform:'uppercase', letterSpacing:0.5 },
+  input: { width:'100%', boxSizing:'border-box', padding:'10px 12px', background:'#fff', border:'1px solid #e5e7eb', borderRadius:8, color:'#14161a', fontSize:14, fontFamily:'inherit', outline:'none' },
+  label: { display:'block', fontSize:11.5, fontWeight:700, color:'#6b7280', marginBottom:5, textTransform:'uppercase', letterSpacing:0.5 },
   btn: { padding:'10px 18px', borderRadius:8, border:'none', cursor:'pointer', fontSize:13.5, fontWeight:700, fontFamily:'inherit' },
 }
 const Field = ({ label, children }) => <div style={{ marginBottom:16 }}><label style={CSS.label}>{label}</label>{children}</div>
+const PageHeader = ({ title }) => <h2 style={{ fontSize:20, fontWeight:800, color:'#14161a', margin:'0 0 20px' }}>{title}</h2>
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 function Modal({ title, onClose, width = 560, children }) {
@@ -135,9 +163,9 @@ function Modal({ title, onClose, width = 560, children }) {
   return (
     <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(15,25,35,0.7)', display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={onClose}>
       <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:width, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 24px 64px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>
-        <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <h3 style={{ margin:0, fontSize:17, fontWeight:700, color:'#0f172a' }}>{title}</h3>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:22, color:'#94a3b8', lineHeight:1 }}>×</button>
+        <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid #f0f1f3', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <h3 style={{ margin:0, fontSize:17, fontWeight:700, color:'#14161a' }}>{title}</h3>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:22, color:'#9aa1ac', lineHeight:1 }}>×</button>
         </div>
         <div style={{ padding:24 }}>{children}</div>
       </div>
@@ -169,8 +197,8 @@ function DocumentDropRow({ label, rempli, path, uploading, onToggle, onFiles, on
       onDrop={e => { e.preventDefault(); setDragOver(false); onFiles(e.dataTransfer.files) }}
       style={{
         display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 14px', marginBottom:6, borderRadius:8, gap:10,
-        background:dragOver ? '#eaf3fd' : (rempli ? '#f0fdf4' : '#f8fafc'),
-        border:`1.5px dashed ${dragOver ? '#00abe9' : (rempli ? '#86efac' : '#e2e8f0')}`,
+        background:dragOver ? '#eaf3fd' : (rempli ? '#f0fdf4' : '#fff'),
+        border:`1.5px dashed ${dragOver ? '#00abe9' : (rempli ? '#86efac' : '#e5e7eb')}`,
       }}
     >
       <div onClick={() => !hasFile && onToggle()} style={{ display:'flex', alignItems:'center', gap:10, cursor:hasFile ? 'default' : 'pointer', minWidth:0, flex:1 }}>
@@ -181,11 +209,11 @@ function DocumentDropRow({ label, rempli, path, uploading, onToggle, onFiles, on
       </div>
       <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
         {uploading ? (
-          <span style={{ fontSize:11.5, color:'#94a3b8' }}>Envoi…</span>
+          <span style={{ fontSize:11.5, color:'#9aa1ac' }}>Envoi…</span>
         ) : hasFile ? (
           <>
             <FileViewButton path={path} />
-            <button type="button" onClick={onRemove} title="Supprimer" style={{ ...CSS.btn, padding:'5px 9px', background:'#fef2f2', color:'#ef4444', fontSize:12 }}>🗑️</button>
+            <button type="button" onClick={onRemove} title="Supprimer" style={{ ...CSS.btn, padding:'5px 9px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', fontSize:12 }}>🗑️</button>
           </>
         ) : (
           <label style={{ fontSize:11.5, fontWeight:600, color:'#0089ba', cursor:'pointer' }} onClick={e => e.stopPropagation()}>
@@ -250,12 +278,12 @@ function FicheDocuments({ entity, entityType, onClose, onStatutChange }) {
     <Modal title={`Dossier — ${entity.prenom} ${entity.nom}`} onClose={onClose} width={520}>
       <div style={{ marginBottom:16, display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:8 }}>
         <div>
-          <div style={{ fontSize:13, fontWeight:700, color:'#0f172a' }}>{entity.prenom} {entity.nom}</div>
-          <div style={{ fontSize:12, color:'#64748b', marginTop:2 }}>{entity.magasin || entity.magasin_vise || '—'} · {entity.poste || entity.poste_vise || '—'}</div>
+          <div style={{ fontSize:13, fontWeight:700, color:'#14161a' }}>{entity.prenom} {entity.nom}</div>
+          <div style={{ fontSize:12, color:'#6b7280', marginTop:2 }}>{entity.magasin || entity.magasin_vise || '—'} · {entity.poste || entity.poste_vise || '—'}</div>
         </div>
         <StatusBadge statut={statut} />
       </div>
-      {loading ? <div style={{ textAlign:'center', padding:'24px 0', color:'#94a3b8' }}>Chargement…</div> : (
+      {loading ? <div style={{ textAlign:'center', padding:'24px 0', color:'#9aa1ac' }}>Chargement…</div> : (
         <>
           <div style={{ marginBottom:14 }}>
             {docs.map(doc => {
@@ -277,8 +305,8 @@ function FicheDocuments({ entity, entityType, onClose, onStatutChange }) {
           <div style={{ background:'#f0f9ff', border:'1px solid #bae6fd', borderRadius:10, padding:'12px 14px' }}>
             <div style={{ fontSize:11, fontWeight:700, color:'#0369a1', textTransform:'uppercase', letterSpacing:1, marginBottom:6 }}>Contact urgence</div>
             {entity.contact_urgence_nom || entity.contact_urgence_telephone
-              ? <div style={{ fontSize:13.5, color:'#0f172a' }}><span style={{ fontWeight:600 }}>{entity.contact_urgence_nom}</span>{entity.contact_urgence_telephone && <span style={{ color:'#475569' }}> — {entity.contact_urgence_telephone}</span>}</div>
-              : <div style={{ fontSize:13, color:'#94a3b8', fontStyle:'italic' }}>Non renseigné</div>}
+              ? <div style={{ fontSize:13.5, color:'#14161a' }}><span style={{ fontWeight:600 }}>{entity.contact_urgence_nom}</span>{entity.contact_urgence_telephone && <span style={{ color:'#6b7280' }}> — {entity.contact_urgence_telephone}</span>}</div>
+              : <div style={{ fontSize:13, color:'#9aa1ac', fontStyle:'italic' }}>Non renseigné</div>}
           </div>
         </>
       )}
@@ -366,12 +394,14 @@ function CandidatFormModal({ initial, session, onSave, onClose }) {
             </select>
           </Field>
         </div>
-        <div style={{ marginBottom:16 }}>
-          <Field label="Heures envisagées (contrat)"><input style={{ ...CSS.input, maxWidth:200 }} value={form.heures_envisagees} onChange={e => set('heures_envisagees', e.target.value)} placeholder="Ex: 35" /></Field>
-        </div>
+        {isEdit && (
+          <div style={{ marginBottom:16 }}>
+            <Field label="Heures envisagées (contrat)"><input style={{ ...CSS.input, maxWidth:200 }} value={form.heures_envisagees} onChange={e => set('heures_envisagees', e.target.value)} placeholder="Ex: 35" /></Field>
+          </div>
+        )}
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }}>
           <FileDropSlot
-            label="CV — fortement recommandé"
+            label="CV — requis pour l'entretien"
             path={!cvFile && !cvRemoved ? (initial?.cv_url || null) : null}
             staged={!!cvFile}
             onFiles={files => { const f = files?.[0]; if (f) { setCvFile(f); setCvRemoved(false) } }}
@@ -385,30 +415,34 @@ function CandidatFormModal({ initial, session, onSave, onClose }) {
             onRemove={() => { setLettreFile(null); setLettreRemoved(true) }}
           />
         </div>
-        <div style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:10, padding:'12px 14px', marginBottom:14 }}>
-          <div style={{ ...CSS.label, marginBottom:8 }}>Domicile</div>
-          <div style={{ display:'flex', gap:14, flexWrap:'wrap' }}>
-            {['personnel','heberge'].map(v => (
-              <label key={v} style={{ display:'flex', alignItems:'center', gap:6, cursor:'pointer', fontSize:13.5, fontWeight:form.mode_domicile===v?700:400 }}>
-                <input type="radio" name="md_c" checked={form.mode_domicile===v} onChange={() => set('mode_domicile', v)} />{v==='personnel'?'Personnel':'Hébergé'}
-              </label>
-            ))}
-            <label style={{ display:'flex', alignItems:'center', gap:6, cursor:'pointer', fontSize:13.5 }}>
-              <input type="checkbox" checked={form.rqth_applicable} onChange={e => set('rqth_applicable', e.target.checked)} />RQTH
-            </label>
-          </div>
-        </div>
-        <div style={{ background:'#f0f9ff', border:'1px solid #bae6fd', borderRadius:10, padding:'12px 14px', marginBottom:18 }}>
-          <div style={{ ...CSS.label, color:'#0369a1', marginBottom:8 }}>Contact urgence</div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 12px' }}>
-            <input style={CSS.input} value={form.contact_urgence_nom} onChange={e => set('contact_urgence_nom', e.target.value)} placeholder="Nom" />
-            <input style={CSS.input} value={form.contact_urgence_telephone} onChange={e => set('contact_urgence_telephone', e.target.value)} placeholder="Téléphone" />
-          </div>
-        </div>
+        {isEdit && (
+          <>
+            <div style={{ background:'#fff', border:'1px solid #e5e7eb', borderRadius:10, padding:'12px 14px', marginBottom:14 }}>
+              <div style={{ ...CSS.label, marginBottom:8 }}>Domicile</div>
+              <div style={{ display:'flex', gap:14, flexWrap:'wrap' }}>
+                {['personnel','heberge'].map(v => (
+                  <label key={v} style={{ display:'flex', alignItems:'center', gap:6, cursor:'pointer', fontSize:13.5, fontWeight:form.mode_domicile===v?700:400 }}>
+                    <input type="radio" name="md_c" checked={form.mode_domicile===v} onChange={() => set('mode_domicile', v)} />{v==='personnel'?'Personnel':'Hébergé'}
+                  </label>
+                ))}
+                <label style={{ display:'flex', alignItems:'center', gap:6, cursor:'pointer', fontSize:13.5 }}>
+                  <input type="checkbox" checked={form.rqth_applicable} onChange={e => set('rqth_applicable', e.target.checked)} />RQTH
+                </label>
+              </div>
+            </div>
+            <div style={{ background:'#f0f9ff', border:'1px solid #bae6fd', borderRadius:10, padding:'12px 14px', marginBottom:18 }}>
+              <div style={{ ...CSS.label, color:'#0369a1', marginBottom:8 }}>Contact urgence</div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 12px' }}>
+                <input style={CSS.input} value={form.contact_urgence_nom} onChange={e => set('contact_urgence_nom', e.target.value)} placeholder="Nom" />
+                <input style={CSS.input} value={form.contact_urgence_telephone} onChange={e => set('contact_urgence_telephone', e.target.value)} placeholder="Téléphone" />
+              </div>
+            </div>
+          </>
+        )}
         {error && <div style={{ color:'#ef4444', fontSize:13, marginBottom:12, padding:'8px 12px', background:'#fef2f2', borderRadius:8 }}>{error}</div>}
         <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-          <button type="button" onClick={onClose} style={{ ...CSS.btn, background:'#f1f5f9', color:'#475569' }}>Annuler</button>
-          <button type="submit" disabled={saving} style={{ ...CSS.btn, background:saving?'#94a3b8':'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff' }}>{saving?'Enregistrement…':isEdit?'Enregistrer':'Ajouter'}</button>
+          <button type="button" onClick={onClose} style={{ ...CSS.btn, background:'#fff', border:'1px solid #e5e7eb', color:'#374151' }}>Annuler</button>
+          <button type="submit" disabled={saving} style={{ ...CSS.btn, background:saving?'#9aa1ac':'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff' }}>{saving?'Enregistrement…':isEdit?'Enregistrer':'Ajouter'}</button>
         </div>
       </form>
     </Modal>
@@ -422,15 +456,15 @@ function AvancerStatutModal({ candidat, onConfirm, onClose }) {
   if (!next) return null
   return (
     <Modal title={`Passer à "${STATUT_LABELS[next]}"`} onClose={onClose} width={440}>
-      <p style={{ margin:'0 0 16px', fontSize:14, color:'#475569', lineHeight:1.6 }}>
+      <p style={{ margin:'0 0 16px', fontSize:14, color:'#6b7280', lineHeight:1.6 }}>
         <strong>{candidat.prenom} {candidat.nom}</strong> passera de <StatutPill statut={candidat.statut} /> à <StatutPill statut={next} />.
       </p>
       <Field label="Note (optionnelle)">
         <textarea style={{ ...CSS.input, height:80, resize:'vertical' }} value={commentaire} onChange={e => setCommentaire(e.target.value)} placeholder="Résultat, remarques…" />
       </Field>
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-        <button onClick={onClose} style={{ ...CSS.btn, background:'#f1f5f9', color:'#475569' }}>Annuler</button>
-        <button disabled={saving} onClick={async () => { setSaving(true); await onConfirm(next, commentaire); setSaving(false) }} style={{ ...CSS.btn, background:saving?'#94a3b8':'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff' }}>
+        <button onClick={onClose} style={{ ...CSS.btn, background:'#fff', border:'1px solid #e5e7eb', color:'#374151' }}>Annuler</button>
+        <button disabled={saving} onClick={async () => { setSaving(true); await onConfirm(next, commentaire); setSaving(false) }} style={{ ...CSS.btn, background:saving?'#9aa1ac':'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff' }}>
           {saving ? '…' : `Passer à "${STATUT_LABELS[next]}"`}
         </button>
       </div>
@@ -443,15 +477,15 @@ function RefuserModal({ candidat, onConfirm, onClose }) {
   const [saving, setSaving] = useState(false)
   return (
     <Modal title="Refuser le candidat" onClose={onClose} width={420}>
-      <p style={{ margin:'0 0 16px', fontSize:14, color:'#475569' }}>
+      <p style={{ margin:'0 0 16px', fontSize:14, color:'#6b7280' }}>
         <strong>{candidat.prenom} {candidat.nom}</strong> sera marqué refusé et sortira de la liste active.
       </p>
       <Field label="Motif (optionnel)">
         <textarea style={{ ...CSS.input, height:70, resize:'vertical' }} value={commentaire} onChange={e => setCommentaire(e.target.value)} placeholder="Motif du refus…" />
       </Field>
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-        <button onClick={onClose} style={{ ...CSS.btn, background:'#f1f5f9', color:'#475569' }}>Annuler</button>
-        <button disabled={saving} onClick={async () => { setSaving(true); await onConfirm(commentaire); setSaving(false) }} style={{ ...CSS.btn, background:saving?'#94a3b8':'#ef4444', color:'#fff' }}>
+        <button onClick={onClose} style={{ ...CSS.btn, background:'#fff', border:'1px solid #e5e7eb', color:'#374151' }}>Annuler</button>
+        <button disabled={saving} onClick={async () => { setSaving(true); await onConfirm(commentaire); setSaving(false) }} style={{ ...CSS.btn, background:saving?'#9aa1ac':'#ef4444', color:'#fff' }}>
           {saving ? '…' : 'Confirmer le refus'}
         </button>
       </div>
@@ -460,10 +494,9 @@ function RefuserModal({ candidat, onConfirm, onClose }) {
 }
 
 function ValiderRecrutementModal({ candidat, session, onConfirm, onClose }) {
-  const s0 = getMondayStr(0); const s1 = getMondayStr(1)
-  const [semaine, setSemaine] = useState(null)
+  const s1 = getMondayStr(1) // dernier lundi couvert par l'onglet "Semaine suivante"
   const [form, setForm] = useState({
-    date_entree: s0, heures: candidat.heures_envisagees || '',
+    date_entree: '', heures: candidat.heures_envisagees || '',
     contact_urgence_nom: candidat.contact_urgence_nom || '',
     contact_urgence_telephone: candidat.contact_urgence_telephone || '',
   })
@@ -471,35 +504,36 @@ function ValiderRecrutementModal({ candidat, session, onConfirm, onClose }) {
   const [error, setError] = useState('')
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
+  const semaine = form.date_entree ? mondayOfDate(form.date_entree) : null
+  const horsFenetre = semaine && semaine > s1 // au-delà de la semaine suivante
+
   const submit = async () => {
-    if (!semaine) { setError("Sélectionnez la semaine d'entrée."); return }
+    if (!form.date_entree) { setError("Sélectionnez la date d'entrée exacte."); return }
     setSaving(true); setError('')
     await onConfirm({ semaine, form }); setSaving(false)
   }
 
   return (
-    <Modal title="Valider le recrutement" onClose={onClose} width={520}>
+    <Modal title="Ajouter aux entrées" onClose={onClose} width={520}>
       <div style={{ marginBottom:18, padding:'12px 14px', background:'#f0fdf4', border:'1px solid #86efac', borderRadius:10 }}>
         <div style={{ fontWeight:700, color:'#166534' }}>{candidat.prenom} {candidat.nom}</div>
         <div style={{ fontSize:12.5, color:'#16a34a', marginTop:2 }}>{candidat.magasin || '—'} · {candidat.poste_vise || '—'}</div>
       </div>
-      <div style={{ marginBottom:18 }}>
-        <div style={{ ...CSS.label, marginBottom:8 }}>Semaine d'entrée <span style={{ color:'#ef4444' }}>*</span></div>
-        <div style={{ display:'flex', gap:10 }}>
-          {[s0, s1].map(s => (
-            <button key={s} type="button" onClick={() => setSemaine(s)} style={{ flex:1, ...CSS.btn, padding:'10px 14px', textAlign:'left', background:semaine===s?'linear-gradient(135deg,#0089ba,#00abe9)':'#f8fafc', color:semaine===s?'#fff':'#475569', border:semaine===s?'none':'1.5px solid #e2e8f0' }}>
-              <div style={{ fontWeight:700, fontSize:13 }}>Semaine {getISOWeek(s)}</div>
-              <div style={{ fontSize:11, marginTop:2, opacity:0.8 }}>{weekDateRange(s)}</div>
-            </button>
-          ))}
-        </div>
-      </div>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 14px' }}>
-        <Field label="Date d'entrée"><input style={CSS.input} type="date" value={form.date_entree} onChange={e => set('date_entree', e.target.value)} /></Field>
+        <Field label="Date d'entrée exacte">
+          <input style={CSS.input} type="date" value={form.date_entree} onChange={e => set('date_entree', e.target.value)} />
+        </Field>
         <Field label={`Heures / semaine${!form.heures.trim() ? ' ⚠️' : ''}`}>
-          <input style={{ ...CSS.input, borderColor:!form.heures.trim()?'#fbbf24':'#e2e8f0' }} value={form.heures} onChange={e => set('heures', e.target.value)} placeholder="Ex: 35" />
+          <input style={{ ...CSS.input, borderColor:!form.heures.trim()?'#fbbf24':'#e5e7eb' }} value={form.heures} onChange={e => set('heures', e.target.value)} placeholder="Ex: 35" />
         </Field>
       </div>
+      {semaine && (
+        <div style={{ marginBottom:16, padding:'10px 14px', borderRadius:10, fontSize:12.5, background:horsFenetre?'#eff6ff':'#f0f9ff', border:`1px solid ${horsFenetre?'#bfdbfe':'#bae6fd'}`, color:horsFenetre?'#1d4ed8':'#0369a1' }}>
+          {horsFenetre
+            ? `Cette date sera visible dans les entrées à partir de la semaine du ${weekDateRange(semaine)} (semaine ${getISOWeek(semaine)}).`
+            : `Apparaîtra dans "Entrées de la semaine" — semaine ${getISOWeek(semaine)} (${weekDateRange(semaine)}).`}
+        </div>
+      )}
       <div style={{ background:'#f0f9ff', border:'1px solid #bae6fd', borderRadius:10, padding:'12px 14px', marginBottom:16 }}>
         <div style={{ ...CSS.label, color:'#0369a1', marginBottom:8 }}>Contact urgence</div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 12px' }}>
@@ -509,8 +543,8 @@ function ValiderRecrutementModal({ candidat, session, onConfirm, onClose }) {
       </div>
       {error && <div style={{ color:'#ef4444', fontSize:13, marginBottom:12, padding:'8px 12px', background:'#fef2f2', borderRadius:8 }}>{error}</div>}
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-        <button onClick={onClose} style={{ ...CSS.btn, background:'#f1f5f9', color:'#475569' }}>Annuler</button>
-        <button disabled={saving} onClick={submit} style={{ ...CSS.btn, background:saving?'#94a3b8':'linear-gradient(135deg,#16a34a,#22c55e)', color:'#fff' }}>
+        <button onClick={onClose} style={{ ...CSS.btn, background:'#fff', border:'1px solid #e5e7eb', color:'#374151' }}>Annuler</button>
+        <button disabled={saving} onClick={submit} style={{ ...CSS.btn, background:saving?'#9aa1ac':'linear-gradient(135deg,#16a34a,#22c55e)', color:'#fff' }}>
           {saving ? 'Validation…' : "Confirmer et créer l'entrée →"}
         </button>
       </div>
@@ -546,17 +580,17 @@ function FileDropSlot({ label, path, staged, uploading, onFiles, onRemove, accep
       onClick={() => !attached && inputRef.current?.click()}
       style={{
         border:`1.5px dashed ${dragOver ? '#00abe9' : (attached ? '#86efac' : '#cbd5e1')}`,
-        borderRadius:10, padding:'10px 12px', background:dragOver ? '#eaf3fd' : (attached ? '#f0fdf4' : '#f8fafc'),
+        borderRadius:10, padding:'10px 12px', background:dragOver ? '#eaf3fd' : (attached ? '#f0fdf4' : '#fff'),
         cursor:attached ? 'default' : 'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, minHeight:40,
       }}
     >
-      <div style={{ fontSize:12.5, color:attached ? '#166534' : '#94a3b8', fontWeight:600, minWidth:0 }}>
+      <div style={{ fontSize:12.5, color:attached ? '#166534' : '#9aa1ac', fontWeight:600, minWidth:0 }}>
         {uploading ? 'Envoi…' : attached ? `✓ ${label} ajouté(e)` : `${label} — glisser-déposer ou cliquer`}
       </div>
       {attached && !uploading && (
         <div style={{ display:'flex', gap:6, flexShrink:0 }} onClick={e => e.stopPropagation()}>
           {path && <FileViewButton path={path} />}
-          <button type="button" onClick={onRemove} title="Supprimer" style={{ ...CSS.btn, padding:'5px 9px', background:'#fef2f2', color:'#ef4444', fontSize:12 }}>🗑️</button>
+          <button type="button" onClick={onRemove} title="Supprimer" style={{ ...CSS.btn, padding:'5px 9px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', fontSize:12 }}>🗑️</button>
         </div>
       )}
       <input ref={inputRef} type="file" accept={accept} style={{ display:'none' }} onChange={e => onFiles(e.target.files)} />
@@ -604,7 +638,7 @@ function EntretienPlanifierModal({ candidat, session, onClose, onCreated }) {
         <div style={{ fontSize:12.5, color:'#0369a1', marginTop:2 }}>{candidat.magasin || '—'} · {candidat.poste_vise || '—'}</div>
       </div>
       <Field label="Manager destinataire">
-        <input style={{ ...CSS.input, background:'#f1f5f9', color:'#64748b' }} readOnly
+        <input style={{ ...CSS.input, background:'#f0f1f3', color:'#6b7280' }} readOnly
           value={resolving ? 'Recherche…' : (manager?.display_name || 'Aucun manager trouvé pour ce magasin')} />
       </Field>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 14px' }}>
@@ -613,8 +647,8 @@ function EntretienPlanifierModal({ candidat, session, onClose, onCreated }) {
       </div>
       {error && <div style={{ color:'#ef4444', fontSize:13, marginBottom:12, padding:'8px 12px', background:'#fef2f2', borderRadius:8 }}>{error}</div>}
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-        <button onClick={onClose} style={{ ...CSS.btn, background:'#f1f5f9', color:'#475569' }}>Annuler</button>
-        <button disabled={saving || resolving} onClick={submit} style={{ ...CSS.btn, background:saving?'#94a3b8':'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff' }}>
+        <button onClick={onClose} style={{ ...CSS.btn, background:'#fff', border:'1px solid #e5e7eb', color:'#374151' }}>Annuler</button>
+        <button disabled={saving || resolving} onClick={submit} style={{ ...CSS.btn, background:saving?'#9aa1ac':'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff' }}>
           {saving ? 'Envoi…' : 'Envoyer la demande →'}
         </button>
       </div>
@@ -650,7 +684,7 @@ function EntretienStatusCard({ entretien, onConfirmerContreProposition, onSuppri
         {entretien.commentaire_manager && <div style={{ fontSize:12.5, color:'#9a3412', marginTop:4, fontStyle:'italic' }}>« {entretien.commentaire_manager} »</div>}
         <div style={{ display:'flex', gap:8, marginTop:10 }}>
           <button onClick={onConfirmerContreProposition} style={{ ...CSS.btn, padding:'7px 12px', background:'linear-gradient(135deg,#16a34a,#22c55e)', color:'#fff', fontSize:12.5 }}>Confirmer ce créneau</button>
-          <button onClick={onSupprimer} disabled={deleting} style={{ ...CSS.btn, padding:'7px 12px', background:'#fef2f2', color:'#ef4444', fontSize:12.5 }}>{deleting ? '…' : 'Supprimer la demande'}</button>
+          <button onClick={onSupprimer} disabled={deleting} style={{ ...CSS.btn, padding:'7px 12px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', fontSize:12.5 }}>{deleting ? '…' : 'Supprimer la demande'}</button>
         </div>
       </div>
     )
@@ -661,7 +695,190 @@ function EntretienStatusCard({ entretien, onConfirmerContreProposition, onSuppri
   return (
     <div style={{ background:'#f0f9ff', border:'1px solid #bae6fd', borderRadius:10, padding:'12px 14px', marginBottom:16 }}>
       <div style={{ fontSize:13, color:'#0369a1', fontWeight:600 }}>{label}</div>
-      <button onClick={onSupprimer} disabled={deleting} style={{ ...CSS.btn, padding:'6px 12px', background:'#fef2f2', color:'#ef4444', fontSize:12, marginTop:10 }}>{deleting ? '…' : 'Supprimer la demande'}</button>
+      <button onClick={onSupprimer} disabled={deleting} style={{ ...CSS.btn, padding:'6px 12px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', fontSize:12, marginTop:10 }}>{deleting ? '…' : 'Supprimer la demande'}</button>
+    </div>
+  )
+}
+
+// ── Mail de bienvenue (candidat accepté, magasins Île-de-France) ────────────
+// Composition mailto pré-remplie éditable + traçage du clic "Envoyer", même
+// principe que le mail de reporting hebdomadaire (MesRetoursView.js) : on ne
+// peut pas savoir si l'email part réellement, seulement que la RH a cliqué.
+function MailBienvenueModal({ candidat, entree, magasinInfo, onClose, onSent }) {
+  const emailPro = buildLptEmail({ prenom: candidat.prenom, nom: candidat.nom }) || '—'
+  const motDePasse = 'bonjour' + stripAccents(candidat.prenom || '').toLowerCase().replace(/[^a-z]/g, '')
+  const dateEntreeLettres = formatDateLettresJour(entree.date_entree)
+  const premierJour = premierJourOuvreApres(entree.date_entree)
+  const nomMagasin = (candidat.magasin || '').replace(/\s*\(.*$/, '')
+  const prefixeMagasin = magasinInfo.typeMagasin === 'entrepot' ? `notre entrepôt de ${nomMagasin}` : `notre magasin de ${nomMagasin}`
+
+  const corpsInitial = `Bonjour,
+
+Comme échangé avec vous, nous sommes ravis de vous proposer de nous rejoindre en tant que ${candidat.poste_vise || ''} - CDI Temps plein ${entree.heures || ''}h sur ${prefixeMagasin}.
+
+Date d'entrée : le ${dateEntreeLettres} à partir de 10h pour le début de la formation dans nos locaux situés au 42 boulevard Sébastopol 75003 Paris (6ème étage)
+
+Nous aurons besoin des documents suivants pour faire votre contrat (à envoyer par mail à contact-rh@lunettespourtous.com dès que possible) :
+
+- votre pièce d'identité (recto verso)
+- votre RIB
+- votre attestation de sécurité sociale ou carte Vitale
+- votre extrait de casier judiciaire
+- la personne à contacter en cas d'urgence
+- votre justificatif de domicile (si hébergé, carte d'identité de l'hébergeur, justificatif de domicile et attestation sur l'honneur)
+- une attestation RQTH le cas échéant
+
+La formation ayant lieu dans nos nouveaux locaux encore en travaux, il n'y a pas d'interphone en bas.
+Voici donc un lien pour prévenir les formateurs de votre arrivée :
+https://lpt-formation.vercel.app/sonnette
+
+Prochaines étapes :
+- Réception et signature du contrat de travail : contrat envoyé via Yousign ou Docusign d'ici lundi, à signer à réception.
+- Lien Skello (notre logiciel de planning) : envoyé sur votre boîte mail personnelle pour vous créer un compte et avoir accès à vos plannings magasin.
+- Boîte mail professionnelle et comptes professionnels :
+Dès ${premierJour}, vous pourrez vous connecter à votre boîte mail professionnelle. Pour cela il faut aller sur GMAIL et se connecter.
+Adresse mail : ${emailPro}
+Mot de passe : ${motDePasse}
+
+Dans votre boîte mail vous trouverez un premier mail avec des instructions pour rejoindre notre communauté Slack et accéder à vos codes vendeurs.
+
+Vous trouverez en pièce jointe une présentation complète de notre entreprise, nos produits et nos valeurs, ainsi qu'une vidéo pour vous plonger dans votre future aventure chez nous :
+https://youtu.be/T-4wQCsmf7s
+
+Pour toute question, je reste disponible.
+
+Belle journée à vous, et bienvenue parmi nous.
+
+Bien à toi`
+
+  const [mailTo, setMailTo] = useState(candidat.email || '')
+  const [body, setBody] = useState(corpsInitial)
+  const [presentationUrl, setPresentationUrl] = useState(null)
+  const [uploadingPresentation, setUploadingPresentation] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    getSignedUrl(FICHIER_CONSTANT_PRESENTATION, 3600, RH_DOCUMENTS_BUCKET).then(u => { if (!cancelled) setPresentationUrl(u) })
+    return () => { cancelled = true }
+  }, [])
+
+  const uploadPresentation = async files => {
+    const file = files?.[0]
+    if (!file) return
+    setUploadingPresentation(true)
+    const ok = await uploadFichierConstant(file)
+    if (ok) setPresentationUrl(await getSignedUrl(FICHIER_CONSTANT_PRESENTATION, 3600, RH_DOCUMENTS_BUCKET))
+    setUploadingPresentation(false)
+  }
+
+  const envoyer = async () => {
+    const subject = encodeURIComponent('Bienvenue chez Lunettes pour tous')
+    window.location.href = `mailto:${mailTo}?subject=${subject}&body=${encodeURIComponent(body)}`
+    await onSent()
+    onClose()
+  }
+
+  return (
+    <Modal title="Mail de bienvenue" onClose={onClose} width={640}>
+      <Field label="Destinataire"><input style={CSS.input} value={mailTo} onChange={e => setMailTo(e.target.value)} /></Field>
+      <Field label="Corps du mail">
+        <textarea style={{ ...CSS.input, height:380, resize:'vertical', fontFamily:'inherit', whiteSpace:'pre-wrap' }} value={body} onChange={e => setBody(e.target.value)} />
+      </Field>
+      <div style={{ background:'#f0f9ff', border:'1px solid #bae6fd', borderRadius:10, padding:'12px 14px', marginBottom:18 }}>
+        <div style={{ ...CSS.label, color:'#0369a1', marginBottom:8 }}>Pièce jointe — à ajouter toi-même dans ton client mail (mailto ne le permet pas)</div>
+        <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+          {presentationUrl ? (
+            <a href={presentationUrl} target="_blank" rel="noopener noreferrer" style={{ ...CSS.btn, textDecoration:'none', padding:'6px 12px', background:'#fff', border:'1px solid #e5e7eb', color:'#0089ba', fontSize:12.5 }}>📄 Télécharger la présentation entreprise</a>
+          ) : (
+            <span style={{ fontSize:12.5, color:'#9aa1ac' }}>Aucune présentation mise en ligne pour l&apos;instant.</span>
+          )}
+          <label style={{ ...CSS.btn, padding:'6px 12px', background:'#fff', border:'1px solid #e5e7eb', color:'#6b7280', fontSize:12, cursor:'pointer' }}>
+            {uploadingPresentation ? 'Envoi…' : (presentationUrl ? 'Remplacer le fichier' : 'Mettre en ligne le fichier')}
+            <input type="file" style={{ display:'none' }} onChange={e => uploadPresentation(e.target.files)} disabled={uploadingPresentation} />
+          </label>
+        </div>
+      </div>
+      <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+        <button onClick={onClose} style={{ ...CSS.btn, background:'#fff', border:'1px solid #e5e7eb', color:'#374151' }}>Annuler</button>
+        <button onClick={envoyer} disabled={!mailTo.trim()} style={{ ...CSS.btn, background:!mailTo.trim()?'#cbd5e1':'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff' }}>Envoyer →</button>
+      </div>
+    </Modal>
+  )
+}
+
+function MailBienvenueSection({ candidat, decisionCandidat, onSent }) {
+  const [magasinInfo, setMagasinInfo] = useState(null)
+  const [entree, setEntree] = useState(null)
+  const [showModal, setShowModal] = useState(false)
+
+  useEffect(() => {
+    if (decisionCandidat !== 'accepte') return
+    let cancelled = false
+    resolveManagerForCandidat(candidat.magasin).then(async ({ magasinId }) => {
+      if (cancelled || !magasinId) return
+      const info = await apiGetMagasinInfo(magasinId)
+      if (!cancelled) setMagasinInfo(info)
+    })
+    return () => { cancelled = true }
+  }, [candidat.magasin, decisionCandidat])
+
+  useEffect(() => {
+    if (decisionCandidat !== 'accepte' || !candidat.entree_id) return
+    let cancelled = false
+    apiGetEntree(candidat.entree_id).then(e => { if (!cancelled) setEntree(e) })
+    return () => { cancelled = true }
+  }, [candidat.entree_id, decisionCandidat])
+
+  if (decisionCandidat !== 'accepte') return null
+  if (!magasinInfo) return null // résolution région/type en cours
+
+  // Beauchamps/Laboratoire Progressif n'ont pas de région renseignée en base
+  // (ce sont des annexes hors grille régionale) — un entrepôt est toujours
+  // traité comme Île-de-France, conformément à l'exemple donné (Beauchamps).
+  // TEMPORAIRE (demande Quentin, phase de test) : ouvert à tous les magasins.
+  // Pour revenir à la restriction IDF, remettre :
+  // const estIdf = magasinInfo.regionNom === 'Zone Paris' || magasinInfo.typeMagasin === 'entrepot'
+  const estIdf = true
+
+  if (!estIdf) {
+    return (
+      <div style={{ fontSize:12, color:'#9aa1ac', fontStyle:'italic', marginBottom:16 }}>
+        Mail de bienvenue automatique : bientôt disponible pour cette région.
+      </div>
+    )
+  }
+
+  const emailManquant = !candidat.email?.trim()
+  const dateManquante = !candidat.entree_id || !entree?.date_entree
+  const disabled = emailManquant || dateManquante
+
+  return (
+    <div style={{ marginBottom:16 }}>
+      <button
+        onClick={() => !disabled && setShowModal(true)}
+        disabled={disabled}
+        title={emailManquant ? "Renseigne l'email du candidat pour pouvoir envoyer ce mail" : dateManquante ? "Valide d'abord le recrutement (date d'entrée) pour pouvoir envoyer ce mail" : undefined}
+        style={{ ...CSS.btn, padding:'9px 16px', fontSize:13, color:'#fff', cursor:disabled?'not-allowed':'pointer', background:disabled?'#cbd5e1':'linear-gradient(135deg,#0089ba,#00abe9)' }}
+      >
+        ✉️ Envoyer le mail de bienvenue
+      </button>
+      {disabled && (
+        <div style={{ fontSize:11.5, color:'#9aa1ac', marginTop:6 }}>
+          {emailManquant ? "Renseigne l'email du candidat pour pouvoir envoyer ce mail." : "Valide d'abord le recrutement (date d'entrée) pour pouvoir envoyer ce mail."}
+        </div>
+      )}
+      {candidat.mail_bienvenue_envoye_at && (
+        <div style={{ fontSize:11.5, color:'#16a34a', marginTop:6 }}>
+          ✓ Mail de bienvenue envoyé le {new Date(candidat.mail_bienvenue_envoye_at).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' })}
+        </div>
+      )}
+      {showModal && (
+        <MailBienvenueModal
+          candidat={candidat} entree={entree} magasinInfo={magasinInfo}
+          onClose={() => setShowModal(false)}
+          onSent={onSent}
+        />
+      )}
     </div>
   )
 }
@@ -688,6 +905,11 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
 
   const push = updated => { setCandidat(updated); onUpdate(updated) }
   const entretien = entretiens[0] || null // le plus récent (order=created_at.desc)
+
+  const marquerMailBienvenueEnvoye = async () => {
+    await apiMarquerMailBienvenueEnvoye(candidat.id)
+    push({ ...candidat, mail_bienvenue_envoye_at: new Date().toISOString() })
+  }
 
   const uploadCandidatFile = async (files, field, setUploading) => {
     const file = files?.[0]
@@ -776,6 +998,14 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
   const isActif = !['valide', 'refuse'].includes(candidat.statut)
   const isDecision = candidat.statut === 'entretien_manager'
   const next = nextStatut(candidat.statut)
+  // Dossier documentaire débloqué seulement après un retour positif du
+  // manager à l'entretien (decision_candidat = 'accepte') — avant ça, la RH
+  // n'a pas à collecter pièce d'identité/RIB/etc. pour quelqu'un pas encore retenu.
+  const documentsUnlocked = entretien?.decision_candidat === 'accepte'
+  // La RH peut ajouter aux entrées dès l'acceptation du manager, sans
+  // attendre un dossier 100% complet — celui-ci reste modifiable une fois
+  // le collaborateur passé côté "Entrées de la semaine".
+  const peutValider = documentsUnlocked
 
   return (
     <>
@@ -786,18 +1016,30 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:16 }}>
           {[['Téléphone', candidat.telephone], ['Email', candidat.email || '—'], ['Magasin', candidat.magasin || '—'], ['Poste', candidat.poste_vise || '—'], ['Heures envisagées', candidat.heures_envisagees ? `${candidat.heures_envisagees}h` : '—']].map(([l, v]) => (
-            <div key={l} style={{ background:'#f8fafc', borderRadius:8, padding:'8px 12px' }}>
-              <div style={{ fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:0.5, marginBottom:2 }}>{l}</div>
-              <div style={{ fontSize:13.5, color:'#0f172a', fontWeight:500 }}>{v}</div>
+            <div key={l} style={{ background:'#fff', borderRadius:8, padding:'8px 12px' }}>
+              <div style={{ fontSize:10, fontWeight:700, color:'#9aa1ac', textTransform:'uppercase', letterSpacing:0.5, marginBottom:2 }}>{l}</div>
+              <div style={{ fontSize:13.5, color:'#14161a', fontWeight:500 }}>{v}</div>
             </div>
           ))}
         </div>
         <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap', alignItems:'center' }}>
-          <button onClick={() => setShowDocs(true)} style={{ ...CSS.btn, padding:'7px 14px', background:'#f0f9ff', color:'#0089ba', fontSize:12.5, display:'flex', alignItems:'center', gap:8 }}>
-            Documents <StatusBadge statut={candidat.statut_documents} />
-          </button>
-          {isActif && <button onClick={() => setShowEdit(true)} style={{ ...CSS.btn, padding:'7px 14px', background:'#f8fafc', color:'#475569', fontSize:12.5, border:'1px solid #e2e8f0' }}>Modifier</button>}
+          {documentsUnlocked && (
+            <button onClick={() => setShowDocs(true)} style={{ ...CSS.btn, padding:'7px 14px', background:'#f0f9ff', color:'#0089ba', fontSize:12.5, display:'flex', alignItems:'center', gap:8 }}>
+              Documents <StatusBadge statut={candidat.statut_documents} />
+            </button>
+          )}
+          {isActif && <button onClick={() => setShowEdit(true)} style={{ ...CSS.btn, padding:'7px 14px', background:'#fff', color:'#6b7280', fontSize:12.5, border:'1px solid #e5e7eb' }}>Modifier</button>}
         </div>
+        {!documentsUnlocked && isActif && (
+          <div style={{ fontSize:12, color:'#9aa1ac', fontStyle:'italic', marginBottom:14 }}>
+            Les documents seront à ajouter après un retour positif de l&apos;entretien.
+          </div>
+        )}
+        <MailBienvenueSection
+          candidat={candidat}
+          decisionCandidat={entretien?.decision_candidat}
+          onSent={marquerMailBienvenueEnvoye}
+        />
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }}>
           <FileDropSlot
             label="CV"
@@ -833,33 +1075,47 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
 
         {historique.length > 0 && (
           <div style={{ marginBottom:20 }}>
-            <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>Historique</div>
+            <div style={{ fontSize:11, fontWeight:700, color:'#9aa1ac', textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>Historique</div>
             {historique.map(h => (
-              <div key={h.id} style={{ display:'flex', gap:8, padding:'8px 0', borderBottom:'1px solid #f1f5f9', fontSize:12.5, flexWrap:'wrap' }}>
-                <span style={{ color:'#94a3b8', flexShrink:0 }}>{new Date(h.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+              <div key={h.id} style={{ display:'flex', gap:8, padding:'8px 0', borderBottom:'1px solid #f0f1f3', fontSize:12.5, flexWrap:'wrap' }}>
+                <span style={{ color:'#9aa1ac', flexShrink:0 }}>{new Date(h.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
                 <StatutPill statut={h.statut_nouveau} />
-                {h.commentaire && <span style={{ color:'#475569', fontStyle:'italic' }}>{h.commentaire}</span>}
+                {h.commentaire && <span style={{ color:'#6b7280', fontStyle:'italic' }}>{h.commentaire}</span>}
               </div>
             ))}
           </div>
         )}
         {isActif && (
-          <div style={{ display:'flex', gap:8, flexWrap:'wrap', paddingTop:12, borderTop:'1px solid #f1f5f9' }}>
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap', paddingTop:12, borderTop:'1px solid #f0f1f3' }}>
             {isDecision ? (
               <>
-                <button onClick={() => setShowValider(true)} style={{ ...CSS.btn, padding:'9px 16px', background:'linear-gradient(135deg,#16a34a,#22c55e)', color:'#fff', fontSize:13 }}>Valider le recrutement →</button>
-                <button onClick={() => setShowRefuser(true)} style={{ ...CSS.btn, padding:'9px 16px', background:'#fef2f2', color:'#ef4444', fontSize:13 }}>Refuser</button>
+                <div>
+                  <button
+                    onClick={() => peutValider && setShowValider(true)}
+                    disabled={!peutValider}
+                    title={!peutValider ? "En attente d'un retour positif du manager à l'entretien" : undefined}
+                    style={{ ...CSS.btn, padding:'9px 16px', fontSize:13, color:'#fff', cursor:peutValider?'pointer':'not-allowed', background:peutValider?'linear-gradient(135deg,#16a34a,#22c55e)':'#cbd5e1' }}
+                  >
+                    Valider et ajouter aux entrées →
+                  </button>
+                  {!peutValider && (
+                    <div style={{ fontSize:11.5, color:'#9aa1ac', marginTop:6 }}>
+                      En attente d&apos;un retour positif du manager à l&apos;entretien.
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => setShowRefuser(true)} style={{ ...CSS.btn, padding:'9px 16px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', fontSize:13, alignSelf:'flex-start' }}>Refuser</button>
               </>
             ) : next ? (
               <>
                 <button onClick={() => setShowAvancer(true)} style={{ ...CSS.btn, padding:'9px 16px', background:'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff', fontSize:13 }}>→ {STATUT_LABELS[next]}</button>
-                <button onClick={() => setShowRefuser(true)} style={{ ...CSS.btn, padding:'9px 16px', background:'#fef2f2', color:'#ef4444', fontSize:13 }}>Refuser</button>
+                <button onClick={() => setShowRefuser(true)} style={{ ...CSS.btn, padding:'9px 16px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', fontSize:13 }}>Refuser</button>
               </>
             ) : null}
           </div>
         )}
-        <div style={{ paddingTop:12, marginTop:12, borderTop:'1px solid #f1f5f9' }}>
-          <button onClick={() => setShowDeleteCandidat(true)} style={{ ...CSS.btn, padding:'7px 12px', background:'none', color:'#94a3b8', fontSize:12, border:'1px solid #e2e8f0' }}>🗑️ Supprimer ce candidat</button>
+        <div style={{ paddingTop:12, marginTop:12, borderTop:'1px solid #f0f1f3' }}>
+          <button onClick={() => setShowDeleteCandidat(true)} style={{ ...CSS.btn, padding:'7px 12px', background:'none', color:'#9aa1ac', fontSize:12, border:'1px solid #e5e7eb' }}>🗑️ Supprimer ce candidat</button>
         </div>
       </Modal>
       {showDocs && <FicheDocuments entity={candidat} entityType="candidat" onClose={() => setShowDocs(false)} onStatutChange={(_, s) => { const u = {...candidat, statut_documents: s}; setCandidat(u); onUpdate(u) }} />}
@@ -876,15 +1132,15 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
       )}
       {showDeleteCandidat && (
         <Modal title="Supprimer le candidat" onClose={() => setShowDeleteCandidat(false)} width={420}>
-          <p style={{ margin:'0 0 20px', color:'#475569', fontSize:14, lineHeight:1.6 }}>
+          <p style={{ margin:'0 0 20px', color:'#6b7280', fontSize:14, lineHeight:1.6 }}>
             Supprimer <strong>{candidat.prenom} {candidat.nom}</strong> ?<br />Action irréversible.
             {(candidat.statut === 'refuse' || entretien?.decision_candidat === 'refuse') && (
               <><br /><span style={{ color:'#c2410c' }}>Ce candidat sera archivé (nom, prénom, motif) pour être détecté en cas de nouvelle candidature.</span></>
             )}
           </p>
           <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-            <button onClick={() => setShowDeleteCandidat(false)} style={{ ...CSS.btn, background:'#f1f5f9', color:'#475569' }}>Annuler</button>
-            <button onClick={supprimerCandidat} disabled={deletingCandidat} style={{ ...CSS.btn, background:deletingCandidat?'#94a3b8':'#ef4444', color:'#fff' }}>{deletingCandidat ? '…' : 'Supprimer'}</button>
+            <button onClick={() => setShowDeleteCandidat(false)} style={{ ...CSS.btn, background:'#fff', border:'1px solid #e5e7eb', color:'#374151' }}>Annuler</button>
+            <button onClick={supprimerCandidat} disabled={deletingCandidat} style={{ ...CSS.btn, background:deletingCandidat?'#9aa1ac':'#ef4444', color:'#fff' }}>{deletingCandidat ? '…' : 'Supprimer'}</button>
           </div>
         </Modal>
       )}
@@ -905,9 +1161,12 @@ function RecrutementView({ session, regionFilter }) {
   }, [])
 
   const handleAdd = async data => {
-    const c = await apiAddCandidat({ ...data, statut: 'a_contacter', statut_documents: 'incomplet' })
+    // La prise de contact a nécessairement déjà eu lieu au moment où la RH
+    // saisit la fiche (échange préalable) — pas de statut "à contacter" en
+    // doublon à faire avancer manuellement juste après création.
+    const c = await apiAddCandidat({ ...data, statut: 'contacte', statut_documents: 'incomplet' })
     if (c) {
-      await apiAddHistorique({ candidat_id: c.id, statut_precedent: null, statut_nouveau: 'a_contacter', commentaire: 'Candidat créé', auteur: session.login })
+      await apiAddHistorique({ candidat_id: c.id, statut_precedent: null, statut_nouveau: 'contacte', commentaire: 'Candidat créé', auteur: session.login })
       setCandidats(prev => [...prev, c])
     }
     setShowAdd(false)
@@ -930,11 +1189,12 @@ function RecrutementView({ session, regionFilter }) {
 
   return (
     <div>
+      <PageHeader title="Recrutement" />
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14, flexWrap:'wrap', gap:12 }}>
         <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-          <div style={{ background:'#fff', border:'1.5px solid #e2e8f0', borderRadius:10, padding:'10px 16px', textAlign:'center' }}>
-            <div style={{ fontSize:22, fontWeight:800, color:'#0f172a' }}>{actifs.length}</div>
-            <div style={{ fontSize:11, color:'#64748b', fontWeight:600 }}>en cours</div>
+          <div style={{ background:'#fff', border:'1px solid #e5e7eb', borderRadius:10, padding:'10px 16px', textAlign:'center' }}>
+            <div style={{ fontSize:22, fontWeight:800, color:'#14161a' }}>{actifs.length}</div>
+            <div style={{ fontSize:11, color:'#6b7280', fontWeight:600 }}>en cours</div>
           </div>
           {enAttente > 0 && <div style={{ background:'#fff7ed', border:'1.5px solid #fed7aa', borderRadius:10, padding:'10px 16px', textAlign:'center' }}>
             <div style={{ fontSize:22, fontWeight:800, color:'#c2410c' }}>{enAttente}</div>
@@ -951,7 +1211,7 @@ function RecrutementView({ session, regionFilter }) {
       </div>
 
       <div style={{ position:'relative', marginBottom:20, maxWidth:340 }}>
-        <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', fontSize:14 }}>🔍</span>
+        <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#9aa1ac', fontSize:14 }}>🔍</span>
         <input
           style={{ ...CSS.input, paddingLeft:34 }}
           value={search}
@@ -960,15 +1220,15 @@ function RecrutementView({ session, regionFilter }) {
         />
       </div>
 
-      {loading ? <div style={{ textAlign:'center', padding:'48px 0', color:'#94a3b8' }}>Chargement…</div> : (
+      {loading ? <div style={{ textAlign:'center', padding:'48px 0', color:'#9aa1ac' }}>Chargement…</div> : (
         <>
           {actifs.length === 0 && !refuses.length && (
-            <div style={{ textAlign:'center', padding:'56px 24px', background:'#fff', borderRadius:14, border:'1.5px solid #e2e8f0' }}>
+            <div style={{ textAlign:'center', padding:'56px 24px', background:'#fff', borderRadius:16, border:'1px solid #e5e7eb', boxShadow:'0 1px 2px rgba(16,24,40,0.03)' }}>
               <div style={{ fontSize:36, marginBottom:12 }}>👥</div>
-              <div style={{ fontSize:15, fontWeight:600, color:'#64748b', marginBottom:6 }}>
+              <div style={{ fontSize:15, fontWeight:600, color:'#6b7280', marginBottom:6 }}>
                 {candidats.length === 0 ? 'Aucun candidat en cours' : 'Aucun candidat ne correspond au filtre'}
               </div>
-              <div style={{ fontSize:13, color:'#94a3b8' }}>
+              <div style={{ fontSize:13, color:'#9aa1ac' }}>
                 {candidats.length === 0 ? 'Ajoutez un premier candidat pour démarrer le pipeline.' : 'Essayez une autre région ou un autre nom.'}
               </div>
             </div>
@@ -980,14 +1240,14 @@ function RecrutementView({ session, regionFilter }) {
               <div key={statut} style={{ marginBottom:20 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
                   <StatutPill statut={statut} />
-                  <span style={{ fontSize:12, color:'#94a3b8', fontWeight:600 }}>{items.length} candidat{items.length>1?'s':''}</span>
+                  <span style={{ fontSize:12, color:'#9aa1ac', fontWeight:600 }}>{items.length} candidat{items.length>1?'s':''}</span>
                 </div>
-                <div style={{ background:'#fff', border:'1.5px solid #e2e8f0', borderRadius:12, overflow:'hidden' }}>
+                <div style={{ background:'#fff', border:'1px solid #e5e7eb', borderRadius:16, overflow:'hidden', boxShadow:'0 1px 2px rgba(16,24,40,0.03)' }}>
                   {items.map((c, i) => (
-                    <div key={c.id} onClick={() => setFiche(c)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'13px 16px', borderBottom:i<items.length-1?'1px solid #f1f5f9':'none', cursor:'pointer', gap:12, flexWrap:'wrap' }}>
+                    <div key={c.id} onClick={() => setFiche(c)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'13px 16px', borderBottom:i<items.length-1?'1px solid #f0f1f3':'none', cursor:'pointer', gap:12, flexWrap:'wrap' }}>
                       <div style={{ minWidth:0 }}>
-                        <div style={{ fontWeight:700, color:'#0f172a', fontSize:14 }}>{c.prenom} {c.nom}</div>
-                        <div style={{ fontSize:12, color:'#64748b', marginTop:1 }}>{c.magasin||'—'} · {c.poste_vise||'—'} · {c.telephone}</div>
+                        <div style={{ fontWeight:700, color:'#14161a', fontSize:14 }}>{c.prenom} {c.nom}</div>
+                        <div style={{ fontSize:12, color:'#6b7280', marginTop:1 }}>{c.magasin||'—'} · {c.poste_vise||'—'} · {c.telephone}</div>
                       </div>
                       <div style={{ display:'flex', gap:8, alignItems:'center', flexShrink:0 }}>
                         <StatusBadge statut={c.statut_documents} />
@@ -1001,16 +1261,16 @@ function RecrutementView({ session, regionFilter }) {
           })}
           {refuses.length > 0 && (
             <div style={{ marginTop:8 }}>
-              <button onClick={() => setShowRefuses(r => !r)} style={{ ...CSS.btn, padding:'6px 12px', background:'none', color:'#94a3b8', fontSize:12, border:'none' }}>
+              <button onClick={() => setShowRefuses(r => !r)} style={{ ...CSS.btn, padding:'6px 12px', background:'none', color:'#9aa1ac', fontSize:12, border:'none' }}>
                 {showRefuses?'▲':'▼'} {refuses.length} refusé{refuses.length>1?'s':''}
               </button>
               {showRefuses && (
-                <div style={{ background:'#fff', border:'1.5px solid #e2e8f0', borderRadius:12, overflow:'hidden', marginTop:8 }}>
+                <div style={{ background:'#fff', border:'1px solid #e5e7eb', borderRadius:16, overflow:'hidden', marginTop:8, boxShadow:'0 1px 2px rgba(16,24,40,0.03)' }}>
                   {refuses.map((c, i) => (
-                    <div key={c.id} onClick={() => setFiche(c)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 16px', borderBottom:i<refuses.length-1?'1px solid #f1f5f9':'none', cursor:'pointer', opacity:0.65 }}>
+                    <div key={c.id} onClick={() => setFiche(c)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 16px', borderBottom:i<refuses.length-1?'1px solid #f0f1f3':'none', cursor:'pointer', opacity:0.65 }}>
                       <div>
                         <div style={{ fontWeight:600, color:'#374151', fontSize:13.5 }}>{c.prenom} {c.nom}</div>
-                        <div style={{ fontSize:11.5, color:'#94a3b8' }}>{c.magasin||'—'} · {c.poste_vise||'—'}</div>
+                        <div style={{ fontSize:11.5, color:'#9aa1ac' }}>{c.magasin||'—'} · {c.poste_vise||'—'}</div>
                       </div>
                       <StatutPill statut="refuse" />
                     </div>
@@ -1034,9 +1294,9 @@ function RecrutementView({ session, regionFilter }) {
 function DeleteConfirm({ entree, onConfirm, onClose }) {
   return (
     <Modal title="Supprimer l'entrée" onClose={onClose} width={420}>
-      <p style={{ margin:'0 0 20px', color:'#475569', fontSize:14, lineHeight:1.6 }}>Supprimer <strong>{entree.prenom} {entree.nom}</strong> ({entree.magasin}) ?<br />Action irréversible.</p>
+      <p style={{ margin:'0 0 20px', color:'#6b7280', fontSize:14, lineHeight:1.6 }}>Supprimer <strong>{entree.prenom} {entree.nom}</strong> ({entree.magasin}) ?<br />Action irréversible.</p>
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-        <button onClick={onClose} style={{ ...CSS.btn, background:'#f1f5f9', color:'#475569' }}>Annuler</button>
+        <button onClick={onClose} style={{ ...CSS.btn, background:'#fff', border:'1px solid #e5e7eb', color:'#374151' }}>Annuler</button>
         <button onClick={onConfirm} style={{ ...CSS.btn, background:'#ef4444', color:'#fff' }}>Supprimer</button>
       </div>
     </Modal>
@@ -1084,7 +1344,7 @@ function EntreeForm({ initial, semaineLundi, session, onSave, onClose }) {
           <Field label="Heures / semaine"><input style={CSS.input} value={form.heures} onChange={e => set('heures', e.target.value)} placeholder="35" /></Field>
           <Field label="Téléphone"><input style={CSS.input} value={form.telephone} onChange={e => set('telephone', e.target.value)} placeholder="06 xx xx xx xx" /></Field>
         </div>
-        <div style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:10, padding:'12px 14px', marginBottom:14 }}>
+        <div style={{ background:'#fff', border:'1px solid #e5e7eb', borderRadius:10, padding:'12px 14px', marginBottom:14 }}>
           <div style={{ ...CSS.label, marginBottom:8 }}>Domicile</div>
           <div style={{ display:'flex', gap:14, flexWrap:'wrap' }}>
             {['personnel','heberge'].map(v => (
@@ -1106,8 +1366,8 @@ function EntreeForm({ initial, semaineLundi, session, onSave, onClose }) {
         </div>
         {error && <div style={{ color:'#ef4444', fontSize:13, marginBottom:12, padding:'8px 12px', background:'#fef2f2', borderRadius:8 }}>{error}</div>}
         <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-          <button type="button" onClick={onClose} style={{ ...CSS.btn, background:'#f1f5f9', color:'#475569' }}>Annuler</button>
-          <button type="submit" disabled={saving} style={{ ...CSS.btn, background:saving?'#94a3b8':'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff' }}>{saving?'Enregistrement…':isEdit?'Enregistrer':'Ajouter'}</button>
+          <button type="button" onClick={onClose} style={{ ...CSS.btn, background:'#fff', border:'1px solid #e5e7eb', color:'#374151' }}>Annuler</button>
+          <button type="submit" disabled={saving} style={{ ...CSS.btn, background:saving?'#9aa1ac':'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff' }}>{saving?'Enregistrement…':isEdit?'Enregistrer':'Ajouter'}</button>
         </div>
       </form>
     </Modal>
@@ -1163,9 +1423,10 @@ function EntreesView({ session, regionFilter }) {
 
   return (
     <div>
+      <PageHeader title="Entrées de la semaine" />
       <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap' }}>
         {tabs.map(t => (
-          <button key={t.id} onClick={() => setActiveWeek(t.id)} style={{ ...CSS.btn, padding:'12px 20px', textAlign:'left', background:activeWeek===t.id?'linear-gradient(135deg,#0089ba,#00abe9)':'#fff', color:activeWeek===t.id?'#fff':'#475569', border:activeWeek===t.id?'none':'1.5px solid #e2e8f0', boxShadow:activeWeek===t.id?'0 4px 14px rgba(0,171,233,0.3)':'none' }}>
+          <button key={t.id} onClick={() => setActiveWeek(t.id)} style={{ ...CSS.btn, padding:'12px 20px', textAlign:'left', background:activeWeek===t.id?'linear-gradient(135deg,#0089ba,#00abe9)':'#fff', color:activeWeek===t.id?'#fff':'#6b7280', border:activeWeek===t.id?'none':'1px solid #e5e7eb', boxShadow:activeWeek===t.id?'0 4px 14px rgba(0,171,233,0.3)':'none' }}>
             <div style={{ fontSize:13.5, fontWeight:700 }}>{t.label}</div>
             <div style={{ fontSize:11, marginTop:2, opacity:0.8 }}>{t.sub}</div>
           </button>
@@ -1173,9 +1434,9 @@ function EntreesView({ session, regionFilter }) {
       </div>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14, flexWrap:'wrap', gap:10 }}>
         <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-          <div style={{ background:'#fff', border:'1.5px solid #e2e8f0', borderRadius:10, padding:'10px 16px', textAlign:'center' }}>
-            <div style={{ fontSize:22, fontWeight:800, color:'#0f172a' }}>{visibleEntrees.length}</div>
-            <div style={{ fontSize:11, color:'#64748b', fontWeight:600 }}>entrant{visibleEntrees.length>1?'s':''}</div>
+          <div style={{ background:'#fff', border:'1px solid #e5e7eb', borderRadius:10, padding:'10px 16px', textAlign:'center' }}>
+            <div style={{ fontSize:22, fontWeight:800, color:'#14161a' }}>{visibleEntrees.length}</div>
+            <div style={{ fontSize:11, color:'#6b7280', fontWeight:600 }}>entrant{visibleEntrees.length>1?'s':''}</div>
           </div>
           {visibleEntrees.length > 0 && <>
             <div style={{ background:'#dcfce7', border:'1.5px solid #86efac', borderRadius:10, padding:'10px 16px', textAlign:'center' }}>
@@ -1192,37 +1453,42 @@ function EntreesView({ session, regionFilter }) {
           + Ajouter un collaborateur
         </button>
       </div>
-      <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #e2e8f0', overflow:'hidden' }}>
-        {loading ? <div style={{ textAlign:'center', padding:'48px 0', color:'#94a3b8' }}>Chargement…</div> :
+      <div style={{ background:'#fff', borderRadius:16, border:'1px solid #e5e7eb', overflow:'hidden', boxShadow:'0 1px 2px rgba(16,24,40,0.03)' }}>
+        {loading ? <div style={{ textAlign:'center', padding:'48px 0', color:'#9aa1ac' }}>Chargement…</div> :
          !visibleEntrees.length ? (
-          <div style={{ textAlign:'center', padding:'56px 24px', color:'#94a3b8' }}>
+          <div style={{ textAlign:'center', padding:'56px 24px', color:'#9aa1ac' }}>
             <div style={{ fontSize:36, marginBottom:12 }}>📋</div>
-            <div style={{ fontSize:15, fontWeight:600, color:'#64748b', marginBottom:6 }}>{entrees.length === 0 ? 'Aucun entrant cette semaine' : 'Aucun entrant dans cette région'}</div>
+            <div style={{ fontSize:15, fontWeight:600, color:'#6b7280', marginBottom:6 }}>{entrees.length === 0 ? 'Aucun entrant cette semaine' : 'Aucun entrant dans cette région'}</div>
           </div>
          ) : (
           <div style={{ overflowX:'auto' }}>
             <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13.5 }}>
               <thead>
-                <tr style={{ background:'#f8fafc' }}>
+                <tr style={{ background:'#fff' }}>
                   {['Collaborateur','Magasin','Date entrée','Poste','Heures','Téléphone','Dossier','Actions'].map(h => (
-                    <th key={h} style={{ padding:'10px 14px', textAlign:'left', fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:0.5, borderBottom:'2px solid #e2e8f0', whiteSpace:'nowrap' }}>{h}</th>
+                    <th key={h} style={{ padding:'10px 14px', textAlign:'left', fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:0.5, borderBottom:'2px solid #e5e7eb', whiteSpace:'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {visibleEntrees.map((e, i) => (
-                  <tr key={e.id} onClick={() => setShowFiche(e)} style={{ borderBottom:'1px solid #f1f5f9', background:i%2===0?'#fff':'#fafbfc', cursor:'pointer' }}>
-                    <td style={{ padding:'12px 14px', fontWeight:700, color:'#0f172a', whiteSpace:'nowrap' }}>{e.prenom} {e.nom}</td>
-                    <td style={{ padding:'12px 14px', color:'#475569' }}>{e.magasin}</td>
-                    <td style={{ padding:'12px 14px', color:'#475569', whiteSpace:'nowrap' }}>{e.date_entree?new Date(e.date_entree+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):'—'}</td>
-                    <td style={{ padding:'12px 14px', color:'#475569' }}>{e.poste||'—'}</td>
-                    <td style={{ padding:'12px 14px', color:'#475569', whiteSpace:'nowrap' }}>{e.heures?`${e.heures}h`:'—'}</td>
-                    <td style={{ padding:'12px 14px', color:'#475569' }}>{e.telephone||'—'}</td>
+                  <tr
+                    key={e.id} onClick={() => setShowFiche(e)}
+                    style={{ borderBottom:'1px solid #f0f1f3', background:i%2===0?'#fff':'#fafbfc', cursor:'pointer', transition:'background .12s' }}
+                    onMouseEnter={ev => { ev.currentTarget.style.background = '#f5f6f8' }}
+                    onMouseLeave={ev => { ev.currentTarget.style.background = i%2===0?'#fff':'#fafbfc' }}
+                  >
+                    <td style={{ padding:'12px 14px', fontWeight:700, color:'#14161a', whiteSpace:'nowrap' }}>{e.prenom} {e.nom}</td>
+                    <td style={{ padding:'12px 14px', color:'#6b7280' }}>{e.magasin}</td>
+                    <td style={{ padding:'12px 14px', color:'#6b7280', whiteSpace:'nowrap' }}>{e.date_entree?new Date(e.date_entree+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):'—'}</td>
+                    <td style={{ padding:'12px 14px', color:'#6b7280' }}>{e.poste||'—'}</td>
+                    <td style={{ padding:'12px 14px', color:'#6b7280', whiteSpace:'nowrap' }}>{e.heures?`${e.heures}h`:'—'}</td>
+                    <td style={{ padding:'12px 14px', color:'#6b7280' }}>{e.telephone||'—'}</td>
                     <td style={{ padding:'12px 14px' }} onClick={ev=>{ev.stopPropagation();setShowFiche(e)}}><StatusBadge statut={e.statut_documents} /></td>
                     <td style={{ padding:'12px 14px' }} onClick={ev=>ev.stopPropagation()}>
                       <div style={{ display:'flex', gap:6 }}>
                         <button onClick={() => setShowForm(e)} style={{ ...CSS.btn, padding:'5px 10px', background:'#f0f9ff', color:'#0089ba', fontSize:12 }}>Modifier</button>
-                        <button onClick={() => setShowDelete(e)} style={{ ...CSS.btn, padding:'5px 10px', background:'#fef2f2', color:'#ef4444', fontSize:12 }}>Suppr.</button>
+                        <button onClick={() => setShowDelete(e)} style={{ ...CSS.btn, padding:'5px 10px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', fontSize:12 }}>Suppr.</button>
                       </div>
                     </td>
                   </tr>
@@ -1232,7 +1498,7 @@ function EntreesView({ session, regionFilter }) {
           </div>
          )}
       </div>
-      <div style={{ marginTop:10, fontSize:12, color:'#94a3b8', textAlign:'right' }}>Cliquez sur une ligne pour voir le dossier documentaire.</div>
+      <div style={{ marginTop:10, fontSize:12, color:'#9aa1ac', textAlign:'right' }}>Cliquez sur une ligne pour voir le dossier documentaire.</div>
       {showForm && <EntreeForm initial={showForm==='add'?null:showForm} semaineLundi={semaineLundi} session={session} onSave={handleSave} onClose={() => setShowForm(null)} />}
       {showFiche && <FicheDocuments entity={showFiche} entityType="entree" onClose={() => setShowFiche(null)} onStatutChange={handleStatutChange} />}
       {showDelete && <DeleteConfirm entree={showDelete} onConfirm={handleDelete} onClose={() => setShowDelete(null)} />}
@@ -1259,57 +1525,37 @@ function RhDashboard({ session, onLogout }) {
     })
   }, [])
 
-  const tabs = [
-    { id: 'recrutement', label: 'Recrutement', count: counts.recrutement },
-    { id: 'entrees', label: 'Entrées de la semaine', count: counts.entrees },
-  ]
+  const firstName = (session.displayName || '').split(' ')[0]
 
   return (
-    <div style={{ minHeight:'100vh', background:'#f4f7fb', fontFamily:'inherit' }}>
-      <div style={{ background:'linear-gradient(90deg,#091520 0%,#0d2538 100%)', borderBottom:'1px solid rgba(255,255,255,0.08)', padding:'16px 24px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit:'contain' }} />
-          <div style={{ width:1, height:26, background:'rgba(255,255,255,0.15)' }} />
-          <div>
-            <div style={{ fontSize:10, fontWeight:700, color:'rgba(255,255,255,0.4)', letterSpacing:2, textTransform:'uppercase' }}>Ressources humaines</div>
-            <div style={{ fontSize:15, fontWeight:700, color:'#fff' }}>Bonjour {session.displayName.split(' ')[0]}</div>
+    <div style={{ minHeight:'100vh', background:'#f5f6f8', fontFamily:'inherit' }}>
+      <div style={{ display:'flex', alignItems:'flex-start' }}>
+        <RhSidebar active={activeTab} onNavigate={setActiveTab} counts={counts} firstName={firstName} onLogout={onLogout} />
+
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ padding:'20px 24px 0', display:'flex', gap:8, flexWrap:'wrap' }}>
+            {REGION_FILTERS.map(r => (
+              <button
+                key={r.id}
+                onClick={() => setRegionFilter(r.id)}
+                style={{
+                  ...CSS.btn, padding:'7px 14px', fontSize:12.5, display:'flex', alignItems:'center', gap:6,
+                  background: regionFilter === r.id ? (r.color ? r.bg : '#eaf3fd') : '#fff',
+                  color: regionFilter === r.id ? (r.color || '#0089ba') : '#6b7280',
+                  border: `1.5px solid ${regionFilter === r.id ? (r.border || '#00abe9') : '#e5e7eb'}`,
+                }}
+              >
+                <span>{r.emoji}</span>{r.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ padding:'20px 28px 40px', maxWidth:1120 }}>
+            {activeTab === 'recrutement'
+              ? <RecrutementView session={session} regionFilter={regionFilter} />
+              : <EntreesView session={session} regionFilter={regionFilter} />}
           </div>
         </div>
-        <button onClick={onLogout} style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, color:'rgba(255,255,255,0.6)', fontSize:12.5, fontWeight:600, padding:'7px 13px', cursor:'pointer', fontFamily:'inherit' }}>Déconnexion</button>
-      </div>
-
-      <div style={{ background:'#fff', borderBottom:'1px solid #e2e8f0', padding:'0 24px' }}>
-        <div style={{ maxWidth:1100, margin:'0 auto', display:'flex' }}>
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ padding:'14px 20px', border:'none', background:'none', cursor:'pointer', fontFamily:'inherit', fontSize:14, fontWeight:700, color:activeTab===t.id?'#00abe9':'#64748b', borderBottom:activeTab===t.id?'2px solid #00abe9':'2px solid transparent', display:'flex', alignItems:'center', gap:8 }}>
-              {t.label}
-              {t.count != null && t.count > 0 && <span style={{ background:activeTab===t.id?'#00abe9':'#e2e8f0', color:activeTab===t.id?'#fff':'#64748b', fontSize:11, fontWeight:700, padding:'1px 7px', borderRadius:10 }}>{t.count}</span>}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ maxWidth:1100, margin:'0 auto', padding:'16px 20px 0', display:'flex', gap:8, flexWrap:'wrap' }}>
-        {REGION_FILTERS.map(r => (
-          <button
-            key={r.id}
-            onClick={() => setRegionFilter(r.id)}
-            style={{
-              ...CSS.btn, padding:'7px 14px', fontSize:12.5, display:'flex', alignItems:'center', gap:6,
-              background: regionFilter === r.id ? (r.color ? r.bg : '#eaf3fd') : '#fff',
-              color: regionFilter === r.id ? (r.color || '#0089ba') : '#64748b',
-              border: `1.5px solid ${regionFilter === r.id ? (r.border || '#00abe9') : '#e2e8f0'}`,
-            }}
-          >
-            <span>{r.emoji}</span>{r.label}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ maxWidth:1100, margin:'0 auto', padding:'20px 20px 24px' }}>
-        {activeTab === 'recrutement'
-          ? <RecrutementView session={session} regionFilter={regionFilter} />
-          : <EntreesView session={session} regionFilter={regionFilter} />}
       </div>
     </div>
   )

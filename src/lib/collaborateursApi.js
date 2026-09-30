@@ -10,6 +10,12 @@ export async function getMagasinIdBySlug(slug) {
   return rows?.[0]?.id || null
 }
 
+export async function getCollaborateurById(id) {
+  if (!id) return null
+  const rows = await sbSelect('collaborateurs', `id=eq.${id}`)
+  return rows?.[0] || null
+}
+
 /** Tous les collaborateurs actifs d'un magasin — source du @mention dans les
  * notes terrain (script refonte reporting hebdo). */
 export async function getCollaborateursByMagasin(magasinId) {
@@ -69,12 +75,13 @@ export async function findCollaborateurByName(magasinId, prenom, nom) {
  * elle n'existe pas encore — pour que le bouton "Lancer le test de sortie"
  * soit toujours disponible sur la tuile "Nouveaux collaborateurs", même
  * avant que quelqu'un n'ait migré la personne dans la table collaborateurs. */
-export async function getOrCreateCollaborateurForEntree(magasinId, prenom, nom, poste) {
+export async function getOrCreateCollaborateurForEntree(magasinId, prenom, nom, poste, dateEntree) {
   const existing = await findCollaborateurByName(magasinId, prenom, nom)
   if (existing) return existing
   const slug = slugifyName(prenom, nom)
   const ok = await sbInsert('collaborateurs', {
     magasin_id: magasinId, slug, prenom, nom, poste: poste || null, statut: 'nouveau',
+    date_entree: dateEntree || null,
   })
   if (!ok) return null
   const rows = await sbSelect('collaborateurs', `magasin_id=eq.${magasinId}&slug=eq.${encodeURIComponent(slug)}`)

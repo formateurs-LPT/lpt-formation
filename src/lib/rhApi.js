@@ -193,6 +193,7 @@ export async function apiSyncFormateur(entrees) {
     nom: e.nom, prenom: e.prenom, fullName: `${e.nom} ${e.prenom}`,
     magasin: (e.magasin || '').toUpperCase(), heures: e.heures,
     poste: e.poste, telephone: e.telephone, statut_documents: e.statut_documents,
+    date_entree: e.date_entree || null,
   }))
   try {
     await fetch(`${SB_URL}/rest/v1/trainer_state?trainer=eq.__weekly__`, {
@@ -202,3 +203,24 @@ export async function apiSyncFormateur(entrees) {
     })
   } catch {}
 }
+
+// Mail de bienvenue (candidat accepté, magasins Île-de-France)
+export async function apiGetMagasinInfo(magasinId) {
+  // Requête dédiée (pas via get()) : besoin d'un select custom avec embed
+  // désambiguïsé (magasins a deux relations vers regions), incompatible avec
+  // le select=* fixe du helper générique.
+  try {
+    const url = `${SB_URL}/rest/v1/magasins?id=eq.${magasinId}&select=type_magasin,regions!magasins_region_id_fkey(nom)`
+    const r = await fetch(url, { headers: h() })
+    if (!r.ok) return { typeMagasin: 'magasin', regionNom: null }
+    const rows = await r.json()
+    const row = rows?.[0]
+    return { typeMagasin: row?.type_magasin || 'magasin', regionNom: row?.regions?.nom || null }
+  } catch { return { typeMagasin: 'magasin', regionNom: null } }
+}
+export async function apiGetEntree(entreeId) {
+  const rows = await get('entrees_rh', `id=eq.${entreeId}`)
+  return rows?.[0] || null
+}
+export const apiMarquerMailBienvenueEnvoye = (candidatId) =>
+  patch('candidats', `id=eq.${candidatId}`, { mail_bienvenue_envoye_at: new Date().toISOString() })

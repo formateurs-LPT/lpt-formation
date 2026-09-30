@@ -12,11 +12,12 @@ import TrainingRegistrationTile, { UpcomingRegistrationsPanel } from '@/componen
 import {
   getMagasinIdBySlug, getNouveauxCollaborateurs, getCollaborateursEnAttenteValidation,
   declencherTestSortie, validerNouvelEntrant, findCollaborateurByName, getOrCreateCollaborateurForEntree,
+  getCollaborateurById,
 } from '@/lib/collaborateursApi'
 import { getReportingsHebdo, updateReportingStructure } from '@/lib/notesTerrainApi'
 import DemandesInterventionView, { DemandeInterventionModal } from '@/components/DemandesInterventionView'
 import ReportingDetailView from '@/components/ReportingDetailView'
-import { isMagasinBelgique, BELGIQUE_ONLY_LOGINS } from '@/lib/directionApi'
+import { isMagasinBelgique, BELGIQUE_ONLY_LOGINS, getNotificationsNonLues, marquerNotificationsLues } from '@/lib/directionApi'
 import ManagerSidebar from '@/components/ManagerSidebar'
 import { IconVideo, IconMapPin, IconChevronRight, IconClipboard } from '@/components/ManagerIcons'
 import {
@@ -251,7 +252,7 @@ function AFaireCard({ magasinId, store, nouveauxEntrants, newHireRows, onDeclenc
             pending={!!collab?.test_declenche_at}
             actionLabel="Lancer le test de sortie"
             onAction={async () => {
-              const c = collab || await getOrCreateCollaborateurForEntree(magasinId, entree.prenom, entree.nom, entree.poste)
+              const c = collab || await getOrCreateCollaborateurForEntree(magasinId, entree.prenom, entree.nom, entree.poste, entree.date_entree)
               if (c) onDeclencher(c.id, c)
             }}
           />
@@ -721,7 +722,7 @@ const RCSS = {
   btn: { padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 700, fontFamily: 'inherit' },
 }
 
-function CvSignedLinkMgr({ path }) {
+function CvSignedLinkMgr({ path, label = '📄 CV' }) {
   const [loading, setLoading] = useState(false)
   const open = async () => {
     setLoading(true)
@@ -729,7 +730,7 @@ function CvSignedLinkMgr({ path }) {
     setLoading(false)
     if (url) window.open(url, '_blank')
   }
-  return <button onClick={open} disabled={loading} style={{ ...RCSS.btn, background: '#f0f9ff', color: '#0089ba' }}>{loading ? '…' : '📄 CV'}</button>
+  return <button onClick={open} disabled={loading} style={{ ...RCSS.btn, background: '#f0f9ff', color: '#0089ba' }}>{loading ? '…' : label}</button>
 }
 
 function ContreProposerForm({ onSubmit, onCancel }) {
@@ -799,7 +800,8 @@ function EntretienCard({ entretien, candidat, onChanged }) {
           <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 2 }}>{candidat?.poste_vise || '—'}</div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {candidat?.cv_url && <CvSignedLinkMgr path={candidat.cv_url} />}
+          {candidat?.cv_url && <CvSignedLinkMgr path={candidat.cv_url} label="📄 CV" />}
+          {candidat?.lettre_motivation_url && <CvSignedLinkMgr path={candidat.lettre_motivation_url} label="✉️ Lettre" />}
           <button onClick={supprimer} disabled={busy} title="Supprimer la demande" style={{ ...RCSS.btn, background: 'none', color: '#94a3b8', border: '1px solid #e2e8f0' }}>🗑️</button>
         </div>
       </div>
@@ -887,6 +889,52 @@ function ReportingPage({ reportings, magasinNom }) {
   )
 }
 
+// Fiche minimale d'un collaborateur de la table relationnelle `collaborateurs`
+// — distincte de CollaborateurProfilePage (qui affiche le roster STORES codé
+// en dur, sans lien fiable avec cette table). Ouverte depuis une notification
+// (ex. fin de période d'essai) qui référence un id de cette table.
+function CollaborateurDbFicheModal({ collaborateurId, onClose }) {
+  const [collab, setCollab] = useState(undefined) // undefined = chargement, null = introuvable
+
+  useEffect(() => {
+    let cancelled = false
+    getCollaborateurById(collaborateurId).then(c => { if (!cancelled) setCollab(c) })
+    return () => { cancelled = true }
+  }, [collaborateurId])
+
+  const finEssai = collab?.date_entree ? new Date(collab.date_entree) : null
+  if (finEssai) finEssai.setMonth(finEssai.getMonth() + 2)
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,25,35,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
+      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 420, boxShadow: '0 24px 64px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>
+        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#0f172a' }}>Fiche collaborateur</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: '#94a3b8', lineHeight: 1 }}>×</button>
+        </div>
+        <div style={{ padding: 24 }}>
+          {collab === undefined ? (
+            <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>Chargement…</div>
+          ) : collab === null ? (
+            <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>Collaborateur introuvable.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{collab.prenom} {collab.nom}</div>
+              <div style={{ fontSize: 13.5, color: '#64748b' }}>{collab.poste || 'Poste non renseigné'}</div>
+              {collab.date_entree && (
+                <div style={{ fontSize: 13, color: '#374151', marginTop: 6 }}>
+                  Entrée le {new Date(collab.date_entree + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  {finEssai && <> — fin de période d&apos;essai le <strong>{finEssai.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</strong></>}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ManagerDashboard({ session, onLogout }) {
   const [entreesData, setEntreesData] = useState([])
   const [activeNav, setActiveNav] = useState('accueil')
@@ -899,6 +947,42 @@ function ManagerDashboard({ session, onLogout }) {
   const [reportings, setReportings] = useState([])
   const [demandesCount, setDemandesCount] = useState(0)
   const [recrutementCount, setRecrutementCount] = useState(0)
+  const [notifications, setNotifications] = useState([])
+  const [ficheCollaborateurId, setFicheCollaborateurId] = useState(null)
+
+  // Centre de notifications générique (table `notifications`, déjà utilisée
+  // ailleurs) — pour l'instant seul le type 'fin_periode_essai' est enrichi
+  // avec un libellé lisible ; les autres types s'affichent en repli minimal.
+  const refreshNotifications = async (login) => {
+    const rows = await getNotificationsNonLues(login)
+    const essaiIds = rows.filter(n => n.type === 'fin_periode_essai').map(n => n.reference_id).filter(Boolean)
+    const collabs = essaiIds.length ? await sbSelect('collaborateurs', `id=in.(${essaiIds.join(',')})&select=id,prenom,nom,poste,date_entree`) : []
+    const collabById = Object.fromEntries((collabs || []).map(c => [c.id, c]))
+    setNotifications(rows.map(n => {
+      if (n.type === 'fin_periode_essai') {
+        const c = collabById[n.reference_id]
+        const fin = c?.date_entree ? new Date(c.date_entree) : null
+        if (fin) fin.setMonth(fin.getMonth() + 2)
+        const dateLabel = fin ? fin.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '—'
+        return {
+          id: n.id, collaborateurId: n.reference_id,
+          label: c ? `${c.prenom} ${c.nom} arrive en fin de période d'essai le ${dateLabel} — pense à faire le point.` : "Fin de période d'essai à venir",
+        }
+      }
+      return { id: n.id, collaborateurId: null, label: `Notification (${n.type})` }
+    }))
+  }
+
+  const handleSelectNotification = async (n) => {
+    setNotifications(prev => prev.filter(x => x.id !== n.id))
+    await marquerNotificationsLues([n.id])
+    if (n.collaborateurId) setFicheCollaborateurId(n.collaborateurId)
+  }
+
+  useEffect(() => {
+    refreshNotifications(session.login)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.login])
 
   useEffect(() => {
     let cancelled = false
@@ -977,6 +1061,12 @@ function ManagerDashboard({ session, onLogout }) {
       <div id="dashboard" className="manager-light-theme">
         <div className="dash-wrap">
           <p style={{ color: '#dc2626' }}>Magasin introuvable ({session.magasin}). Contactez votre formateur.</p>
+          <button
+            onClick={onLogout}
+            style={{ marginTop: 12, padding: '10px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', background: '#0089ba', color: '#fff' }}
+          >
+            Se déconnecter
+          </button>
         </div>
       </div>
     )
@@ -995,6 +1085,8 @@ function ManagerDashboard({ session, onLogout }) {
           onNavigate={(id) => { setActiveNav(id); setCollaborateurId(null) }}
           demandesCount={demandesCount}
           recrutementCount={recrutementCount}
+          notifications={notifications}
+          onSelectNotification={handleSelectNotification}
           firstName={firstName}
           storeLabel={store.label}
           onLogout={onLogout}
@@ -1052,6 +1144,9 @@ function ManagerDashboard({ session, onLogout }) {
 
       {enAttenteValidation.length > 0 && (
         <ValidationNouvelEntrantModal collaborateur={enAttenteValidation[0]} onValider={handleValiderEntrant} />
+      )}
+      {ficheCollaborateurId && (
+        <CollaborateurDbFicheModal collaborateurId={ficheCollaborateurId} onClose={() => setFicheCollaborateurId(null)} />
       )}
     </div>
   )

@@ -1,6 +1,7 @@
 'use client'
+import { useState } from 'react'
 import Image from 'next/image'
-import { IconHome, IconUsers, IconSend, IconBarChart, IconHelpCircle, IconChevronRight, IconUserPlus } from './ManagerIcons'
+import { IconHome, IconUsers, IconSend, IconBarChart, IconHelpCircle, IconChevronRight, IconUserPlus, IconBell } from './ManagerIcons'
 
 const NAV_ITEMS = [
   { id: 'accueil', label: 'Accueil', Icon: IconHome },
@@ -10,10 +11,68 @@ const NAV_ITEMS = [
   { id: 'reporting', label: 'Reporting', Icon: IconBarChart },
 ]
 
+// Centre de notifications générique (table `notifications`, réutilisée telle
+// quelle) — jusqu'ici le manager n'avait que des badges spécifiques
+// (demandes/recrutement) dérivés directement de leurs tables métier.
+function NotificationBell({ notifications, onSelect }) {
+  const [open, setOpen] = useState(false)
+  const count = notifications.length
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        title="Notifications"
+        style={{
+          position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 34, height: 34, borderRadius: 10, border: '1px solid #e5e7eb', background: open ? '#eaf3fd' : '#fff',
+          color: open ? '#0089ba' : '#4b5563', cursor: 'pointer', flexShrink: 0,
+        }}
+      >
+        <IconBell size={16} />
+        {count > 0 && (
+          <span style={{
+            position: 'absolute', top: -5, right: -5, background: '#dc2626', color: '#fff',
+            fontSize: 10, fontWeight: 800, borderRadius: 20, padding: '1px 5px', minWidth: 15, textAlign: 'center',
+            border: '2px solid #fff',
+          }}>{count}</span>
+        )}
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+          <div style={{
+            position: 'absolute', top: '110%', left: 0, width: 300, maxHeight: 360, overflowY: 'auto',
+            background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: '0 12px 32px rgba(0,0,0,0.14)',
+            zIndex: 50, padding: 6,
+          }}>
+            {notifications.length === 0 ? (
+              <div style={{ padding: '16px 12px', fontSize: 12.5, color: '#9aa1ac', textAlign: 'center' }}>Aucune notification</div>
+            ) : notifications.map(n => (
+              <button
+                key={n.id}
+                onClick={() => { setOpen(false); onSelect(n) }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left', padding: '10px 10px', borderRadius: 8,
+                  border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5,
+                  color: '#374151', lineHeight: 1.4,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f5f6f8' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+              >
+                {n.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // Navigation latérale du dashboard manager — remplace le long scroll unique
 // par de vrais écrans séparés (Accueil / Mon équipe / Demandes / Recrutement /
 // Reporting), à l'image d'un vrai produit SaaS plutôt que d'une simple page magasin.
-export default function ManagerSidebar({ active, onNavigate, demandesCount, recrutementCount, firstName, storeLabel, onLogout }) {
+export default function ManagerSidebar({ active, onNavigate, demandesCount, recrutementCount, notifications, onSelectNotification, firstName, storeLabel, onLogout }) {
   return (
     <div style={{
       width: 232, flexShrink: 0, minHeight: '100vh', background: '#fff',
@@ -22,7 +81,8 @@ export default function ManagerSidebar({ active, onNavigate, demandesCount, recr
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px 22px' }}>
         <Image src="/assets/logo-lpt.png" alt="Lunettes Pour Tous" width={20} height={20} style={{ objectFit: 'contain' }} />
-        <span style={{ fontSize: 12.5, fontWeight: 700, color: '#14161a' }}>Lunettes Pour Tous</span>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: '#14161a', flex: 1 }}>Lunettes Pour Tous</span>
+        <NotificationBell notifications={notifications || []} onSelect={onSelectNotification} />
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
