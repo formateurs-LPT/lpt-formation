@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { getManagerFromDB, getWeeklySharedState, sbSelect, pgInList } from '@/lib/supabase'
 import { STORES, collaborateurFullName, tenureLabel } from '@/lib/storeFollowupData'
@@ -12,14 +12,20 @@ import TrainingRegistrationTile, { UpcomingRegistrationsPanel } from '@/componen
 import {
   getMagasinIdBySlug, getNouveauxCollaborateurs, getCollaborateursEnAttenteValidation,
   declencherTestSortie, validerNouvelEntrant, findCollaborateurByName, getOrCreateCollaborateurForEntree,
+  getCollaborateurById,
 } from '@/lib/collaborateursApi'
 import { getReportingsHebdo, updateReportingStructure } from '@/lib/notesTerrainApi'
 import DemandesInterventionView, { DemandeInterventionModal } from '@/components/DemandesInterventionView'
 import ReportingDetailView from '@/components/ReportingDetailView'
-import { isMagasinBelgique, BELGIQUE_ONLY_LOGINS } from '@/lib/directionApi'
+import { isMagasinBelgique, BELGIQUE_ONLY_LOGINS, getNotificationsNonLues, marquerNotificationsLues } from '@/lib/directionApi'
 import { poleMeta } from '@/lib/poles'
 import ManagerSidebar from '@/components/ManagerSidebar'
 import { IconVideo, IconMapPin, IconChevronRight, IconClipboard } from '@/components/ManagerIcons'
+import {
+  apiGetEntretiensByMagasin, apiGetCandidatsByIds, apiAccepterEntretien,
+  apiContreProposerEntretien, apiSupprimerEntretien, apiDeciderEntretien, apiNotifier,
+} from '@/lib/rhApi'
+import { getSignedUrl, RH_DOCUMENTS_BUCKET } from '@/lib/storageApi'
 
 // Page autonome (comme /rapport, /bilan-formation) — aucune dépendance à
 // page.js/Dashboard.js, donc aucun risque pour le flux formateur/participant/TV.
@@ -284,7 +290,7 @@ function AFaireCard({ magasinId, store, nouveauxEntrants, newHireRows, onDeclenc
             pending={!!collab?.test_declenche_at}
             actionLabel="Lancer le test de sortie"
             onAction={async () => {
-              const c = collab || await getOrCreateCollaborateurForEntree(magasinId, entree.prenom, entree.nom, entree.poste)
+              const c = collab || await getOrCreateCollaborateurForEntree(magasinId, entree.prenom, entree.nom, entree.poste, entree.date_entree)
               if (c) onDeclencher(c.id, c)
             }}
           />
@@ -759,11 +765,225 @@ function DemandesPage({ magasinId, session, store }) {
   )
 }
 
+// ── Recrutement (entretiens candidat ↔ manager) ──────────────────────────────
+function fmtDateTimeMgr(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+const RCSS = {
+  input: { width: '100%', boxSizing: 'border-box', padding: '10px 12px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 8, color: '#1e293b', fontSize: 14, fontFamily: 'inherit', outline: 'none' },
+  btn: { padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 700, fontFamily: 'inherit' },
+}
+
+function CvSignedLinkMgr({ path, label = '📄 CV' }) {
+  const [loading, setLoading] = useState(false)
+  const open = async () => {
+    setLoading(true)
+    const url = await getSignedUrl(path, 3600, RH_DOCUMENTS_BUCKET)
+    setLoading(false)
+    if (url) window.open(url, '_blank')
+  }
+  return <button onClick={open} disabled={loading} style={{ ...RCSS.btn, background: '#f0f9ff', color: '#0089ba' }}>{loading ? '…' : label}</button>
+}
+
+function ContreProposerForm({ onSubmit, onCancel }) {
+  const [date, setDate] = useState('')
+  const [heure, setHeure] = useState('10:00')
+  const [commentaire, setCommentaire] = useState('')
+  const [saving, setSaving] = useState(false)
+  const submit = async () => {
+    if (!date || !heure) return
+    setSaving(true)
+    await onSubmit(new Date(`${date}T${heure}:00`).toISOString(), commentaire)
+    setSaving(false)
+  }
+  return (
+    <div style={{ marginTop: 10, padding: 12, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+        <input style={RCSS.input} type="date" value={date} onChange={e => setDate(e.target.value)} />
+        <input style={RCSS.input} type="time" value={heure} onChange={e => setHeure(e.target.value)} />
+      </div>
+      <textarea style={{ ...RCSS.input, height: 60, resize: 'vertical', marginBottom: 8 }} placeholder="Commentaire (optionnel)" value={commentaire} onChange={e => setCommentaire(e.target.value)} />
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button onClick={onCancel} style={{ ...RCSS.btn, background: '#f1f5f9', color: '#475569' }}>Annuler</button>
+        <button onClick={submit} disabled={saving} style={{ ...RCSS.btn, background: saving ? '#94a3b8' : 'linear-gradient(135deg,#0089ba,#00abe9)', color: '#fff' }}>{saving ? '…' : 'Proposer ce créneau'}</button>
+      </div>
+    </div>
+  )
+}
+
+function EntretienCard({ entretien, candidat, onChanged }) {
+  const [showContrer, setShowContrer] = useState(false)
+  const [note, setNote] = useState(entretien.note_entretien || '')
+  const [busy, setBusy] = useState(false)
+
+  const accepter = async () => {
+    setBusy(true)
+    await apiAccepterEntretien(entretien.id)
+    await apiNotifier(entretien.demandeur_login, 'entretien_accepte', entretien.id)
+    setBusy(false); onChanged()
+  }
+  const contreProposer = async (dateHeure, commentaire) => {
+    await apiContreProposerEntretien(entretien.id, { dateHeureContreProposee: dateHeure, commentaireManager: commentaire })
+    await apiNotifier(entretien.demandeur_login, 'entretien_contre_proposition', entretien.id)
+    setShowContrer(false); onChanged()
+  }
+  const supprimer = async () => {
+    if (!window.confirm("Supprimer cette demande d'entretien ?")) return
+    setBusy(true)
+    const etaitNonTraitee = entretien.statut === 'en_attente'
+    await apiSupprimerEntretien(entretien.id)
+    if (etaitNonTraitee) await apiNotifier(entretien.demandeur_login, 'entretien_supprime_manager', entretien.candidat_id)
+    setBusy(false); onChanged()
+  }
+  const decider = async decisionCandidat => {
+    setBusy(true)
+    await apiDeciderEntretien(entretien.id, { noteEntretien: note, decisionCandidat })
+    await apiNotifier(entretien.demandeur_login, decisionCandidat === 'accepte' ? 'candidat_accepte_manager' : 'candidat_refuse_manager', entretien.candidat_id)
+    setBusy(false); onChanged()
+  }
+
+  const decision = entretien.decision_candidat
+
+  return (
+    <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 14.5 }}>{candidat?.prenom} {candidat?.nom}</div>
+          <div style={{ fontSize: 12.5, color: '#64748b', marginTop: 2 }}>{candidat?.poste_vise || '—'}</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {candidat?.cv_url && <CvSignedLinkMgr path={candidat.cv_url} label="📄 CV" />}
+          {candidat?.lettre_motivation_url && <CvSignedLinkMgr path={candidat.lettre_motivation_url} label="✉️ Lettre" />}
+          <button onClick={supprimer} disabled={busy} title="Supprimer la demande" style={{ ...RCSS.btn, background: 'none', color: '#94a3b8', border: '1px solid #e2e8f0' }}>🗑️</button>
+        </div>
+      </div>
+
+      {decision === 'accepte' ? (
+        <div style={{ marginTop: 12, padding: '10px 12px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, fontSize: 13, color: '#166534' }}>
+          ✓ Vous avez accepté ce candidat le {fmtDateTimeMgr(entretien.decision_at)}
+          {entretien.note_entretien && <div style={{ marginTop: 4, fontStyle: 'italic' }}>« {entretien.note_entretien} »</div>}
+        </div>
+      ) : decision === 'refuse' ? (
+        <div style={{ marginTop: 12, padding: '10px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#b91c1c' }}>
+          ✕ Vous avez refusé ce candidat le {fmtDateTimeMgr(entretien.decision_at)}
+          {entretien.note_entretien && <div style={{ marginTop: 4, fontStyle: 'italic' }}>« {entretien.note_entretien} »</div>}
+        </div>
+      ) : entretien.statut === 'en_attente' ? (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ fontSize: 13, color: '#475569' }}>Créneau proposé : <strong>{fmtDateTimeMgr(entretien.date_heure_proposee)}</strong></div>
+          {!showContrer ? (
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <button onClick={accepter} disabled={busy} style={{ ...RCSS.btn, background: 'linear-gradient(135deg,#16a34a,#22c55e)', color: '#fff' }}>Accepter</button>
+              <button onClick={() => setShowContrer(true)} disabled={busy} style={{ ...RCSS.btn, background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>Proposer un autre créneau</button>
+            </div>
+          ) : (
+            <ContreProposerForm onSubmit={contreProposer} onCancel={() => setShowContrer(false)} />
+          )}
+        </div>
+      ) : entretien.statut === 'contre_proposition_en_attente' ? (
+        <div style={{ marginTop: 12, padding: '10px 12px', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, fontSize: 13, color: '#9a3412' }}>
+          Créneau alternatif proposé le {fmtDateTimeMgr(entretien.date_heure_contre_proposee)} — en attente de confirmation RH.
+        </div>
+      ) : (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ fontSize: 13, color: '#475569', marginBottom: 8 }}>Entretien confirmé le <strong>{fmtDateTimeMgr(entretien.date_heure_proposee)}</strong></div>
+          <textarea style={{ ...RCSS.input, height: 70, resize: 'vertical', marginBottom: 8 }} placeholder="Note d'entretien…" value={note} onChange={e => setNote(e.target.value)} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => decider('accepte')} disabled={busy} style={{ ...RCSS.btn, background: 'linear-gradient(135deg,#16a34a,#22c55e)', color: '#fff' }}>Accepter le candidat</button>
+            <button onClick={() => decider('refuse')} disabled={busy} style={{ ...RCSS.btn, background: '#fef2f2', color: '#ef4444' }}>Refuser le candidat</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RecrutementPage({ magasinId, onRefresh }) {
+  const [entretiens, setEntretiens] = useState([])
+  const [candidatsById, setCandidatsById] = useState({})
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const rows = await apiGetEntretiensByMagasin(magasinId)
+    const candidats = await apiGetCandidatsByIds([...new Set(rows.map(r => r.candidat_id))])
+    setCandidatsById(Object.fromEntries((candidats || []).map(c => [c.id, c])))
+    setEntretiens(rows)
+    setLoading(false)
+  }, [magasinId])
+
+  useEffect(() => { if (magasinId) load() }, [magasinId, load])
+
+  const handleChanged = () => { load(); onRefresh?.() }
+
+  return (
+    <div>
+      <PageHeader title="Recrutement" />
+      {loading ? <div style={{ textAlign: 'center', padding: '48px 0', color: '#94a3b8' }}>Chargement…</div> :
+       !entretiens.length ? (
+        <div style={{ textAlign: 'center', padding: '56px 24px', background: '#fff', borderRadius: 14, border: '1.5px solid #e2e8f0' }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>📅</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: '#64748b' }}>Aucune demande d&apos;entretien</div>
+        </div>
+       ) : entretiens.map(e => (
+        <EntretienCard key={e.id} entretien={e} candidat={candidatsById[e.candidat_id]} onChanged={handleChanged} />
+      ))}
+    </div>
+  )
+}
+
 function ReportingPage({ reportings, magasinNom }) {
   return (
     <div>
       <PageHeader title="Reporting" />
       <HistoriqueReportingsSection reportings={reportings} magasinNom={magasinNom} />
+    </div>
+  )
+}
+
+// Fiche minimale d'un collaborateur de la table relationnelle `collaborateurs`
+// — distincte de CollaborateurProfilePage (qui affiche le roster STORES codé
+// en dur, sans lien fiable avec cette table). Ouverte depuis une notification
+// (ex. fin de période d'essai) qui référence un id de cette table.
+function CollaborateurDbFicheModal({ collaborateurId, onClose }) {
+  const [collab, setCollab] = useState(undefined) // undefined = chargement, null = introuvable
+
+  useEffect(() => {
+    let cancelled = false
+    getCollaborateurById(collaborateurId).then(c => { if (!cancelled) setCollab(c) })
+    return () => { cancelled = true }
+  }, [collaborateurId])
+
+  const finEssai = collab?.date_entree ? new Date(collab.date_entree) : null
+  if (finEssai) finEssai.setMonth(finEssai.getMonth() + 2)
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,25,35,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
+      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 420, boxShadow: '0 24px 64px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>
+        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#0f172a' }}>Fiche collaborateur</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: '#94a3b8', lineHeight: 1 }}>×</button>
+        </div>
+        <div style={{ padding: 24 }}>
+          {collab === undefined ? (
+            <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>Chargement…</div>
+          ) : collab === null ? (
+            <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>Collaborateur introuvable.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{collab.prenom} {collab.nom}</div>
+              <div style={{ fontSize: 13.5, color: '#64748b' }}>{collab.poste || 'Poste non renseigné'}</div>
+              {collab.date_entree && (
+                <div style={{ fontSize: 13, color: '#374151', marginTop: 6 }}>
+                  Entrée le {new Date(collab.date_entree + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  {finEssai && <> — fin de période d&apos;essai le <strong>{finEssai.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</strong></>}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -779,6 +999,43 @@ function ManagerDashboard({ session, onLogout }) {
   const [testEnCoursCollab, setTestEnCoursCollab] = useState(null)
   const [reportings, setReportings] = useState([])
   const [demandesCount, setDemandesCount] = useState(0)
+  const [recrutementCount, setRecrutementCount] = useState(0)
+  const [notifications, setNotifications] = useState([])
+  const [ficheCollaborateurId, setFicheCollaborateurId] = useState(null)
+
+  // Centre de notifications générique (table `notifications`, déjà utilisée
+  // ailleurs) — pour l'instant seul le type 'fin_periode_essai' est enrichi
+  // avec un libellé lisible ; les autres types s'affichent en repli minimal.
+  const refreshNotifications = async (login) => {
+    const rows = await getNotificationsNonLues(login)
+    const essaiIds = rows.filter(n => n.type === 'fin_periode_essai').map(n => n.reference_id).filter(Boolean)
+    const collabs = essaiIds.length ? await sbSelect('collaborateurs', `id=in.(${essaiIds.join(',')})&select=id,prenom,nom,poste,date_entree`) : []
+    const collabById = Object.fromEntries((collabs || []).map(c => [c.id, c]))
+    setNotifications(rows.map(n => {
+      if (n.type === 'fin_periode_essai') {
+        const c = collabById[n.reference_id]
+        const fin = c?.date_entree ? new Date(c.date_entree) : null
+        if (fin) fin.setMonth(fin.getMonth() + 2)
+        const dateLabel = fin ? fin.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '—'
+        return {
+          id: n.id, collaborateurId: n.reference_id,
+          label: c ? `${c.prenom} ${c.nom} arrive en fin de période d'essai le ${dateLabel} — pense à faire le point.` : "Fin de période d'essai à venir",
+        }
+      }
+      return { id: n.id, collaborateurId: null, label: `Notification (${n.type})` }
+    }))
+  }
+
+  const handleSelectNotification = async (n) => {
+    setNotifications(prev => prev.filter(x => x.id !== n.id))
+    await marquerNotificationsLues([n.id])
+    if (n.collaborateurId) setFicheCollaborateurId(n.collaborateurId)
+  }
+
+  useEffect(() => {
+    refreshNotifications(session.login)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.login])
 
   useEffect(() => {
     let cancelled = false
@@ -806,6 +1063,13 @@ function ManagerDashboard({ session, onLogout }) {
     setDemandesCount(rows?.length || 0)
   }
 
+  // Badge "Recrutement" : demandes d'entretien qui attendent une réponse du
+  // manager (les autres statuts n'attendent rien de sa part pour l'instant).
+  const refreshRecrutement = async (id) => {
+    const rows = await sbSelect('entretiens_recrutement', `magasin_id=eq.${id}&statut=eq.en_attente&select=id`)
+    setRecrutementCount(rows?.length || 0)
+  }
+
   useEffect(() => {
     let cancelled = false
     getMagasinIdBySlug(session.magasin).then(id => {
@@ -813,6 +1077,7 @@ function ManagerDashboard({ session, onLogout }) {
       setMagasinId(id)
       refreshNouvelEntrant(id)
       refreshDemandes(id)
+      refreshRecrutement(id)
       getReportingsHebdo(id).then(r => { if (!cancelled) setReportings(r) })
     }).catch(() => {})
     return () => { cancelled = true }
@@ -869,6 +1134,12 @@ function ManagerDashboard({ session, onLogout }) {
       <div id="dashboard" className="manager-light-theme">
         <div className="dash-wrap">
           <p style={{ color: '#dc2626' }}>Magasin introuvable ({session.magasin}). Contactez votre formateur.</p>
+          <button
+            onClick={onLogout}
+            style={{ marginTop: 12, padding: '10px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', background: '#0089ba', color: '#fff' }}
+          >
+            Se déconnecter
+          </button>
         </div>
       </div>
     )
@@ -886,6 +1157,9 @@ function ManagerDashboard({ session, onLogout }) {
           active={activeNav}
           onNavigate={(id) => { setActiveNav(id); setCollaborateurId(null) }}
           demandesCount={demandesCount}
+          recrutementCount={recrutementCount}
+          notifications={notifications}
+          onSelectNotification={handleSelectNotification}
           firstName={firstName}
           storeLabel={store.label}
           onLogout={onLogout}
@@ -920,6 +1194,8 @@ function ManagerDashboard({ session, onLogout }) {
             />
           ) : activeNav === 'demandes' ? (
             <DemandesPage magasinId={magasinId} session={session} store={store} />
+          ) : activeNav === 'recrutement' ? (
+            <RecrutementPage magasinId={magasinId} onRefresh={() => refreshRecrutement(magasinId)} />
           ) : activeNav === 'reporting' ? (
             <ReportingPage reportings={reportings} magasinNom={store.label} />
           ) : (
@@ -945,6 +1221,9 @@ function ManagerDashboard({ session, onLogout }) {
 
       {enAttenteValidation.length > 0 && (
         <ValidationNouvelEntrantModal collaborateur={enAttenteValidation[0]} onValider={handleValiderEntrant} />
+      )}
+      {ficheCollaborateurId && (
+        <CollaborateurDbFicheModal collaborateurId={ficheCollaborateurId} onClose={() => setFicheCollaborateurId(null)} />
       )}
     </div>
   )

@@ -1,25 +1,88 @@
 'use client'
 import { useState } from 'react'
 import Image from 'next/image'
-import { IconHome, IconUsers, IconSend, IconBarChart, IconHelpCircle, IconChevronRight } from './ManagerIcons'
+import { IconHome, IconUsers, IconSend, IconBarChart, IconHelpCircle, IconChevronRight, IconUserPlus, IconBell } from './ManagerIcons'
 import { TRAINER_CONTACTS } from '@/lib/trainerContacts'
 
 const NAV_ITEMS = [
   { id: 'accueil', label: 'Accueil', Icon: IconHome },
   { id: 'equipe', label: 'Mon équipe', Icon: IconUsers },
   { id: 'demandes', label: 'Demandes', Icon: IconSend },
+  { id: 'recrutement', label: 'Recrutement', Icon: IconUserPlus },
   { id: 'reporting', label: 'Reporting', Icon: IconBarChart },
 ]
 
+// Centre de notifications générique (table `notifications`, réutilisée telle
+// quelle) — jusqu'ici le manager n'avait que des badges spécifiques
+// (demandes/recrutement) dérivés directement de leurs tables métier. Partagé
+// par les en-têtes desktop et mobile.
+function NotificationBell({ notifications, onSelect }) {
+  const [open, setOpen] = useState(false)
+  const count = notifications.length
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        title="Notifications"
+        style={{
+          position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 34, height: 34, borderRadius: 10, border: '1px solid #e5e7eb', background: open ? '#eaf3fd' : '#fff',
+          color: open ? '#0089ba' : '#4b5563', cursor: 'pointer', flexShrink: 0,
+        }}
+      >
+        <IconBell size={16} />
+        {count > 0 && (
+          <span style={{
+            position: 'absolute', top: -5, right: -5, background: '#dc2626', color: '#fff',
+            fontSize: 10, fontWeight: 800, borderRadius: 20, padding: '1px 5px', minWidth: 15, textAlign: 'center',
+            border: '2px solid #fff',
+          }}>{count}</span>
+        )}
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+          <div style={{
+            position: 'absolute', top: '110%', left: 0, width: 300, maxHeight: 360, overflowY: 'auto',
+            background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: '0 12px 32px rgba(0,0,0,0.14)',
+            zIndex: 50, padding: 6,
+          }}>
+            {notifications.length === 0 ? (
+              <div style={{ padding: '16px 12px', fontSize: 12.5, color: '#9aa1ac', textAlign: 'center' }}>Aucune notification</div>
+            ) : notifications.map(n => (
+              <button
+                key={n.id}
+                onClick={() => { setOpen(false); onSelect(n) }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left', padding: '10px 10px', borderRadius: 8,
+                  border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5,
+                  color: '#374151', lineHeight: 1.4,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f5f6f8' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+              >
+                {n.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // Navigation du dashboard manager — deux présentations du même menu :
-// - Desktop/TV : sidebar verticale fixe (inchangée).
+// - Desktop/TV : sidebar verticale fixe.
 // - Mobile (<= 860px, cf. globals.css) : petite barre du haut (logo +
 //   compte) + barre d'onglets fixée en bas, façon app native, pour que
 //   l'ajout à l'écran d'accueil ressemble vraiment à une app plutôt qu'à un
 //   site web compressé. Les deux blocs sont toujours dans le DOM, c'est le
 //   CSS qui bascule de l'un à l'autre (évite tout flash lié à un calcul JS
 //   de largeur d'écran au montage).
-export default function ManagerSidebar({ active, onNavigate, demandesCount, firstName, storeLabel, onLogout }) {
+export default function ManagerSidebar({
+  active, onNavigate, demandesCount, recrutementCount, notifications, onSelectNotification,
+  firstName, storeLabel, onLogout,
+}) {
   const [helpOpen, setHelpOpen] = useState(false)
   return (
     <>
@@ -30,7 +93,8 @@ export default function ManagerSidebar({ active, onNavigate, demandesCount, firs
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px 22px' }}>
           <Image src="/assets/logo-lpt.png" alt="Lunettes Pour Tous" width={20} height={20} style={{ objectFit: 'contain' }} />
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: '#14161a' }}>Lunettes Pour Tous</span>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: '#14161a', flex: 1 }}>Lunettes Pour Tous</span>
+          <NotificationBell notifications={notifications || []} onSelect={onSelectNotification} />
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
@@ -57,6 +121,12 @@ export default function ManagerSidebar({ active, onNavigate, demandesCount, firs
                     background: '#fee2e2', color: '#dc2626', fontSize: 10.5, fontWeight: 800,
                     borderRadius: 20, padding: '1px 7px', minWidth: 16, textAlign: 'center',
                   }}>{demandesCount}</span>
+                )}
+                {id === 'recrutement' && recrutementCount > 0 && (
+                  <span style={{
+                    background: '#fee2e2', color: '#dc2626', fontSize: 10.5, fontWeight: 800,
+                    borderRadius: 20, padding: '1px 7px', minWidth: 16, textAlign: 'center',
+                  }}>{recrutementCount}</span>
                 )}
               </button>
             )
@@ -102,8 +172,8 @@ export default function ManagerSidebar({ active, onNavigate, demandesCount, firs
         </div>
       </div>
 
-      {/* Barre du haut mobile — logo + identité/déconnexion, remplace le bloc
-          équivalent de la sidebar desktop. */}
+      {/* Barre du haut mobile — logo + notifications + aide + déconnexion,
+          remplace le bloc équivalent de la sidebar desktop. */}
       <div className="manager-topbar-mobile" style={{
         alignItems: 'center', gap: 10, padding: '12px 16px', background: '#fff',
         borderBottom: '1px solid #e5e7eb',
@@ -112,6 +182,7 @@ export default function ManagerSidebar({ active, onNavigate, demandesCount, firs
         <span style={{ fontSize: 13, fontWeight: 700, color: '#14161a', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {storeLabel}
         </span>
+        <NotificationBell notifications={notifications || []} onSelect={onSelectNotification} />
         <button
           onClick={() => setHelpOpen(true)}
           title="Besoin d'aide ?"
@@ -155,6 +226,12 @@ export default function ManagerSidebar({ active, onNavigate, demandesCount, firs
                       position: 'absolute', top: -4, right: -7, background: '#dc2626', color: '#fff',
                       fontSize: 9, fontWeight: 800, borderRadius: 20, padding: '1px 4px', minWidth: 13, textAlign: 'center', lineHeight: 1.3,
                     }}>{demandesCount}</span>
+                  )}
+                  {id === 'recrutement' && recrutementCount > 0 && (
+                    <span style={{
+                      position: 'absolute', top: -4, right: -7, background: '#dc2626', color: '#fff',
+                      fontSize: 9, fontWeight: 800, borderRadius: 20, padding: '1px 4px', minWidth: 13, textAlign: 'center', lineHeight: 1.3,
+                    }}>{recrutementCount}</span>
                   )}
                 </span>
                 <span style={{ fontSize: 10.5, fontWeight: isActive ? 700 : 600 }}>{label}</span>

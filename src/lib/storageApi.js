@@ -6,16 +6,17 @@ const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 
 export const NOTES_TERRAIN_BUCKET = 'notes-terrain'
+export const RH_DOCUMENTS_BUCKET = 'rh-documents'
 
 function sbHeaders(extra = {}) {
   return { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, ...extra }
 }
 
 /** Upload un fichier, renvoie le chemin stocké (pas une URL) à garder en base. */
-export async function uploadPieceJointe(file, { magasinId, prefix = 'note' } = {}) {
+export async function uploadPieceJointe(file, { magasinId, prefix = 'note', bucket = NOTES_TERRAIN_BUCKET } = {}) {
   const ext = (file.name?.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '')
-  const path = `${magasinId}/${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-  const res = await fetch(`${SB_URL}/storage/v1/object/${NOTES_TERRAIN_BUCKET}/${path}`, {
+  const path = `${magasinId ? magasinId + '/' : ''}${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+  const res = await fetch(`${SB_URL}/storage/v1/object/${bucket}/${path}`, {
     method: 'POST',
     headers: sbHeaders({ 'Content-Type': file.type || 'application/octet-stream' }),
     body: file,
@@ -28,11 +29,25 @@ export async function uploadPieceJointe(file, { magasinId, prefix = 'note' } = {
   return path
 }
 
+// Fichier constant "présentation entreprise" (pièce jointe du mail de
+// bienvenue) — chemin fixe dans le bucket rh-documents, remplacé par simple
+// ré-upload (x-upsert) plutôt que via une table de config (parametres_app
+// est réservée en écriture au service role, inaccessible depuis le front RH).
+export const FICHIER_CONSTANT_PRESENTATION = 'constantes/presentation-entreprise.pdf'
+export async function uploadFichierConstant(file) {
+  const res = await fetch(`${SB_URL}/storage/v1/object/${RH_DOCUMENTS_BUCKET}/${FICHIER_CONSTANT_PRESENTATION}`, {
+    method: 'POST',
+    headers: sbHeaders({ 'Content-Type': file.type || 'application/pdf', 'x-upsert': 'true' }),
+    body: file,
+  })
+  return res.ok
+}
+
 /** URL signée temporaire (1h) pour afficher/lire une pièce jointe. */
-export async function getSignedUrl(path, expiresIn = 3600) {
+export async function getSignedUrl(path, expiresIn = 3600, bucket = NOTES_TERRAIN_BUCKET) {
   if (!path) return null
   try {
-    const res = await fetch(`${SB_URL}/storage/v1/object/sign/${NOTES_TERRAIN_BUCKET}/${path}`, {
+    const res = await fetch(`${SB_URL}/storage/v1/object/sign/${bucket}/${path}`, {
       method: 'POST',
       headers: sbHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ expiresIn }),
