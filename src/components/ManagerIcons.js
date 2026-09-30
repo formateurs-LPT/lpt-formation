@@ -101,6 +101,16 @@ export function IconClipboard({ size = 18, ...props }) {
   )
 }
 
+export function IconTarget({ size = 18, ...props }) {
+  return (
+    <svg width={size} height={size} {...base} {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1" />
+    </svg>
+  )
+}
+
 export function IconBell({ size = 18, ...props }) {
   return (
     <svg width={size} height={size} {...base} {...props}>
