@@ -18,7 +18,6 @@ import {
 import { STORES, STORE_REGION_GROUPS } from '@/lib/storeFollowupData'
 import { getMagasinIdBySlug, slugifyName, stripAccents, creerCompteCollaborateur, findCollaborateurByName } from '@/lib/collaborateursApi'
 import { uploadPieceJointe, getSignedUrl, RH_DOCUMENTS_BUCKET, FICHIER_CONSTANT_PRESENTATION, uploadFichierConstant } from '@/lib/storageApi'
-import { buildLptEmail } from '@/components/FicheShareModal'
 import { getDocsRequis, computeStatut } from '@/lib/dossierDocuments'
 import { FileViewButton, FileDropSlot } from '@/components/FileDropSlot'
 import RhSidebar from '@/components/RhSidebar'
@@ -75,13 +74,6 @@ function formatDateLettresJour(dateStr) {
   const dd = String(d.getDate()).padStart(2, '0')
   const mm = String(d.getMonth() + 1).padStart(2, '0')
   return `${jour} ${dd}/${mm}/${d.getFullYear()}`
-}
-/** Nom du 1er jour ouvré (lun-ven) suivant une date, ex "mercredi". */
-function premierJourOuvreApres(dateStr) {
-  const d = new Date(dateStr + 'T12:00:00')
-  d.setDate(d.getDate() + 1)
-  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1)
-  return d.toLocaleDateString('fr-FR', { weekday: 'long' })
 }
 function getISOWeek(mondayStr) {
   const d = new Date(mondayStr + 'T12:00:00')
@@ -642,10 +634,7 @@ function EntretienStatusCard({ entretien, onConfirmerContreProposition, onSuppri
 // principe que le mail de reporting hebdomadaire (MesRetoursView.js) : on ne
 // peut pas savoir si l'email part réellement, seulement que la RH a cliqué.
 function MailBienvenueModal({ candidat, entree, magasinInfo, collaborateur, onClose, onSent }) {
-  const emailPro = buildLptEmail({ prenom: candidat.prenom, nom: candidat.nom }) || '—'
-  const motDePasse = 'bonjour' + stripAccents(candidat.prenom || '').toLowerCase().replace(/[^a-z]/g, '')
   const dateEntreeLettres = formatDateLettresJour(entree.date_entree)
-  const premierJour = premierJourOuvreApres(entree.date_entree)
   const nomMagasin = (candidat.magasin || '').replace(/\s*\(.*$/, '')
   const prefixeMagasin = magasinInfo.typeMagasin === 'entrepot' ? `notre entrepôt de ${nomMagasin}` : `notre magasin de ${nomMagasin}`
   const estIdf = magasinInfo.regionNom === 'Zone Paris' || magasinInfo.typeMagasin === 'entrepot'
@@ -674,13 +663,8 @@ https://lpt-formation.vercel.app/sonnette
 ` : ''}
 Prochaines étapes :
 - Réception et signature du contrat de travail : contrat envoyé via Yousign ou Docusign d'ici lundi, à signer à réception.
-- Lien Skello (notre logiciel de planning) : envoyé sur votre boîte mail personnelle pour vous créer un compte et avoir accès à vos plannings magasin.
-- Boîte mail professionnelle et comptes professionnels :
-Dès ${premierJour}, vous pourrez vous connecter à votre boîte mail professionnelle. Pour cela il faut aller sur GMAIL et se connecter.
-Adresse mail : ${emailPro}
-Mot de passe : ${motDePasse}
 
-Dans votre boîte mail vous trouverez un premier mail avec des instructions pour rejoindre notre communauté Slack et accéder à vos codes vendeurs.
+Tu retrouveras tes accès (mail pro, Slack, codes vendeurs…) directement dans ton espace, sur la fiche accès.
 
 Vous trouverez en pièce jointe une présentation complète de notre entreprise, nos produits et nos valeurs, ainsi qu'une vidéo pour vous plonger dans votre future aventure chez nous :
 https://youtu.be/T-4wQCsmf7s
