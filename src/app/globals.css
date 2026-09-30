@@ -401,6 +401,43 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 #dashboard.manager-light-theme .finput:focus{border-color:#0089ba;background:#fff}
 #dashboard.manager-light-theme .btn2{background:#fff;color:#14161a;border-color:#e5e7eb}
 #dashboard.manager-light-theme .btn2:hover{background:#f5f6f8;border-color:#c7cbd1}
+#dashboard.manager-light-theme .badge.pending{background:#f3f4f6;color:#6b7280}
+
+/* ── DASHBOARD MANAGER — RESPONSIVE ──
+   Desktop/TV : sidebar verticale fixe, contenu centré (évite le vide à
+   droite sur très grand écran), défilement de page normal.
+   Mobile (<=860px) : passe en vraie "coquille d'app" — #dashboard occupe
+   tout le viewport en position fixe (jamais de scroll de la page elle-même,
+   donc plus de rebond élastique iOS ni de saut au repli de la barre
+   d'adresse) ; seul .manager-content-wrap défile, entre une barre du haut et
+   une barre d'onglets qui restent, elles, parfaitement immobiles. C'est ce
+   découplage (coquille fixe + unique zone scrollable) qui donne la sensation
+   d'app plutôt que de page web. */
+.manager-shell{display:flex;align-items:flex-start}
+.manager-content-wrap{flex:1;min-width:0;display:flex;justify-content:center}
+.manager-content{width:100%;max-width:1120px;padding:28px 36px 60px}
+.manager-sidebar-desktop{display:flex}
+.manager-topbar-mobile{display:none}
+.manager-bottomnav-mobile{display:none}
+
+@media (max-width:860px){
+  html:has(#dashboard.manager-light-theme),
+  body:has(#dashboard.manager-light-theme){overflow:hidden;height:100%;overscroll-behavior:none}
+  #dashboard.manager-light-theme{
+    position:fixed;inset:0;height:100dvh;
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  #dashboard.manager-light-theme .manager-shell{flex:1;min-height:0;flex-direction:column;align-items:stretch}
+  .manager-sidebar-desktop{display:none}
+  .manager-topbar-mobile{display:flex;order:1;flex-shrink:0}
+  .manager-content-wrap{
+    order:2;flex:1;min-height:0;display:block;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  }
+  .manager-bottomnav-mobile{display:block;order:3;flex-shrink:0;position:relative}
+  .manager-content{padding:16px 16px 24px}
+  .skill-row-label{width:120px!important}
+}
 
 /* ── IMPRESSION — n'imprime que le compte rendu (.print-report-area), pas le
    reste de la page qui reste dans le DOM derrière la modale ── */

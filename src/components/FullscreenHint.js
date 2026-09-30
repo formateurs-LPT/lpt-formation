@@ -47,7 +47,7 @@ export default function FullscreenHint() {
 
   return (
     <div style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 99999,
+      position: 'fixed', bottom: 'calc(70px + env(safe-area-inset-bottom, 0px))', left: 0, right: 0, zIndex: 99999,
       background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 100%)',
       borderTop: '1px solid rgba(0,171,233,0.35)',
       padding: '14px 16px 20px',

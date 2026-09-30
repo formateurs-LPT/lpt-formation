@@ -18,6 +18,7 @@ import { getReportingsHebdo, updateReportingStructure } from '@/lib/notesTerrain
 import DemandesInterventionView, { DemandeInterventionModal } from '@/components/DemandesInterventionView'
 import ReportingDetailView from '@/components/ReportingDetailView'
 import { isMagasinBelgique, BELGIQUE_ONLY_LOGINS, getNotificationsNonLues, marquerNotificationsLues } from '@/lib/directionApi'
+import { poleMeta } from '@/lib/poles'
 import ManagerSidebar from '@/components/ManagerSidebar'
 import { IconVideo, IconMapPin, IconChevronRight, IconClipboard } from '@/components/ManagerIcons'
 import {
@@ -163,7 +164,7 @@ function useNewHiresWithReport(store, entreesData, magasinId) {
 // un seul gabarit visuel (icône + titre + méta + action) pour toutes les
 // natures d'action (demande d'intervention, test de sortie…), afin d'éviter
 // l'empilement de blocs de styles différents d'avant.
-function ATraiterRow({ icon, title, meta, pending, actionLabel, onAction, onOpen }) {
+function ATraiterRow({ icon, title, meta, pending, actionLabel, onAction, onOpen, checkbox }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 2px' }}>
       <div onClick={onOpen} style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, cursor: onOpen ? 'pointer' : 'default' }}>
@@ -173,7 +174,18 @@ function ATraiterRow({ icon, title, meta, pending, actionLabel, onAction, onOpen
           {meta && <div style={{ fontSize: 11.5, color: '#9aa1ac', marginTop: 1 }}>{meta}</div>}
         </div>
       </div>
-      {pending ? (
+      {checkbox ? (
+        <label style={{
+          display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 700, color: '#6b7280',
+          cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap',
+        }}>
+          <input
+            type="checkbox" checked={false} onChange={checkbox.onToggle}
+            style={{ accentColor: '#22c55e', width: 15, height: 15, cursor: 'pointer' }}
+          />
+          Marquer comme fait
+        </label>
+      ) : pending ? (
         <span style={{ fontSize: 11.5, fontWeight: 700, color: '#b45309', flexShrink: 0, whiteSpace: 'nowrap' }}>⏳ En cours</span>
       ) : onAction ? (
         <button onClick={onAction} style={{
@@ -185,28 +197,54 @@ function ATraiterRow({ icon, title, meta, pending, actionLabel, onAction, onOpen
   )
 }
 
-// Carte "À faire" — ne regroupe plus que les tests de sortie à lancer (les
-// demandes d'intervention ont leur propre écran dédié dans la sidebar,
-// cf. DemandesPage). Invisible dès qu'il n'y a plus rien à traiter : l'app
-// ne doit se faire remarquer que quand c'est utile.
-function AFaireCard({ magasinId, store, nouveauxEntrants, newHireRows, onDeclencher, onOpenFiche }) {
-  // Un candidat "ancien schéma" déjà présent côté nouveau schéma
-  // (nouveauxEntrants) ne doit pas apparaître deux fois dans la liste. On
-  // déduplique par id ET par nom : le lien entre les deux schémas
-  // (findCollaborateurByName) se résout de façon asynchrone et arrive
-  // souvent après que `nouveauxEntrants` soit déjà chargé — sans le repli
-  // par nom, la même personne apparaît brièvement deux fois le temps que
-  // l'id se résolve.
+// Sépare, parmi les candidats "ancien schéma" (entrees_data), ceux déjà
+// couverts par le nouveau schéma relationnel (nouveauxEntrants) — extrait en
+// fonction partagée pour que le compteur de la tuile stat et la carte
+// "À faire" ne puissent jamais afficher des totaux différents.
+function computeExtraRows(nouveauxEntrants, newHireRows) {
   const norm = (s) => (s || '').trim().toLowerCase()
   const nouveauIds = new Set(nouveauxEntrants.map(c => c.id))
   const nouveauNames = new Set(nouveauxEntrants.map(c => `${norm(c.prenom)}|${norm(c.nom)}`))
-  const extraRows = newHireRows.filter(r => {
+  return newHireRows.filter(r => {
     if (r.collab && nouveauIds.has(r.collab.id)) return false
     if (nouveauNames.has(`${norm(r.entree.prenom)}|${norm(r.entree.nom)}`)) return false
     return true
   })
+}
 
-  const totalCount = nouveauxEntrants.length + extraRows.length
+// Aplati les points "à faire" non cochés de tous les reportings hebdo du
+// magasin — même mécanique que ReportingDetailView.toggleDone (Quentin),
+// dupliquée ici en version "un seul sens" (on ne fait que cocher depuis
+// l'accueil, jamais décocher) pour rester simple sur ce raccourci.
+function getPendingReportingActions(reportings) {
+  const actions = []
+  for (const r of (reportings || [])) {
+    const structure = r.contenu_structure
+    if (!structure?.sections) continue
+    for (const section of structure.sections) {
+      for (const rub of (section.rubriques || [])) {
+        if (rub.rubrique !== 'a_faire') continue
+        rub.items.forEach((item, index) => {
+          if (item.done) return
+          actions.push({
+            reportingId: r.id, pole: section.pole, poleLabel: poleMeta(section.pole).label,
+            index, resume: item.resume, detail: item.detail, semaineDebut: r.semaine_debut,
+          })
+        })
+      }
+    }
+  }
+  return actions
+}
+
+// Carte "À faire" — ne regroupe plus que les tests de sortie à lancer (les
+// demandes d'intervention ont leur propre écran dédié dans la sidebar,
+// cf. DemandesPage). Invisible dès qu'il n'y a plus rien à traiter : l'app
+// ne doit se faire remarquer que quand c'est utile.
+function AFaireCard({ magasinId, store, nouveauxEntrants, newHireRows, onDeclencher, onOpenFiche, reportingActions, onToggleReportingAction }) {
+  const extraRows = computeExtraRows(nouveauxEntrants, newHireRows)
+
+  const totalCount = nouveauxEntrants.length + extraRows.length + reportingActions.length
   if (totalCount === 0) return null
 
   const categoryKey = classifyMagasin(store.label)
@@ -256,6 +294,17 @@ function AFaireCard({ magasinId, store, nouveauxEntrants, newHireRows, onDeclenc
               const c = collab || await getOrCreateCollaborateurForEntree(magasinId, entree.prenom, entree.nom, entree.poste, entree.date_entree)
               if (c) onDeclencher(c.id, c)
             }}
+          />
+        </div>
+      ))}
+
+      {reportingActions.map(action => (
+        <div key={`${action.reportingId}-${action.pole}-${action.index}`} style={{ borderTop: '1px solid #f0f1f3' }}>
+          <ATraiterRow
+            icon="📋"
+            title={action.resume}
+            meta={`${action.poleLabel} · semaine du ${fmtDateLongFr(action.semaineDebut)}`}
+            checkbox={{ onToggle: () => onToggleReportingAction(action) }}
           />
         </div>
       ))}
@@ -482,7 +531,7 @@ function InterventionCTA({ magasinId, magasinNom, session, onCreated }) {
 // d'action côte à côte, aperçu de l'équipe avec barre de progression.
 function AccueilPage({
   store, session, progress, firstName, nouveauxEntrants, newHireRows, onDeclencher,
-  magasinId, demandesCount, onRefreshDemandes, onNavigate, onOpenFiche,
+  magasinId, demandesCount, onRefreshDemandes, onNavigate, onOpenFiche, reportings, onToggleReportingAction,
 }) {
   const [trainingRefreshKey, setTrainingRefreshKey] = useState(0)
 
@@ -492,6 +541,10 @@ function AccueilPage({
 
   const pctValues = store.sections.flatMap(s => s.collaborateurs.map(c => pctFor(progress, c.id, s.id)))
   const avgPct = pctValues.length ? Math.round(pctValues.reduce((a, b) => a + b, 0) / pctValues.length) : 0
+
+  const extraRows = computeExtraRows(nouveauxEntrants, newHireRows)
+  const reportingActions = getPendingReportingActions(reportings)
+  const totalActions = demandesCount + nouveauxEntrants.length + extraRows.length + reportingActions.length
 
   return (
     <div>
@@ -529,9 +582,8 @@ function AccueilPage({
         </div>
         <StatCard
           icon={<IconClipboard size={20} />} iconBg="#fee2e2" iconColor="#dc2626"
-          label="Actions à traiter" value={demandesCount}
-          sub={`demande${demandesCount > 1 ? 's' : ''} en attente`}
-          onClick={demandesCount > 0 ? () => onNavigate('demandes') : undefined}
+          label="Actions à traiter" value={totalActions}
+          sub={`action${totalActions > 1 ? 's' : ''} à traiter`}
         />
       </div>
 
@@ -539,6 +591,7 @@ function AccueilPage({
         magasinId={magasinId} store={store}
         nouveauxEntrants={nouveauxEntrants} newHireRows={newHireRows}
         onDeclencher={onDeclencher} onOpenFiche={onOpenFiche}
+        reportingActions={reportingActions} onToggleReportingAction={onToggleReportingAction}
       />
 
       <UpcomingRegistrationsPanel store={store} refreshKey={trainingRefreshKey} />
@@ -1072,6 +1125,26 @@ function ManagerDashboard({ session, onLogout }) {
     if (magasinId) refreshNouvelEntrant(magasinId)
   }
 
+  // Coche un point "à faire" du reporting directement depuis l'accueil —
+  // même mécanique que ReportingDetailView.toggleDone, mais sans passer par
+  // l'écran complet du reporting. Met à jour l'état local en plus de la
+  // base pour que la ligne disparaisse immédiatement de "À faire".
+  const handleToggleReportingAction = async (action) => {
+    const reporting = reportings.find(r => r.id === action.reportingId)
+    if (!reporting) return
+    const nextStructure = {
+      ...reporting.contenu_structure,
+      sections: reporting.contenu_structure.sections.map(s => s.pole !== action.pole ? s : {
+        ...s,
+        rubriques: s.rubriques.map(r => r.rubrique !== 'a_faire' ? r : {
+          ...r, items: r.items.map((it, i) => i !== action.index ? it : { ...it, done: true, doneAt: new Date().toISOString() }),
+        }),
+      }),
+    }
+    setReportings(prev => prev.map(r => r.id === reporting.id ? { ...r, contenu_structure: nextStructure } : r))
+    await updateReportingStructure(reporting.id, nextStructure)
+  }
+
   const { progress, saveError } = useStoreFollowupProgress(session.magasin, session.displayName)
 
   // Calculés avant tout retour anticipé : useNewHiresWithReport est un hook,
@@ -1108,7 +1181,7 @@ function ManagerDashboard({ session, onLogout }) {
 
   return (
     <div id="dashboard" className="manager-light-theme">
-      <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+      <div className="manager-shell">
         <ManagerSidebar
           active={activeNav}
           onNavigate={(id) => { setActiveNav(id); setCollaborateurId(null) }}
@@ -1121,7 +1194,8 @@ function ManagerDashboard({ session, onLogout }) {
           onLogout={onLogout}
         />
 
-        <div style={{ flex: 1, minWidth: 0, padding: '28px 36px 60px', maxWidth: 1120 }}>
+        <div className="manager-content-wrap">
+        <div className="manager-content">
           {saveError && (
             <div style={{
               position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 999,
@@ -1167,8 +1241,11 @@ function ManagerDashboard({ session, onLogout }) {
               onRefreshDemandes={() => magasinId && refreshDemandes(magasinId)}
               onNavigate={setActiveNav}
               onOpenFiche={setFicheCollaborateurId}
+              reportings={reportings}
+              onToggleReportingAction={handleToggleReportingAction}
             />
           )}
+        </div>
         </div>
       </div>
 
