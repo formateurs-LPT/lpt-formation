@@ -747,7 +747,11 @@ function MailBienvenueSection({ candidat, decisionCandidat, onSent }) {
       if (!cancelled) setCollaborateur(c)
     })
     return () => { cancelled = true }
-  }, [candidat.magasin, candidat.prenom, candidat.nom, decisionCandidat])
+    // candidat.entree_id : le compte collaborateur (et son login) n'est créé
+    // qu'à la validation — sans cette dépendance, une fiche ouverte AVANT de
+    // valider garde un `collaborateur` figé à null (pas encore trouvé) même
+    // après la validation, et le mail part sans identifiant.
+  }, [candidat.magasin, candidat.prenom, candidat.nom, candidat.entree_id, decisionCandidat])
 
   useEffect(() => {
     if (decisionCandidat !== 'accepte' || !candidat.entree_id) return
@@ -777,21 +781,22 @@ function MailBienvenueSection({ candidat, decisionCandidat, onSent }) {
 
   const emailManquant = !candidat.email?.trim()
   const dateManquante = !candidat.entree_id || !entree?.date_entree
-  const disabled = emailManquant || dateManquante
+  const compteManquant = !dateManquante && !collaborateur?.login
+  const disabled = emailManquant || dateManquante || compteManquant
 
   return (
     <div style={{ marginBottom:16 }}>
       <button
         onClick={() => !disabled && setShowModal(true)}
         disabled={disabled}
-        title={emailManquant ? "Renseigne l'email du candidat pour pouvoir envoyer ce mail" : dateManquante ? "Valide d'abord le recrutement (date d'entrée) pour pouvoir envoyer ce mail" : undefined}
+        title={emailManquant ? "Renseigne l'email du candidat pour pouvoir envoyer ce mail" : dateManquante ? "Valide d'abord le recrutement (date d'entrée) pour pouvoir envoyer ce mail" : compteManquant ? "Le compte espace collaborateur n'a pas été retrouvé — réessaie dans quelques secondes" : undefined}
         style={{ ...CSS.btn, padding:'9px 16px', fontSize:13, color:'#fff', cursor:disabled?'not-allowed':'pointer', background:disabled?'#cbd5e1':'linear-gradient(135deg,#0089ba,#00abe9)' }}
       >
         ✉️ Envoyer le mail de bienvenue
       </button>
       {disabled && (
         <div style={{ fontSize:11.5, color:'#9aa1ac', marginTop:6 }}>
-          {emailManquant ? "Renseigne l'email du candidat pour pouvoir envoyer ce mail." : "Valide d'abord le recrutement (date d'entrée) pour pouvoir envoyer ce mail."}
+          {emailManquant ? "Renseigne l'email du candidat pour pouvoir envoyer ce mail." : dateManquante ? "Valide d'abord le recrutement (date d'entrée) pour pouvoir envoyer ce mail." : "Le compte espace collaborateur n'a pas été retrouvé — recharge la fiche et réessaie."}
         </div>
       )}
       {candidat.mail_bienvenue_envoye_at && (
