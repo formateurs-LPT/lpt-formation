@@ -60,7 +60,10 @@ function computeStatut(entity, dossiers) {
 // ── Pipeline ──────────────────────────────────────────────────────────────────
 // 'a_contacter' n'est plus utilisé (contact toujours fait avant création de
 // la fiche) — gardé dans STATUT_LABELS/STATUT_COLORS pour l'historique/anciennes fiches.
-const PIPELINE = ['contacte', 'prise_de_reference', 'entretien_manager']
+// 'entretien_manager' n'est plus une étape à avancer manuellement : la
+// planification réelle se fait via "Planifier un entretien" (entretiens_recrutement) ;
+// gardé aussi dans STATUT_LABELS/STATUT_COLORS pour l'historique.
+const PIPELINE = ['contacte', 'prise_de_reference']
 const STATUT_LABELS = {
   a_contacter: 'À contacter', contacte: 'Contacté',
   prise_de_reference: 'Prise de référence', entretien_manager: 'Entretien manager',
@@ -996,7 +999,9 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
   }
 
   const isActif = !['valide', 'refuse'].includes(candidat.statut)
-  const isDecision = candidat.statut === 'entretien_manager'
+  // Dès qu'un entretien est planifié, la fiche bascule sur le suivi
+  // entretien/décision — plus besoin de l'ancienne étape manuelle "→ Entretien manager".
+  const isDecision = !!entretien
   const next = nextStatut(candidat.statut)
   // Dossier documentaire débloqué seulement après un retour positif du
   // manager à l'entretien (decision_candidat = 'accepte') — avant ça, la RH
@@ -1106,12 +1111,12 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
                 </div>
                 <button onClick={() => setShowRefuser(true)} style={{ ...CSS.btn, padding:'9px 16px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', fontSize:13, alignSelf:'flex-start' }}>Refuser</button>
               </>
-            ) : next ? (
+            ) : (
               <>
-                <button onClick={() => setShowAvancer(true)} style={{ ...CSS.btn, padding:'9px 16px', background:'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff', fontSize:13 }}>→ {STATUT_LABELS[next]}</button>
+                {next && <button onClick={() => setShowAvancer(true)} style={{ ...CSS.btn, padding:'9px 16px', background:'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff', fontSize:13 }}>→ {STATUT_LABELS[next]}</button>}
                 <button onClick={() => setShowRefuser(true)} style={{ ...CSS.btn, padding:'9px 16px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', fontSize:13 }}>Refuser</button>
               </>
-            ) : null}
+            )}
           </div>
         )}
         <div style={{ paddingTop:12, marginTop:12, borderTop:'1px solid #f0f1f3' }}>
