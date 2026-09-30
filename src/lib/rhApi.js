@@ -224,3 +224,5 @@ export async function apiGetEntree(entreeId) {
 }
 export const apiMarquerMailBienvenueEnvoye = (candidatId) =>
   patch('candidats', `id=eq.${candidatId}`, { mail_bienvenue_envoye_at: new Date().toISOString() })
+export const apiMarquerAccesEnvoye = (candidatId) =>
+  patch('candidats', `id=eq.${candidatId}`, { acces_espace_envoye_at: new Date().toISOString() })

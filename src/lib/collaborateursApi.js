@@ -88,6 +88,74 @@ export async function getOrCreateCollaborateurForEntree(magasinId, prenom, nom, 
   return rows?.[0] || null
 }
 
+// ── Compte espace collaborateur (login + code, même modèle en clair que
+// store_managers/rh_accounts/trainers/store_directors — pas un nouveau
+// paradigme d'auth) ──────────────────────────────────────────────────────
+
+function genererLoginBase(prenom, nom) {
+  const p = stripAccents(prenom || '').toLowerCase().replace(/[^a-z]/g, '')
+  const n = stripAccents(nom || '').toLowerCase().replace(/[^a-z]/g, '')
+  return (p ? p[0] : '') + n
+}
+
+/** Crée (ou met à jour si déjà existant via findCollaborateurByName) le
+ * compte espace collaborateur à la validation RH : login généré (1ère
+ * lettre prénom + nom, suffixe numérique en cas de collision), code
+ * générique LPTSHOP à changer obligatoirement, lien vers l'entrée pour le
+ * dossier RH self-service. */
+export async function creerCompteCollaborateur({ magasinId, prenom, nom, poste, dateEntree, entreeId }) {
+  const existing = await findCollaborateurByName(magasinId, prenom, nom)
+  const base = genererLoginBase(prenom, nom)
+  if (existing?.login) {
+    // Compte déjà créé (ex. double-validation) — on rattache juste la nouvelle entrée.
+    await sbUpdate('collaborateurs', { entree_id: entreeId || existing.entree_id, date_entree: dateEntree || existing.date_entree }, `id=eq.${existing.id}`)
+    const rows = await sbSelect('collaborateurs', `id=eq.${existing.id}`)
+    return rows?.[0] || null
+  }
+  let login = base, suffixe = 1
+  while (true) {
+    const clash = await sbSelect('collaborateurs', `login=eq.${encodeURIComponent(login)}`)
+    if (!clash?.length) break
+    suffixe += 1; login = base + suffixe
+  }
+  const slug = slugifyName(prenom, nom)
+  if (existing) {
+    await sbUpdate('collaborateurs', {
+      login, code: 'LPTSHOP', doit_changer_code: true, formation_terminee: false,
+      poste: poste || existing.poste, date_entree: dateEntree || existing.date_entree, entree_id: entreeId || null,
+    }, `id=eq.${existing.id}`)
+    const rows = await sbSelect('collaborateurs', `id=eq.${existing.id}`)
+    return rows?.[0] || null
+  }
+  const ok = await sbInsert('collaborateurs', {
+    magasin_id: magasinId, slug, prenom, nom, poste: poste || null, statut: 'nouveau',
+    login, code: 'LPTSHOP', doit_changer_code: true, formation_terminee: false,
+    date_entree: dateEntree || null, entree_id: entreeId || null,
+  })
+  if (!ok) return null
+  const rows = await sbSelect('collaborateurs', `login=eq.${encodeURIComponent(login)}`)
+  return rows?.[0] || null
+}
+
+export async function apiGetCollaborateurByLogin(login, code) {
+  if (!login || !code) return null
+  const rows = await sbSelect('collaborateurs', `login=eq.${encodeURIComponent(login)}`)
+  const collab = rows?.[0]
+  if (!collab || collab.code !== code) return null
+  return collab
+}
+
+/** Choix du nouveau code à 6 chiffres, obligatoire à la 1ère connexion. */
+export async function apiChangerCode(collaborateurId, nouveauCode) {
+  return sbUpdate('collaborateurs', { code: nouveauCode, doit_changer_code: false }, `id=eq.${collaborateurId}`)
+}
+
+/** Déclencheur manuel manager (le vrai test de sortie n'est pas encore
+ * construit) — bascule le dashboard collaborateur en version complète. */
+export async function apiMarquerFormationTerminee(collaborateurId, valeur = true) {
+  return sbUpdate('collaborateurs', { formation_terminee: valeur }, `id=eq.${collaborateurId}`)
+}
+
 // ── Résultats des tests (page formateur Kevin/Quentin) ──────────────────
 
 /** Bornes de dates pour chaque préréglage de période. */

@@ -12,7 +12,7 @@ import TrainingRegistrationTile, { UpcomingRegistrationsPanel } from '@/componen
 import {
   getMagasinIdBySlug, getNouveauxCollaborateurs, getCollaborateursEnAttenteValidation,
   declencherTestSortie, validerNouvelEntrant, findCollaborateurByName, getOrCreateCollaborateurForEntree,
-  getCollaborateurById,
+  getCollaborateurById, apiMarquerFormationTerminee,
 } from '@/lib/collaborateursApi'
 import { getReportingsHebdo, updateReportingStructure } from '@/lib/notesTerrainApi'
 import DemandesInterventionView, { DemandeInterventionModal } from '@/components/DemandesInterventionView'
@@ -163,10 +163,10 @@ function useNewHiresWithReport(store, entreesData, magasinId) {
 // un seul gabarit visuel (icône + titre + méta + action) pour toutes les
 // natures d'action (demande d'intervention, test de sortie…), afin d'éviter
 // l'empilement de blocs de styles différents d'avant.
-function ATraiterRow({ icon, title, meta, pending, actionLabel, onAction }) {
+function ATraiterRow({ icon, title, meta, pending, actionLabel, onAction, onOpen }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 2px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+      <div onClick={onOpen} style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, cursor: onOpen ? 'pointer' : 'default' }}>
         <span style={{ fontSize: 15, flexShrink: 0 }}>{icon}</span>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 13.5, fontWeight: 700, color: '#14161a' }}>{title}</div>
@@ -189,7 +189,7 @@ function ATraiterRow({ icon, title, meta, pending, actionLabel, onAction }) {
 // demandes d'intervention ont leur propre écran dédié dans la sidebar,
 // cf. DemandesPage). Invisible dès qu'il n'y a plus rien à traiter : l'app
 // ne doit se faire remarquer que quand c'est utile.
-function AFaireCard({ magasinId, store, nouveauxEntrants, newHireRows, onDeclencher }) {
+function AFaireCard({ magasinId, store, nouveauxEntrants, newHireRows, onDeclencher, onOpenFiche }) {
   // Un candidat "ancien schéma" déjà présent côté nouveau schéma
   // (nouveauxEntrants) ne doit pas apparaître deux fois dans la liste. On
   // déduplique par id ET par nom : le lien entre les deux schémas
@@ -233,6 +233,7 @@ function AFaireCard({ magasinId, store, nouveauxEntrants, newHireRows, onDeclenc
             pending={!!c.test_declenche_at}
             actionLabel="Déclencher le test de sortie"
             onAction={() => onDeclencher(c.id)}
+            onOpen={onOpenFiche ? () => onOpenFiche(c.id) : undefined}
           />
         </div>
       ))}
@@ -481,7 +482,7 @@ function InterventionCTA({ magasinId, magasinNom, session, onCreated }) {
 // d'action côte à côte, aperçu de l'équipe avec barre de progression.
 function AccueilPage({
   store, session, progress, firstName, nouveauxEntrants, newHireRows, onDeclencher,
-  magasinId, demandesCount, onRefreshDemandes, onNavigate,
+  magasinId, demandesCount, onRefreshDemandes, onNavigate, onOpenFiche,
 }) {
   const [trainingRefreshKey, setTrainingRefreshKey] = useState(0)
 
@@ -537,7 +538,7 @@ function AccueilPage({
       <AFaireCard
         magasinId={magasinId} store={store}
         nouveauxEntrants={nouveauxEntrants} newHireRows={newHireRows}
-        onDeclencher={onDeclencher}
+        onDeclencher={onDeclencher} onOpenFiche={onOpenFiche}
       />
 
       <UpcomingRegistrationsPanel store={store} refreshKey={trainingRefreshKey} />
@@ -895,6 +896,7 @@ function ReportingPage({ reportings, magasinNom }) {
 // (ex. fin de période d'essai) qui référence un id de cette table.
 function CollaborateurDbFicheModal({ collaborateurId, onClose }) {
   const [collab, setCollab] = useState(undefined) // undefined = chargement, null = introuvable
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -904,6 +906,14 @@ function CollaborateurDbFicheModal({ collaborateurId, onClose }) {
 
   const finEssai = collab?.date_entree ? new Date(collab.date_entree) : null
   if (finEssai) finEssai.setMonth(finEssai.getMonth() + 2)
+
+  const toggleFormationTerminee = async () => {
+    setSaving(true)
+    const valeur = !collab.formation_terminee
+    await apiMarquerFormationTerminee(collab.id, valeur)
+    setCollab({ ...collab, formation_terminee: valeur })
+    setSaving(false)
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,25,35,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
@@ -927,6 +937,25 @@ function CollaborateurDbFicheModal({ collaborateurId, onClose }) {
                   {finEssai && <> — fin de période d&apos;essai le <strong>{finEssai.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</strong></>}
                 </div>
               )}
+              <div style={{ marginTop: 8, paddingTop: 14, borderTop: '1px solid #f1f5f9' }}>
+                <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8 }}>
+                  {collab.formation_terminee
+                    ? '✓ Formation marquée comme terminée — dashboard complet débloqué.'
+                    : "En attente de fin de formation (mode restreint : dossier RH + fiche accès). En attendant le vrai test de sortie, tu peux forcer le déblocage ici."}
+                </div>
+                <button
+                  onClick={toggleFormationTerminee}
+                  disabled={saving}
+                  style={{
+                    padding: '9px 16px', borderRadius: 8, border: 'none', cursor: saving ? 'default' : 'pointer', fontFamily: 'inherit',
+                    fontSize: 13, fontWeight: 700, color: '#fff',
+                    background: saving ? '#94a3b8' : (collab.formation_terminee ? 'rgba(239,68,68,0.08)' : 'linear-gradient(135deg,#16a34a,#22c55e)'),
+                    ...(collab.formation_terminee ? { color: '#f87171', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)' } : {}),
+                  }}
+                >
+                  {saving ? '…' : collab.formation_terminee ? 'Repasser en mode restreint' : 'Marquer la formation comme terminée'}
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -1137,6 +1166,7 @@ function ManagerDashboard({ session, onLogout }) {
               demandesCount={demandesCount}
               onRefreshDemandes={() => magasinId && refreshDemandes(magasinId)}
               onNavigate={setActiveNav}
+              onOpenFiche={setFicheCollaborateurId}
             />
           )}
         </div>

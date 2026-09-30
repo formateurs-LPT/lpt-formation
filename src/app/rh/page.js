@@ -13,50 +13,23 @@ import {
   apiGetManagerByMagasinId, apiNotifier,
   apiGetEntretiensByCandidat, apiCreerEntretien, apiContreProposerEntretien,
   apiConfirmerContreProposition, apiSupprimerEntretien,
-  apiGetMagasinInfo, apiGetEntree, apiMarquerMailBienvenueEnvoye,
+  apiGetMagasinInfo, apiGetEntree, apiMarquerMailBienvenueEnvoye, apiMarquerAccesEnvoye,
 } from '@/lib/rhApi'
 import { STORES, STORE_REGION_GROUPS } from '@/lib/storeFollowupData'
-import { getMagasinIdBySlug, slugifyName, stripAccents } from '@/lib/collaborateursApi'
+import { getMagasinIdBySlug, slugifyName, stripAccents, creerCompteCollaborateur, findCollaborateurByName } from '@/lib/collaborateursApi'
 import { uploadPieceJointe, getSignedUrl, RH_DOCUMENTS_BUCKET, FICHIER_CONSTANT_PRESENTATION, uploadFichierConstant } from '@/lib/storageApi'
 import { buildLptEmail } from '@/components/FicheShareModal'
+import { getDocsRequis, computeStatut } from '@/lib/dossierDocuments'
+import { FileViewButton, FileDropSlot } from '@/components/FileDropSlot'
 import RhSidebar from '@/components/RhSidebar'
 
 const SESSION_KEY = 'rh_session'
 const RH_DISPLAY_NAMES = { kevin: 'Kevin Dupuy', quentin: 'Quentin Bahougne' }
 const STORE_OPTIONS = STORES.map(s => ({ id: s.id, label: s.label }))
 const POSTE_OPTIONS = ['CVO', 'MO/SAV', 'OPTICIEN', 'STORE MANAGER', 'Alternant']
+const HEURES_SUGGESTIONS = ['35', '24', '28', '18', '8']
 
-// ── Documents ─────────────────────────────────────────────────────────────────
-const DOCS_TOUJOURS = [
-  { id: 'piece_identite', label: "Pièce d'identité (recto verso)" },
-  { id: 'rib', label: 'RIB' },
-  { id: 'secu_vitale', label: 'Attestation sécu sociale ou carte Vitale' },
-  { id: 'casier_judiciaire', label: 'Extrait de casier judiciaire' },
-]
-const DOCS_DOMICILE_PERSO = [{ id: 'justificatif_domicile', label: 'Justificatif de domicile' }]
-const DOCS_DOMICILE_HEBERGE = [
-  { id: 'identite_hebergeur', label: "Pièce d'identité de l'hébergeur" },
-  { id: 'domicile_hebergeur', label: "Justificatif de domicile de l'hébergeur" },
-  { id: 'attestation_honneur', label: "Attestation sur l'honneur" },
-]
-const DOCS_RQTH = [{ id: 'rqth', label: 'Attestation RQTH' }]
-
-function getDocsRequis(entity) {
-  const docs = [...DOCS_TOUJOURS]
-  if (entity.mode_domicile === 'heberge') docs.push(...DOCS_DOMICILE_HEBERGE)
-  else docs.push(...DOCS_DOMICILE_PERSO)
-  if (entity.rqth_applicable) docs.push(...DOCS_RQTH)
-  return docs
-}
-
-function computeStatut(entity, dossiers) {
-  const requis = getDocsRequis(entity)
-  const remplis = new Set(dossiers.filter(d => d.rempli).map(d => d.type_document))
-  const docsOk = requis.every(d => remplis.has(d.id))
-  const contactOk = (entity.contact_urgence_nom || '').trim() && (entity.contact_urgence_telephone || '').trim()
-  return docsOk && contactOk ? 'complet' : 'incomplet'
-}
-
+// ── Documents (liste + calcul de statut partagés avec l'espace collaborateur) ──
 // ── Pipeline ──────────────────────────────────────────────────────────────────
 // 'a_contacter' n'est plus utilisé (contact toujours fait avant création de
 // la fiche) — gardé dans STATUT_LABELS/STATUT_COLORS pour l'historique/anciennes fiches.
@@ -399,7 +372,10 @@ function CandidatFormModal({ initial, session, onSave, onClose }) {
         </div>
         {isEdit && (
           <div style={{ marginBottom:16 }}>
-            <Field label="Heures envisagées (contrat)"><input style={{ ...CSS.input, maxWidth:200 }} value={form.heures_envisagees} onChange={e => set('heures_envisagees', e.target.value)} placeholder="Ex: 35" /></Field>
+            <Field label="Heures envisagées (contrat)">
+              <input style={{ ...CSS.input, maxWidth:200 }} list="heures-suggestions-candidat" value={form.heures_envisagees} onChange={e => set('heures_envisagees', e.target.value)} placeholder="Ex: 35" />
+              <datalist id="heures-suggestions-candidat">{HEURES_SUGGESTIONS.map(h => <option key={h} value={h} />)}</datalist>
+            </Field>
           </div>
         )}
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }}>
@@ -527,7 +503,8 @@ function ValiderRecrutementModal({ candidat, session, onConfirm, onClose }) {
           <input style={CSS.input} type="date" value={form.date_entree} onChange={e => set('date_entree', e.target.value)} />
         </Field>
         <Field label={`Heures / semaine${!form.heures.trim() ? ' ⚠️' : ''}`}>
-          <input style={{ ...CSS.input, borderColor:!form.heures.trim()?'#fbbf24':'#e5e7eb' }} value={form.heures} onChange={e => set('heures', e.target.value)} placeholder="Ex: 35" />
+          <input style={{ ...CSS.input, borderColor:!form.heures.trim()?'#fbbf24':'#e5e7eb' }} list="heures-suggestions-valider" value={form.heures} onChange={e => set('heures', e.target.value)} placeholder="Ex: 35" />
+          <datalist id="heures-suggestions-valider">{HEURES_SUGGESTIONS.map(h => <option key={h} value={h} />)}</datalist>
         </Field>
       </div>
       {semaine && (
@@ -555,51 +532,8 @@ function ValiderRecrutementModal({ candidat, session, onConfirm, onClose }) {
   )
 }
 
-// ── Fichiers RH (CV, lettre de motivation, dossier) — glisser-déposer,
-// consultation et suppression, bucket privé rh-documents ────────────────────
-function FileViewButton({ path, label = '📄 Voir' }) {
-  const [loading, setLoading] = useState(false)
-  const open = async () => {
-    setLoading(true)
-    const url = await getSignedUrl(path, 3600, RH_DOCUMENTS_BUCKET)
-    setLoading(false)
-    if (url) window.open(url, '_blank')
-  }
-  return <button type="button" onClick={open} disabled={loading} style={{ ...CSS.btn, padding:'5px 10px', background:'#f0f9ff', color:'#0089ba', fontSize:12 }}>{loading ? '…' : label}</button>
-}
-
-/** Zone glisser-déposer réutilisable : `path` (fichier déjà stocké, mode
- * "fiche") affiche Voir/Supprimer ; `staged` (fichier choisi localement mais
- * pas encore uploadé, mode "création") affiche juste Supprimer. */
-function FileDropSlot({ label, path, staged, uploading, onFiles, onRemove, accept = '.pdf,.doc,.docx,image/*' }) {
-  const [dragOver, setDragOver] = useState(false)
-  const inputRef = useRef(null)
-  const attached = !!path || !!staged
-  return (
-    <div
-      onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={e => { e.preventDefault(); setDragOver(false); onFiles(e.dataTransfer.files) }}
-      onClick={() => !attached && inputRef.current?.click()}
-      style={{
-        border:`1.5px dashed ${dragOver ? '#00abe9' : (attached ? '#86efac' : '#cbd5e1')}`,
-        borderRadius:10, padding:'10px 12px', background:dragOver ? '#eaf3fd' : (attached ? '#f0fdf4' : '#fff'),
-        cursor:attached ? 'default' : 'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, minHeight:40,
-      }}
-    >
-      <div style={{ fontSize:12.5, color:attached ? '#166534' : '#9aa1ac', fontWeight:600, minWidth:0 }}>
-        {uploading ? 'Envoi…' : attached ? `✓ ${label} ajouté(e)` : `${label} — glisser-déposer ou cliquer`}
-      </div>
-      {attached && !uploading && (
-        <div style={{ display:'flex', gap:6, flexShrink:0 }} onClick={e => e.stopPropagation()}>
-          {path && <FileViewButton path={path} />}
-          <button type="button" onClick={onRemove} title="Supprimer" style={{ ...CSS.btn, padding:'5px 9px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', fontSize:12 }}>🗑️</button>
-        </div>
-      )}
-      <input ref={inputRef} type="file" accept={accept} style={{ display:'none' }} onChange={e => onFiles(e.target.files)} />
-    </div>
-  )
-}
+// FileViewButton/FileDropSlot : voir src/components/FileDropSlot.js (partagé
+// avec l'espace collaborateur, dossier RH self-service).
 
 // ── Planification d'entretien ────────────────────────────────────────────────
 function EntretienPlanifierModal({ candidat, session, onClose, onCreated }) {
@@ -707,34 +641,37 @@ function EntretienStatusCard({ entretien, onConfirmerContreProposition, onSuppri
 // Composition mailto pré-remplie éditable + traçage du clic "Envoyer", même
 // principe que le mail de reporting hebdomadaire (MesRetoursView.js) : on ne
 // peut pas savoir si l'email part réellement, seulement que la RH a cliqué.
-function MailBienvenueModal({ candidat, entree, magasinInfo, onClose, onSent }) {
+function MailBienvenueModal({ candidat, entree, magasinInfo, collaborateur, onClose, onSent }) {
   const emailPro = buildLptEmail({ prenom: candidat.prenom, nom: candidat.nom }) || '—'
   const motDePasse = 'bonjour' + stripAccents(candidat.prenom || '').toLowerCase().replace(/[^a-z]/g, '')
   const dateEntreeLettres = formatDateLettresJour(entree.date_entree)
   const premierJour = premierJourOuvreApres(entree.date_entree)
   const nomMagasin = (candidat.magasin || '').replace(/\s*\(.*$/, '')
   const prefixeMagasin = magasinInfo.typeMagasin === 'entrepot' ? `notre entrepôt de ${nomMagasin}` : `notre magasin de ${nomMagasin}`
+  const estIdf = magasinInfo.regionNom === 'Zone Paris' || magasinInfo.typeMagasin === 'entrepot'
+  const lieuFormation = estIdf
+    ? `Vous débuterez votre formation à partir de 10h à l'adresse 42 boulevard Sébastopol 75003 Paris (6ème étage).`
+    : `Vous débuterez votre formation en visio depuis votre magasin, à partir de 10h.`
 
-  const corpsInitial = `Bonjour,
+  const corpsInitial = `Bonjour ${candidat.prenom},
 
 Comme échangé avec vous, nous sommes ravis de vous proposer de nous rejoindre en tant que ${candidat.poste_vise || ''} - CDI Temps plein ${entree.heures || ''}h sur ${prefixeMagasin}.
 
-Date d'entrée : le ${dateEntreeLettres} à partir de 10h pour le début de la formation dans nos locaux situés au 42 boulevard Sébastopol 75003 Paris (6ème étage)
+${lieuFormation}
 
-Nous aurons besoin des documents suivants pour faire votre contrat (à envoyer par mail à contact-rh@lunettespourtous.com dès que possible) :
+Date d'entrée prévue : le ${dateEntreeLettres}.
 
-- votre pièce d'identité (recto verso)
-- votre RIB
-- votre attestation de sécurité sociale ou carte Vitale
-- votre extrait de casier judiciaire
-- la personne à contacter en cas d'urgence
-- votre justificatif de domicile (si hébergé, carte d'identité de l'hébergeur, justificatif de domicile et attestation sur l'honneur)
-- une attestation RQTH le cas échéant
+Avant cela, je vous invite à vous connecter sur votre nouvel espace Lunettes Pour Tous. Dessus, vous pourrez ajouter les documents dont nous avons besoin afin de rédiger votre contrat.
 
+Voici le lien pour vous connecter : https://lpt-formation.vercel.app/espace-collaborateur
+
+Identifiant : ${collaborateur?.login || '—'}
+Mot de passe : LPTSHOP (il vous sera demandé d'en choisir un nouveau à 6 chiffres dès la première connexion)
+${estIdf ? `
 La formation ayant lieu dans nos nouveaux locaux encore en travaux, il n'y a pas d'interphone en bas.
 Voici donc un lien pour prévenir les formateurs de votre arrivée :
 https://lpt-formation.vercel.app/sonnette
-
+` : ''}
 Prochaines étapes :
 - Réception et signature du contrat de travail : contrat envoyé via Yousign ou Docusign d'ici lundi, à signer à réception.
 - Lien Skello (notre logiciel de planning) : envoyé sur votre boîte mail personnelle pour vous créer un compte et avoir accès à vos plannings magasin.
@@ -812,6 +749,7 @@ Bien à toi`
 function MailBienvenueSection({ candidat, decisionCandidat, onSent }) {
   const [magasinInfo, setMagasinInfo] = useState(null)
   const [entree, setEntree] = useState(null)
+  const [collaborateur, setCollaborateur] = useState(null)
   const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
@@ -821,9 +759,11 @@ function MailBienvenueSection({ candidat, decisionCandidat, onSent }) {
       if (cancelled || !magasinId) return
       const info = await apiGetMagasinInfo(magasinId)
       if (!cancelled) setMagasinInfo(info)
+      const c = await findCollaborateurByName(magasinId, candidat.prenom, candidat.nom)
+      if (!cancelled) setCollaborateur(c)
     })
     return () => { cancelled = true }
-  }, [candidat.magasin, decisionCandidat])
+  }, [candidat.magasin, candidat.prenom, candidat.nom, decisionCandidat])
 
   useEffect(() => {
     if (decisionCandidat !== 'accepte' || !candidat.entree_id) return
@@ -877,11 +817,98 @@ function MailBienvenueSection({ candidat, decisionCandidat, onSent }) {
       )}
       {showModal && (
         <MailBienvenueModal
-          candidat={candidat} entree={entree} magasinInfo={magasinInfo}
+          candidat={candidat} entree={entree} magasinInfo={magasinInfo} collaborateur={collaborateur}
           onClose={() => setShowModal(false)}
           onSent={onSent}
         />
       )}
+    </div>
+  )
+}
+
+// ── Accès à l'espace collaborateur (login + LPTSHOP) — mail distinct du mail
+// de bienvenue Île-de-France ci-dessus, ouvert à TOUS les magasins, envoyé
+// une fois le compte créé (juste après validation du recrutement). ─────────
+function AccesEspaceModal({ candidat, collaborateur, onClose, onSent }) {
+  const corpsInitial = `Bonjour ${candidat.prenom},
+
+Bienvenue chez Lunettes Pour Tous ! Ton espace collaborateur est prêt.
+
+Identifiant : ${collaborateur.login}
+Mot de passe temporaire : LPTSHOP
+
+Connecte-toi ici : https://lpt-formation.vercel.app/espace-collaborateur
+Dès ta première connexion, il te sera demandé de choisir un nouveau code personnel à 6 chiffres.
+
+Première étape : remplis ton dossier RH directement depuis ton espace (pièce d'identité, RIB, attestation de sécurité sociale ou carte Vitale, extrait de casier judiciaire, justificatif de domicile, attestation RQTH si besoin) — tu peux le faire en plusieurs fois, à ton rythme.
+
+À très vite !`
+
+  const [mailTo, setMailTo] = useState(candidat.email || '')
+  const [body, setBody] = useState(corpsInitial)
+
+  const envoyer = async () => {
+    const subject = encodeURIComponent('Bienvenue chez Lunettes pour tous — tes accès')
+    window.location.href = `mailto:${mailTo}?subject=${subject}&body=${encodeURIComponent(body)}`
+    await onSent()
+    onClose()
+  }
+
+  return (
+    <Modal title="Accès à l'espace collaborateur" onClose={onClose} width={600}>
+      <Field label="Destinataire"><input style={CSS.input} value={mailTo} onChange={e => setMailTo(e.target.value)} /></Field>
+      <Field label="Corps du mail">
+        <textarea style={{ ...CSS.input, height:280, resize:'vertical', fontFamily:'inherit', whiteSpace:'pre-wrap' }} value={body} onChange={e => setBody(e.target.value)} />
+      </Field>
+      <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+        <button onClick={onClose} style={{ ...CSS.btn, background:'#fff', border:'1px solid #e5e7eb', color:'#374151' }}>Annuler</button>
+        <button onClick={envoyer} disabled={!mailTo.trim()} style={{ ...CSS.btn, background:!mailTo.trim()?'#cbd5e1':'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff' }}>Envoyer →</button>
+      </div>
+    </Modal>
+  )
+}
+
+function AccesEspaceSection({ candidat, magasinLabel, onSent }) {
+  const [collaborateur, setCollaborateur] = useState(undefined) // undefined = chargement
+  const [showModal, setShowModal] = useState(false)
+
+  useEffect(() => {
+    if (candidat.statut !== 'valide') return
+    let cancelled = false
+    resolveManagerForCandidat(magasinLabel).then(async ({ magasinId }) => {
+      if (cancelled) return
+      if (!magasinId) { setCollaborateur(null); return }
+      const c = await findCollaborateurByName(magasinId, candidat.prenom, candidat.nom)
+      if (!cancelled) setCollaborateur(c)
+    })
+    return () => { cancelled = true }
+  }, [candidat.statut, candidat.prenom, candidat.nom, magasinLabel])
+
+  if (candidat.statut !== 'valide') return null
+  if (collaborateur === undefined) return null
+  if (!collaborateur?.login) return null // compte pas encore résolu (garde-fou, ne devrait pas arriver)
+
+  const emailManquant = !candidat.email?.trim()
+
+  return (
+    <div style={{ marginBottom:16 }}>
+      <button
+        onClick={() => !emailManquant && setShowModal(true)}
+        disabled={emailManquant}
+        title={emailManquant ? "Renseigne l'email du candidat pour pouvoir envoyer ce mail" : undefined}
+        style={{ ...CSS.btn, padding:'9px 16px', fontSize:13, color:'#fff', cursor:emailManquant?'not-allowed':'pointer', background:emailManquant?'#cbd5e1':'linear-gradient(135deg,#0089ba,#00abe9)' }}
+      >
+        🔑 Envoyer les accès à l&apos;espace
+      </button>
+      {emailManquant && (
+        <div style={{ fontSize:11.5, color:'#9aa1ac', marginTop:6 }}>Renseigne l&apos;email du candidat pour pouvoir envoyer ce mail.</div>
+      )}
+      {candidat.acces_espace_envoye_at && (
+        <div style={{ fontSize:11.5, color:'#16a34a', marginTop:6 }}>
+          ✓ Accès envoyés le {new Date(candidat.acces_espace_envoye_at).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' })}
+        </div>
+      )}
+      {showModal && <AccesEspaceModal candidat={candidat} collaborateur={collaborateur} onClose={() => setShowModal(false)} onSent={onSent} />}
     </div>
   )
 }
@@ -912,6 +939,11 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
   const marquerMailBienvenueEnvoye = async () => {
     await apiMarquerMailBienvenueEnvoye(candidat.id)
     push({ ...candidat, mail_bienvenue_envoye_at: new Date().toISOString() })
+  }
+
+  const marquerAccesEnvoye = async () => {
+    await apiMarquerAccesEnvoye(candidat.id)
+    push({ ...candidat, acces_espace_envoye_at: new Date().toISOString() })
   }
 
   const uploadCandidatFile = async (files, field, setUploading) => {
@@ -994,7 +1026,18 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
       },
       statutPrecedent: candidat.statut, login: session.login,
     })
-    if (entree) push({ ...candidat, statut: 'valide', entree_id: entree.id })
+    if (entree) {
+      push({ ...candidat, statut: 'valide', entree_id: entree.id })
+      // Création automatique du compte espace collaborateur — la RH n'a
+      // rien à faire de plus pour ça, seulement pour envoyer le mail d'accès.
+      const { magasinId } = await resolveManagerForCandidat(candidat.magasin)
+      if (magasinId) {
+        await creerCompteCollaborateur({
+          magasinId, prenom: candidat.prenom, nom: candidat.nom,
+          poste: candidat.poste_vise, dateEntree: form.date_entree, entreeId: entree.id,
+        })
+      }
+    }
     setShowValider(false)
   }
 
@@ -1044,6 +1087,11 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
           candidat={candidat}
           decisionCandidat={entretien?.decision_candidat}
           onSent={marquerMailBienvenueEnvoye}
+        />
+        <AccesEspaceSection
+          candidat={candidat}
+          magasinLabel={candidat.magasin}
+          onSent={marquerAccesEnvoye}
         />
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }}>
           <FileDropSlot
@@ -1159,6 +1207,7 @@ function RecrutementView({ session, regionFilter }) {
   const [showAdd, setShowAdd] = useState(false)
   const [fiche, setFiche] = useState(null)
   const [showRefuses, setShowRefuses] = useState(false)
+  const [showValides, setShowValides] = useState(false)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
@@ -1264,6 +1313,26 @@ function RecrutementView({ session, regionFilter }) {
               </div>
             )
           })}
+          {valides.length > 0 && (
+            <div style={{ marginTop:8 }}>
+              <button onClick={() => setShowValides(v => !v)} style={{ ...CSS.btn, padding:'6px 12px', background:'none', color:'#9aa1ac', fontSize:12, border:'none' }}>
+                {showValides?'▲':'▼'} {valides.length} validé{valides.length>1?'s':''}
+              </button>
+              {showValides && (
+                <div style={{ background:'#fff', border:'1px solid #e5e7eb', borderRadius:16, overflow:'hidden', marginTop:8, boxShadow:'0 1px 2px rgba(16,24,40,0.03)' }}>
+                  {valides.map((c, i) => (
+                    <div key={c.id} onClick={() => setFiche(c)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 16px', borderBottom:i<valides.length-1?'1px solid #f0f1f3':'none', cursor:'pointer' }}>
+                      <div>
+                        <div style={{ fontWeight:600, color:'#14161a', fontSize:13.5 }}>{c.prenom} {c.nom}</div>
+                        <div style={{ fontSize:11.5, color:'#9aa1ac' }}>{c.magasin||'—'} · {c.poste_vise||'—'}</div>
+                      </div>
+                      <StatutPill statut="valide" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {refuses.length > 0 && (
             <div style={{ marginTop:8 }}>
               <button onClick={() => setShowRefuses(r => !r)} style={{ ...CSS.btn, padding:'6px 12px', background:'none', color:'#9aa1ac', fontSize:12, border:'none' }}>
@@ -1346,7 +1415,10 @@ function EntreeForm({ initial, semaineLundi, session, onSave, onClose }) {
           <Field label="Poste"><input style={CSS.input} value={form.poste} onChange={e => set('poste', e.target.value)} placeholder="CVO, Opticien…" /></Field>
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 16px' }}>
-          <Field label="Heures / semaine"><input style={CSS.input} value={form.heures} onChange={e => set('heures', e.target.value)} placeholder="35" /></Field>
+          <Field label="Heures / semaine">
+            <input style={CSS.input} list="heures-suggestions-entree" value={form.heures} onChange={e => set('heures', e.target.value)} placeholder="35" />
+            <datalist id="heures-suggestions-entree">{HEURES_SUGGESTIONS.map(h => <option key={h} value={h} />)}</datalist>
+          </Field>
           <Field label="Téléphone"><input style={CSS.input} value={form.telephone} onChange={e => set('telephone', e.target.value)} placeholder="06 xx xx xx xx" /></Field>
         </div>
         <div style={{ background:'#fff', border:'1px solid #e5e7eb', borderRadius:10, padding:'12px 14px', marginBottom:14 }}>
