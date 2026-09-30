@@ -676,7 +676,7 @@ export function CollaborateurProfilePage({ store, sectionId, collaborateur, prog
                     borderTop: i > 0 ? '1px solid #f0f1f3' : 'none',
                   }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: '#14161a', width: 200, flexShrink: 0 }}>{item.label}</div>
+                    <div className="skill-row-label" style={{ fontSize: 13.5, fontWeight: 600, color: '#14161a', width: 200, flexShrink: 0 }}>{item.label}</div>
                     <div style={{ flex: 1, height: 6, background: '#eef0f2', borderRadius: 3, overflow: 'hidden', minWidth: 60 }}>
                       <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 3 }} />
                     </div>
