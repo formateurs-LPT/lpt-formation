@@ -252,7 +252,7 @@ function AFaireCard({ magasinId, store, nouveauxEntrants, newHireRows, onDeclenc
   const categoryKey = classifyMagasin(store.label)
 
   return (
-    <div style={{
+    <div id="a-faire-card" style={{
       background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16,
       padding: '14px 18px 4px', marginBottom: 24, boxShadow: '0 1px 2px rgba(16,24,40,0.03)',
     }}>
@@ -378,6 +378,18 @@ function TestEnCoursPage({ collaborateur, onBack }) {
 function fmtDateLongFr(isoDate) {
   if (!isoDate) return '—'
   return new Date(`${isoDate}T00:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+// "du 5 au 9 octobre 2026" (même mois) ou "du 5 décembre 2026 au 2 janvier
+// 2027" (à cheval sur deux mois) — pour l'alerte planning déplacement.
+function fmtPlanningRangeFr(startIso, endIso) {
+  const start = new Date(`${startIso}T00:00:00`)
+  const end = new Date(`${endIso}T00:00:00`)
+  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
+  if (sameMonth) {
+    return `du ${start.getDate()} au ${end.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`
+  }
+  return `du ${fmtDateLongFr(startIso)} au ${fmtDateLongFr(endIso)}`
 }
 
 // Lecture seule — même requête réutilisable (getReportingsHebdo, filtrable
@@ -586,6 +598,14 @@ function AccueilPage({
           icon={<IconClipboard size={20} />} iconBg="#fee2e2" iconColor="#dc2626"
           label="Actions à traiter" value={totalActions}
           sub={`action${totalActions > 1 ? 's' : ''} à traiter`}
+          onClick={totalActions > 0 ? () => {
+            const hasAFaireRow = nouveauxEntrants.length + extraRows.length + reportingActions.length > 0
+            if (hasAFaireRow) {
+              document.getElementById('a-faire-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            } else {
+              onNavigate('demandes')
+            }
+          } : undefined}
         />
       </div>
 
@@ -965,6 +985,24 @@ function ReportingPage({ reportings, magasinNom }) {
   )
 }
 
+// Emplacement pour les mini-modules d'entraînement que Kevin ajoutera par la
+// suite (à faire passer en réunion manager, ou en tête-à-tête avec un
+// collaborateur) — pour l'instant seul le menu existe, contenu à venir.
+function EntrainementPage() {
+  return (
+    <div>
+      <PageHeader title="J'entraîne mon équipe" />
+      <p style={{ fontSize: 13.5, color: '#6b7280', margin: '-12px 0 20px', maxWidth: 520, lineHeight: 1.5 }}>
+        Des mini-modules à faire en réunion manager, ou en tête-à-tête avec un collaborateur.
+      </p>
+      <div style={{ textAlign: 'center', padding: '56px 24px', background: '#fff', borderRadius: 14, border: '1.5px solid #e2e8f0' }}>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>🎯</div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: '#64748b' }}>Les premiers modules arrivent bientôt</div>
+      </div>
+    </div>
+  )
+}
+
 // Fiche minimale d'un collaborateur de la table relationnelle `collaborateurs`
 // — distincte de CollaborateurProfilePage (qui affiche le roster STORES codé
 // en dur, sans lien fiable avec cette table). Ouverte depuis une notification
@@ -1118,17 +1156,22 @@ function ManagerDashboard({ session, onLogout }) {
   }, [session.login])
 
   // Centre de notifications générique (table `notifications`, déjà utilisée
-  // ailleurs) — pour l'instant seul le type 'fin_periode_essai' est enrichi
-  // avec un libellé lisible ; les autres types s'affichent en repli minimal.
-  // 'message_chat_groupe' est volontairement exclu de cette liste générique :
-  // il a son propre badge dédié sur l'onglet "Chat magasin" (refreshChatCount).
-  const refreshNotifications = async (loginRaw) => {
-    const all = await getNotificationsNonLues(loginRaw)
+  // ailleurs) — chaque type reconnu est enrichi avec un libellé lisible via
+  // une requête sur sa table source ; les autres types s'affichent en repli
+  // minimal. 'message_chat_groupe' est volontairement exclu de cette liste
+  // générique : il a son propre badge dédié sur l'onglet "Chat magasin".
+  const refreshNotifications = async (login) => {
+    const all = await getNotificationsNonLues(login)
     setChatCount(all.filter(n => n.type === 'message_chat_groupe').length)
     const rows = all.filter(n => n.type !== 'message_chat_groupe')
     const essaiIds = rows.filter(n => n.type === 'fin_periode_essai').map(n => n.reference_id).filter(Boolean)
-    const collabs = essaiIds.length ? await sbSelect('collaborateurs', `id=in.(${essaiIds.join(',')})&select=id,prenom,nom,poste,date_entree`) : []
+    const deploiementIds = rows.filter(n => n.type === 'planning_deploiement').map(n => n.reference_id).filter(Boolean)
+    const [collabs, deploiements] = await Promise.all([
+      essaiIds.length ? sbSelect('collaborateurs', `id=in.(${essaiIds.join(',')})&select=id,prenom,nom,poste,date_entree`) : [],
+      deploiementIds.length ? sbSelect('planning_deployments', `id=in.(${deploiementIds.join(',')})&select=id,trainer,start_date,end_date`) : [],
+    ])
     const collabById = Object.fromEntries((collabs || []).map(c => [c.id, c]))
+    const deploiementById = Object.fromEntries((deploiements || []).map(d => [d.id, d]))
     setNotifications(rows.map(n => {
       if (n.type === 'fin_periode_essai') {
         const c = collabById[n.reference_id]
@@ -1136,11 +1179,18 @@ function ManagerDashboard({ session, onLogout }) {
         if (fin) fin.setMonth(fin.getMonth() + 2)
         const dateLabel = fin ? fin.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '—'
         return {
-          id: n.id, collaborateurId: n.reference_id,
+          id: n.id, collaborateurId: n.reference_id, icon: '🎓',
           label: c ? `${c.prenom} ${c.nom} arrive en fin de période d'essai le ${dateLabel} — pense à faire le point.` : "Fin de période d'essai à venir",
         }
       }
-      return { id: n.id, collaborateurId: null, label: `Notification (${n.type})` }
+      if (n.type === 'planning_deploiement') {
+        const d = deploiementById[n.reference_id]
+        return {
+          id: n.id, collaborateurId: null, icon: '🚗',
+          label: d ? `Semaine ${fmtPlanningRangeFr(d.start_date, d.end_date)} : ${d.trainer} sera présent dans votre magasin.` : 'Un formateur va bientôt intervenir dans votre magasin.',
+        }
+      }
+      return { id: n.id, collaborateurId: null, icon: '🔔', label: `Notification (${n.type})` }
     }))
   }
 
@@ -1331,6 +1381,8 @@ function ManagerDashboard({ session, onLogout }) {
             <ReportingPage reportings={reportings} magasinNom={store.label} />
           ) : activeNav === 'chat' ? (
             <ChatMagasinPage magasinId={magasinId} magasinNom={store.label} session={session} storeManagerId={storeManagerId} />
+          ) : activeNav === 'entrainement' ? (
+            <EntrainementPage />
           ) : (
             <AccueilPage
               store={store}

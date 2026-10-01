@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbSelect, sbInsert, sbUpdate, sbDelete } from '@/lib/supabase'
+import { sbSelect, sbInsert, sbInsertReturn, sbUpdate, sbDelete } from '@/lib/supabase'
+import { getMagasinIdByNom, notifierManagersDeploiement } from '@/lib/planningApi'
 
 // ── Données statiques ─────────────────────────────────────────
 const STORES_BY_ZONE = {
@@ -72,12 +73,15 @@ function CreateModal({ onClose, onCreated }) {
   const submit = async () => {
     if (!canSubmit) return
     setLoading(true)
-    const ok = await sbInsert('planning_deployments', {
-      trainer, store, start_date: startDate, end_date: endDate,
+    const magasinId = await getMagasinIdByNom(store)
+    const created = await sbInsertReturn('planning_deployments', {
+      trainer, store, start_date: startDate, end_date: endDate, magasin_id: magasinId,
     })
     setLoading(false)
-    if (ok) onCreated()
-    else setError('Erreur lors de la création. Vérifiez les tables Supabase.')
+    if (created) {
+      await notifierManagersDeploiement(created.id, magasinId)
+      onCreated()
+    } else setError('Erreur lors de la création. Vérifiez les tables Supabase.')
   }
 
   return (
@@ -182,8 +186,9 @@ function EditCardForm({ dep, onCancel, onSaved, onDeleted }) {
   const save = async () => {
     if (!canSave) return
     setSaving(true)
+    const magasinId = store === dep.store ? dep.magasin_id : await getMagasinIdByNom(store)
     const ok = await sbUpdate('planning_deployments', {
-      trainer, store, start_date: startDate, end_date: endDate,
+      trainer, store, start_date: startDate, end_date: endDate, magasin_id: magasinId,
     }, `id=eq.${dep.id}`)
     setSaving(false)
     if (ok) onSaved()
