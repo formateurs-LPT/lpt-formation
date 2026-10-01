@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { getManagerFromDB, getWeeklySharedState, sbSelect, pgInList } from '@/lib/supabase'
 import { STORES, collaborateurFullName, tenureLabel } from '@/lib/storeFollowupData'
@@ -15,6 +15,8 @@ import {
   getCollaborateurById, apiMarquerFormationTerminee,
 } from '@/lib/collaborateursApi'
 import { getReportingsHebdo, updateReportingStructure } from '@/lib/notesTerrainApi'
+import { getMotsMessages, addMotMessage, getStoreManagerId } from '@/lib/notesCollaborateurApi'
+import { ChatGroupeBody } from '@/components/ChatGroupeModal'
 import DemandesInterventionView, { DemandeInterventionModal } from '@/components/DemandesInterventionView'
 import ReportingDetailView from '@/components/ReportingDetailView'
 import { isMagasinBelgique, BELGIQUE_ONLY_LOGINS, getNotificationsNonLues, marquerNotificationsLues } from '@/lib/directionApi'
@@ -934,6 +936,26 @@ function RecrutementPage({ magasinId, onRefresh }) {
   )
 }
 
+// ── Chat du magasin (manager + tous les collaborateurs) ──────────────────
+// Onglet de premier plan (lancement de journée) — même table/composant que
+// le chat individuel manager ↔ collaborateur (mots_messages, type='groupe').
+function ChatMagasinPage({ magasinId, magasinNom, session, storeManagerId }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 110px)' }}>
+      <PageHeader title="Chat du magasin" />
+      <div style={{ flex: 1, minHeight: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column' }}>
+        <ChatGroupeBody
+          magasinId={magasinId}
+          auteur="manager"
+          auteurNom={session.displayName || 'Manager'}
+          auteurLogin={session.login}
+          storeManagerId={storeManagerId}
+        />
+      </div>
+    </div>
+  )
+}
+
 function ReportingPage({ reportings, magasinNom }) {
   return (
     <div>
@@ -947,7 +969,63 @@ function ReportingPage({ reportings, magasinNom }) {
 // — distincte de CollaborateurProfilePage (qui affiche le roster STORES codé
 // en dur, sans lien fiable avec cette table). Ouverte depuis une notification
 // (ex. fin de période d'essai) qui référence un id de cette table.
-function CollaborateurDbFicheModal({ collaborateurId, onClose }) {
+// Fil de discussion manager ↔ collaborateur — extension du fil "mots" déjà
+// utilisé entre formateur et collaborateur (mots_messages), pour que le
+// manager ait lui aussi un canal direct avec son équipe sans attendre
+// l'entretien de validation ou de passer par le formateur/la RH.
+function MessagesCollaborateurSection({ collaborateurId, managerLogin }) {
+  const [messages, setMessages] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [texte, setTexte] = useState('')
+  const [sending, setSending] = useState(false)
+  const managerIdRef = useRef(null)
+
+  const load = async () => { setMessages(await getMotsMessages(collaborateurId)); setLoading(false) }
+  useEffect(() => { load() }, [collaborateurId]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { getStoreManagerId(managerLogin).then(id => { managerIdRef.current = id }) }, [managerLogin])
+
+  const envoyer = async () => {
+    if (!texte.trim() || sending) return
+    setSending(true)
+    await addMotMessage({ collaborateurId, storeManagerId: managerIdRef.current, auteur: 'manager', contenu: texte.trim() })
+    setTexte(''); await load(); setSending(false)
+  }
+
+  const auteurLabel = auteur => auteur === 'manager' ? 'Toi' : auteur === 'formateur' ? 'Formateur' : 'Collaborateur'
+
+  return (
+    <div style={{ marginTop: 8, paddingTop: 14, borderTop: '1px solid #f1f5f9' }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Messages</div>
+      {loading ? <div style={{ color: '#94a3b8', fontSize: 13 }}>Chargement…</div> : (
+        <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
+          {messages.length === 0 ? (
+            <p style={{ color: '#94a3b8', fontSize: 12.5, fontStyle: 'italic', margin: 0 }}>Aucun message pour l&apos;instant.</p>
+          ) : messages.map(m => (
+            <div key={m.id} style={{ alignSelf: m.auteur === 'manager' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+              <div style={{ fontSize: 10.5, color: '#94a3b8', marginBottom: 2, textAlign: m.auteur === 'manager' ? 'right' : 'left' }}>{auteurLabel(m.auteur)}</div>
+              <div style={{ background: m.auteur === 'manager' ? '#eaf3fd' : '#f1f5f9', borderRadius: 10, padding: '8px 12px' }}>
+                <div style={{ fontSize: 13, color: '#0f172a', lineHeight: 1.45, whiteSpace: 'pre-wrap' }}>{m.contenu}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          value={texte} onChange={e => setTexte(e.target.value)} onKeyDown={e => e.key === 'Enter' && envoyer()}
+          placeholder="Écrire un message…"
+          style={{ flex: 1, padding: '9px 11px', border: '1px solid #e5e7eb', borderRadius: 8, fontFamily: 'inherit', fontSize: 13 }}
+        />
+        <button
+          onClick={envoyer} disabled={sending || !texte.trim()}
+          style={{ padding: '9px 14px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,#0089ba,#00abe9)', color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: sending ? 'default' : 'pointer', fontFamily: 'inherit' }}
+        >Envoyer</button>
+      </div>
+    </div>
+  )
+}
+
+function CollaborateurDbFicheModal({ collaborateurId, managerLogin, onClose }) {
   const [collab, setCollab] = useState(undefined) // undefined = chargement, null = introuvable
   const [saving, setSaving] = useState(false)
 
@@ -1009,6 +1087,7 @@ function CollaborateurDbFicheModal({ collaborateurId, onClose }) {
                   {saving ? '…' : collab.formation_terminee ? 'Repasser en mode restreint' : 'Marquer la formation comme terminée'}
                 </button>
               </div>
+              <MessagesCollaborateurSection collaborateurId={collab.id} managerLogin={managerLogin} />
             </div>
           )}
         </div>
@@ -1031,12 +1110,22 @@ function ManagerDashboard({ session, onLogout }) {
   const [recrutementCount, setRecrutementCount] = useState(0)
   const [notifications, setNotifications] = useState([])
   const [ficheCollaborateurId, setFicheCollaborateurId] = useState(null)
+  const [chatCount, setChatCount] = useState(0)
+  const [storeManagerId, setStoreManagerId] = useState(null)
+
+  useEffect(() => {
+    getStoreManagerId(session.login).then(setStoreManagerId)
+  }, [session.login])
 
   // Centre de notifications générique (table `notifications`, déjà utilisée
   // ailleurs) — pour l'instant seul le type 'fin_periode_essai' est enrichi
   // avec un libellé lisible ; les autres types s'affichent en repli minimal.
-  const refreshNotifications = async (login) => {
-    const rows = await getNotificationsNonLues(login)
+  // 'message_chat_groupe' est volontairement exclu de cette liste générique :
+  // il a son propre badge dédié sur l'onglet "Chat magasin" (refreshChatCount).
+  const refreshNotifications = async (loginRaw) => {
+    const all = await getNotificationsNonLues(loginRaw)
+    setChatCount(all.filter(n => n.type === 'message_chat_groupe').length)
+    const rows = all.filter(n => n.type !== 'message_chat_groupe')
     const essaiIds = rows.filter(n => n.type === 'fin_periode_essai').map(n => n.reference_id).filter(Boolean)
     const collabs = essaiIds.length ? await sbSelect('collaborateurs', `id=in.(${essaiIds.join(',')})&select=id,prenom,nom,poste,date_entree`) : []
     const collabById = Object.fromEntries((collabs || []).map(c => [c.id, c]))
@@ -1059,6 +1148,18 @@ function ManagerDashboard({ session, onLogout }) {
     setNotifications(prev => prev.filter(x => x.id !== n.id))
     await marquerNotificationsLues([n.id])
     if (n.collaborateurId) setFicheCollaborateurId(n.collaborateurId)
+  }
+
+  // Ouverture de l'onglet "Chat magasin" : vide le badge, comme pour les
+  // autres compteurs de la sidebar (demandes/recrutement).
+  const handleNavigate = async (id) => {
+    setActiveNav(id)
+    setCollaborateurId(null)
+    if (id === 'chat') {
+      const rows = await getNotificationsNonLues(session.login)
+      const ids = rows.filter(n => n.type === 'message_chat_groupe').map(n => n.id)
+      if (ids.length) { await marquerNotificationsLues(ids); setChatCount(0) }
+    }
   }
 
   useEffect(() => {
@@ -1184,9 +1285,10 @@ function ManagerDashboard({ session, onLogout }) {
       <div className="manager-shell">
         <ManagerSidebar
           active={activeNav}
-          onNavigate={(id) => { setActiveNav(id); setCollaborateurId(null) }}
+          onNavigate={handleNavigate}
           demandesCount={demandesCount}
           recrutementCount={recrutementCount}
+          chatCount={chatCount}
           notifications={notifications}
           onSelectNotification={handleSelectNotification}
           firstName={firstName}
@@ -1227,6 +1329,8 @@ function ManagerDashboard({ session, onLogout }) {
             <RecrutementPage magasinId={magasinId} onRefresh={() => refreshRecrutement(magasinId)} />
           ) : activeNav === 'reporting' ? (
             <ReportingPage reportings={reportings} magasinNom={store.label} />
+          ) : activeNav === 'chat' ? (
+            <ChatMagasinPage magasinId={magasinId} magasinNom={store.label} session={session} storeManagerId={storeManagerId} />
           ) : (
             <AccueilPage
               store={store}
@@ -1253,7 +1357,7 @@ function ManagerDashboard({ session, onLogout }) {
         <ValidationNouvelEntrantModal collaborateur={enAttenteValidation[0]} onValider={handleValiderEntrant} />
       )}
       {ficheCollaborateurId && (
-        <CollaborateurDbFicheModal collaborateurId={ficheCollaborateurId} onClose={() => setFicheCollaborateurId(null)} />
+        <CollaborateurDbFicheModal collaborateurId={ficheCollaborateurId} managerLogin={session.login} onClose={() => setFicheCollaborateurId(null)} />
       )}
     </div>
   )

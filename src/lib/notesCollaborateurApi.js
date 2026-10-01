@@ -104,7 +104,7 @@ export async function envoyerRetourIndividuel({ collaborateurId, formateurId, co
   return ok
 }
 
-// ── Mots (fil de discussion 1:1 formateur ↔ collaborateur) ──────────────
+// ── Mots (fil de discussion formateur/manager ↔ collaborateur) ──────────
 
 /** Historique du fil, dans l'ordre chronologique. */
 export async function getMotsMessages(collaborateurId) {
@@ -113,10 +113,63 @@ export async function getMotsMessages(collaborateurId) {
   return rows || []
 }
 
-export async function addMotMessage({ collaborateurId, formateurId, auteur, contenu }) {
+/** auteur: 'formateur' | 'manager' | 'collaborateur'. */
+export async function addMotMessage({ collaborateurId, formateurId, storeManagerId, auteur, contenu }) {
   return sbInsert('mots_messages', {
-    collaborateur_id: collaborateurId, formateur_id: formateurId || null, auteur, contenu,
+    collaborateur_id: collaborateurId, formateur_id: formateurId || null, store_manager_id: storeManagerId || null, auteur, contenu,
   })
+}
+
+/** Résout l'id réel (uuid) d'un manager à partir de son login (store_managers). */
+export async function getStoreManagerId(login) {
+  if (!login) return null
+  const rows = await sbSelect('store_managers', `login=eq.${encodeURIComponent(login)}&select=id`)
+  return rows?.[0]?.id || null
+}
+
+// ── Chat de groupe (1 conversation par magasin, même table que le chat
+// individuel ci-dessus — distinguée par type='groupe' + magasin_id) ──────
+
+/** Historique du chat du magasin, dans l'ordre chronologique. */
+export async function getChatGroupeMessages(magasinId) {
+  if (!magasinId) return []
+  const rows = await sbSelect('mots_messages', `magasin_id=eq.${magasinId}&type=eq.groupe&order=created_at.asc`)
+  return rows || []
+}
+
+/**
+ * auteur: 'formateur' | 'manager' | 'collaborateur' | 'dr' | 'directeur_retail'.
+ * auteurNom : nom affiché avec le message (obligatoire pour dr/directeur_retail,
+ * qui n'ont pas de colonne FK dédiée — un fil de groupe mélange trop
+ * d'interlocuteurs différents pour se contenter du seul rôle générique).
+ */
+export async function addChatGroupeMessage({ magasinId, auteur, auteurNom, collaborateurId, formateurId, storeManagerId, contenu }) {
+  return sbInsert('mots_messages', {
+    magasin_id: magasinId, type: 'groupe', auteur, auteur_nom: auteurNom || null,
+    collaborateur_id: collaborateurId || null, formateur_id: formateurId || null, store_manager_id: storeManagerId || null,
+    contenu,
+  })
+}
+
+/**
+ * Notifie tous les collaborateurs + le manager du magasin, sauf l'auteur —
+ * jamais la direction (accès à la demande, cf. demandes_intervention). Marche
+ * aussi quand l'auteur est un DR/directeur retail : `auteurLogin` ne
+ * correspondra alors à personne de la liste, donc tout le monde est notifié.
+ */
+export async function notifierChatGroupe({ magasinId, auteurLogin }) {
+  if (!magasinId) return
+  const [collaborateurs, managers] = await Promise.all([
+    getCollaborateursByMagasin(magasinId),
+    sbSelect('store_managers', `magasin_id=eq.${magasinId}&active=eq.true&select=login`),
+  ])
+  const destinataires = [
+    ...(collaborateurs || []).map(c => c.slug),
+    ...(managers || []).map(m => m.login),
+  ].filter(login => login && login !== auteurLogin)
+  for (const login of destinataires) {
+    await sbInsert('notifications', { destinataire_login: login, type: 'message_chat_groupe', reference_id: magasinId })
+  }
 }
 
 /**

@@ -105,6 +105,9 @@ export const apiNotifier = (destinataireLogin, type, referenceId) =>
 // Entretiens de recrutement
 export const apiGetEntretiensByCandidat = (candidatId) => get('entretiens_recrutement', `candidat_id=eq.${candidatId}&order=created_at.desc`)
 export const apiGetEntretiensByMagasin = (magasinId) => get('entretiens_recrutement', `magasin_id=eq.${magasinId}&order=created_at.desc`)
+// Tous les entretiens (RecrutementView filtre ensuite côté client, comme apiGetCandidats) —
+// sert à afficher le statut d'entretien directement sur chaque ligne de la liste.
+export const apiGetEntretiensActifs = () => get('entretiens_recrutement', 'order=created_at.desc')
 
 export async function apiCreerEntretien({ candidatId, magasinId, managerId, demandeurLogin, dateHeureProposee }) {
   const row = await post('entretiens_recrutement', {
@@ -226,3 +229,7 @@ export const apiMarquerMailBienvenueEnvoye = (candidatId) =>
   patch('candidats', `id=eq.${candidatId}`, { mail_bienvenue_envoye_at: new Date().toISOString() })
 export const apiMarquerAccesEnvoye = (candidatId) =>
   patch('candidats', `id=eq.${candidatId}`, { acces_espace_envoye_at: new Date().toISOString() })
+// Statut du contrat (Docusign) — piloté à la main par la RH, jamais déduit
+// de la complétude du dossier documentaire (deux processus indépendants).
+export const apiMarquerStatutContrat = (entreeId, statut) =>
+  patch('entrees_rh', `id=eq.${entreeId}`, { statut_contrat: statut })
