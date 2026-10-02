@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { getManagerFromDB, getWeeklySharedState, sbSelect, pgInList } from '@/lib/supabase'
-import { STORES, collaborateurFullName, tenureLabel } from '@/lib/storeFollowupData'
+import { STORES, collaborateurFullName, tenureLabel, isBelgiqueStore } from '@/lib/storeFollowupData'
 import { mergeEntreesIntoRoster } from '@/lib/storeRosterMerge'
 import { matchMagasinKey } from '@/lib/managersData'
 import { classifyMagasin } from '@/lib/formationCategories'
@@ -553,7 +553,8 @@ function AccueilPage({
   const groups = computeTeamGroups(store)
   const breakdown = groups.map(g => `${g.collaborateurs.length} ${g.label}`).join(' · ')
 
-  const pctValues = store.sections.flatMap(s => s.collaborateurs.map(c => pctFor(progress, c.id, s.id)))
+  const isBelgique = isBelgiqueStore(store.id)
+  const pctValues = store.sections.flatMap(s => s.collaborateurs.map(c => pctFor(progress, c.id, s.id, isBelgique)))
   const avgPct = pctValues.length ? Math.round(pctValues.reduce((a, b) => a + b, 0) / pctValues.length) : 0
 
   const extraRows = computeExtraRows(nouveauxEntrants, newHireRows)
@@ -638,7 +639,7 @@ function AccueilPage({
           {groups.map(g => {
             const colors = SECTION_COLORS_LIGHT[g.id] || SECTION_COLORS_LIGHT['apprenti-alternant']
             const gPct = g.collaborateurs.length
-              ? Math.round(g.collaborateurs.reduce((sum, c) => sum + pctFor(progress, c.id, c.__sectionId), 0) / g.collaborateurs.length)
+              ? Math.round(g.collaborateurs.reduce((sum, c) => sum + pctFor(progress, c.id, c.__sectionId, isBelgique), 0) / g.collaborateurs.length)
               : 0
             return (
               <button key={g.id} onClick={() => onNavigate('equipe')} style={{
@@ -681,6 +682,7 @@ function EquipePage({ store, progress, onSelectCollaborateur }) {
   const groups = computeTeamGroups(store)
   const [activeGroupId, setActiveGroupId] = useState(groups[0]?.id || null)
   const [query, setQuery] = useState('')
+  const isBelgique = isBelgiqueStore(store.id)
 
   const totalCount = groups.reduce((sum, g) => sum + g.collaborateurs.length, 0)
   const norm = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -690,7 +692,7 @@ function EquipePage({ store, progress, onSelectCollaborateur }) {
     : []
 
   const Row = ({ c, first }) => {
-    const pct = pctFor(progress, c.id, c.__sectionId)
+    const pct = pctFor(progress, c.id, c.__sectionId, isBelgique)
     const color = pct >= 70 ? '#22c55e' : pct >= 40 ? '#f59e0b' : '#ef4444'
     return (
       <button onClick={() => onSelectCollaborateur(c.__sectionId, c.id)} style={{

@@ -2622,6 +2622,23 @@ export const SKILL_ITEMS = {
     { id: 'slack',              label: 'Slack',                        category: 'Maîtrise des outils' },
     { id: 'granit',             label: 'Granit',                       category: 'Maîtrise des outils' },
   ],
+  // Variante Belgique du rôle CVO : ni tiers payant, ni LPT SANTÉ, ni Granit
+  // (pas utilisés là-bas) — LPT CARE à la place. Mêmes autres items/catégories.
+  'cvo-belgique': [
+    { id: 'lecture-ordonnance', label: 'Lecture ordonnance',           category: 'Compétences' },
+    { id: 'trame-accueil',      label: "Trame d'accueil",              category: 'Compétences' },
+    { id: 'offres',             label: 'Offres',                       category: 'Compétences' },
+    { id: 'types-verres',       label: 'Types de verres',              category: 'Compétences' },
+    { id: 'traitements',        label: 'Traitements',                  category: 'Compétences' },
+    { id: 'montures',           label: 'Montures',                     category: 'Compétences' },
+    { id: 'verres-progressifs', label: 'Verres progressifs',           category: 'Compétences' },
+    { id: 'prises-mesures',     label: 'Prises de mesures',            category: 'Compétences' },
+    { id: 'backend-cvo',        label: 'Backend',                      category: 'Compétences' },
+    { id: 'parcours-telephone', label: 'Parcours téléphone',           category: 'Maîtrise des outils' },
+    { id: 'lpt-vision',         label: 'LPT VISION',                   category: 'Maîtrise des outils' },
+    { id: 'lpt-care',           label: 'LPT CARE',                     category: 'Maîtrise des outils' },
+    { id: 'slack',              label: 'Slack',                        category: 'Maîtrise des outils' },
+  ],
   'mo-sav': [
     { id: 'machines',        label: 'Maitrise et connaissance des machines', category: 'Compétences' },
     { id: 'etapes-montage',  label: 'Étapes de montage',                     category: 'Compétences' },
@@ -2648,6 +2665,17 @@ export const SKILL_ITEMS = {
   'non-renseigne': [],
   'monteur-prog': [],
   'operateur-prog': [],
+}
+
+/** true si ce magasin fait partie du groupe Belgique (STORE_REGION_GROUPS, affichage uniquement). */
+export function isBelgiqueStore(storeId) {
+  return STORE_REGION_GROUPS.find(g => g.id === 'belgique')?.storeIds.includes(storeId) || false
+}
+
+/** Items de suivi pour une section, en tenant compte de la variante Belgique du rôle CVO. */
+export function getSkillItems(sectionId, isBelgique) {
+  if (sectionId === 'cvo' && isBelgique) return SKILL_ITEMS['cvo-belgique']
+  return SKILL_ITEMS[sectionId] || []
 }
 
 // Trame d'audit par item — la question à poser / consigne pour le formateur
