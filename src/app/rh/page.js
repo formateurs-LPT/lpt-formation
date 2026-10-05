@@ -14,7 +14,7 @@ import {
   apiGetEntretiensByCandidat, apiCreerEntretien, apiContreProposerEntretien,
   apiConfirmerContreProposition, apiSupprimerEntretien,
   apiGetMagasinInfo, apiGetEntree, apiMarquerMailBienvenueEnvoye, apiMarquerAccesEnvoye,
-  apiGetEntretiensActifs, apiMarquerStatutContrat, apiGetCandidatsByEntreeIds,
+  apiGetEntretiensActifs, apiMarquerStatutContrat, apiGetCandidatsByEntreeIds, apiGetCandidatsByIds,
 } from '@/lib/rhApi'
 import { STORES, STORE_REGION_GROUPS } from '@/lib/storeFollowupData'
 import { getMagasinIdBySlug, slugifyName, stripAccents, creerCompteCollaborateur, findCollaborateurByName } from '@/lib/collaborateursApi'
@@ -22,6 +22,7 @@ import { uploadPieceJointe, getSignedUrl, RH_DOCUMENTS_BUCKET, FICHIER_CONSTANT_
 import { getDocsRequis, computeStatut } from '@/lib/dossierDocuments'
 import { FileViewButton, FileDropSlot } from '@/components/FileDropSlot'
 import RhSidebar from '@/components/RhSidebar'
+import { getNotificationsNonLues, marquerNotificationsLues } from '@/lib/directionApi'
 
 const SESSION_KEY = 'rh_session'
 const RH_DISPLAY_NAMES = { kevin: 'Kevin Dupuy', quentin: 'Quentin Bahougne' }
@@ -1272,7 +1273,7 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
   )
 }
 
-function RecrutementView({ session, regionFilter }) {
+function RecrutementView({ session, regionFilter, openCandidatId, onOpenedCandidat }) {
   const [candidats, setCandidats] = useState([])
   const [entretiens, setEntretiens] = useState([])
   const [loading, setLoading] = useState(true)
@@ -1289,6 +1290,16 @@ function RecrutementView({ session, regionFilter }) {
       setCandidats(cands); setEntretiens(ents); setLoading(false)
     })
   }, [])
+
+  // Arrivée depuis une notification (cloche RH) — ouvre directement la
+  // fiche du candidat concerné dès que la liste est chargée.
+  useEffect(() => {
+    if (!openCandidatId || !candidats.length) return
+    const c = candidats.find(c => c.id === openCandidatId)
+    if (c) setFiche(c)
+    onOpenedCandidat?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openCandidatId, candidats])
 
   // Le plus récent par candidat (entretiens déjà triés created_at.desc) —
   // affiché directement sur chaque ligne au lieu d'avoir à rouvrir la fiche.
@@ -1482,7 +1493,7 @@ function EntreeForm({ initial, semaineLundi, session, onSave, onClose }) {
     e.preventDefault()
     if (!form.nom.trim()||!form.prenom.trim()||!form.magasin||!form.date_entree) { setError("Nom, prénom, magasin et date d'entrée sont obligatoires."); return }
     setSaving(true); setError('')
-    await onSave({ ...form, nom: form.nom.trim().toUpperCase(), prenom: form.prenom.trim(), semaine_lundi: semaineLundi, cree_par: session.login, statut_documents: initial?.statut_documents||'incomplet' })
+    await onSave({ ...form, id: initial?.id, nom: form.nom.trim().toUpperCase(), prenom: form.prenom.trim(), semaine_lundi: semaineLundi, cree_par: session.login, statut_documents: initial?.statut_documents||'incomplet' })
     setSaving(false)
   }
 
@@ -1732,16 +1743,11 @@ function EntreesView({ session, regionFilter }) {
             </div>
           </>}
         </div>
-        <div style={{ display:'flex', gap:10 }}>
-          {visibleEntrees.length > 0 && (
-            <button onClick={() => setShowMailGroupe(true)} style={{ ...CSS.btn, padding:'12px 18px', background:'#fff', border:'1.5px solid #0089ba', color:'#0089ba', fontSize:14 }}>
-              ✉️ Envoyer le mail de bienvenue
-            </button>
-          )}
-          <button onClick={() => setShowForm('add')} style={{ ...CSS.btn, padding:'12px 20px', background:'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff', boxShadow:'0 4px 14px rgba(0,171,233,0.3)', fontSize:14 }}>
-            + Ajouter un collaborateur
+        {visibleEntrees.length > 0 && (
+          <button onClick={() => setShowMailGroupe(true)} style={{ ...CSS.btn, padding:'12px 18px', background:'#fff', border:'1.5px solid #0089ba', color:'#0089ba', fontSize:14 }}>
+            ✉️ Envoyer le mail de bienvenue
           </button>
-        </div>
+        )}
       </div>
       <div style={{ background:'#fff', borderRadius:16, border:'1px solid #e5e7eb', overflow:'hidden', boxShadow:'0 1px 2px rgba(16,24,40,0.03)' }}>
         {loading ? <div style={{ textAlign:'center', padding:'48px 0', color:'#9aa1ac' }}>Chargement…</div> :
@@ -1801,10 +1807,20 @@ function EntreesView({ session, regionFilter }) {
 // DASHBOARD PRINCIPAL
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Types de notifications générés côté manager (cf. manager/page.js) que la
+// RH doit voir — deux familles selon ce que `reference_id` pointe :
+// un entretien (créneau accepté/contre-proposé) ou directement un candidat
+// (demande supprimée, décision finale) puisque l'entretien peut avoir
+// disparu (suppression) au moment où la RH consulte la notification.
+const RH_NOTIF_VIA_ENTRETIEN = new Set(['entretien_accepte', 'entretien_contre_proposition'])
+const RH_NOTIF_VIA_CANDIDAT = new Set(['entretien_supprime_manager', 'candidat_accepte_manager', 'candidat_refuse_manager'])
+
 function RhDashboard({ session, onLogout }) {
   const [activeTab, setActiveTab] = useState('recrutement')
   const [counts, setCounts] = useState({ recrutement: null, entrees: null })
   const [regionFilter, setRegionFilter] = useState('tous')
+  const [notifications, setNotifications] = useState([])
+  const [openCandidatId, setOpenCandidatId] = useState(null)
 
   useEffect(() => {
     const s0 = getMondayStr(0)
@@ -1816,12 +1832,60 @@ function RhDashboard({ session, onLogout }) {
     })
   }, [])
 
+  const refreshNotifications = async (login) => {
+    const all = await getNotificationsNonLues(login)
+    const rows = all.filter(n => RH_NOTIF_VIA_ENTRETIEN.has(n.type) || RH_NOTIF_VIA_CANDIDAT.has(n.type))
+    if (!rows.length) { setNotifications([]); return }
+
+    const entretienIds = rows.filter(n => RH_NOTIF_VIA_ENTRETIEN.has(n.type)).map(n => n.reference_id)
+    const entretiens = entretienIds.length ? await apiGetEntretiensActifs() : []
+    const entretienById = Object.fromEntries(entretiens.map(e => [e.id, e]))
+
+    const candidatIds = new Set(rows.filter(n => RH_NOTIF_VIA_CANDIDAT.has(n.type)).map(n => n.reference_id))
+    entretienIds.forEach(id => { const e = entretienById[id]; if (e) candidatIds.add(e.candidat_id) })
+    const candidats = await apiGetCandidatsByIds([...candidatIds])
+    const candidatById = Object.fromEntries(candidats.map(c => [c.id, c]))
+
+    setNotifications(rows.map(n => {
+      const entretien = RH_NOTIF_VIA_ENTRETIEN.has(n.type) ? entretienById[n.reference_id] : null
+      const candidat = entretien ? candidatById[entretien.candidat_id] : candidatById[n.reference_id]
+      const nom = candidat ? `${candidat.prenom} ${candidat.nom}` : 'Un candidat'
+      const candidatId = entretien?.candidat_id || candidat?.id || null
+      const base = { id: n.id, candidatId, icon: '🧑‍💼' }
+      if (n.type === 'entretien_accepte') return { ...base, label: `Le manager a accepté le RDV avec ${nom}${entretien ? ` (${fmtDateTime(entretien.date_heure_proposee)})` : ''}.` }
+      if (n.type === 'entretien_contre_proposition') return { ...base, label: `Le manager propose un autre créneau pour ${nom}${entretien ? ` : ${fmtDateTime(entretien.date_heure_contre_proposee)}` : ''}.` }
+      if (n.type === 'entretien_supprime_manager') return { ...base, label: `Le manager a annulé la demande d'entretien avec ${nom}.` }
+      if (n.type === 'candidat_accepte_manager') return { ...base, icon: '✅', label: `Le manager a accepté ${nom} après l'entretien.` }
+      if (n.type === 'candidat_refuse_manager') return { ...base, icon: '❌', label: `Le manager a refusé ${nom} après l'entretien.` }
+      return { ...base, label: `Notification (${n.type})` }
+    }))
+  }
+
+  // Sondage toutes les 30s (même pattern que côté manager) pour que les
+  // réponses du manager (accepter/décaler/décider) arrivent sans que la RH
+  // ait besoin de recharger la page.
+  useEffect(() => {
+    refreshNotifications(session.login)
+    const t = setInterval(() => refreshNotifications(session.login), 30000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.login])
+
+  const handleSelectNotification = async (n) => {
+    setNotifications(prev => prev.filter(x => x.id !== n.id))
+    await marquerNotificationsLues([n.id])
+    if (n.candidatId) { setActiveTab('recrutement'); setOpenCandidatId(n.candidatId) }
+  }
+
   const firstName = (session.displayName || '').split(' ')[0]
 
   return (
     <div style={{ minHeight:'100vh', background:'#f5f6f8', fontFamily:'inherit' }}>
       <div style={{ display:'flex', alignItems:'flex-start' }}>
-        <RhSidebar active={activeTab} onNavigate={setActiveTab} counts={counts} firstName={firstName} onLogout={onLogout} />
+        <RhSidebar
+          active={activeTab} onNavigate={setActiveTab} counts={counts} firstName={firstName} onLogout={onLogout}
+          notifications={notifications} onSelectNotification={handleSelectNotification}
+        />
 
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ padding:'20px 24px 0', display:'flex', gap:8, flexWrap:'wrap' }}>
@@ -1843,7 +1907,7 @@ function RhDashboard({ session, onLogout }) {
 
           <div style={{ padding:'20px 28px 40px', maxWidth:1120 }}>
             {activeTab === 'recrutement'
-              ? <RecrutementView session={session} regionFilter={regionFilter} />
+              ? <RecrutementView session={session} regionFilter={regionFilter} openCandidatId={openCandidatId} onOpenedCandidat={() => setOpenCandidatId(null)} />
               : <EntreesView session={session} regionFilter={regionFilter} />}
           </div>
         </div>

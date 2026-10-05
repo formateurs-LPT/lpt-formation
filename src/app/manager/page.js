@@ -1009,7 +1009,10 @@ function RecrutementPlanningStrip({ entretiens, candidatsById }) {
     .filter(r => r.date && new Date(r.date) > new Date())
     .sort((a, b) => new Date(a.date) - new Date(b.date))
 
-  if (!rows.length) return null
+  // Avec un seul entretien, le planning ne fait que répéter ce que la carte
+  // juste en dessous affiche déjà — il n'apporte un vrai coup d'œil
+  // qu'à partir de 2 entretiens à comparer chronologiquement.
+  if (rows.length < 2) return null
 
   return (
     <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>

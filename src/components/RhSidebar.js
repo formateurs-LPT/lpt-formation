@@ -1,6 +1,7 @@
 'use client'
 import Image from 'next/image'
 import { IconUserPlus, IconClipboard, IconChevronRight } from './ManagerIcons'
+import { NotificationBell } from './ManagerSidebar'
 
 const NAV_ITEMS = [
   { id: 'recrutement', label: 'Recrutement', Icon: IconUserPlus },
@@ -10,7 +11,7 @@ const NAV_ITEMS = [
 // Navigation latérale du dashboard RH — même patron que ManagerSidebar
 // (largeur, couleurs, état actif/survol, footer identité+déconnexion) pour
 // que les deux dashboards se comportent comme un seul produit cohérent.
-export default function RhSidebar({ active, onNavigate, counts, firstName, onLogout }) {
+export default function RhSidebar({ active, onNavigate, counts, firstName, onLogout, notifications, onSelectNotification }) {
   return (
     <div style={{
       width: 232, flexShrink: 0, minHeight: '100vh', background: '#fff',
@@ -19,7 +20,8 @@ export default function RhSidebar({ active, onNavigate, counts, firstName, onLog
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px 22px' }}>
         <Image src="/assets/logo-lpt.png" alt="Lunettes Pour Tous" width={20} height={20} style={{ objectFit: 'contain' }} />
-        <span style={{ fontSize: 12.5, fontWeight: 700, color: '#14161a' }}>Lunettes Pour Tous</span>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: '#14161a', flex: 1 }}>Lunettes Pour Tous</span>
+        <NotificationBell notifications={notifications || []} onSelect={onSelectNotification} />
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>

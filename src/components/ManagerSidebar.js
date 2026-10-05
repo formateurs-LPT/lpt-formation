@@ -21,7 +21,7 @@ const NAV_ITEMS = [
 // que la modale "Besoin d'aide ?") plutôt qu'en dropdown ancré au bouton :
 // un dropdown de 300px, plus large que la sidebar, débordait sur le contenu
 // et se superposait au texte de l'accueil.
-function NotificationBell({ notifications, onSelect }) {
+export function NotificationBell({ notifications, onSelect }) {
   const [open, setOpen] = useState(false)
   const count = notifications.length
   return (
