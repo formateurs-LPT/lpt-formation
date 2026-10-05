@@ -6,7 +6,7 @@ import { useIsMobile } from '@/lib/useIsMobile'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
 import { countVotesPerOption } from '@/lib/quizVotes'
-import { OFFRES_QUIZ, LPT_CARE_OFFERS } from '@/lib/modulesData'
+import { OFFRES_QUIZ, LPT_CARE_OFFERS, LPT_CARE_INTRO, LPT_CARE_COMMON, LPT_CARE_COFIDIS_NOTE } from '@/lib/modulesData'
 import { NextPagePreview } from '@/lib/trainerPreview'
 
 import { QUIZ_OPTION_COLORS as OPTION_COLORS } from '@/lib/constants'
@@ -547,12 +547,25 @@ function CoursLptCare({ onPrev, onNext, onBack }) {
       </div>
 
       {!compact && (
-        <div style={{ textAlign: 'center', marginBottom: 28, flexShrink: 0 }}>
+        <div style={{ textAlign: 'center', marginBottom: 20, flexShrink: 0 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Nouveauté Belgique</div>
           <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', marginBottom: 6 }}>LPT Care — Les 3 offres d&apos;abonnement</div>
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', maxWidth: 560, margin: '0 auto', lineHeight: 1.5 }}>
             Trois formules, un seul principe : ne plus jamais être sans lunettes. Cliquez sur une offre pour l&apos;afficher au groupe.
           </p>
+        </div>
+      )}
+
+      {!compact && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 14, maxWidth: 640, margin: '0 auto 24px', flexShrink: 0,
+          background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: 14, padding: '12px 18px',
+        }}>
+          <span style={{ fontSize: 20, flexShrink: 0 }}>📍</span>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#fbbf24', marginBottom: 2 }}>{LPT_CARE_INTRO.title}</div>
+            <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{LPT_CARE_INTRO.text}</div>
+          </div>
         </div>
       )}
 
@@ -566,11 +579,25 @@ function CoursLptCare({ onPrev, onNext, onBack }) {
       {/* Détail de l'offre sélectionnée */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {!offer ? (
-          <div style={{
-            border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 16, padding: '40px 24px',
-            textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: 14, maxWidth: 560, margin: '0 auto',
-          }}>
-            Sélectionnez START, FLEX ou ONE ci-dessus pour afficher le détail — le contenu apparaît en même temps sur le diffuseur.
+          <div style={{ maxWidth: 640, margin: '0 auto' }}>
+            <div style={{
+              border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 16, padding: '28px 24px',
+              textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: 14, marginBottom: 24,
+            }}>
+              Sélectionnez START, FLEX ou ONE ci-dessus pour afficher le détail — le contenu apparaît en même temps sur le diffuseur.
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, textAlign: 'center' }}>
+              Dans les 3 formules
+            </div>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 10, marginBottom: 20 }}>
+              {LPT_CARE_COMMON.map(c => (
+                <div key={c.label} style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '12px 14px' }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{c.label}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{c.text}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>{LPT_CARE_COFIDIS_NOTE}</div>
           </div>
         ) : (
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
@@ -597,6 +624,12 @@ function CoursLptCare({ onPrev, onNext, onBack }) {
             )}
             {offer.footnote && (
               <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{offer.footnote}</div>
+            )}
+            {offer.pourQui && (
+              <div style={{ marginTop: 14, background: `${offer.color}18`, border: `1px solid ${offer.color}40`, borderRadius: 12, padding: '12px 16px' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: offer.color, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Pour qui</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5, fontStyle: 'italic' }}>{offer.pourQui}</div>
+              </div>
             )}
             <div style={{ marginTop: 14, fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{offer.payment}</div>
           </div>

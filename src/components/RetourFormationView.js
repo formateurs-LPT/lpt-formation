@@ -309,9 +309,9 @@ function CorrectButton({ onClick, loading }) {
       onClick={onClick}
       disabled={loading}
       style={{
-        padding: '5px 12px', borderRadius: 8, border: '1px solid #334155',
-        background: loading ? '#1e293b' : '#0f172a',
-        color: loading ? '#475569' : '#818cf8',
+        padding: '5px 12px', borderRadius: 8, border: '1px solid #e5e7eb',
+        background: loading ? '#ffffff' : '#f5f6f8',
+        color: loading ? '#4b5563' : '#6366f1',
         fontSize: 11, fontWeight: 700, cursor: loading ? 'default' : 'pointer',
         fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
         transition: 'all .15s',
@@ -324,7 +324,7 @@ function CorrectButton({ onClick, loading }) {
 
 function RateBar({ rate }) {
   if (rate === null) return (
-    <div style={{ fontSize: 13, color: '#64748b', fontStyle: 'italic' }}>
+    <div style={{ fontSize: 13, color: '#6b7280', fontStyle: 'italic' }}>
       Remplissez les thèmes ci-dessus pour calculer le taux d'acquisition
     </div>
   )
@@ -333,13 +333,13 @@ function RateBar({ rate }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>Taux d'acquisition global</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#14161a' }}>Taux d'acquisition global</div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
           <span style={{ fontSize: 28, fontWeight: 800, color }}>{rate}%</span>
           <span style={{ fontSize: 12, fontWeight: 600, color }}>{label}</span>
         </div>
       </div>
-      <div style={{ height: 10, background: '#334155', borderRadius: 99, overflow: 'hidden' }}>
+      <div style={{ height: 10, background: '#e5e7eb', borderRadius: 99, overflow: 'hidden' }}>
         <div style={{ width: `${rate}%`, height: '100%', background: color, borderRadius: 99, transition: 'width .5s' }} />
       </div>
     </div>
@@ -945,7 +945,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
   }
 
   if (loading) return (
-    <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>Chargement…</div>
+    <div style={{ padding: 40, textAlign: 'center', color: '#9aa1ac', fontSize: 14 }}>Chargement…</div>
   )
 
   return (
@@ -1043,7 +1043,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9' }}>{name}</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#14161a' }}>{name}</div>
             <span style={{
               fontSize: 11, fontWeight: 700, color: entree.magasin ? '#38bdf8' : '#f87171',
               background: entree.magasin ? 'rgba(56,189,248,0.12)' : 'rgba(248,113,113,0.12)',
@@ -1053,7 +1053,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
               {entree.magasin ? canonicalMagasinLabel(entree.magasin) : 'Magasin non renseigné'}
             </span>
             {lastEditor && lastEditor !== trainerName && (
-              <span style={{ fontSize: 11, color: '#818cf8', fontWeight: 600 }}>
+              <span style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>
                 🔄 dernière saisie par {lastEditor}
               </span>
             )}
@@ -1062,13 +1062,13 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
             <div style={{
               display: 'flex', alignItems: 'center', gap: 6,
               background: rank === 1 ? 'rgba(22,163,74,0.15)' : 'rgba(100,116,139,0.15)',
-              border: `1px solid ${rank === 1 ? 'rgba(22,163,74,0.3)' : '#334155'}`,
+              border: `1px solid ${rank === 1 ? 'rgba(22,163,74,0.3)' : '#e5e7eb'}`,
               borderRadius: 20, padding: '4px 12px',
             }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: rank === 1 ? '#16a34a' : '#94a3b8' }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: rank === 1 ? '#16a34a' : '#9aa1ac' }}>
                 {rank}{ordFR(rank)}
               </span>
-              <span style={{ fontSize: 11, color: '#64748b' }}>du groupe sur {rankOf}</span>
+              <span style={{ fontSize: 11, color: '#6b7280' }}>du groupe sur {rankOf}</span>
             </div>
           )}
         </div>
@@ -1086,7 +1086,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
               <div style={{ fontSize: 12, fontWeight: 700, color: '#d97706' }}>
                 Activité écran nettement en dessous du groupe
               </div>
-              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>
+              <div style={{ fontSize: 11, color: '#9aa1ac', marginTop: 1 }}>
                 {formatDuration(myActiveSeconds)} sur l'app cette semaine, contre {formatDuration(groupAvgActiveSeconds)} en moyenne dans le groupe
               </div>
             </div>
@@ -1107,19 +1107,19 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                 <div style={{ fontSize: 11, fontWeight: 700, color: lvl.levelDef.color, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                   {lvl.levelDef.name}
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>
+                <div style={{ fontSize: 18, fontWeight: 900, color: lvl.levelDef.color, lineHeight: 1.1 }}>
                   {totalPoints} pts
                 </div>
               </div>
               {pointsRank && pointsRankOf && (
                 <div style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2,
-                  background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '6px 10px',
+                  background: 'rgba(0,0,0,0.06)', borderRadius: 8, padding: '6px 10px',
                 }}>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: '#14161a' }}>
                     {pointsRank}{ordFR(pointsRank)}
                   </span>
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>
+                  <span style={{ fontSize: 10, color: '#6b7280' }}>
                     classement pts / {pointsRankOf}
                   </span>
                 </div>
@@ -1136,9 +1136,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
           style={{
             flex: 1, padding: '10px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700,
             cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
-            border: `1.5px solid ${activeTab === 'retour' ? '#0089ba' : '#334155'}`,
-            background: activeTab === 'retour' ? 'rgba(0,137,186,0.15)' : '#1e293b',
-            color: activeTab === 'retour' ? '#00abe9' : '#64748b',
+            border: `1.5px solid ${activeTab === 'retour' ? '#0089ba' : '#e5e7eb'}`,
+            background: activeTab === 'retour' ? 'rgba(0,137,186,0.15)' : '#ffffff',
+            color: activeTab === 'retour' ? '#00abe9' : '#6b7280',
           }}
         >
           📋 Retour de formation
@@ -1148,9 +1148,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
           style={{
             flex: 1, padding: '10px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700,
             cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
-            border: `1.5px solid ${activeTab === 'notes' ? '#7c3aed' : '#334155'}`,
-            background: activeTab === 'notes' ? 'rgba(124,58,237,0.15)' : '#1e293b',
-            color: activeTab === 'notes' ? '#a78bfa' : '#64748b',
+            border: `1.5px solid ${activeTab === 'notes' ? '#7c3aed' : '#e5e7eb'}`,
+            background: activeTab === 'notes' ? 'rgba(124,58,237,0.15)' : '#ffffff',
+            color: activeTab === 'notes' ? '#a78bfa' : '#6b7280',
           }}
         >
           📝 Notes de la semaine {notesSemaine.trim() && '•'}
@@ -1158,15 +1158,15 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       </div>
 
       {activeTab === 'notes' ? (
-        <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <section style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid #e5e7eb', background: '#f7f8fa', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#9aa1ac', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Notes prises pendant la semaine
             </span>
-            {saving && <span style={{ fontSize: 11, color: '#475569', fontStyle: 'italic' }}>Sauvegarde…</span>}
+            {saving && <span style={{ fontSize: 11, color: '#4b5563', fontStyle: 'italic' }}>Sauvegarde…</span>}
           </div>
           <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
+            <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.5 }}>
               Notes libres à prendre au fil de la semaine sur ce formé (une remarque après un module, un point à ne pas oublier…).
               Elles ne sont visibles que par les formateurs et sont reprises automatiquement par le bouton
               "🪄 Pré-remplir" du "Mot du formateur" dans l'onglet Retour de formation.
@@ -1183,12 +1183,12 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
               rows={10}
               style={{
                 width: '100%', padding: '10px 12px', borderRadius: 10,
-                border: '1.5px solid #334155', background: '#0f172a',
-                fontSize: 13, color: '#f1f5f9', resize: 'vertical',
+                border: '1.5px solid #e5e7eb', background: '#f5f6f8',
+                fontSize: 13, color: '#14161a', resize: 'vertical',
                 fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', lineHeight: 1.6,
               }}
-              onFocus={e => { e.target.style.borderColor = '#475569' }}
-              onBlurCapture={e => { e.target.style.borderColor = '#334155' }}
+              onFocus={e => { e.target.style.borderColor = '#4b5563' }}
+              onBlurCapture={e => { e.target.style.borderColor = '#e5e7eb' }}
             />
           </div>
         </section>
@@ -1196,28 +1196,28 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       <>
 
       {/* Quiz results */}
-      <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <section style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #e5e7eb', background: '#f7f8fa' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#9aa1ac', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Résultats aux Quiz
           </span>
         </div>
         <div style={{ padding: '12px 18px' }}>
           {quizData.length === 0 ? (
-            <div style={{ color: '#64748b', fontSize: 13, fontStyle: 'italic', padding: '8px 0' }}>
+            <div style={{ color: '#6b7280', fontSize: 13, fontStyle: 'italic', padding: '8px 0' }}>
               Aucun résultat de quiz enregistré pour ce collaborateur.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {quizData.map(({ moduleId, label, score, total }) => {
                 const pct = total > 0 ? Math.round((score / total) * 100) : null
-                const barColor = pct === null ? '#475569' : pct >= 70 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626'
-                const badgeBg  = pct === null ? '#334155' : pct >= 70 ? '#14532d' : pct >= 50 ? '#78350f' : '#7f1d1d'
-                const badgeColor = pct === null ? '#94a3b8' : barColor
+                const barColor = pct === null ? '#4b5563' : pct >= 70 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626'
+                const badgeBg  = pct === null ? '#e5e7eb' : pct >= 70 ? '#14532d' : pct >= 50 ? '#78350f' : '#7f1d1d'
+                const badgeColor = pct === null ? '#9aa1ac' : barColor
                 return (
                   <div key={moduleId}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#14161a' }}>{label}</span>
                       <span style={{
                         fontSize: 12, fontWeight: 700, color: badgeColor,
                         background: badgeBg, borderRadius: 20, padding: '2px 10px',
@@ -1226,7 +1226,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                       </span>
                     </div>
                     {total > 0 && (
-                      <div style={{ height: 6, background: '#334155', borderRadius: 99, overflow: 'hidden' }}>
+                      <div style={{ height: 6, background: '#e5e7eb', borderRadius: 99, overflow: 'hidden' }}>
                         <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: 99, transition: 'width .4s' }} />
                       </div>
                     )}
@@ -1239,13 +1239,13 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       </section>
 
       {/* Theme assessments */}
-      <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <section style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #e5e7eb', background: '#f7f8fa', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#9aa1ac', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Thèmes abordés
           </span>
           {saving && (
-            <span style={{ fontSize: 11, color: '#475569', fontStyle: 'italic' }}>Sauvegarde…</span>
+            <span style={{ fontSize: 11, color: '#4b5563', fontStyle: 'italic' }}>Sauvegarde…</span>
           )}
         </div>
         <div style={{ padding: '8px 0' }}>
@@ -1264,17 +1264,17 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '10px 18px',
-                  borderBottom: idx < themes.length - 1 ? '1px solid #334155' : 'none',
+                  borderBottom: idx < themes.length - 1 ? '1px solid #e5e7eb' : 'none',
                   background: activeSt ? `${activeSt.color}18` : 'transparent',
-                  boxShadow: isSuggested ? `inset 3px 0 0 ${activeSt?.color || '#475569'}` : 'none',
+                  boxShadow: isSuggested ? `inset 3px 0 0 ${activeSt?.color || '#4b5563'}` : 'none',
                   transition: 'background .15s',
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{meta.label}</div>
-                  {meta.sub && <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{meta.sub}</div>}
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#14161a' }}>{meta.label}</div>
+                  {meta.sub && <div style={{ fontSize: 11, color: '#6b7280', marginTop: 1 }}>{meta.sub}</div>}
                   {isSuggested && (
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#818cf8', marginTop: 3 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', marginTop: 3 }}>
                       🤖 suggéré via le taux de quiz — à vérifier
                     </div>
                   )}
@@ -1290,9 +1290,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                         style={{
                           padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
                           cursor: 'pointer', transition: 'all .15s', whiteSpace: 'nowrap',
-                          border: `1.5px solid ${active ? opt.border : '#334155'}`,
-                          background: active ? opt.bg : '#253247',
-                          color: active ? opt.color : '#64748b',
+                          border: `1.5px solid ${active ? opt.border : '#e5e7eb'}`,
+                          background: active ? opt.bg : '#f3f4f6',
+                          color: active ? opt.color : '#6b7280',
                           boxShadow: active ? `0 1px 3px ${opt.border}` : 'none',
                         }}
                       >
@@ -1307,7 +1307,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                   style={{
                     flexShrink: 0, minWidth: 64, textAlign: 'right',
                     fontSize: 11, fontWeight: 700,
-                    color: qRate === null ? '#475569' : qColor,
+                    color: qRate === null ? '#4b5563' : qColor,
                   }}
                 >
                   {qRate !== null ? `📊 ${qStats.correct}/${qStats.total} (${qRate}%)` : '—'}
@@ -1319,23 +1319,23 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       </section>
 
       {/* Global rate */}
-      <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: '20px 22px' }}>
+      <section style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 14, padding: '20px 22px' }}>
         <RateBar rate={rate} />
       </section>
 
       {/* Commentaires */}
-      <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <section style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #e5e7eb', background: '#f7f8fa', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#9aa1ac', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Commentaires du formateur
           </span>
-          {saving && <span style={{ fontSize: 11, color: '#475569', fontStyle: 'italic' }}>Sauvegarde…</span>}
+          {saving && <span style={{ fontSize: 11, color: '#4b5563', fontStyle: 'italic' }}>Sauvegarde…</span>}
         </div>
         <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* Attitude */}
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 10 }}>Attitude générale</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#9aa1ac', marginBottom: 10 }}>Attitude générale</div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
               {COMMENTAIRE_OPTS.map(opt => {
                 const active = attitudeStatus === opt.key
@@ -1346,9 +1346,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                     style={{
                       flex: 1, padding: '9px 6px', borderRadius: 10, fontSize: 12, fontWeight: 700,
                       cursor: 'pointer', transition: 'all .15s',
-                      border: `1.5px solid ${active ? opt.border : '#334155'}`,
-                      background: active ? opt.bg : '#253247',
-                      color: active ? opt.color : '#64748b',
+                      border: `1.5px solid ${active ? opt.border : '#e5e7eb'}`,
+                      background: active ? opt.bg : '#f3f4f6',
+                      color: active ? opt.color : '#6b7280',
                       boxShadow: active ? `0 1px 4px ${opt.border}` : 'none',
                     }}
                   >
@@ -1367,12 +1367,12 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                   rows={3}
                   style={{
                     width: '100%', padding: '10px 12px', borderRadius: 10,
-                    border: '1.5px solid #334155', background: '#0f172a',
-                    fontSize: 13, color: '#f1f5f9', resize: 'vertical',
+                    border: '1.5px solid #e5e7eb', background: '#f5f6f8',
+                    fontSize: 13, color: '#14161a', resize: 'vertical',
                     fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
                   }}
-                  onFocus={e => { e.target.style.borderColor = '#475569' }}
-                  onBlurCapture={e => { e.target.style.borderColor = '#334155' }}
+                  onFocus={e => { e.target.style.borderColor = '#4b5563' }}
+                  onBlurCapture={e => { e.target.style.borderColor = '#e5e7eb' }}
                 />
                 {attitudeNote.trim() && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
@@ -1385,7 +1385,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
 
           {/* Participation */}
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 10 }}>Participation</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#9aa1ac', marginBottom: 10 }}>Participation</div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
               {COMMENTAIRE_OPTS.map(opt => {
                 const active = participationStatus === opt.key
@@ -1396,9 +1396,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                     style={{
                       flex: 1, padding: '9px 6px', borderRadius: 10, fontSize: 12, fontWeight: 700,
                       cursor: 'pointer', transition: 'all .15s',
-                      border: `1.5px solid ${active ? opt.border : '#334155'}`,
-                      background: active ? opt.bg : '#253247',
-                      color: active ? opt.color : '#64748b',
+                      border: `1.5px solid ${active ? opt.border : '#e5e7eb'}`,
+                      background: active ? opt.bg : '#f3f4f6',
+                      color: active ? opt.color : '#6b7280',
                       boxShadow: active ? `0 1px 4px ${opt.border}` : 'none',
                     }}
                   >
@@ -1417,12 +1417,12 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                   rows={3}
                   style={{
                     width: '100%', padding: '10px 12px', borderRadius: 10,
-                    border: '1.5px solid #334155', background: '#0f172a',
-                    fontSize: 13, color: '#f1f5f9', resize: 'vertical',
+                    border: '1.5px solid #e5e7eb', background: '#f5f6f8',
+                    fontSize: 13, color: '#14161a', resize: 'vertical',
                     fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
                   }}
-                  onFocus={e => { e.target.style.borderColor = '#475569' }}
-                  onBlurCapture={e => { e.target.style.borderColor = '#334155' }}
+                  onFocus={e => { e.target.style.borderColor = '#4b5563' }}
+                  onBlurCapture={e => { e.target.style.borderColor = '#e5e7eb' }}
                 />
                 {participationNote.trim() && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
@@ -1435,7 +1435,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
 
           {/* Compréhension */}
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 10 }}>Compréhension des contenus</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#9aa1ac', marginBottom: 10 }}>Compréhension des contenus</div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
               {COMMENTAIRE_OPTS.map(opt => {
                 const active = comprehensionStatus === opt.key
@@ -1446,9 +1446,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                     style={{
                       flex: 1, padding: '9px 6px', borderRadius: 10, fontSize: 12, fontWeight: 700,
                       cursor: 'pointer', transition: 'all .15s',
-                      border: `1.5px solid ${active ? opt.border : '#334155'}`,
-                      background: active ? opt.bg : '#253247',
-                      color: active ? opt.color : '#64748b',
+                      border: `1.5px solid ${active ? opt.border : '#e5e7eb'}`,
+                      background: active ? opt.bg : '#f3f4f6',
+                      color: active ? opt.color : '#6b7280',
                       boxShadow: active ? `0 1px 4px ${opt.border}` : 'none',
                     }}
                   >
@@ -1467,12 +1467,12 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                   rows={3}
                   style={{
                     width: '100%', padding: '10px 12px', borderRadius: 10,
-                    border: '1.5px solid #334155', background: '#0f172a',
-                    fontSize: 13, color: '#f1f5f9', resize: 'vertical',
+                    border: '1.5px solid #e5e7eb', background: '#f5f6f8',
+                    fontSize: 13, color: '#14161a', resize: 'vertical',
                     fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
                   }}
-                  onFocus={e => { e.target.style.borderColor = '#475569' }}
-                  onBlurCapture={e => { e.target.style.borderColor = '#334155' }}
+                  onFocus={e => { e.target.style.borderColor = '#4b5563' }}
+                  onBlurCapture={e => { e.target.style.borderColor = '#e5e7eb' }}
                 />
                 {comprehensionNote.trim() && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
@@ -1487,9 +1487,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       </section>
 
       {/* Appréciation globale */}
-      <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <section style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #e5e7eb', background: '#f7f8fa' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#9aa1ac', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Appréciation globale
           </span>
         </div>
@@ -1502,9 +1502,9 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                 onClick={() => toggleAppreciation(opt.key)}
                 style={{
                   flex: 1, padding: '16px 8px', borderRadius: 14, cursor: 'pointer',
-                  border: `2px solid ${active ? opt.solidBg : '#334155'}`,
-                  background: active ? opt.solidBg : '#253247',
-                  color: active ? '#fff' : '#64748b',
+                  border: `2px solid ${active ? opt.solidBg : '#e5e7eb'}`,
+                  background: active ? opt.solidBg : '#f3f4f6',
+                  color: active ? '#fff' : '#6b7280',
                   fontWeight: active ? 700 : 500, fontSize: 12,
                   lineHeight: 1.4, textAlign: 'center', transition: 'all .18s',
                   boxShadow: active ? `0 4px 14px ${opt.solidBg}55` : 'none',
@@ -1519,19 +1519,19 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       </section>
 
       {/* Commentaire libre formateur */}
-      <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <section style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #e5e7eb', background: '#f7f8fa', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#9aa1ac', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Mot du formateur
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {saving && <span style={{ fontSize: 11, color: '#475569', fontStyle: 'italic' }}>Sauvegarde…</span>}
+            {saving && <span style={{ fontSize: 11, color: '#4b5563', fontStyle: 'italic' }}>Sauvegarde…</span>}
             <button
               onClick={handlePrefillComment}
               title="Génère un brouillon à partir des thèmes, de l'attitude, de la participation, de la compréhension, de l'appréciation et des notes de la semaine déjà renseignées"
               style={{
-                padding: '5px 12px', borderRadius: 8, border: '1px solid #334155',
-                background: '#0f172a', color: '#818cf8',
+                padding: '5px 12px', borderRadius: 8, border: '1px solid #e5e7eb',
+                background: '#f5f6f8', color: '#6366f1',
                 fontSize: 11, fontWeight: 700, cursor: 'pointer',
                 fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
               }}
@@ -1556,12 +1556,12 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
             rows={4}
             style={{
               width: '100%', padding: '10px 12px', borderRadius: 10,
-              border: '1.5px solid #334155', background: '#0f172a',
-              fontSize: 13, color: '#f1f5f9', resize: 'vertical',
+              border: '1.5px solid #e5e7eb', background: '#f5f6f8',
+              fontSize: 13, color: '#14161a', resize: 'vertical',
               fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', lineHeight: 1.6,
             }}
-            onFocus={e => { e.target.style.borderColor = '#475569' }}
-            onBlurCapture={e => { e.target.style.borderColor = '#334155' }}
+            onFocus={e => { e.target.style.borderColor = '#4b5563' }}
+            onBlurCapture={e => { e.target.style.borderColor = '#e5e7eb' }}
           />
         </div>
       </section>
@@ -1572,7 +1572,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
           onClick={() => setShowReport(true)}
           style={{
             flex: 1, padding: '14px 16px', borderRadius: 14,
-            background: '#334155', color: '#f1f5f9', border: 'none',
+            background: '#e5e7eb', color: '#14161a', border: 'none',
             fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}
@@ -1585,7 +1585,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
           disabled={downloadingPdf}
           style={{
             flex: 1, padding: '14px 16px', borderRadius: 14,
-            background: '#334155', color: '#f1f5f9', border: 'none',
+            background: '#e5e7eb', color: '#14161a', border: 'none',
             fontSize: 13, fontWeight: 700, cursor: downloadingPdf ? 'default' : 'pointer', fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             opacity: downloadingPdf ? 0.6 : 1,
@@ -1600,7 +1600,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
               <div style={{
                 flex: 1, padding: '12px 16px', borderRadius: 14,
                 background: '#14532d33', border: '1.5px solid #16a34a66',
-                fontSize: 13, color: '#4ade80', fontWeight: 700,
+                fontSize: 13, color: '#16a34a', fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}>
                 ✉️ Envoyé le {new Date(mailSentAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
@@ -1609,8 +1609,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                 onClick={sendToManager}
                 style={{
                   flexShrink: 0, padding: '12px 16px', borderRadius: 14,
-                  background: '#1e293b', border: '1.5px solid #334155',
-                  fontSize: 12, color: '#64748b', fontWeight: 600,
+                  background: '#ffffff', border: '1.5px solid #e5e7eb',
+                  fontSize: 12, color: '#6b7280', fontWeight: 600,
                   cursor: 'pointer', fontFamily: 'inherit',
                 }}
               >
@@ -1634,8 +1634,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
         ) : (
           <div style={{
             flex: 1, padding: '14px 16px', borderRadius: 14,
-            background: '#1e293b', border: '1.5px dashed #334155',
-            fontSize: 12, color: '#475569', fontWeight: 500,
+            background: '#ffffff', border: '1.5px dashed #e5e7eb',
+            fontSize: 12, color: '#4b5563', fontWeight: 500,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}>
             ✉️ Manager non renseigné
@@ -1644,14 +1644,14 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
       </div>
 
       {/* Retour au formé lui-même — distinct du compte rendu manager */}
-      <section style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #334155', background: '#162032' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <section style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #e5e7eb', background: '#f7f8fa' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#9aa1ac', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Retour au formé
           </span>
         </div>
         <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.5 }}>
             Un mail personnel à {name.split(' ')[0]} avec ses acquis/non-acquis, son taux global de bonnes réponses,
             et ton message ci-dessous — distinct du compte rendu envoyé au manager.
           </div>
@@ -1663,8 +1663,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
             rows={3}
             style={{
               width: '100%', padding: '10px 12px', borderRadius: 10,
-              border: '1.5px solid #334155', background: '#0f172a',
-              fontSize: 13, color: '#f1f5f9', resize: 'vertical',
+              border: '1.5px solid #e5e7eb', background: '#f5f6f8',
+              fontSize: 13, color: '#14161a', resize: 'vertical',
               fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', lineHeight: 1.6,
             }}
           />
@@ -1673,7 +1673,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
               onClick={() => setShowFormePreview(true)}
               style={{
                 flexShrink: 0, padding: '14px 16px', borderRadius: 14,
-                background: '#334155', color: '#f1f5f9', border: 'none',
+                background: '#e5e7eb', color: '#14161a', border: 'none',
                 fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}
@@ -1683,8 +1683,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
             {!formeEmail ? (
               <div style={{
                 flex: 1, padding: '14px 16px', borderRadius: 14,
-                background: '#1e293b', border: '1.5px dashed #334155',
-                fontSize: 12, color: '#475569', fontWeight: 500, textAlign: 'center',
+                background: '#ffffff', border: '1.5px dashed #e5e7eb',
+                fontSize: 12, color: '#4b5563', fontWeight: 500, textAlign: 'center',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 Nom/prénom manquants pour déduire l'adresse mail
@@ -1694,7 +1694,7 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                 <div style={{
                   flex: 1, padding: '12px 16px', borderRadius: 14,
                   background: '#14532d33', border: '1.5px solid #16a34a66',
-                  fontSize: 13, color: '#4ade80', fontWeight: 700,
+                  fontSize: 13, color: '#16a34a', fontWeight: 700,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 }}>
                   ✉️ Envoyé le {new Date(mailFormeSentAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
@@ -1703,8 +1703,8 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
                   onClick={handleSendToForme}
                   style={{
                     flexShrink: 0, padding: '12px 16px', borderRadius: 14,
-                    background: '#1e293b', border: '1.5px solid #334155',
-                    fontSize: 12, color: '#64748b', fontWeight: 600,
+                    background: '#ffffff', border: '1.5px solid #e5e7eb',
+                    fontSize: 12, color: '#6b7280', fontWeight: 600,
                     cursor: 'pointer', fontFamily: 'inherit',
                   }}
                 >
@@ -2046,7 +2046,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
   if (filtered.length === 0) return (
     <div style={{ padding: 40, textAlign: 'center' }}>
       <div style={{ fontSize: 40, marginBottom: 12 }}>{catMeta.icon}</div>
-      <div style={{ color: '#94a3b8', fontSize: 14 }}>Aucun formé dans cette catégorie cette semaine.</div>
+      <div style={{ color: '#9aa1ac', fontSize: 14 }}>Aucun formé dans cette catégorie cette semaine.</div>
       <button className="detail-back" style={{ marginTop: 20 }} onClick={onBack}>← Retour</button>
     </div>
   )
@@ -2068,28 +2068,28 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
           }}
         >
           <div style={{
-            background: '#1e293b', borderRadius: 20, width: '100%', maxWidth: 480,
+            background: '#ffffff', borderRadius: 20, width: '100%', maxWidth: 480,
             boxShadow: '0 24px 64px rgba(0,0,0,0.5)', overflow: 'hidden',
           }}>
             {/* Header modale */}
             <div style={{
               padding: '20px 24px 16px',
-              borderBottom: '1px solid #334155',
+              borderBottom: '1px solid #e5e7eb',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#f1f5f9' }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#14161a' }}>
                   ✉️ Envoyer tous les comptes rendus
                 </div>
-                <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
                   Cliquez sur chaque bouton pour ouvrir le mail pré-rempli
                 </div>
               </div>
               <button
                 onClick={() => setShowSendAll(false)}
                 style={{
-                  background: '#334155', border: 'none', borderRadius: 8,
-                  width: 32, height: 32, cursor: 'pointer', fontSize: 16, color: '#94a3b8',
+                  background: '#e5e7eb', border: 'none', borderRadius: 8,
+                  width: 32, height: 32, cursor: 'pointer', fontSize: 16, color: '#9aa1ac',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
                 }}
@@ -2099,7 +2099,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
             {/* Liste des groupes */}
             <div style={{ padding: '12px 16px', maxHeight: '60vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
               {sendAllGroups.length === 0 && (
-                <div style={{ padding: '20px 0', textAlign: 'center', color: '#64748b', fontSize: 13 }}>
+                <div style={{ padding: '20px 0', textAlign: 'center', color: '#6b7280', fontSize: 13 }}>
                   Aucun manager renseigné pour les formés de cette session.
                 </div>
               )}
@@ -2112,17 +2112,17 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
                   <div
                     key={group.emailKey}
                     style={{
-                      background: sent ? '#14532d33' : '#253247',
-                      border: `1.5px solid ${sent ? '#16a34a55' : '#334155'}`,
+                      background: sent ? '#14532d33' : '#f3f4f6',
+                      border: `1.5px solid ${sent ? '#16a34a55' : '#e5e7eb'}`,
                       borderRadius: 14, padding: '14px 16px',
                       display: 'flex', alignItems: 'center', gap: 14,
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9', marginBottom: 2 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#14161a', marginBottom: 2 }}>
                         {group.managers.map(m => m.name).join(' & ')}
                       </div>
-                      <div style={{ fontSize: 12, color: '#64748b' }}>
+                      <div style={{ fontSize: 12, color: '#6b7280' }}>
                         {prenoms.join(', ')}
                       </div>
                     </div>
@@ -2162,13 +2162,13 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
             </div>
 
             {/* Footer */}
-            <div style={{ padding: '12px 16px 16px', borderTop: '1px solid #334155' }}>
+            <div style={{ padding: '12px 16px 16px', borderTop: '1px solid #e5e7eb' }}>
               <button
                 onClick={() => setShowSendAll(false)}
                 style={{
                   width: '100%', padding: '12px', borderRadius: 12,
-                  background: '#334155', border: 'none', cursor: 'pointer',
-                  fontSize: 13, fontWeight: 600, color: '#94a3b8', fontFamily: 'inherit',
+                  background: '#e5e7eb', border: 'none', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600, color: '#9aa1ac', fontFamily: 'inherit',
                 }}
               >
                 Fermer
@@ -2189,8 +2189,8 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
           {catMeta.icon}
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, color: '#f1f5f9', fontSize: 16 }}>{catMeta.label}</div>
-          <div style={{ fontSize: 12, color: '#64748b' }}>
+          <div style={{ fontWeight: 700, color: '#14161a', fontSize: 16 }}>{catMeta.label}</div>
+          <div style={{ fontSize: 12, color: '#6b7280' }}>
             {filtered.length} collaborateur{filtered.length > 1 ? 's' : ''} · Semaine du {weekDate}
           </div>
         </div>
@@ -2215,7 +2215,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
           de session sans avoir à ouvrir chaque fiche une par une. */}
       {weakThemes.length > 0 && (
         <div style={{
-          background: '#1e293b', border: '1px solid #334155', borderRadius: 14,
+          background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 14,
           overflow: 'hidden', marginBottom: 18,
         }}>
           <div
@@ -2226,13 +2226,13 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
             }}
           >
             <span style={{ fontSize: 16 }}>🎯</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9', flex: 1 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#14161a', flex: 1 }}>
               Points faibles du groupe
             </span>
-            <span style={{ fontSize: 11, color: '#64748b' }}>
+            <span style={{ fontSize: 11, color: '#6b7280' }}>
               {weakThemes.length} thème{weakThemes.length > 1 ? 's' : ''} · trié du plus faible au plus fort
             </span>
-            <span style={{ fontSize: 11, color: '#64748b', transform: showWeakThemes ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>▾</span>
+            <span style={{ fontSize: 11, color: '#6b7280', transform: showWeakThemes ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>▾</span>
           </div>
           {showWeakThemes && (
             <div style={{ padding: '4px 16px 14px', display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 120, overflowY: 'auto' }}>
@@ -2242,12 +2242,12 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
                 const label = MODULE_DATA[t.theme]?.label || t.theme
                 return (
                   <div key={t.theme} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 150, flexShrink: 0, fontSize: 12.5, color: '#cbd5e1', fontWeight: 600 }}>{label}</div>
-                    <div style={{ flex: 1, height: 8, background: '#334155', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ width: 150, flexShrink: 0, fontSize: 12.5, color: '#374151', fontWeight: 600 }}>{label}</div>
+                    <div style={{ flex: 1, height: 8, background: '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
                       <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 4, transition: 'width .5s ease' }} />
                     </div>
                     <div style={{ width: 90, flexShrink: 0, textAlign: 'right', fontSize: 12, fontWeight: 700, color }}>
-                      {pct}% <span style={{ color: '#475569', fontWeight: 500 }}>({t.correct}/{t.total})</span>
+                      {pct}% <span style={{ color: '#4b5563', fontWeight: 500 }}>({t.correct}/{t.total})</span>
                     </div>
                   </div>
                 )
@@ -2273,9 +2273,9 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
               onClick={() => setSelected(i)}
               style={{
                 flexShrink: 0, padding: '7px 18px', borderRadius: 99,
-                border: active ? `2px solid ${catMeta.color}` : sent ? '1.5px solid #16a34a55' : '1.5px solid #334155',
-                background: active ? catMeta.color : sent ? '#14532d22' : '#253247',
-                color: active ? '#fff' : sent ? '#4ade80' : '#64748b',
+                border: active ? `2px solid ${catMeta.color}` : sent ? '1.5px solid #16a34a55' : '1.5px solid #e5e7eb',
+                background: active ? catMeta.color : sent ? '#14532d22' : '#f3f4f6',
+                color: active ? '#fff' : sent ? '#16a34a' : '#6b7280',
                 fontWeight: active ? 700 : 500,
                 fontSize: 13, cursor: 'pointer', transition: 'all .15s',
                 whiteSpace: 'nowrap', boxShadow: active ? `0 2px 8px rgba(${catMeta.rgb},0.25)` : 'none',
@@ -2347,7 +2347,7 @@ function CategorySelector({ entrees, onSelect }) {
 
   return (
     <div>
-      <div style={{ marginBottom: 20, color: '#64748b', fontSize: 14 }}>
+      <div style={{ marginBottom: 20, color: '#6b7280', fontSize: 14 }}>
         Choisissez la catégorie pour accéder aux fiches de retour de formation.
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
@@ -2358,8 +2358,8 @@ function CategorySelector({ entrees, onSelect }) {
               key={key}
               onClick={() => onSelect(key)}
               style={{
-                background: '#1e293b',
-                border: '1.5px solid #334155',
+                background: '#ffffff',
+                border: '1.5px solid #e5e7eb',
                 borderTop: `4px solid ${meta.color}`,
                 borderRadius: 14, padding: '24px 18px', cursor: 'pointer',
                 textAlign: 'left', transition: 'all .18s',
@@ -2370,8 +2370,8 @@ function CategorySelector({ entrees, onSelect }) {
               onMouseOut={e => { e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.2)'; e.currentTarget.style.transform = 'translateY(0)' }}
             >
               <span style={{ fontSize: 28, marginBottom: 2 }}>{meta.icon}</span>
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>{meta.label}</span>
-              <span style={{ fontSize: 12, color: '#64748b' }}>{meta.sub}</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#14161a' }}>{meta.label}</span>
+              <span style={{ fontSize: 12, color: '#6b7280' }}>{meta.sub}</span>
               <div style={{ marginTop: 6 }}>
                 {count > 0 ? (
                   <span style={{
@@ -2383,7 +2383,7 @@ function CategorySelector({ entrees, onSelect }) {
                     {count} formé{count > 1 ? 's' : ''}
                   </span>
                 ) : (
-                  <span style={{ fontSize: 12, color: '#475569' }}>Aucun formé</span>
+                  <span style={{ fontSize: 12, color: '#4b5563' }}>Aucun formé</span>
                 )}
               </div>
             </button>
@@ -2392,8 +2392,8 @@ function CategorySelector({ entrees, onSelect }) {
       </div>
 
       {/* ── Rapports Directeurs Régionaux ── */}
-      <div style={{ marginTop: 32, borderTop: '1px solid #334155', paddingTop: 24 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>
+      <div style={{ marginTop: 32, borderTop: '1px solid #e5e7eb', paddingTop: 24 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>
           Rapports Directeurs Régionaux
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -2401,7 +2401,7 @@ function CategorySelector({ entrees, onSelect }) {
             <div
               key={key}
               style={{
-                background: '#1e293b', border: '1px solid #334155',
+                background: '#ffffff', border: '1px solid #e5e7eb',
                 borderLeft: `3px solid ${dr.color}`,
                 borderRadius: 12, padding: '12px 16px',
                 display: 'flex', alignItems: 'center', gap: 14,
@@ -2409,15 +2409,15 @@ function CategorySelector({ entrees, onSelect }) {
             >
               <span style={{ fontSize: 20, flexShrink: 0 }}>{dr.icon}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#f1f5f9' }}>{dr.fullName}</div>
-                <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{dr.territory}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#14161a' }}>{dr.fullName}</div>
+                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 1 }}>{dr.territory}</div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                 <button
                   onClick={() => window.open(getDrUrl(key), '_blank')}
                   style={{
-                    padding: '6px 12px', borderRadius: 8, border: '1px solid #475569',
-                    background: 'transparent', color: '#94a3b8',
+                    padding: '6px 12px', borderRadius: 8, border: '1px solid #4b5563',
+                    background: 'transparent', color: '#9aa1ac',
                     fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
                   }}
                 >
@@ -2438,7 +2438,7 @@ function CategorySelector({ entrees, onSelect }) {
             </div>
           ))}
         </div>
-        <div style={{ marginTop: 12, fontSize: 11, color: '#475569', lineHeight: 1.6 }}>
+        <div style={{ marginTop: 12, fontSize: 11, color: '#4b5563', lineHeight: 1.6 }}>
           Les rapports DR affichent tous les formés de leur réseau actuellement dans la liste « Entrées »
           (même non encore évalués), avec l&apos;appréciation choisie ci-dessus quand elle existe
           (« très bon élément » à « ça va être compliqué »).
@@ -2457,7 +2457,7 @@ function formatDate(dateStr) {
 // ── Historique : auto-éval (lecture seule) ───────────────────────
 
 const HIST_APPR_META = {
-  'tres-bon':       { label: '🌟 Très bon potentiel', color: '#4ade80' },
+  'tres-bon':       { label: '🌟 Très bon potentiel', color: '#16a34a' },
   'ca-va-le-faire': { label: '👍 Ça va le faire',      color: '#a3e635' },
   'accompagnement': { label: '🤝 Accompagnement',     color: '#fbbf24' },
   'complique':      { label: '⚠️ Compliqué',          color: '#f87171' },
@@ -2471,7 +2471,7 @@ function AutoEvalReadOnly({ snap }) {
 
   if (!themes.length && !ae.progres && !ae.rating) {
     return (
-      <div style={{ textAlign: 'center', color: '#64748b', fontSize: 13, padding: '28px 0' }}>
+      <div style={{ textAlign: 'center', color: '#6b7280', fontSize: 13, padding: '28px 0' }}>
         Aucune auto-évaluation disponible pour ce formé.
       </div>
     )
@@ -2480,17 +2480,17 @@ function AutoEvalReadOnly({ snap }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       {themes.length > 0 && (
         <div>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 10 }}>Auto-évaluation des thèmes</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 10 }}>Auto-évaluation des thèmes</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {themes.map(t => {
               const s = asmts[t]
               const stars = starsDisplay(s)
               return (
                 <div key={t} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                  <span style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 500 }}>{MODULE_DATA[t]?.label || t}</span>
+                  <span style={{ fontSize: 13, color: '#14161a', fontWeight: 500 }}>{MODULE_DATA[t]?.label || t}</span>
                   {stars
                     ? <span style={{ fontSize: 13, letterSpacing: 1 }}>{stars}</span>
-                    : <span style={{ fontSize: 11, color: '#475569' }}>—</span>}
+                    : <span style={{ fontSize: 11, color: '#4b5563' }}>—</span>}
                 </div>
               )
             })}
@@ -2499,7 +2499,7 @@ function AutoEvalReadOnly({ snap }) {
       )}
       {accomp.length > 0 && (
         <div>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Accompagnement souhaité</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Accompagnement souhaité</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {accomp.map(t => (
               <span key={t} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: 'rgba(0,171,233,0.12)', color: '#38bdf8', border: '1px solid rgba(0,171,233,0.25)' }}>
@@ -2515,21 +2515,21 @@ function AutoEvalReadOnly({ snap }) {
         { key: 'suggestions',           label: 'Suggestions' },
       ].map(({ key, label }) => ae[key] ? (
         <div key={key}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>{label}</div>
-          <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.7, background: '#0f172a', borderRadius: 10, padding: '10px 14px', border: '1px solid #334155', whiteSpace: 'pre-wrap' }}>{ae[key]}</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>{label}</div>
+          <div style={{ fontSize: 13, color: '#14161a', lineHeight: 1.7, background: '#f5f6f8', borderRadius: 10, padding: '10px 14px', border: '1px solid #e5e7eb', whiteSpace: 'pre-wrap' }}>{ae[key]}</div>
         </div>
       ) : null)}
       {ae.rating && (
         <div>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Avis formation</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Avis formation</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 22 }}>{'⭐'.repeat(ae.rating)}</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: ae.rating >= 4 ? '#4ade80' : ae.rating === 3 ? '#fbbf24' : '#f87171' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: ae.rating >= 4 ? '#16a34a' : ae.rating === 3 ? '#fbbf24' : '#f87171' }}>
               {['','Insuffisant','Passable','Bien','Très bien','Excellent !'][ae.rating]}
             </span>
           </div>
           {ae.rating_comment && (
-            <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.7, background: '#0f172a', borderRadius: 10, padding: '10px 14px', border: '1px solid #334155', fontStyle: 'italic', marginTop: 8, whiteSpace: 'pre-wrap' }}>
+            <div style={{ fontSize: 13, color: '#14161a', lineHeight: 1.7, background: '#f5f6f8', borderRadius: 10, padding: '10px 14px', border: '1px solid #e5e7eb', fontStyle: 'italic', marginTop: 8, whiteSpace: 'pre-wrap' }}>
               « {ae.rating_comment} »
             </div>
           )}
@@ -2573,19 +2573,19 @@ function HistoriqueFiche({ record, autoEvalSnap, onBack }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <button className="detail-back" onClick={onBack}>← Retour</button>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: '#f1f5f9' }}>{record.collaborateur}</div>
-          <div style={{ fontSize: 12, color: '#64748b' }}>{magasin} · Formation du {formatDate(record.week_date)}</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#14161a' }}>{record.collaborateur}</div>
+          <div style={{ fontSize: 12, color: '#6b7280' }}>{magasin} · Formation du {formatDate(record.week_date)}</div>
         </div>
       </div>
 
       {hasAE && (
-        <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#1e293b', borderRadius: 12, padding: 4 }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#ffffff', borderRadius: 12, padding: 4 }}>
           {[['retour', '📝 Retour formateur'], ['autoval', '🙋 Auto-évaluation']].map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)} style={{
               flex: 1, padding: '9px 16px', borderRadius: 9, border: 'none',
               fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              background: tab === key ? '#0f172a' : 'transparent',
-              color: tab === key ? '#f1f5f9' : '#64748b',
+              background: tab === key ? '#f5f6f8' : 'transparent',
+              color: tab === key ? '#14161a' : '#6b7280',
               transition: 'all .15s',
             }}>{label}</button>
           ))}
@@ -2595,7 +2595,7 @@ function HistoriqueFiche({ record, autoEvalSnap, onBack }) {
       {tab === 'retour' ? (
         <CompteRenduManager data={reportData} />
       ) : (
-        <div style={{ background: '#1e293b', borderRadius: 16, padding: '20px 22px', border: '1px solid #334155' }}>
+        <div style={{ background: '#ffffff', borderRadius: 16, padding: '20px 22px', border: '1px solid #e5e7eb' }}>
           <AutoEvalReadOnly snap={autoEvalSnap} />
         </div>
       )}
@@ -2612,8 +2612,8 @@ function HistoriqueCollabList({ records, magasin, autoEvals, onSelect, onBack })
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <button className="detail-back" onClick={onBack}>← Magasins</button>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: '#f1f5f9' }}>{magasin}</div>
-          <div style={{ fontSize: 12, color: '#64748b' }}>{records.length} formé{records.length !== 1 ? 's' : ''}</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#14161a' }}>{magasin}</div>
+          <div style={{ fontSize: 12, color: '#6b7280' }}>{records.length} formé{records.length !== 1 ? 's' : ''}</div>
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -2623,24 +2623,24 @@ function HistoriqueCollabList({ records, magasin, autoEvals, onSelect, onBack })
           const hasAE   = !!autoEvals[r.collaborateur]?.auto_eval
           return (
             <button key={r.collaborateur + r.week_date} onClick={() => onSelect(r)} style={{
-              background: '#1e293b', border: '1px solid #334155', borderRadius: 14,
+              background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 14,
               padding: '14px 18px', cursor: 'pointer', textAlign: 'left',
               display: 'flex', alignItems: 'center', gap: 14, width: '100%', fontFamily: 'inherit',
             }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = '#475569'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = '#334155'}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#0f172a', border: '2px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#94a3b8', flexShrink: 0 }}>
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#4b5563'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e7eb'}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#f5f6f8', border: '2px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#9aa1ac', flexShrink: 0 }}>
                 {r.collaborateur?.charAt(0)?.toUpperCase()}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9', marginBottom: 2 }}>{r.collaborateur}</div>
-                <div style={{ fontSize: 12, color: '#64748b' }}>Formation du {formatDate(r.week_date)}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#14161a', marginBottom: 2 }}>{r.collaborateur}</div>
+                <div style={{ fontSize: 12, color: '#6b7280' }}>Formation du {formatDate(r.week_date)}</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
                 {apprMeta && <span style={{ fontSize: 11, fontWeight: 700, color: apprMeta.color }}>{apprMeta.label}</span>}
-                {hasAE && <span style={{ fontSize: 10, color: '#94a3b8', background: '#0f172a', borderRadius: 8, padding: '2px 8px' }}>Auto-éval ✓</span>}
+                {hasAE && <span style={{ fontSize: 10, color: '#9aa1ac', background: '#f5f6f8', borderRadius: 8, padding: '2px 8px' }}>Auto-éval ✓</span>}
               </div>
-              <span style={{ color: '#475569', fontSize: 18 }}>›</span>
+              <span style={{ color: '#4b5563', fontSize: 18 }}>›</span>
             </button>
           )
         })}
@@ -2706,7 +2706,7 @@ function HistoriqueView({ trainerName }) {
     return records.filter(r => r.collaborateur.toLowerCase().includes(q))
   }, [search, records])
 
-  if (loading) return <div style={{ textAlign: 'center', padding: 48, color: '#94a3b8', fontSize: 14 }}>Chargement de l'historique…</div>
+  if (loading) return <div style={{ textAlign: 'center', padding: 48, color: '#9aa1ac', fontSize: 14 }}>Chargement de l'historique…</div>
 
   if (selectedRecord) {
     return <HistoriqueFiche record={selectedRecord} autoEvalSnap={autoEvals[selectedRecord.collaborateur]} onBack={() => setSelectedRecord(null)} />
@@ -2722,42 +2722,42 @@ function HistoriqueView({ trainerName }) {
     <div>
       {/* Recherche */}
       <div style={{ marginBottom: 24, position: 'relative' }}>
-        <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: 16, pointerEvents: 'none' }}>🔍</span>
+        <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#6b7280', fontSize: 16, pointerEvents: 'none' }}>🔍</span>
         <input
           type="text" value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Rechercher un formé par nom ou prénom…"
-          style={{ width: '100%', boxSizing: 'border-box', background: '#1e293b', border: '1px solid #334155', borderRadius: 12, padding: '12px 42px 12px 42px', fontSize: 14, color: '#f1f5f9', fontFamily: 'inherit', outline: 'none' }}
-          onFocus={e => e.target.style.borderColor = '#475569'}
-          onBlur={e => e.target.style.borderColor = '#334155'}
+          style={{ width: '100%', boxSizing: 'border-box', background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '12px 42px 12px 42px', fontSize: 14, color: '#14161a', fontFamily: 'inherit', outline: 'none' }}
+          onFocus={e => e.target.style.borderColor = '#4b5563'}
+          onBlur={e => e.target.style.borderColor = '#e5e7eb'}
         />
         {search && (
-          <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 4 }}>×</button>
+          <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6b7280', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 4 }}>×</button>
         )}
       </div>
 
       {search ? (
         /* Résultats de recherche */
         <div>
-          <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>
+          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 12 }}>
             {searchResults.length} résultat{searchResults.length !== 1 ? 's' : ''} pour « {search} »
           </div>
           {searchResults.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px 0', color: '#475569', fontSize: 14 }}>Aucun formé trouvé.</div>
+            <div style={{ textAlign: 'center', padding: '32px 0', color: '#4b5563', fontSize: 14 }}>Aucun formé trouvé.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {searchResults.map(r => {
                 const apprMeta = HIST_APPR_META[r.stats_snapshot?.appreciation]
                 return (
-                  <button key={r.collaborateur} onClick={() => setSelectedRecord(r)} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: '14px 18px', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 14, width: '100%', fontFamily: 'inherit' }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = '#475569'}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = '#334155'}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#0f172a', border: '2px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#94a3b8', flexShrink: 0 }}>{r.collaborateur?.charAt(0)?.toUpperCase()}</div>
+                  <button key={r.collaborateur} onClick={() => setSelectedRecord(r)} style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 14, padding: '14px 18px', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 14, width: '100%', fontFamily: 'inherit' }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = '#4b5563'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e7eb'}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#f5f6f8', border: '2px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#9aa1ac', flexShrink: 0 }}>{r.collaborateur?.charAt(0)?.toUpperCase()}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9', marginBottom: 2 }}>{r.collaborateur}</div>
-                      <div style={{ fontSize: 12, color: '#64748b' }}>{r.stats_snapshot?.magasin || '—'} · Formation du {formatDate(r.week_date)}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#14161a', marginBottom: 2 }}>{r.collaborateur}</div>
+                      <div style={{ fontSize: 12, color: '#6b7280' }}>{r.stats_snapshot?.magasin || '—'} · Formation du {formatDate(r.week_date)}</div>
                     </div>
                     {apprMeta && <span style={{ fontSize: 11, fontWeight: 700, color: apprMeta.color, flexShrink: 0 }}>{apprMeta.label}</span>}
-                    <span style={{ color: '#475569', fontSize: 18 }}>›</span>
+                    <span style={{ color: '#4b5563', fontSize: 18 }}>›</span>
                   </button>
                 )
               })}
@@ -2767,24 +2767,24 @@ function HistoriqueView({ trainerName }) {
       ) : (
         /* Grille des magasins */
         magasins.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: '#475569', fontSize: 14 }}>
+          <div style={{ textAlign: 'center', padding: '48px 0', color: '#4b5563', fontSize: 14 }}>
             <div style={{ fontSize: 36, marginBottom: 12 }}>📂</div>
-            <div style={{ fontWeight: 600, color: '#64748b', marginBottom: 6 }}>Aucun historique disponible</div>
+            <div style={{ fontWeight: 600, color: '#6b7280', marginBottom: 6 }}>Aucun historique disponible</div>
             <div style={{ fontSize: 12 }}>Les retours de formation apparaîtront ici au fil des semaines.</div>
           </div>
         ) : (
           <>
-            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>
+            <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 16 }}>
               {records.length} formé{records.length !== 1 ? 's' : ''} · {magasins.length} magasin{magasins.length !== 1 ? 's' : ''}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
               {magasins.map(([mag, collabs]) => (
-                <button key={mag} onClick={() => setSelectedMagasin(mag)} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 16, padding: '18px 20px', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', transition: 'all .15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#475569'; e.currentTarget.style.background = '#243249' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.background = '#1e293b' }}>
+                <button key={mag} onClick={() => setSelectedMagasin(mag)} style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '18px 20px', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', transition: 'all .15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#4b5563'; e.currentTarget.style.background = '#243249' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.background = '#ffffff' }}>
                   <div style={{ fontSize: 24, marginBottom: 8 }}>🏪</div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#f1f5f9', marginBottom: 4, lineHeight: 1.3 }}>{mag}</div>
-                  <div style={{ fontSize: 12, color: '#64748b' }}>{collabs.length} formé{collabs.length !== 1 ? 's' : ''}</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#14161a', marginBottom: 4, lineHeight: 1.3 }}>{mag}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{collabs.length} formé{collabs.length !== 1 ? 's' : ''}</div>
                 </button>
               ))}
             </div>
@@ -2821,31 +2821,31 @@ export default function RetourFormationView({ onBack, pName }) {
   }, [])
 
   return (
-    <div id="dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: '#0f172a' }}>
+    <div id="dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: '#f5f6f8' }}>
       {/* Header */}
       <div style={{
-        padding: '18px 24px', background: '#1e293b',
-        borderBottom: '1px solid #334155',
+        padding: '18px 24px', background: '#ffffff',
+        borderBottom: '1px solid #e5e7eb',
         display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0,
       }}>
         {(tab === 'semaine' ? !category : true) && (
           <button className="detail-back" onClick={onBack}>← Tableau de bord</button>
         )}
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: '#f1f5f9' }}>📝 Retour de formation</div>
-          <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: '#14161a' }}>📝 Retour de formation</div>
+          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
             {tab === 'semaine' ? `Fiches de suivi · Semaine du ${getWeekDate()}` : 'Historique des formations'}
           </div>
         </div>
       </div>
 
       {/* Onglets */}
-      <div style={{ display: 'flex', background: '#1e293b', borderBottom: '1px solid #334155', flexShrink: 0, padding: '0 24px' }}>
+      <div style={{ display: 'flex', background: '#ffffff', borderBottom: '1px solid #e5e7eb', flexShrink: 0, padding: '0 24px' }}>
         {[['semaine', '📋 Semaine en cours'], ['historique', '📚 Historique']].map(([key, label]) => (
           <button key={key} onClick={() => { setTab(key); if (key === 'semaine') setCategory(null) }} style={{
             padding: '10px 20px', background: 'none', border: 'none',
             borderBottom: `2px solid ${tab === key ? '#00abe9' : 'transparent'}`,
-            color: tab === key ? '#00abe9' : '#64748b',
+            color: tab === key ? '#00abe9' : '#6b7280',
             fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
             transition: 'all .15s',
           }}>{label}</button>
@@ -2856,7 +2856,7 @@ export default function RetourFormationView({ onBack, pName }) {
         {tab === 'historique' ? (
           <HistoriqueView trainerName={trainerName} />
         ) : loading ? (
-          <div style={{ textAlign: 'center', padding: 48, color: '#94a3b8', fontSize: 14 }}>Chargement…</div>
+          <div style={{ textAlign: 'center', padding: 48, color: '#9aa1ac', fontSize: 14 }}>Chargement…</div>
         ) : category ? (
           <CollabListView entrees={entrees} categoryKey={category} trainerName={trainerName} onBack={() => setCategory(null)} />
         ) : (

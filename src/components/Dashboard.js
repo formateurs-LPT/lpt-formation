@@ -13,15 +13,18 @@ import { TRAINER_AVATARS, TRAINER_CANONICAL, getTrainerAvatarKey } from '@/lib/c
 import { TRAINING_THEMES, formatSlotDate, formatHeure, THEME_TO_SKILL_ITEM } from '@/lib/trainingSlots'
 import { ItemRow } from '@/components/StoreFollowupShared'
 import { useStoreFollowupProgress } from '@/lib/useStoreFollowupProgress'
-import { PLANNING_JOURS } from '@/lib/planningData'
 import { setSharedState } from '@/lib/supabase'
+import TrainerShell from './TrainerShell'
 import { findActiveRoomForTrainer, getLiveTrainerRoomCode, openOrCreateRoom, trainerLoginFromDisplayName, endActiveRoom } from '@/lib/sessionRoom'
 import { isDynamicRoomCode, setTrainerActiveRoomCode } from '@/lib/sessionCode'
-import { isTrainerAccount } from '@/lib/participantNames'
 import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees, addIdee } from '@/components/IdeesButton'
 import { MODULE_DATA } from '@/lib/modulesData'
 import { getQuizResultats, periodBounds } from '@/lib/collaborateursApi'
 import DemandesInterventionView from '@/components/DemandesInterventionView'
+import { getFormateurRatings } from '@/lib/formateurRatings'
+import TachesView from '@/components/TachesView'
+import { getTaches } from '@/lib/tachesApi'
+import { getNotificationsNonLues, marquerNotificationsLues } from '@/lib/directionApi'
 
 // Comptes autorisés à voir "Résultats des tests" (script 2) — structure
 // volontairement simple pour être modifiable en un instant plus tard.
@@ -31,7 +34,6 @@ import RetourFormationView from './RetourFormationView'
 import AutoEvalView from './AutoEvalView'
 import GlobalRatingsView from './GlobalRatingsView'
 import PeerQuizTrainer from './PeerQuizGame'
-import FreeQuizTrainer from './FreeQuizGame'
 import { readTrainerMode, setTrainerMode, TRAINER_MODE_META } from '@/lib/trainerMode'
 import { categorySlugFromZone } from '@/lib/formationCategories'
 
@@ -46,11 +48,11 @@ function TrainerModeToggle({ mode, onChange }) {
         title="Mode de travail — mémorisé jusqu'à ce que tu le changes"
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          background: mode ? 'rgba(0,171,233,0.15)' : 'rgba(255,255,255,0.08)',
-          border: `1px solid ${mode ? 'rgba(0,171,233,0.35)' : 'rgba(255,255,255,0.2)'}`,
+          background: mode ? 'rgba(0,137,186,0.1)' : '#f3f4f6',
+          border: `1px solid ${mode ? 'rgba(0,137,186,0.3)' : '#e5e7eb'}`,
           borderRadius: 20, padding: '6px 12px',
           cursor: 'pointer', fontFamily: 'inherit',
-          color: mode ? '#00abe9' : 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 700,
+          color: mode ? '#0089ba' : '#6b7280', fontSize: 12, fontWeight: 700,
         }}
       >
         {meta ? `${meta.emoji} ${meta.label}` : '⚙️ Choisir un mode'}
@@ -60,9 +62,9 @@ function TrainerModeToggle({ mode, onChange }) {
           <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
           <div style={{
             position: 'absolute', top: '110%', right: 0, zIndex: 41,
-            background: '#0f172a', border: '1px solid rgba(255,255,255,0.15)',
+            background: '#fff', border: '1px solid #e5e7eb',
             borderRadius: 12, padding: 6, minWidth: 160,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', gap: 2,
+            boxShadow: '0 8px 24px rgba(16,24,40,0.14)', display: 'flex', flexDirection: 'column', gap: 2,
           }}>
             {Object.entries(TRAINER_MODE_META).map(([slug, m]) => (
               <button
@@ -70,10 +72,10 @@ function TrainerModeToggle({ mode, onChange }) {
                 onClick={() => { onChange(slug); setOpen(false) }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left',
-                  background: mode === slug ? 'rgba(0,171,233,0.15)' : 'transparent',
+                  background: mode === slug ? 'rgba(0,137,186,0.1)' : 'transparent',
                   border: 'none', borderRadius: 8, padding: '8px 10px',
                   cursor: 'pointer', fontFamily: 'inherit',
-                  color: mode === slug ? '#00abe9' : '#e2e8f0', fontSize: 13, fontWeight: 600,
+                  color: mode === slug ? '#0089ba' : '#374151', fontSize: 13, fontWeight: 600,
                 }}
               >
                 {m.emoji} {m.label}
@@ -86,7 +88,7 @@ function TrainerModeToggle({ mode, onChange }) {
   )
 }
 
-function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoom, onSonnetteClick, sonnettePending, trainerMode, onTrainerModeChange }) {
+function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoom, onSonnetteClick, sonnettePending, onIdeesClick, ideeCount, onTacheNotifsClick, tacheNotifsCount }) {
   const rawKey = (pName || '').toLowerCase().split(' ')[0]
   const key = TRAINER_CANONICAL[rawKey] || rawKey
   const avatarSrc = TRAINER_AVATARS[key] || TRAINER_AVATARS.kevin
@@ -114,7 +116,6 @@ function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoo
 
       {/* Zone salle active */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, zIndex: 1 }}>
-        <TrainerModeToggle mode={trainerMode} onChange={onTrainerModeChange} />
         {hasRoom ? (
           <>
             <div
@@ -180,6 +181,44 @@ function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoo
           </button>
         )}
 
+        {onIdeesClick && (
+          <button
+            onClick={onIdeesClick}
+            title="Idées notées"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.3)',
+              borderRadius: 20, padding: '6px 12px 6px 10px',
+              cursor: 'pointer', fontFamily: 'inherit',
+              color: '#d97706', fontSize: 12, fontWeight: 700, transition: 'all .18s',
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = 'rgba(251,191,36,0.2)'; e.currentTarget.style.borderColor = 'rgba(251,191,36,0.45)' }}
+            onMouseOut={e => { e.currentTarget.style.background = 'rgba(251,191,36,0.12)'; e.currentTarget.style.borderColor = 'rgba(251,191,36,0.3)' }}
+          >
+            <span style={{ fontSize: 14 }}>💡</span>
+            <span>{ideeCount}</span>
+          </button>
+        )}
+
+        {onTacheNotifsClick && tacheNotifsCount > 0 && (
+          <button
+            onClick={onTacheNotifsClick}
+            title="Tâches terminées"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'rgba(22,163,74,0.12)', border: '1px solid rgba(22,163,74,0.3)',
+              borderRadius: 20, padding: '6px 12px 6px 10px',
+              cursor: 'pointer', fontFamily: 'inherit',
+              color: '#16a34a', fontSize: 12, fontWeight: 700, transition: 'all .18s',
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = 'rgba(22,163,74,0.2)'; e.currentTarget.style.borderColor = 'rgba(22,163,74,0.45)' }}
+            onMouseOut={e => { e.currentTarget.style.background = 'rgba(22,163,74,0.12)'; e.currentTarget.style.borderColor = 'rgba(22,163,74,0.3)' }}
+          >
+            <span style={{ fontSize: 14 }}>🔔</span>
+            <span>{tacheNotifsCount}</span>
+          </button>
+        )}
+
         {onSonnetteClick && (
           <button
             onClick={onSonnetteClick}
@@ -187,15 +226,15 @@ function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoo
             style={{
               position: 'relative',
               display: 'flex', alignItems: 'center', gap: 6,
-              background: sonnettePending > 0 ? 'rgba(251,191,36,0.18)' : 'rgba(255,255,255,0.07)',
-              border: sonnettePending > 0 ? '1px solid rgba(251,191,36,0.45)' : '1px solid rgba(255,255,255,0.15)',
+              background: sonnettePending > 0 ? 'rgba(251,191,36,0.18)' : '#f3f4f6',
+              border: sonnettePending > 0 ? '1px solid rgba(251,191,36,0.45)' : '1px solid #e5e7eb',
               borderRadius: 20, padding: '6px 12px',
               cursor: 'pointer', fontFamily: 'inherit',
-              color: sonnettePending > 0 ? '#fbbf24' : 'rgba(255,255,255,0.6)',
+              color: sonnettePending > 0 ? '#b45309' : '#6b7280',
               fontSize: 12, fontWeight: 700, transition: 'all .18s',
             }}
-            onMouseOver={e => { e.currentTarget.style.background = sonnettePending > 0 ? 'rgba(251,191,36,0.28)' : 'rgba(255,255,255,0.12)' }}
-            onMouseOut={e => { e.currentTarget.style.background = sonnettePending > 0 ? 'rgba(251,191,36,0.18)' : 'rgba(255,255,255,0.07)' }}
+            onMouseOver={e => { e.currentTarget.style.background = sonnettePending > 0 ? 'rgba(251,191,36,0.28)' : '#e5e7eb' }}
+            onMouseOut={e => { e.currentTarget.style.background = sonnettePending > 0 ? 'rgba(251,191,36,0.18)' : '#f3f4f6' }}
           >
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
@@ -2049,10 +2088,97 @@ function FichesAnnexesWidget() {
 }
 
 
+// Associe chaque activeView existant à la catégorie de sidebar qui doit
+// être surlignée quand on s'y trouve — y compris les écrans qui ne sont pas
+// la "porte d'entrée" d'une catégorie (ex: on reste sur "Onboarding &
+// sessions" pendant tout le parcours onboarding/peer-quiz). 'retour-formation'
+// et 'auto-eval' restent volontairement en dehors (voir TrainerPage
+// ci-dessous) : ce sont des écrans autonomes avec leur propre fond, pas
+// encore intégrés à la coquille — leur tour viendra avec leur retouche
+// couleur dédiée.
+const VIEW_TO_CATEGORY = {
+  home: 'accueil', idees: 'accueil',
+  sessions: 'onboarding', 'onboarding-choix': 'onboarding', onboarding: 'onboarding', 'onboarding-belgique': 'onboarding', 'peer-quiz': 'onboarding',
+  'suivi-magasin': 'suivi-terrain',
+  entrees: 'entrees', inscriptions: 'entrees',
+  'demandes-intervention': 'demandes',
+  'global-ratings': 'evaluations', 'resultats-tests': 'evaluations',
+}
+
+// Vue par défaut quand on clique directement sur une catégorie de la
+// sidebar (plutôt que d'arriver dessus via un sous-écran précis).
+const CATEGORY_LANDING = {
+  accueil: 'home',
+  onboarding: 'sessions',
+  'suivi-terrain': 'suivi-magasin',
+  entrees: 'entrees',
+  demandes: 'demandes-intervention',
+  evaluations: 'global-ratings',
+}
+
+// Petit sélecteur d'onglets interne à une catégorie (ex: Entrées ↔
+// Inscriptions) — pure présentation, ne connaît rien de la logique des
+// vues qu'il bascule.
+function TabRow({ tabs, activeView, onSelect }) {
+  if (!tabs || tabs.length < 2) return null
+  return (
+    <div style={{ display: 'flex', gap: 4, marginBottom: 22, borderBottom: '1px solid var(--border)' }}>
+      {tabs.map(t => {
+        const isActive = (t.match || [t.id]).includes(activeView)
+        return (
+          <button
+            key={t.id}
+            onClick={() => onSelect(t.id)}
+            style={{
+              padding: '9px 16px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              fontSize: 13, fontWeight: 700, background: 'none',
+              color: isActive ? '#0089ba' : 'var(--text-s)',
+              borderBottom: isActive ? '2px solid #0089ba' : '2px solid transparent',
+              marginBottom: -1,
+            }}
+          >{t.label}</button>
+        )
+      })}
+    </div>
+  )
+}
+
+// Coquille commune à tous les écrans formateur : sidebar desktop / barre
+// d'onglets mobile autour du contenu existant, qui ne change pas d'une
+// ligne. Centralise ce qui était avant répété à chaque `return` de
+// Dashboard (id="dashboard" + className) pour ne le faire qu'une fois.
+function TrainerPage({ activeView, setActiveView, inscriptionsPending, demandesInterventionPending, footerSlot, tabs, children }) {
+  return (
+    <div id="dashboard" className="manager-light-theme">
+      <div className="trainer-shell">
+        <TrainerShell
+          active={VIEW_TO_CATEGORY[activeView] || 'accueil'}
+          onNavigateCategory={(catId) => setActiveView(CATEGORY_LANDING[catId])}
+          badges={{ entrees: inscriptionsPending, demandes: demandesInterventionPending }}
+          footerSlot={footerSlot}
+        />
+        <div className="trainer-content-wrap">
+          <div className="trainer-content">
+            <TabRow tabs={tabs} activeView={activeView} onSelect={setActiveView} />
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onOpenTv, onToast, onOnlineCount, onOpenPlanning }) {
-  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning | retour-formation | auto-eval | global-ratings | free-quiz
+  // Dashboard "équipe" (tuiles personnelles : entrées, ma note, mes
+  // déplacements) vs dashboard de Kevin, qui reste pour l'instant la version
+  // complète existante — on commence par l'équipe, le sien viendra ensuite.
+  const isTeamDashboard = getTrainerAvatarKey(pName) !== 'kevin'
+  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning | retour-formation | auto-eval | global-ratings | mes-avis | free-quiz
   const [entreeCount, setEntreeCount] = useState(null)
   const [globalAvgRating, setGlobalAvgRating] = useState(null)
+  const [allTaches, setAllTaches] = useState([])
+  const [tacheNotifs, setTacheNotifs] = useState([])
+  const [showTacheNotifs, setShowTacheNotifs] = useState(false)
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
   const [selectedUpdate, setSelectedUpdate] = useState(null)
@@ -2263,29 +2389,55 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     }
   }
 
-  // Chargement séparé de la note globale (isolé des autres requêtes)
+  // Note personnelle (tuile "Ma note de formation", équipe uniquement) —
+  // moyenne des avis des formés dont ce formateur est le dernier éditeur de
+  // fiche (cf. src/lib/formateurRatings.js pour la logique de rattachement).
   useEffect(() => {
-    const loadGlobalRating = async () => {
+    if (!isTeamDashboard) return
+    const loadMyRating = async () => {
       try {
-        const data = await sbSelect('formation_reports', 'trainer_name=eq.__auto_eval__')
-        const ratings = (data || [])
-          .filter(r => !isTrainerAccount(r.collaborateur))
-          .map(r => r.stats_snapshot?.auto_eval?.rating)
-          .filter(Boolean)
+        const ratings = await getFormateurRatings(pName)
         if (ratings.length) {
-          const avg = Math.round((ratings.reduce((s, v) => s + v, 0) / ratings.length) * 10) / 10
+          const avg = Math.round((ratings.reduce((s, r) => s + r.rating, 0) / ratings.length) * 10) / 10
           setGlobalAvgRating({ avg, count: ratings.length })
         } else {
           setGlobalAvgRating(null)
         }
       } catch (e) {
-        console.error('[Dashboard] global rating', e)
+        console.error('[Dashboard] my rating', e)
       }
     }
-    loadGlobalRating()
-    const t = setInterval(loadGlobalRating, 30000)
+    loadMyRating()
+    const t = setInterval(loadMyRating, 30000)
     return () => clearInterval(t)
-  }, [])
+  }, [pName, isTeamDashboard])
+
+  // Tuile "Tâches" (tout le monde) — compteur des tâches qui m'attendent, et
+  // notifications "tâche terminée" pour celui qui les a créées (Kevin pour
+  // l'instant, mais générique si Quentin crée des tâches plus tard).
+  useEffect(() => {
+    const loadTaches = async () => {
+      try { setAllTaches(await getTaches()) } catch (e) { console.error('[Dashboard] taches', e) }
+    }
+    const loadTacheNotifs = async () => {
+      try {
+        const rows = await getNotificationsNonLues(getTrainerAvatarKey(pName))
+        setTacheNotifs(rows.filter(n => n.type === 'tache_terminee'))
+      } catch (e) { console.error('[Dashboard] tache notifs', e) }
+    }
+    loadTaches()
+    loadTacheNotifs()
+    const t = setInterval(() => { loadTaches(); loadTacheNotifs() }, 30000)
+    return () => clearInterval(t)
+  }, [pName])
+
+  const tachesCount = allTaches.filter(t => t.assignes.includes(pName) && t.statut !== 'termine').length
+
+  const handleOpenTacheNotifs = async () => {
+    setShowTacheNotifs(true)
+    if (tacheNotifs.length) await marquerNotificationsLues(tacheNotifs.map(n => n.id)).catch(() => {})
+  }
+  const handleCloseTacheNotifs = () => { setShowTacheNotifs(false); setTacheNotifs([]) }
 
   const loadTileStats = async () => {
     try {
@@ -2313,32 +2465,50 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     } catch {}
   }
 
+  const trainerPageProps = {
+    setActiveView, inscriptionsPending, demandesInterventionPending,
+    footerSlot: <TrainerModeToggle mode={trainerMode} onChange={handleTrainerModeChange} />,
+  }
+
+  const ONBOARDING_TABS = [
+    { id: 'sessions', label: 'Sessions réalisées' },
+    { id: 'onboarding-choix', label: 'Onboarding', match: ['onboarding-choix', 'onboarding', 'onboarding-belgique', 'peer-quiz'] },
+  ]
+  const ENTREES_TABS = [
+    { id: 'entrees', label: 'Entrées de la semaine' },
+    { id: 'inscriptions', label: 'Inscriptions formations' },
+  ]
+  const EVAL_TABS = [
+    { id: 'global-ratings', label: 'Note de la formation' },
+    ...(ALLOWED_RESULTATS_LOGINS.includes(getTrainerAvatarKey(pName)) ? [{ id: 'resultats-tests', label: 'Résultats des tests' }] : []),
+  ]
+
   if (activeView === 'sessions') {
     return (
-      <div id="dashboard">
+      <TrainerPage activeView={activeView} tabs={ONBOARDING_TABS} {...trainerPageProps}>
         <SessionsHistoryView pName={pName} onBack={() => { setActiveView('home'); loadTileStats() }} onToast={onToast} />
-      </div>
+      </TrainerPage>
     )
   }
 
   if (activeView === 'entrees') {
     return (
-      <div id="dashboard">
+      <TrainerPage activeView={activeView} tabs={ENTREES_TABS} {...trainerPageProps}>
         <EntreesView onBack={() => { setActiveView('home'); loadTileStats() }} onToast={onToast} pName={pName} />
-      </div>
+      </TrainerPage>
     )
   }
 
   if (activeView === 'idees') {
-    return <div id="dashboard"><IdeesView onBack={() => setActiveView('home')} pName={pName} /></div>
+    return <TrainerPage activeView={activeView} {...trainerPageProps}><IdeesView onBack={() => setActiveView('home')} pName={pName} /></TrainerPage>
   }
 
   if (activeView === 'inscriptions') {
-    return <div id="dashboard"><InscriptionsView onBack={() => { setActiveView('home'); refreshInscriptionsCount(false) }} pName={pName} /></div>
+    return <TrainerPage activeView={activeView} tabs={ENTREES_TABS} {...trainerPageProps}><InscriptionsView onBack={() => { setActiveView('home'); refreshInscriptionsCount(false) }} pName={pName} /></TrainerPage>
   }
 
   if (activeView === 'suivi-magasin') {
-    return <div id="dashboard"><StoreFollowupView pName={pName} onBack={() => setActiveView('home')} /></div>
+    return <TrainerPage activeView={activeView} {...trainerPageProps}><StoreFollowupView pName={pName} onBack={() => setActiveView('home')} /></TrainerPage>
   }
 
   if (activeView === 'retour-formation') {
@@ -2351,23 +2521,20 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   }
 
   if (activeView === 'resultats-tests') {
-    return <div id="dashboard"><ResultatsTestsView onBack={() => setActiveView('home')} pName={pName} /></div>
+    return <TrainerPage activeView={activeView} tabs={EVAL_TABS} {...trainerPageProps}><ResultatsTestsView onBack={() => setActiveView('home')} pName={pName} /></TrainerPage>
   }
 
   if (activeView === 'demandes-intervention') {
     return (
-      <div id="dashboard">
-        <div className="dash-wrap">
-          <button className="detail-back" onClick={() => setActiveView('home')}>← Retour</button>
-          <div className="dash-header">
-            <div>
-              <h2>🆘 Demandes d&apos;intervention</h2>
-              <p>Réseau entier, tous magasins confondus</p>
-            </div>
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
+        <div className="dash-header">
+          <div>
+            <h2>🆘 Demandes d&apos;intervention</h2>
+            <p>Réseau entier, tous magasins confondus</p>
           </div>
-          <DemandesInterventionView login={getTrainerAvatarKey(pName)} role="formateur" />
         </div>
-      </div>
+        <DemandesInterventionView login={getTrainerAvatarKey(pName)} role="formateur" />
+      </TrainerPage>
     )
   }
 
@@ -2377,9 +2544,25 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
   if (activeView === 'global-ratings') {
     return (
-      <div id="dashboard">
+      <TrainerPage activeView={activeView} tabs={EVAL_TABS} {...trainerPageProps}>
         <GlobalRatingsView onBack={() => setActiveView('home')} />
-      </div>
+      </TrainerPage>
+    )
+  }
+
+  if (activeView === 'mes-avis') {
+    return (
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
+        <GlobalRatingsView trainerName={pName} onBack={() => setActiveView('home')} />
+      </TrainerPage>
+    )
+  }
+
+  if (activeView === 'taches') {
+    return (
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
+        <TachesView pName={pName} />
+      </TrainerPage>
     )
   }
 
@@ -2387,31 +2570,21 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     return (
       <PeerQuizTrainer
         sessionCode={activeRoomCode}
-        onBack={() => setActiveView(obReturnJournee ? obReturnView : 'planning')}
+        onBack={() => setActiveView(obReturnJournee ? obReturnView : 'sessions')}
       />
-    )
-  }
-
-  if (activeView === 'free-quiz') {
-    return (
-      <div id="dashboard">
-        <FreeQuizTrainer onBack={() => setActiveView('modules')} />
-      </div>
     )
   }
 
   if (activeView === 'onboarding-choix') {
     return (
-      <div id="dashboard">
-        <div className="dash-wrap">
-          <button className="detail-back" onClick={() => setActiveView('home')}>← Retour au tableau de bord</button>
+      <TrainerPage activeView={activeView} tabs={ONBOARDING_TABS} {...trainerPageProps}>
           <div className="dash-hero" style={{ marginBottom: 32 }}>
             <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
               <div className="dash-hero-label">Formation · Suivi collaborateurs</div>
               <h2 className="dash-hero-title">ONBOARDING</h2>
               <p className="dash-hero-date">Choisissez le programme de formation</p>
             </div>
-            <div style={{ width: 56, height: 56, background: 'rgba(255,255,255,.08)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, position: 'relative', zIndex: 1 }}>🚀</div>
+            <div style={{ width: 56, height: 56, background: 'rgba(0,137,186,.1)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, position: 'relative', zIndex: 1 }}>🚀</div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -2419,29 +2592,29 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div
               onClick={() => setActiveView('onboarding')}
               style={{
-                background: 'linear-gradient(135deg, #03112a 0%, #0a2040 100%)',
-                border: '1px solid rgba(0,137,186,0.3)',
+                background: 'linear-gradient(135deg, #eaf3fd 0%, #dbe9f8 100%)',
+                border: '1px solid rgba(0,137,186,0.25)',
                 borderRadius: 18, padding: '32px 28px', cursor: 'pointer',
                 transition: 'all .2s', display: 'flex', flexDirection: 'column', gap: 16,
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,137,186,0.7)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,137,186,0.3)'; e.currentTarget.style.transform = 'translateY(0)' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,137,186,0.6)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,137,186,0.25)'; e.currentTarget.style.transform = 'translateY(0)' }}
             >
               <div style={{ fontSize: 48 }}>🇫🇷</div>
               <div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Onboarding France</div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#14161a', marginBottom: 6 }}>Onboarding France</div>
+                <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.5 }}>
                   Optique · Offres · Prise de mesures · Remboursements
                 </div>
               </div>
-              <div style={{ marginTop: 'auto', fontSize: 13, fontWeight: 700, color: '#00abe9' }}>Accéder →</div>
+              <div style={{ marginTop: 'auto', fontSize: 13, fontWeight: 700, color: '#0089ba' }}>Accéder →</div>
             </div>
 
             {/* Belgique */}
             <div
               onClick={() => setActiveView('onboarding-belgique')}
               style={{
-                background: 'linear-gradient(135deg, #1a1200 0%, #3a2800 100%)',
+                background: 'linear-gradient(135deg, #fdf6e3 0%, #faecc4 100%)',
                 border: '1px solid rgba(201,162,39,0.3)',
                 borderRadius: 18, padding: '32px 28px', cursor: 'pointer',
                 transition: 'all .2s', display: 'flex', flexDirection: 'column', gap: 16,
@@ -2451,23 +2624,22 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             >
               <div style={{ fontSize: 48 }}>🇧🇪</div>
               <div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Onboarding Belgique</div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#14161a', marginBottom: 6 }}>Onboarding Belgique</div>
+                <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.5 }}>
                   Mutuelles · INAMI · PARTENA · Spécificités belges
                 </div>
               </div>
-              <div style={{ marginTop: 'auto', fontSize: 13, fontWeight: 700, color: '#c9a227' }}>Accéder →</div>
+              <div style={{ marginTop: 'auto', fontSize: 13, fontWeight: 700, color: '#a17d0a' }}>Accéder →</div>
             </div>
           </div>
-        </div>
-      </div>
+      </TrainerPage>
     )
   }
 
   if (activeView === 'onboarding') {
     const returnJournee = obReturnJournee
     return (
-      <div id="dashboard">
+      <TrainerPage activeView={activeView} tabs={ONBOARDING_TABS} {...trainerPageProps}>
         <OnboardingView
           pName={pName}
           onBack={() => { setObReturnJournee(null); setActiveView('onboarding-choix') }}
@@ -2478,14 +2650,14 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           initialJournee={returnJournee}
           initialGroup={(trainerMode === 'paris' || trainerMode === 'province') ? trainerMode : null}
         />
-      </div>
+      </TrainerPage>
     )
   }
 
   if (activeView === 'onboarding-belgique') {
     const returnJourneeBelgique = obReturnJournee
     return (
-      <div id="dashboard">
+      <TrainerPage activeView={activeView} tabs={ONBOARDING_TABS} {...trainerPageProps}>
         <OnboardingViewBelgique
           pName={pName}
           onBack={() => { setObReturnJournee(null); setActiveView('onboarding-choix') }}
@@ -2495,175 +2667,13 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           initialStep={returnJourneeBelgique ? 'modules' : 'list'}
           initialJournee={returnJourneeBelgique}
         />
-      </div>
+      </TrainerPage>
     )
   }
 
-  if (activeView === 'planning') {
-    return (
-      <div id="dashboard">
-        <div className="dash-wrap">
-          <button className="detail-back" onClick={() => setActiveView('home')}>← Retour au tableau de bord</button>
-          <div className="dash-header" style={{ marginBottom: 28 }}>
-            <div>
-              <h2 style={{ marginBottom: 4 }}>Planning formation</h2>
-              <p style={{ color: 'var(--text-s)', fontSize: 14 }}>Cliquez sur un jour pour l&apos;afficher sur le diffuseur et les téléphones</p>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-            {PLANNING_JOURS.map(jour => (
-              <div
-                key={jour.id}
-                style={{
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                  borderTop: `4px solid ${jour.color}`,
-                  borderRadius: 'var(--r)', padding: '24px 28px',
-                  transition: 'all .2s',
-                }}
-              >
-                {/* En-tête jour */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{jour.jour}</div>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)' }}>{jour.label}</div>
-                  </div>
-                </div>
-
-                {/* Blocs programme */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-                  {jour.blocs.map((bloc, i) => {
-                    const isPause = bloc.titre === 'Pause déjeuner'
-                    if (isPause) return (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
-                        <div style={{ flex: 1, height: 1, background: `${jour.color}40` }} />
-                        <div style={{ background: `${jour.color}12`, border: `1px solid ${jour.color}35`, borderRadius: 20, padding: '3px 12px', fontSize: 10, fontWeight: 700, color: jour.color, textTransform: 'uppercase', letterSpacing: 0.8, whiteSpace: 'nowrap' }}>
-                          {bloc.horaire && <span style={{ opacity: 0.7, marginRight: 6 }}>{bloc.horaire}</span>}Pause déjeuner
-                        </div>
-                        <div style={{ flex: 1, height: 1, background: `${jour.color}40` }} />
-                      </div>
-                    )
-                    const isQuizBloc = bloc.titre === 'Jeu de questions'
-                    return (
-                      <div key={i} style={{ background: isQuizBloc ? 'rgba(245,158,11,0.06)' : 'var(--bg)', border: `1px solid ${isQuizBloc ? 'rgba(245,158,11,0.3)' : 'var(--border)'}`, borderLeft: `3px solid ${isQuizBloc ? '#f59e0b' : jour.color}`, borderRadius: 8, padding: '10px 14px' }}>
-                        {bloc.horaire && (
-                          <div style={{ fontSize: 10, fontWeight: 700, color: isQuizBloc ? '#f59e0b' : jour.color, marginBottom: 2, letterSpacing: 0.5 }}>{bloc.horaire}</div>
-                        )}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: bloc.items.length > 0 ? 6 : 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{bloc.titre}</div>
-                          {isQuizBloc && (
-                            <button
-                              onClick={e => { e.stopPropagation(); setActiveView('peer-quiz') }}
-                              style={{ flexShrink: 0, background: '#f59e0b', border: 'none', borderRadius: 8, padding: '5px 12px', fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', letterSpacing: 0.3 }}
-                            >
-                              🎯 Lancer
-                            </button>
-                          )}
-                        </div>
-                        {bloc.items.length > 0 && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            {bloc.items.map((item, j) => (
-                              <div key={j} style={{ fontSize: 11, color: 'var(--text-s)', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5, padding: '3px 8px' }}>
-                                {item}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {/* Bouton Diffuser */}
-                <button
-                  onClick={async () => { await setSharedState({ tv_screen: 'planning', planning_day: jour.id }) }}
-                  style={{
-                    width: '100%', padding: '12px 0',
-                    background: jour.color, border: 'none',
-                    borderRadius: 10, cursor: 'pointer',
-                    fontSize: 14, fontWeight: 700, color: '#fff',
-                    fontFamily: 'inherit', letterSpacing: 0.3,
-                    boxShadow: `0 4px 14px ${jour.color}44`,
-                    transition: 'opacity .15s',
-                  }}
-                  onMouseOver={e => e.currentTarget.style.opacity = '0.85'}
-                  onMouseOut={e => e.currentTarget.style.opacity = '1'}
-                >
-                  Diffuser sur TV &amp; téléphones
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--r)', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-s)' }}>Arrêter la diffusion du planning</span>
-            <button
-              onClick={async () => { await setSharedState({ tv_screen: null, planning_day: null }) }}
-              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626', borderRadius: 10, padding: '7px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
-            >Arrêter</button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (activeView === 'modules') {
-    return (
-      <div id="dashboard">
-        <div className="dash-wrap">
-          <button className="detail-back" onClick={() => setActiveView('home')}>← Retour au tableau de bord</button>
-          <div className="dash-header">
-            <div><h2>Démarrer une session</h2><p>Choisissez le module de formation à lancer</p></div>
-          </div>
-          <div
-            onClick={() => onLaunchModule('verre-progressif')}
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--r)', padding: '28px 30px', cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 24, marginBottom: 12 }}
-            onMouseOver={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(124,58,237,.25)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
-          >
-            <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg,#7c3aed,#9f67fa)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, flexShrink: 0 }}>🔬</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Module J+14 · Formation retour terrain</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Le Verre Progressif</div>
-              <div style={{ fontSize: 13, color: 'var(--text-s)', marginBottom: 12 }}>Module interactif complet : anatomie, zones, presbytie, arguments LPT, jeu d'objections et quiz final 8 questions.</div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {['① Anatomie', '② Zones quiz', '③ Presbytie', '④ Retour terrain', '⑤ Arguments', '⑥ Objections', '⑦ Quiz 8Q'].map(t => (
-                  <span key={t} style={{ padding: '3px 10px', background: 'rgba(124,58,237,0.08)', color: '#7c3aed', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>{t}</span>
-                ))}
-              </div>
-            </div>
-            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, color: '#7c3aed', fontSize: 14, fontWeight: 600 }}>
-              Lancer <span style={{ fontSize: 20 }}>→</span>
-            </div>
-          </div>
-          <div
-            onClick={() => setActiveView('free-quiz')}
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--r)', padding: '28px 30px', cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 24, marginBottom: 12 }}
-            onMouseOver={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(99,102,241,.25)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)' }}
-          >
-            <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg,#6366f1,#818cf8)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, flexShrink: 0 }}>🎯</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 6 }}>Outil pédagogique · Toutes formations</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Quiz libre</div>
-              <div style={{ fontSize: 13, color: 'var(--text-s)' }}>Pose une question · les formés répondent · tu valides et commentes en direct.</div>
-            </div>
-            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, color: '#6366f1', fontSize: 14, fontWeight: 600 }}>
-              Lancer <span style={{ fontSize: 20 }}>→</span>
-            </div>
-          </div>
-          <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--r)', padding: 24, textAlign: 'center', color: 'var(--text-m)' }}>
-            <div style={{ fontSize: 22, marginBottom: 8 }}>＋</div>
-            <div style={{ fontSize: 13, fontWeight: 500 }}>D'autres modules seront disponibles prochainement</div>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
-    <div id="dashboard">
-      <div className="dash-wrap">
+    <TrainerPage activeView={activeView} {...trainerPageProps}>
         <DashHeader
           pName={pName}
           onUpdatesClick={() => setShowUpdatesList(true)}
@@ -2672,8 +2682,10 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           onOpenRoom={handleOpenRoomClick}
           onSonnetteClick={() => setShowSonnette(true)}
           sonnettePending={sonnettePending}
-          trainerMode={trainerMode}
-          onTrainerModeChange={handleTrainerModeChange}
+          onIdeesClick={() => setActiveView('idees')}
+          ideeCount={ideeCount}
+          onTacheNotifsClick={handleOpenTacheNotifs}
+          tacheNotifsCount={tacheNotifs.length}
         />
         <SonnettePanel
           visible={showSonnette}
@@ -2688,6 +2700,26 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           />
         )}
         {selectedUpdate && <AppUpdateModal update={selectedUpdate} onClose={() => setSelectedUpdate(null)} />}
+        {showTacheNotifs && (
+          <div onClick={handleCloseTacheNotifs} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,20,30,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 18, padding: 24, width: '100%', maxWidth: 420, boxShadow: '0 24px 60px rgba(16,24,40,0.25)' }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#14161a', marginBottom: 16 }}>🔔 Tâches terminées</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                {tacheNotifs.map(n => {
+                  const tache = allTaches.find(t => t.id === n.reference_id)
+                  return (
+                    <div key={n.id} style={{ background: '#f0fdf4', border: '1px solid rgba(22,163,74,0.25)', borderRadius: 12, padding: '12px 16px' }}>
+                      <div style={{ fontSize: 13, color: '#14161a', lineHeight: 1.5 }}>
+                        {tache ? <><strong>{tache.termine_par}</strong> a terminé la tâche « {tache.titre} »</> : 'Une tâche a été marquée terminée.'}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <button onClick={handleCloseTacheNotifs} style={{ width: '100%', padding: '10px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}>Fermer</button>
+            </div>
+          </div>
+        )}
 
         {/* OB Banner */}
         <div className="ob-banner" onClick={() => setActiveView('onboarding-choix')}>
@@ -2701,7 +2733,13 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           <div className="ob-banner-arrow">→</div>
         </div>
 
-        {/* Main tiles */}
+        {/* Main tiles — uniquement ce qui n'a pas encore d'équivalent dans la
+            sidebar (cf. tri demandé par Kevin) : Sessions/Inscriptions/Suivi
+            magasin/Résultats des tests/Demandes d'intervention/Note de la
+            formation vivent déjà dans leur catégorie de sidebar, inutile de
+            les dupliquer ici. Retour de formation et Auto-éval restent des
+            tuiles tant qu'ils n'ont pas leur propre catégorie (écrans encore
+            autonomes, cf. étape 4). */}
         <div className="dash-tiles">
           <div className="dash-tile" onClick={() => setActiveView('entrees')}>
             <div className="dash-tile-top">
@@ -2713,50 +2751,14 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-sub">Importer un tableau RH</div>
           </div>
 
-          <div className="dash-tile" onClick={() => setActiveView('sessions')}>
+          <div className="dash-tile" onClick={() => setActiveView('taches')} style={{ borderColor: tachesCount > 0 ? 'rgba(220,38,38,0.4)' : 'rgba(0,137,186,0.3)' }}>
             <div className="dash-tile-top">
-              <div className="dash-tile-icon">🎓</div>
-              <span className="dash-tile-link">Voir tout →</span>
+              <div className="dash-tile-icon">📌</div>
+              <span className="dash-tile-link">Voir →</span>
             </div>
-            <div className="dash-tile-count">{sessionCount}</div>
-            <div className="dash-tile-label">Sessions réalisées</div>
-            <div className="dash-tile-sub">{sessionLast}</div>
-          </div>
-
-          <div
-            className="dash-tile"
-            onClick={() => setActiveView('inscriptions')}
-            style={inscriptionsCount > 0 ? {
-              borderColor: 'rgba(245,158,11,0.6)', boxShadow: '0 0 24px rgba(245,158,11,0.25)',
-            } : undefined}
-          >
-            <div className="dash-tile-top">
-              <div className="dash-tile-icon">📬</div>
-              <span className="dash-tile-link">Voir tout →</span>
-            </div>
-            <div className="dash-tile-count" style={inscriptionsCount > 0 ? { color: '#f59e0b' } : undefined}>{inscriptionsPending}</div>
-            <div className="dash-tile-label">Inscriptions formations</div>
-            <div className="dash-tile-sub">Collaborateur{inscriptionsPending > 1 ? 's' : ''} en attente de formation</div>
-          </div>
-
-          <div className="dash-tile" onClick={() => setActiveView('idees')}>
-            <div className="dash-tile-top">
-              <div className="dash-tile-icon">💡</div>
-              <span className="dash-tile-link">Voir tout →</span>
-            </div>
-            <div className="dash-tile-count">{ideeCount}</div>
-            <div className="dash-tile-label">Idées notées</div>
-            <div className="dash-tile-sub">Idées notées durant les formations</div>
-          </div>
-
-          <div className="dash-tile" onClick={() => setActiveView('suivi-magasin')} style={{ borderColor: 'rgba(34,197,94,0.3)' }}>
-            <div className="dash-tile-top">
-              <div className="dash-tile-icon">🏬</div>
-              <span className="dash-tile-link" style={{ color: '#4ade80' }}>Ouvrir →</span>
-            </div>
-            <div className="dash-tile-count" style={{ fontSize: 22, color: '#4ade80' }}>Suivi magasin</div>
-            <div className="dash-tile-label">Suivi terrain</div>
-            <div className="dash-tile-sub">Montée en compétences par magasin et collaborateur</div>
+            <div className="dash-tile-count" style={tachesCount > 0 ? { color: '#dc2626' } : undefined}>{tachesCount}</div>
+            <div className="dash-tile-label">Tâches</div>
+            <div className="dash-tile-sub">{tachesCount > 0 ? `À traiter de ton côté` : 'Rien en attente pour toi'}</div>
           </div>
 
           <div className="dash-tile" onClick={() => setActiveView('retour-formation')} style={{ borderColor: 'rgba(99,102,241,0.35)' }}>
@@ -2769,43 +2771,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-sub">Fiches de suivi par collaborateur</div>
           </div>
 
-          {ALLOWED_RESULTATS_LOGINS.includes(getTrainerAvatarKey(pName)) && (
-            <div className="dash-tile" onClick={() => setActiveView('resultats-tests')} style={{ borderColor: 'rgba(167,139,250,0.35)' }}>
-              <div className="dash-tile-top">
-                <div className="dash-tile-icon">📊</div>
-                <span className="dash-tile-link" style={{ color: '#a78bfa' }}>Accéder →</span>
-              </div>
-              <div className="dash-tile-count" style={{ color: '#a78bfa' }}>—</div>
-              <div className="dash-tile-label">Résultats des tests</div>
-              <div className="dash-tile-sub">Tests de sortie · nouveaux entrants</div>
-            </div>
-          )}
-
-          <div
-            className="dash-tile"
-            onClick={() => {
-              setActiveView('demandes-intervention')
-              try { localStorage.setItem(demandesInterventionLastSeenKey(pName), new Date().toISOString()) } catch {}
-              setDemandesInterventionCount(0)
-            }}
-            style={demandesInterventionCount > 0 ? {
-              borderColor: 'rgba(251,191,36,0.6)', boxShadow: '0 0 24px rgba(251,191,36,0.25)',
-            } : { borderColor: 'rgba(251,191,36,0.35)' }}
-          >
-            <div className="dash-tile-top">
-              <div className="dash-tile-icon">🆘</div>
-              <span className="dash-tile-link" style={{ color: '#fbbf24' }}>Accéder →</span>
-            </div>
-            <div className="dash-tile-count" style={{ color: '#fbbf24' }}>{demandesInterventionPending || '—'}</div>
-            <div className="dash-tile-label">Demandes d&apos;intervention</div>
-            <div className="dash-tile-sub">
-              Réseau entier
-              {demandesInterventionCount > 0 && (
-                <span style={{ color: '#fbbf24', fontWeight: 700 }}> · {demandesInterventionCount} nouvelle{demandesInterventionCount > 1 ? 's' : ''}</span>
-              )}
-            </div>
-          </div>
-
           <div className="dash-tile" onClick={() => setActiveView('auto-eval')} style={{ borderColor: 'rgba(16,185,129,0.35)' }}>
             <div className="dash-tile-top">
               <div className="dash-tile-icon">📋</div>
@@ -2816,30 +2781,30 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-sub">Questionnaire fin de formation par le formé</div>
           </div>
 
-          <div className="dash-tile" onClick={() => setActiveView('global-ratings')} style={{ borderColor: 'rgba(245,158,11,0.4)' }}>
-            <div className="dash-tile-top">
-              <div className="dash-tile-icon">⭐</div>
-              <span className="dash-tile-link" style={{ color: '#d97706' }}>Voir →</span>
+          {isTeamDashboard && (
+            <div className="dash-tile" onClick={() => setActiveView('mes-avis')} style={{ borderColor: 'rgba(245,158,11,0.4)' }}>
+              <div className="dash-tile-top">
+                <div className="dash-tile-icon">⭐</div>
+                <span className="dash-tile-link" style={{ color: '#d97706' }}>Voir →</span>
+              </div>
+              {globalAvgRating ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                    <span className="dash-tile-count" style={{ color: '#d97706' }}>{globalAvgRating.avg.toFixed(1)}</span>
+                    <span style={{ fontSize: 13, color: '#92400e', fontWeight: 700 }}>/5</span>
+                  </div>
+                  <div className="dash-tile-label">Ma note de formation</div>
+                  <div className="dash-tile-sub">{globalAvgRating.count} avis sur tes formés</div>
+                </>
+              ) : (
+                <>
+                  <div className="dash-tile-count" style={{ color: '#d97706', fontSize: 20 }}>—</div>
+                  <div className="dash-tile-label">Ma note de formation</div>
+                  <div className="dash-tile-sub">Aucun avis reçu pour l'instant</div>
+                </>
+              )}
             </div>
-            {globalAvgRating ? (
-              <>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                  <span className="dash-tile-count" style={{ color: '#d97706' }}>{globalAvgRating.avg.toFixed(1)}</span>
-                  <span style={{ fontSize: 13, color: '#92400e', fontWeight: 700 }}>/5</span>
-                </div>
-                <div className="dash-tile-label">Note de la formation</div>
-                <div className="dash-tile-sub">{globalAvgRating.count} avis cumulés · tous formateurs</div>
-              </>
-            ) : (
-              <>
-                <div className="dash-tile-count" style={{ color: '#d97706', fontSize: 20 }}>—</div>
-                <div className="dash-tile-label">Note de la formation</div>
-                <div className="dash-tile-sub">Aucun avis reçu pour l'instant</div>
-              </>
-            )}
-          </div>
-
-
+          )}
         </div>
 
         {/* Planning + Shortcuts + Fiches */}
@@ -2849,7 +2814,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           <FichesAnnexesWidget />
         </div>
 
-      </div>
       {roomModalOpen && (
         <RoomOpenModal
           trainerName={pName}
@@ -2858,6 +2822,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           onConfirm={handleConfirmRoom}
         />
       )}
-    </div>
+    </TrainerPage>
   )
 }

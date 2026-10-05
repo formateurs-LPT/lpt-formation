@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
-import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE, MONTAGE_TRAITEMENTS, LPT_CARE_OFFERS } from '@/lib/modulesData'
+import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE, MONTAGE_TRAITEMENTS, LPT_CARE_OFFERS, LPT_CARE_INTRO, LPT_CARE_COMMON, LPT_CARE_COFIDIS_NOTE } from '@/lib/modulesData'
 import { PLANNING_JOURS } from '@/lib/planningData'
 import { sbSelect, SESSION_CODE, fetchOpenAnswers, getSharedState, getRoomSharedState, setRoomSharedState, getWeeklySharedState } from '@/lib/supabase'
 import { fetchOnlineParticipantsList } from '@/lib/participantPresence'
@@ -4398,6 +4398,30 @@ function TVOffresLptCare({ selected }) {
         })}
       </div>
 
+      {!offer && (
+        <div style={{ maxWidth: 820, margin: '32px auto 0', width: '100%' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20,
+            background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: 16, padding: '16px 22px',
+          }}>
+            <span style={{ fontSize: 26, flexShrink: 0 }}>📍</span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#fbbf24', marginBottom: 3 }}>{LPT_CARE_INTRO.title}</div>
+              <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{LPT_CARE_INTRO.text}</div>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
+            {LPT_CARE_COMMON.map(c => (
+              <div key={c.label} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '14px 16px' }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: '#fff', marginBottom: 5 }}>{c.label}</div>
+                <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{c.text}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>{LPT_CARE_COFIDIS_NOTE}</div>
+        </div>
+      )}
+
       {offer && (
         <div key={offer.key} style={{ maxWidth: 820, margin: '0 auto', width: '100%', animation: 'successPop .4s cubic-bezier(0.22,1,0.36,1)' }}>
           <div style={{ textAlign: 'center', marginBottom: 12 }}>
@@ -4423,6 +4447,12 @@ function TVOffresLptCare({ selected }) {
           </div>
           {offer.exclusions && (
             <div style={{ marginTop: 10, textAlign: 'center', fontSize: 13, color: '#f87171', fontWeight: 700 }}>⛔ {offer.exclusions}</div>
+          )}
+          {offer.pourQui && (
+            <div style={{ marginTop: 14, textAlign: 'center', background: `${offer.color}18`, border: `1px solid ${offer.color}40`, borderRadius: 12, padding: '12px 18px' }}>
+              <div style={{ fontSize: 11.5, fontWeight: 800, color: offer.color, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Pour qui</div>
+              <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5, fontStyle: 'italic' }}>{offer.pourQui}</div>
+            </div>
           )}
         </div>
       )}

@@ -403,6 +403,40 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 #dashboard.manager-light-theme .btn2:hover{background:#f5f6f8;border-color:#c7cbd1}
 #dashboard.manager-light-theme .badge.pending{background:#f3f4f6;color:#6b7280}
 
+/* ── FORMATEUR — étape 1 : les éléments de Dashboard.js qui ont encore des
+   couleurs sombres codées en dur (pas pilotées par les variables --bg/--card
+   ci-dessus) : héros d'accueil, tuiles, bannière Onboarding. Même logique de
+   scoping que le reste : uniquement sous #dashboard.manager-light-theme. ── */
+#dashboard.manager-light-theme .dash-header h2{color:#14161a}
+#dashboard.manager-light-theme .dash-header p{color:#6b7280}
+
+#dashboard.manager-light-theme .dash-hero{background:linear-gradient(135deg,#eaf3fd 0%,#dbe9f8 55%,#cfe3f5 100%);border:1px solid #e5e7eb}
+#dashboard.manager-light-theme .dash-hero::before{background:rgba(0,137,186,.06)}
+#dashboard.manager-light-theme .dash-hero::after{background:rgba(0,137,186,.1)}
+#dashboard.manager-light-theme .dash-hero-avatar{border-color:#fff;box-shadow:0 0 0 5px rgba(0,137,186,.14)}
+#dashboard.manager-light-theme .dash-hero-label{color:#0089ba}
+#dashboard.manager-light-theme .dash-hero-title{color:#14161a}
+#dashboard.manager-light-theme .dash-hero-date{color:#6b7280}
+
+#dashboard.manager-light-theme .dash-tile{background:#fff;border:1px solid #e5e7eb;box-shadow:0 1px 2px rgba(16,24,40,.03)}
+#dashboard.manager-light-theme .dash-tile::after{background:rgba(0,137,186,.05)}
+#dashboard.manager-light-theme .dash-tile:hover{border-color:rgba(0,137,186,.4);box-shadow:0 6px 20px rgba(16,24,40,.08)}
+#dashboard.manager-light-theme .dash-tile-count{color:#14161a}
+#dashboard.manager-light-theme .dash-tile-label{color:#14161a}
+#dashboard.manager-light-theme .dash-tile-sub{color:#6b7280}
+#dashboard.manager-light-theme .dash-tile-cta{background:linear-gradient(135deg,#0089ba 0%,#00abe9 100%);border-color:transparent}
+#dashboard.manager-light-theme .dash-tile-cta::after{background:rgba(255,255,255,.1)}
+#dashboard.manager-light-theme .dash-tile-cta .dash-tile-count,
+#dashboard.manager-light-theme .dash-tile-cta .dash-tile-label,
+#dashboard.manager-light-theme .dash-tile-cta .dash-tile-sub{color:#fff}
+
+#dashboard.manager-light-theme .ob-banner{background:linear-gradient(135deg,#eaf3fd 0%,#dbe9f8 60%,#cfe3f5 100%);border:1px solid #e5e7eb}
+#dashboard.manager-light-theme .ob-banner::before{background:rgba(0,137,186,.06)}
+#dashboard.manager-light-theme .ob-banner-label{color:#0089ba}
+#dashboard.manager-light-theme .ob-banner-title{color:#14161a}
+#dashboard.manager-light-theme .ob-banner-sub{color:#6b7280}
+#dashboard.manager-light-theme .ob-banner-arrow{color:#6b7280}
+
 /* ── DASHBOARD MANAGER — RESPONSIVE ──
    Desktop/TV : sidebar verticale fixe, contenu centré (évite le vide à
    droite sur très grand écran), défilement de page normal.
@@ -421,9 +455,13 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .manager-bottomnav-mobile{display:none}
 
 @media (max-width:860px){
-  html:has(#dashboard.manager-light-theme),
-  body:has(#dashboard.manager-light-theme){overflow:hidden;height:100%;overscroll-behavior:none}
-  #dashboard.manager-light-theme{
+  /* Qualifié par :has(.manager-shell) — seul le manager a cette coquille
+     (sidebar+topbar+bottomnav). Le formateur réutilise .manager-light-theme
+     pour les couleurs (étape 0 de sa propre refonte) mais garde un défilement
+     de page normal tant qu'il n'a pas sa propre coquille d'app (étape 2). */
+  html:has(#dashboard.manager-light-theme .manager-shell),
+  body:has(#dashboard.manager-light-theme .manager-shell){overflow:hidden;height:100%;overscroll-behavior:none}
+  #dashboard.manager-light-theme:has(.manager-shell){
     position:fixed;inset:0;height:100dvh;
     display:flex;flex-direction:column;overflow:hidden;
   }
@@ -437,6 +475,23 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   .manager-bottomnav-mobile{display:block;order:3;flex-shrink:0;position:relative}
   .manager-content{padding:16px 16px 24px}
   .skill-row-label{width:120px!important}
+}
+
+/* ── DASHBOARD FORMATEUR — sidebar (desktop) / barre d'onglets fixe (mobile).
+   Contrairement au manager, pas de coquille "app fixe" : le <Topbar> commun
+   et le défilement de page existant restent inchangés (cf. étape 0/1), on ne
+   fait qu'ajouter un rail de navigation à gauche et un filet d'onglets en
+   bas sur mobile — breakpoint 640px, aligné sur useIsMobile()/Topbar. ── */
+.trainer-shell{display:flex;align-items:flex-start}
+.trainer-content-wrap{flex:1;min-width:0}
+.trainer-content{width:100%;max-width:1100px;margin:0 auto;padding:28px 36px 60px;box-sizing:border-box}
+.trainer-sidebar-desktop{display:flex}
+.trainer-bottomnav-mobile{display:none}
+
+@media (max-width:640px){
+  .trainer-sidebar-desktop{display:none}
+  .trainer-bottomnav-mobile{display:block;position:fixed;left:0;right:0;bottom:0;z-index:90}
+  .trainer-content{padding:16px 16px calc(78px + env(safe-area-inset-bottom,0px))}
 }
 
 /* ── IMPRESSION — n'imprime que le compte rendu (.print-report-area), pas le

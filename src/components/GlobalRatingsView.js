@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { sbSelect } from '@/lib/supabase'
 import { isTrainerAccount } from '@/lib/participantNames'
+import { getFormateurRatings } from '@/lib/formateurRatings'
 
 const RATING_LABELS = ['', 'Insuffisant', 'Passable', 'Bien', 'Très bien', 'Excellent !']
 const RATING_COLORS = { 5: '#16a34a', 4: '#22c55e', 3: '#d97706', 2: '#f97316', 1: '#dc2626' }
@@ -16,15 +17,15 @@ function Stars({ value, size = 16 }) {
   )
 }
 
-export default function GlobalRatingsView({ onBack }) {
+export default function GlobalRatingsView({ onBack, trainerName }) {
   const [loading,    setLoading]    = useState(true)
   const [allRatings, setAllRatings] = useState([]) // { name, rating, comment, week_date }
   const [filterStar, setFilterStar] = useState(0)  // 0 = tous
 
   useEffect(() => {
-    sbSelect('formation_reports', 'trainer_name=eq.__auto_eval__')
-      .then(data => {
-        const list = (data || [])
+    const load = trainerName
+      ? getFormateurRatings(trainerName)
+      : sbSelect('formation_reports', 'trainer_name=eq.__auto_eval__').then(data => (data || [])
           .filter(r => r.stats_snapshot?.auto_eval?.rating && !isTrainerAccount(r.collaborateur))
           .map(r => ({
             name:      r.collaborateur,
@@ -32,12 +33,9 @@ export default function GlobalRatingsView({ onBack }) {
             comment:   r.stats_snapshot.auto_eval.rating_comment || null,
             week_date: r.week_date,
           }))
-          .sort((a, b) => b.week_date.localeCompare(a.week_date))
-        setAllRatings(list)
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [])
+          .sort((a, b) => b.week_date.localeCompare(a.week_date)))
+    load.then(setAllRatings).catch(console.error).finally(() => setLoading(false))
+  }, [trainerName])
 
   const avgRating = useMemo(() =>
     allRatings.length
@@ -75,7 +73,7 @@ export default function GlobalRatingsView({ onBack }) {
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>⭐ Avis sur la formation</div>
           <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-            Note globale · toutes semaines · tous formateurs
+            {trainerName ? `Toutes semaines · formés de ${trainerName}` : 'Note globale · toutes semaines · tous formateurs'}
           </div>
         </div>
       </div>

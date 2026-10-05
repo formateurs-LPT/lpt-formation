@@ -18,11 +18,11 @@ function StoreTile({ store, color, onSelect }) {
       onClick={onSelect}
       style={{
         position: 'relative', overflow: 'hidden',
-        background: `linear-gradient(155deg, ${color.bg} 0%, rgba(255,255,255,0.03) 65%)`,
+        background: `linear-gradient(155deg, ${color.bg} 0%, #fff 65%)`,
         border: `1px solid ${color.border}`, borderRadius: 18, padding: '20px 20px 18px',
         cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all .2s',
         minWidth: 200, maxWidth: 260, flex: '1 1 200px', display: 'flex', flexDirection: 'column', gap: 14,
-        boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+        boxShadow: '0 1px 2px rgba(16,24,40,0.05)',
       }}
       onMouseEnter={e => {
         e.currentTarget.style.transform = 'translateY(-3px)'
@@ -46,8 +46,8 @@ function StoreTile({ store, color, onSelect }) {
         fontSize: 13, fontWeight: 800, color: color.color,
       }}>{storeInitials(store.label)}</div>
       <div>
-        <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginBottom: 4, lineHeight: 1.25 }}>{store.label}</div>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: '#14161a', marginBottom: 4, lineHeight: 1.25 }}>{store.label}</div>
+        <div style={{ fontSize: 12, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 5 }}>
           <span>👥</span> {totalCollabs} collaborateur{totalCollabs > 1 ? 's' : ''}
         </div>
       </div>
@@ -65,7 +65,7 @@ function RegionSection({ group, stores, onSelectStore }) {
         <span style={{ fontSize: 20 }}>{group.emoji}</span>
         <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: group.color, letterSpacing: 0.2 }}>{group.label}</h3>
         <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${group.border}, transparent)` }} />
-        <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>{ordered.length} {group.unitLabel || 'magasin'}{ordered.length > 1 ? 's' : ''}</span>
+        <span style={{ fontSize: 11.5, color: '#9aa1ac', fontWeight: 600 }}>{ordered.length} {group.unitLabel || 'magasin'}{ordered.length > 1 ? 's' : ''}</span>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
         {ordered.map(store => (
@@ -96,8 +96,8 @@ function StoreGrid({ onSelectStore, onBack }) {
           background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.3)',
           borderRadius: 14, padding: '10px 18px', textAlign: 'center', flexShrink: 0,
         }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: '#00abe9', lineHeight: 1.1 }}>{magasinsCount}</div>
-          <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.5)', fontWeight: 600, whiteSpace: 'nowrap' }}>magasins réseau LPT</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: '#0089ba', lineHeight: 1.1 }}>{magasinsCount}</div>
+          <div style={{ fontSize: 10.5, color: '#6b7280', fontWeight: 600, whiteSpace: 'nowrap' }}>magasins réseau LPT</div>
         </div>
       </div>
       {STORE_REGION_GROUPS.map(group => (
@@ -123,7 +123,7 @@ export default function StoreFollowupView({ pName, onBack }) {
 
   if (collaborateur && section && store) {
     return (
-      <div id="dashboard">
+      <div>
         {saveError && (
           <div style={{
             position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 999,
@@ -152,7 +152,7 @@ export default function StoreFollowupView({ pName, onBack }) {
 
   if (store && showMesRetours) {
     return (
-      <div id="dashboard">
+      <div>
         <MesRetoursView store={store} pName={pName} onBack={() => setShowMesRetours(false)} />
       </div>
     )
@@ -160,7 +160,7 @@ export default function StoreFollowupView({ pName, onBack }) {
 
   if (store) {
     return (
-      <div id="dashboard">
+      <div>
         <StoreDetail
           store={store}
           progress={progress}
@@ -173,7 +173,7 @@ export default function StoreFollowupView({ pName, onBack }) {
   }
 
   return (
-    <div id="dashboard">
+    <div>
       <StoreGrid onSelectStore={setStoreId} onBack={onBack} />
     </div>
   )

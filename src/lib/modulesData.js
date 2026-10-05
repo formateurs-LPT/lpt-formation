@@ -484,78 +484,89 @@ export const OFFRES_PAGES = [
   { id: 'lpt-care',      type: 'offres-lpt-care',       color: '#22c55e', titre: 'LPT Care — Les 3 offres d\'abonnement' },
 ]
 
-// LPT Care — abonnement Belgique (lancement 09/2026). Trois formules,
-// un seul principe : ne plus jamais être sans lunettes.
+// LPT Care — abonnement Belgique (lancement 09/2026, barème mis à jour
+// 10/2026 — cf. fiche vendeurs). Trois formules, un seul principe : ne
+// plus jamais être sans lunettes.
 export const LPT_CARE_OFFERS = [
   {
     key: 'start',
     label: 'START',
     color: '#22c55e',
     price: '5€/mois',
-    total: '90€ sur 18 mois (+39€ en cas de rachat de la paire)',
+    total: '90€ sur 18 mois',
     formule: 'Location · 18 mois',
     tagline: '« Toujours équipé, quoi qu\'il arrive. »',
-    intro: 'La porte d\'entrée : dépannage, petits budgets, primo-porteurs. Elle existe, on ne la pousse pas.',
+    intro: null,
     bullets: [
       '1 paire unifocale',
-      'Sélection de montures jusqu\'à 20€',
-      'Verres Premium',
-      'Perte : franchise 30€',
-      '1 paire neuve par an, dès le 12e mois — nouveau choix dans la sélection (montures jusqu\'à 20€ + verres premium)',
-      'Fin de contrat : restitution, rachat 39€ ou ré-abonnement avec paire neuve',
+      'Montures jusqu\'à 20€',
+      'Tous les verres unifocaux',
+      'Prélèvement mensuel LPT (SEPA)',
+      'Fin de contrat : paire à rendre (franchise 1€ si non rendue)',
     ],
     exclusions: 'Sans progressifs, sans solaires',
     footnote: null,
     payment: '💳 Prélèvement mensuel LPT (SEPA)',
+    pourQui: '« C\'est trop cher d\'un coup ». Porte d\'entrée : elle existe, on ne la pousse pas.',
   },
   {
     key: 'flex',
     label: 'FLEX',
     color: '#00abe9',
-    price: '12€/mois unif. · 15€/mois prog.',
-    total: '216€ (unif.) / 270€ (prog.) sur 18 mois',
+    price: '15€/mois unif. · 20€/mois prog.',
+    total: '270€ (unif.) / 360€ (prog.) sur 18 mois',
     formule: 'Achat + crédit Cofidis · 18 mois',
     tagline: '« Votre 1+1, couvert pendant 18 mois. »',
     intro: null,
     bullets: [
-      '2 paires incluses — la 2e peut être une solaire à la vue',
+      '2 paires incluses',
       'Toutes les montures',
-      'Tous les verres et traitements',
-      'Verres renouvelés si la vue change',
-      'Paire renouvelée en cas de casse ou de perte (franchise), pendant 18 mois',
-      'Au 12e mois : le bilan — contrôle de vue, ajustage et remise à neuf en magasin',
-      'Au ré-abonnement : tout redevient neuf — 2 paires neuves, avantage dès J-60',
+      'Unifocaux & progressifs',
+      'Hors solaire',
+      'Les paires sont au client : rien à rendre en fin de contrat',
     ],
     exclusions: null,
     footnote: null,
     payment: '💳 Achat + crédit Cofidis — vos paires sont à vous, rien à rendre en fin de contrat',
+    pourQui: '« Je veux être tranquille ».',
   },
   {
     key: 'one',
     label: 'ONE',
     color: '#7c3aed',
-    price: '16€/mois unif. · 25€/mois prog.',
-    total: '288€ (unif.) / 450€ (prog.) sur 18 mois',
+    price: '20€/mois unif. · 25€/mois prog.',
+    total: '360€ (unif.) / 450€ (prog.) sur 18 mois',
     formule: 'Achat + crédit Cofidis · 18 mois',
     tagline: '« Tout, tout de suite, en priorité. »',
-    intro: 'Le tout compris full option. Changez de lunettes quand vous voulez.',
+    intro: null,
     bulletsIntro: 'Tout Flex, plus :',
     bullets: [
-      'Toutes les montures',
-      'Tous les verres et traitements',
-      '🔄 Échange illimité : changez de paire quand vous voulez, nouveau choix à chaque fois — l\'ancienne revient (clause anti-abus)',
-      '🚀 Garantie illimitée, en priorité : casse, perte, vue qui change — sans compter (clause anti-abus)',
-      '⚡ Priority Pass : coupe-file en magasin',
-      '👁️ Contrôle de vue offert à volonté',
-      '💬 Ligne VIP WhatsApp dédiée',
-      '👨‍👩‍👧 Avantage famille (sous réserve Cofidis)',
-      'Au ré-abonnement : tout redevient neuf, en priorité',
+      'Solaire et photochromique inclus',
+      'Les 2 paires peuvent être des solaires',
+      'Les paires sont au client : rien à rendre en fin de contrat',
     ],
     exclusions: null,
     footnote: null,
     payment: '💳 Achat + crédit Cofidis — vos paires sont à vous, rien à rendre en fin de contrat',
+    pourQui: '« Je veux tout, sans me poser de question ».',
   },
 ]
+
+// Bandeau d'avertissement géographique, affiché avant le choix d'une offre.
+export const LPT_CARE_INTRO = {
+  title: 'Offre 100 % Belgique',
+  text: 'Le client ne peut bénéficier de LPT Care que dans nos magasins belges : souscription, changements de paire, échanges et SAV. Aucun service LPT Care dans les magasins France.',
+}
+
+// Conditions communes aux 3 formules — affichées une seule fois (pas
+// répétées sur chaque offre).
+export const LPT_CARE_COMMON = [
+  { label: 'Changements illimités', text: 'Casse ou vue qui change, à tout moment. 30€ par changement, ancienne paire rendue.' },
+  { label: 'Perte non incluse', text: 'À dire clairement dès la présentation, pour éviter toute déception.' },
+  { label: 'Services en Belgique', text: 'Changements, échanges et SAV : uniquement dans les magasins LPT belges.' },
+]
+
+export const LPT_CARE_COFIDIS_NOTE = 'Dossier Cofidis refusé ? Le pack 1+1 reste disponible : c\'est notre filet de sécurité.'
 
 export const OFFRES_QUIZ = [
   {

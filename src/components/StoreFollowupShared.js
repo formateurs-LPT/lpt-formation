@@ -307,26 +307,26 @@ function CollaborateurCard({ c, sectionId, colors, progress, onSelectCollaborate
       onClick={() => onSelectCollaborateur(sectionId, c.id)}
       style={{
         display: 'flex', alignItems: 'center', gap: 12,
-        background: 'rgba(255,255,255,0.03)', border: `1px solid ${border}`,
+        background: 'var(--dh-row-bg)', border: `1px solid ${border}`,
         borderRadius: 14, padding: '12px 16px', cursor: 'pointer', fontFamily: 'inherit',
         flex: '1 1 260px', minWidth: 240, maxWidth: 340, textAlign: 'left', transition: 'all .18s',
       }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = hoverBorder; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = border; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = hoverBorder }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = border }}
     >
       <div style={{
         flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
-        background: alt ? apprentiColors.bg : 'rgba(255,255,255,0.06)',
+        background: alt ? apprentiColors.bg : 'var(--dh-icon-bg)',
         border: `1.5px solid ${hoverBorder}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 13, fontWeight: 800, color: '#fff',
+        fontSize: 13, fontWeight: 800, color: 'var(--dh-text)',
       }}>{initials(c)}</div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--dh-text)', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {collaborateurFullName(c)}
         </div>
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontSize: 10, color: 'var(--dh-text-faint)', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {c.contrat}{c.entree && ` · ${tenureLabel(c.entree)} d'ancienneté`}
         </div>
         {completed && (
@@ -335,12 +335,12 @@ function CollaborateurCard({ c, sectionId, colors, progress, onSelectCollaborate
             {completed.score != null && ` · ${Math.round(completed.score / 5 * 100)}%`}
           </div>
         )}
-        <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${pct}%`, background: alt ? apprentiColors.bar : colors.bar, transition: 'width .3s' }} />
         </div>
       </div>
 
-      <div style={{ flexShrink: 0, fontSize: 13, fontWeight: 800, color: '#fff', minWidth: 34, textAlign: 'right' }}>
+      <div style={{ flexShrink: 0, fontSize: 13, fontWeight: 800, color: 'var(--dh-text)', minWidth: 34, textAlign: 'right' }}>
         {pct}%
       </div>
     </button>
@@ -389,13 +389,13 @@ export function SectionsList({ store, progress, onSelectCollaborateur }) {
         const isEmpty = collaborateurs.length === 0
         return (
           <div key={section.id} style={{ marginBottom: 32 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 800, color: '#fff', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 800, color: 'var(--dh-text)', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
               {section.label} · {section.sub}
             </h3>
             {isEmpty ? (
               <div style={{
-                border: '1.5px dashed rgba(255,255,255,0.12)', borderRadius: 14, padding: '18px 20px',
-                fontSize: 13, color: 'rgba(255,255,255,0.3)', fontStyle: 'italic',
+                border: '1.5px dashed var(--dh-row-border)', borderRadius: 14, padding: '18px 20px',
+                fontSize: 13, color: 'var(--dh-text-faint)', fontStyle: 'italic',
               }}>
                 Aucun collaborateur dans cette équipe pour le moment.
               </div>
@@ -784,7 +784,7 @@ function LaboProgressifBanner({ store }) {
 // Couleurs formateur — mêmes valeurs que Planning déplacements
 // (src/components/PlanningPage.js), pour reconnaître un formateur d'un coup
 // d'œil quel que soit l'écran où on le croise.
-const LABO_TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777', Thomas: '#f59e0b', Valentine: '#22c55e', Matteo: '#fb923c', Jonathan: '#14b8a6' }
+const LABO_TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777', Thomas: '#f59e0b', Valentine: '#22c55e', Mateo: '#fb923c', Jonathan: '#14b8a6' }
 function laboTrainerColor(name) { return LABO_TRAINER_COLORS[name] || '#64748b' }
 
 function laboFmtDateShort(d) {
@@ -1154,9 +1154,9 @@ export function ScorePicker({ score, onSetScore }) {
       <button
         onClick={() => setOpen(v => !v)}
         style={{
-          background: meta ? meta.bg : 'rgba(255,255,255,0.06)',
-          border: `1.5px solid ${meta ? meta.color : 'rgba(255,255,255,0.18)'}`,
-          color: meta ? meta.color : 'rgba(255,255,255,0.4)',
+          background: meta ? meta.bg : 'var(--dh-btn-bg)',
+          border: `1.5px solid ${meta ? meta.color : 'var(--dh-btn-border)'}`,
+          color: meta ? meta.color : 'var(--dh-btn-text)',
           borderRadius: 20, padding: '6px 16px', fontSize: 12, fontWeight: 700,
           cursor: 'pointer', fontFamily: 'inherit', minWidth: 130,
         }}
@@ -1164,9 +1164,9 @@ export function ScorePicker({ score, onSetScore }) {
       {open && (
         <div style={{
           position: 'absolute', top: '110%', right: 0, zIndex: 50, minWidth: 260,
-          background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12,
+          background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12,
           padding: 8, display: 'flex', flexDirection: 'column', gap: 4,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
+          boxShadow: '0 8px 24px rgba(16,24,40,0.25)',
         }}>
           {SCORE_ORDER.map(n => {
             const m = STATUS_META[scoreToStatus(n)]
@@ -1178,12 +1178,12 @@ export function ScorePicker({ score, onSetScore }) {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left',
                   background: selected ? `${m.color}22` : 'transparent',
-                  border: `1px solid ${selected ? m.color : 'rgba(255,255,255,0.1)'}`,
+                  border: `1px solid ${selected ? m.color : 'var(--border)'}`,
                   borderRadius: 8, padding: '7px 10px', cursor: 'pointer', fontFamily: 'inherit',
                 }}
               >
                 <span style={{ fontWeight: 800, color: m.color, fontSize: 13, width: 14, flexShrink: 0 }}>{n}</span>
-                <span style={{ fontSize: 12, color: '#fff' }}>{SCORE_LABELS[n]}</span>
+                <span style={{ fontSize: 12, color: 'var(--dh-text)' }}>{SCORE_LABELS[n]}</span>
               </button>
             )
           })}
@@ -1229,10 +1229,10 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
   useEffect(() => { setDraftNote(entry?.note || '') }, [entry?.note])
 
   return (
-    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px', marginBottom: 8 }}>
+    <div style={{ background: 'var(--dh-row-bg)', border: '1px solid var(--dh-row-border)', borderRadius: 12, padding: '12px 16px', marginBottom: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ fontSize: 14, color: '#fff', fontWeight: 600 }}>{item.label}</span>
+          <span style={{ fontSize: 14, color: 'var(--dh-text)', fontWeight: 600 }}>{item.label}</span>
           {entry?.score != null && (
             <div style={{ fontSize: 10, color: '#22c55e', marginTop: 2, fontWeight: 600 }}>
               ✅ Réalisé le {formatDateFr(entry.audit_date)}
@@ -1244,9 +1244,9 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
           title={isOrdonnanceExercise ? "Lancer l'exercice" : isTrameAccueil ? "Voir la trame d'audit" : "Lancer l'exercice"}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
-            background: (guide || isOrdonnanceExercise) ? 'rgba(0,171,233,0.15)' : 'rgba(255,255,255,0.06)',
-            border: '1px solid ' + ((guide || isOrdonnanceExercise) ? 'rgba(0,171,233,0.4)' : 'rgba(255,255,255,0.12)'),
-            color: (guide || isOrdonnanceExercise) ? '#00abe9' : 'rgba(255,255,255,0.4)',
+            background: (guide || isOrdonnanceExercise) ? 'rgba(0,171,233,0.15)' : 'var(--dh-btn-bg)',
+            border: '1px solid ' + ((guide || isOrdonnanceExercise) ? 'rgba(0,171,233,0.4)' : 'var(--dh-btn-border)'),
+            color: (guide || isOrdonnanceExercise) ? '#00abe9' : 'var(--dh-btn-text)',
             borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontFamily: 'inherit',
             fontSize: 12, fontWeight: 700, flexShrink: 0,
           }}
@@ -1262,8 +1262,8 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
             title="Historique des audits précédents"
             style={{
               display: 'flex', alignItems: 'center', gap: 4,
-              background: historyOpen ? 'rgba(167,139,250,0.18)' : 'rgba(255,255,255,0.06)',
-              border: '1px solid ' + (historyOpen ? 'rgba(167,139,250,0.5)' : 'rgba(255,255,255,0.12)'),
+              background: historyOpen ? 'rgba(167,139,250,0.18)' : 'var(--dh-btn-bg)',
+              border: '1px solid ' + (historyOpen ? 'rgba(167,139,250,0.5)' : 'var(--dh-btn-border)'),
               color: '#c4b5fd', borderRadius: 8, padding: '7px 10px', cursor: 'pointer',
               fontFamily: 'inherit', fontSize: 12, fontWeight: 700, flexShrink: 0,
             }}
@@ -1273,9 +1273,9 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
           onClick={() => setNoteOpen(v => !v)}
           title="Note"
           style={{
-            background: entry?.note ? 'rgba(0,171,233,0.15)' : 'rgba(255,255,255,0.06)',
-            border: '1px solid ' + (entry?.note ? 'rgba(0,171,233,0.4)' : 'rgba(255,255,255,0.12)'),
-            color: entry?.note ? '#00abe9' : 'rgba(255,255,255,0.4)',
+            background: entry?.note ? 'rgba(0,171,233,0.15)' : 'var(--dh-btn-bg)',
+            border: '1px solid ' + (entry?.note ? 'rgba(0,171,233,0.4)' : 'var(--dh-btn-border)'),
+            color: entry?.note ? '#00abe9' : 'var(--dh-btn-text)',
             borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 14, flexShrink: 0,
           }}
         >📝</button>
@@ -1284,8 +1284,8 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
             onClick={() => setConfirmResetOpen(true)}
             title="Réinitialiser cet item"
             style={{
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              color: 'rgba(255,255,255,0.4)', borderRadius: 8, width: 32, height: 32,
+              background: 'var(--dh-btn-bg)', border: '1px solid var(--dh-btn-border)',
+              color: 'var(--dh-btn-text)', borderRadius: 8, width: 32, height: 32,
               cursor: 'pointer', fontSize: 14, flexShrink: 0,
             }}
           >↺</button>
@@ -1309,9 +1309,9 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
             placeholder="Observation, point à retravailler…"
             rows={2}
             style={{
-              width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 12px',
-              color: '#fff', fontSize: 13, fontFamily: 'inherit', resize: 'vertical', outline: 'none',
+              width: '100%', boxSizing: 'border-box', background: 'var(--dh-btn-bg)',
+              border: '1px solid var(--dh-btn-border)', borderRadius: 8, padding: '8px 12px',
+              color: 'var(--dh-text)', fontSize: 13, fontFamily: 'inherit', resize: 'vertical', outline: 'none',
             }}
           />
         </div>
@@ -1326,11 +1326,11 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
                 borderRadius: 10, padding: '8px 12px',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: h.note ? 4 : 0 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>{formatDateFr(h.audit_date)}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--dh-text-faint)' }}>{formatDateFr(h.audit_date)}</span>
                   <span style={{ fontSize: 11, fontWeight: 700, color: hMeta.color }}>{hMeta.label}{h.score != null && ` · ${h.score}/5`}</span>
-                  {h.updated_by && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>· {h.updated_by}</span>}
+                  {h.updated_by && <span style={{ fontSize: 10, color: 'var(--dh-text-faint)' }}>· {h.updated_by}</span>}
                 </div>
-                {h.note && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{h.note}</div>}
+                {h.note && <div style={{ fontSize: 12, color: 'var(--dh-text-note)', lineHeight: 1.4 }}>{h.note}</div>}
               </div>
             )
           })}
