@@ -84,6 +84,10 @@ export async function apiDeleteCandidat(id) {
   return del('candidats', `id=eq.${id}`)
 }
 export const apiGetCandidatsByIds = (ids) => ids?.length ? get('candidats', `id=in.(${ids.join(',')})`) : Promise.resolve([])
+// Retrouve les candidats correspondant à des entrées déjà validées — sert à
+// l'envoi groupé du mail de bienvenue depuis la liste "Entrées de la semaine"
+// (qui ne connaît que entrees_rh, pas candidats).
+export const apiGetCandidatsByEntreeIds = (entreeIds) => entreeIds?.length ? get('candidats', `entree_id=in.(${entreeIds.join(',')})`) : Promise.resolve([])
 
 // Archives candidats refusés — détection de doublon à la création
 export const apiCheckCandidatArchive = async (slug) => {

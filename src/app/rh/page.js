@@ -14,7 +14,7 @@ import {
   apiGetEntretiensByCandidat, apiCreerEntretien, apiContreProposerEntretien,
   apiConfirmerContreProposition, apiSupprimerEntretien,
   apiGetMagasinInfo, apiGetEntree, apiMarquerMailBienvenueEnvoye, apiMarquerAccesEnvoye,
-  apiGetEntretiensActifs, apiMarquerStatutContrat,
+  apiGetEntretiensActifs, apiMarquerStatutContrat, apiGetCandidatsByEntreeIds,
 } from '@/lib/rhApi'
 import { STORES, STORE_REGION_GROUPS } from '@/lib/storeFollowupData'
 import { getMagasinIdBySlug, slugifyName, stripAccents, creerCompteCollaborateur, findCollaborateurByName } from '@/lib/collaborateursApi'
@@ -650,7 +650,7 @@ function EntretienStatusCard({ entretien, onConfirmerContreProposition, onSuppri
 // Composition mailto pré-remplie éditable + traçage du clic "Envoyer", même
 // principe que le mail de reporting hebdomadaire (MesRetoursView.js) : on ne
 // peut pas savoir si l'email part réellement, seulement que la RH a cliqué.
-function MailBienvenueModal({ candidat, entree, magasinInfo, collaborateur, onClose, onSent }) {
+function MailBienvenueModal({ candidat, entree, magasinInfo, collaborateur, onClose, onSent, progressLabel }) {
   const dateEntreeLettres = formatDateLettresJour(entree.date_entree)
   const nomMagasin = (candidat.magasin || '').replace(/\s*\(.*$/, '')
   const prefixeMagasin = magasinInfo.typeMagasin === 'entrepot' ? `notre entrepôt de ${nomMagasin}` : `notre magasin de ${nomMagasin}`
@@ -720,7 +720,7 @@ Bien à toi`
   }
 
   return (
-    <Modal title="Mail de bienvenue" onClose={onClose} width={640}>
+    <Modal title={progressLabel ? `Mail de bienvenue — ${progressLabel}` : 'Mail de bienvenue'} onClose={onClose} width={640}>
       <Field label="Destinataire"><input style={CSS.input} value={mailTo} onChange={e => setMailTo(e.target.value)} /></Field>
       <Field label="Corps du mail">
         <textarea style={{ ...CSS.input, height:380, resize:'vertical', fontFamily:'inherit', whiteSpace:'pre-wrap' }} value={body} onChange={e => setBody(e.target.value)} />
@@ -1090,9 +1090,15 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
       statutPrecedent: candidat.statut, login: session.login,
     })
     if (entree) {
-      push({ ...candidat, statut: 'valide', entree_id: entree.id })
       // Création automatique du compte espace collaborateur — la RH n'a
       // rien à faire de plus pour ça, seulement pour envoyer le mail d'accès.
+      // `push` (qui met à jour entree_id) est fait APRÈS la création du
+      // compte, pas avant : MailBienvenueSection se déclenche dès que
+      // entree_id change et cherche le compte via findCollaborateurByName —
+      // si on la déclenchait avant la fin de creerCompteCollaborateur, elle
+      // cherchait un compte qui n'existait pas encore (race condition :
+      // "parfois le mail de bienvenue part, parfois non" selon que la RH
+      // checke tout de suite après validation ou plus tard).
       const { magasinId } = await resolveManagerForCandidat(candidat.magasin)
       if (magasinId) {
         await creerCompteCollaborateur({
@@ -1100,6 +1106,7 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
           poste: candidat.poste_vise, dateEntree: form.date_entree, entreeId: entree.id,
         })
       }
+      push({ ...candidat, statut: 'valide', entree_id: entree.id })
     }
     setShowValider(false)
   }
@@ -1533,6 +1540,118 @@ function EntreeForm({ initial, semaineLundi, session, onSave, onClose }) {
   )
 }
 
+// Envoi groupé du mail de bienvenue depuis "Entrées de la semaine" — la
+// liste y est en entrees_rh, pas candidats, donc on retrouve d'abord le
+// candidat correspondant à chaque entrée (c'est lui qui porte l'email et le
+// suivi "mail_bienvenue_envoye_at"). Pas de vrai envoi groupé possible (le
+// mail reste un mailto:, ouvert dans le client mail de la RH) — on fait
+// donc défiler les destinataires sélectionnés un par un : "Envoyer" dans la
+// fiche fait avancer au suivant automatiquement.
+function MailBienvenueGroupeModal({ entrees, onClose, onAnyChanged }) {
+  const [loading, setLoading] = useState(true)
+  const [eligibles, setEligibles] = useState([]) // [{ candidat, entree }]
+  const [selected, setSelected] = useState(new Set())
+  const [queue, setQueue] = useState(null) // null tant qu'on est à l'étape sélection
+  const [queueIndex, setQueueIndex] = useState(0)
+  const [currentData, setCurrentData] = useState(null) // { magasinInfo, collaborateur }
+
+  useEffect(() => {
+    let cancelled = false
+    const entreeIds = entrees.map(e => e.id)
+    apiGetCandidatsByEntreeIds(entreeIds).then(candidats => {
+      if (cancelled) return
+      const byEntreeId = Object.fromEntries((candidats || []).map(c => [c.entree_id, c]))
+      const rows = entrees
+        .map(entree => ({ entree, candidat: byEntreeId[entree.id] }))
+        .filter(r => r.candidat?.email?.trim() && !r.candidat.mail_bienvenue_envoye_at)
+      setEligibles(rows)
+      setSelected(new Set(rows.map(r => r.candidat.id)))
+      setLoading(false)
+    })
+    return () => { cancelled = true }
+  }, [entrees])
+
+  const toggle = id => setSelected(s => {
+    const n = new Set(s)
+    n.has(id) ? n.delete(id) : n.add(id)
+    return n
+  })
+
+  const demarrer = () => { setQueue(eligibles.filter(r => selected.has(r.candidat.id))); setQueueIndex(0) }
+
+  const current = queue?.[queueIndex]
+
+  useEffect(() => {
+    if (!current) return
+    let cancelled = false
+    setCurrentData(null)
+    resolveManagerForCandidat(current.candidat.magasin).then(async ({ magasinId }) => {
+      if (cancelled || !magasinId) { if (!cancelled) setCurrentData({ magasinInfo: { typeMagasin: 'magasin', regionNom: null }, collaborateur: null }); return }
+      const [info, collab] = await Promise.all([
+        apiGetMagasinInfo(magasinId),
+        findCollaborateurByName(magasinId, current.candidat.prenom, current.candidat.nom),
+      ])
+      if (!cancelled) setCurrentData({ magasinInfo: info, collaborateur: collab })
+    })
+    return () => { cancelled = true }
+  }, [current])
+
+  const avancer = () => {
+    if (queueIndex + 1 < queue.length) setQueueIndex(i => i + 1)
+    else onClose()
+  }
+
+  if (queue && current) {
+    if (!currentData) return <Modal title="Mail de bienvenue" onClose={onClose} width={640}><div style={{ textAlign:'center', padding:'32px 0', color:'#9aa1ac' }}>Chargement…</div></Modal>
+    return (
+      <MailBienvenueModal
+        candidat={current.candidat}
+        entree={current.entree}
+        magasinInfo={currentData.magasinInfo}
+        collaborateur={currentData.collaborateur}
+        progressLabel={`${queueIndex + 1}/${queue.length}`}
+        onClose={avancer}
+        onSent={async () => { await apiMarquerMailBienvenueEnvoye(current.candidat.id); onAnyChanged?.() }}
+      />
+    )
+  }
+
+  return (
+    <Modal title="Envoyer le mail de bienvenue" onClose={onClose} width={480}>
+      {loading ? (
+        <div style={{ textAlign:'center', padding:'32px 0', color:'#9aa1ac' }}>Chargement…</div>
+      ) : eligibles.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'24px 0', color:'#6b7280', fontSize:13.5 }}>
+          Personne en attente du mail de bienvenue pour l&apos;instant (email manquant ou déjà envoyé pour tout le monde).
+        </div>
+      ) : (
+        <>
+          <div style={{ fontSize:12.5, color:'#6b7280', marginBottom:14 }}>
+            Sélectionne les destinataires, puis envoie-leur le mail les uns après les autres.
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>
+            {eligibles.map(({ candidat, entree }) => (
+              <label key={candidat.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', background:'#f8fafc', borderRadius:8, cursor:'pointer' }}>
+                <input type="checkbox" checked={selected.has(candidat.id)} onChange={() => toggle(candidat.id)} />
+                <div>
+                  <div style={{ fontSize:13.5, fontWeight:600, color:'#14161a' }}>{candidat.prenom} {candidat.nom}</div>
+                  <div style={{ fontSize:11.5, color:'#9aa1ac' }}>{entree.magasin || '—'}</div>
+                </div>
+              </label>
+            ))}
+          </div>
+          <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+            <button onClick={onClose} style={{ ...CSS.btn, background:'#fff', border:'1px solid #e5e7eb', color:'#374151' }}>Annuler</button>
+            <button onClick={demarrer} disabled={selected.size === 0} style={{ ...CSS.btn, background:selected.size===0?'#cbd5e1':'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff', cursor:selected.size===0?'not-allowed':'pointer' }}>
+              Envoyer à {selected.size} personne{selected.size>1?'s':''} →
+            </button>
+          </div>
+        </>
+      )}
+    </Modal>
+  )
+}
+
 function EntreesView({ session, regionFilter }) {
   const [activeWeek, setActiveWeek] = useState('current')
   const [entrees, setEntrees] = useState([])
@@ -1540,6 +1659,7 @@ function EntreesView({ session, regionFilter }) {
   const [showForm, setShowForm] = useState(null)
   const [showFiche, setShowFiche] = useState(null)
   const [showDelete, setShowDelete] = useState(null)
+  const [showMailGroupe, setShowMailGroupe] = useState(false)
 
   const s0 = getMondayStr(0); const s1 = getMondayStr(1)
   const semaineLundi = activeWeek === 'current' ? s0 : s1
@@ -1608,9 +1728,16 @@ function EntreesView({ session, regionFilter }) {
             </div>
           </>}
         </div>
-        <button onClick={() => setShowForm('add')} style={{ ...CSS.btn, padding:'12px 20px', background:'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff', boxShadow:'0 4px 14px rgba(0,171,233,0.3)', fontSize:14 }}>
-          + Ajouter un collaborateur
-        </button>
+        <div style={{ display:'flex', gap:10 }}>
+          {visibleEntrees.length > 0 && (
+            <button onClick={() => setShowMailGroupe(true)} style={{ ...CSS.btn, padding:'12px 18px', background:'#fff', border:'1.5px solid #0089ba', color:'#0089ba', fontSize:14 }}>
+              ✉️ Envoyer le mail de bienvenue
+            </button>
+          )}
+          <button onClick={() => setShowForm('add')} style={{ ...CSS.btn, padding:'12px 20px', background:'linear-gradient(135deg,#0089ba,#00abe9)', color:'#fff', boxShadow:'0 4px 14px rgba(0,171,233,0.3)', fontSize:14 }}>
+            + Ajouter un collaborateur
+          </button>
+        </div>
       </div>
       <div style={{ background:'#fff', borderRadius:16, border:'1px solid #e5e7eb', overflow:'hidden', boxShadow:'0 1px 2px rgba(16,24,40,0.03)' }}>
         {loading ? <div style={{ textAlign:'center', padding:'48px 0', color:'#9aa1ac' }}>Chargement…</div> :
@@ -1661,6 +1788,7 @@ function EntreesView({ session, regionFilter }) {
       {showForm && <EntreeForm initial={showForm==='add'?null:showForm} semaineLundi={semaineLundi} session={session} onSave={handleSave} onClose={() => setShowForm(null)} />}
       {showFiche && <FicheDocuments entity={showFiche} entityType="entree" onClose={() => setShowFiche(null)} onStatutChange={handleStatutChange} />}
       {showDelete && <DeleteConfirm entree={showDelete} onConfirm={handleDelete} onClose={() => setShowDelete(null)} />}
+      {showMailGroupe && <MailBienvenueGroupeModal entrees={visibleEntrees} onClose={() => setShowMailGroupe(false)} onAnyChanged={load} />}
     </div>
   )
 }

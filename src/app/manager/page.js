@@ -28,6 +28,7 @@ import {
   apiContreProposerEntretien, apiSupprimerEntretien, apiDeciderEntretien, apiNotifier,
 } from '@/lib/rhApi'
 import { getSignedUrl, RH_DOCUMENTS_BUCKET } from '@/lib/storageApi'
+import Toast, { useToast } from '@/components/Toast'
 
 // Page autonome (comme /rapport, /bilan-formation) — aucune dépendance à
 // page.js/Dashboard.js, donc aucun risque pour le flux formateur/participant/TV.
@@ -841,12 +842,15 @@ function EntretienCard({ entretien, candidat, onChanged }) {
   const [showContrer, setShowContrer] = useState(false)
   const [note, setNote] = useState(entretien.note_entretien || '')
   const [busy, setBusy] = useState(false)
+  const { message: toastMsg, toast } = useToast()
 
   const accepter = async () => {
     setBusy(true)
     await apiAccepterEntretien(entretien.id)
     await apiNotifier(entretien.demandeur_login, 'entretien_accepte', entretien.id)
-    setBusy(false); onChanged()
+    setBusy(false)
+    toast('✓ Votre RDV a bien été planifié')
+    onChanged()
   }
   const contreProposer = async (dateHeure, commentaire) => {
     await apiContreProposerEntretien(entretien.id, { dateHeureContreProposee: dateHeure, commentaireManager: commentaire })
@@ -910,9 +914,16 @@ function EntretienCard({ entretien, candidat, onChanged }) {
         <div style={{ marginTop: 12, padding: '10px 12px', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, fontSize: 13, color: '#9a3412' }}>
           Créneau alternatif proposé le {fmtDateTimeMgr(entretien.date_heure_contre_proposee)} — en attente de confirmation RH.
         </div>
+      ) : new Date(entretien.date_heure_proposee) > new Date() ? (
+        // Créneau confirmé mais l'entretien n'a pas encore eu lieu — pas de
+        // décision à prendre tant que la date n'est pas passée, le RDV vit
+        // simplement dans le planning en attendant.
+        <div style={{ marginTop: 12, padding: '10px 12px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, fontSize: 13, color: '#0369a1' }}>
+          📅 Entretien planifié le <strong>{fmtDateTimeMgr(entretien.date_heure_proposee)}</strong> — la décision se fera une fois l&apos;entretien passé.
+        </div>
       ) : (
         <div style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 13, color: '#475569', marginBottom: 8 }}>Entretien confirmé le <strong>{fmtDateTimeMgr(entretien.date_heure_proposee)}</strong></div>
+          <div style={{ fontSize: 13, color: '#475569', marginBottom: 8 }}>Entretien du <strong>{fmtDateTimeMgr(entretien.date_heure_proposee)}</strong> — comment ça s&apos;est passé ?</div>
           <textarea style={{ ...RCSS.input, height: 70, resize: 'vertical', marginBottom: 8 }} placeholder="Note d'entretien…" value={note} onChange={e => setNote(e.target.value)} />
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => decider('accepte')} disabled={busy} style={{ ...RCSS.btn, background: 'linear-gradient(135deg,#16a34a,#22c55e)', color: '#fff' }}>Accepter le candidat</button>
@@ -920,6 +931,40 @@ function EntretienCard({ entretien, candidat, onChanged }) {
           </div>
         </div>
       )}
+      <Toast message={toastMsg} />
+    </div>
+  )
+}
+
+// Liste chronologique compacte des entretiens pas encore décidés — vue
+// "planning" légère (pas un vrai calendrier) pour que le manager voie ses
+// créneaux à venir d'un coup d'œil avant de dérouler les cartes détaillées.
+function RecrutementPlanningStrip({ entretiens, candidatsById }) {
+  const rows = entretiens
+    .map(e => ({
+      entretien: e,
+      candidat: candidatsById[e.candidat_id],
+      date: e.statut === 'contre_proposition_en_attente' ? e.date_heure_contre_proposee : e.date_heure_proposee,
+    }))
+    .filter(r => r.date && new Date(r.date) > new Date())
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+
+  if (!rows.length) return null
+
+  return (
+    <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>
+      <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>📅 Planning des entretiens</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {rows.map(({ entretien, candidat, date }) => (
+          <div key={entretien.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+            <span style={{ fontWeight: 700, color: '#0089ba', minWidth: 120 }}>{fmtDateTimeMgr(date)}</span>
+            <span style={{ color: '#1e293b', fontWeight: 600 }}>{candidat?.prenom} {candidat?.nom}</span>
+            {entretien.statut === 'contre_proposition_en_attente' && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#9a3412', background: '#fff7ed', borderRadius: 20, padding: '2px 8px' }}>créneau proposé</span>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -928,32 +973,72 @@ function RecrutementPage({ magasinId, onRefresh }) {
   const [entretiens, setEntretiens] = useState([])
   const [candidatsById, setCandidatsById] = useState({})
   const [loading, setLoading] = useState(true)
+  const [showHistorique, setShowHistorique] = useState(false)
+  // Seul le tout premier chargement affiche le spinner plein écran — les
+  // rechargements déclenchés par une action (accepter/décider/...) ne
+  // doivent pas démonter la liste des cartes, sinon leur état local (ex:
+  // le toast de confirmation) disparaît avant d'avoir pu s'afficher.
+  const firstLoadDone = useRef(false)
 
   const load = useCallback(async () => {
-    setLoading(true)
+    if (!firstLoadDone.current) setLoading(true)
     const rows = await apiGetEntretiensByMagasin(magasinId)
     const candidats = await apiGetCandidatsByIds([...new Set(rows.map(r => r.candidat_id))])
     setCandidatsById(Object.fromEntries((candidats || []).map(c => [c.id, c])))
     setEntretiens(rows)
     setLoading(false)
+    firstLoadDone.current = true
   }, [magasinId])
 
   useEffect(() => { if (magasinId) load() }, [magasinId, load])
 
   const handleChanged = () => { load(); onRefresh?.() }
 
+  const enCours = entretiens.filter(e => e.decision_candidat !== 'accepte' && e.decision_candidat !== 'refuse')
+  const historique = entretiens.filter(e => e.decision_candidat === 'accepte' || e.decision_candidat === 'refuse')
+
   return (
     <div>
       <PageHeader title="Recrutement" />
-      {loading ? <div style={{ textAlign: 'center', padding: '48px 0', color: '#94a3b8' }}>Chargement…</div> :
-       !entretiens.length ? (
+      {loading ? <div style={{ textAlign: 'center', padding: '48px 0', color: '#94a3b8' }}>Chargement…</div> : !entretiens.length ? (
         <div style={{ textAlign: 'center', padding: '56px 24px', background: '#fff', borderRadius: 14, border: '1.5px solid #e2e8f0' }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>📅</div>
           <div style={{ fontSize: 15, fontWeight: 600, color: '#64748b' }}>Aucune demande d&apos;entretien</div>
         </div>
-       ) : entretiens.map(e => (
-        <EntretienCard key={e.id} entretien={e} candidat={candidatsById[e.candidat_id]} onChanged={handleChanged} />
-      ))}
+      ) : (
+        <>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
+            Recrutement en cours {enCours.length > 0 && `(${enCours.length})`}
+          </div>
+          {!enCours.length ? (
+            <div style={{ textAlign: 'center', padding: '32px 24px', background: '#fff', borderRadius: 14, border: '1.5px solid #e2e8f0', marginBottom: 20, color: '#94a3b8', fontSize: 13.5 }}>
+              Rien en cours pour l&apos;instant.
+            </div>
+          ) : (
+            <>
+              <RecrutementPlanningStrip entretiens={enCours} candidatsById={candidatsById} />
+              {enCours.map(e => (
+                <EntretienCard key={e.id} entretien={e} candidat={candidatsById[e.candidat_id]} onChanged={handleChanged} />
+              ))}
+            </>
+          )}
+
+          {historique.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <button onClick={() => setShowHistorique(v => !v)} style={{
+                background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                fontSize: 12, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5,
+                padding: 0, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                {showHistorique ? '▾' : '▸'} Historique ({historique.length})
+              </button>
+              {showHistorique && historique.map(e => (
+                <EntretienCard key={e.id} entretien={e} candidat={candidatsById[e.candidat_id]} onChanged={handleChanged} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

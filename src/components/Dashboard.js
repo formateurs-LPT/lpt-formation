@@ -23,7 +23,18 @@ import { getQuizResultats, periodBounds } from '@/lib/collaborateursApi'
 import DemandesInterventionView from '@/components/DemandesInterventionView'
 import { getFormateurRatings } from '@/lib/formateurRatings'
 import TachesView from '@/components/TachesView'
+import FutursEntreesView from '@/components/FutursEntreesView'
 import { getTaches } from '@/lib/tachesApi'
+import { apiGetEntreesRhByWeek } from '@/lib/rhApi'
+
+// Lundi de la semaine en cours / prochaine (même calcul que getMondayStr()
+// côté dashboard RH, dupliqué ici car privé à ce fichier-là — heure locale,
+// pas UTC, pour ne pas décaler la date selon le fuseau).
+function getMondayStr(offsetWeeks = 0) {
+  const d = new Date(); const day = d.getDay() || 7
+  d.setDate(d.getDate() - (day - 1) + offsetWeeks * 7)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 import { getNotificationsNonLues, marquerNotificationsLues } from '@/lib/directionApi'
 
 // Comptes autorisés à voir "Résultats des tests" (script 2) — structure
@@ -2179,6 +2190,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   const [allTaches, setAllTaches] = useState([])
   const [tacheNotifs, setTacheNotifs] = useState([])
   const [showTacheNotifs, setShowTacheNotifs] = useState(false)
+  const [futursEntrees, setFutursEntrees] = useState([])
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
   const [selectedUpdate, setSelectedUpdate] = useState(null)
@@ -2433,6 +2445,27 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
   const tachesCount = allTaches.filter(t => t.assignes.includes(pName) && t.statut !== 'termine').length
 
+  // Tuile "Futurs entrées" (tout le monde) — aperçu en direct des entrées RH
+  // validées (table entrees_rh, même source que le dashboard RH), semaine en
+  // cours + semaine suivante confondues : la RH recrute à cheval sur les
+  // deux (jusqu'au vendredi, parfois jusqu'au lundi suivant), donc se
+  // limiter à la semaine suivante laissait les validations du jour même
+  // invisibles côté formateur. Lecture seule.
+  useEffect(() => {
+    const loadFutursEntrees = async () => {
+      try {
+        const [current, next] = await Promise.all([
+          apiGetEntreesRhByWeek(getMondayStr(0)),
+          apiGetEntreesRhByWeek(getMondayStr(1)),
+        ])
+        setFutursEntrees([...current, ...next])
+      } catch (e) { console.error('[Dashboard] futurs entrées', e) }
+    }
+    loadFutursEntrees()
+    const t = setInterval(loadFutursEntrees, 30000)
+    return () => clearInterval(t)
+  }, [])
+
   const handleOpenTacheNotifs = async () => {
     setShowTacheNotifs(true)
     if (tacheNotifs.length) await marquerNotificationsLues(tacheNotifs.map(n => n.id)).catch(() => {})
@@ -2562,6 +2595,14 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     return (
       <TrainerPage activeView={activeView} {...trainerPageProps}>
         <TachesView pName={pName} />
+      </TrainerPage>
+    )
+  }
+
+  if (activeView === 'futurs-entrees') {
+    return (
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
+        <FutursEntreesView entrees={futursEntrees} />
       </TrainerPage>
     )
   }
@@ -2749,6 +2790,16 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-count">{entreeCount ?? '—'}</div>
             <div className="dash-tile-label">Entrées de la semaine</div>
             <div className="dash-tile-sub">Importer un tableau RH</div>
+          </div>
+
+          <div className="dash-tile" onClick={() => setActiveView('futurs-entrees')} style={{ borderColor: 'rgba(132,204,22,0.35)' }}>
+            <div className="dash-tile-top">
+              <div className="dash-tile-icon">🌱</div>
+              <span className="dash-tile-link" style={{ color: '#84cc16' }}>Voir →</span>
+            </div>
+            <div className="dash-tile-count" style={{ color: '#84cc16' }}>{futursEntrees.length}</div>
+            <div className="dash-tile-label">Futurs entrées</div>
+            <div className="dash-tile-sub">En préparation côté RH</div>
           </div>
 
           <div className="dash-tile" onClick={() => setActiveView('taches')} style={{ borderColor: tachesCount > 0 ? 'rgba(220,38,38,0.4)' : 'rgba(0,137,186,0.3)' }}>
