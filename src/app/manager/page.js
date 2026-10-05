@@ -247,6 +247,11 @@ function getPendingReportingActions(reportings) {
 // terminée, prêts pour le test de sortie. Avant, tout le monde était mélangé
 // sous "À faire" avec le même bouton "Déclencher le test de sortie", ce qui
 // n'avait pas de sens pour quelqu'un qui n'a même pas commencé sa formation.
+function fmtDateCourt(dateEntree) {
+  if (!dateEntree) return null
+  return new Date(dateEntree + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+}
+
 function FuturesEntreesCard({ magasinId, store, nouveauxEntrants, newHireRows, onDeclencher, onOpenFiche }) {
   const extraRows = computeExtraRows(nouveauxEntrants, newHireRows)
   const totalCount = nouveauxEntrants.length + extraRows.length
@@ -274,7 +279,7 @@ function FuturesEntreesCard({ magasinId, store, nouveauxEntrants, newHireRows, o
           <ATraiterRow
             icon="🌱"
             title={`${c.prenom} ${c.nom}`}
-            meta={c.poste}
+            meta={[c.poste, fmtDateCourt(c.date_entree) && `Entrée le ${fmtDateCourt(c.date_entree)}`].filter(Boolean).join(' · ')}
             onOpen={onOpenFiche ? () => onOpenFiche(c.id) : undefined}
           />
         </div>
@@ -286,11 +291,14 @@ function FuturesEntreesCard({ magasinId, store, nouveauxEntrants, newHireRows, o
             icon="🌱"
             title={`${entree.prenom} ${entree.nom}`}
             meta={
-              <a
-                href={`/rapport/?c=${encodeURIComponent(report.collaborateur)}&w=${report.week_date}&t=${encodeURIComponent(report.trainer_name)}&cat=${categoryKey}`}
-                target="_blank" rel="noopener noreferrer"
-                style={{ color: '#0089ba', textDecoration: 'none' }}
-              >Voir le compte rendu →</a>
+              <>
+                {fmtDateCourt(entree.date_entree) && `Entrée le ${fmtDateCourt(entree.date_entree)} · `}
+                <a
+                  href={`/rapport/?c=${encodeURIComponent(report.collaborateur)}&w=${report.week_date}&t=${encodeURIComponent(report.trainer_name)}&cat=${categoryKey}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ color: '#0089ba', textDecoration: 'none' }}
+                >Voir le compte rendu →</a>
+              </>
             }
           />
         </div>
@@ -306,7 +314,7 @@ function FuturesEntreesCard({ magasinId, store, nouveauxEntrants, newHireRows, o
           <ATraiterRow
             icon="🎓"
             title={`${c.prenom} ${c.nom}`}
-            meta={c.poste}
+            meta={[c.poste, fmtDateCourt(c.date_entree) && `Entrée le ${fmtDateCourt(c.date_entree)}`].filter(Boolean).join(' · ')}
             pending={!!c.test_declenche_at}
             actionLabel="Déclencher le test de sortie"
             onAction={() => onDeclencher(c.id)}
@@ -321,11 +329,14 @@ function FuturesEntreesCard({ magasinId, store, nouveauxEntrants, newHireRows, o
             icon="🎓"
             title={`${entree.prenom} ${entree.nom}`}
             meta={
-              <a
-                href={`/rapport/?c=${encodeURIComponent(report.collaborateur)}&w=${report.week_date}&t=${encodeURIComponent(report.trainer_name)}&cat=${categoryKey}`}
-                target="_blank" rel="noopener noreferrer"
-                style={{ color: '#0089ba', textDecoration: 'none' }}
-              >Voir le compte rendu →</a>
+              <>
+                {fmtDateCourt(entree.date_entree) && `Entrée le ${fmtDateCourt(entree.date_entree)} · `}
+                <a
+                  href={`/rapport/?c=${encodeURIComponent(report.collaborateur)}&w=${report.week_date}&t=${encodeURIComponent(report.trainer_name)}&cat=${categoryKey}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ color: '#0089ba', textDecoration: 'none' }}
+                >Voir le compte rendu →</a>
+              </>
             }
             pending={!!collab?.test_declenche_at}
             actionLabel="Lancer le test de sortie"

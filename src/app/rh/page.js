@@ -1822,14 +1822,22 @@ function RhDashboard({ session, onLogout }) {
   const [notifications, setNotifications] = useState([])
   const [openCandidatId, setOpenCandidatId] = useState(null)
 
+  // Sondage toutes les 30s — sinon les badges de la sidebar (nombre de
+  // candidats en cours, d'entrées incomplètes) restent figés sur le chiffre
+  // du tout premier chargement, même après avoir validé/modifié une fiche.
   useEffect(() => {
-    const s0 = getMondayStr(0)
-    Promise.all([apiGetCandidats(), apiGetEntreesRhByWeek(s0)]).then(([cands, ent]) => {
-      setCounts({
-        recrutement: cands.filter(c => !['valide','refuse'].includes(c.statut)).length,
-        entrees: ent.filter(e => e.statut_documents !== 'complet').length,
+    const refresh = () => {
+      const s0 = getMondayStr(0)
+      Promise.all([apiGetCandidats(), apiGetEntreesRhByWeek(s0)]).then(([cands, ent]) => {
+        setCounts({
+          recrutement: cands.filter(c => !['valide','refuse'].includes(c.statut)).length,
+          entrees: ent.filter(e => e.statut_documents !== 'complet').length,
+        })
       })
-    })
+    }
+    refresh()
+    const t = setInterval(refresh, 30000)
+    return () => clearInterval(t)
   }, [])
 
   const refreshNotifications = async (login) => {

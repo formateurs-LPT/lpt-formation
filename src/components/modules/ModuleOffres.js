@@ -1130,7 +1130,7 @@ function GroupResultsView({ onTerminate }) {
 }
 
 // ── Lobby ─────────────────────────────────────────────────────────
-function Lobby({ onStart, onBack }) {
+function Lobby({ onStart, onBack, isBelgique }) {
   return (
     <div style={{
       minHeight: '100vh',
@@ -1155,7 +1155,7 @@ function Lobby({ onStart, onBack }) {
           Les offres
         </h1>
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 36, lineHeight: 1.6 }}>
-          Suprême · 1=1 · Classique · Pack Plan<br />
+          {isBelgique ? '1=1 · LPT Care · Classique · Pack Plan 95€' : 'Suprême · 1=1 · Classique · Pack Plan'}<br />
           Maîtriser les parcours d&apos;achat et les proposer au bon client
         </p>
         <button onClick={onStart} style={{
@@ -1261,7 +1261,7 @@ export default function ModuleOffres({ pName, onBack, isBelgique }) {
     onBack()
   }
 
-  if (phase === 'lobby')         return <Lobby onStart={go11} onBack={handleBack} />
+  if (phase === 'lobby')         return <Lobby onStart={go11} onBack={handleBack} isBelgique={isBelgique} />
   if (phase === 'un-pour-un')    return <Cours11 onPrev={goLobby} onNext={goUnifocal11} onBack={handleBack} />
   if (phase === 'unifocal-11')   return <CoursUnifocal11 onPrev={go11} onNext={goProgressif11} onBack={handleBack} />
   if (phase === 'progressif-11') return <CoursProgressif11 onPrev={goUnifocal11} onNext={isBelgique ? goLptCare : goClassique} onBack={handleBack} isBelgique={isBelgique} />
