@@ -2,8 +2,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import Image from 'next/image'
 import {
-  SKILL_ITEMS, STATUS_META, SCORE_ORDER, SCORE_LABELS, scoreToStatus, collaborateurFullName,
-  formatDateFr, tenureLabel, teamAge, TEAM_LABELS, ITEM_GUIDES,
+  STATUS_META, SCORE_ORDER, SCORE_LABELS, scoreToStatus, collaborateurFullName,
+  formatDateFr, tenureLabel, teamAge, TEAM_LABELS, ITEM_GUIDES, getSkillItems, isBelgiqueStore,
 } from '@/lib/storeFollowupData'
 import { sbSelect } from '@/lib/supabase'
 import { TRAINING_THEMES } from '@/lib/trainingSlots'
@@ -155,8 +155,8 @@ export const SECTION_COLORS_LIGHT = {
 // Extrait en fonction partagée pour que la carte collaborateur ET la
 // statistique d'en-tête (taux de maîtrise moyen) utilisent exactement le
 // même calcul, sans jamais pouvoir diverger.
-export function pctFor(progress, collabId, sectionId) {
-  const items = SKILL_ITEMS[sectionId] || []
+export function pctFor(progress, collabId, sectionId, isBelgique = false) {
+  const items = getSkillItems(sectionId, isBelgique)
   if (!items.length) return 0
   const total = items.reduce((sum, it) => sum + (progress[`${collabId}:${it.id}`]?.score || 0), 0)
   return Math.round((total / (items.length * 5)) * 100)
@@ -180,7 +180,8 @@ export function StoreHeader({ store, progress, subtitle, right, hero = false }) 
   const allCollaborateurs = store.sections.flatMap(s => s.collaborateurs)
   const totalHeadcount = allCollaborateurs.length
 
-  const pctValues = store.sections.flatMap(s => s.collaborateurs.map(c => pctFor(progress, c.id, s.id)))
+  const isBelgique = isBelgiqueStore(store.id)
+  const pctValues = store.sections.flatMap(s => s.collaborateurs.map(c => pctFor(progress, c.id, s.id, isBelgique)))
   const avgPct = pctValues.length ? Math.round(pctValues.reduce((a, b) => a + b, 0) / pctValues.length) : 0
 
   const age = teamAge(allCollaborateurs)
@@ -296,8 +297,8 @@ export function TeamAgeBadge({ sectionId, collaborateurs }) {
 // progression) — utilisée à la fois dans les sections CVO/MO-SAV normales
 // et dans le groupe "Apprentis" à part, d'où l'usage explicite de
 // sectionId plutôt que de le déduire d'un contexte de section.
-function CollaborateurCard({ c, sectionId, colors, progress, onSelectCollaborateur, completed }) {
-  const pct = pctFor(progress, c.id, sectionId)
+function CollaborateurCard({ c, sectionId, colors, progress, onSelectCollaborateur, completed, isBelgique = false }) {
+  const pct = pctFor(progress, c.id, sectionId, isBelgique)
   const alt = c.alternant
   const apprentiColors = SECTION_COLORS['apprenti-alternant']
   const border = alt ? apprentiColors.border : colors.border
@@ -355,6 +356,7 @@ function CollaborateurCard({ c, sectionId, colors, progress, onSelectCollaborate
 // leur sectionId réel (cvo/mo-sav) est conservé pour la fiche détail
 // (compétences affichées) et le calcul de progression.
 export function SectionsList({ store, progress, onSelectCollaborateur }) {
+  const isBelgique = isBelgiqueStore(store.id)
   const apprentis = store.sections.flatMap(section =>
     (section.collaborateurs || [])
       .filter(c => c.alternant)
@@ -405,7 +407,7 @@ export function SectionsList({ store, progress, onSelectCollaborateur }) {
                   <CollaborateurCard
                     key={c.id} c={c} sectionId={section.id} colors={colors}
                     progress={progress} onSelectCollaborateur={onSelectCollaborateur}
-                    completed={completedByCollab[c.id]}
+                    completed={completedByCollab[c.id]} isBelgique={isBelgique}
                   />
                 ))}
               </div>
@@ -425,7 +427,7 @@ export function SectionsList({ store, progress, onSelectCollaborateur }) {
                 key={collaborateur.id} c={collaborateur} sectionId={sectionId}
                 colors={SECTION_COLORS[sectionId] || SECTION_COLORS.cvo}
                 progress={progress} onSelectCollaborateur={onSelectCollaborateur}
-                completed={completedByCollab[collaborateur.id]}
+                completed={completedByCollab[collaborateur.id]} isBelgique={isBelgique}
               />
             ))}
           </div>
@@ -592,7 +594,7 @@ export function CollaborateurProfilePage({ store, sectionId, collaborateur, prog
     return () => { cancelled = true }
   }, [collaborateur.id])
 
-  const items = SKILL_ITEMS[sectionId] || []
+  const items = getSkillItems(sectionId, isBelgiqueStore(store.id))
   const categories = {}
   for (const it of items) {
     if (!categories[it.category]) categories[it.category] = []
@@ -1341,7 +1343,7 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
 }
 
 export function CollaborateurFiche({ store, sectionId, collaborateur, progress, history, onSetScore, onSaveNote, onReset, onBack, pName, role = 'formateur' }) {
-  const items = SKILL_ITEMS[sectionId] || []
+  const items = getSkillItems(sectionId, isBelgiqueStore(store.id))
   const categories = useMemo(() => {
     const groups = {}
     for (const it of items) {

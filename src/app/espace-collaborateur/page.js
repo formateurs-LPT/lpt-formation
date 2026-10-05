@@ -4,11 +4,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { sbSelect } from '@/lib/supabase'
 import { apiGetCollaborateurByLogin, apiChangerCode, getCollaborateurById } from '@/lib/collaborateursApi'
-import { apiGetEntree, apiGetDossiersEntree, apiUpsertDocumentEntree } from '@/lib/rhApi'
+import { apiGetEntree, apiGetDossiersEntree, apiUpsertDocumentEntree, apiGetMagasinInfo } from '@/lib/rhApi'
 import { getDocsRequis, computeStatut } from '@/lib/dossierDocuments'
 import { uploadPieceJointe, RH_DOCUMENTS_BUCKET } from '@/lib/storageApi'
 import { FileDropSlot } from '@/components/FileDropSlot'
 import { getMotsMessages, addMotMessage } from '@/lib/notesCollaborateurApi'
+import { getNotificationsNonLues, marquerNotificationsLues } from '@/lib/directionApi'
+import ChatGroupeModal from '@/components/ChatGroupeModal'
 
 // Page autonome (comme /manager, /rh, /collaborateur) — espace du nouvel
 // entrant validé par la RH : dossier RH self-service + fiche accès tant que
@@ -35,11 +37,15 @@ function EspaceLogin({ onLogin }) {
     setLoading(true); setError('')
     const row = await apiGetCollaborateurByLogin(login.trim().toLowerCase(), code.trim())
     if (!row) { setLoading(false); setError('Identifiant ou code incorrect.'); return }
-    const magasins = await sbSelect('magasins', `id=eq.${row.magasin_id}&select=id,nom`)
+    const [magasins, magasinInfo] = await Promise.all([
+      sbSelect('magasins', `id=eq.${row.magasin_id}&select=id,nom`),
+      apiGetMagasinInfo(row.magasin_id),
+    ])
     setLoading(false)
+    const estIdf = magasinInfo.regionNom === 'Zone Paris' || magasinInfo.typeMagasin === 'entrepot'
     const session = {
-      id: row.id, prenom: row.prenom, nom: row.nom, poste: row.poste,
-      magasinId: row.magasin_id, magasinNom: magasins?.[0]?.nom || '—',
+      id: row.id, slug: row.slug, prenom: row.prenom, nom: row.nom, poste: row.poste,
+      magasinId: row.magasin_id, magasinNom: magasins?.[0]?.nom || '—', estIdf,
       entreeId: row.entree_id, doitChangerCode: row.doit_changer_code, formationTerminee: row.formation_terminee,
     }
     try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)) } catch {}
@@ -107,7 +113,7 @@ function ChangerCodeScreen({ session, onChanged }) {
 }
 
 // ── Dossier RH self-service (mode restreint) ─────────────────────────────
-function DossierRhCard({ session }) {
+function DossierRhCard({ session, onChange }) {
   const [entree, setEntree] = useState(undefined)
   const [dossiers, setDossiers] = useState([])
   const [uploadingDoc, setUploadingDoc] = useState(null)
@@ -116,6 +122,7 @@ function DossierRhCard({ session }) {
     if (!session.entreeId) { setEntree(null); return }
     const [e, d] = await Promise.all([apiGetEntree(session.entreeId), apiGetDossiersEntree(session.entreeId)])
     setEntree(e); setDossiers(d)
+    if (e) onChange?.(computeStatut(e, d))
   }
   useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -202,10 +209,15 @@ function AideModal({ session, onClose }) {
         {loading ? <p style={{ color: '#6b7280' }}>Chargement…</p> : (
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
             {messages.length === 0 ? (
-              <p style={{ color: '#9aa1ac', fontSize: 13, fontStyle: 'italic' }}>Écris ton message, ton formateur te répondra ici.</p>
+              <p style={{ color: '#9aa1ac', fontSize: 13, fontStyle: 'italic' }}>Écris ton message, ton formateur ou ton manager te répondra ici.</p>
             ) : messages.map(m => (
-              <div key={m.id} style={{ alignSelf: m.auteur === 'collaborateur' ? 'flex-end' : 'flex-start', background: m.auteur === 'collaborateur' ? '#eaf3fd' : '#f5f6f8', borderRadius: 12, padding: '9px 14px', maxWidth: '85%' }}>
-                <div style={{ fontSize: 13.5, color: '#14161a', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{m.contenu}</div>
+              <div key={m.id} style={{ alignSelf: m.auteur === 'collaborateur' ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+                {m.auteur !== 'collaborateur' && (
+                  <div style={{ fontSize: 10.5, color: '#9aa1ac', marginBottom: 2 }}>{m.auteur === 'manager' ? 'Ton manager' : 'Ton formateur'}</div>
+                )}
+                <div style={{ background: m.auteur === 'collaborateur' ? '#eaf3fd' : '#f5f6f8', borderRadius: 12, padding: '9px 14px' }}>
+                  <div style={{ fontSize: 13.5, color: '#14161a', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{m.contenu}</div>
+                </div>
               </div>
             ))}
           </div>
@@ -222,6 +234,36 @@ function AideModal({ session, onClose }) {
 
 const cardStyle = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 20, boxShadow: '0 1px 2px rgba(16,24,40,0.03)' }
 
+// Bandeau logo — bien visible en haut de l'espace collaborateur (mode
+// restreint et dashboard complet), pour que ça ressemble à un vrai espace
+// perso plutôt qu'à une simple liste de liens.
+function EspaceTopBar() {
+  return (
+    <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '20px 20px', display: 'flex', justifyContent: 'center' }}>
+      <Image src="/assets/logo-lpt.png" alt="Lunettes Pour Tous" width={168} height={62} style={{ objectFit: 'contain' }} />
+    </div>
+  )
+}
+
+// Tuile de navigation réutilisable — lien direct (href) ou action (onClick).
+function EspaceTile({ emoji, titre, sousTitre, badge, onClick, href }) {
+  const content = (
+    <>
+      <div style={{ fontSize: 28, flexShrink: 0 }}>{emoji}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 700, color: '#14161a' }}>{titre}</div>
+        <div style={{ fontSize: 12.5, color: '#6b7280', marginTop: 2 }}>{sousTitre}</div>
+      </div>
+      {badge}
+      <span style={{ color: '#9aa1ac', fontSize: 18, flexShrink: 0 }}>→</span>
+    </>
+  )
+  const style = { ...cardStyle, display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit', border: '1.5px solid #e5e7eb' }
+  return href
+    ? <Link href={href} style={style}>{content}</Link>
+    : <button onClick={onClick} style={style}>{content}</button>
+}
+
 function EspaceHeader({ session, onLogout }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
@@ -234,29 +276,129 @@ function EspaceHeader({ session, onLogout }) {
   )
 }
 
+// Statut du contrat (Docusign), piloté à la main par la RH (rh/page.js,
+// StatutContratSection) — invisible tant qu'elle ne l'a pas défini, pour ne
+// jamais laisser croire à une étape franchie qui n'a pas eu lieu.
+const STATUT_CONTRAT_LABELS = {
+  en_attente_pieces: { label: 'Contrat — en attente de pièces', bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' },
+  envoye_signature: { label: 'Contrat envoyé pour signature', bg: '#eaf3fd', color: '#0369a1', border: '#bae6fd' },
+  signe: { label: '✓ Contrat signé', bg: '#dcfce7', color: '#15803d', border: '#86efac' },
+}
+
+function StatutContratPill({ session }) {
+  const [statut, setStatut] = useState(undefined) // undefined = chargement
+
+  useEffect(() => {
+    if (!session.entreeId) { setStatut(null); return }
+    let cancelled = false
+    apiGetEntree(session.entreeId).then(e => { if (!cancelled) setStatut(e?.statut_contrat || null) })
+    return () => { cancelled = true }
+  }, [session.entreeId])
+
+  const meta = statut && STATUT_CONTRAT_LABELS[statut]
+  if (!meta) return null
+
+  return (
+    <div style={{ ...cardStyle, marginBottom: 20, padding: '12px 16px', background: meta.bg, border: `1px solid ${meta.border}` }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: meta.color }}>📄 {meta.label}</div>
+    </div>
+  )
+}
+
 // ── Mode restreint ────────────────────────────────────────────────────────
 function EspaceRestreint({ session, onLogout }) {
+  const [showDocs, setShowDocs] = useState(false)
+  const [statutDocs, setStatutDocs] = useState(null)
+  const [showAide, setShowAide] = useState(false)
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f6f8', padding: '28px 20px 60px' }}>
-      <div style={{ maxWidth: 640, margin: '0 auto' }}>
-        <EspaceHeader session={session} onLogout={onLogout} />
-        <div style={{ ...cardStyle, marginBottom: 16, background: '#eaf3fd', border: '1px solid #bae0f7' }}>
-          <div style={{ fontSize: 13.5, color: '#0369a1', lineHeight: 1.6 }}>
-            Bienvenue dans l&apos;équipe ! Première étape de ton intégration : remplis ton dossier RH ci-dessous, à ton rythme. Ta formation démarrera bientôt.
+    <div style={{ minHeight: '100vh', background: '#f5f6f8' }}>
+      <EspaceTopBar />
+      <div style={{ padding: '28px 20px 60px' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto' }}>
+          <EspaceHeader session={session} onLogout={onLogout} />
+          <StatutContratPill session={session} />
+          <div style={{ ...cardStyle, marginBottom: 20, background: '#eaf3fd', border: '1px solid #bae0f7' }}>
+            <div style={{ fontSize: 13.5, color: '#0369a1', lineHeight: 1.6 }}>
+              Bienvenue dans l&apos;équipe ! Première étape de ton intégration : envoie tes documents RH ci-dessous. Dès ton premier jour de formation, tu pourras créer tes accès Lunettes Pour Tous en suivant les instructions sur la fiche accès.
+            </div>
           </div>
-        </div>
-        <div style={{ ...cardStyle, marginBottom: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#14161a', marginBottom: 14 }}>📋 Mon dossier RH</div>
-          <DossierRhCard session={session} />
-        </div>
-        <Link href="/fiche-acces" style={{ ...cardStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none', marginBottom: 16 }}>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#14161a' }}>🔑 Fiche accès</div>
-            <div style={{ fontSize: 12.5, color: '#6b7280', marginTop: 2 }}>Mail pro, Slack…</div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
+            <EspaceTile
+              emoji="📋"
+              titre="Fournir mes documents RH"
+              sousTitre="Pièce d'identité, RIB, sécurité sociale…"
+              onClick={() => setShowDocs(true)}
+              badge={statutDocs && (
+                <span style={{
+                  fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20, flexShrink: 0,
+                  background: statutDocs === 'complet' ? '#dcfce7' : '#fff7ed',
+                  color: statutDocs === 'complet' ? '#15803d' : '#c2410c',
+                }}>
+                  {statutDocs === 'complet' ? '✓ Complet' : 'Incomplet'}
+                </span>
+              )}
+            />
+            <EspaceTile
+              emoji="🏢"
+              titre="Préparer mon arrivée chez Lunettes Pour Tous"
+              sousTitre="Découvrir l'entreprise avant ton 1er jour"
+              href="/preparer-mon-arrivee"
+            />
+            <EspaceTile
+              emoji="🔑"
+              titre="Créer mes accès Lunettes Pour Tous"
+              sousTitre="Mail pro, Slack… — dès ton 1er jour de formation"
+              href="/fiche-acces"
+            />
+            <EspaceTile
+              emoji="💬"
+              titre="Contacter mon manager"
+              sousTitre="Planning, question administrative…"
+              onClick={() => setShowAide(true)}
+            />
           </div>
-          <span style={{ color: '#9aa1ac' }}>→</span>
-        </Link>
+
+          {session.estIdf && (
+            <div style={{ ...cardStyle, marginBottom: 20, background: '#eef2ff', border: '1px solid #c7d2fe' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <span style={{ fontSize: 20 }}>🔔</span>
+                <div style={{ fontSize: 13.5, fontWeight: 800, color: '#3730a3' }}>Sonnette virtuelle</div>
+              </div>
+              <div style={{ fontSize: 12.5, color: '#4338ca', lineHeight: 1.6, marginBottom: 12 }}>
+                Le jour de ta formation, tu arriveras au 42 boulevard de Sébastopol (75003 Paris) où il n&apos;y a pas d&apos;interphone. Ouvre ce lien une fois sur place pour prévenir ton formateur de ton arrivée : il descendra te chercher.
+              </div>
+              <Link href="/sonnette" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 700, color: '#4338ca', textDecoration: 'none' }}>
+                Ouvrir la sonnette →
+              </Link>
+            </div>
+          )}
+
+          <div style={{ ...cardStyle, marginBottom: 12, background: '#fffbeb', border: '1px solid #fde68a', padding: '12px 16px' }}>
+            <div style={{ fontSize: 12.5, color: '#92400e', lineHeight: 1.6 }}>
+              🔐 Garde bien ton identifiant et ton code en mémoire (ou note-les quelque part de sûr) : tu en auras besoin pendant toute ta formation, puis au quotidien une fois en magasin.
+            </div>
+          </div>
+
+          <p style={{ textAlign: 'center', fontSize: 12.5, color: '#9aa1ac', lineHeight: 1.6 }}>
+            À l&apos;issue de ta formation, de nouvelles fonctionnalités seront disponibles sur ton espace collaborateur.
+          </p>
+        </div>
       </div>
+
+      {showDocs && (
+        <div onClick={() => setShowDocs(false)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 18, padding: 24, width: '100%', maxWidth: 520, maxHeight: '85vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#14161a' }}>📋 Mes documents RH</div>
+              <button onClick={() => setShowDocs(false)} style={{ background: 'none', border: 'none', fontSize: 22, color: '#9aa1ac', cursor: 'pointer' }}>×</button>
+            </div>
+            <DossierRhCard session={session} onChange={setStatutDocs} />
+          </div>
+        </div>
+      )}
+      {showAide && <AideModal session={session} onClose={() => setShowAide(false)} />}
     </div>
   )
 }
@@ -274,8 +416,32 @@ function ChantierCard({ emoji, titre, sousTitre }) {
 
 function EspaceComplet({ session, onLogout }) {
   const [showAide, setShowAide] = useState(false)
+  const [showChatGroupe, setShowChatGroupe] = useState(false)
+  const [chatCount, setChatCount] = useState(0)
+
+  useEffect(() => {
+    if (!session.slug) return
+    let cancelled = false
+    const refresh = () => getNotificationsNonLues(session.slug).then(rows => {
+      if (!cancelled) setChatCount(rows.filter(n => n.type === 'message_chat_groupe').length)
+    })
+    refresh()
+    const t = setInterval(refresh, 10000)
+    return () => { cancelled = true; clearInterval(t) }
+  }, [session.slug])
+
+  const openChatGroupe = async () => {
+    setShowChatGroupe(true)
+    if (!session.slug) return
+    const rows = await getNotificationsNonLues(session.slug)
+    const ids = rows.filter(n => n.type === 'message_chat_groupe').map(n => n.id)
+    if (ids.length) { await marquerNotificationsLues(ids); setChatCount(0) }
+  }
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f6f8', padding: '28px 20px 60px' }}>
+    <div style={{ minHeight: '100vh', background: '#f5f6f8' }}>
+      <EspaceTopBar />
+      <div style={{ padding: '28px 20px 60px' }}>
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
         <EspaceHeader session={session} onLogout={onLogout} />
         <div style={{ ...cardStyle, marginBottom: 16, background: '#f0fdf4', border: '1px solid #86efac' }}>
@@ -289,6 +455,18 @@ function EspaceComplet({ session, onLogout }) {
             <div style={{ fontSize: 14.5, fontWeight: 700, color: '#14161a', marginBottom: 4 }}>Demander de l&apos;aide</div>
             <div style={{ fontSize: 12.5, color: '#9aa1ac' }}>Écrire à mon formateur</div>
           </button>
+          <button onClick={openChatGroupe} style={{ ...cardStyle, textAlign: 'center', padding: '28px 20px', cursor: 'pointer', fontFamily: 'inherit', position: 'relative' }}>
+            {chatCount > 0 && (
+              <span style={{
+                position: 'absolute', top: 10, right: 10, background: '#ef4444', color: '#fff',
+                fontSize: 11, fontWeight: 800, borderRadius: 20, minWidth: 18, height: 18, padding: '0 4px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>{chatCount}</span>
+            )}
+            <div style={{ fontSize: 32, marginBottom: 10 }}>💬</div>
+            <div style={{ fontSize: 14.5, fontWeight: 700, color: '#14161a', marginBottom: 4 }}>Chat du magasin</div>
+            <div style={{ fontSize: 12.5, color: '#9aa1ac' }}>Avec {session.magasinNom}</div>
+          </button>
         </div>
         <Link href="/fiche-acces" style={{ ...cardStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none' }}>
           <div>
@@ -298,7 +476,19 @@ function EspaceComplet({ session, onLogout }) {
           <span style={{ color: '#9aa1ac' }}>→</span>
         </Link>
       </div>
+      </div>
       {showAide && <AideModal session={session} onClose={() => setShowAide(false)} />}
+      {showChatGroupe && (
+        <ChatGroupeModal
+          magasinId={session.magasinId}
+          magasinNom={session.magasinNom}
+          auteur="collaborateur"
+          auteurNom={`${session.prenom} ${session.nom}`}
+          auteurLogin={session.slug}
+          collaborateurId={session.id}
+          onClose={() => setShowChatGroupe(false)}
+        />
+      )}
     </div>
   )
 }
@@ -325,6 +515,14 @@ export default function EspaceCollaborateurPage() {
     })()
     return () => { cancelled = true }
   }, [])
+
+  // Retour auto vers la session de formation scannée (QR) après connexion —
+  // le formé n'a pas à re-scanner, cf. AccountJoinFlow / Login.js.
+  useEffect(() => {
+    if (!session || session.doitChangerCode) return
+    const redirect = new URLSearchParams(window.location.search).get('redirect')
+    if (redirect) window.location.href = decodeURIComponent(redirect)
+  }, [session])
 
   const onLogout = () => {
     try { localStorage.removeItem(SESSION_KEY) } catch {}

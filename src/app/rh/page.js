@@ -14,6 +14,7 @@ import {
   apiGetEntretiensByCandidat, apiCreerEntretien, apiContreProposerEntretien,
   apiConfirmerContreProposition, apiSupprimerEntretien,
   apiGetMagasinInfo, apiGetEntree, apiMarquerMailBienvenueEnvoye, apiMarquerAccesEnvoye,
+  apiGetEntretiensActifs, apiMarquerStatutContrat,
 } from '@/lib/rhApi'
 import { STORES, STORE_REGION_GROUPS } from '@/lib/storeFollowupData'
 import { getMagasinIdBySlug, slugifyName, stripAccents, creerCompteCollaborateur, findCollaborateurByName } from '@/lib/collaborateursApi'
@@ -149,6 +150,22 @@ function StatusBadge({ statut }) {
 function StatutPill({ statut }) {
   const c = STATUT_COLORS[statut] || STATUT_COLORS.a_contacter
   return <span style={{ display:'inline-flex', padding:'3px 10px', borderRadius:20, fontSize:11.5, fontWeight:700, background:c.bg, color:c.color, border:`1px solid ${c.border}` }}>{STATUT_LABELS[statut] || statut}</span>
+}
+
+// Résumé lisible de l'entretien le plus récent d'un candidat, affiché
+// directement sur chaque ligne de la liste recrutement — avant, il fallait
+// rouvrir chaque fiche une par une pour savoir si un manager avait répondu.
+function entretienBadgeMeta(entretien) {
+  if (!entretien) return null
+  if (entretien.decision_candidat === 'accepte') return { label: '✓ Manager OK — à valider', bg: '#dcfce7', color: '#15803d', border: '#86efac' }
+  if (entretien.decision_candidat === 'refuse') return { label: '✕ Manager a refusé', bg: '#fef2f2', color: '#b91c1c', border: '#fecaca' }
+  if (entretien.statut === 'contre_proposition_en_attente') return { label: '🔁 Contre-proposition', bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' }
+  return { label: '⏳ En attente manager', bg: '#f0f9ff', color: '#0369a1', border: '#bae6fd' }
+}
+function EntretienBadge({ entretien }) {
+  const meta = entretienBadgeMeta(entretien)
+  if (!meta) return null
+  return <span style={{ fontSize:11.5, fontWeight:700, color:meta.color, background:meta.bg, padding:'3px 8px', borderRadius:6, border:`1px solid ${meta.border}` }}>{meta.label}</span>
 }
 
 // Ligne "document requis" du dossier RH — coche manuelle tant qu'aucun
@@ -902,6 +919,63 @@ function AccesEspaceSection({ candidat, magasinLabel, onSent }) {
   )
 }
 
+// ── Statut du contrat (Docusign) — piloté à la main par la RH, jamais déduit
+// de la complétude du dossier documentaire : ce sont deux processus
+// indépendants qui peuvent se désynchroniser (contrat envoyé avant que les
+// documents soient complets, ou inversement). Visible par le collaborateur
+// depuis son espace bridé une fois défini.
+const STATUT_CONTRAT_OPTIONS = [
+  { value: 'en_attente_pieces', label: 'En attente de pièces', color: '#c2410c', bg: '#fff7ed', border: '#fed7aa' },
+  { value: 'envoye_signature', label: 'Envoyé pour signature', color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
+  { value: 'signe', label: 'Signé', color: '#15803d', bg: '#dcfce7', border: '#86efac' },
+]
+
+function StatutContratSection({ candidat }) {
+  const [entree, setEntree] = useState(undefined) // undefined = chargement
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!candidat.entree_id) { setEntree(null); return }
+    let cancelled = false
+    apiGetEntree(candidat.entree_id).then(e => { if (!cancelled) setEntree(e) })
+    return () => { cancelled = true }
+  }, [candidat.entree_id])
+
+  if (candidat.statut !== 'valide' || !candidat.entree_id || entree === undefined) return null
+
+  const setStatut = async statut => {
+    setSaving(true)
+    await apiMarquerStatutContrat(candidat.entree_id, statut)
+    setEntree(e => ({ ...e, statut_contrat: statut }))
+    setSaving(false)
+  }
+
+  return (
+    <div style={{ marginBottom:16 }}>
+      <div style={{ fontSize:11, fontWeight:700, color:'#9aa1ac', textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>Statut du contrat</div>
+      <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+        {STATUT_CONTRAT_OPTIONS.map(opt => {
+          const active = entree?.statut_contrat === opt.value
+          return (
+            <button
+              key={opt.value}
+              onClick={() => !saving && setStatut(opt.value)}
+              disabled={saving}
+              style={{
+                ...CSS.btn, padding:'7px 12px', fontSize:12.5, fontWeight:700, cursor:saving?'default':'pointer',
+                background: active ? opt.bg : '#fff', color: active ? opt.color : '#6b7280',
+                border: `1.5px solid ${active ? opt.border : '#e5e7eb'}`,
+              }}
+            >
+              {opt.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDeleted }) {
   const [candidat, setCandidat] = useState(init)
   const [historique, setHistorique] = useState([])
@@ -1082,6 +1156,7 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
           magasinLabel={candidat.magasin}
           onSent={marquerAccesEnvoye}
         />
+        <StatutContratSection candidat={candidat} />
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }}>
           <FileDropSlot
             label="CV"
@@ -1192,6 +1267,7 @@ function FicheCandidatModal({ candidat: init, session, onClose, onUpdate, onDele
 
 function RecrutementView({ session, regionFilter }) {
   const [candidats, setCandidats] = useState([])
+  const [entretiens, setEntretiens] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [fiche, setFiche] = useState(null)
@@ -1199,9 +1275,20 @@ function RecrutementView({ session, regionFilter }) {
   const [showValides, setShowValides] = useState(false)
   const [search, setSearch] = useState('')
 
+  const reloadEntretiens = () => apiGetEntretiensActifs().then(setEntretiens)
+
   useEffect(() => {
-    apiGetCandidats().then(rows => { setCandidats(rows); setLoading(false) })
+    Promise.all([apiGetCandidats(), apiGetEntretiensActifs()]).then(([cands, ents]) => {
+      setCandidats(cands); setEntretiens(ents); setLoading(false)
+    })
   }, [])
+
+  // Le plus récent par candidat (entretiens déjà triés created_at.desc) —
+  // affiché directement sur chaque ligne au lieu d'avoir à rouvrir la fiche.
+  const entretienByCandidatId = {}
+  for (const e of entretiens) {
+    if (!entretienByCandidatId[e.candidat_id]) entretienByCandidatId[e.candidat_id] = e
+  }
 
   const handleAdd = async data => {
     // La prise de contact a nécessairement déjà eu lieu au moment où la RH
@@ -1228,7 +1315,13 @@ function RecrutementView({ session, regionFilter }) {
   const actifs = visibles.filter(c => !['valide','refuse'].includes(c.statut))
   const refuses = visibles.filter(c => c.statut === 'refuse')
   const valides = visibles.filter(c => c.statut === 'valide')
-  const enAttente = visibles.filter(c => c.statut === 'entretien_manager').length
+  // Vraie décision requise : le manager a rendu son verdict, la balle est
+  // dans le camp RH (remplace l'ancien statut 'entretien_manager', retiré du
+  // pipeline actif et donc plus jamais attribué — ce compteur affichait 0).
+  const enAttente = actifs.filter(c => {
+    const d = entretienByCandidatId[c.id]?.decision_candidat
+    return d === 'accepte' || d === 'refuse'
+  }).length
 
   return (
     <div>
@@ -1294,7 +1387,7 @@ function RecrutementView({ session, regionFilter }) {
                       </div>
                       <div style={{ display:'flex', gap:8, alignItems:'center', flexShrink:0 }}>
                         <StatusBadge statut={c.statut_documents} />
-                        {statut === 'entretien_manager' && <span style={{ fontSize:11.5, fontWeight:700, color:'#c2410c', background:'#fff7ed', padding:'3px 8px', borderRadius:6, border:'1px solid #fed7aa' }}>Décision</span>}
+                        <EntretienBadge entretien={entretienByCandidatId[c.id]} />
                       </div>
                     </div>
                   ))}
@@ -1345,7 +1438,7 @@ function RecrutementView({ session, regionFilter }) {
         </>
       )}
       {showAdd && <CandidatFormModal session={session} onSave={handleAdd} onClose={() => setShowAdd(false)} />}
-      {fiche && <FicheCandidatModal candidat={fiche} session={session} onClose={() => setFiche(null)} onUpdate={u => { handleUpdate(u); setFiche(u) }} onDeleted={handleDeleted} />}
+      {fiche && <FicheCandidatModal candidat={fiche} session={session} onClose={() => { setFiche(null); reloadEntretiens() }} onUpdate={u => { handleUpdate(u); setFiche(u) }} onDeleted={handleDeleted} />}
     </div>
   )
 }

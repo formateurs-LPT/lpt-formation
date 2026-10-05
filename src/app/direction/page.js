@@ -14,6 +14,17 @@ import { useStoreFollowupProgress } from '@/lib/useStoreFollowupProgress'
 import { SectionsList, CollaborateurFiche, StoreHeader } from '@/components/StoreFollowupShared'
 import DemandesInterventionView, { DemandeInterventionModal } from '@/components/DemandesInterventionView'
 import ReportingDetailView from '@/components/ReportingDetailView'
+import ChatGroupeModal from '@/components/ChatGroupeModal'
+
+// "Mathias Darmon (DR Sud Est)" / "Mathias Darmon (Directeur Retail)" — pour
+// que le manager et les collaborateurs sachent clairement qui leur écrit
+// dans le chat de groupe (la direction n'a pas de colonne FK dédiée dans
+// mots_messages, trop de rôles différents y écrivent pour ça — voir migration).
+function directionRoleLabel(session) {
+  if (session.role === 'directeur_retail') return 'Directeur Retail'
+  const regionNom = session.regions?.[0]?.nom
+  return regionNom ? `DR ${regionNom}` : 'DR'
+}
 
 const SESSION_KEY = 'direction_session' // { login, displayName, role, regions: [{id, nom}] }
 
@@ -174,6 +185,7 @@ function StoreDirectionView({ store: baseStore, session, onBack }) {
   const [sectionId, setSectionId] = useState(null)
   const [collaborateurId, setCollaborateurId] = useState(null)
   const [showDemandeModal, setShowDemandeModal] = useState(false)
+  const [showChatGroupe, setShowChatGroupe] = useState(false)
   const [trainers, setTrainers] = useState([])
   // Calculé depuis la vraie appartenance en base (magasin_regions), jamais
   // depuis le chemin de navigation emprunté pour arriver sur cette fiche.
@@ -213,10 +225,16 @@ function StoreDirectionView({ store: baseStore, session, onBack }) {
     <div className="dash-wrap">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
         <button className="detail-back" onClick={onBack}>← Magasins</button>
-        <button onClick={() => setShowDemandeModal(true)} style={{
-          background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.4)', color: '#fbbf24',
-          padding: '9px 18px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-        }}>🆘 Demander l&apos;intervention d&apos;un formateur</button>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button onClick={() => setShowChatGroupe(true)} style={{
+            background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.35)', color: '#0089ba',
+            padding: '9px 18px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          }}>💬 Chat du magasin</button>
+          <button onClick={() => setShowDemandeModal(true)} style={{
+            background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.4)', color: '#fbbf24',
+            padding: '9px 18px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          }}>🆘 Demander l&apos;intervention d&apos;un formateur</button>
+        </div>
       </div>
       <StoreHeader store={store} progress={progress} subtitle="Vue Direction" />
       <SectionsList store={store} progress={progress} onSelectCollaborateur={(secId, collabId) => { setSectionId(secId); setCollaborateurId(collabId) }} />
@@ -227,6 +245,16 @@ function StoreDirectionView({ store: baseStore, session, onBack }) {
           formateurOptions={formateurOptions}
           demandeurLogin={session.login} demandeurRole={session.role}
           onClose={() => setShowDemandeModal(false)}
+        />
+      )}
+      {showChatGroupe && (
+        <ChatGroupeModal
+          magasinId={baseStore.dbId}
+          magasinNom={store.label}
+          auteur={session.role === 'directeur_retail' ? 'directeur_retail' : 'dr'}
+          auteurNom={`${session.displayName} (${directionRoleLabel(session)})`}
+          auteurLogin={session.login}
+          onClose={() => setShowChatGroupe(false)}
         />
       )}
     </div>

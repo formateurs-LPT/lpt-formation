@@ -1,12 +1,13 @@
 'use client'
 import { useState } from 'react'
 import Image from 'next/image'
-import { IconHome, IconUsers, IconSend, IconBarChart, IconHelpCircle, IconChevronRight, IconUserPlus, IconBell, IconTarget } from './ManagerIcons'
+import { IconHome, IconUsers, IconSend, IconBarChart, IconHelpCircle, IconChevronRight, IconUserPlus, IconBell, IconMessageCircle, IconTarget } from './ManagerIcons'
 import { TRAINER_CONTACTS } from '@/lib/trainerContacts'
 
 const NAV_ITEMS = [
   { id: 'accueil', label: 'Accueil', Icon: IconHome },
   { id: 'equipe', label: 'Mon équipe', Icon: IconUsers },
+  { id: 'chat', label: 'Chat magasin', Icon: IconMessageCircle },
   { id: 'entrainement', label: "J'entraîne mon équipe", shortLabel: 'Entraîner', Icon: IconTarget },
   { id: 'demandes', label: 'Demandes', Icon: IconSend },
   { id: 'recrutement', label: 'Recrutement', Icon: IconUserPlus },
@@ -119,7 +120,7 @@ function NotificationBell({ notifications, onSelect }) {
 //   CSS qui bascule de l'un à l'autre (évite tout flash lié à un calcul JS
 //   de largeur d'écran au montage).
 export default function ManagerSidebar({
-  active, onNavigate, demandesCount, recrutementCount, notifications, onSelectNotification,
+  active, onNavigate, demandesCount, recrutementCount, chatCount, notifications, onSelectNotification,
   firstName, storeLabel, onLogout,
 }) {
   const [helpOpen, setHelpOpen] = useState(false)
@@ -172,6 +173,12 @@ export default function ManagerSidebar({
                     background: '#fee2e2', color: '#dc2626', fontSize: 10.5, fontWeight: 800,
                     borderRadius: 20, padding: '1px 7px', minWidth: 16, textAlign: 'center',
                   }}>{recrutementCount}</span>
+                )}
+                {id === 'chat' && chatCount > 0 && (
+                  <span style={{
+                    background: '#fee2e2', color: '#dc2626', fontSize: 10.5, fontWeight: 800,
+                    borderRadius: 20, padding: '1px 7px', minWidth: 16, textAlign: 'center',
+                  }}>{chatCount}</span>
                 )}
               </button>
             )
@@ -277,6 +284,12 @@ export default function ManagerSidebar({
                       position: 'absolute', top: -4, right: -7, background: '#dc2626', color: '#fff',
                       fontSize: 9, fontWeight: 800, borderRadius: 20, padding: '1px 4px', minWidth: 13, textAlign: 'center', lineHeight: 1.3,
                     }}>{recrutementCount}</span>
+                  )}
+                  {id === 'chat' && chatCount > 0 && (
+                    <span style={{
+                      position: 'absolute', top: -4, right: -7, background: '#dc2626', color: '#fff',
+                      fontSize: 9, fontWeight: 800, borderRadius: 20, padding: '1px 4px', minWidth: 13, textAlign: 'center', lineHeight: 1.3,
+                    }}>{chatCount}</span>
                   )}
                 </span>
                 <span style={{
