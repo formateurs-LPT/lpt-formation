@@ -784,7 +784,7 @@ function LaboProgressifBanner({ store }) {
 // Couleurs formateur — mêmes valeurs que Planning déplacements
 // (src/components/PlanningPage.js), pour reconnaître un formateur d'un coup
 // d'œil quel que soit l'écran où on le croise.
-const LABO_TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777', Thomas: '#f59e0b', Valentine: '#22c55e', Mateo: '#fb923c', Jonathan: '#14b8a6' }
+const LABO_TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777', Thomas: '#f59e0b', Valentine: '#22c55e', Mateo: '#fb923c', Jonathan: '#14b8a6', Salomé: '#4f46e5' }
 function laboTrainerColor(name) { return LABO_TRAINER_COLORS[name] || '#64748b' }
 
 function laboFmtDateShort(d) {

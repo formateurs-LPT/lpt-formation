@@ -28,9 +28,9 @@ const STORES_BY_ZONE = {
 
 const ALL_STORES = Object.values(STORES_BY_ZONE).flat()
 
-const TRAINERS = ['Kevin','Quentin','Nadège','Thomas','Valentine','Mateo','Jonathan']
+const TRAINERS = ['Kevin','Quentin','Nadège','Thomas','Valentine','Mateo','Jonathan','Salomé']
 
-const TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777', Thomas: '#f59e0b', Valentine: '#22c55e', Mateo: '#fb923c', Jonathan: '#14b8a6' }
+const TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777', Thomas: '#f59e0b', Valentine: '#22c55e', Mateo: '#fb923c', Jonathan: '#14b8a6', Salomé: '#4f46e5' }
 
 function trainerColor(name) {
   return TRAINER_COLORS[name] || '#64748b'

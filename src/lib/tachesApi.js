@@ -12,7 +12,20 @@ export async function getTaches() {
   return rows || []
 }
 
-export async function createTache({ titre, description, assignes, creePar }) {
+// mode:
+// - 'commune' (défaut) : une seule fiche, un seul statut partagé par tous
+//   les assignés — le premier qui la clôture la clôture pour tout le monde.
+// - 'individuelle' : même consigne donnée à plusieurs personnes qui
+//   l'exécutent chacune de leur côté — on crée une fiche par assigné (même
+//   titre/description/created_at, pour pouvoir les regrouper à l'affichage),
+//   chacun suit et clôt uniquement la sienne.
+export async function createTache({ titre, description, assignes, creePar, mode = 'commune' }) {
+  if (mode === 'individuelle' && assignes.length > 1) {
+    const createdAt = new Date().toISOString()
+    return Promise.all(assignes.map(name => sbInsert('taches_equipe', {
+      titre, description: description || null, assignes: [name], cree_par: creePar, statut: 'a_faire', created_at: createdAt,
+    })))
+  }
   return sbInsertReturn('taches_equipe', {
     titre, description: description || null, assignes, cree_par: creePar, statut: 'a_faire',
   })
