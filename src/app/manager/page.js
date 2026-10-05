@@ -240,32 +240,68 @@ function getPendingReportingActions(reportings) {
   return actions
 }
 
-// Carte "À faire" — ne regroupe plus que les tests de sortie à lancer (les
-// demandes d'intervention ont leur propre écran dédié dans la sidebar,
-// cf. DemandesPage). Invisible dès qu'il n'y a plus rien à traiter : l'app
-// ne doit se faire remarquer que quand c'est utile.
-function AFaireCard({ magasinId, store, nouveauxEntrants, newHireRows, onDeclencher, onOpenFiche, reportingActions, onToggleReportingAction }) {
+// Carte "Futures entrées" — les nouveaux entrants (nouveau schéma +
+// ancien schéma entrees_data), séparés en deux groupes : ceux encore en
+// formation (rien à faire, juste de la visibilité — c'est le pendant côté
+// manager du "Futurs entrées" formateur) et ceux dont la formation est
+// terminée, prêts pour le test de sortie. Avant, tout le monde était mélangé
+// sous "À faire" avec le même bouton "Déclencher le test de sortie", ce qui
+// n'avait pas de sens pour quelqu'un qui n'a même pas commencé sa formation.
+function FuturesEntreesCard({ magasinId, store, nouveauxEntrants, newHireRows, onDeclencher, onOpenFiche }) {
   const extraRows = computeExtraRows(nouveauxEntrants, newHireRows)
-
-  const totalCount = nouveauxEntrants.length + extraRows.length + reportingActions.length
+  const totalCount = nouveauxEntrants.length + extraRows.length
   if (totalCount === 0) return null
 
   const categoryKey = classifyMagasin(store.label)
+  const enFormation = nouveauxEntrants.filter(c => !c.formation_terminee)
+  const prets = nouveauxEntrants.filter(c => c.formation_terminee)
 
   return (
-    <div id="a-faire-card" style={{
+    <div id="futures-entrees-card" style={{
       background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16,
       padding: '14px 18px 4px', marginBottom: 24, boxShadow: '0 1px 2px rgba(16,24,40,0.03)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 2px 10px' }}>
-        <h3 style={{ fontSize: 13, fontWeight: 800, color: '#14161a', margin: 0, flex: 1 }}>À faire</h3>
+        <h3 style={{ fontSize: 13, fontWeight: 800, color: '#14161a', margin: 0, flex: 1 }}>🌱 Futures entrées</h3>
         <span style={{
           background: '#f0f1f3', color: '#374151', fontSize: 11, fontWeight: 800,
           borderRadius: 20, padding: '2px 9px', minWidth: 18, textAlign: 'center',
         }}>{totalCount}</span>
       </div>
 
-      {nouveauxEntrants.map(c => (
+      {enFormation.map(c => (
+        <div key={c.id} style={{ borderTop: '1px solid #f0f1f3' }}>
+          <ATraiterRow
+            icon="🌱"
+            title={`${c.prenom} ${c.nom}`}
+            meta={c.poste}
+            onOpen={onOpenFiche ? () => onOpenFiche(c.id) : undefined}
+          />
+        </div>
+      ))}
+
+      {extraRows.filter(({ collab }) => !collab?.formation_terminee).map(({ entree, report, collab }) => (
+        <div key={report.id} style={{ borderTop: '1px solid #f0f1f3' }}>
+          <ATraiterRow
+            icon="🌱"
+            title={`${entree.prenom} ${entree.nom}`}
+            meta={
+              <a
+                href={`/rapport/?c=${encodeURIComponent(report.collaborateur)}&w=${report.week_date}&t=${encodeURIComponent(report.trainer_name)}&cat=${categoryKey}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ color: '#0089ba', textDecoration: 'none' }}
+              >Voir le compte rendu →</a>
+            }
+          />
+        </div>
+      ))}
+
+      {prets.length > 0 && (
+        <div style={{ padding: '10px 2px 4px', fontSize: 11, fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', letterSpacing: 0.5, borderTop: enFormation.length ? '1px solid #f0f1f3' : 'none' }}>
+          Prêts pour le test de sortie
+        </div>
+      )}
+      {prets.map(c => (
         <div key={c.id} style={{ borderTop: '1px solid #f0f1f3' }}>
           <ATraiterRow
             icon="🎓"
@@ -279,10 +315,10 @@ function AFaireCard({ magasinId, store, nouveauxEntrants, newHireRows, onDeclenc
         </div>
       ))}
 
-      {extraRows.map(({ entree, report, collab }) => (
+      {extraRows.filter(({ collab }) => collab?.formation_terminee).map(({ entree, report, collab }) => (
         <div key={report.id} style={{ borderTop: '1px solid #f0f1f3' }}>
           <ATraiterRow
-            icon="🆕"
+            icon="🎓"
             title={`${entree.prenom} ${entree.nom}`}
             meta={
               <a
@@ -300,6 +336,28 @@ function AFaireCard({ magasinId, store, nouveauxEntrants, newHireRows, onDeclenc
           />
         </div>
       ))}
+    </div>
+  )
+}
+
+// Carte "À faire" — uniquement les points "à faire" du reporting terrain
+// (les nouveaux entrants vivent dans leur propre carte "Futures entrées",
+// les demandes d'intervention ont leur écran dédié dans la sidebar).
+function AFaireCard({ reportingActions, onToggleReportingAction }) {
+  if (reportingActions.length === 0) return null
+
+  return (
+    <div id="a-faire-card" style={{
+      background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16,
+      padding: '14px 18px 4px', marginBottom: 24, boxShadow: '0 1px 2px rgba(16,24,40,0.03)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 2px 10px' }}>
+        <h3 style={{ fontSize: 13, fontWeight: 800, color: '#14161a', margin: 0, flex: 1 }}>À faire</h3>
+        <span style={{
+          background: '#f0f1f3', color: '#374151', fontSize: 11, fontWeight: 800,
+          borderRadius: 20, padding: '2px 9px', minWidth: 18, textAlign: 'center',
+        }}>{reportingActions.length}</span>
+      </div>
 
       {reportingActions.map(action => (
         <div key={`${action.reportingId}-${action.pole}-${action.index}`} style={{ borderTop: '1px solid #f0f1f3' }}>
@@ -601,9 +659,10 @@ function AccueilPage({
           label="Actions à traiter" value={totalActions}
           sub={`action${totalActions > 1 ? 's' : ''} à traiter`}
           onClick={totalActions > 0 ? () => {
-            const hasAFaireRow = nouveauxEntrants.length + extraRows.length + reportingActions.length > 0
-            if (hasAFaireRow) {
-              document.getElementById('a-faire-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            const hasFuturesEntrees = nouveauxEntrants.length + extraRows.length > 0
+            const target = hasFuturesEntrees ? 'futures-entrees-card' : reportingActions.length > 0 ? 'a-faire-card' : null
+            if (target) {
+              document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
             } else {
               onNavigate('demandes')
             }
@@ -611,12 +670,13 @@ function AccueilPage({
         />
       </div>
 
-      <AFaireCard
+      <FuturesEntreesCard
         magasinId={magasinId} store={store}
         nouveauxEntrants={nouveauxEntrants} newHireRows={newHireRows}
         onDeclencher={onDeclencher} onOpenFiche={onOpenFiche}
-        reportingActions={reportingActions} onToggleReportingAction={onToggleReportingAction}
       />
+
+      <AFaireCard reportingActions={reportingActions} onToggleReportingAction={onToggleReportingAction} />
 
       <UpcomingRegistrationsPanel store={store} refreshKey={trainingRefreshKey} />
 
@@ -1299,8 +1359,13 @@ function ManagerDashboard({ session, onLogout }) {
     }
   }
 
+  // Sondage toutes les 30s — avant ça, les notifications n'étaient allées
+  // chercher qu'au chargement de la page, donc une demande d'entretien RH
+  // (ou toute autre notif) n'apparaissait qu'après un rechargement manuel.
   useEffect(() => {
     refreshNotifications(session.login)
+    const t = setInterval(() => refreshNotifications(session.login), 30000)
+    return () => clearInterval(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.login])
 

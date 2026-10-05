@@ -2231,8 +2231,13 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     setTrainerMode(slug)
     setTrainerModeState(slug)
   }
+  // Sondage toutes les 30s (même pattern que tâches/notes/futurs entrées) —
+  // sinon le compteur ne se met à jour qu'au rechargement de la page.
   useEffect(() => {
-    loadIdeesFromSupabase().then(list => setIdeeCount(list.length)).catch(() => {})
+    const refresh = () => loadIdeesFromSupabase().then(list => setIdeeCount(list.length)).catch(() => {})
+    refresh()
+    const t = setInterval(refresh, 30000)
+    return () => clearInterval(t)
   }, [])
 
   // Deux nombres distincts, volontairement découplés :

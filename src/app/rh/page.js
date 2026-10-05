@@ -1652,8 +1652,13 @@ function MailBienvenueGroupeModal({ entrees, onClose, onAnyChanged }) {
   )
 }
 
+// Nombre de semaines affichées en plus de la semaine en cours — la RH
+// recrute avec plusieurs semaines d'avance, 2 onglets (cette semaine +
+// suivante) ne donnaient pas assez de visibilité sur le pipeline à venir.
+const SEMAINES_A_VENIR = 4
+
 function EntreesView({ session, regionFilter }) {
-  const [activeWeek, setActiveWeek] = useState('current')
+  const [activeWeek, setActiveWeek] = useState(0) // offset en semaines depuis la semaine en cours
   const [entrees, setEntrees] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(null)
@@ -1661,8 +1666,7 @@ function EntreesView({ session, regionFilter }) {
   const [showDelete, setShowDelete] = useState(null)
   const [showMailGroupe, setShowMailGroupe] = useState(false)
 
-  const s0 = getMondayStr(0); const s1 = getMondayStr(1)
-  const semaineLundi = activeWeek === 'current' ? s0 : s1
+  const semaineLundi = getMondayStr(activeWeek)
 
   const load = useCallback(async () => {
     setLoading(true); setEntrees(await apiGetEntreesRhByWeek(semaineLundi)); setLoading(false)
@@ -1670,7 +1674,7 @@ function EntreesView({ session, regionFilter }) {
 
   useEffect(() => { load() }, [load])
 
-  const sync = rows => { if (activeWeek === 'current') apiSyncFormateur(rows).catch(() => {}) }
+  const sync = rows => { if (activeWeek === 0) apiSyncFormateur(rows).catch(() => {}) }
 
   const handleSave = async payload => {
     if (payload.id) await apiUpdateEntreeRh(payload.id, payload)
@@ -1689,10 +1693,10 @@ function EntreesView({ session, regionFilter }) {
     setEntrees(prev => { const u = prev.map(e => e.id===id?{...e,statut_documents:statut}:e); sync(u); return u })
   }
 
-  const tabs = [
-    { id:'current', label:`Semaine ${getISOWeek(s0)}`, sub:weekDateRange(s0) },
-    { id:'next',    label:`Semaine ${getISOWeek(s1)}`, sub:weekDateRange(s1) },
-  ]
+  const tabs = Array.from({ length: SEMAINES_A_VENIR + 1 }, (_, offset) => {
+    const monday = getMondayStr(offset)
+    return { id: offset, label: `Semaine ${getISOWeek(monday)}`, sub: weekDateRange(monday) }
+  })
   // Filtre région purement d'affichage — `entrees` (données brutes, non
   // filtrées) reste la source utilisée par `sync` pour trainer_state.
   const visibleEntrees = (!regionFilter || regionFilter === 'tous')
