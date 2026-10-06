@@ -1,4 +1,4 @@
-export const TRAINER_CANONICAL = { 'nadège': 'nadege', 'thomas': 'thomas', 'mattéo': 'mateo', 'matteo': 'mateo' }
+export const TRAINER_CANONICAL = { 'nadège': 'nadege', 'thomas': 'thomas', 'mattéo': 'mateo', 'matteo': 'mateo', 'salomé': 'salome' }
 
 // Palettes réutilisées telles quelles dans la plupart des Module*.js (QCM à
 // 4 options, bulles de réponse texte libre) — centralisées ici pour éviter
