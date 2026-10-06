@@ -53,7 +53,7 @@ function EspaceLogin({ onLogin }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'linear-gradient(160deg,#0f1923 0%,#1a2535 60%,#00abe9 100%)' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'linear-gradient(160deg,#0f1923 0%,#1a2535 60%,#00abe9 100%)' }}>
       <form onSubmit={submit} style={{ background: 'linear-gradient(175deg,#0099d0 0%,#0d2538 42%,#091520 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 22, width: '100%', maxWidth: 400, boxShadow: '0 28px 80px rgba(0,0,0,0.5)', overflow: 'hidden', position: 'relative' }}>
         <div style={{ padding: '36px 36px 24px', textAlign: 'center' }}>
           <Image src="/assets/logo-lpt-blanc.png" alt="Lunettes Pour Tous" width={140} height={52} style={{ objectFit: 'contain', margin: '0 auto 20px' }} />
@@ -96,7 +96,7 @@ function ChangerCodeScreen({ session, onChanged }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'linear-gradient(160deg,#0f1923 0%,#1a2535 60%,#00abe9 100%)' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'linear-gradient(160deg,#0f1923 0%,#1a2535 60%,#00abe9 100%)' }}>
       <form onSubmit={submit} style={{ background: 'linear-gradient(175deg,#0099d0 0%,#0d2538 42%,#091520 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 22, width: '100%', maxWidth: 400, boxShadow: '0 28px 80px rgba(0,0,0,0.5)', padding: '36px' }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 6, textAlign: 'center' }}>1ère connexion</div>
         <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: '#fff', textAlign: 'center' }}>Choisis ton code personnel</h2>
@@ -312,7 +312,7 @@ function EspaceRestreint({ session, onLogout }) {
   const [showAide, setShowAide] = useState(false)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f6f8' }}>
+    <div style={{ minHeight: '100dvh', background: '#f5f6f8' }}>
       <EspaceTopBar />
       <div style={{ padding: '28px 20px 60px' }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
@@ -439,7 +439,7 @@ function EspaceComplet({ session, onLogout }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f6f8' }}>
+    <div style={{ minHeight: '100dvh', background: '#f5f6f8' }}>
       <EspaceTopBar />
       <div style={{ padding: '28px 20px 60px' }}>
       <div style={{ maxWidth: 640, margin: '0 auto' }}>

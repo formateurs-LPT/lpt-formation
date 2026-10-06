@@ -6,10 +6,73 @@
   --red:#ef4444;--red-l:#fee2e2;--red-d:#b91c1c;--orange:#f59e0b;--orange-l:#fef3c7;
   --r:12px;--rs:8px;
 }
-body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;font-size:15px;line-height:1.6}
+
+/* ── RESPONSIVE — fondations globales (brkpts mobile-first : <640 mobile,
+   640-1023 tablette, >=1024 ordinateur ; cf. étape 1 du chantier responsive).
+   Aucun impact >=1024px : ces règles sont toutes scoping à <640px. ── */
+@media (max-width:639px){
+  /* Empêche le zoom auto iOS au focus d'un champ (iOS zoome si < 16px) —
+     !important nécessaire car la quasi-totalité des champs de l'appli sont
+     stylés en inline style={{fontSize:14}} qui prime sinon sur cette règle. */
+  input, select, textarea { font-size:16px!important; }
+}
+
+/* Paires de champs de formulaire (espace RH) — une seule colonne sur
+   mobile. gridTemplateColumns volontairement absent de l'inline style de
+   ces conteneurs pour que cette règle s'applique sans !important. */
+.rh-grid2{grid-template-columns:1fr 1fr}
+@media (max-width:639px){
+  .rh-grid2{grid-template-columns:1fr}
+}
+
+/* Onglets pilule de l'espace Direction — zone tactile 44px mini sur mobile */
+@media (max-width:639px){
+  .dir-tab-btn{min-height:44px;display:inline-flex;align-items:center}
+}
+
+/* Ligne de compétence formateur (ItemRow, StoreFollowupShared) — sur
+   mobile, le libellé + jusqu'à 5 boutons d'action (exercice, historique,
+   note, reset, score) dans une seule ligne flex n'avaient plus de place :
+   le libellé se compressait sous sa largeur de contenu et son texte
+   débordait visuellement par-dessus les boutons. Le libellé passe sur sa
+   propre ligne, les actions suivent dessous. */
+@media (max-width:639px){
+  .item-row-main{flex-wrap:wrap;row-gap:10px}
+  /* !important nécessaire : l'élément porte un inline style={{flex:1,minWidth:0}}
+     (flex-basis 0%), toujours prioritaire sur une règle de classe externe. */
+  .item-row-label{flex:1 1 100%!important;min-width:100%!important}
+}
+
+/* Filtres formateur du planning déplacements — 8 pilules sans wrap ni
+   scroll débordaient hors champ (coupées, inatteignables) sur mobile ;
+   on les rend défilables horizontalement, pattern "barre d'onglets à
+   défilement" déjà utilisé ailleurs dans l'appli. */
+@media (max-width:639px){
+  .planning-topbar{padding:14px 16px!important}
+  .planning-topbar-logo{display:none}
+  .planning-topbar-sep{display:none}
+  .planning-grid{
+    grid-template-columns:1fr!important;padding:16px!important;
+    overflow-y:auto!important;-webkit-overflow-scrolling:touch;
+  }
+  .planning-filters-row{
+    padding:12px 16px 0!important;
+    overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .planning-filters-row::-webkit-scrollbar{display:none}
+}
+
+/* Cartes magasin (sélecteur formateur, StoreFollowupView) — pleine largeur
+   sur mobile plutôt que plafonnées à 260px (laissait un vide à droite dès
+   qu'une seule carte tient par ligne). */
+@media (max-width:639px){
+  .store-tile{max-width:none!important;min-width:0!important;flex-basis:100%!important}
+}
 
 /* ── LANDING ── */
-#landing{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#0f1923 0%,#1a2535 60%,#00abe9 100%);padding:24px}
+#landing{min-height:100dvh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#0f1923 0%,#1a2535 60%,#00abe9 100%);padding:24px}
 .lcard{background:linear-gradient(175deg,#0099d0 0%,#0d2538 42%,#091520 100%);border:1px solid rgba(255,255,255,.1);border-radius:22px;width:100%;max-width:440px;box-shadow:0 28px 80px rgba(0,0,0,.5);overflow:hidden;position:relative;}
 .lcard::before{content:'';position:absolute;top:-70px;right:-70px;width:220px;height:220px;background:rgba(255,255,255,.05);border-radius:50%;pointer-events:none;z-index:0;}
 .lcard::after{content:'';position:absolute;bottom:-80px;left:-40px;width:260px;height:260px;background:rgba(0,171,233,.08);border-radius:50%;pointer-events:none;z-index:0;}
@@ -323,6 +386,14 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   .ob-banner-icon{display:none}
 }
 
+@media(max-width:899px){
+  /* Marge de défilement pour que le dernier bouton de la carte de connexion
+     reste atteignable même quand le bandeau "Passer en plein écran" (fixe,
+     en bas, ~90px) est affiché par-dessus (FullscreenHint, 1er lancement
+     seulement — mobile < 900px). */
+  #landing{padding-bottom:140px}
+}
+
 /* ── DASHBOARD DARK CONTEXT ── */
 #dashboard {
   --bg: #111c2b;
@@ -420,7 +491,18 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .manager-topbar-mobile{display:none}
 .manager-bottomnav-mobile{display:none}
 
+.manager-chat-shell{height:calc(100vh - 110px)}
+
 @media (max-width:860px){
+  /* Le chat magasin fixe sa propre hauteur (liste de messages + champ de
+     saisie) plutôt que de dépendre du défilement de .manager-content-wrap :
+     sinon le champ de saisie + bouton Envoyer finissent collés/masqués par
+     la barre d'onglets du bas, le défilement de page ne les remontant pas
+     automatiquement au-dessus du clavier. Constantes = hauteur barre du
+     haut mobile (59px) + barre d'onglets bas hors zone sûre (58px) + padding
+     vertical de .manager-content en mobile (16+24=40px). */
+  .manager-chat-shell{height:calc(100dvh - 157px - env(safe-area-inset-bottom, 0px))}
+
   html:has(#dashboard.manager-light-theme),
   body:has(#dashboard.manager-light-theme){overflow:hidden;height:100%;overscroll-behavior:none}
   #dashboard.manager-light-theme{
@@ -437,6 +519,33 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   .manager-bottomnav-mobile{display:block;order:3;flex-shrink:0;position:relative}
   .manager-content{padding:16px 16px 24px}
   .skill-row-label{width:120px!important}
+}
+
+/* ── DASHBOARD RH — RESPONSIVE — même patron que le dashboard manager
+   (.manager-*) : sidebar fixe desktop, coquille d'app fixe + barre du bas
+   en mobile (<=860px). ── */
+.rh-shell{display:flex;align-items:flex-start}
+.rh-content-wrap{flex:1;min-width:0}
+.rh-sidebar-desktop{display:flex}
+.rh-topbar-mobile{display:none}
+.rh-bottomnav-mobile{display:none}
+
+@media (max-width:860px){
+  html:has(#rhDashboard), body:has(#rhDashboard){overflow:hidden;height:100%;overscroll-behavior:none}
+  #rhDashboard{
+    position:fixed;inset:0;height:100dvh;
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  #rhDashboard .rh-shell{flex:1;min-height:0;flex-direction:column;align-items:stretch}
+  .rh-sidebar-desktop{display:none}
+  .rh-topbar-mobile{display:flex;order:1;flex-shrink:0}
+  .rh-content-wrap{
+    order:2;flex:1;min-height:0;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  }
+  .rh-bottomnav-mobile{display:block;order:3;flex-shrink:0;position:relative}
+  .rh-filters-row{padding:14px 16px 0!important}
+  .rh-content{padding:16px 16px 24px!important}
 }
 
 /* ── IMPRESSION — n'imprime que le compte rendu (.print-report-area), pas le

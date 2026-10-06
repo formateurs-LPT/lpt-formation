@@ -1232,8 +1232,8 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
 
   return (
     <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px', marginBottom: 8 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="item-row-main" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="item-row-label" style={{ flex: 1, minWidth: 0 }}>
           <span style={{ fontSize: 14, color: '#fff', fontWeight: 600 }}>{item.label}</span>
           {entry?.score != null && (
             <div style={{ fontSize: 10, color: '#22c55e', marginTop: 2, fontWeight: 600 }}>

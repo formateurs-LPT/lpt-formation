@@ -151,6 +151,21 @@ export const apiDeciderEntretien = (id, { noteEntretien, decisionCandidat }) =>
     updated_at: new Date().toISOString(),
   })
 
+// Entretiens confirmés ('acceptee') dont l'heure est passée sans décision
+// manager (decision_candidat toujours 'en_attente') — alimente la carte RH
+// "Entretiens sans retour" (toujours calculé en direct, jamais depuis la
+// table notifications qui ne sert qu'à l'alerte du soir).
+export const apiGetEntretiensSansRetour = () =>
+  get('entretiens_recrutement', `statut=eq.acceptee&decision_candidat=eq.en_attente&date_heure_proposee=lt.${encodeURIComponent(new Date().toISOString())}&order=date_heure_proposee.asc`)
+
+// Conversation RH <-> manager à propos d'un candidat — même table que les
+// chats individuel/groupe (mots_messages), distinguée par type='recrutement'.
+export const getConversationRecrutement = (candidatId) =>
+  get('mots_messages', `candidat_id=eq.${candidatId}&type=eq.recrutement&order=created_at.asc`)
+
+export const addMessageRecrutement = ({ candidatId, auteur, auteurNom, contenu }) =>
+  post('mots_messages', { candidat_id: candidatId, type: 'recrutement', auteur, auteur_nom: auteurNom, contenu })
+
 // Historique
 export const apiAddHistorique = (data) => postMin('candidats_historique', data)
 export const apiGetHistorique = (candidatId) => get('candidats_historique', `candidat_id=eq.${candidatId}&order=created_at.asc`)
@@ -223,6 +238,13 @@ export async function apiGetMagasinInfo(magasinId) {
 }
 export async function apiGetEntree(entreeId) {
   const rows = await get('entrees_rh', `id=eq.${entreeId}`)
+  return rows?.[0] || null
+}
+// Retrouve le candidat d'origine depuis une entrée (FK réelle entree_id, pas
+// un matching de nom) — pour pouvoir (re)envoyer le mail de bienvenue depuis
+// "Entrées de la semaine", où seule l'entrée est affichée.
+export async function apiGetCandidatByEntreeId(entreeId) {
+  const rows = await get('candidats', `entree_id=eq.${entreeId}`)
   return rows?.[0] || null
 }
 export const apiMarquerMailBienvenueEnvoye = (candidatId) =>

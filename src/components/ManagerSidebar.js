@@ -6,11 +6,11 @@ import { TRAINER_CONTACTS } from '@/lib/trainerContacts'
 
 const NAV_ITEMS = [
   { id: 'accueil', label: 'Accueil', Icon: IconHome },
-  { id: 'equipe', label: 'Mon équipe', Icon: IconUsers },
-  { id: 'chat', label: 'Chat magasin', Icon: IconMessageCircle },
+  { id: 'equipe', label: 'Mon équipe', shortLabel: 'Équipe', Icon: IconUsers },
+  { id: 'chat', label: 'Chat magasin', shortLabel: 'Chat', Icon: IconMessageCircle },
   { id: 'entrainement', label: "J'entraîne mon équipe", shortLabel: 'Entraîner', Icon: IconTarget },
   { id: 'demandes', label: 'Demandes', Icon: IconSend },
-  { id: 'recrutement', label: 'Recrutement', Icon: IconUserPlus },
+  { id: 'recrutement', label: 'Recrutement', shortLabel: 'Recrut.', Icon: IconUserPlus },
   { id: 'reporting', label: 'Reporting', Icon: IconBarChart },
 ]
 
