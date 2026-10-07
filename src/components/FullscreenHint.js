@@ -12,7 +12,10 @@ export default function FullscreenHint() {
       window.navigator.standalone === true ||
       window.matchMedia('(display-mode: standalone)').matches
     const dismissed = localStorage.getItem('lpt_fs_dismissed')
-    const mobile = window.innerWidth < 900
+    // Hauteur minimale : en paysage téléphone (peu de hauteur dispo), ce
+    // bandeau fixe en bas peut recouvrir un champ de saisie ou un bouton
+    // d'action — on ne le montre que quand il y a la place.
+    const mobile = window.innerWidth < 900 && window.innerHeight >= 450
 
     setIsIOS(ios)
     setIsFullscreen(standalone)

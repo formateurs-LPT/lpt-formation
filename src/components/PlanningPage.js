@@ -525,16 +525,16 @@ export default function PlanningPage({ pName, onBack }) {
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
 
       {/* Topbar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+      <div className="planning-topbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.07)', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
-          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} className="planning-topbar-logo" />
+          <div className="planning-topbar-sep" style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2 }}>Pôle Formation</div>
             <div style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>Planning déplacements</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button onClick={() => setShowCreate(true)} style={{
             background: 'linear-gradient(135deg, #0089ba, #00abe9)', border: 'none',
             color: '#fff', padding: '10px 20px', borderRadius: 12, fontSize: 13,
@@ -553,27 +553,27 @@ export default function PlanningPage({ pName, onBack }) {
       </div>
 
       {/* Filtres formateurs */}
-      <div style={{ display: 'flex', gap: 8, padding: '16px 32px 0', flexShrink: 0 }}>
+      <div className="planning-filters-row" style={{ display: 'flex', gap: 8, padding: '16px 32px 0', flexShrink: 0 }}>
         {['Tous', ...TRAINERS].map(t => {
           const active = filterTrainer === t
           const c = t === 'Tous' ? '#64748b' : trainerColor(t)
           return (
             <button key={t} onClick={() => setFilter(t)} style={{
               padding: '6px 16px', borderRadius: 20, cursor: 'pointer', fontFamily: 'inherit',
-              fontSize: 12, fontWeight: 700, transition: 'all .15s',
+              fontSize: 12, fontWeight: 700, transition: 'all .15s', flexShrink: 0,
               background: active ? `${c}22` : 'rgba(255,255,255,0.04)',
               border: `1px solid ${active ? c : 'rgba(255,255,255,0.1)'}`,
               color: active ? c : 'rgba(255,255,255,0.4)',
             }}>{t}</button>
           )
         })}
-        <div style={{ marginLeft: 'auto', fontSize: 12, color: 'rgba(255,255,255,0.3)', alignSelf: 'center' }}>
+        <div style={{ marginLeft: 'auto', fontSize: 12, color: 'rgba(255,255,255,0.3)', alignSelf: 'center', flexShrink: 0 }}>
           {filtered.length} déplacement{filtered.length !== 1 ? 's' : ''}
         </div>
       </div>
 
       {/* Contenu */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: selected ? 'minmax(320px, 1fr) 420px' : '1fr', gap: 0, overflow: 'hidden', padding: '20px 32px 24px' }}>
+      <div className="planning-grid" style={{ flex: 1, display: 'grid', gridTemplateColumns: selected ? 'minmax(320px, 1fr) 420px' : '1fr', gap: 0, overflow: 'hidden', padding: '20px 32px 24px' }}>
 
         {/* Grille de cartes */}
         <div style={{ overflowY: 'auto', paddingRight: selected ? 16 : 0 }}>

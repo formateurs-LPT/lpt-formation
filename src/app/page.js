@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Login from '@/components/Login'
 import Topbar from '@/components/Topbar'
 import Toast, { useToast } from '@/components/Toast'
@@ -51,6 +51,13 @@ import ParticipantModuleView from '@/components/ParticipantModuleView'
 export default function Page() {
   const isMobile = useIsMobile(640)
   const [view, setView] = useState('landing') // landing | dashboard | trainer-session | participant | module-types-verres
+  const scrollAreaRef = useRef(null)
+  // Remonte en haut à chaque changement d'écran — sur mobile, le conteneur
+  // de défilement est partagé entre toutes les vues (coquille d'app fixe),
+  // donc sans ça la position de scroll d'une vue reste collée à la suivante
+  // (ex: contenu masqué sous la barre du haut en arrivant sur "Suivi magasin"
+  // si le tableau de bord avait été défilé avant de cliquer dessus).
+  useEffect(() => { if (scrollAreaRef.current) scrollAreaRef.current.scrollTop = 0 }, [view])
   const [pName, setPName] = useState('')
   const [pPrenom, setPPrenom] = useState('')
   const [isTrainer, setIsTrainer] = useState(false)
@@ -449,7 +456,7 @@ export default function Page() {
         onTVMode={handleOpenTv}
         onStartSession={handleLaunchSession}
       />
-      <div style={isMobile ? { flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', position: 'relative' } : {}}>
+      <div ref={scrollAreaRef} data-app-scroll style={isMobile ? { flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', position: 'relative' } : {}}>
       {view === 'dashboard' && (
         <Dashboard
           pName={pName}

@@ -2185,6 +2185,13 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   // complète existante — on commence par l'équipe, le sien viendra ensuite.
   const isTeamDashboard = getTrainerAvatarKey(pName) !== 'kevin'
   const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning | retour-formation | auto-eval | global-ratings | mes-avis | free-quiz
+  // Remonte en haut à chaque sous-écran — sur mobile, le conteneur de
+  // défilement (coquille d'app, [data-app-scroll] dans page.js) est partagé
+  // entre toutes les vues du Dashboard, donc sans ça la position de scroll
+  // du tableau de bord reste collée en arrivant sur "Suivi magasin" etc.
+  useEffect(() => {
+    document.querySelector('[data-app-scroll]')?.scrollTo(0, 0)
+  }, [activeView])
   const [entreeCount, setEntreeCount] = useState(null)
   const [globalAvgRating, setGlobalAvgRating] = useState(null)
   const [allTaches, setAllTaches] = useState([])

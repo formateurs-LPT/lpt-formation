@@ -48,7 +48,7 @@ function CollaborateurLogin({ onLogin }) {
 
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+      minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
       background: 'linear-gradient(160deg,#0f1923 0%,#1a2535 60%,#00abe9 100%)',
     }}>
       <form onSubmit={submit} style={{

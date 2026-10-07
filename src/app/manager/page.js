@@ -17,6 +17,7 @@ import {
 import { getReportingsHebdo, updateReportingStructure } from '@/lib/notesTerrainApi'
 import { getMotsMessages, addMotMessage, getStoreManagerId } from '@/lib/notesCollaborateurApi'
 import { ChatGroupeBody } from '@/components/ChatGroupeModal'
+import ConversationRecrutementModal from '@/components/ConversationRecrutementModal'
 import DemandesInterventionView, { DemandeInterventionModal } from '@/components/DemandesInterventionView'
 import ReportingDetailView from '@/components/ReportingDetailView'
 import { isMagasinBelgique, BELGIQUE_ONLY_LOGINS, getNotificationsNonLues, marquerNotificationsLues } from '@/lib/directionApi'
@@ -62,7 +63,7 @@ function ManagerLogin({ onLogin }) {
 
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+      minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
       background: 'linear-gradient(160deg,#0f1923 0%,#1a2535 60%,#00abe9 100%)',
     }}>
       <form onSubmit={submit} style={{
@@ -428,7 +429,7 @@ function ValidationNouvelEntrantModal({ collaborateur, onValider }) {
 // lui-même (contenu, quiz) sera construit dans un prochain script.
 function TestEnCoursPage({ collaborateur, onBack }) {
   return (
-    <div id="dashboard" className="manager-light-theme" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+    <div id="dashboard" className="manager-light-theme" style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ textAlign: 'center', maxWidth: 420 }}>
         <div style={{ fontSize: 48, marginBottom: 20 }}>🚧</div>
         <h2 style={{ fontSize: 20, fontWeight: 800, color: '#14161a', marginBottom: 10 }}>Chantier en cours</h2>
@@ -909,11 +910,12 @@ function ContreProposerForm({ onSubmit, onCancel }) {
   )
 }
 
-function EntretienCard({ entretien, candidat, onChanged }) {
+function EntretienCard({ entretien, candidat, session, onChanged }) {
   const [showContrer, setShowContrer] = useState(false)
   const [note, setNote] = useState(entretien.note_entretien || '')
   const [busy, setBusy] = useState(false)
   const { message: toastMsg, toast } = useToast()
+  const [showConv, setShowConv] = useState(false)
 
   const accepter = async () => {
     setBusy(true)
@@ -955,6 +957,7 @@ function EntretienCard({ entretien, candidat, onChanged }) {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {candidat?.cv_url && <CvSignedLinkMgr path={candidat.cv_url} label="📄 CV" />}
           {candidat?.lettre_motivation_url && <CvSignedLinkMgr path={candidat.lettre_motivation_url} label="✉️ Lettre" />}
+          <button onClick={() => setShowConv(true)} title="Discuter avec la RH" style={{ ...RCSS.btn, background: 'none', color: '#0089ba', border: '1px solid rgba(0,137,186,0.3)' }}>💬 RH</button>
           <button onClick={supprimer} disabled={busy} title="Supprimer la demande" style={{ ...RCSS.btn, background: 'none', color: '#94a3b8', border: '1px solid #e2e8f0' }}>🗑️</button>
         </div>
       </div>
@@ -1003,6 +1006,17 @@ function EntretienCard({ entretien, candidat, onChanged }) {
         </div>
       )}
       <Toast message={toastMsg} />
+      {showConv && (
+        <ConversationRecrutementModal
+          candidatId={entretien.candidat_id}
+          candidatNom={candidat ? `${candidat.prenom} ${candidat.nom}` : ''}
+          auteur="manager"
+          auteurNom={session?.displayName || 'Manager'}
+          showDecisionButtons={entretien.statut === 'acceptee' && decision === 'en_attente'}
+          onDecided={decider}
+          onClose={() => setShowConv(false)}
+        />
+      )}
     </div>
   )
 }
@@ -1043,7 +1057,7 @@ function RecrutementPlanningStrip({ entretiens, candidatsById }) {
   )
 }
 
-function RecrutementPage({ magasinId, onRefresh }) {
+function RecrutementPage({ magasinId, session, onRefresh }) {
   const [entretiens, setEntretiens] = useState([])
   const [candidatsById, setCandidatsById] = useState({})
   const [loading, setLoading] = useState(true)
@@ -1092,7 +1106,7 @@ function RecrutementPage({ magasinId, onRefresh }) {
             <>
               <RecrutementPlanningStrip entretiens={enCours} candidatsById={candidatsById} />
               {enCours.map(e => (
-                <EntretienCard key={e.id} entretien={e} candidat={candidatsById[e.candidat_id]} onChanged={handleChanged} />
+                <EntretienCard key={e.id} entretien={e} candidat={candidatsById[e.candidat_id]} session={session} onChanged={handleChanged} />
               ))}
             </>
           )}
@@ -1107,7 +1121,7 @@ function RecrutementPage({ magasinId, onRefresh }) {
                 {showHistorique ? '▾' : '▸'} Historique ({historique.length})
               </button>
               {showHistorique && historique.map(e => (
-                <EntretienCard key={e.id} entretien={e} candidat={candidatsById[e.candidat_id]} onChanged={handleChanged} />
+                <EntretienCard key={e.id} entretien={e} candidat={candidatsById[e.candidat_id]} session={session} onChanged={handleChanged} />
               ))}
             </div>
           )}
@@ -1122,7 +1136,7 @@ function RecrutementPage({ magasinId, onRefresh }) {
 // le chat individuel manager ↔ collaborateur (mots_messages, type='groupe').
 function ChatMagasinPage({ magasinId, magasinNom, session, storeManagerId }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 110px)' }}>
+    <div className="manager-chat-shell" style={{ display: 'flex', flexDirection: 'column' }}>
       <PageHeader title="Chat du magasin" />
       <div style={{ flex: 1, minHeight: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column' }}>
         <ChatGroupeBody
@@ -1542,7 +1556,7 @@ function ManagerDashboard({ session, onLogout }) {
           ) : activeNav === 'demandes' ? (
             <DemandesPage magasinId={magasinId} session={session} store={store} />
           ) : activeNav === 'recrutement' ? (
-            <RecrutementPage magasinId={magasinId} onRefresh={() => refreshRecrutement(magasinId)} />
+            <RecrutementPage magasinId={magasinId} session={session} onRefresh={() => refreshRecrutement(magasinId)} />
           ) : activeNav === 'reporting' ? (
             <ReportingPage reportings={reportings} magasinNom={store.label} />
           ) : activeNav === 'chat' ? (

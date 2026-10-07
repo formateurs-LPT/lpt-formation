@@ -57,7 +57,7 @@ function DirectionLogin({ onLogin }) {
 
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+      minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
       background: 'linear-gradient(160deg,#0f1923 0%,#1a2535 60%,#00abe9 100%)',
     }}>
       <form onSubmit={submit} style={{
@@ -109,7 +109,7 @@ function TabBar({ tabs, active, onChange }) {
   return (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
       {tabs.map(t => (
-        <button key={t.id} onClick={() => onChange(t.id)} style={{
+        <button key={t.id} className="dir-tab-btn" onClick={() => onChange(t.id)} style={{
           padding: '8px 16px', borderRadius: 20, cursor: 'pointer', fontFamily: 'inherit',
           fontSize: 12.5, fontWeight: 700,
           background: active === t.id ? 'rgba(0,171,233,0.15)' : 'var(--card)',

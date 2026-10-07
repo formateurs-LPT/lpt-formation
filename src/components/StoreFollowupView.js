@@ -16,6 +16,7 @@ function StoreTile({ store, color, onSelect }) {
   return (
     <button
       onClick={onSelect}
+      className="store-tile"
       style={{
         position: 'relative', overflow: 'hidden',
         background: `linear-gradient(155deg, ${color.bg} 0%, #fff 65%)`,
