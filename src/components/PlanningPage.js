@@ -30,10 +30,10 @@ const ALL_STORES = Object.values(STORES_BY_ZONE).flat()
 
 const TRAINERS = ['Kevin','Quentin','Nadège','Thomas','Valentine','Mateo','Jonathan','Salomé']
 
-const TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777', Thomas: '#f59e0b', Valentine: '#22c55e', Mateo: '#fb923c', Jonathan: '#14b8a6', Salomé: '#4f46e5' }
+const TRAINER_COLORS = { Kevin: '#0089ba', Quentin: '#7c3aed', Nadège: '#db2777', Thomas: '#f59e0b', Valentine: '#22c55e', Mateo: '#fb923c', Jonathan: '#14b8a6', Salomé: '#4f46e5' }
 
 function trainerColor(name) {
-  return TRAINER_COLORS[name] || '#64748b'
+  return TRAINER_COLORS[name] || '#6b7280'
 }
 
 function fmtDate(d) {
@@ -54,9 +54,9 @@ function statusOf(dep) {
 }
 
 const STATUS_STYLE = {
-  active:   { label: 'En cours',  bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.35)',  color: '#4ade80' },
-  upcoming: { label: 'À venir',   bg: 'rgba(0,171,233,0.1)',   border: 'rgba(0,171,233,0.3)',   color: '#00abe9' },
-  done:     { label: 'Terminé',   bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.3)' },
+  active:   { label: 'En cours',  bg: '#dcfce7', border: '#86efac', color: '#16a34a' },
+  upcoming: { label: 'À venir',   bg: '#eaf3fd', border: 'rgba(0,137,186,0.3)', color: '#0089ba' },
+  done:     { label: 'Terminé',   bg: '#f3f4f6', border: '#e5e7eb', color: '#9aa1ac' },
 }
 
 // ── Modal création déplacement ────────────────────────────────
@@ -87,33 +87,33 @@ function CreateModal({ onClose, onCreated }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 200,
-      background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)',
+      background: 'rgba(15,20,30,0.5)', backdropFilter: 'blur(6px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
     }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{
-        background: 'linear-gradient(135deg, #0a1628 0%, #0d2247 100%)',
-        border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24,
+        background: '#fff',
+        border: '1px solid #e5e7eb', borderRadius: 24, boxShadow: '0 20px 60px rgba(16,24,40,.15)',
         padding: '32px', width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Planning</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>Nouveau déplacement</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Planning</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#14161a' }}>Nouveau déplacement</div>
           </div>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.5)', width: 36, height: 36, borderRadius: 10, cursor: 'pointer', fontSize: 16, fontFamily: 'inherit' }}>✕</button>
+          <button onClick={onClose} style={{ background: '#f3f4f6', border: '1px solid #e5e7eb', color: '#6b7280', width: 36, height: 36, borderRadius: 10, cursor: 'pointer', fontSize: 16, fontFamily: 'inherit' }}>✕</button>
         </div>
 
         {/* Formateur */}
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Formateur</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Formateur</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             {TRAINERS.map(t => (
               <button key={t} onClick={() => setTrainer(t)} style={{
                 flex: '1 1 100px', padding: '12px 0', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
                 fontWeight: 700, fontSize: 14, transition: 'all .15s',
-                background: trainer === t ? `${trainerColor(t)}22` : 'rgba(255,255,255,0.04)',
-                border: `2px solid ${trainer === t ? trainerColor(t) : 'rgba(255,255,255,0.1)'}`,
-                color: trainer === t ? trainerColor(t) : 'rgba(255,255,255,0.5)',
+                background: trainer === t ? `${trainerColor(t)}18` : '#f8fafc',
+                border: `2px solid ${trainer === t ? trainerColor(t) : '#e5e7eb'}`,
+                color: trainer === t ? trainerColor(t) : '#6b7280',
               }}>{t}</button>
             ))}
           </div>
@@ -121,15 +121,15 @@ function CreateModal({ onClose, onCreated }) {
 
         {/* Période */}
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Période</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Période</div>
           <div style={{ display: 'flex', gap: 12 }}>
             {[['Du', startDate, setStart], ['Au', endDate, setEnd]].map(([label, val, setter]) => (
               <label key={label} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{label}</span>
+                <span style={{ fontSize: 11, color: '#6b7280' }}>{label}</span>
                 <input type="date" value={val} onChange={e => setter(e.target.value)} style={{
-                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
-                  color: '#fff', borderRadius: 10, padding: '10px 14px', fontSize: 14,
-                  fontFamily: 'inherit', outline: 'none', colorScheme: 'dark',
+                  background: '#fff', border: '1px solid #e5e7eb',
+                  color: '#14161a', borderRadius: 10, padding: '10px 14px', fontSize: 14,
+                  fontFamily: 'inherit', outline: 'none',
                 }} />
               </label>
             ))}
@@ -138,18 +138,18 @@ function CreateModal({ onClose, onCreated }) {
 
         {/* Magasin */}
         <div style={{ marginBottom: 28 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Magasin</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Magasin</div>
           {Object.entries(STORES_BY_ZONE).map(([zone, stores]) => (
             <div key={zone} style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>{zone}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#9aa1ac', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>{zone}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {stores.map(s => (
                   <button key={s} onClick={() => setStore(s)} style={{
                     padding: '6px 14px', borderRadius: 20, cursor: 'pointer', fontFamily: 'inherit',
                     fontSize: 12, fontWeight: 600, transition: 'all .15s',
-                    background: store === s ? 'rgba(0,171,233,0.2)' : 'rgba(255,255,255,0.05)',
-                    border: `1px solid ${store === s ? '#00abe9' : 'rgba(255,255,255,0.1)'}`,
-                    color: store === s ? '#00abe9' : 'rgba(255,255,255,0.55)',
+                    background: store === s ? '#eaf3fd' : '#f8fafc',
+                    border: `1px solid ${store === s ? '#0089ba' : '#e5e7eb'}`,
+                    color: store === s ? '#0089ba' : '#6b7280',
                   }}>{s}</button>
                 ))}
               </div>
@@ -157,13 +157,13 @@ function CreateModal({ onClose, onCreated }) {
           ))}
         </div>
 
-        {error && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 16, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '10px 14px' }}>{error}</div>}
+        {error && <div style={{ color: '#b91c1c', fontSize: 13, marginBottom: 16, background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px' }}>{error}</div>}
 
         <button onClick={submit} disabled={!canSubmit || loading} style={{
           width: '100%', padding: '14px', borderRadius: 14, fontFamily: 'inherit',
           fontSize: 15, fontWeight: 700, cursor: canSubmit ? 'pointer' : 'default',
-          background: canSubmit ? 'linear-gradient(135deg, #0089ba, #00abe9)' : 'rgba(255,255,255,0.07)',
-          border: 'none', color: canSubmit ? '#fff' : 'rgba(255,255,255,0.3)',
+          background: canSubmit ? 'linear-gradient(135deg, #0089ba, #00abe9)' : '#f3f4f6',
+          border: 'none', color: canSubmit ? '#fff' : '#9aa1ac',
           boxShadow: canSubmit ? '0 6px 24px rgba(0,171,233,0.35)' : 'none', transition: 'all .2s',
         }}>{loading ? 'Enregistrement…' : '✓ Créer le déplacement'}</button>
       </div>
@@ -208,9 +208,9 @@ function EditCardForm({ dep, onCancel, onSaved, onDeleted }) {
   }
 
   const inputStyle = {
-    width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
-    color: '#fff', borderRadius: 8, padding: '8px 10px', fontSize: 12.5,
-    fontFamily: 'inherit', outline: 'none', colorScheme: 'dark', boxSizing: 'border-box',
+    width: '100%', background: '#fff', border: '1px solid #e5e7eb',
+    color: '#14161a', borderRadius: 8, padding: '8px 10px', fontSize: 12.5,
+    fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
   }
 
   return (
@@ -225,25 +225,25 @@ function EditCardForm({ dep, onCancel, onSaved, onDeleted }) {
         <input type="date" value={startDate} onChange={e => setStart(e.target.value)} style={inputStyle} />
         <input type="date" value={endDate} onChange={e => setEnd(e.target.value)} style={inputStyle} />
       </div>
-      {error && <div style={{ color: '#f87171', fontSize: 11 }}>{error}</div>}
+      {error && <div style={{ color: '#b91c1c', fontSize: 11 }}>{error}</div>}
       <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
         <button onClick={save} disabled={!canSave || saving} style={{
           flex: 1, padding: '8px', borderRadius: 8, fontFamily: 'inherit',
           fontSize: 12.5, fontWeight: 700, cursor: canSave ? 'pointer' : 'default',
-          background: canSave ? 'linear-gradient(135deg, #0089ba, #00abe9)' : 'rgba(255,255,255,0.07)',
-          border: 'none', color: canSave ? '#fff' : 'rgba(255,255,255,0.3)',
+          background: canSave ? 'linear-gradient(135deg, #0089ba, #00abe9)' : '#f3f4f6',
+          border: 'none', color: canSave ? '#fff' : '#9aa1ac',
         }}>{saving ? '…' : '✓ Enregistrer'}</button>
         <button onClick={onCancel} style={{
           padding: '8px 12px', borderRadius: 8, fontFamily: 'inherit',
           fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
-          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-          color: 'rgba(255,255,255,0.5)',
+          background: '#f8fafc', border: '1px solid #e5e7eb',
+          color: '#6b7280',
         }}>Annuler</button>
         <button onClick={remove} disabled={deleting} title="Supprimer ce déplacement" style={{
           padding: '8px 12px', borderRadius: 8, fontFamily: 'inherit',
           fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
-          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
-          color: '#f87171', flexShrink: 0,
+          background: '#fef2f2', border: '1px solid #fecaca',
+          color: '#ef4444', flexShrink: 0,
         }}>{deleting ? '…' : '🗑️'}</button>
       </div>
     </div>
@@ -259,9 +259,9 @@ function DeploymentCard({ dep, isSelected, onClick, onSaved, onDeleted }) {
   if (editing) {
     return (
       <div style={{
-        background: 'rgba(0,171,233,0.06)',
-        borderTop: '1px solid rgba(0,171,233,0.3)', borderRight: '1px solid rgba(0,171,233,0.3)',
-        borderBottom: '1px solid rgba(0,171,233,0.3)', borderLeft: `4px solid ${c}`,
+        background: 'rgba(0,137,186,0.05)',
+        borderTop: '1px solid rgba(0,137,186,0.25)', borderRight: '1px solid rgba(0,137,186,0.25)',
+        borderBottom: '1px solid rgba(0,137,186,0.25)', borderLeft: `4px solid ${c}`,
         borderRadius: 14, padding: '14px 16px',
       }}>
         <EditCardForm dep={dep} onCancel={() => setEditing(false)} onSaved={() => { setEditing(false); onSaved() }} onDeleted={onDeleted} />
@@ -272,27 +272,27 @@ function DeploymentCard({ dep, isSelected, onClick, onSaved, onDeleted }) {
   return (
     <div onClick={onClick}
       style={{
-        background: isSelected ? 'rgba(0,171,233,0.08)' : 'rgba(255,255,255,0.04)',
-        borderTop: `1px solid ${isSelected ? 'rgba(0,171,233,0.35)' : 'rgba(255,255,255,0.08)'}`,
-        borderRight: `1px solid ${isSelected ? 'rgba(0,171,233,0.35)' : 'rgba(255,255,255,0.08)'}`,
-        borderBottom: `1px solid ${isSelected ? 'rgba(0,171,233,0.35)' : 'rgba(255,255,255,0.08)'}`,
+        background: isSelected ? '#eaf3fd' : '#fff',
+        borderTop: `1px solid ${isSelected ? '#0089ba' : '#e5e7eb'}`,
+        borderRight: `1px solid ${isSelected ? '#0089ba' : '#e5e7eb'}`,
+        borderBottom: `1px solid ${isSelected ? '#0089ba' : '#e5e7eb'}`,
         borderLeft: `4px solid ${c}`,
         borderRadius: 14, padding: '16px 18px', position: 'relative',
-        cursor: 'pointer', transition: 'all .15s',
+        cursor: 'pointer', transition: 'all .15s', boxShadow: '0 1px 2px rgba(16,24,40,.03)',
         display: 'flex', flexDirection: 'column', gap: 8, minHeight: 108,
       }}
-      onMouseEnter={e => !isSelected && (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
-      onMouseLeave={e => !isSelected && (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+      onMouseEnter={e => !isSelected && (e.currentTarget.style.background = '#f5f6f8')}
+      onMouseLeave={e => !isSelected && (e.currentTarget.style.background = '#fff')}
     >
       <button onClick={e => { e.stopPropagation(); setEditing(true) }} title="Modifier ce déplacement" style={{
         position: 'absolute', top: 10, right: 10,
-        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-        color: 'rgba(255,255,255,0.45)', width: 26, height: 26, borderRadius: 8,
+        background: '#fff', border: '1px solid #e5e7eb',
+        color: '#9aa1ac', width: 26, height: 26, borderRadius: 8,
         cursor: 'pointer', fontSize: 12, fontFamily: 'inherit', display: 'flex',
         alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}
-        onMouseEnter={e => { e.currentTarget.style.color = '#00abe9'; e.currentTarget.style.borderColor = 'rgba(0,171,233,0.4)' }}
-        onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)' }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#0089ba'; e.currentTarget.style.borderColor = 'rgba(0,137,186,0.4)' }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#9aa1ac'; e.currentTarget.style.borderColor = '#e5e7eb' }}
       >✏️</button>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingRight: 30 }}>
@@ -300,8 +300,8 @@ function DeploymentCard({ dep, isSelected, onClick, onSaved, onDeleted }) {
         <span style={{ fontSize: 13, fontWeight: 700, color: c }}>{dep.trainer}</span>
         <div style={{ background: st.bg, border: `1px solid ${st.border}`, borderRadius: 20, padding: '2px 8px', fontSize: 10, fontWeight: 700, color: st.color }}>{st.label}</div>
       </div>
-      <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{dep.store}</div>
-      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 'auto' }}>{fmtDate(dep.start_date)} → {fmtDate(dep.end_date)}</div>
+      <div style={{ fontSize: 17, fontWeight: 800, color: '#14161a', lineHeight: 1.2 }}>{dep.store}</div>
+      <div style={{ fontSize: 12, color: '#9aa1ac', marginTop: 'auto' }}>{fmtDate(dep.start_date)} → {fmtDate(dep.end_date)}</div>
     </div>
   )
 }
@@ -398,22 +398,22 @@ function DeploymentDetail({ dep, onDelete, onClose }) {
               <span style={{ fontSize: 13, fontWeight: 700, color }}>{dep.trainer}</span>
               <div style={{ background: st.bg, border: `1px solid ${st.border}`, borderRadius: 20, padding: '3px 10px', fontSize: 10, fontWeight: 700, color: st.color }}>{st.label}</div>
             </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{dep.store}</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#14161a', marginBottom: 4 }}>{dep.store}</div>
+            <div style={{ fontSize: 13, color: '#6b7280' }}>
               {fmtDate(dep.start_date)} → {fmtDate(dep.end_date)}
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 14, fontFamily: 'inherit', flexShrink: 0 }}>✕</button>
+          <button onClick={onClose} style={{ background: '#f3f4f6', border: '1px solid #e5e7eb', color: '#6b7280', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 14, fontFamily: 'inherit', flexShrink: 0 }}>✕</button>
         </div>
 
         {/* Ajouter une note */}
-        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '16px', marginBottom: 20, flexShrink: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Ajouter une note</div>
+        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 14, padding: '16px', marginBottom: 20, flexShrink: 0, boxShadow: '0 1px 2px rgba(16,24,40,.03)' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Ajouter une note</div>
           <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
             <input type="date" value={noteDate} onChange={e => setNoteDate(e.target.value)} style={{
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              color: '#fff', borderRadius: 8, padding: '8px 12px', fontSize: 13,
-              fontFamily: 'inherit', outline: 'none', colorScheme: 'dark', width: 150, flexShrink: 0,
+              background: '#fff', border: '1px solid #e5e7eb',
+              color: '#14161a', borderRadius: 8, padding: '8px 12px', fontSize: 13,
+              fontFamily: 'inherit', outline: 'none', width: 150, flexShrink: 0,
             }} />
           </div>
           <textarea
@@ -421,8 +421,8 @@ function DeploymentDetail({ dep, onDelete, onClose }) {
             placeholder="Ce que j'ai fait aujourd'hui…"
             rows={3}
             style={{
-              width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              color: '#fff', borderRadius: 8, padding: '10px 12px', fontSize: 13,
+              width: '100%', background: '#fff', border: '1px solid #e5e7eb',
+              color: '#14161a', borderRadius: 8, padding: '10px 12px', fontSize: 13,
               fontFamily: 'inherit', outline: 'none', resize: 'vertical', boxSizing: 'border-box',
               lineHeight: 1.5,
             }}
@@ -430,8 +430,8 @@ function DeploymentDetail({ dep, onDelete, onClose }) {
           <button onClick={addNote} disabled={!noteText.trim() || saving} style={{
             marginTop: 10, padding: '9px 20px', borderRadius: 10, fontFamily: 'inherit',
             fontSize: 13, fontWeight: 700, cursor: noteText.trim() ? 'pointer' : 'default',
-            background: noteText.trim() ? `linear-gradient(135deg, ${color}cc, ${color})` : 'rgba(255,255,255,0.06)',
-            border: 'none', color: noteText.trim() ? '#fff' : 'rgba(255,255,255,0.3)',
+            background: noteText.trim() ? `linear-gradient(135deg, ${color}cc, ${color})` : '#f3f4f6',
+            border: 'none', color: noteText.trim() ? '#fff' : '#9aa1ac',
             transition: 'all .15s',
           }}>{saving ? 'Enregistrement…' : '+ Enregistrer la note'}</button>
         </div>
@@ -439,25 +439,25 @@ function DeploymentDetail({ dep, onDelete, onClose }) {
         {/* Liste des notes */}
         <div style={{ flex: 1, overflowY: 'auto', marginBottom: 16 }}>
           {notes.length === 0 ? (
-            <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.25)', fontSize: 13, padding: '32px 0' }}>Aucune note pour ce déplacement</div>
+            <div style={{ textAlign: 'center', color: '#9aa1ac', fontSize: 13, padding: '32px 0' }}>Aucune note pour ce déplacement</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {notes.map(n => (
                 <div key={n.id} style={{
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                  background: '#fff', border: '1px solid #e5e7eb',
                   borderLeft: `3px solid ${color}`, borderRadius: 12, padding: '12px 16px',
-                  position: 'relative',
+                  position: 'relative', boxShadow: '0 1px 2px rgba(16,24,40,.03)',
                 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{fmtDate(n.note_date)}</div>
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>{n.content}</div>
+                  <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.6 }}>{n.content}</div>
                   <button onClick={() => deleteNote(n.id)} style={{
                     position: 'absolute', top: 10, right: 10,
-                    background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)',
+                    background: 'none', border: 'none', color: '#c7cbd1',
                     cursor: 'pointer', fontSize: 14, padding: '2px 6px', borderRadius: 6,
                     fontFamily: 'inherit',
                   }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
-                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}
+                    onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                    onMouseLeave={e => e.currentTarget.style.color = '#c7cbd1'}
                   >✕</button>
                 </div>
               ))}
@@ -465,20 +465,20 @@ function DeploymentDetail({ dep, onDelete, onClose }) {
           )}
         </div>
 
-        {deleteError && <div style={{ color: '#f87171', fontSize: 12, marginBottom: 10 }}>{deleteError}</div>}
+        {deleteError && <div style={{ color: '#b91c1c', fontSize: 12, marginBottom: 10 }}>{deleteError}</div>}
         {/* Footer actions */}
-        <div style={{ display: 'flex', gap: 10, flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 16 }}>
+        <div style={{ display: 'flex', gap: 10, flexShrink: 0, borderTop: '1px solid #e5e7eb', paddingTop: 16 }}>
           <button onClick={generatePDF} style={{
             flex: 1, padding: '11px', borderRadius: 12, fontFamily: 'inherit',
             fontSize: 13, fontWeight: 700, cursor: 'pointer',
-            background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)',
-            color: '#00abe9',
+            background: '#eaf3fd', border: '1px solid rgba(0,137,186,0.3)',
+            color: '#0089ba',
           }}>📄 Générer le rapport PDF</button>
           <button onClick={deleteDep} disabled={deleting} style={{
             padding: '11px 16px', borderRadius: 12, fontFamily: 'inherit',
             fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
-            color: '#f87171',
+            background: '#fef2f2', border: '1px solid #fecaca',
+            color: '#ef4444',
           }}>{deleting ? '…' : '🗑️'}</button>
         </div>
       </div>
@@ -522,16 +522,16 @@ export default function PlanningPage({ pName, onBack }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: '#f5f6f8', display: 'flex', flexDirection: 'column' }}>
 
       {/* Topbar */}
-      <div className="planning-topbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.07)', flexWrap: 'wrap', gap: 12 }}>
+      <div className="planning-topbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 32px', flexShrink: 0, background: '#fff', borderBottom: '1px solid #e5e7eb', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} className="planning-topbar-logo" />
-          <div className="planning-topbar-sep" style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <Image src="/assets/tgv-lpt.png" alt="LPT" width={200} height={100} style={{ width: 64, height: 'auto', objectFit: 'contain' }} className="planning-topbar-logo" />
+          <div className="planning-topbar-sep" style={{ width: 1, height: 20, background: '#e5e7eb' }} />
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 2 }}>Pôle Formation</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>Planning déplacements</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 2 }}>Pôle Formation</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#14161a' }}>Planning déplacements</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -539,15 +539,15 @@ export default function PlanningPage({ pName, onBack }) {
             background: 'linear-gradient(135deg, #0089ba, #00abe9)', border: 'none',
             color: '#fff', padding: '10px 20px', borderRadius: 12, fontSize: 13,
             fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            boxShadow: '0 4px 16px rgba(0,171,233,0.35)',
+            boxShadow: '0 4px 16px rgba(0,171,233,0.3)',
           }}>+ Nouveau déplacement</button>
           <button onClick={onBack} style={{
-            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-            color: 'rgba(255,255,255,0.55)', padding: '10px 18px', borderRadius: 12,
+            background: '#fff', border: '1px solid #e5e7eb',
+            color: '#6b7280', padding: '10px 18px', borderRadius: 12,
             fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .2s',
           }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = '#fecaca' }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#6b7280'; e.currentTarget.style.borderColor = '#e5e7eb' }}
           >✕ Fermer</button>
         </div>
       </div>
@@ -556,18 +556,18 @@ export default function PlanningPage({ pName, onBack }) {
       <div className="planning-filters-row" style={{ display: 'flex', gap: 8, padding: '16px 32px 0', flexShrink: 0 }}>
         {['Tous', ...TRAINERS].map(t => {
           const active = filterTrainer === t
-          const c = t === 'Tous' ? '#64748b' : trainerColor(t)
+          const c = t === 'Tous' ? '#6b7280' : trainerColor(t)
           return (
             <button key={t} onClick={() => setFilter(t)} style={{
               padding: '6px 16px', borderRadius: 20, cursor: 'pointer', fontFamily: 'inherit',
               fontSize: 12, fontWeight: 700, transition: 'all .15s', flexShrink: 0,
-              background: active ? `${c}22` : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${active ? c : 'rgba(255,255,255,0.1)'}`,
-              color: active ? c : 'rgba(255,255,255,0.4)',
+              background: active ? `${c}18` : '#fff',
+              border: `1px solid ${active ? c : '#e5e7eb'}`,
+              color: active ? c : '#6b7280',
             }}>{t}</button>
           )
         })}
-        <div style={{ marginLeft: 'auto', fontSize: 12, color: 'rgba(255,255,255,0.3)', alignSelf: 'center', flexShrink: 0 }}>
+        <div style={{ marginLeft: 'auto', fontSize: 12, color: '#9aa1ac', alignSelf: 'center', flexShrink: 0 }}>
           {filtered.length} déplacement{filtered.length !== 1 ? 's' : ''}
         </div>
       </div>
@@ -578,12 +578,12 @@ export default function PlanningPage({ pName, onBack }) {
         {/* Grille de cartes */}
         <div style={{ overflowY: 'auto', paddingRight: selected ? 16 : 0 }}>
           {loading ? (
-            <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', padding: 60, fontSize: 14 }}>Chargement…</div>
+            <div style={{ textAlign: 'center', color: '#9aa1ac', padding: 60, fontSize: 14 }}>Chargement…</div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 60 }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 8 }}>Aucun déplacement</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Créez votre premier déplacement avec le bouton ci-dessus</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#14161a', marginBottom: 8 }}>Aucun déplacement</div>
+              <div style={{ fontSize: 13, color: '#6b7280' }}>Créez votre premier déplacement avec le bouton ci-dessus</div>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, alignItems: 'start' }}>
@@ -594,19 +594,19 @@ export default function PlanningPage({ pName, onBack }) {
                 }
                 return (
                   <div key={statusKey} style={{
-                    background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)',
-                    borderRadius: 18, padding: 16,
+                    background: '#fff', border: '1px solid #e5e7eb',
+                    borderRadius: 18, padding: 16, boxShadow: '0 1px 2px rgba(16,24,40,.03)',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #f0f1f3' }}>
                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: meta.color, boxShadow: `0 0 6px ${meta.color}`, flexShrink: 0 }} />
-                      <span style={{ fontSize: 13, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.6 }}>{meta.label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: '#14161a', textTransform: 'uppercase', letterSpacing: 0.6 }}>{meta.label}</span>
                       <span style={{
                         marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: meta.color,
                         background: meta.bg, border: `1px solid ${meta.border}`, borderRadius: 20, padding: '2px 9px',
                       }}>{items.length}</span>
                     </div>
                     {items.length === 0 ? (
-                      <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: 12, padding: '24px 0' }}>Aucun déplacement</div>
+                      <div style={{ textAlign: 'center', color: '#9aa1ac', fontSize: 12, padding: '24px 0' }}>Aucun déplacement</div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {items.map(dep => (
@@ -631,7 +631,7 @@ export default function PlanningPage({ pName, onBack }) {
         {/* Détail */}
         {selected && (
           <div style={{
-            borderLeft: '1px solid rgba(255,255,255,0.08)', paddingLeft: 24,
+            borderLeft: '1px solid #e5e7eb', paddingLeft: 24,
             overflowY: 'auto',
           }}>
             <DeploymentDetail dep={selected} onDelete={onDelete} onClose={() => setSelected(null)} />

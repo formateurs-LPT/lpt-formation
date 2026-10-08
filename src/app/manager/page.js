@@ -23,6 +23,7 @@ import ReportingDetailView from '@/components/ReportingDetailView'
 import { isMagasinBelgique, BELGIQUE_ONLY_LOGINS, getNotificationsNonLues, marquerNotificationsLues } from '@/lib/directionApi'
 import { poleMeta } from '@/lib/poles'
 import ManagerSidebar from '@/components/ManagerSidebar'
+import ModuleMiniJeuxManager from '@/components/modules/ModuleMiniJeuxManager'
 import { IconVideo, IconMapPin, IconChevronRight, IconClipboard } from '@/components/ManagerIcons'
 import {
   apiGetEntretiensByMagasin, apiGetCandidatsByIds, apiAccepterEntretien,
@@ -1162,18 +1163,37 @@ function ReportingPage({ reportings, magasinNom }) {
 
 // Emplacement pour les mini-modules d'entraînement que Kevin ajoutera par la
 // suite (à faire passer en réunion manager, ou en tête-à-tête avec un
-// collaborateur) — pour l'instant seul le menu existe, contenu à venir.
-function EntrainementPage() {
+// collaborateur) — pour l'instant, seul "Mini Jeux" (repris du dashboard
+// formateur) est disponible.
+function EntrainementPage({ onOpenMiniJeux }) {
   return (
     <div>
       <PageHeader title="J'entraîne mon équipe" />
       <p style={{ fontSize: 13.5, color: '#6b7280', margin: '-12px 0 20px', maxWidth: 520, lineHeight: 1.5 }}>
         Des mini-modules à faire en réunion manager, ou en tête-à-tête avec un collaborateur.
       </p>
-      <div style={{ textAlign: 'center', padding: '56px 24px', background: '#fff', borderRadius: 14, border: '1.5px solid #e2e8f0' }}>
-        <div style={{ fontSize: 36, marginBottom: 12 }}>🎯</div>
-        <div style={{ fontSize: 15, fontWeight: 600, color: '#64748b' }}>Les premiers modules arrivent bientôt</div>
-      </div>
+      <button
+        onClick={onOpenMiniJeux}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 16, width: '100%', maxWidth: 420,
+          background: 'linear-gradient(155deg, rgba(139,92,246,0.08) 0%, #fff 65%)',
+          border: '1px solid rgba(139,92,246,0.3)', borderRadius: 16, padding: '20px 22px',
+          cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all .2s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 28px -10px rgba(139,92,246,0.4)' }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
+      >
+        <div style={{
+          width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+          background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+        }}>🎮</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#14161a' }}>Mini Jeux</div>
+          <div style={{ fontSize: 12.5, color: '#6b7280', marginTop: 2 }}>Accueil moi si tu peux — jeu de rôle d&apos;équipe</div>
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#8b5cf6', flexShrink: 0 }}>Lancer →</div>
+      </button>
     </div>
   )
 }
@@ -1325,6 +1345,7 @@ function ManagerDashboard({ session, onLogout }) {
   const [ficheCollaborateurId, setFicheCollaborateurId] = useState(null)
   const [chatCount, setChatCount] = useState(0)
   const [storeManagerId, setStoreManagerId] = useState(null)
+  const [miniJeuxOpen, setMiniJeuxOpen] = useState(false)
 
   useEffect(() => {
     getStoreManagerId(session.login).then(setStoreManagerId)
@@ -1489,6 +1510,10 @@ function ManagerDashboard({ session, onLogout }) {
     return <TestEnCoursPage collaborateur={testEnCoursCollab} onBack={() => setTestEnCoursCollab(null)} />
   }
 
+  if (miniJeuxOpen) {
+    return <ModuleMiniJeuxManager onBack={() => setMiniJeuxOpen(false)} />
+  }
+
   if (!baseStore) {
     return (
       <div id="dashboard" className="manager-light-theme">
@@ -1562,7 +1587,7 @@ function ManagerDashboard({ session, onLogout }) {
           ) : activeNav === 'chat' ? (
             <ChatMagasinPage magasinId={magasinId} magasinNom={store.label} session={session} storeManagerId={storeManagerId} />
           ) : activeNav === 'entrainement' ? (
-            <EntrainementPage />
+            <EntrainementPage onOpenMiniJeux={() => setMiniJeuxOpen(true)} />
           ) : (
             <AccueilPage
               store={store}

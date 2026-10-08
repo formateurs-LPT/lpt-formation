@@ -4,7 +4,6 @@ import Login from '@/components/Login'
 import Topbar from '@/components/Topbar'
 import Toast, { useToast } from '@/components/Toast'
 import Dashboard from '@/components/Dashboard'
-import TrainerView from '@/components/TrainerView'
 import ParticipantView from '@/components/ParticipantView'
 import { sbUpsert, sbUpdate, SESSION_CODE, getTrainerFromDB, ensureSession, getRuntimeSessionCode, getActiveSessionCode, setRoomSharedState, setSharedState } from '@/lib/supabase'
 import { resolveParticipantName } from '@/lib/participantNames'
@@ -14,7 +13,7 @@ import { TRAINER_CANONICAL } from '@/lib/constants'
 import { getTrainerCredentials } from '@/lib/env'
 import { captureParticipantRoomFromUrl, captureTvRoomFromUrl, buildTvUrl, isDynamicRoomCode, setParticipantSessionCode, getLegacySessionCode } from '@/lib/sessionCode'
 import { useIsMobile } from '@/lib/useIsMobile'
-import { endActiveRoom, getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
+import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import { useOnlineCount } from '@/lib/useOnlineCount'
 import ModuleTypesVerres from '@/components/modules/ModuleTypesVerres'
 import ModuleProgressif from '@/components/modules/ModuleProgressif'
@@ -42,15 +41,12 @@ import ModuleMonturesOutlet from '@/components/modules/ModuleMonturesOutlet'
 import IdeesButton from '@/components/IdeesButton'
 import TrainerQuestionsPanel from '@/components/TrainerQuestionsPanel'
 import PlanningPage from '@/components/PlanningPage'
-import OnboardingView from '@/components/OnboardingView'
-import OnboardingViewBelgique from '@/components/OnboardingViewBelgique'
-import PeerQuizTrainer from '@/components/PeerQuizGame'
 import TVView from '@/components/TVView'
 import ParticipantModuleView from '@/components/ParticipantModuleView'
 
 export default function Page() {
   const isMobile = useIsMobile(640)
-  const [view, setView] = useState('landing') // landing | dashboard | trainer-session | participant | module-types-verres
+  const [view, setView] = useState('landing') // landing | dashboard | participant | module-types-verres
   const scrollAreaRef = useRef(null)
   // Remonte en haut à chaque changement d'écran — sur mobile, le conteneur
   // de défilement est partagé entre toutes les vues (coquille d'app fixe),
@@ -65,14 +61,18 @@ export default function Page() {
   const [mode, setMode] = useState(null)
   const [appReady, setAppReady] = useState(false)
   const [displaySessionCode, setDisplaySessionCode] = useState('')
-  const [returnJournee, setReturnJournee] = useState(null)
   const [moduleReturnTo, setModuleReturnTo] = useState('onboarding-modules')
   const [returnJourneeBelgique, setReturnJourneeBelgique] = useState(null)
-  const [peerQuizReturnView, setPeerQuizReturnView] = useState('onboarding-modules')
+  // Quel écran d'onboarding (sidebar, dans Dashboard.js) retrouver quand on
+  // revient d'un module ou qu'on ouvre une salle — Dashboard se démonte
+  // entièrement tant qu'un module plein écran est affiché (vue 'module-xxx'
+  // au niveau de cette page), donc son propre état interne (activeView) est
+  // perdu ; ce prop lui redit où se replacer dès qu'il remonte.
+  const [dashboardResume, setDashboardResume] = useState(null)
   const { message, toast } = useToast()
 
   useOnlineCount({
-    enabled: appReady && isTrainer && ['dashboard', 'trainer-session', 'onboarding-modules'].includes(view),
+    enabled: appReady && isTrainer && view === 'dashboard',
     onCount: setOnlineCount,
   })
 
@@ -265,27 +265,6 @@ export default function Page() {
     setMode(null)
   }
 
-  const handleEndRoom = async (roomCodeHint) => {
-    const code = (roomCodeHint || '').trim()
-      || (await getLiveTrainerRoomCode(trainerLoginFromDisplayName(pName), pName))
-      || getActiveSessionCode()
-    const result = await endActiveRoom(code, { trainerName: pName })
-    if (result?.ok) {
-      // Si l'archivage a échoué (coupure réseau...), les données live ne sont
-      // volontairement PAS purgées (voir roomArchive.js) — rien n'est perdu,
-      // juste pas encore rangé dans l'historique.
-      toast(
-        result.archived ? 'Salle terminée et archivée ✓'
-          : result.hadData ? 'Salle terminée — archivage impossible pour le moment, données conservées, réessaie plus tard'
-          : 'Salle terminée ✓'
-      )
-      setDisplaySessionCode(getLegacySessionCode())
-      setView('dashboard')
-    } else {
-      toast('Impossible de terminer la salle')
-    }
-  }
-
   const handleOpenTv = async () => {
     const code = getActiveSessionCode()
     // Ouvrir la fenêtre en premier (geste utilisateur direct, avant tout await)
@@ -315,6 +294,7 @@ export default function Page() {
     if (savedName) {
       setPName(savedName)
       setIsTrainer(true)
+      setDashboardResume(null)
       setView('dashboard')
     }
   }
@@ -328,14 +308,13 @@ export default function Page() {
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
 
-  const handleLaunchSession = () => setView('trainer-session')
-
+  // "Créer une salle" ouvre désormais le même écran d'onboarding (intégré à
+  // la sidebar, dans Dashboard.js) que la bannière "Onboarding LPT" — avant,
+  // ça pointait vers l'ancien écran plein écran sans sidebar, un doublon.
   const handleOpenRoom = ({ code }) => {
     if (code) setDisplaySessionCode(code)
-    setView('onboarding-modules')
   }
   const handleLaunchModule = async (moduleId, returnTo = 'onboarding-modules', journeeId = null) => {
-    setReturnJournee(null)
     setModuleReturnTo(returnTo)
     setReturnJourneeBelgique(returnTo === 'onboarding-modules-belgique' ? journeeId : null)
     setView('module-' + moduleId)
@@ -402,28 +381,23 @@ export default function Page() {
     }
   }
 
-  const handleBackToDashboard = () => { setView('dashboard'); tvBackToQr() }
-  const handleBackToModules = () => { setView(moduleReturnTo); tvBackToQr() }
-  const handleTerminateToJournee1 = () => {
-    if (moduleReturnTo === 'onboarding-modules-belgique') {
-      setReturnJourneeBelgique('journee1')
-      setView('onboarding-modules-belgique')
-    } else {
-      setReturnJournee('journee1')
-      setView('onboarding-modules')
-    }
+  const handleBackToDashboard = () => { setDashboardResume(null); setView('dashboard'); tvBackToQr() }
+  // Retour d'un module vers l'écran d'onboarding (sidebar) qui l'a lancé —
+  // Dashboard s'étant démonté entre-temps, on lui redit où se replacer via
+  // dashboardResume plutôt que de rebasculer sur l'ancien écran plein écran.
+  const resumeDashboardOnboarding = (journeeId) => {
+    setDashboardResume({
+      activeView: moduleReturnTo === 'onboarding-modules-belgique' ? 'onboarding-belgique' : 'onboarding',
+      journeeId,
+    })
+    setView('dashboard')
     tvBackToQr()
   }
-  const handleTerminateToJournee4 = () => {
-    if (moduleReturnTo === 'onboarding-modules-belgique') {
-      setReturnJourneeBelgique('journee4')
-      setView('onboarding-modules-belgique')
-    } else {
-      setReturnJournee('journee4')
-      setView('onboarding-modules')
-    }
-    tvBackToQr()
+  const handleBackToModules = () => {
+    resumeDashboardOnboarding(moduleReturnTo === 'onboarding-modules-belgique' ? returnJourneeBelgique : null)
   }
+  const handleTerminateToJournee1 = () => resumeDashboardOnboarding('journee1')
+  const handleTerminateToJournee4 = () => resumeDashboardOnboarding('journee4')
   const handleOpenPlanning = () => setView('planning')
 
   if (!appReady) {
@@ -451,30 +425,20 @@ export default function Page() {
         isTrainer={isTrainer}
         onlineCount={onlineCount}
         sessionCode={displaySessionCode || getRuntimeSessionCode('trainer') || SESSION_CODE}
-        isRoomSession={isDynamicRoomCode(displaySessionCode || getRuntimeSessionCode('trainer') || SESSION_CODE)}
         onLogout={handleLogout}
         onTVMode={handleOpenTv}
-        onStartSession={handleLaunchSession}
       />
       <div ref={scrollAreaRef} data-app-scroll style={isMobile ? { flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', position: 'relative' } : {}}>
       {view === 'dashboard' && (
         <Dashboard
           pName={pName}
-          onLaunchSession={handleLaunchSession}
           onLaunchModule={handleLaunchModule}
           onOpenRoom={handleOpenRoom}
           onOpenTv={handleOpenTv}
           onToast={toast}
           onOnlineCount={setOnlineCount}
           onOpenPlanning={handleOpenPlanning}
-        />
-      )}
-      {view === 'trainer-session' && (
-        <TrainerView
-          pName={pName}
-          onBack={handleBackToDashboard}
-          onToast={toast}
-          onOnlineCount={setOnlineCount}
+          dashboardResume={dashboardResume}
         />
       )}
       {view === 'participant' && (
@@ -485,33 +449,6 @@ export default function Page() {
           onOnlineCount={setOnlineCount}
           onDisconnect={handleParticipantDisconnect}
         />
-      )}
-      {view === 'onboarding-modules' && (
-        <div id="dashboard">
-          <OnboardingView
-            pName={pName}
-            onBack={handleBackToDashboard}
-            onLaunchFormation={handleLaunchSession}
-            onLaunchModule={handleLaunchModule}
-            onEndRoom={handleEndRoom}
-            onLaunchPeerQuiz={() => { setPeerQuizReturnView('onboarding-modules'); setReturnJournee('journee2'); setView('peer-quiz') }}
-            initialStep="modules"
-            initialJournee={returnJournee}
-          />
-        </div>
-      )}
-      {view === 'onboarding-modules-belgique' && (
-        <div id="dashboard">
-          <OnboardingViewBelgique
-            pName={pName}
-            onBack={handleBackToDashboard}
-            onLaunchFormation={handleLaunchSession}
-            onLaunchModule={(moduleId, journeeId) => handleLaunchModule(moduleId, 'onboarding-modules-belgique', journeeId)}
-            onLaunchPeerQuiz={() => { setPeerQuizReturnView('onboarding-modules-belgique'); setReturnJourneeBelgique('journee2'); setView('peer-quiz') }}
-            initialStep="modules"
-            initialJournee={returnJourneeBelgique}
-          />
-        </div>
       )}
       {view === 'module-types-verres' && (
         <ModuleTypesVerres
@@ -659,12 +596,6 @@ export default function Page() {
           pName={pName}
           onBack={handleBackToModules}
           onTerminate={handleTerminateToJournee4}
-        />
-      )}
-      {view === 'peer-quiz' && (
-        <PeerQuizTrainer
-          sessionCode={getActiveSessionCode()}
-          onBack={() => setView(peerQuizReturnView)}
         />
       )}
       {view === 'planning' && (

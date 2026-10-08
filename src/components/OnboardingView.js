@@ -1,13 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { generatePin } from '@/lib/pin'
-import { getSharedState, setSharedState, setRoomSharedState, sbUpsert, sbSelect, getActiveSessionCode } from '@/lib/supabase'
+import { getSharedState, setSharedState, setRoomSharedState, sbSelect, getActiveSessionCode } from '@/lib/supabase'
 import { getLevelInfo, getRankMessage } from '@/lib/scoring'
 import {
   countEntreesByCategory,
-  entreeMatchesCategory,
-  getCategoryDisplayTitle,
   listFormationCategories,
 } from '@/lib/formationCategories'
 import { getLegacySessionCode, isDynamicRoomCode } from '@/lib/sessionCode'
@@ -172,7 +169,10 @@ const JOURNEES = (onLaunchModule, onLaunchPeerQuiz) => [
 // ── Step 1 : Choix du groupe ──────────────────────────────────────
 function GroupSelect({ onSelect, onBack }) {
   const [counts, setCounts] = useState({})
-  const categories = listFormationCategories()
+  // Belgique a son propre parcours dédié (OnboardingViewBelgique, choisi un
+  // écran plus haut) avec ses propres modules — la proposer ici mènerait aux
+  // modules France pour des collaborateurs belges, donc exclue de ce choix.
+  const categories = listFormationCategories().filter(c => c.slug !== 'belgique')
 
   useEffect(() => {
     const load = async () => {
@@ -214,142 +214,6 @@ function GroupSelect({ onSelect, onBack }) {
             </div>
           )
         })}
-      </div>
-    </div>
-  )
-}
-
-// ── Step 2 : Liste présence ───────────────────────────────────────
-function CollabList({ group, onNext, onBack }) {
-  const [collabs, setCollabs] = useState([])
-  const [checks, setChecks] = useState({})
-
-  useEffect(() => {
-    const load = async () => {
-      let data = []
-      let obData = {}
-      try {
-        const state = await getSharedState()
-        data = state.entrees_data || JSON.parse(localStorage.getItem('entrees_data') || '[]')
-        obData = state.ob_data || JSON.parse(localStorage.getItem('ob_data') || '{}')
-      } catch {
-        data = JSON.parse(localStorage.getItem('entrees_data') || '[]')
-        obData = JSON.parse(localStorage.getItem('ob_data') || '{}')
-      }
-
-      // Fallback : charger depuis participants Supabase si entrees_data vide
-      if (data.length === 0) {
-        try {
-          const rows = await sbSelect('participants', `session_code=eq.${getActiveSessionCode()}&order=joined_at.asc`)
-          if (rows && rows.length > 0) {
-            data = rows.map(r => {
-              const parts = (r.name || '').trim().split(/\s+/)
-              return { nom: parts.slice(1).join(' ') || '', prenom: parts[0] || '', magasin: '', heures: '', poste: '', telephone: '' }
-            })
-          }
-        } catch (e) { console.warn('participants fallback échoué', e) }
-      }
-
-      const filtered = data.filter(e => entreeMatchesCategory(e, group))
-      setCollabs(filtered)
-      setChecks(obData)
-    }
-    load()
-  }, [group])
-
-  // Calcule le lundi de la semaine courante (clé week_date)
-  const getWeekDate = () => {
-    const d = new Date()
-    const day = d.getDay()
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-    d.setDate(diff)
-    return d.toISOString().slice(0, 10)
-  }
-
-  const toggle = async (key, field, collab) => {
-    const updated = {
-      ...checks,
-      [key]: { ...(checks[key] || {}), [field]: !(checks[key]?.[field]) }
-    }
-    setChecks(updated)
-    localStorage.setItem('ob_data', JSON.stringify(updated))
-    const patch = { ob_data: updated }
-    // marque la date du 1er onboarding
-    const state = await getSharedState().catch(() => ({}))
-    if (!state.ob_date) {
-      const today = new Date().toDateString()
-      localStorage.setItem('ob_date', today)
-      localStorage.setItem('ob_day', '1')
-      patch.ob_date = today
-      patch.ob_day = '1'
-    }
-    setSharedState(patch).catch(console.warn)
-
-    // Écriture dans la table onboarding_sessions
-    const d = updated[key] || {}
-    sbUpsert('onboarding_sessions', {
-      week_date: getWeekDate(),
-      collaborateur: key,
-      pin: generatePin(key),
-      magasin: collab?.magasin || '',
-      poste: collab?.poste || '',
-      present: !!d.present,
-      contrat: !!d.contrat,
-    }, 'collaborateur,week_date').catch(console.warn)
-  }
-
-  const title = getCategoryDisplayTitle(group)
-
-  return (
-    <div className="dash-wrap">
-      <button className="detail-back" onClick={onBack}>← Retour</button>
-      <div className="dash-hero" style={{ marginBottom: 24 }}>
-        <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-          <div className="dash-hero-label">ONBOARDING · Suivi présence</div>
-          <h2 className="dash-hero-title">{title}</h2>
-          <p className="dash-hero-date">Cochez la présence, la signature du contrat et laissez un commentaire par collaborateur</p>
-        </div>
-        <div style={{ width: 56, height: 56, background: 'rgba(255,255,255,.08)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, position: 'relative', zIndex: 1 }}>👥</div>
-      </div>
-
-      <div className="ob-collab-list">
-        {collabs.length === 0 ? (
-          <p style={{ color: 'var(--text-m)', fontSize: 14, textAlign: 'center', padding: '40px 20px' }}>
-            Aucun collaborateur dans ce groupe.<br />
-            Importez d'abord le tableau RH depuis "Entrées de la semaine".
-          </p>
-        ) : collabs.map((c, i) => {
-          const fullName = ((c.nom || '') + ' ' + (c.prenom || '')).trim() || 'Collaborateur ' + (i + 1)
-          const key = fullName.replace(/"/g, '')
-          const d = checks[key] || {}
-          const pin = generatePin(fullName)
-          return (
-            <div key={key} className="ob-collab-row">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-                <div className="ob-collab-name">{fullName}</div>
-                <div style={{
-                  background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8,
-                  padding: '2px 9px', fontSize: 12, fontWeight: 800,
-                  color: '#0089ba', letterSpacing: 1, flexShrink: 0,
-                }}>🔑 {pin}</div>
-              </div>
-              <div className="ob-collab-checks">
-                <label className="ob-collab-check">
-                  <input type="checkbox" checked={!!d.present} onChange={() => toggle(key, 'present', c)} />
-                  Présent
-                </label>
-                <label className="ob-collab-check">
-                  <input type="checkbox" checked={!!d.contrat} onChange={() => toggle(key, 'contrat', c)} />
-                  Contrat signé
-                </label>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
-        <button className="btn1" onClick={onNext}>Démarrer la session →</button>
       </div>
     </div>
   )
@@ -503,7 +367,7 @@ function SessionRanking({ sessionCode }) {
 }
 
 // ── Step 3 : Sélection de la journée ─────────────────────────────
-function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, onLaunchPeerQuiz, initialJournee = null }) {
+function SessionModules({ pName, onBack, onLaunchModule, onEndRoom, onLaunchPeerQuiz, initialJournee = null }) {
   const [selectedJournee, setSelectedJournee] = useState(initialJournee)
   const [activeTab, setActiveTab] = useState('modules')
   const journees = JOURNEES(onLaunchModule, onLaunchPeerQuiz)
@@ -528,6 +392,22 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
     }
   }, [pName])
   const isRoomSession = isDynamicRoomCode(roomCode)
+
+  // Marque le "Jour 1" de l'onboarding au premier lancement des modules —
+  // reprend la logique qui vivait auparavant dans l'écran de présence
+  // (supprimé), pour ne pas perdre le badge "Jour X" de la bannière d'accueil.
+  useEffect(() => {
+    const markDay1 = async () => {
+      const state = await getSharedState().catch(() => ({}))
+      if (!state.ob_date) {
+        const today = new Date().toDateString()
+        localStorage.setItem('ob_date', today)
+        localStorage.setItem('ob_day', '1')
+        setSharedState({ ob_date: today, ob_day: '1' }).catch(console.warn)
+      }
+    }
+    markDay1()
+  }, [])
 
   const showQrOnTv = async () => {
     // roomCode peut être vide si l'async n'est pas terminé → fallback localStorage immédiat
@@ -597,8 +477,8 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
                   type="button"
                   onClick={() => setEndConfirmOpen(true)}
                   style={{
-                    fontSize: 12, fontWeight: 700, color: '#fecaca',
-                    background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)',
+                    fontSize: 12, fontWeight: 700, color: '#00abe9',
+                    background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)',
                     borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit',
                   }}
                 >
@@ -660,23 +540,6 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
             <div style={{ fontSize: 11, color: '#00abe9', marginTop: 8, fontWeight: 600 }}>Voir les modules →</div>
           </div>
         ))}
-
-        {/* Tuile Réveil des acquis */}
-        <div className="dash-tile" onClick={() => { showQrOnTv(); onLaunchModule('reveil-acquis') }} style={{ cursor: 'pointer', borderColor: 'rgba(245,158,11,0.25)' }}>
-          <div className="dash-tile-top">
-            <div style={{
-              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-              background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
-            }}>⚡</div>
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 20, padding: '2px 8px', letterSpacing: 0.5 }}>
-              3 journées
-            </span>
-          </div>
-          <div className="dash-tile-label" style={{ marginTop: 12 }}>Réveil des acquis</div>
-          <div className="dash-tile-sub">FAQ et quiz de consolidation</div>
-          <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 8, fontWeight: 600 }}>Voir les réveils →</div>
-        </div>
 
         {/* Tuile Mini Jeux */}
         <div className="dash-tile" onClick={() => { setSharedState({ tv_screen: null }).catch(() => {}); onLaunchModule('mini-jeux') }} style={{ cursor: 'pointer', borderColor: 'rgba(139,92,246,0.25)' }}>
@@ -749,17 +612,21 @@ function SessionModules({ pName, onBack, onLaunchFormation, onLaunchModule, onEn
 }
 
 // ── Composant principal ───────────────────────────────────────────
-export default function OnboardingView({ pName, onBack, onLaunchFormation, onLaunchModule, onEndRoom, onLaunchPeerQuiz, initialStep = 'select', initialJournee = null, initialGroup = null }) {
-  const [step, setStep] = useState(initialStep === 'select' && initialGroup ? 'list' : initialStep) // select | list | modules
-  const [group, setGroup] = useState(initialGroup)
+export default function OnboardingView({ pName, onBack, onLaunchModule, onEndRoom, onLaunchPeerQuiz, initialStep = 'select', initialJournee = null, initialGroup = null }) {
+  const [step, setStep] = useState(initialStep === 'select' && initialGroup ? 'modules' : initialStep) // select | modules
 
-  const handleSelectGroup = (g) => {
-    setGroup(g)
-    setStep('list')
+  if (step === 'select') return <GroupSelect onSelect={() => setStep('modules')} onBack={onBack} />
+  if (step === 'modules') {
+    return (
+      <SessionModules
+        pName={pName}
+        onBack={() => (initialGroup ? onBack() : setStep('select'))}
+        onLaunchModule={onLaunchModule}
+        onEndRoom={onEndRoom}
+        onLaunchPeerQuiz={onLaunchPeerQuiz}
+        initialJournee={initialJournee}
+      />
+    )
   }
-
-  if (step === 'select') return <GroupSelect onSelect={handleSelectGroup} onBack={onBack} />
-  if (step === 'list') return <CollabList group={group} onNext={() => setStep('modules')} onBack={() => setStep('select')} />
-  if (step === 'modules') return <SessionModules pName={pName} onBack={() => setStep('list')} onLaunchFormation={onLaunchFormation} onLaunchModule={onLaunchModule} onEndRoom={onEndRoom} onLaunchPeerQuiz={onLaunchPeerQuiz} initialJournee={initialJournee} />
   return null
 }

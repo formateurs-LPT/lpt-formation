@@ -536,8 +536,6 @@ export default function EntreesView({ onBack, onToast, pName }) {
   const handleCloture = async () => {
     if (!confirm('Clôturer la semaine ? Les données seront archivées dans Supabase et la liste sera vidée.')) return
     try {
-      const sharedState = await getSharedState()
-      const obData = sharedState.ob_data || JSON.parse(localStorage.getItem('ob_data') || '{}')
       const weekDate = new Date().toISOString().slice(0, 10)
 
       // Archiver chaque collaborateur — on compte les échecs individuels : un
@@ -546,17 +544,13 @@ export default function EntreesView({ onBack, onToast, pName }) {
       let failCount = 0
       for (const c of entrees) {
         const fullName = ((c.nom || '') + ' ' + (c.prenom || '')).trim()
-        const key = fullName.replace(/"/g, '')
         const pin = generatePin(fullName)
-        const d = obData[key] || {}
         const ok = await sbInsert('onboarding_sessions', {
           week_date: weekDate,
           collaborateur: fullName,
           pin,
           magasin: c.magasin || '',
           poste: c.poste || '',
-          present: !!d.present,
-          contrat: !!d.contrat,
         })
         if (!ok) failCount++
       }

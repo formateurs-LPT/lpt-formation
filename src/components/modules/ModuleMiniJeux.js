@@ -319,9 +319,16 @@ export function RouletteView({ participants, phase, vendeur, client, theme, reel
 }
 
 // ── Rules view ─────────────────────────────────────────────────────
-function RulesView({ participants, excluded, onToggle, onStart }) {
+export function RulesView({ participants, excluded, onToggle, onStart, onAddName }) {
   const active = participants.filter(p => !excluded.has(p))
   const canStart = active.length >= 2
+  const [nameInput, setNameInput] = useState('')
+  const submitName = () => {
+    const name = nameInput.trim()
+    if (!name || !onAddName) return
+    onAddName(name)
+    setNameInput('')
+  }
 
   return (
     <div style={{ display: 'flex', gap: 40, padding: '36px 40px', minHeight: 'calc(100vh - 100px)', alignItems: 'flex-start' }}>
@@ -375,9 +382,35 @@ function RulesView({ participants, excluded, onToggle, onStart }) {
           <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>
             Participants — {active.length} actif{active.length > 1 ? 's' : ''} / {participants.length}
           </div>
+          {onAddName && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <input
+                value={nameInput}
+                onChange={e => setNameInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && submitName()}
+                placeholder="Prénom…"
+                style={{
+                  flex: 1, padding: '9px 12px', borderRadius: 10, fontFamily: 'inherit', fontSize: 13,
+                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff',
+                }}
+              />
+              <button
+                onClick={submitName}
+                disabled={!nameInput.trim()}
+                style={{
+                  padding: '9px 14px', borderRadius: 10, border: 'none', fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
+                  background: nameInput.trim() ? '#8b5cf6' : 'rgba(139,92,246,0.25)',
+                  color: nameInput.trim() ? '#fff' : 'rgba(255,255,255,0.4)',
+                  cursor: nameInput.trim() ? 'pointer' : 'not-allowed',
+                }}
+              >
+                Ajouter
+              </button>
+            </div>
+          )}
           {participants.length === 0 ? (
-            <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 13, textAlign: 'center', padding: '24px 0', animation: 'mjPulse 1.5s ease-in-out infinite' }}>
-              En attente de connexions…
+            <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 13, textAlign: 'center', padding: '24px 0', animation: onAddName ? 'none' : 'mjPulse 1.5s ease-in-out infinite' }}>
+              {onAddName ? 'Ajoute les membres de ton équipe présents' : 'En attente de connexions…'}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxHeight: 440, overflowY: 'auto' }}>

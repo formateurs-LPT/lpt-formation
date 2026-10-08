@@ -453,7 +453,7 @@ export default function AutoEvalView({ onBack }) {
         />
       )}
 
-      <div id="dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: '#f8fafc' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(16,24,40,.03)' }}>
 
         {/* Header */}
         <div style={{
@@ -461,7 +461,7 @@ export default function AutoEvalView({ onBack }) {
           borderBottom: '1px solid #e2e8f0',
           display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0,
         }}>
-          <button className="detail-back" onClick={onBack}>← Tableau de bord</button>
+          <button className="detail-back" onClick={onBack} style={{ marginBottom: 0 }}>← Retour</button>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>📋 Auto-évaluation</span>
@@ -506,7 +506,7 @@ export default function AutoEvalView({ onBack }) {
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
+        <div style={{ padding: '22px 24px' }}>
 
           {/* Sélecteur de catégorie */}
           <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: '16px 18px', marginBottom: 18 }}>

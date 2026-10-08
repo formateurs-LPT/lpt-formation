@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
-import { getTrainerAvatarSrc } from '@/lib/constants'
+import TrainerAvatar from './TrainerAvatar'
 import { fetchOnlineParticipantsList, markParticipantLeft, isKickActive } from '@/lib/participantPresence'
 import { extractPrenom } from '@/lib/participantNames'
 import { setRoomSharedState, getRoomSharedState, sbSelect, getSharedState, setSharedState, getWeeklySharedState, setWeeklySharedState } from '@/lib/supabase'
@@ -486,7 +486,7 @@ function KFormationPasswordPanel({ onClose }) {
 }
 
 /* Menu hamburger mobile — panneau qui descend depuis le haut */
-function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onStartSession, onTVMode, onLogout, onClose, onShowParticipants, onQr, qrActive, qrBusy, onKPassword }) {
+function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, onTVMode, onLogout, onClose, onShowParticipants, onQr, qrActive, qrBusy, onKPassword }) {
   const code = (sessionCode || '').trim()
   return (
     <>
@@ -499,18 +499,6 @@ function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession,
         padding: '12px 16px',
         display: 'flex', flexDirection: 'column', gap: 10,
       }}>
-        {/* Code salle */}
-        {isRoomSession ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgba(0,137,186,0.06)', borderRadius: 10, border: '1px solid rgba(0,137,186,0.2)' }}>
-            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: '#0089ba' }}>Salle active</span>
-            <span style={{ color: '#0089ba', fontWeight: 800, fontFamily: 'monospace', letterSpacing: 2, fontSize: 14 }}>{code}</span>
-          </div>
-        ) : (
-          <div style={{ padding: '8px 12px', background: '#f5f5f5', borderRadius: 10, fontSize: 13, color: '#888' }}>
-            Legacy · {code || '—'}
-          </div>
-        )}
-
         {/* Formés connectés */}
         {isTrainer && (
           <button
@@ -532,16 +520,6 @@ function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession,
 
         {/* Boutons d'action */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {isTrainer && onStartSession && (
-            <button onClick={() => { onClose(); onStartSession() }} style={{
-              width: '100%', padding: '13px 16px', borderRadius: 10,
-              background: '#0089ba', border: 'none', color: '#fff',
-              fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            }}>
-              ▶ Démarrer la session
-            </button>
-          )}
           {isTrainer && onTVMode && (
             <button onClick={() => { onClose(); onTVMode() }} style={{
               width: '100%', padding: '13px 16px', borderRadius: 10,
@@ -590,7 +568,7 @@ function MobileMenu({ pName, isTrainer, onlineCount, sessionCode, isRoomSession,
   )
 }
 
-export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isRoomSession, onLogout, onTVMode, onStartSession }) {
+export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, onLogout, onTVMode }) {
   const [showPanel, setShowPanel] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   const [showKPassword, setShowKPassword] = useState(false)
@@ -598,7 +576,7 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
   const [qrBusy, setQrBusy] = useState(false)
   const isMobile = useIsMobile(640)
   const code = (sessionCode || '').trim()
-  const avatarSrc = isTrainer ? getTrainerAvatarSrc(pName) : '/assets/logo-lpt-blanc.png'
+  const avatarSrc = '/assets/logo-lpt-blanc.png'
 
   // Initialise qrActive depuis l'état réel au montage
   useEffect(() => {
@@ -629,7 +607,13 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
         <div className="topbar" style={{ justifyContent: 'space-between' }}>
           {/* Gauche : logo */}
           <div className="tlogo">
-            <Image src={avatarSrc} alt={pName || 'LPT'} width={28} height={28} style={{ borderRadius: '50%', objectFit: 'cover' }} />
+            {isTrainer ? (
+              <div style={{ width: 28, height: 28, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+                <TrainerAvatar pName={pName} size={28} />
+              </div>
+            ) : (
+              <Image src={avatarSrc} alt={pName || 'LPT'} width={28} height={28} style={{ borderRadius: '50%', objectFit: 'cover' }} />
+            )}
             <span style={{ fontSize: 14, fontWeight: 700 }}>LPT</span>
           </div>
 
@@ -684,8 +668,6 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
             isTrainer={isTrainer}
             onlineCount={onlineCount}
             sessionCode={code}
-            isRoomSession={isRoomSession}
-            onStartSession={onStartSession}
             onTVMode={onTVMode}
             onLogout={onLogout}
             onClose={() => setShowMenu(false)}
@@ -715,28 +697,14 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
   return (
     <div className="topbar">
       <div className="tlogo">
-        <Image src={avatarSrc} alt={pName || 'LPT'} width={28} height={28} style={{ borderRadius: '50%', objectFit: 'cover' }} />
-        LPT Formation
-      </div>
-      <div style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
-        {isRoomSession ? (
-          <>
-            <span style={{
-              fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6,
-              color: '#0089ba', background: 'rgba(0,137,186,0.12)', border: '1px solid rgba(0,137,186,0.35)',
-              borderRadius: 20, padding: '3px 10px',
-            }}>
-              Salle active
-            </span>
-            <span style={{ color: '#0089ba', fontWeight: 800, fontFamily: 'monospace', letterSpacing: 2 }}>
-              {code}
-            </span>
-          </>
+        {isTrainer ? (
+          <div style={{ width: 28, height: 28, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+            <TrainerAvatar pName={pName} size={28} />
+          </div>
         ) : (
-          <span style={{ color: '#888' }} title="Mode legacy — cliquez sur « Créer une salle » pour une salle dédiée">
-            Legacy · {code || '—'}
-          </span>
+          <Image src={avatarSrc} alt={pName || 'LPT'} width={28} height={28} style={{ borderRadius: '50%', objectFit: 'cover' }} />
         )}
+        LPT Formation
       </div>
       <div className="tright">
         <div
@@ -749,20 +717,10 @@ export default function Topbar({ pName, isTrainer, onlineCount, sessionCode, isR
           <span>{onlineCount} connecté(s)</span>
           {isTrainer && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginLeft: 2 }}>▾</span>}
         </div>
-        <div className={`brole ${isTrainer ? 'trainer' : 'participant'}`}>
-          {isTrainer ? 'Formateur' : extractPrenom(pName)}
-        </div>
-        {isTrainer && onStartSession && (
-          <button onClick={onStartSession} style={{
-            background: '#0089ba', border: 'none', color: '#fff',
-            fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 20,
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, transition: 'all .2s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = '#00abe9'}
-          onMouseLeave={e => e.currentTarget.style.background = '#0089ba'}
-          >
-            ▶ Démarrer
-          </button>
+        {!isTrainer && (
+          <div className="brole participant">
+            {extractPrenom(pName)}
+          </div>
         )}
         {isTrainer && onTVMode && (
           <button onClick={onTVMode} style={{

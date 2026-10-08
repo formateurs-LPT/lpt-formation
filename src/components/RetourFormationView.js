@@ -2821,7 +2821,7 @@ export default function RetourFormationView({ onBack, pName }) {
   }, [])
 
   return (
-    <div id="dashboard" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: '#f5f6f8' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(16,24,40,.03)' }}>
       {/* Header */}
       <div style={{
         padding: '18px 24px', background: '#ffffff',
@@ -2829,7 +2829,7 @@ export default function RetourFormationView({ onBack, pName }) {
         display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0,
       }}>
         {(tab === 'semaine' ? !category : true) && (
-          <button className="detail-back" onClick={onBack}>← Tableau de bord</button>
+          <button className="detail-back" onClick={onBack} style={{ marginBottom: 0 }}>← Retour</button>
         )}
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 800, color: '#14161a' }}>📝 Retour de formation</div>
@@ -2852,7 +2852,7 @@ export default function RetourFormationView({ onBack, pName }) {
         ))}
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
+      <div style={{ padding: '22px 24px' }}>
         {tab === 'historique' ? (
           <HistoriqueView trainerName={trainerName} />
         ) : loading ? (

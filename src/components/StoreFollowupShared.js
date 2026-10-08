@@ -134,19 +134,19 @@ export const SECTION_COLORS = {
 // les avatars ronds (texte blanc dessus, donc besoin d'un aplat franc plutôt
 // que d'une teinte pastel).
 export const SECTION_COLORS_LIGHT = {
-  cvo: { text: '#16a34a', solid: '#22c55e', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.25)', hoverBorder: 'rgba(34,197,94,0.5)' },
-  'mo-sav': { text: '#dc2626', solid: '#ef4444', bg: 'rgba(239,68,68,0.07)', border: 'rgba(239,68,68,0.22)', hoverBorder: 'rgba(239,68,68,0.45)' },
-  mo: { text: '#dc2626', solid: '#ef4444', bg: 'rgba(239,68,68,0.07)', border: 'rgba(239,68,68,0.22)', hoverBorder: 'rgba(239,68,68,0.45)' },
-  sav: { text: '#d97706', solid: '#f59e0b', bg: 'rgba(217,119,6,0.08)', border: 'rgba(217,119,6,0.25)', hoverBorder: 'rgba(217,119,6,0.5)' },
-  opto: { text: '#0284c7', solid: '#0ea5e9', bg: 'rgba(2,132,199,0.08)', border: 'rgba(2,132,199,0.25)', hoverBorder: 'rgba(2,132,199,0.5)' },
-  'apprenti-alternant': { text: '#7c3aed', solid: '#8b5cf6', bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.25)', hoverBorder: 'rgba(124,58,237,0.5)' },
-  manager: { text: '#b45309', solid: '#f59e0b', bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.3)', hoverBorder: 'rgba(251,191,36,0.55)' },
-  referent: { text: '#0891b2', solid: '#22d3ee', bg: 'rgba(34,211,238,0.08)', border: 'rgba(34,211,238,0.25)', hoverBorder: 'rgba(34,211,238,0.5)' },
-  'monteur-prog': { text: '#b45309', solid: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)', hoverBorder: 'rgba(245,158,11,0.5)' },
-  'operateur-prog': { text: '#0d9488', solid: '#14b8a6', bg: 'rgba(20,184,166,0.08)', border: 'rgba(20,184,166,0.25)', hoverBorder: 'rgba(20,184,166,0.5)' },
-  autre: { text: '#64748b', solid: '#94a3b8', bg: 'rgba(100,116,139,0.08)', border: 'rgba(100,116,139,0.22)', hoverBorder: 'rgba(100,116,139,0.4)' },
-  'non-renseigne': { text: '#64748b', solid: '#94a3b8', bg: 'rgba(100,116,139,0.06)', border: 'rgba(100,116,139,0.18)', hoverBorder: 'rgba(100,116,139,0.35)' },
-  labo: { text: '#7c3aed', solid: '#8b5cf6', bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.25)', hoverBorder: 'rgba(124,58,237,0.5)' },
+  cvo: { text: '#16a34a', solid: '#22c55e', bar: '#22c55e', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.25)', hoverBorder: 'rgba(34,197,94,0.5)' },
+  'mo-sav': { text: '#dc2626', solid: '#ef4444', bar: '#ef4444', bg: 'rgba(239,68,68,0.07)', border: 'rgba(239,68,68,0.22)', hoverBorder: 'rgba(239,68,68,0.45)' },
+  mo: { text: '#dc2626', solid: '#ef4444', bar: '#ef4444', bg: 'rgba(239,68,68,0.07)', border: 'rgba(239,68,68,0.22)', hoverBorder: 'rgba(239,68,68,0.45)' },
+  sav: { text: '#d97706', solid: '#f59e0b', bar: '#f59e0b', bg: 'rgba(217,119,6,0.08)', border: 'rgba(217,119,6,0.25)', hoverBorder: 'rgba(217,119,6,0.5)' },
+  opto: { text: '#0284c7', solid: '#0ea5e9', bar: '#0ea5e9', bg: 'rgba(2,132,199,0.08)', border: 'rgba(2,132,199,0.25)', hoverBorder: 'rgba(2,132,199,0.5)' },
+  'apprenti-alternant': { text: '#7c3aed', solid: '#8b5cf6', bar: '#8b5cf6', bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.25)', hoverBorder: 'rgba(124,58,237,0.5)' },
+  manager: { text: '#b45309', solid: '#f59e0b', bar: '#f59e0b', bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.3)', hoverBorder: 'rgba(251,191,36,0.55)' },
+  referent: { text: '#0891b2', solid: '#22d3ee', bar: '#22d3ee', bg: 'rgba(34,211,238,0.08)', border: 'rgba(34,211,238,0.25)', hoverBorder: 'rgba(34,211,238,0.5)' },
+  'monteur-prog': { text: '#b45309', solid: '#f59e0b', bar: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)', hoverBorder: 'rgba(245,158,11,0.5)' },
+  'operateur-prog': { text: '#0d9488', solid: '#14b8a6', bar: '#14b8a6', bg: 'rgba(20,184,166,0.08)', border: 'rgba(20,184,166,0.25)', hoverBorder: 'rgba(20,184,166,0.5)' },
+  autre: { text: '#64748b', solid: '#94a3b8', bar: '#94a3b8', bg: 'rgba(100,116,139,0.08)', border: 'rgba(100,116,139,0.22)', hoverBorder: 'rgba(100,116,139,0.4)' },
+  'non-renseigne': { text: '#64748b', solid: '#94a3b8', bar: '#94a3b8', bg: 'rgba(100,116,139,0.06)', border: 'rgba(100,116,139,0.18)', hoverBorder: 'rgba(100,116,139,0.35)' },
+  labo: { text: '#7c3aed', solid: '#8b5cf6', bar: '#8b5cf6', bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.25)', hoverBorder: 'rgba(124,58,237,0.5)' },
 }
 
 // Moyenne des notes (/5) sur tous les items d'une section, notes manquantes
@@ -282,13 +282,13 @@ export function TeamAgeBadge({ sectionId, collaborateurs }) {
       background: `${age.color}12`, border: `1px solid ${age.color}45`,
       borderRadius: 14, padding: '10px 16px', minWidth: 168,
     }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
         {TEAM_LABELS[sectionId] || sectionId}
       </div>
       <div style={{ fontSize: 13, fontWeight: 800, color: age.color, display: 'flex', alignItems: 'center', gap: 6 }}>
         <span>{age.icon}</span> {age.label}
       </div>
-      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 3 }}>Ancienneté moy. {age.avgLabel}</div>
+      <div style={{ fontSize: 11, color: '#9aa1ac', marginTop: 3 }}>Ancienneté moy. {age.avgLabel}</div>
     </div>
   )
 }
@@ -300,7 +300,7 @@ export function TeamAgeBadge({ sectionId, collaborateurs }) {
 function CollaborateurCard({ c, sectionId, colors, progress, onSelectCollaborateur, completed, isBelgique = false }) {
   const pct = pctFor(progress, c.id, sectionId, isBelgique)
   const alt = c.alternant
-  const apprentiColors = SECTION_COLORS['apprenti-alternant']
+  const apprentiColors = SECTION_COLORS_LIGHT['apprenti-alternant']
   const border = alt ? apprentiColors.border : colors.border
   const hoverBorder = alt ? apprentiColors.hoverBorder : colors.hoverBorder
   return (
@@ -384,7 +384,7 @@ export function SectionsList({ store, progress, onSelectCollaborateur }) {
   return (
     <>
       {store.sections.map(section => {
-        const colors = SECTION_COLORS[section.id] || SECTION_COLORS.cvo
+        const colors = SECTION_COLORS_LIGHT[section.id] || SECTION_COLORS_LIGHT.cvo
         const collaborateurs = (section.collaborateurs || []).filter(c => !c.alternant)
         // Section entièrement composée d'apprentis : déjà affichée plus bas.
         if (section.collaborateurs.length > 0 && collaborateurs.length === 0) return null
@@ -418,14 +418,14 @@ export function SectionsList({ store, progress, onSelectCollaborateur }) {
 
       {apprentis.length > 0 && (
         <div style={{ marginBottom: 32 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 800, color: SECTION_COLORS['apprenti-alternant'].text, margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 800, color: SECTION_COLORS_LIGHT['apprenti-alternant'].text, margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
             Apprentis
           </h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
             {apprentis.map(({ collaborateur, sectionId }) => (
               <CollaborateurCard
                 key={collaborateur.id} c={collaborateur} sectionId={sectionId}
-                colors={SECTION_COLORS[sectionId] || SECTION_COLORS.cvo}
+                colors={SECTION_COLORS_LIGHT[sectionId] || SECTION_COLORS_LIGHT.cvo}
                 progress={progress} onSelectCollaborateur={onSelectCollaborateur}
                 completed={completedByCollab[collaborateur.id]} isBelgique={isBelgique}
               />
@@ -787,7 +787,7 @@ function LaboProgressifBanner({ store }) {
 // (src/components/PlanningPage.js), pour reconnaître un formateur d'un coup
 // d'œil quel que soit l'écran où on le croise.
 const LABO_TRAINER_COLORS = { Kevin: '#00abe9', Quentin: '#7c3aed', Nadège: '#db2777', Thomas: '#f59e0b', Valentine: '#22c55e', Mateo: '#fb923c', Jonathan: '#14b8a6', Salomé: '#4f46e5' }
-function laboTrainerColor(name) { return LABO_TRAINER_COLORS[name] || '#64748b' }
+function laboTrainerColor(name) { return LABO_TRAINER_COLORS[name] || '#6b7280' }
 
 function laboFmtDateShort(d) {
   if (!d) return '—'
@@ -796,9 +796,9 @@ function laboFmtDateShort(d) {
 }
 
 const LABO_STATUS_COLS = [
-  { key: 'active',   label: 'En cours', color: '#4ade80' },
-  { key: 'upcoming', label: 'Prévu',    color: '#00abe9' },
-  { key: 'done',     label: 'Passé',    color: 'rgba(255,255,255,0.4)' },
+  { key: 'active',   label: 'En cours', color: '#16a34a' },
+  { key: 'upcoming', label: 'Prévu',    color: '#0089ba' },
+  { key: 'done',     label: 'Passé',    color: '#9aa1ac' },
 ]
 
 // Tuile "Formateurs sur site" — même logique de statut que Planning
@@ -825,25 +825,25 @@ function LaboPlanningTile({ magasin }) {
 
   return (
     <div style={{ marginBottom: 28 }}>
-      <h3 style={{ fontSize: 14, fontWeight: 800, color: '#fff', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+      <h3 style={{ fontSize: 14, fontWeight: 800, color: '#14161a', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
         👷 Formateurs sur site
       </h3>
       {loading ? (
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Chargement…</div>
+        <div style={{ fontSize: 13, color: '#9aa1ac' }}>Chargement…</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
           {LABO_STATUS_COLS.map(col => (
             <div key={col.key} style={{
-              background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: 16, padding: 16,
+              background: '#fff', border: '1px solid #e5e7eb',
+              borderRadius: 16, padding: 16, boxShadow: '0 1px 2px rgba(16,24,40,.03)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: col.color, flexShrink: 0 }} />
-                <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 }}>{col.label}</span>
+                <span style={{ fontSize: 11.5, fontWeight: 800, color: '#14161a', textTransform: 'uppercase', letterSpacing: 0.5 }}>{col.label}</span>
                 <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: col.color }}>{groups[col.key].length}</span>
               </div>
               {groups[col.key].length === 0 ? (
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>Aucun</div>
+                <div style={{ fontSize: 12, color: '#9aa1ac', fontStyle: 'italic' }}>Aucun</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {groups[col.key].map(dep => {
@@ -854,7 +854,7 @@ function LaboPlanningTile({ magasin }) {
                         borderLeft: `3px solid ${c}`, paddingLeft: 8,
                       }}>
                         <span style={{ fontWeight: 700, color: c }}>{dep.trainer}</span>
-                        <span style={{ color: 'rgba(255,255,255,0.4)' }}>
+                        <span style={{ color: '#9aa1ac' }}>
                           {laboFmtDateShort(dep.start_date)} → {laboFmtDateShort(dep.end_date)}
                         </span>
                       </div>
@@ -930,24 +930,25 @@ export function GuideModal({ item, guide, onClose }) {
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20,
+          background: '#fff', border: '1px solid #e5e7eb', borderRadius: 20,
+          boxShadow: '0 20px 60px rgba(16,24,40,.15)',
           padding: '28px 32px', width: '100%', maxWidth: 560, maxHeight: '80vh', overflowY: 'auto',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#0089ba', textTransform: 'uppercase', letterSpacing: 1.5 }}>
             📋 Trame d&apos;audit
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', textTransform: 'none', letterSpacing: 0, marginTop: 4 }}>{item.label}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#14161a', textTransform: 'none', letterSpacing: 0, marginTop: 4 }}>{item.label}</div>
           </div>
           <button onClick={onClose} style={{
-            background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 8, width: 32, height: 32,
-            cursor: 'pointer', color: 'rgba(255,255,255,0.5)', fontSize: 16, flexShrink: 0,
+            background: '#f3f4f6', border: 'none', borderRadius: 8, width: 32, height: 32,
+            cursor: 'pointer', color: '#6b7280', fontSize: 16, flexShrink: 0,
           }}>✕</button>
         </div>
 
         {guide ? (
           <>
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, marginBottom: 20 }}>
+            <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.6, marginBottom: 20 }}>
               {guide.instruction}
             </p>
 
@@ -956,14 +957,14 @@ export function GuideModal({ item, guide, onClose }) {
                 pour corriger les réponses du collaborateur. */}
             {guide.questions && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
                   🗣️ Questions à poser
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {guide.questions.map((q, i) => (
                     <div key={i} style={{
-                      background: 'rgba(0,171,233,0.06)', border: '1px solid rgba(0,171,233,0.2)',
-                      borderRadius: 10, padding: '9px 14px', fontSize: 13, color: '#fff', lineHeight: 1.5,
+                      background: '#eaf3fd', border: '1px solid rgba(0,137,186,0.25)',
+                      borderRadius: 10, padding: '9px 14px', fontSize: 13, color: '#14161a', lineHeight: 1.5,
                     }}>{q}</div>
                   ))}
                 </div>
@@ -979,12 +980,12 @@ export function GuideModal({ item, guide, onClose }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
                   {guide.steps.map(s => (
                     <div key={s.num} style={{
-                      background: 'rgba(255,255,255,0.04)', border: `1px solid ${s.color}40`,
+                      background: '#f8fafc', border: `1px solid ${s.color}40`,
                       borderLeft: `3px solid ${s.color}`, borderRadius: 12, padding: '12px 16px',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
                         <span style={{ fontSize: 16, flexShrink: 0 }}>{s.emoji}</span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.5)', flex: 1 }}>Point {s.num}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#6b7280', flex: 1 }}>Point {s.num}</span>
                       </div>
                       <textarea
                         value={answers[s.num] || ''}
@@ -994,16 +995,16 @@ export function GuideModal({ item, guide, onClose }) {
                         disabled={validated}
                         style={{
                           width: '100%', boxSizing: 'border-box',
-                          background: validated ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
-                          border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 12px',
-                          color: validated ? 'rgba(255,255,255,0.6)' : '#fff', fontSize: 13,
+                          background: validated ? '#f3f4f6' : '#fff',
+                          border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 12px',
+                          color: validated ? '#9aa1ac' : '#14161a', fontSize: 13,
                           fontFamily: 'inherit', resize: 'vertical', outline: 'none',
                         }}
                       />
                       {revealed && (
                         <div style={{
-                          fontSize: 13, color: '#4ade80', lineHeight: 1.5, marginTop: 8,
-                          background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
+                          fontSize: 13, color: '#15803d', lineHeight: 1.5, marginTop: 8,
+                          background: '#dcfce7', border: '1px solid #86efac',
                           borderRadius: 8, padding: '8px 12px',
                         }}>✅ {s.text}</div>
                       )}
@@ -1015,7 +1016,7 @@ export function GuideModal({ item, guide, onClose }) {
                   <button
                     onClick={() => setValidated(true)}
                     style={{
-                      width: '100%', padding: '11px', background: '#00abe9', border: 'none', color: '#fff',
+                      width: '100%', padding: '11px', background: '#0089ba', border: 'none', color: '#fff',
                       borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
                       marginBottom: 20,
                     }}
@@ -1025,8 +1026,8 @@ export function GuideModal({ item, guide, onClose }) {
                   <button
                     onClick={() => setRevealed(true)}
                     style={{
-                      width: '100%', padding: '11px', background: 'rgba(34,197,94,0.15)',
-                      border: '1px solid rgba(34,197,94,0.5)', color: '#4ade80',
+                      width: '100%', padding: '11px', background: '#dcfce7',
+                      border: '1px solid #86efac', color: '#15803d',
                       borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
                       marginBottom: 20,
                     }}
@@ -1046,9 +1047,9 @@ export function GuideModal({ item, guide, onClose }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {section.bullets.map((b, i) => (
                     <div key={i} style={{
-                      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                      background: '#f8fafc', border: '1px solid #e5e7eb',
                       borderLeft: `3px solid ${section.color}`, borderRadius: 10, padding: '9px 14px',
-                      fontSize: 13, color: '#fff', lineHeight: 1.5,
+                      fontSize: 13, color: '#14161a', lineHeight: 1.5,
                     }}>{b}</div>
                   ))}
                 </div>
@@ -1060,20 +1061,20 @@ export function GuideModal({ item, guide, onClose }) {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {guide.options.map(o => (
                   <span key={o} style={{
-                    background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.3)',
-                    borderRadius: 20, padding: '6px 14px', fontSize: 13, fontWeight: 600, color: '#7dd3fc',
+                    background: '#eaf3fd', border: '1px solid rgba(0,137,186,0.3)',
+                    borderRadius: 20, padding: '6px 14px', fontSize: 13, fontWeight: 600, color: '#0089ba',
                   }}>{o}</span>
                 ))}
               </div>
             )}
             {guide.optionGroups && guide.optionGroups.map(group => (
               <div key={group.label} style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{group.label}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{group.label}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {group.options.map(o => (
                     <span key={o} style={{
-                      background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.3)',
-                      borderRadius: 20, padding: '6px 14px', fontSize: 13, fontWeight: 600, color: '#7dd3fc',
+                      background: '#eaf3fd', border: '1px solid rgba(0,137,186,0.3)',
+                      borderRadius: 20, padding: '6px 14px', fontSize: 13, fontWeight: 600, color: '#0089ba',
                     }}>{o}</span>
                   ))}
                 </div>
@@ -1082,15 +1083,15 @@ export function GuideModal({ item, guide, onClose }) {
 
             {guide.missingNote && (
               <div style={{
-                marginTop: 16, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
-                borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#fbbf24', lineHeight: 1.5,
+                marginTop: 16, background: '#fef3c7', border: '1px solid #fcd34d',
+                borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#92400e', lineHeight: 1.5,
               }}>
                 ⚠️ {guide.missingNote}
               </div>
             )}
           </>
         ) : (
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', margin: 0 }}>
+          <p style={{ fontSize: 13, color: '#9aa1ac', fontStyle: 'italic', margin: 0 }}>
             Trame pas encore rédigée pour cet item.
           </p>
         )}
@@ -1106,28 +1107,29 @@ export function ConfirmModal({ title, message, onConfirm, onCancel }) {
       onClick={onCancel}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+        background: 'rgba(15,20,30,0.5)', backdropFilter: 'blur(4px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
       }}
     >
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: '#0d1f3c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16,
+          background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16,
+          boxShadow: '0 20px 60px rgba(16,24,40,.15)',
           padding: '24px 28px', width: '100%', maxWidth: 400,
         }}
       >
-        <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginBottom: 8 }}>{title}</div>
-        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, marginBottom: 20 }}>{message}</p>
+        <div style={{ fontSize: 16, fontWeight: 800, color: '#14161a', marginBottom: 8 }}>{title}</div>
+        <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.5, marginBottom: 20 }}>{message}</p>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onCancel} style={{
-            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-            color: 'rgba(255,255,255,0.7)', padding: '8px 16px', borderRadius: 10,
+            background: '#f8fafc', border: '1px solid #e5e7eb',
+            color: '#4b5563', padding: '8px 16px', borderRadius: 10,
             fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
           }}>Annuler</button>
           <button onClick={onConfirm} style={{
-            background: 'rgba(220,38,38,0.15)', border: '1px solid #dc2626',
-            color: '#f87171', padding: '8px 16px', borderRadius: 10,
+            background: '#fef2f2', border: '1px solid #fecaca',
+            color: '#ef4444', padding: '8px 16px', borderRadius: 10,
             fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
           }}>Réinitialiser</button>
         </div>

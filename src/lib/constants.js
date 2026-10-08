@@ -14,7 +14,7 @@ export function getTrainerAvatarKey(pName) {
 
 export function getTrainerAvatarSrc(pName) {
   const key = getTrainerAvatarKey(pName)
-  return TRAINER_AVATARS[key] || TRAINER_AVATARS.kevin
+  return TRAINER_AVATARS[key] || null
 }
 
 export const TRAINER_AVATARS = {

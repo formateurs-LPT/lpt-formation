@@ -16,7 +16,7 @@ export default function TrainerAvatar({ pName, size = 80, alt, style, className 
   const initial = TRAINER_INITIALS[key] || (pName || '?').charAt(0).toUpperCase()
   const color = TRAINER_COLORS[key] || '#0089ba'
 
-  if (failed) {
+  if (failed || !src) {
     return (
       <div
         className={className}

@@ -1,17 +1,22 @@
 'use client'
-import { IconHome, IconRocket, IconMapPin, IconUserPlus, IconSend, IconStar } from './ManagerIcons'
+import { IconHome, IconMapPin, IconSend, IconStar, IconMessageCircle, IconClipboard, IconHelpCircle, IconBarChart, IconBell } from './ManagerIcons'
 
-// 6 catégories, même densité que la sidebar manager — le détail de quelle
-// activeView appartient à quelle catégorie (et quelle vue sert de "porte
-// d'entrée" par défaut) vit dans Dashboard.js, pas ici : ce composant ne
-// connaît que la présentation, pas les ~20 écrans internes du formateur.
+// Le détail de quelle activeView appartient à quelle catégorie (et quelle vue
+// sert de "porte d'entrée" par défaut) vit dans Dashboard.js, pas ici : ce
+// composant ne connaît que la présentation, pas les ~20 écrans internes du
+// formateur. Onboarding et Entrées de la semaine n'ont volontairement pas de
+// catégorie dédiée : déjà accessibles depuis le dashboard (bannière / tuile),
+// pas la peine de les dupliquer ici (cf. tri demandé par Kevin).
 export const TRAINER_CATEGORIES = [
   { id: 'accueil', label: 'Accueil', Icon: IconHome },
-  { id: 'onboarding', label: 'Onboarding & sessions', Icon: IconRocket },
+  { id: 'sessions', label: 'Sessions réalisées', Icon: IconBarChart },
   { id: 'suivi-terrain', label: 'Suivi terrain', Icon: IconMapPin },
-  { id: 'entrees', label: 'Entrées & inscriptions', Icon: IconUserPlus },
+  { id: 'inscriptions', label: 'Inscriptions formations', Icon: IconBell },
   { id: 'demandes', label: "Demandes d'intervention", Icon: IconSend },
   { id: 'evaluations', label: 'Évaluations & notes', Icon: IconStar },
+  { id: 'retour-formation', label: 'Retour formation', Icon: IconMessageCircle },
+  { id: 'fiches-pratiques', label: 'Fiches pratiques', Icon: IconClipboard },
+  { id: 'idees', label: 'Idées & remontées', Icon: IconHelpCircle },
 ]
 
 // Pas de topbar mobile ici, contrairement à ManagerSidebar : le <Topbar>

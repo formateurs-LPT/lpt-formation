@@ -1,15 +1,14 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbSelect, sbUpdate, sbDelete, getSharedState, insertSessionHistory, parseSessionHistorySummary, getRuntimeSessionCode, SESSION_CODE } from '@/lib/supabase'
-import PlanningWidget from './PlanningWidget'
-import ShortcutsWidget from './ShortcutsWidget'
+import { sbSelect, sbUpdate, sbDelete, getSharedState, parseSessionHistorySummary, getRuntimeSessionCode, SESSION_CODE } from '@/lib/supabase'
 import StoreFollowupView from './StoreFollowupView'
 import OnboardingView from './OnboardingView'
 import OnboardingViewBelgique from './OnboardingViewBelgique'
 import EntreesView from './EntreesView'
 import RoomOpenModal from './RoomOpenModal'
-import { TRAINER_AVATARS, TRAINER_CANONICAL, getTrainerAvatarKey } from '@/lib/constants'
+import { TRAINER_CANONICAL, getTrainerAvatarKey } from '@/lib/constants'
+import TrainerAvatar from './TrainerAvatar'
 import { TRAINING_THEMES, formatSlotDate, formatHeure, THEME_TO_SKILL_ITEM } from '@/lib/trainingSlots'
 import { ItemRow } from '@/components/StoreFollowupShared'
 import { useStoreFollowupProgress } from '@/lib/useStoreFollowupProgress'
@@ -50,12 +49,27 @@ import { categorySlugFromZone } from '@/lib/formationCategories'
 
 function TrainerModeToggle({ mode, onChange }) {
   const [open, setOpen] = useState(false)
+  const [menuPos, setMenuPos] = useState(null)
+  const btnRef = useRef(null)
   const meta = mode ? TRAINER_MODE_META[mode] : null
+
+  // Le bouton vit maintenant dans la bannière d'accueil (overflow:hidden,
+  // pour ses cercles décoratifs) — un menu en position:absolute s'y
+  // retrouverait rogné. On calcule sa position à l'écran (getBoundingClientRect)
+  // et on l'affiche en position:fixed, qui échappe au overflow:hidden du parent.
+  const toggleOpen = () => {
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setMenuPos({ top: r.bottom + 6, right: window.innerWidth - r.right })
+    }
+    setOpen(v => !v)
+  }
 
   return (
     <div style={{ position: 'relative' }}>
       <button
-        onClick={() => setOpen(v => !v)}
+        ref={btnRef}
+        onClick={toggleOpen}
         title="Mode de travail — mémorisé jusqu'à ce que tu le changes"
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
@@ -68,11 +82,11 @@ function TrainerModeToggle({ mode, onChange }) {
       >
         {meta ? `${meta.emoji} ${meta.label}` : '⚙️ Choisir un mode'}
       </button>
-      {open && (
+      {open && menuPos && (
         <>
-          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 9998 }} />
           <div style={{
-            position: 'absolute', top: '110%', right: 0, zIndex: 41,
+            position: 'fixed', top: menuPos.top, right: menuPos.right, zIndex: 9999,
             background: '#fff', border: '1px solid #e5e7eb',
             borderRadius: 12, padding: 6, minWidth: 160,
             boxShadow: '0 8px 24px rgba(16,24,40,0.14)', display: 'flex', flexDirection: 'column', gap: 2,
@@ -99,17 +113,27 @@ function TrainerModeToggle({ mode, onChange }) {
   )
 }
 
-function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoom, onSonnetteClick, sonnettePending, onIdeesClick, ideeCount, onTacheNotifsClick, tacheNotifsCount }) {
+// Les sessions se terminent le vendredi soir, les rapports se finalisent le
+// lundi matin — le bouton "Clôturer la salle" n'a de sens (et n'est proposé)
+// que le lundi à partir de 8h, pour ne pas polluer le reste de la semaine
+// pendant que les sessions sont encore en cours (cf. demande Kevin).
+function isMondayCloseWindow() {
+  const now = new Date()
+  return now.getDay() === 1 && now.getHours() >= 8
+}
+
+function DashHeader({ pName, activeRoomCode, onOpenTv, onOpenRoom, onOpenPlanning, onEndRoomClick, trainerMode, onTrainerModeChange, onSonnetteClick, sonnettePending, onTacheNotifsClick, tacheNotifsCount }) {
   const rawKey = (pName || '').toLowerCase().split(' ')[0]
   const key = TRAINER_CANONICAL[rawKey] || rawKey
-  const avatarSrc = TRAINER_AVATARS[key] || TRAINER_AVATARS.kevin
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
   const hasRoom = isDynamicRoomCode(activeRoomCode)
 
   return (
     <div className="dash-hero" style={{ display: 'flex', alignItems: 'center' }}>
-      <Image src={avatarSrc} alt={pName} width={90} height={90} className="dash-hero-avatar" />
+      <div className="dash-hero-avatar" style={{ borderRadius: '50%', overflow: 'hidden' }}>
+        <TrainerAvatar pName={pName} size={90} />
+      </div>
       <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
         <div className="dash-hero-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           Formation · Lunettes Pour Tous
@@ -127,11 +151,31 @@ function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoo
 
       {/* Zone salle active */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, zIndex: 1 }}>
+        <TrainerModeToggle mode={trainerMode} onChange={onTrainerModeChange} />
+        {onOpenPlanning && (
+          <button
+            onClick={onOpenPlanning}
+            title="Planning déplacements"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              flexShrink: 0, transition: 'transform .2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateX(4px) scale(1.06)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'none' }}
+          >
+            <Image
+              src="/assets/tgv-lpt.png" alt="Planning déplacements" width={200} height={100}
+              style={{ width: 92, height: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 3px 6px rgba(0,137,186,0.35))' }}
+            />
+          </button>
+        )}
+
         {hasRoom ? (
           <>
             <div
               onClick={onOpenRoom}
-              title="Gérer la salle"
+              title="Reprendre la salle"
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginRight: 4,
                 cursor: 'pointer',
@@ -140,21 +184,23 @@ function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoo
               <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(0,171,233,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>Salle active</span>
               <span style={{ fontSize: 16, fontWeight: 900, color: '#00abe9', fontFamily: 'monospace', letterSpacing: 3, lineHeight: 1.2 }}>{activeRoomCode}</span>
             </div>
-            <button
-              onClick={onOpenRoom}
-              title="Reprendre la salle"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                background: 'rgba(0,171,233,0.1)', border: '1px solid rgba(0,171,233,0.25)',
-                borderRadius: 20, padding: '6px 12px',
-                cursor: 'pointer', fontFamily: 'inherit',
-                color: '#00abe9', fontSize: 12, fontWeight: 700, transition: 'all .18s',
-              }}
-              onMouseOver={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.2)' }}
-              onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.1)' }}
-            >
-              Reprendre →
-            </button>
+            {onEndRoomClick && isMondayCloseWindow() && (
+              <button
+                onClick={onEndRoomClick}
+                title="Archive les résultats de la semaine et ferme la salle"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.3)',
+                  borderRadius: 20, padding: '6px 14px',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  color: '#00abe9', fontSize: 12, fontWeight: 700, transition: 'all .18s',
+                }}
+                onMouseOver={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.22)' }}
+                onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.12)' }}
+              >
+                🔒 Clôturer la salle
+              </button>
+            )}
           </>
         ) : (
           <button
@@ -170,44 +216,6 @@ function DashHeader({ pName, onUpdatesClick, activeRoomCode, onOpenTv, onOpenRoo
             onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,171,233,0.12)' }}
           >
             🚪 Créer une salle
-          </button>
-        )}
-
-        {onUpdatesClick && (
-          <button
-            onClick={onUpdatesClick}
-            title="Mises à jour de l'app"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.35)',
-              borderRadius: 20, padding: '6px 12px 6px 10px',
-              cursor: 'pointer', fontFamily: 'inherit',
-              color: '#c4b5fd', fontSize: 12, fontWeight: 700, transition: 'all .18s',
-            }}
-            onMouseOver={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.25)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.5)' }}
-            onMouseOut={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.15)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.35)' }}
-          >
-            <span style={{ fontSize: 14 }}>⚡</span>
-            <span>{APP_UPDATES.length}</span>
-          </button>
-        )}
-
-        {onIdeesClick && (
-          <button
-            onClick={onIdeesClick}
-            title="Idées notées"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.3)',
-              borderRadius: 20, padding: '6px 12px 6px 10px',
-              cursor: 'pointer', fontFamily: 'inherit',
-              color: '#d97706', fontSize: 12, fontWeight: 700, transition: 'all .18s',
-            }}
-            onMouseOver={e => { e.currentTarget.style.background = 'rgba(251,191,36,0.2)'; e.currentTarget.style.borderColor = 'rgba(251,191,36,0.45)' }}
-            onMouseOut={e => { e.currentTarget.style.background = 'rgba(251,191,36,0.12)'; e.currentTarget.style.borderColor = 'rgba(251,191,36,0.3)' }}
-          >
-            <span style={{ fontSize: 14 }}>💡</span>
-            <span>{ideeCount}</span>
           </button>
         )}
 
@@ -351,67 +359,12 @@ function SessionsHistoryView({ pName, onBack, onToast }) {
     onToast('Ton historique vidé')
   }
 
-  const handleCloseSession = async () => {
-    setModal(null)
-    const roomCode = getRuntimeSessionCode('trainer') || SESSION_CODE
-    const enc = encodeURIComponent(roomCode)
-    const filter = `session_code=eq.${enc}`
-    const [participants, answers, quizResults, scenarioResponses, moduleResults, openAnswers] = await Promise.all([
-      sbSelect('participants', filter),
-      sbSelect('quiz_answers', filter),
-      sbSelect('quiz_results', filter),
-      sbSelect('scenario_responses', filter),
-      sbSelect('module_results', filter),
-      sbSelect('open_answers', filter),
-    ])
-    const total =
-      (participants?.length || 0) +
-      (answers?.length || 0) +
-      (quizResults?.length || 0) +
-      (scenarioResponses?.length || 0) +
-      (moduleResults?.length || 0) +
-      (openAnswers?.length || 0)
-    if (total === 0) {
-      onToast('Aucune donnée à enregistrer'); return
-    }
-    await insertSessionHistory({
-      sessionCode: roomCode + '_' + Date.now(),
-      sessionDate: new Date().toISOString(),
-      trainerName: localStorage.getItem('trainer_name') || 'Formateur',
-      participants: participants || [],
-      quizResults: {
-        type: 'room_archive',
-        room_code: roomCode,
-        scores: quizResults || [],
-        answers: answers || [],
-        module_results: moduleResults || [],
-        open_answers: openAnswers || [],
-      },
-      scenarioResponses: scenarioResponses || [],
-    })
-    await Promise.all([
-      sbDelete('participants', filter),
-      sbDelete('quiz_answers', filter),
-      sbDelete('quiz_results', filter),
-      sbDelete('scenario_responses', filter),
-      sbDelete('module_results', filter),
-      sbDelete('open_answers', filter),
-    ])
-    onToast('Session clôturée ✓')
-    load()
-  }
-
   const xpFor = (correct, total) => total > 0 ? Math.round((correct / total) * 100) : 0
   const MODULE_LABELS = { 'types-verres': 'Types de verres' }
 
   return (
     <div className="dash-wrap">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <button className="detail-back" onClick={onBack} style={{ margin: 0 }}>← Retour</button>
-        <button className="btn1" onClick={() => setModal('close')} style={{ fontSize: 13, padding: '8px 16px' }}>
-          🔒 Clôturer la session
-        </button>
-      </div>
+      <button className="detail-back" onClick={onBack} style={{ margin: '0 0 8px' }}>← Retour</button>
 
       {modal === 'quiz' && (
         <ConfirmModal
@@ -433,17 +386,6 @@ function SessionsHistoryView({ pName, onBack, onToast }) {
           danger
         />
       )}
-      {modal === 'close' && (
-        <ConfirmModal
-          title="Clôturer la session ?"
-          message="Les résultats de la semaine vont être enregistrés dans l'historique, puis la session en cours sera réinitialisée. Bonne action pour fin de semaine ✅"
-          confirmLabel="Oui, clôturer"
-          onConfirm={handleCloseSession}
-          onCancel={() => setModal(null)}
-          danger={false}
-        />
-      )}
-
       {loading ? (
         <p style={{ color: 'var(--text-m)', fontSize: 14, textAlign: 'center', padding: '40px 20px' }}>Chargement…</p>
       ) : (
@@ -536,781 +478,6 @@ function SessionsHistoryView({ pName, onBack, onToast }) {
           )}
         </>
       )}
-    </div>
-  )
-}
-
-// ── Changelog data ───────────────────────────────────────────────
-const APP_UPDATES = [
-  {
-    id: '2026-08-20',
-    date: '17 → 20 août 2026',
-    title: 'Quiz Jour 2 (Q19) corrigé, auto-passage à la correction fiabilisé sur les 13 quiz',
-    tag: 'Correctif',
-    tagColor: '#22d3ee',
-    sections: [
-      {
-        title: 'Quiz — formés jetés direct sur la correction',
-        accent: '#ef4444',
-        tag: 'Correctif',
-        items: [
-          'Le drapeau qui affiche la correction pouvait rester bloqué à "activé" d\'une question — voire d\'un quiz — à l\'autre : un formé retombait alors direct sur la correction sans avoir pu répondre',
-          'Remis à zéro systématiquement en changeant de question, en quittant un quiz, ou en le terminant (Quiz Jour 1 & Jour 2)',
-          'Bouton "🔄 Réinitialiser" ajouté sur Quiz Jour 2 (déjà présent sur Jour 1) : efface les réponses de la question en cours si une ancienne réponse traîne en base',
-        ],
-      },
-      {
-        title: 'Quiz Jour 2 — Q19 invisible côté formateur',
-        accent: '#f59e0b',
-        tag: 'Correctif',
-        items: [
-          'L\'ordonnance et le compteur juste/faux ne s\'affichaient jamais côté formateur pour "calcul de la vision de près" — seul le QCM/ordonnance classique était prévu, pas ce type de question à cases à remplir',
-        ],
-      },
-      {
-        title: 'Auto-passage à la correction — uniformisé sur les 13 quiz',
-        accent: '#10b981',
-        tag: 'Amélioration',
-        items: [
-          'Même mécanique partout désormais : passage automatique à la correction dès que tous les formés réellement connectés (présence active, pas juste "présents dans l\'app") ont répondu',
-          'Liste "n\'ont pas encore répondu" visible côté formateur (jamais sur le diffuseur) pour repérer qui bloque',
-          'Lien "⚠️ Forcer la correction" toujours disponible en secours si le décompte de connectés est faussé (ex: un collaborateur resté marqué "connecté" sans jamais répondre)',
-        ],
-      },
-    ],
-  },
-  {
-    id: '2026-08-17',
-    date: '13 → 17 août 2026',
-    title: 'Scoring fiabilisé, retour de formation accéléré, mot de passe K\'Formation, Quiz Jour 2',
-    tag: 'Gros récap',
-    tagColor: '#fbbf24',
-    sections: [
-      {
-        title: 'Scoring & classement — incidents corrigés',
-        accent: '#ef4444',
-        tag: 'Fiabilité critique',
-        items: [
-          'Clôture automatique qui fermait des salles EN COURS D\'UTILISATION (se basait sur la date de création au lieu de la dernière activité réelle) — incident IDF du 13/08',
-          'Réponses d\'un formé qui disparaissaient du Retour de formation et du classement quand sa salle avait été recréée — un formé a un compte de points individuel, plus un compte par salle',
-          'Temps d\'activité sous-estimé par le même type de défaut de filtrage par salle',
-          'Classement (dashboard formé + fiche formateur) basé sur le taux de bonnes réponses plutôt que sur les points bruts — un formé qui a répondu à moins de questions n\'est plus défavorisé',
-        ],
-      },
-      {
-        title: 'Correctifs formés en direct',
-        accent: '#22d3ee',
-        tag: 'Correctif',
-        items: [
-          'Téléphones dédiés ayant déjà servi à une connexion formateur (test, démo…) : le formé restait bloqué sans que rien ne bouge à l\'écran — corrigé',
-          'Formés restant piégés sur l\'écran du jeu des questions après que le formateur ait lancé un autre module directement (sans repasser par "Retour")',
-          'Podium interstitiel du Quiz Jour 2 qui faisait planter l\'appli — retiré (comme déjà fait sur le Quiz Jour 1)',
-        ],
-      },
-      {
-        title: 'Retour de formation — saisie accélérée',
-        accent: '#818cf8',
-        tag: 'Nouveauté',
-        items: [
-          'Suggestion automatique des acquis/non-acquis par thème à partir du taux de quiz (uniquement sur les thèmes jamais évalués manuellement, badge "suggéré à vérifier")',
-          'Bouton "Pré-remplir" sur le mot du formateur : génère un brouillon à partir de ce qui est déjà renseigné (thèmes, attitude, participation, compréhension, appréciation)',
-          'Nouvel onglet "Notes de la semaine" pour prendre des notes libres au fil des jours, reprises par le "Pré-remplir" en fin de semaine',
-          'Bouton "Télécharger PDF" sur la fiche d\'un collaborateur — génère directement un fichier PDF, sans passer par la boîte de dialogue d\'impression',
-          'Corrige "Imprimer" qui affichait le rapport en double',
-        ],
-      },
-      {
-        title: 'Mot de passe K\'Formation',
-        accent: '#f59e0b',
-        tag: 'Nouveauté',
-        items: [
-          'Bouton 🔑 dans la barre du haut (desktop et mobile) : affiche le code de la semaine, sa date de mise à jour, et permet de le modifier — partagé et modifiable par tous les formateurs',
-          'Bouton "📺 Diffuseur" pour l\'afficher sur le grand écran — reproduction fidèle du vrai écran de connexion K\'Formation, avec l\'identifiant et le mot de passe de la semaine',
-        ],
-      },
-      {
-        title: 'Quiz Jour 2 & Mini Jeux',
-        accent: '#10b981',
-        tag: 'Nouveauté',
-        items: [
-          '3e carte "Questions Jour 2" dans Mini Jeux (offres, 1=1, montures, verre progressif, examen de vue)',
-          'Ouverture de salle sans re-redemander la catégorie (présentiel/visio/Belgique) à chaque fois — reprend directement ton mode de travail persistant',
-          'Mode Belgique pré-sélectionné automatiquement pour Thomas tant qu\'il n\'a jamais choisi de mode lui-même',
-        ],
-      },
-      {
-        title: 'Diffuseur',
-        accent: '#fb923c',
-        tag: 'Amélioration',
-        items: [
-          'Minuteur de quiz (90s) affiché en overlay sur le diffuseur, comme sur le téléphone du formé',
-          'Texte agrandi sur les 3 pages du module Remboursement France — plus lisible au fond de la salle',
-        ],
-      },
-      {
-        title: 'Tableau de bord',
-        accent: '#a78bfa',
-        tag: 'Amélioration',
-        items: [
-          'La tuile "Mises à jour de l\'app" au milieu du dashboard a été retirée — elle prenait trop de place',
-          'La liste complète des mises à jour reste accessible en un clic via l\'éclair ⚡ à côté de ton avatar, en haut',
-        ],
-      },
-    ],
-  },
-  {
-    id: '2026-08-13',
-    date: '10 → 13 août 2026',
-    title: 'Audit complet de l\'app, retour de formation partagé, dashboard formé refait',
-    tag: 'Gros récap',
-    tagColor: '#fbbf24',
-    sections: [
-      {
-        title: 'Audit complet — bugs corrigés',
-        accent: '#ef4444',
-        tag: 'Sécurité & fiabilité',
-        items: [
-          'Mini-jeu des questions invisible sur les téléphones dédiés (raccourci) — corrigé pour fonctionner comme via le QR code',
-          'Lien "compte rendu" pouvant renvoyer une fiche vide au manager quand un autre formateur que celui qui l\'a remplie cliquait sur "Envoyer"',
-          'Risque de perte de données à la clôture d\'une salle si l\'archivage réseau échouait — la salle n\'est plus purgée tant que l\'archivage n\'a pas réussi',
-          '"Clôturer la session" pouvait planter silencieusement (import manquant)',
-          'Boutons "Vider les résultats quiz" / "Vider l\'historique" limités à sa propre salle/historique au lieu de toucher tous les formateurs',
-          'Décalage d\'affichage formateur ↔ diffuseur sur certaines corrections d\'ordonnance (Optique, Quiz Final)',
-          'Clôture de semaine RH : une erreur de sauvegarde individuelle est détectée au lieu d\'annoncer un succès et de vider la liste à tort',
-        ],
-      },
-      {
-        title: 'Connexion des formés',
-        accent: '#22d3ee',
-        tag: 'Correctif',
-        items: [
-          'Un rafraîchissement de page ne déconnecte plus les formés — ils retombent directement sur leur écran en cours (fermer complètement l\'app déconnecte toujours, comme prévu)',
-          'Détection fiable des formés partis pour de bon (téléphone rangé) — ils n\'apparaissent plus indéfiniment "connectés", ce qui faussait le "qui n\'a pas répondu" pendant les quiz',
-          'Clôture automatique d\'une salle oubliée d\'une semaine précédente à l\'ouverture du Dashboard — sans risque, les retours de formation restent accessibles quoi qu\'il arrive',
-        ],
-      },
-      {
-        title: 'Retour de formation',
-        accent: '#818cf8',
-        tag: 'Nouveauté',
-        items: [
-          'Fiche partagée entre formateurs : un même formé n\'a plus qu\'une seule fiche par semaine, modifiable par n\'importe qui — fini les acquis/non-acquis invisibles d\'un formateur à l\'autre',
-          'Taux de compréhension par thème calculé automatiquement à partir des vraies réponses aux quiz, affiché à côté de ton évaluation (jamais à sa place), avec tendance jour par jour',
-          'Retour individuel envoyé au formé par mail (en plus du compte rendu manager) : acquis/non-acquis, taux global, message personnalisable, adresse déduite automatiquement',
-          'Indicateur d\'activité écran : alerte si un formé est nettement moins actif sur l\'app que la moyenne du groupe — signal relatif à vérifier avec lui, pas une preuve absolue',
-        ],
-      },
-      {
-        title: 'Dashboard formé refait',
-        accent: '#10b981',
-        tag: 'Nouveauté',
-        items: [
-          'L\'écran d\'attente "Bonjour..." est remplacé par un vrai dashboard : profil (magasin, poste), niveau (10 pts par bonne réponse, palier tous les 50 points), historique des quiz de la semaine',
-          'Visible uniquement quand rien n\'est en cours (jamais pendant un module/quiz, pour ne pas détourner l\'attention)',
-          'Badges : série de bonnes réponses, Expert par thème, Sans-faute, Increvable',
-        ],
-      },
-      {
-        title: 'Dashboard formateur',
-        accent: '#fb923c',
-        tag: 'Amélioration',
-        items: [
-          'Mode de travail persistant (présentiel / visio / Belgique) à côté de ton nom — l\'Onboarding France ne redemande plus le groupe à chaque fois',
-          'Bouton QR en double retiré (celui de la barre du haut suffit)',
-          'Quiz Jour 2 ajouté et intégré au taux de compréhension par thème',
-        ],
-      },
-    ],
-  },
-  {
-    id: '2026-08-10',
-    date: '3 → 10 août 2026',
-    title: 'Récap de la semaine — sécurité quiz, points fiabilisés, saisie interactive repensée',
-    tag: 'Gros récap',
-    tagColor: '#fbbf24',
-    sections: [
-      {
-        title: 'Sécurité anti-triche sur les quiz à réponse libre',
-        accent: '#ef4444',
-        tag: 'Sécurité',
-        items: [
-          'Sur les 8 modules à questions libres (Bases de l\'optique, Ajustages, Remboursement France, Quiz Jour 1, Types de verres, Entreprise, Retraits, Quiz Final), le bouton "Voir la correction" est bloqué tant que tous les formés connectés n\'ont pas répondu',
-          'Avant : il pouvait être cliqué à tout moment et révélait sur le diffuseur le texte des réponses déjà reçues — un formé qui traînait pouvait lire les autres et recopier',
-          'Le bouton affiche maintenant un compteur "En attente (3/8)" tant que ce n\'est pas complet',
-        ],
-      },
-      {
-        title: 'Comptes formateur en test — traités comme un vrai formé',
-        accent: '#22d3ee',
-        tag: 'Correctif de fond',
-        items: [
-          'Un formateur qui teste l\'appli avec son propre compte voit maintenant ses réponses prises en compte partout où c\'est pertinent : classement en direct, vue formateur, écran diffuseur, jeu des questions, ses propres points sur son téléphone',
-          'Corrige un bug de fond où la vue formateur en direct interrogeait la mauvaise salle si le navigateur avait déjà servi à se connecter comme formé (code de salle resté en mémoire)',
-          'Reste volontairement filtré sur les rapports officiels (retour de formation, note globale, avis) pour ne pas fausser les vraies statistiques des formés',
-        ],
-      },
-      {
-        title: 'Points et classement — plusieurs bugs corrigés',
-        accent: '#818cf8',
-        tag: 'Correctif',
-        items: [
-          'Formés dont la salle avait déjà été terminée par le formateur : leurs points remontent maintenant depuis l\'archive au lieu d\'afficher 0',
-          'Corrige un cumul erroné qui additionnait à tort les points de plusieurs semaines passées au lieu de ne compter que la salle en cours',
-          'Corrige des doublons dans les réponses aux quiz qui faussaient les compteurs "bonnes/mauvaises réponses" affichés en fin de question',
-          'La saisie interactive (cas pratiques Bases de l\'optique) ne remonte plus les résultats de semaines passées, côté formateur comme sur le diffuseur',
-        ],
-      },
-      {
-        title: 'Jeu des questions',
-        accent: '#10b981',
-        tag: 'Amélioration',
-        items: [
-          'Le formateur voit maintenant qui n\'a pas encore répondu, en plus de la liste de ceux qui ont répondu',
-          'Validation automatique continue : dès que le formateur donne sa réponse (Vrai/Faux, choix, sélection multiple), tout formé ayant répondu exactement pareil est validé automatiquement — modifiable manuellement à tout moment, y compris après coup',
-          'Nouvelles options dédiées pour "Ce client voit :" (symptômes : flou de loin, flou à toutes distances, déformé, flou de près) distinctes de "Quels sont les problèmes de vue ?" (troubles)',
-          'Sélection multiple, durée de validité d\'ordonnance et nouveau mini-jeu autonome ajoutés en cours de semaine',
-        ],
-      },
-      {
-        title: 'Saisie interactive — cas pratiques (Bases de l\'optique)',
-        accent: '#fb923c',
-        tag: 'Refonte',
-        items: [
-          'La molette tactile est remplacée par un clavier numérique : le formé saisit lui-même chiffres, virgule et signe (comme sur une vraie ordonnance)',
-          'Cases sphère/cylindre/axe/add agrandies pour limiter les erreurs de clic',
-          'Plus d\'avancée automatique après validation : le formé clique "Cas suivant" lui-même, le temps de lire le résultat',
-          'Retire l\'indice "(aucune)" à côté d\'Add qui donnait la réponse sans effort',
-        ],
-      },
-      {
-        title: 'Animation cylindre/axe',
-        accent: '#f59e0b',
-        tag: 'Design',
-        items: [
-          'Nouveau visuel façon phare de voiture (au lieu d\'une sphère blanche abstraite) — le fonctionnement et le rapporteur restent identiques',
-          'Label inutile "Ce que voit le formé" retiré du diffuseur',
-        ],
-      },
-      {
-        title: '4 troubles visuels — Bases de l\'optique',
-        accent: '#00abe9',
-        tag: 'Amélioration',
-        items: [
-          'Les 4 troubles sont désormais révélés un par un sur le diffuseur et le téléphone des formés, au lieu d\'apparaître tous en même temps',
-        ],
-      },
-      {
-        title: 'Podium & correction en direct',
-        accent: '#a78bfa',
-        tag: 'Interactif',
-        items: [
-          'Le podium intermédiaire toutes les 5 questions est supprimé (source de plantages) — seul le podium final reste',
-          'Chaque formé voit désormais son classement en temps réel, en privé, sur son téléphone après chaque correction',
-        ],
-      },
-      {
-        title: 'Nouveaux modules SAV — Montures Outlet & Le Montage',
-        accent: '#f472b6',
-        tag: 'Nouveaux modules',
-        items: [
-          'Module "Montures Outlet" : animation dédiée, bouton de révélation et rythme corrigés',
-          'Module "Le Montage" : mention claire du 0€ de reste à charge, animation interactive (remplace l\'ancienne page statique), tous les traitements comparés côte à côte sur le diffuseur, page de conclusion plus percutante',
-        ],
-      },
-      {
-        title: 'Retour de formation & rapports',
-        accent: '#c084fc',
-        tag: 'Amélioration',
-        items: [
-          'Envoi d\'un lien d\'auto-évaluation à distance pour les formés absents',
-          'Sélection des destinataires lors du partage de la fiche pratique SAV',
-          'Classement du formé visible dans le compte rendu envoyé au manager',
-          'Historique : les variantes de saisie d\'un même magasin (ex. Bayonne) sont regroupées, sans fusionner les villes à plusieurs magasins (Marseille, Toulouse, Montpellier)',
-          'Managers retour de formation mis à jour (Toulon Avenue 83, Ixelles) + correction de l\'email de Marie-Julie Cicuto',
-        ],
-      },
-      {
-        title: 'Audit complet & corrections diverses',
-        accent: '#34d399',
-        tag: 'Fiabilité',
-        items: [
-          'Audit complet du Quiz Final : classement formateur, garde-fous et filtres',
-          'Contrôle complet de la Journée 4, fiche récap SAV enrichie',
-          'QR code de connexion : ne renvoie plus vers l\'écran de connexion Vercel',
-          'Corrige le formé qui restait bloqué quand le formateur quittait un module en cours',
-          'Corrige l\'écran formé pendant l\'animation PDM (verre brut → paire parfaite)',
-        ],
-      },
-    ],
-  },
-  {
-    id: '2026-07-31',
-    date: '13 → 31 juillet 2026',
-    title: 'Récap complet — nouveautés de l\'app pendant tes vacances',
-    tag: 'Gros récap',
-    tagColor: '#fbbf24',
-    sections: [
-      {
-        title: 'Retour de formation — refonte complète',
-        accent: '#818cf8',
-        tag: 'Nouveau',
-        items: [
-          'Nouvel onglet "Retour de formation" sur le dashboard : une fiche de suivi par collaborateur, par semaine',
-          'Évaluation des thèmes sur 4 niveaux (Pas compris / Notions / En cours / Maîtrisé) avec calcul automatique du taux d\'acquisition',
-          'Commentaires formateur : Attitude générale, Participation (tout nouveau), Compréhension des contenus — chacun avec statut RAS / Peut mieux faire / Attention + note libre',
-          'Appréciation globale à 4 niveaux : Très bon élément / Ça va le faire (tout nouveau) / Accompagnement / Compliqué',
-          '"Mot du formateur" en texte libre + bouton correcteur d\'orthographe sur toutes les zones de texte du retour',
-          'Compte rendu manager visuel avec aperçu, lien partageable, envoi par email (individuel ou "Tout envoyer" groupé par manager) et suivi d\'envoi (date visible)',
-          'Onglet "Historique" pour retrouver toutes les formations passées, avec l\'auto-éval du formé en regard',
-          'Rapports Directeurs Régionaux (Bryan / Sarah / Alexandre) intégrés directement dans Retour de formation, avec envoi mail pré-rédigé au DR',
-          'Les retours et auto-évaluations ne disparaissent plus quand on change de semaine',
-        ],
-      },
-      {
-        title: 'Auto-évaluation des formés',
-        accent: '#10b981',
-        tag: 'Nouveau module',
-        items: [
-          'Questionnaire de fin de formation rempli par le formé lui-même : niveau par thème en étoiles (1 à 5), thèmes où il souhaite être accompagné, suggestions libres',
-          'Avis sur la formation type Google (étoiles + commentaire), moyenne visible sur le dashboard et détail des commentaires',
-          'Le formateur lance le questionnaire formé par formé (plus d\'envoi groupé à toute la salle) et peut le renvoyer individuellement ("Renvoyer") avec pré-remplissage des réponses précédentes',
-          'Vue formateur : sélecteur de catégorie (Présentiel / Visio / Belgique / Tous), récap individuel par formé, compte rendu de synthèse global exportable',
-          'Thèmes affichés dans l\'ordre chronologique de la formation',
-        ],
-      },
-      {
-        title: 'Journée 4 — SAV (Retraits, Ajustages, RAZ)',
-        accent: '#fb923c',
-        tag: 'Nouveaux modules',
-        items: [
-          '3 modules complets : Les Retraits (SMS, recherche, essayage, signature), Les Ajustages (confort, acétate, métal, règles d\'or), Les RAZ (recommandes, process, dernier recours)',
-          'Brainstorm introductif sur chaque module SAV (vue formateur + participant + diffuseur)',
-          'Réponses des formés anonymes sur le diffuseur TV',
-          'Questions posées par les formés affichables et supprimables individuellement par le formateur',
-          'Fiche SAV accessible directement depuis le dashboard',
-        ],
-      },
-      {
-        title: 'Nouveaux modules — contenu Journée 3',
-        accent: '#00abe9',
-        tag: 'Contenu',
-        items: [
-          'LPT Santé (nouveau module) : animation cycle de prise en charge, scénario Test Suprême / Facturation / Tiers payant partiel piloté par le formateur',
-          'Les parcours remboursés (Le Suprême, 1=1, 100% Santé) avec révélations progressives et quiz tiers payant dédié (14 questions)',
-          'Remboursement optique en France : conditions de remboursement, Sécu/mutuelle/100% Santé',
-          'Mutuelles et INAMI (Belgique) : réponses anonymes, révélation progressive, données à jour',
-          'Atelier "prise en charge" — simulation de l\'app de vente en magasin (LPTSale), tuile "Nouveau · Test" sur le dashboard',
-          'Entraînement oral sur le module Bases de l\'optique, avec validation formateur en direct',
-        ],
-      },
-      {
-        title: 'Quiz — refontes et nouveautés',
-        accent: '#a78bfa',
-        tag: 'Interactif',
-        items: [
-          'Quiz Jour 1 entièrement refondu (21 questions, nouveaux types de questions interactives)',
-          'Quiz final refondu : 30 questions, ordonnances visuelles, questions à choix multiples, corrections',
-          'Quiz culture d\'entreprise (10 questions texte libre, auto-validation, page de transition)',
-          'Quiz Optique : refonte de nombreuses questions + lecture d\'ordonnance en texte libre',
-          'Quiz Montures et Quiz Types de verres : nouvelles questions texte libre',
-          'Quiz tiers payant (14 questions) sur le module parcours remboursés',
-          'Quiz "réponses libres" générique disponible dans tous les modules : le formateur pose une question à l\'oral, les formés répondent sur mobile, correction ✓/✗ en direct, avec correcteur orthographique intégré',
-        ],
-      },
-      {
-        title: 'Jeux entre formés & mini-jeux',
-        accent: '#c084fc',
-        tag: 'Interactif',
-        items: [
-          'Jeu de questions entre formés (peer quiz) en Journée 2 — chacun interroge les autres, révision des acquis',
-          'Mini-jeu débrief collectif : observateurs + diffusion TV anonyme',
-          'Tirage au sort du vendeur sans répétition (pool tournant) pour les mises en situation',
-        ],
-      },
-      {
-        title: 'Diffuseur TV & vie de salle',
-        accent: '#f472b6',
-        tag: 'Amélioration',
-        items: [
-          'Bouton QR flottant fiable sur toutes les pages formateur (lit l\'état réel depuis Supabase)',
-          'Outil annotation (stylo/gomme) directement sur l\'écran diffuseur',
-          'Bulle de questions des formés (FAQ) : anonyme sur TV, gérable question par question côté formateur (mettre en avant / marquer traitée)',
-          'Alertes distraction : 8 messages humoristiques aléatoires envoyés aux formés qui décrochent',
-          'Suivi de présence des formés en temps réel (détection d\'onglet inactif)',
-          'QR code en overlay sur le diffuseur au lieu d\'un écran plein',
-        ],
-      },
-      {
-        title: 'Sonnette connectée',
-        accent: '#f59e0b',
-        tag: 'Nouveau',
-        items: [
-          'Page d\'arrivée des participants + moniteur formateur en temps réel',
-          'Onglet Historique affichant l\'heure d\'arrivée de chaque formé',
-          'Bouton sourdine dans le panneau formateur (le réglage reste en mémoire d\'une session à l\'autre)',
-        ],
-      },
-      {
-        title: 'Belgique',
-        accent: '#f9a8d4',
-        tag: 'Contenu',
-        items: [
-          'Onboarding Belgique indépendant avec sa propre progression par journée',
-          'Catégorie Belgique désormais distincte de Visio Province dans les entrées de la semaine',
-          'Fiche récap Belgique complète (8 modules, design dark LPT)',
-          'Journée 4 terrain Belgique (binôme CVO + MO/SAV retraits et SAV)',
-          'Jeu de questions entre formés (peer quiz) ajouté à l\'onboarding belge',
-        ],
-      },
-      {
-        title: 'Fiches pratiques & partage',
-        accent: '#38bdf8',
-        tag: 'Amélioration',
-        items: [
-          'Fiches pratiques France et Belgique : refonte visuelle identique, export PDF propre en A4 paysage sans coupure au milieu des blocs',
-          'Bouton "Partager" : envoi par email aux formés, par groupe, avec texte prédéfini',
-          'Thème sombre conservé dans les exports PDF',
-        ],
-      },
-      {
-        title: 'Idées',
-        accent: '#facc15',
-        tag: 'Amélioration',
-        items: [
-          'Stockage des idées migré vers Supabase — partagé entre tous les formateurs (plus de stockage local par formateur)',
-          'Workflow de vote + validation des idées proposées',
-          'Nouvel onglet "Idées faites" : une idée validée passe en "fait" au lieu d\'être supprimée',
-        ],
-      },
-      {
-        title: 'Mobile, PWA & dashboard',
-        accent: '#4ade80',
-        tag: 'Confort',
-        items: [
-          'Ajout de l\'app sur l\'écran d\'accueil iPhone (icône + bannière plein écran, instructions iOS/Android)',
-          'Mode portrait plein écran et boutons tactiles repositionnés sur mobile',
-          'Dark mode complet sur tout le dashboard (idées, planning, vues secondaires)',
-          'Onglet global "Avis formation" multi-semaines sur le dashboard formateur',
-        ],
-      },
-      {
-        title: 'Quiz — système de correction généralisé partout',
-        accent: '#fbbf24',
-        tag: 'Gros chantier',
-        items: [
-          'Le système "révéler la correction" du quiz Bases de l\'optique (auto-révélation dès que tout le monde a répondu + bouton manuel + stats + liste confidentielle des mauvaises réponses) est maintenant présent sur TOUS les quiz : Offres, PDM, Verre progressif, Types de verres, Montures, Ajustages, Retraits, Quiz J1, Quiz final, Remboursement France / tiers payant',
-          'Fonctionne aussi pour les questions à réponse libre (texte), pas seulement les QCM, partout',
-          'Sur les questions avec ordonnance/visuel, le formateur peut le rediffuser sur le diffuseur pendant la correction',
-          'Nouveaux types de questions réutilisables dans tous les quiz : plusieurs cases à remplir en une fois (ex. "citez les 5 points clés"), et questions "par paires" ligne par ligne (ex. "problème de vue → définition")',
-          'Sur les questions à double sélection (qcm-multi), impossible d\'envoyer sa réponse tant que le bon nombre de cases n\'est pas coché, partout',
-          'Fix : sur le diffuseur, la bonne réponse ne se surlignait jamais pour les questions à double sélection',
-        ],
-      },
-      {
-        title: 'Module Montures',
-        accent: '#00abe9',
-        tag: 'Nouveau',
-        items: [
-          'Nouvelle première page : question ouverte "d\'après vous, les montures sont fabriquées avec quels matériaux ?" — réponses des formés diffusées en direct sur TV, même système que Culture d\'entreprise',
-          'Suppression du quiz de fin de module',
-          'Page injecté : rappel du lien avec les lunettes à 10 € fabriquées en 10 minutes',
-        ],
-      },
-      {
-        title: 'Module Types de verres',
-        accent: '#7c3aed',
-        tag: 'Contenu & fix',
-        items: [
-          'Délais de fabrication (24/48h France vs 9 jours Rodenstock) affichés sur le diffuseur pour le verre progressif',
-          'Questions retravaillées : origine des verres 9 jours, client à recommander en progressif, délai en deux cases (magasins parisiens / autres magasins), vrai-faux presbytie',
-          'Fix : page blanche (plantage) au chargement d\'une des questions retravaillées',
-          'Fix : bonne réponse corrigée sur la question du client myope/astigmate de 28 ans (Faux, pas Vrai)',
-        ],
-      },
-      {
-        title: 'Quiz Jour 1',
-        accent: '#a78bfa',
-        tag: 'Contenu & fix',
-        items: [
-          'Question fondateurs : ne valide que si Paul Morlet ET Xavier Niel sont cités ensemble',
-          'Question "5 points clés" et "4 problèmes de vue" passées aux nouveaux systèmes à cases multiples / par paires',
-          'Question puissances maximales : remplacée par deux roulettes tactiles (positif / négatif) au lieu d\'une réponse texte',
-          'Fix : page blanche (plantage) sur ces nouvelles questions',
-        ],
-      },
-      {
-        title: 'Bases de l\'optique — page "Lire une ordonnance"',
-        accent: '#f472b6',
-        tag: 'Fix & nouveau',
-        items: [
-          'Le téléphone du formé est maintenant parfaitement synchronisé avec le diffuseur (avant, tout apparaissait d\'un coup côté formé sans attendre le formateur)',
-          'Bouton "Expliquer le sens du cylindre et de l\'axe" déplacé — il était caché derrière la barre de navigation',
-          'Nouveau : un rapporteur (0° à 180°) sur le diffuseur suit en direct l\'axe déplacé par le formateur pendant cette démo',
-          'Sens des roulettes de saisie (sphère/cylindre) inversé : le moins en haut, le plus en bas',
-        ],
-      },
-      {
-        title: 'Exercice "saisie interactive" (3 cas)',
-        accent: '#34d399',
-        tag: 'Amélioration',
-        items: [
-          'Une fois la réponse vérifiée, elle est verrouillée (impossible de la modifier) et l\'exercice passe automatiquement au cas suivant après quelques secondes',
-          'Le comptage se fait par cas juste/faux plutôt que par champ, et les messages n\'affichent plus de scores chiffrés',
-          'Mise en page corrigée pour que le bouton reste toujours accessible sans avoir à faire défiler l\'écran (risque de modifier une roulette par erreur en descendant)',
-        ],
-      },
-      {
-        title: 'Questions ouvertes des modules (hors quiz)',
-        accent: '#f59e0b',
-        tag: 'Fix',
-        items: [
-          'Freins à l\'achat, Prix moyen, Promesse, Ventes opticien, Montures/matériaux, Retour terrain et Jeu d\'objections (Verre progressif) : les réponses ne s\'affichent plus automatiquement sur le diffuseur dès que tout le monde a répondu',
-          'Il faut désormais que le formateur clique sur "Afficher les réponses sur TV" pour garder la main sur le bon moment de révélation',
-        ],
-      },
-    ],
-  },
-  {
-    id: '2026-07-02',
-    date: '2 juillet 2026',
-    title: 'Animation 0 intermédiaire · Offres Classique · Mises à jour contenu',
-    tag: 'Améliorations',
-    tagColor: '#00abe9',
-    sections: [
-      {
-        title: 'Animation « 0 intermédiaire » — refonte complète',
-        accent: '#f472b6',
-        tag: 'Nouveau',
-        items: [
-          'L\'animation est maintenant intégrée directement dans la page "Ce qui fait la force de LPT" — plus de page séparée',
-          'Le formateur clique sur "0 intermédiaire" dans la liste : un panneau apparaît à côté avec l\'animation en aperçu',
-          'Sur le diffuseur : 3 points colorés apparaissent un par un sur la chaîne rouge, puis chaque segment et chaque point s\'envole dans une direction différente',
-          'La chaîne LPT bleue (DIRECT · Prix réduits ✓) prend le dessus après le brise',
-          'L\'animation boucle automatiquement toutes les ~8 secondes — aucun clic nécessaire',
-        ],
-      },
-      {
-        title: 'Offre Classique — synchronisation avec le diffuseur',
-        accent: '#00abe9',
-        tag: 'Fix',
-        items: [
-          'Les caractéristiques de l\'offre Classique s\'affichent maintenant progressivement sur le diffuseur au rythme du formateur (comme le 1=1)',
-          'Avant ce fix, le diffuseur affichait tout d\'un coup sans attendre le formateur',
-          'Mise en page unifiée avec le 1=1 : tarifs à gauche, items à droite avec barre de progression',
-          'Les items non encore révélés sont invisibles sur le diffuseur (les collaborateurs ne voient rien en avance)',
-        ],
-      },
-      {
-        title: 'Corrections contenu',
-        accent: '#4ade80',
-        tag: 'Contenu',
-        items: [
-          'Suppression du badge "Sans remboursement" sur les offres Classique et 1=1 (diffuseur)',
-          'Suppression des sous-titres sur les items de l\'offre Classique',
-          'Compteur "Volume de ventes" : 2 000 → 5 000 paires vendues par jour',
-          'Nouvelle vidéo machines (V2) sur la page "Ce qui fait la force de LPT"',
-        ],
-      },
-    ],
-  },
-  {
-    id: '2026-06-24',
-    date: '24 juin 2026',
-    title: 'Réveil des acquis & FAQ anonyme',
-    tag: 'Nouveau module',
-    tagColor: '#f59e0b',
-    sections: [
-      {
-        title: 'Aperçu de la slide suivante',
-        accent: '#00abe9',
-        tag: 'Navigation',
-        items: [
-          'Une carte discrète apparaît au-dessus des boutons Précédent / Suivant sur l\'écran formateur',
-          'Elle affiche le titre et le type de la prochaine slide — plus besoin de mémoriser l\'ordre',
-          'Déployée sur tous les modules : Optique, PDM, Types de verres, Offres, Progressif, Entreprise',
-        ],
-      },
-      {
-        title: 'Réveil des acquis',
-        accent: '#f59e0b',
-        tag: 'Nouveau',
-        items: [
-          'Nouvelle tuile dédiée dans la grille des modules, aux côtés des Journées 1, 2 et 3',
-          'Le formateur choisit la journée à consolider (J1, J2 ou J3) avant de lancer l\'activité',
-          'Le QR code de connexion s\'affiche automatiquement sur la TV au clic de la tuile',
-        ],
-      },
-      {
-        title: 'FAQ anonyme',
-        accent: '#a78bfa',
-        tag: 'Interactif',
-        roles: [
-          { icon: '📱', label: 'Participant', color: '#a78bfa', desc: 'Un champ de saisie apparaît automatiquement sur le téléphone. La question est envoyée anonymement. Un bouton « Poser une autre question ? » permet d\'en ajouter plusieurs à la suite.' },
-          { icon: '📺', label: 'Diffuseur (TV)', color: '#a78bfa', desc: 'Les questions s\'affichent en nuage de bulles. Quand le formateur met une question en avant, sa bulle grossit avec un effet lumineux.' },
-          { icon: '🎓', label: 'Formateur', color: '#a78bfa', desc: 'Liste des questions dans l\'ordre d\'arrivée. Deux actions : Mettre en avant (met en lumière la bulle sur TV) et Traitée ✓ (supprime la question partout).' },
-        ],
-      },
-      {
-        title: 'Corrections & fiabilité',
-        accent: '#4ade80',
-        tag: 'Fixes',
-        items: [
-          'Aperçu de slide suivante absent sur le module Bases de l\'optique — chaque sous-composant de page ne transmettait pas la prop au composant de navigation',
-          'Participants bloqués sur l\'écran d\'attente lors du FAQ — ParticipantView n\'interceptait pas la FAQ quand aucun module de cours n\'était actif',
-          'Délai de synchronisation réduit de 5 s à 1,2 s dès qu\'une session FAQ est ouverte',
-        ],
-      },
-    ],
-  },
-]
-
-function AppUpdateModal({ update, onClose }) {
-  return (
-    <div
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(0,0,0,0.7)',
-        backdropFilter: 'blur(4px)',
-        overflowY: 'auto', WebkitOverflowScrolling: 'touch',
-        padding: '20px',
-      }}
-    >
-      <div style={{
-        background: '#0a1628', borderRadius: 24,
-        border: '1px solid rgba(255,255,255,0.1)',
-        width: '100%', maxWidth: 680,
-        margin: '0 auto',
-        padding: '40px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>
-              Formation LPT · Mise à jour
-            </div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{update.date}</div>
-            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{update.title}</div>
-          </div>
-          <button onClick={onClose} style={{
-            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
-            color: 'rgba(255,255,255,0.5)', width: 36, height: 36, borderRadius: 10,
-            fontSize: 18, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>×</button>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {update.sections.map((sec, si) => (
-            <div key={si} style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: `1px solid rgba(255,255,255,0.07)`,
-              borderLeft: `4px solid ${sec.accent}`,
-              borderRadius: 16, padding: '22px 24px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{sec.title}</div>
-                <span style={{
-                  fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase',
-                  background: sec.accent + '18', color: sec.accent,
-                  border: `1px solid ${sec.accent}30`, borderRadius: 20, padding: '3px 10px',
-                }}>{sec.tag}</span>
-              </div>
-
-              {sec.items && sec.items.map((item, ii) => (
-                <div key={ii} style={{ display: 'flex', gap: 12, marginBottom: ii < sec.items.length - 1 ? 10 : 0 }}>
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: sec.accent, flexShrink: 0, marginTop: 6 }} />
-                  <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.72)', lineHeight: 1.55 }}>{item}</div>
-                </div>
-              ))}
-
-              {sec.roles && sec.roles.map((role, ri) => (
-                <div key={ri} style={{
-                  display: 'flex', gap: 12, padding: '12px 16px',
-                  background: 'rgba(255,255,255,0.03)', borderRadius: 12,
-                  marginBottom: ri < sec.roles.length - 1 ? 10 : 0,
-                }}>
-                  <span style={{ fontSize: 18, flexShrink: 0 }}>{role.icon}</span>
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: role.color, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }}>{role.label}</div>
-                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{role.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Liste de toutes les mises à jour — ouverte depuis l'éclair ⚡ de la barre du
-// haut (plus de tuile dédiée dans le tableau de bord, ça prenait trop de place).
-function AppUpdatesListModal({ onClose, onSelect }) {
-  return (
-    <div
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(0,0,0,0.7)',
-        backdropFilter: 'blur(4px)',
-        overflowY: 'auto', WebkitOverflowScrolling: 'touch',
-        padding: '20px',
-      }}
-    >
-      <div style={{
-        background: '#0a1628', borderRadius: 24,
-        border: '1px solid rgba(255,255,255,0.1)',
-        width: '100%', maxWidth: 560,
-        margin: '0 auto',
-        padding: '32px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(167,139,250,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>⚡</div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Mises à jour de l'app</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Nouveautés et corrections</div>
-            </div>
-          </div>
-          <button onClick={onClose} style={{
-            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
-            color: 'rgba(255,255,255,0.5)', width: 32, height: 32, borderRadius: 10,
-            fontSize: 16, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>×</button>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {APP_UPDATES.map(u => (
-            <div
-              key={u.id}
-              onClick={() => onSelect(u)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 14px', borderRadius: 10,
-                background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.15)',
-                cursor: 'pointer', transition: 'all .15s',
-              }}
-              onMouseOver={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.1)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.3)' }}
-              onMouseOut={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.05)'; e.currentTarget.style.borderColor = 'rgba(167,139,250,0.15)' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', minWidth: 90 }}>{u.date}</span>
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{u.title}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{
-                  fontSize: 10, fontWeight: 700, color: u.tagColor,
-                  background: u.tagColor + '18', border: `1px solid ${u.tagColor}30`,
-                  borderRadius: 20, padding: '2px 8px', whiteSpace: 'nowrap',
-                }}>{u.tag}</span>
-                <span style={{ fontSize: 13, color: '#a78bfa', fontWeight: 600 }}>→</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }
@@ -2057,40 +1224,39 @@ const FICHES = [
   { label: 'Fiche Contrôle Qualité', href: '/fiche-controle-qualite', icon: '🔍', color: '#06b6d4', sub: 'Montures · Verres unifocal & progressif' },
 ]
 
-function FichesAnnexesWidget() {
+function FichesPratiquesPage() {
   return (
-    <div className="dash-tile" style={{ cursor: 'default' }}>
-      <div className="dash-tile-top">
-        <div className="dash-tile-icon">📎</div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,.4)', letterSpacing: '.4px' }}>Fiches annexes</span>
+    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(16,24,40,.03)' }}>
+      <div style={{ padding: '18px 24px', borderBottom: '1px solid #e5e7eb' }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#14161a' }}>📎 Fiches pratiques</div>
+        <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Documents de référence, à consulter ou partager</div>
       </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '18px 24px' }}>
         {FICHES.map(f => (
           <button
             key={f.label}
             onClick={() => window.open(f.href, '_blank', 'noopener,noreferrer')}
             style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.07)',
-              borderRadius: 10, padding: '9px 12px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 12,
+              background: '#f8fafc', border: '1px solid #e5e7eb',
+              borderRadius: 12, padding: '12px 14px', cursor: 'pointer',
               transition: 'all .18s', width: '100%', textAlign: 'left',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,.10)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,.15)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,.07)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = f.color }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e5e7eb' }}
           >
             <div style={{
-              width: 32, height: 32, borderRadius: 7, flexShrink: 0,
-              background: `rgba(${f.color === '#c9a227' ? '201,162,39' : f.color === '#0089ba' ? '0,137,186' : '74,222,128'},0.15)`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+              background: `${f.color}1f`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
             }}>
               {f.icon}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.label}</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', marginTop: 1 }}>{f.sub}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#14161a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.label}</div>
+              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>{f.sub}</div>
             </div>
-            <span style={{ fontSize: 11, color: f.color, flexShrink: 0 }}>↗</span>
+            <span style={{ fontSize: 13, color: f.color, flexShrink: 0 }}>↗</span>
           </button>
         ))}
       </div>
@@ -2100,31 +1266,33 @@ function FichesAnnexesWidget() {
 
 
 // Associe chaque activeView existant à la catégorie de sidebar qui doit
-// être surlignée quand on s'y trouve — y compris les écrans qui ne sont pas
-// la "porte d'entrée" d'une catégorie (ex: on reste sur "Onboarding &
-// sessions" pendant tout le parcours onboarding/peer-quiz). 'retour-formation'
-// et 'auto-eval' restent volontairement en dehors (voir TrainerPage
-// ci-dessous) : ce sont des écrans autonomes avec leur propre fond, pas
-// encore intégrés à la coquille — leur tour viendra avec leur retouche
-// couleur dédiée.
+// être surlignée quand on s'y trouve. Onboarding (choix/France/Belgique/peer-quiz)
+// et Entrées de la semaine n'ont volontairement pas d'entrée ici : déjà
+// accessibles depuis le dashboard (bannière / tuile), pas de catégorie dédiée
+// à surligner — la sidebar retombe sur "Accueil" par défaut pendant ce parcours.
 const VIEW_TO_CATEGORY = {
-  home: 'accueil', idees: 'accueil',
-  sessions: 'onboarding', 'onboarding-choix': 'onboarding', onboarding: 'onboarding', 'onboarding-belgique': 'onboarding', 'peer-quiz': 'onboarding',
+  home: 'accueil', idees: 'idees',
+  sessions: 'sessions',
   'suivi-magasin': 'suivi-terrain',
-  entrees: 'entrees', inscriptions: 'entrees',
+  inscriptions: 'inscriptions',
   'demandes-intervention': 'demandes',
-  'global-ratings': 'evaluations', 'resultats-tests': 'evaluations',
+  'global-ratings': 'evaluations', 'resultats-tests': 'evaluations', 'auto-eval': 'evaluations',
+  'retour-formation': 'retour-formation',
+  'fiches-pratiques': 'fiches-pratiques',
 }
 
 // Vue par défaut quand on clique directement sur une catégorie de la
 // sidebar (plutôt que d'arriver dessus via un sous-écran précis).
 const CATEGORY_LANDING = {
   accueil: 'home',
-  onboarding: 'sessions',
+  sessions: 'sessions',
   'suivi-terrain': 'suivi-magasin',
-  entrees: 'entrees',
+  inscriptions: 'inscriptions',
   demandes: 'demandes-intervention',
   evaluations: 'global-ratings',
+  'retour-formation': 'retour-formation',
+  'fiches-pratiques': 'fiches-pratiques',
+  idees: 'idees',
 }
 
 // Petit sélecteur d'onglets interne à une catégorie (ex: Entrées ↔
@@ -2158,14 +1326,14 @@ function TabRow({ tabs, activeView, onSelect }) {
 // d'onglets mobile autour du contenu existant, qui ne change pas d'une
 // ligne. Centralise ce qui était avant répété à chaque `return` de
 // Dashboard (id="dashboard" + className) pour ne le faire qu'une fois.
-function TrainerPage({ activeView, setActiveView, inscriptionsPending, demandesInterventionPending, footerSlot, tabs, children }) {
+function TrainerPage({ activeView, setActiveView, inscriptionsPending, demandesInterventionPending, ideeCount, footerSlot, tabs, children }) {
   return (
     <div id="dashboard" className="manager-light-theme">
       <div className="trainer-shell">
         <TrainerShell
           active={VIEW_TO_CATEGORY[activeView] || 'accueil'}
           onNavigateCategory={(catId) => setActiveView(CATEGORY_LANDING[catId])}
-          badges={{ entrees: inscriptionsPending, demandes: demandesInterventionPending }}
+          badges={{ inscriptions: inscriptionsPending, demandes: demandesInterventionPending, idees: ideeCount }}
           footerSlot={footerSlot}
         />
         <div className="trainer-content-wrap">
@@ -2179,12 +1347,17 @@ function TrainerPage({ activeView, setActiveView, inscriptionsPending, demandesI
   )
 }
 
-export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOpenRoom, onOpenTv, onToast, onOnlineCount, onOpenPlanning }) {
+export default function Dashboard({ pName, onLaunchModule, onOpenRoom, onOpenTv, onToast, onOnlineCount, onOpenPlanning, dashboardResume }) {
   // Dashboard "équipe" (tuiles personnelles : entrées, ma note, mes
   // déplacements) vs dashboard de Kevin, qui reste pour l'instant la version
   // complète existante — on commence par l'équipe, le sien viendra ensuite.
   const isTeamDashboard = getTrainerAvatarKey(pName) !== 'kevin'
-  const [activeView, setActiveView] = useState('home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning | retour-formation | auto-eval | global-ratings | mes-avis | free-quiz
+  // dashboardResume (page.js) : où se replacer quand on remonte juste après
+  // un aller-retour module — ce composant se démonte entièrement pendant
+  // qu'un module plein écran est affiché, donc son activeView ne survit pas
+  // tout seul. Lu une seule fois (valeurs d'init de useState), au moment du
+  // montage qui suit justement ce retour.
+  const [activeView, setActiveView] = useState(() => dashboardResume?.activeView || 'home') // home | sessions | entrees | modules | onboarding | onboarding-belgique | planning | retour-formation | auto-eval | global-ratings | mes-avis | free-quiz
   // Remonte en haut à chaque sous-écran — sur mobile, le conteneur de
   // défilement (coquille d'app, [data-app-scroll] dans page.js) est partagé
   // entre toutes les vues du Dashboard, donc sans ça la position de scroll
@@ -2200,15 +1373,18 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   const [futursEntrees, setFutursEntrees] = useState([])
   const [sessionCount, setSessionCount] = useState('—')
   const [sessionLast, setSessionLast] = useState('Chargement…')
-  const [selectedUpdate, setSelectedUpdate] = useState(null)
-  const [showUpdatesList, setShowUpdatesList] = useState(false)
   const [roomModalOpen, setRoomModalOpen] = useState(false)
+  const [showEndRoomConfirm, setShowEndRoomConfirm] = useState(false)
   const [roomLoading, setRoomLoading] = useState(false)
   const [activeRoomCode, setActiveRoomCode] = useState('')
 
   const [obDay, setObDay] = useState('1')
-  const [obReturnJournee, setObReturnJournee] = useState(null)
-  const [obReturnView, setObReturnView] = useState('onboarding')
+  const [obReturnJournee, setObReturnJournee] = useState(() => dashboardResume?.journeeId || null)
+  const [obReturnView, setObReturnView] = useState(() => dashboardResume?.activeView || 'onboarding')
+  // Retour générique d'un module (pas "Terminer" vers une journée précise) :
+  // on avait déjà quitté l'écran de sélection France/Visio/Belgique avant de
+  // lancer ce module, pas la peine de la redemander au retour.
+  const [obSkipSelect] = useState(() => !!dashboardResume)
   const [ideeCount, setIdeeCount] = useState(0)
   const [inscriptionsCount, setInscriptionsCount] = useState(0)
   const [inscriptionsPending, setInscriptionsPending] = useState(0)
@@ -2237,6 +1413,16 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   const handleTrainerModeChange = (slug) => {
     setTrainerMode(slug)
     setTrainerModeState(slug)
+  }
+
+  // Un mode déjà choisi (sidebar "Choisir un mode") dit déjà tout ce que
+  // l'écran France/Belgique + le choix Présentiel/Visio redemanderaient —
+  // on saute directement à la bonne liste de collaborateurs. Sans mode
+  // choisi, on repasse par le parcours manuel habituel.
+  const handleOpenOnboarding = () => {
+    if (trainerMode === 'belgique') setActiveView('onboarding-belgique')
+    else if (trainerMode === 'paris' || trainerMode === 'province') setActiveView('onboarding')
+    else setActiveView('onboarding-choix')
   }
   // Sondage toutes les 30s (même pattern que tâches/notes/futurs entrées) —
   // sinon le compteur ne se met à jour qu'au rechargement de la page.
@@ -2372,11 +1558,16 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     }
   }, [pName])
 
+  // "Créer une salle" amène directement sur le même écran d'onboarding
+  // (sidebar) que la bannière "Onboarding LPT" juste en dessous — avant,
+  // ces deux boutons menaient à deux endroits différents (l'un vers l'ancien
+  // écran plein écran sans sidebar), un doublon confirmé et à unifier.
   const handleOpenRoomClick = async () => {
     const login = trainerLoginFromDisplayName(pName)
     const existing = await findActiveRoomForTrainer(login, pName)
     if (existing?.code) {
       onOpenRoom?.({ code: existing.code, resumed: true })
+      handleOpenOnboarding()
       return
     }
     // Mode formateur déjà choisi (présentiel/visio/Belgique, persistant) :
@@ -2405,11 +1596,34 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
       setRoomModalOpen(false)
       onToast?.(result.created ? `Salle ${result.code} créée` : `Salle ${result.code} reprise`)
       onOpenRoom?.({ code: result.code, resumed: !result.created, created: result.created })
+      handleOpenOnboarding()
     } catch (e) {
       console.error(e)
       onToast?.(`Impossible d'ouvrir la salle — ${e.message || 'erreur inconnue'}`)
     } finally {
       setRoomLoading(false)
+    }
+  }
+
+  // Archive les résultats quiz/participants de la salle active ET la termine
+  // réellement (status 'ended' + code actif vidé) — pour repartir sur une
+  // salle neuve au prochain "Créer une salle", plutôt que de reprendre la
+  // même. Branché sur l'écran "Modules de formation" de l'onboarding (bouton
+  // "Terminer la salle"), à côté du code de salle.
+  const handleEndRoomClick = async (roomCodeHint) => {
+    const login = trainerLoginFromDisplayName(pName)
+    const code = (roomCodeHint || '').trim() || activeRoomCode || await getLiveTrainerRoomCode(login, pName)
+    const result = await endActiveRoom(code, { trainerName: pName })
+    if (result?.ok) {
+      setActiveRoomCode('')
+      onToast?.(
+        result.archived ? 'Salle terminée et archivée ✓'
+          : result.hadData ? 'Salle terminée — archivage impossible pour le moment, données conservées, réessaie plus tard'
+          : 'Salle terminée ✓'
+      )
+      setActiveView('home')
+    } else {
+      onToast?.('Impossible de terminer la salle')
     }
   }
 
@@ -2511,26 +1725,18 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   }
 
   const trainerPageProps = {
-    setActiveView, inscriptionsPending, demandesInterventionPending,
-    footerSlot: <TrainerModeToggle mode={trainerMode} onChange={handleTrainerModeChange} />,
+    setActiveView, inscriptionsPending, demandesInterventionPending, ideeCount,
   }
 
-  const ONBOARDING_TABS = [
-    { id: 'sessions', label: 'Sessions réalisées' },
-    { id: 'onboarding-choix', label: 'Onboarding', match: ['onboarding-choix', 'onboarding', 'onboarding-belgique', 'peer-quiz'] },
-  ]
-  const ENTREES_TABS = [
-    { id: 'entrees', label: 'Entrées de la semaine' },
-    { id: 'inscriptions', label: 'Inscriptions formations' },
-  ]
   const EVAL_TABS = [
     { id: 'global-ratings', label: 'Note de la formation' },
     ...(ALLOWED_RESULTATS_LOGINS.includes(getTrainerAvatarKey(pName)) ? [{ id: 'resultats-tests', label: 'Résultats des tests' }] : []),
+    { id: 'auto-eval', label: 'Auto-évaluation' },
   ]
 
   if (activeView === 'sessions') {
     return (
-      <TrainerPage activeView={activeView} tabs={ONBOARDING_TABS} {...trainerPageProps}>
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
         <SessionsHistoryView pName={pName} onBack={() => { setActiveView('home'); loadTileStats() }} onToast={onToast} />
       </TrainerPage>
     )
@@ -2538,7 +1744,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
   if (activeView === 'entrees') {
     return (
-      <TrainerPage activeView={activeView} tabs={ENTREES_TABS} {...trainerPageProps}>
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
         <EntreesView onBack={() => { setActiveView('home'); loadTileStats() }} onToast={onToast} pName={pName} />
       </TrainerPage>
     )
@@ -2549,7 +1755,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   }
 
   if (activeView === 'inscriptions') {
-    return <TrainerPage activeView={activeView} tabs={ENTREES_TABS} {...trainerPageProps}><InscriptionsView onBack={() => { setActiveView('home'); refreshInscriptionsCount(false) }} pName={pName} /></TrainerPage>
+    return <TrainerPage activeView={activeView} {...trainerPageProps}><InscriptionsView onBack={() => { setActiveView('home'); refreshInscriptionsCount(false) }} pName={pName} /></TrainerPage>
   }
 
   if (activeView === 'suivi-magasin') {
@@ -2558,10 +1764,20 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
   if (activeView === 'retour-formation') {
     return (
-      <RetourFormationView
-        onBack={() => setActiveView('home')}
-        pName={pName}
-      />
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
+        <RetourFormationView
+          onBack={() => setActiveView('home')}
+          pName={pName}
+        />
+      </TrainerPage>
+    )
+  }
+
+  if (activeView === 'fiches-pratiques') {
+    return (
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
+        <FichesPratiquesPage />
+      </TrainerPage>
     )
   }
 
@@ -2584,7 +1800,11 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   }
 
   if (activeView === 'auto-eval') {
-    return <AutoEvalView onBack={() => setActiveView('home')} />
+    return (
+      <TrainerPage activeView={activeView} tabs={EVAL_TABS} {...trainerPageProps}>
+        <AutoEvalView onBack={() => setActiveView('home')} />
+      </TrainerPage>
+    )
   }
 
   if (activeView === 'global-ratings') {
@@ -2630,7 +1850,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
 
   if (activeView === 'onboarding-choix') {
     return (
-      <TrainerPage activeView={activeView} tabs={ONBOARDING_TABS} {...trainerPageProps}>
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
           <div className="dash-hero" style={{ marginBottom: 32 }}>
             <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
               <div className="dash-hero-label">Formation · Suivi collaborateurs</div>
@@ -2692,16 +1912,22 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   if (activeView === 'onboarding') {
     const returnJournee = obReturnJournee
     return (
-      <TrainerPage activeView={activeView} tabs={ONBOARDING_TABS} {...trainerPageProps}>
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
         <OnboardingView
           pName={pName}
-          onBack={() => { setObReturnJournee(null); setActiveView('onboarding-choix') }}
-          onLaunchFormation={onLaunchSession}
+          onBack={() => {
+            setObReturnJournee(null)
+            // Mode déjà choisi (sidebar) : on n'est jamais passé par l'écran
+            // France/Belgique, donc "Retour" doit ramener à l'accueil, pas
+            // vers un écran qu'on n'a jamais vu.
+            setActiveView((trainerMode === 'paris' || trainerMode === 'province') ? 'home' : 'onboarding-choix')
+          }}
           onLaunchModule={onLaunchModule}
+          onEndRoom={handleEndRoomClick}
           onLaunchPeerQuiz={() => { setObReturnJournee('journee2'); setObReturnView('onboarding'); setActiveView('peer-quiz') }}
-          initialStep={returnJournee ? 'modules' : 'select'}
+          initialStep={(returnJournee || obSkipSelect) ? 'modules' : 'select'}
           initialJournee={returnJournee}
-          initialGroup={(trainerMode === 'paris' || trainerMode === 'province') ? trainerMode : null}
+          initialGroup={(trainerMode === 'paris' || trainerMode === 'province') ? categorySlugFromZone(trainerMode) : null}
         />
       </TrainerPage>
     )
@@ -2710,14 +1936,16 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
   if (activeView === 'onboarding-belgique') {
     const returnJourneeBelgique = obReturnJournee
     return (
-      <TrainerPage activeView={activeView} tabs={ONBOARDING_TABS} {...trainerPageProps}>
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
         <OnboardingViewBelgique
           pName={pName}
-          onBack={() => { setObReturnJournee(null); setActiveView('onboarding-choix') }}
-          onLaunchFormation={onLaunchSession}
+          onBack={() => {
+            setObReturnJournee(null)
+            setActiveView(trainerMode === 'belgique' ? 'home' : 'onboarding-choix')
+          }}
           onLaunchModule={(moduleId, journeeId) => onLaunchModule(moduleId, 'onboarding-modules-belgique', journeeId)}
+          onEndRoom={handleEndRoomClick}
           onLaunchPeerQuiz={() => { setObReturnJournee('journee2'); setObReturnView('onboarding-belgique'); setActiveView('peer-quiz') }}
-          initialStep={returnJourneeBelgique ? 'modules' : 'list'}
           initialJournee={returnJourneeBelgique}
         />
       </TrainerPage>
@@ -2729,14 +1957,15 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
     <TrainerPage activeView={activeView} {...trainerPageProps}>
         <DashHeader
           pName={pName}
-          onUpdatesClick={() => setShowUpdatesList(true)}
           activeRoomCode={activeRoomCode}
           onOpenTv={onOpenTv}
           onOpenRoom={handleOpenRoomClick}
+          onOpenPlanning={onOpenPlanning}
+          onEndRoomClick={() => setShowEndRoomConfirm(true)}
+          trainerMode={trainerMode}
+          onTrainerModeChange={handleTrainerModeChange}
           onSonnetteClick={() => setShowSonnette(true)}
           sonnettePending={sonnettePending}
-          onIdeesClick={() => setActiveView('idees')}
-          ideeCount={ideeCount}
           onTacheNotifsClick={handleOpenTacheNotifs}
           tacheNotifsCount={tacheNotifs.length}
         />
@@ -2746,13 +1975,16 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
           onPendingChange={setSonnettePending}
           trainerName={pName}
         />
-        {showUpdatesList && (
-          <AppUpdatesListModal
-            onClose={() => setShowUpdatesList(false)}
-            onSelect={u => { setShowUpdatesList(false); setSelectedUpdate(u) }}
+        {showEndRoomConfirm && (
+          <ConfirmModal
+            title="Clôturer la salle ?"
+            message="Les résultats quiz et participants de la salle active vont être archivés dans l'historique, puis la salle sera fermée. Tu repartiras sur une salle neuve au prochain lancement."
+            confirmLabel="Oui, clôturer"
+            onConfirm={async () => { setShowEndRoomConfirm(false); await handleEndRoomClick() }}
+            onCancel={() => setShowEndRoomConfirm(false)}
+            danger={false}
           />
         )}
-        {selectedUpdate && <AppUpdateModal update={selectedUpdate} onClose={() => setSelectedUpdate(null)} />}
         {showTacheNotifs && (
           <div onClick={handleCloseTacheNotifs} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,20,30,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
             <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 18, padding: 24, width: '100%', maxWidth: 420, boxShadow: '0 24px 60px rgba(16,24,40,0.25)' }}>
@@ -2775,7 +2007,7 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
         )}
 
         {/* OB Banner */}
-        <div className="ob-banner" onClick={() => setActiveView('onboarding-choix')}>
+        <div className="ob-banner" onClick={handleOpenOnboarding}>
           <div className="ob-banner-icon">🚀</div>
           <div className="ob-banner-body">
             <div className="ob-banner-label">Formation · Suivi collaborateurs</div>
@@ -2789,10 +2021,8 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
         {/* Main tiles — uniquement ce qui n'a pas encore d'équivalent dans la
             sidebar (cf. tri demandé par Kevin) : Sessions/Inscriptions/Suivi
             magasin/Résultats des tests/Demandes d'intervention/Note de la
-            formation vivent déjà dans leur catégorie de sidebar, inutile de
-            les dupliquer ici. Retour de formation et Auto-éval restent des
-            tuiles tant qu'ils n'ont pas leur propre catégorie (écrans encore
-            autonomes, cf. étape 4). */}
+            formation/Retour de formation/Auto-éval vivent déjà dans leur
+            catégorie de sidebar, inutile de les dupliquer ici. */}
         <div className="dash-tiles">
           <div className="dash-tile" onClick={() => setActiveView('entrees')}>
             <div className="dash-tile-top">
@@ -2824,26 +2054,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
             <div className="dash-tile-sub">{tachesCount > 0 ? `À traiter de ton côté` : 'Rien en attente pour toi'}</div>
           </div>
 
-          <div className="dash-tile" onClick={() => setActiveView('retour-formation')} style={{ borderColor: 'rgba(99,102,241,0.35)' }}>
-            <div className="dash-tile-top">
-              <div className="dash-tile-icon">📝</div>
-              <span className="dash-tile-link" style={{ color: '#818cf8' }}>Accéder →</span>
-            </div>
-            <div className="dash-tile-count" style={{ color: '#818cf8' }}>{entreeCount ?? '—'}</div>
-            <div className="dash-tile-label">Retour de formation</div>
-            <div className="dash-tile-sub">Fiches de suivi par collaborateur</div>
-          </div>
-
-          <div className="dash-tile" onClick={() => setActiveView('auto-eval')} style={{ borderColor: 'rgba(16,185,129,0.35)' }}>
-            <div className="dash-tile-top">
-              <div className="dash-tile-icon">📋</div>
-              <span className="dash-tile-link" style={{ color: '#10b981' }}>Lancer →</span>
-            </div>
-            <div className="dash-tile-count" style={{ color: '#10b981', fontSize: 22 }}>Auto-éval</div>
-            <div className="dash-tile-label">Auto-évaluation</div>
-            <div className="dash-tile-sub">Questionnaire fin de formation par le formé</div>
-          </div>
-
           {isTeamDashboard && (
             <div className="dash-tile" onClick={() => setActiveView('mes-avis')} style={{ borderColor: 'rgba(245,158,11,0.4)' }}>
               <div className="dash-tile-top">
@@ -2868,13 +2078,6 @@ export default function Dashboard({ pName, onLaunchSession, onLaunchModule, onOp
               )}
             </div>
           )}
-        </div>
-
-        {/* Planning + Shortcuts + Fiches */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
-          <PlanningWidget onOpen={() => onOpenPlanning()} />
-          <ShortcutsWidget />
-          <FichesAnnexesWidget />
         </div>
 
       {roomModalOpen && (

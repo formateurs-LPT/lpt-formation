@@ -56,23 +56,49 @@ function StoreTile({ store, color, onSelect }) {
   )
 }
 
-function RegionSection({ group, stores, onSelectStore }) {
+// Grande tuile pliable (une par région) — remplace l'ancien menu où toutes
+// les régions étaient dépliées en permanence (long, chargé). Un clic ouvre
+// la région et replie celle déjà ouverte (une seule à la fois).
+function RegionBigTile({ group, count, expanded, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 18, width: '100%',
+        background: expanded ? `linear-gradient(135deg, ${group.bg} 0%, #fff 75%)` : '#fff',
+        border: `1.5px solid ${expanded ? group.color : group.border}`,
+        borderRadius: 18, padding: '22px 26px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+        transition: 'all .2s', boxShadow: expanded ? `0 10px 28px -12px ${group.color}66` : '0 1px 2px rgba(16,24,40,0.05)',
+      }}
+    >
+      <div style={{
+        width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+        background: `${group.color}26`, border: `1.5px solid ${group.color}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26,
+      }}>{group.emoji}</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#14161a' }}>{group.label}</div>
+        <div style={{ fontSize: 12.5, color: '#6b7280', fontWeight: 600, marginTop: 2 }}>
+          {count} {group.unitLabel || 'magasin'}{count > 1 ? 's' : ''}
+        </div>
+      </div>
+      <div style={{
+        fontSize: 20, fontWeight: 700, color: group.color, flexShrink: 0,
+        transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .2s',
+      }}>›</div>
+    </button>
+  )
+}
+
+function RegionStoresGrid({ group, stores, onSelectStore }) {
   const storesById = Object.fromEntries(stores.map(s => [s.id, s]))
   const ordered = group.storeIds.map(id => storesById[id]).filter(Boolean)
   if (!ordered.length) return null
   return (
-    <div style={{ marginBottom: 30 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-        <span style={{ fontSize: 20 }}>{group.emoji}</span>
-        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: group.color, letterSpacing: 0.2 }}>{group.label}</h3>
-        <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${group.border}, transparent)` }} />
-        <span style={{ fontSize: 11.5, color: '#9aa1ac', fontWeight: 600 }}>{ordered.length} {group.unitLabel || 'magasin'}{ordered.length > 1 ? 's' : ''}</span>
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
-        {ordered.map(store => (
-          <StoreTile key={store.id} store={store} color={group} onSelect={() => onSelectStore(store.id)} />
-        ))}
-      </div>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, padding: '16px 6px 4px' }}>
+      {ordered.map(store => (
+        <StoreTile key={store.id} store={store} color={group} onSelect={() => onSelectStore(store.id)} />
+      ))}
     </div>
   )
 }
@@ -85,6 +111,8 @@ function StoreGrid({ onSelectStore, onBack }) {
   // Le Labo Progressif et Beauchamps sont des annexes (labo/entrepôt), pas
   // des magasins de vente — exclus du décompte réseau.
   const magasinsCount = STORES.filter(s => !STORE_ANNEXES.storeIds.includes(s.id)).length
+  const allGroups = [...STORE_REGION_GROUPS, STORE_ANNEXES]
+  const [expandedId, setExpandedId] = useState(null)
   return (
     <div className="dash-wrap">
       <BackBtn onClick={onBack}>← Retour au tableau de bord</BackBtn>
@@ -101,10 +129,23 @@ function StoreGrid({ onSelectStore, onBack }) {
           <div style={{ fontSize: 10.5, color: '#6b7280', fontWeight: 600, whiteSpace: 'nowrap' }}>magasins réseau LPT</div>
         </div>
       </div>
-      {STORE_REGION_GROUPS.map(group => (
-        <RegionSection key={group.id} group={group} stores={STORES} onSelectStore={onSelectStore} />
-      ))}
-      <RegionSection group={STORE_ANNEXES} stores={STORES} onSelectStore={onSelectStore} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {allGroups.map(group => {
+          const id = group.id || 'annexes'
+          const isOpen = expandedId === id
+          return (
+            <div key={id}>
+              <RegionBigTile
+                group={group}
+                count={group.storeIds.length}
+                expanded={isOpen}
+                onToggle={() => setExpandedId(isOpen ? null : id)}
+              />
+              {isOpen && <RegionStoresGrid group={group} stores={STORES} onSelectStore={onSelectStore} />}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
