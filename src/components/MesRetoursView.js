@@ -4,10 +4,11 @@ import {
   getMagasinIdBySlug, getCollaborateursByMagasin,
 } from '@/lib/collaborateursApi'
 import {
-  getFormateurId, getNotesTerrain, addNoteTerrain,
+  getFormateurId, getNotesTerrain, addNoteTerrain, getNotesSemaine,
   getReportingsHebdo, saveReportingHebdo, markReportingEnvoye, currentWeekBounds,
   genererSyntheseSiNecessaire, updateNoteTerrain, deleteNoteTerrain,
   genererReportingStructure, updateReportingStructure, deleteReportingHebdo,
+  buildConfidentielStructure, saveReportingConfidentiel, getReportingConfidentiel,
 } from '@/lib/notesTerrainApi'
 import { uploadPieceJointe, getSignedUrl } from '@/lib/storageApi'
 import { getDemandesIntervention, rattacherReporting, notifierReportingRattache } from '@/lib/directionApi'
@@ -90,6 +91,12 @@ function NoteTerrainRow({ note, canDelete, onSave, onDelete }) {
               color: '#c4b5fd', border: '1px solid #c4b5fd', background: 'transparent',
             }}>Mot de la fin</span>
           )}
+          {note.confidentiel && (
+            <span style={{
+              fontSize: 10.5, fontWeight: 700, padding: '2px 9px', borderRadius: 20,
+              color: '#b45309', border: '1px solid #fcd9a8', background: 'transparent',
+            }}>🔒 Confidentiel</span>
+          )}
         </div>
         {!editing && (
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
@@ -164,9 +171,16 @@ export default function MesRetoursView({ store, pName, onBack }) {
   const [voiceRecorderKey, setVoiceRecorderKey] = useState(0)
   const [collaborateurs, setCollaborateurs] = useState([])
   const [saving, setSaving] = useState(false)
+  const [showOptions, setShowOptions] = useState(false)
   const fileInputRef = useRef(null)
 
+  // Tuile confidentielle — volontairement minimale (texte seul, pas de
+  // pôle/rubrique/mention/pièce jointe), vu la sensibilité du contenu.
+  const [noteTextConfidentiel, setNoteTextConfidentiel] = useState('')
+  const [savingConfidentiel, setSavingConfidentiel] = useState(false)
+
   const [draftStructure, setDraftStructure] = useState(null) // null = pas encore généré
+  const [draftConfidentiel, setDraftConfidentiel] = useState(null)
   const [generating, setGenerating] = useState(false)
   const [generateError, setGenerateError] = useState(null)
   const [publishing, setPublishing] = useState(false)
@@ -177,6 +191,7 @@ export default function MesRetoursView({ store, pName, onBack }) {
   const [mailTo, setMailTo] = useState('reporting@lunettespourtous.com')
   const [mailBody, setMailBody] = useState('')
   const [selectedReporting, setSelectedReporting] = useState(null)
+  const [selectedConfidentiel, setSelectedConfidentiel] = useState(null)
   const [updatingSelected, setUpdatingSelected] = useState(false)
   const [demandeOuverte, setDemandeOuverte] = useState(null) // demande d'intervention ouverte sur ce magasin, si existe
   const [rattacherDemande, setRattacherDemande] = useState(false)
@@ -246,6 +261,7 @@ export default function MesRetoursView({ store, pName, onBack }) {
       rubrique: noteRubrique,
       collaborateursCites: noteCollaborateurs,
       motDeLaFin: noteMotDeLaFin,
+      confidentiel: false,
     })
     setNoteText('')
     setNoteFiles([])
@@ -260,15 +276,33 @@ export default function MesRetoursView({ store, pName, onBack }) {
     setSaving(false)
   }
 
+  // Tuile confidentielle — texte seul, jamais passé par l'IA (cf.
+  // reporting-generate/index.ts, filtre confidentiel=eq.false côté serveur).
+  const handleAddNoteConfidentiel = async () => {
+    if (!noteTextConfidentiel.trim() || !magasinId || !formateurId) return
+    setSavingConfidentiel(true)
+    await addNoteTerrain({
+      magasinId, formateurId, typeNote: 'texte',
+      contenu: noteTextConfidentiel.trim(), confidentiel: true,
+    })
+    setNoteTextConfidentiel('')
+    await load(magasinId)
+    setSavingConfidentiel(false)
+  }
+
   const genererReporting = async () => {
     setGenerateError(null)
     setGenerating(true)
     const { debut, fin } = currentWeekBounds()
-    const result = await genererReportingStructure({ magasinId, formateurId, semaineDebut: debut, semaineFin: fin })
+    const [result, semaineNotes] = await Promise.all([
+      genererReportingStructure({ magasinId, formateurId, semaineDebut: debut, semaineFin: fin }),
+      getNotesSemaine(magasinId, formateurId),
+    ])
     setGenerating(false)
     if (!result.ok) { setGenerateError(result.error); return }
     setDraftStructure(result.contenuStructure)
     lastGeneratedRef.current = JSON.stringify(result.contenuStructure)
+    setDraftConfidentiel(buildConfidentielStructure(semaineNotes))
   }
 
   const regenererReporting = async () => {
@@ -289,6 +323,9 @@ export default function MesRetoursView({ store, pName, onBack }) {
       row = await saveReportingHebdo({ formateurId, magasinId, contenuGenere, contenuStructure: draftStructure })
     }
     setSavedReporting(row)
+    if (draftConfidentiel?.items?.length && row?.id) {
+      await saveReportingConfidentiel({ reportingId: row.id, contenuStructure: draftConfidentiel })
+    }
     if (rattacherDemande && demandeOuverte && row?.id) {
       await rattacherReporting(demandeOuverte.id, row.id)
       await notifierReportingRattache({ ...demandeOuverte, reporting_id: row.id })
@@ -314,7 +351,17 @@ export default function MesRetoursView({ store, pName, onBack }) {
     if (!selectedReporting || !window.confirm('Supprimer ce reporting définitivement ?')) return
     await deleteReportingHebdo({ id: selectedReporting.id, formateurId })
     setSelectedReporting(null)
+    setSelectedConfidentiel(null)
     await load(magasinId)
+  }
+
+  // Les formateurs voient le confidentiel de leur historique sans ressaisie —
+  // ce sont les auteurs de ce contenu (même niveau de confiance que les
+  // notes_terrain brutes, déjà partagées entre tous les formateurs). Seul le
+  // manager passe par la ressaisie de code (cf. HistoriqueReportingsSection).
+  const openReporting = async (r) => {
+    setSelectedReporting(r)
+    setSelectedConfidentiel(await getReportingConfidentiel(r.id))
   }
 
   const ouvrirMail = () => {
@@ -346,68 +393,99 @@ export default function MesRetoursView({ store, pName, onBack }) {
         </div>
       </div>
 
-      {/* Ajouter une note */}
-      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: 18, marginBottom: 24 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-s)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-          Ajouter une note
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-          {POLES.map(p => (
-            <button
-              key={p.id} type="button" onClick={() => setNotePole(notePole === p.id ? null : p.id)}
-              style={{
-                padding: '5px 13px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                background: notePole === p.id ? `color-mix(in srgb, ${p.color} 18%, transparent)` : 'transparent',
-                border: `1px solid ${notePole === p.id ? p.color : 'var(--border)'}`,
-                color: notePole === p.id ? p.color : 'var(--text-s)',
-              }}
-            >{p.label}</button>
-          ))}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-          {RUBRIQUES.map(r => (
-            <button
-              key={r.id} type="button" onClick={() => setNoteRubrique(noteRubrique === r.id ? null : r.id)}
-              style={{
-                padding: '5px 13px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                background: noteRubrique === r.id ? `color-mix(in srgb, ${r.color} 18%, transparent)` : 'transparent',
-                border: `1px solid ${noteRubrique === r.id ? r.color : 'var(--border)'}`,
-                color: noteRubrique === r.id ? r.color : 'var(--text-s)',
-              }}
-            >{r.label}</button>
-          ))}
-          <label style={{
-            display: 'flex', alignItems: 'center', gap: 7, marginLeft: 'auto', cursor: 'pointer',
-            fontSize: 12, color: noteMotDeLaFin ? '#c4b5fd' : 'var(--text-s)', fontWeight: 700,
-          }}>
-            <input type="checkbox" checked={noteMotDeLaFin} onChange={e => setNoteMotDeLaFin(e.target.checked)} style={{ accentColor: '#c4b5fd' }} />
-            Mot de la fin
-          </label>
-        </div>
-        <CollaborateurMentionPicker
-          value={noteText}
-          onChange={setNoteText}
-          collaborateurs={collaborateurs}
-          cited={noteCollaborateurs}
-          onCitedChange={setNoteCollaborateurs}
-          placeholder="Ce que vous avez constaté/fait aujourd'hui sur ce magasin… (tapez @ pour citer un collaborateur)"
-          rows={3}
-        />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <input
-            ref={fileInputRef} type="file" accept="image/*,video/*" multiple
-            onChange={e => setNoteFiles(Array.from(e.target.files || []))}
-            style={{ fontSize: 12, color: 'var(--text-s)' }}
+      <div className="reporting-light-theme" style={{ borderRadius: 18, padding: 20, marginBottom: 8 }}>
+
+      {/* Deux tuiles sobres — commentaires publics / confidentiels (manager
+          uniquement, cf. plan). Options avancées (pôle/rubrique/mention/pièce
+          jointe/vocal) repliées par défaut, disponibles via "+ options". */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
+        <div className="reporting-tile">
+          <div className="reporting-tile-label">💬 Commentaires</div>
+          <CollaborateurMentionPicker
+            value={noteText}
+            onChange={setNoteText}
+            collaborateurs={collaborateurs}
+            cited={noteCollaborateurs}
+            onCitedChange={setNoteCollaborateurs}
+            placeholder="Ce que vous avez constaté/fait aujourd'hui sur ce magasin… (tapez @ pour citer un collaborateur)"
+            rows={3}
           />
-          <VoiceNoteRecorder
-            key={voiceRecorderKey}
-            onRecorded={setNoteAudioBlob}
-            onClear={() => setNoteAudioBlob(null)}
-            onTranscript={text => setNoteText(prev => prev.trim() ? `${prev.trim()} ${text}` : text)}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <button type="button" onClick={() => setShowOptions(o => !o)} className="btn2" style={{ fontSize: 12 }}>
+              {showOptions ? '– Options' : '+ Options (pôle, rubrique, photo, vocal…)'}
+            </button>
+            <button onClick={handleAddNote} disabled={saving || (!noteText.trim() && noteFiles.length === 0 && !noteAudioBlob)} className="gbtn" style={{ marginLeft: 'auto' }}>
+              {saving ? 'Enregistrement…' : '+ Ajouter'}
+            </button>
+          </div>
+
+          {showOptions && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                {POLES.map(p => (
+                  <button
+                    key={p.id} type="button" onClick={() => setNotePole(notePole === p.id ? null : p.id)}
+                    style={{
+                      padding: '5px 13px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                      background: notePole === p.id ? `color-mix(in srgb, ${p.color} 18%, transparent)` : 'transparent',
+                      border: `1px solid ${notePole === p.id ? p.color : 'var(--border)'}`,
+                      color: notePole === p.id ? p.color : 'var(--text-s)',
+                    }}
+                  >{p.label}</button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                {RUBRIQUES.map(r => (
+                  <button
+                    key={r.id} type="button" onClick={() => setNoteRubrique(noteRubrique === r.id ? null : r.id)}
+                    style={{
+                      padding: '5px 13px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                      background: noteRubrique === r.id ? `color-mix(in srgb, ${r.color} 18%, transparent)` : 'transparent',
+                      border: `1px solid ${noteRubrique === r.id ? r.color : 'var(--border)'}`,
+                      color: noteRubrique === r.id ? r.color : 'var(--text-s)',
+                    }}
+                  >{r.label}</button>
+                ))}
+                <label style={{
+                  display: 'flex', alignItems: 'center', gap: 7, marginLeft: 'auto', cursor: 'pointer',
+                  fontSize: 12, color: noteMotDeLaFin ? '#c4b5fd' : 'var(--text-s)', fontWeight: 700,
+                }}>
+                  <input type="checkbox" checked={noteMotDeLaFin} onChange={e => setNoteMotDeLaFin(e.target.checked)} style={{ accentColor: '#c4b5fd' }} />
+                  Mot de la fin
+                </label>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
+                <input
+                  ref={fileInputRef} type="file" accept="image/*,video/*" multiple
+                  onChange={e => setNoteFiles(Array.from(e.target.files || []))}
+                  style={{ fontSize: 12, color: 'var(--text-s)' }}
+                />
+                <VoiceNoteRecorder
+                  key={voiceRecorderKey}
+                  onRecorded={setNoteAudioBlob}
+                  onClear={() => setNoteAudioBlob(null)}
+                  onTranscript={text => setNoteText(prev => prev.trim() ? `${prev.trim()} ${text}` : text)}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="reporting-tile reporting-tile-confidentiel">
+          <div className="reporting-tile-label">🔒 Commentaires confidentiels</div>
+          <p style={{ fontSize: 11.5, color: 'var(--text-m)', marginTop: -4, marginBottom: 10 }}>
+            Visibles uniquement par le manager dans le reporting final (ex. un point RH sensible) — jamais par les collaborateurs, jamais traités par une IA.
+          </p>
+          <textarea
+            value={noteTextConfidentiel} onChange={e => setNoteTextConfidentiel(e.target.value)} rows={3} className="finput"
+            placeholder="Note confidentielle, réservée au manager…"
+            style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', marginBottom: 10 }}
           />
-          <button onClick={handleAddNote} disabled={saving || (!noteText.trim() && noteFiles.length === 0 && !noteAudioBlob)} className="gbtn" style={{ marginLeft: 'auto' }}>
-            {saving ? 'Enregistrement…' : '+ Ajouter la note'}
-          </button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={handleAddNoteConfidentiel} disabled={savingConfidentiel || !noteTextConfidentiel.trim()} className="gbtn">
+              {savingConfidentiel ? 'Enregistrement…' : '+ Ajouter'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -431,7 +509,7 @@ export default function MesRetoursView({ store, pName, onBack }) {
       </div>
 
       {/* Génération du reporting */}
-      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: 18, marginBottom: 32 }}>
+      <div className="reporting-tile" style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
           <h3 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Reporting de la semaine</h3>
           {draftStructure === null ? (
@@ -450,7 +528,8 @@ export default function MesRetoursView({ store, pName, onBack }) {
         {draftStructure && (
           <>
             <p style={{ fontSize: 13, color: 'var(--text-s)', marginBottom: 14 }}>
-              ✓ Reporting généré — {draftStructure.sections.reduce((n, s) => n + s.rubriques.reduce((m, r) => m + r.items.length, 0), 0)} point(s).
+              ✓ Reporting généré — {draftStructure.sections.reduce((n, s) => n + s.rubriques.reduce((m, r) => m + r.items.length, 0), 0)} point(s)
+              {draftConfidentiel?.items?.length ? ` + ${draftConfidentiel.items.length} confidentiel(s)` : ''}.
               {savedReporting?.id ? ' Déjà publié — tu peux continuer à le modifier.' : ' Vérifie-le avant de publier.'}
             </p>
             {demandeOuverte && (
@@ -478,6 +557,7 @@ export default function MesRetoursView({ store, pName, onBack }) {
           publishing={publishing}
           published={!!savedReporting?.id}
           onOpenMail={ouvrirMail}
+          confidentialStructure={draftConfidentiel}
         />
       )}
 
@@ -489,9 +569,8 @@ export default function MesRetoursView({ store, pName, onBack }) {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {reportings.map(r => (
-              <button key={r.id} onClick={() => setSelectedReporting(r)} style={{
-                textAlign: 'left', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12,
-                padding: '12px 16px', cursor: 'pointer', fontFamily: 'inherit',
+              <button key={r.id} onClick={() => openReporting(r)} className="reporting-tile" style={{
+                textAlign: 'left', padding: '12px 16px', cursor: 'pointer', fontFamily: 'inherit',
               }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
                   Semaine du {fmtDateLong(r.semaine_debut)} au {fmtDateLong(r.semaine_fin)}
@@ -506,6 +585,8 @@ export default function MesRetoursView({ store, pName, onBack }) {
         )}
       </div>
 
+      </div>
+
       {/* Détail d'un reporting déjà publié — modifiable par son auteur uniquement */}
       {selectedReporting && (
         <ReportingDetailView
@@ -513,11 +594,12 @@ export default function MesRetoursView({ store, pName, onBack }) {
           magasinNom={store.label}
           canEdit={selectedReporting.formateur_id === formateurId}
           onChange={next => setSelectedReporting(prev => prev ? { ...prev, contenu_structure: next } : prev)}
-          onClose={() => setSelectedReporting(null)}
+          onClose={() => { setSelectedReporting(null); setSelectedConfidentiel(null) }}
           onPublish={selectedReporting.formateur_id === formateurId ? handleUpdateSelectedReporting : undefined}
           onDelete={selectedReporting.formateur_id === formateurId ? handleDeleteSelectedReporting : undefined}
           publishing={updatingSelected}
           published
+          confidentialStructure={selectedConfidentiel}
         />
       )}
 

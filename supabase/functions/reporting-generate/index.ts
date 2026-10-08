@@ -33,11 +33,14 @@ function json(body: unknown, status = 200) {
   })
 }
 
+// confidentiel=eq.false : garantie côté serveur (pas seulement côté client)
+// qu'un texte confidentiel (potentiellement sensible RH) n'est jamais inclus
+// dans ce qui part vers l'API Groq, même en cas de bug côté appelant.
 async function fetchNotesSemaine(magasinId: string, formateurId: string, debut: string, fin: string) {
   const url = Deno.env.get('SUPABASE_URL')
   const anon = Deno.env.get('SUPABASE_ANON_KEY')
   const res = await fetch(
-    `${url}/rest/v1/notes_terrain?magasin_id=eq.${magasinId}&formateur_id=eq.${formateurId}&date=gte.${debut}&date=lte.${fin}&order=date.asc`,
+    `${url}/rest/v1/notes_terrain?magasin_id=eq.${magasinId}&formateur_id=eq.${formateurId}&date=gte.${debut}&date=lte.${fin}&confidentiel=eq.false&order=date.asc`,
     { headers: { apikey: anon!, Authorization: `Bearer ${anon}` } }
   )
   if (!res.ok) throw new Error(`Lecture des notes échouée (${res.status})`)

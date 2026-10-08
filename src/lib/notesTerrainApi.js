@@ -20,7 +20,7 @@ export async function getNotesTerrain(magasinId) {
   return (notes || []).map(n => ({ ...n, auteur: nameById[n.formateur_id] || 'Formateur' }))
 }
 
-export async function addNoteTerrain({ magasinId, formateurId, typeNote = 'texte', contenu, audioUrl, piecesJointes, pole, rubrique, collaborateursCites, motDeLaFin }) {
+export async function addNoteTerrain({ magasinId, formateurId, typeNote = 'texte', contenu, audioUrl, piecesJointes, pole, rubrique, collaborateursCites, motDeLaFin, confidentiel }) {
   return sbInsert('notes_terrain', {
     magasin_id: magasinId,
     formateur_id: formateurId,
@@ -32,6 +32,7 @@ export async function addNoteTerrain({ magasinId, formateurId, typeNote = 'texte
     rubrique: rubrique || null,
     collaborateurs_cites: collaborateursCites?.length ? collaborateursCites : null,
     mot_de_la_fin: !!motDeLaFin,
+    confidentiel: !!confidentiel,
   })
 }
 
@@ -182,6 +183,48 @@ export async function saveReportingHebdo({ formateurId, magasinId, contenuGenere
  * de la refonte : modifier/supprimer/réordonner un point avant publication). */
 export async function updateReportingStructure(reportingId, contenuStructure) {
   return sbUpdate('reportings_hebdo', { contenu_structure: contenuStructure }, `id=eq.${reportingId}`)
+}
+
+// ── Commentaires confidentiels (manager uniquement) ──────────────────────────
+// Jamais passés par l'IA Groq (texte RH potentiellement sensible) : assemblés
+// ici, côté client, tels quels. Stockés dans une table séparée de
+// reportings_hebdo (pas un champ dans contenu_structure) — c'est cette
+// séparation de table, et le fait qu'AUCUNE route collaborateur n'importe
+// jamais getReportingConfidentiel/hasReportingConfidentiel, qui garantit que
+// ce contenu ne transite jamais vers une session collaborateur. À n'appeler
+// que depuis du code manager.
+
+/** Pure, aucun appel réseau — construit la structure confidentielle d'un
+ * reporting à partir des notes confidentielles de la semaine. */
+export function buildConfidentielStructure(notes) {
+  const items = (notes || [])
+    .filter(n => n.confidentiel && n.contenu)
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+    .map(n => ({ date: n.date, texte: n.contenu }))
+  return { items }
+}
+
+/** Enregistre (ou met à jour) le contenu confidentiel d'un reporting publié. */
+export async function saveReportingConfidentiel({ reportingId, contenuStructure }) {
+  const existing = await sbSelect('reportings_hebdo_confidentiel', `reporting_id=eq.${reportingId}&select=id`)
+  if (existing?.length) {
+    return sbUpdate('reportings_hebdo_confidentiel', { contenu_structure: contenuStructure }, `id=eq.${existing[0].id}`)
+  }
+  return sbInsert('reportings_hebdo_confidentiel', { reporting_id: reportingId, contenu_structure: contenuStructure })
+}
+
+/** Existence seule (pas le contenu) — utilisée pour décider d'afficher le
+ * bouton "Voir les infos confidentielles", sans charger le texte sensible
+ * tant que le manager n'a pas ressaisi son code. */
+export async function hasReportingConfidentiel(reportingId) {
+  const rows = await sbSelect('reportings_hebdo_confidentiel', `reporting_id=eq.${reportingId}&select=id`)
+  return !!rows?.length
+}
+
+/** Contenu confidentiel — à n'appeler qu'après ressaisie du code manager. */
+export async function getReportingConfidentiel(reportingId) {
+  const rows = await sbSelect('reportings_hebdo_confidentiel', `reporting_id=eq.${reportingId}`)
+  return rows?.[0]?.contenu_structure || null
 }
 
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''

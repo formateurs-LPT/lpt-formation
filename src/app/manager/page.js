@@ -14,7 +14,7 @@ import {
   declencherTestSortie, validerNouvelEntrant, findCollaborateurByName, getOrCreateCollaborateurForEntree,
   getCollaborateurById, apiMarquerFormationTerminee,
 } from '@/lib/collaborateursApi'
-import { getReportingsHebdo, updateReportingStructure } from '@/lib/notesTerrainApi'
+import { getReportingsHebdo, updateReportingStructure, hasReportingConfidentiel, getReportingConfidentiel } from '@/lib/notesTerrainApi'
 import { getMotsMessages, addMotMessage, getStoreManagerId } from '@/lib/notesCollaborateurApi'
 import { ChatGroupeBody } from '@/components/ChatGroupeModal'
 import ConversationRecrutementModal from '@/components/ConversationRecrutementModal'
@@ -467,8 +467,24 @@ function fmtPlanningRangeFr(startIso, endIso) {
 // Lecture seule — même requête réutilisable (getReportingsHebdo, filtrable
 // par magasin_id) que celle prévue pour DR/directeur retail au script 5 ;
 // rien de spécifique au rôle manager n'est codé ici.
-function HistoriqueReportingsSection({ reportings, magasinNom }) {
+function HistoriqueReportingsSection({ reportings, magasinNom, session }) {
   const [selected, setSelected] = useState(null)
+  const [confidentialAvailable, setConfidentialAvailable] = useState(false)
+
+  const openReporting = async (r) => {
+    setSelected(r)
+    setConfidentialAvailable(await hasReportingConfidentiel(r.id))
+  }
+
+  // Ressaisie du code manager (ConfirmManagerCodeModal, dans
+  // ReportingDetailView) avant de charger le contenu confidentiel — jamais
+  // chargé tant que ce n'est pas validé.
+  const handleUnlockConfidential = async (code) => {
+    const row = await getManagerFromDB(session.login, code)
+    if (!row) return null
+    return getReportingConfidentiel(selected.id)
+  }
+
   return (
     <div style={{ marginBottom: 28 }}>
       {reportings.length === 0 ? (
@@ -476,7 +492,7 @@ function HistoriqueReportingsSection({ reportings, magasinNom }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {reportings.map(r => (
-            <button key={r.id} onClick={() => setSelected(r)} style={{
+            <button key={r.id} onClick={() => openReporting(r)} style={{
               textAlign: 'left', background: '#fff', border: '1px solid #e5e7eb',
               borderRadius: 12, padding: '12px 16px', cursor: 'pointer', fontFamily: 'inherit',
               boxShadow: '0 1px 2px rgba(16,24,40,0.04)',
@@ -496,12 +512,14 @@ function HistoriqueReportingsSection({ reportings, magasinNom }) {
         <ReportingDetailView
           reporting={selected}
           magasinNom={magasinNom}
-          onClose={() => setSelected(null)}
+          onClose={() => { setSelected(null); setConfidentialAvailable(false) }}
           canToggleDone
           onChange={async (next) => {
             setSelected(prev => prev ? { ...prev, contenu_structure: next } : prev)
             await updateReportingStructure(selected.id, next)
           }}
+          confidentialAvailable={confidentialAvailable}
+          onUnlockConfidential={handleUnlockConfidential}
         />
       )}
     </div>
@@ -1152,11 +1170,11 @@ function ChatMagasinPage({ magasinId, magasinNom, session, storeManagerId }) {
   )
 }
 
-function ReportingPage({ reportings, magasinNom }) {
+function ReportingPage({ reportings, magasinNom, session }) {
   return (
     <div>
       <PageHeader title="Reporting" />
-      <HistoriqueReportingsSection reportings={reportings} magasinNom={magasinNom} />
+      <HistoriqueReportingsSection reportings={reportings} magasinNom={magasinNom} session={session} />
     </div>
   )
 }
@@ -1583,7 +1601,7 @@ function ManagerDashboard({ session, onLogout }) {
           ) : activeNav === 'recrutement' ? (
             <RecrutementPage magasinId={magasinId} session={session} onRefresh={() => refreshRecrutement(magasinId)} />
           ) : activeNav === 'reporting' ? (
-            <ReportingPage reportings={reportings} magasinNom={store.label} />
+            <ReportingPage reportings={reportings} magasinNom={store.label} session={session} />
           ) : activeNav === 'chat' ? (
             <ChatMagasinPage magasinId={magasinId} magasinNom={store.label} session={session} storeManagerId={storeManagerId} />
           ) : activeNav === 'entrainement' ? (
