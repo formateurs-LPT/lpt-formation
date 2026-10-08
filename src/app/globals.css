@@ -474,6 +474,36 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 #dashboard.manager-light-theme .btn2:hover{background:#f5f6f8;border-color:#c7cbd1}
 #dashboard.manager-light-theme .badge.pending{background:#f3f4f6;color:#6b7280}
 
+/* ── REPORTING — même DA sobre/claire que le manager (.manager-light-theme),
+   mais en classe simple (pas liée à l'id #dashboard) pour pouvoir envelopper
+   juste la zone reporting (composeur formateur, slides) n'importe où dans
+   l'app — y compris imbriquée dans un #dashboard déjà sombre (formateur,
+   collaborateur) — sans toucher au thème du reste de cette page. ── */
+.reporting-light-theme {
+  background: #f5f6f8;
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --text: #14161a;
+  --text-s: #6b7280;
+  --text-m: #9aa1ac;
+  --lpt-l: rgba(0,137,186,0.10);
+  --lpt-ll: rgba(0,137,186,0.06);
+  --green-l: #dcfce7;
+  --red-l: #fee2e2;
+  --orange-l: #fef3c7;
+}
+.reporting-light-theme .finput{background:#fff;color:#14161a;border-color:#e5e7eb}
+.reporting-light-theme .finput::placeholder{color:#9aa1ac}
+.reporting-light-theme .finput:focus{border-color:#0089ba;background:#fff}
+.reporting-light-theme .btn2{background:#fff;color:#14161a;border-color:#e5e7eb}
+.reporting-light-theme .btn2:hover{background:#f5f6f8;border-color:#c7cbd1}
+.reporting-light-theme .badge.pending{background:#f3f4f6;color:#6b7280}
+.reporting-tile{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,0.03)}
+.reporting-tile-label{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.reporting-tile-confidentiel{border-color:#fcd9a8}
+.reporting-tile-confidentiel .reporting-tile-label{color:#b45309}
+
 /* ── DASHBOARD MANAGER — RESPONSIVE ──
    Desktop/TV : sidebar verticale fixe, contenu centré (évite le vide à
    droite sur très grand écran), défilement de page normal.
@@ -546,6 +576,40 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
   .rh-bottomnav-mobile{display:block;order:3;flex-shrink:0;position:relative}
   .rh-filters-row{padding:14px 16px 0!important}
   .rh-content{padding:16px 16px 24px!important}
+}
+
+/* ── DASHBOARD COLLABORATEUR — navigation 3 sections (Ma progression /
+   Cours / Exercices). Desktop : rangée d'onglets pilule sous l'en-tête.
+   Mobile : barre fixe en bas façon app native (même esprit que
+   .manager-bottomnav-mobile) — `fixed` plutôt que `sticky` : ce composant
+   est placé tôt dans le DOM (juste sous l'en-tête), et `sticky` ne colle au
+   bord qu'à partir de sa position naturelle de défilement, pas dès le
+   chargement. `.collab-page` reçoit le padding bas correspondant pour que
+   la barre ne masque jamais le dernier contenu. ── */
+.collab-nav{
+  display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
+  padding:0 20px 20px;max-width:640px;margin:0 auto;
+}
+.collab-nav-btn{
+  display:flex;align-items:center;gap:8px;padding:11px 18px;
+  border:1.5px solid transparent;border-radius:30px;cursor:pointer;
+  font-family:inherit;font-size:13.5px;min-height:44px;transition:all .15s;
+}
+.collab-nav-btn:hover{border-color:#e5e7eb}
+.collab-nav-emoji{font-size:16px}
+
+@media (max-width:639px){
+  .collab-nav{
+    position:fixed;bottom:0;left:0;right:0;z-index:50;margin:0;max-width:none;
+    justify-content:stretch;gap:0;padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));
+    background:#fff;border-top:1px solid #e5e7eb;box-shadow:0 -2px 12px rgba(0,0,0,0.04);
+  }
+  .collab-nav-btn{
+    flex:1;flex-direction:column;gap:3px;padding:7px 4px;border-radius:12px;
+    min-height:48px;border:none;
+  }
+  .collab-nav-label{font-size:10.5px}
+  .collab-page{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))!important}
 }
 
 /* ── IMPRESSION — n'imprime que le compte rendu (.print-report-area), pas le

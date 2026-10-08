@@ -560,7 +560,7 @@ function masteryTier(pct) {
 
 const THEME_EMOJI = { 'tiers-payant': '💳', 'verres-progressifs': '👓', 'prises-mesures': '📏' }
 
-function MasteryRing({ pct, size = 74, stroke = 7, color = '#0089ba' }) {
+export function MasteryRing({ pct, size = 74, stroke = 7, color = '#0089ba' }) {
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
   const offset = circumference - (Math.min(100, Math.max(0, pct)) / 100) * circumference

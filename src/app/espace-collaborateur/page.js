@@ -11,6 +11,10 @@ import { FileDropSlot } from '@/components/FileDropSlot'
 import { getMotsMessages, addMotMessage } from '@/lib/notesCollaborateurApi'
 import { getNotificationsNonLues, marquerNotificationsLues } from '@/lib/directionApi'
 import ChatGroupeModal from '@/components/ChatGroupeModal'
+import CollaborateurNav from '@/components/collaborateur/CollaborateurNav'
+import ProgressionView from '@/components/collaborateur/ProgressionView'
+import CoursView from '@/components/collaborateur/CoursView'
+import ExercicesView from '@/components/collaborateur/ExercicesView'
 
 // Page autonome (comme /manager, /rh, /collaborateur) — espace du nouvel
 // entrant validé par la RH : dossier RH self-service + fiche accès tant que
@@ -404,20 +408,23 @@ function EspaceRestreint({ session, onLogout }) {
 }
 
 // ── Dashboard complet (formation terminée) ────────────────────────────────
-function ChantierCard({ emoji, titre, sousTitre }) {
-  return (
-    <div style={{ ...cardStyle, textAlign: 'center', padding: '28px 20px' }}>
-      <div style={{ fontSize: 32, marginBottom: 10 }}>{emoji}</div>
-      <div style={{ fontSize: 14.5, fontWeight: 700, color: '#14161a', marginBottom: 4 }}>{titre}</div>
-      <div style={{ fontSize: 12.5, color: '#9aa1ac' }}>{sousTitre}</div>
-    </div>
-  )
-}
 
 function EspaceComplet({ session, onLogout }) {
   const [showAide, setShowAide] = useState(false)
   const [showChatGroupe, setShowChatGroupe] = useState(false)
   const [chatCount, setChatCount] = useState(0)
+  // Section active du dashboard (Ma progression / Cours / Exercices) — thème
+  // pré-sélectionné quand on arrive via "Lire le cours"/"M'exercer" depuis la
+  // fiche de détail d'un thème dans Ma progression.
+  const [section, setSection] = useState('progression')
+  const [themeFiltre, setThemeFiltre] = useState(null)
+
+  const changerSection = (s) => {
+    setSection(s)
+    if (s !== 'cours' && s !== 'exercices') setThemeFiltre(null)
+  }
+  const allerAuCours = (themeId) => { setThemeFiltre(themeId); setSection('cours') }
+  const allerAuxExercices = (themeId) => { setThemeFiltre(themeId); setSection('exercices') }
 
   useEffect(() => {
     if (!session.slug) return
@@ -441,34 +448,46 @@ function EspaceComplet({ session, onLogout }) {
   return (
     <div style={{ minHeight: '100dvh', background: '#f5f6f8' }}>
       <EspaceTopBar />
-      <div style={{ padding: '28px 20px 60px' }}>
+      <div className="collab-page" style={{ padding: '20px 20px 40px' }}>
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
         <EspaceHeader session={session} onLogout={onLogout} />
-        <div style={{ ...cardStyle, marginBottom: 16, background: '#f0fdf4', border: '1px solid #86efac' }}>
-          <div style={{ fontSize: 13.5, color: '#166534' }}>✓ Formation terminée — bienvenue dans ton espace complet !</div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
-          <ChantierCard emoji="🏋️" titre="S'entraîner" sousTitre="Bientôt disponible" />
-          <ChantierCard emoji="✅" titre="Se tester" sousTitre="Bientôt disponible" />
-          <button onClick={() => setShowAide(true)} style={{ ...cardStyle, textAlign: 'center', padding: '28px 20px', cursor: 'pointer', fontFamily: 'inherit' }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>🆘</div>
-            <div style={{ fontSize: 14.5, fontWeight: 700, color: '#14161a', marginBottom: 4 }}>Demander de l&apos;aide</div>
-            <div style={{ fontSize: 12.5, color: '#9aa1ac' }}>Écrire à mon formateur</div>
+
+        {/* Niveau (emplacement réservé, non construit), Aide, Messages —
+            accessibles en permanence depuis l'accueil, comme demandé. */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+          <div style={{ ...cardStyle, flex: '1 1 140px', display: 'flex', alignItems: 'center', gap: 10, padding: '13px 16px' }}>
+            <span style={{ fontSize: 20 }}>⭐</span>
+            <div>
+              <div style={{ fontSize: 10.5, fontWeight: 700, color: '#9aa1ac', textTransform: 'uppercase', letterSpacing: 0.5 }}>Niveau</div>
+              <div style={{ fontSize: 12.5, color: '#9aa1ac' }}>Bientôt disponible</div>
+            </div>
+          </div>
+          <button onClick={() => setShowAide(true)} style={{ ...cardStyle, flex: '1 1 140px', display: 'flex', alignItems: 'center', gap: 10, padding: '13px 16px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+            <span style={{ fontSize: 20 }}>🆘</span>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#14161a' }}>Besoin d&apos;aide</div>
           </button>
-          <button onClick={openChatGroupe} style={{ ...cardStyle, textAlign: 'center', padding: '28px 20px', cursor: 'pointer', fontFamily: 'inherit', position: 'relative' }}>
+          <button onClick={openChatGroupe} style={{ ...cardStyle, flex: '1 1 140px', display: 'flex', alignItems: 'center', gap: 10, padding: '13px 16px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', position: 'relative' }}>
+            <span style={{ fontSize: 20 }}>💬</span>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#14161a' }}>Messages</div>
             {chatCount > 0 && (
               <span style={{
-                position: 'absolute', top: 10, right: 10, background: '#ef4444', color: '#fff',
+                position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff',
                 fontSize: 11, fontWeight: 800, borderRadius: 20, minWidth: 18, height: 18, padding: '0 4px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #f5f6f8',
               }}>{chatCount}</span>
             )}
-            <div style={{ fontSize: 32, marginBottom: 10 }}>💬</div>
-            <div style={{ fontSize: 14.5, fontWeight: 700, color: '#14161a', marginBottom: 4 }}>Chat du magasin</div>
-            <div style={{ fontSize: 12.5, color: '#9aa1ac' }}>Avec {session.magasinNom}</div>
           </button>
         </div>
-        <Link href="/fiche-acces" style={{ ...cardStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none' }}>
+      </div>
+
+      <CollaborateurNav active={section} onChange={changerSection} />
+
+      <div style={{ maxWidth: 640, margin: '0 auto' }}>
+        {section === 'progression' && <ProgressionView session={session} onLireLeCours={allerAuCours} onMExercer={allerAuxExercices} />}
+        {section === 'cours' && <CoursView session={session} initialThemeId={themeFiltre} onConsumedInitialTheme={() => setThemeFiltre(null)} />}
+        {section === 'exercices' && <ExercicesView session={session} initialThemeId={themeFiltre} onConsumedInitialTheme={() => setThemeFiltre(null)} />}
+
+        <Link href="/fiche-acces" style={{ ...cardStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none', marginTop: 16 }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#14161a' }}>🔑 Fiche accès</div>
             <div style={{ fontSize: 12.5, color: '#6b7280', marginTop: 2 }}>Mail pro, Slack…</div>

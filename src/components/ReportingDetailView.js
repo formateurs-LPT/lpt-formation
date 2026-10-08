@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { getSignedUrl } from '@/lib/storageApi'
 import { POLES, RUBRIQUES, poleMeta, rubriqueMeta } from '@/lib/poles'
+import ConfirmManagerCodeModal from './ConfirmManagerCodeModal'
 
 function fmtDateLong(isoDate) {
   if (!isoDate) return '—'
@@ -57,13 +58,17 @@ function poleTotal(section) {
 
 /** Construit la liste des slides à partir de la structure — un slide titre,
  * un slide synthèse (si présente), un slide par pôle présent, un slide "mot
- * de la fin" (si présent), un slide collaborateurs (si au moins un cité). */
-function buildSlides(structure) {
+ * de la fin" (si présent), un slide collaborateurs (si au moins un cité), et
+ * un slide confidentiel en tout dernier SI `confidentielStructure` est déjà
+ * résolue (fournie directement par le formateur, ou déverrouillée par le
+ * manager) — tant qu'elle ne l'est pas, ce slide n'existe simplement pas. */
+function buildSlides(structure, confidentielStructure) {
   const slides = [{ type: 'title' }]
   if (structure.syntheseGlobale) slides.push({ type: 'synthese' })
   for (const section of structure.sections) slides.push({ type: 'pole', pole: section.pole })
   if (structure.motDeLaFin) slides.push({ type: 'motdelafin' })
   if (structure.collaborateursCites?.length) slides.push({ type: 'collaborateurs' })
+  if (confidentielStructure?.items?.length) slides.push({ type: 'confidentiel' })
   return slides
 }
 
@@ -177,7 +182,7 @@ function ItemCard({
 /** Contenu d'un slide donné — partagé entre la présentation paginée et
  * l'export PDF (tout empilé). `edit` regroupe les callbacks de mutation,
  * absent (undefined) en lecture seule. */
-function SlideContent({ slide, structure, reporting, magasinNom, edit, forceOpen, canToggleDone, onToggleDone }) {
+function SlideContent({ slide, structure, confidentielStructure, reporting, magasinNom, edit, forceOpen, canToggleDone, onToggleDone }) {
   if (slide.type === 'title') {
     return (
       <div style={{ textAlign: 'center', padding: '40px 20px' }}>
@@ -287,6 +292,28 @@ function SlideContent({ slide, structure, reporting, magasinNom, edit, forceOpen
     )
   }
 
+  if (slide.type === 'confidentiel') {
+    return (
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 20, justifyContent: 'center' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#b45309', textTransform: 'uppercase', letterSpacing: 1 }}>
+            🔒 Confidentiel — visible uniquement par le manager
+          </span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 620, margin: '0 auto' }}>
+          {(confidentielStructure?.items || []).map((it, i) => (
+            <div key={i} style={{
+              background: 'var(--card)', border: '1px solid #fcd9a8', borderRadius: 14, padding: '16px 18px',
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#b45309', marginBottom: 6 }}>{fmtDateLong(it.date)}</div>
+              <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{it.texte}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   // collaborateurs
   return (
     <div>
@@ -311,7 +338,7 @@ function SlideContent({ slide, structure, reporting, magasinNom, edit, forceOpen
  * capture PDF (html2pdf) : le rendu paginé interactif n'est pas adapté à une
  * capture, il faut tout avoir dans le DOM en même temps.
  */
-export function ReportingPrintDocument({ reporting, magasinNom }) {
+export function ReportingPrintDocument({ reporting, magasinNom, confidentielStructure }) {
   const structure = reporting?.contenu_structure
   if (!structure || !Array.isArray(structure.sections)) {
     return (
@@ -320,12 +347,12 @@ export function ReportingPrintDocument({ reporting, magasinNom }) {
       </div>
     )
   }
-  const slides = buildSlides(structure)
+  const slides = buildSlides(structure, confidentielStructure)
   return (
     <div className="print-report-area">
       {slides.map((slide, i) => (
         <div key={i} className="print-section" style={{ marginBottom: 48, paddingBottom: 32, borderBottom: i < slides.length - 1 ? '1px solid var(--border)' : 'none' }}>
-          <SlideContent slide={slide} structure={structure} reporting={reporting} magasinNom={magasinNom} forceOpen />
+          <SlideContent slide={slide} structure={structure} confidentielStructure={confidentielStructure} reporting={reporting} magasinNom={magasinNom} forceOpen />
         </div>
       ))}
     </div>
@@ -344,17 +371,39 @@ export default function ReportingDetailView({
   reporting, magasinNom, canEdit = false, onChange, onClose,
   onPublish, publishing = false, published = false,
   onOpenMail, canToggleDone = false, onDelete,
+  // Confidentiel : soit déjà fourni tel quel (brouillon du formateur, ou
+  // historique consulté par son auteur — pas de ressaisie nécessaire), soit
+  // disponible mais verrouillé (cas manager) — `confidentialAvailable` +
+  // `onUnlockConfidential` (async, renvoie la structure ou null) pilotent
+  // alors l'affichage d'un bouton de déverrouillage. Le formateur et le
+  // collaborateur ne passent jamais ces deux dernières props.
+  confidentialStructure = null, confidentialAvailable = false, onUnlockConfidential,
 }) {
   const structure = reporting?.contenu_structure
   const hasStructure = structure && Array.isArray(structure.sections)
   const [slideIndex, setSlideIndex] = useState(0)
   const [printCapture, setPrintCapture] = useState(false)
   const [exportingPdf, setExportingPdf] = useState(false)
+  const [unlockedConfidentiel, setUnlockedConfidentiel] = useState(null)
+  const [showUnlockModal, setShowUnlockModal] = useState(false)
+  const [unlocking, setUnlocking] = useState(false)
+  const [unlockError, setUnlockError] = useState(null)
   const printRef = useRef(null)
   const touchStartX = useRef(null)
 
-  const slides = hasStructure ? buildSlides(structure) : []
+  const resolvedConfidentiel = confidentialStructure || unlockedConfidentiel
+  const slides = hasStructure ? buildSlides(structure, resolvedConfidentiel) : []
   const clampedIndex = Math.min(slideIndex, Math.max(0, slides.length - 1))
+
+  const handleUnlock = async (code) => {
+    setUnlocking(true)
+    setUnlockError(null)
+    const result = await onUnlockConfidential?.(code)
+    setUnlocking(false)
+    if (!result) { setUnlockError('Code incorrect.'); return }
+    setUnlockedConfidentiel(result)
+    setShowUnlockModal(false)
+  }
 
   useEffect(() => {
     const onKey = (e) => {
@@ -511,7 +560,7 @@ export default function ReportingDetailView({
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+    <div className="reporting-light-theme" style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px',
@@ -524,6 +573,11 @@ export default function ReportingDetailView({
           {magasinNom} · {fmtDateLong(reporting.semaine_debut)}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {confidentialAvailable && !resolvedConfidentiel && (
+            <button onClick={() => setShowUnlockModal(true)} className="btn2" style={{ fontSize: 12.5, color: '#b45309', borderColor: '#fcd9a8' }}>
+              🔒 Voir les infos confidentielles
+            </button>
+          )}
           {onOpenMail && <button onClick={onOpenMail} className="btn2" style={{ fontSize: 12.5 }}>✉️ Mail</button>}
           <button onClick={handleExportPdf} disabled={exportingPdf} className="btn2" style={{ fontSize: 12.5 }}>{exportingPdf ? 'Export…' : '⬇ PDF'}</button>
           {canEdit && published && onDelete && (
@@ -550,7 +604,7 @@ export default function ReportingDetailView({
           '--border': '#ebebeb', '--card': '#f7f9fb', '--bg': '#ffffff',
         }}>
           <div ref={printRef} style={{ maxWidth: 680, margin: '0 auto' }}>
-            <ReportingPrintDocument reporting={reporting} magasinNom={magasinNom} />
+            <ReportingPrintDocument reporting={reporting} magasinNom={magasinNom} confidentielStructure={resolvedConfidentiel} />
           </div>
         </div>
       ) : (
@@ -559,7 +613,7 @@ export default function ReportingDetailView({
           style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 20px' }}
         >
           <div key={clampedIndex} className="reporting-slide-fade" style={{ width: '100%', maxWidth: 680 }}>
-            <SlideContent slide={slides[clampedIndex]} structure={structure} reporting={reporting} magasinNom={magasinNom} edit={edit} canToggleDone={canToggleDone} onToggleDone={toggleDone} />
+            <SlideContent slide={slides[clampedIndex]} structure={structure} confidentielStructure={resolvedConfidentiel} reporting={reporting} magasinNom={magasinNom} edit={edit} canToggleDone={canToggleDone} onToggleDone={toggleDone} />
           </div>
         </div>
       )}
@@ -583,6 +637,15 @@ export default function ReportingDetailView({
         @keyframes reportingSlideFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         @media (prefers-reduced-motion: reduce) { .reporting-slide-fade { animation: none; } }
       `}</style>
+
+      {showUnlockModal && (
+        <ConfirmManagerCodeModal
+          loading={unlocking}
+          error={unlockError}
+          onCancel={() => { setShowUnlockModal(false); setUnlockError(null) }}
+          onConfirm={handleUnlock}
+        />
+      )}
     </div>
   )
 }
