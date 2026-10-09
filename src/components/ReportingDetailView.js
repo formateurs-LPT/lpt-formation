@@ -41,10 +41,18 @@ function AudioPlayer({ path }) {
   return <audio src={url} controls style={{ height: 30, marginTop: 6, maxWidth: '100%' }} />
 }
 
+// Les deux fonctions ci-dessous acceptent les deux formes de section : avec
+// niveau `themes` (nouveaux reportings, regroupés par thème — cf. edge
+// function) ou directement `rubriques` (anciens reportings, affichés tels
+// quels — cf. CONTRAINTES de la refonte thèmes).
+function rubriqueGroupsOf(section) {
+  return section.themes ? section.themes.flatMap(t => t.rubriques) : section.rubriques
+}
+
 function countAll(sections) {
   let photos = 0, aFaire = 0
   for (const s of sections) {
-    for (const r of s.rubriques) {
+    for (const r of rubriqueGroupsOf(s)) {
       for (const it of r.items) photos += it.piecesJointes?.length || 0
       if (r.rubrique === 'a_faire') aFaire += r.items.length
     }
@@ -53,22 +61,28 @@ function countAll(sections) {
 }
 
 function poleTotal(section) {
-  return section.rubriques.reduce((n, r) => n + r.items.length, 0)
+  return rubriqueGroupsOf(section).reduce((n, r) => n + r.items.length, 0)
 }
 
 /** Construit la liste des slides à partir de la structure — un slide titre,
  * un slide synthèse (si présente), un slide par pôle présent, un slide "mot
- * de la fin" (si présent), un slide collaborateurs (si au moins un cité), et
- * un slide confidentiel en tout dernier SI `confidentielStructure` est déjà
+ * de la fin" (si présent), un slide collaborateurs (si au moins un cité),
+ * puis EXACTEMENT le même jeu de slides pour `confidentielStructure` (même
+ * format, généré séparément par Groq, cf. edge function) si elle est déjà
  * résolue (fournie directement par le formateur, ou déverrouillée par le
- * manager) — tant qu'elle ne l'est pas, ce slide n'existe simplement pas. */
+ * manager) — tant qu'elle ne l'est pas, ces slides n'existent simplement pas. */
 function buildSlides(structure, confidentielStructure) {
   const slides = [{ type: 'title' }]
   if (structure.syntheseGlobale) slides.push({ type: 'synthese' })
   for (const section of structure.sections) slides.push({ type: 'pole', pole: section.pole })
   if (structure.motDeLaFin) slides.push({ type: 'motdelafin' })
   if (structure.collaborateursCites?.length) slides.push({ type: 'collaborateurs' })
-  if (confidentielStructure?.items?.length) slides.push({ type: 'confidentiel' })
+  if (confidentielStructure) {
+    if (confidentielStructure.syntheseGlobale) slides.push({ type: 'synthese', confidentiel: true })
+    for (const section of confidentielStructure.sections) slides.push({ type: 'pole', pole: section.pole, confidentiel: true })
+    if (confidentielStructure.motDeLaFin) slides.push({ type: 'motdelafin', confidentiel: true })
+    if (confidentielStructure.collaborateursCites?.length) slides.push({ type: 'collaborateurs', confidentiel: true })
+  }
   return slides
 }
 
@@ -79,8 +93,8 @@ function fmtDateShort(iso) {
 
 function ItemCard({
   item, canEdit, forceOpen, onEdit, onRemove, onMoveUp, onMoveDown,
-  onChangePole, onChangeRubrique, currentPole, currentRubrique,
-  isActionItem, canToggleDone, onToggleDone,
+  onChangePole, onChangeRubrique, onChangeTheme, themeOptions, currentPole, currentRubrique, currentTheme,
+  isActionItem, canToggleDone, onToggleDone, confidentiel,
 }) {
   const [open, setOpen] = useState(false)
   const [editingText, setEditingText] = useState(false)
@@ -94,7 +108,7 @@ function ItemCard({
   }
 
   return (
-    <div className="print-card" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 18px' }}>
+    <div className="print-card" style={{ background: 'var(--card)', border: `1px solid ${confidentiel ? '#fcd9a8' : 'var(--border)'}`, borderRadius: 14, padding: '16px 18px' }}>
       {editingText ? (
         <div>
           <input value={resume} onChange={e => setResume(e.target.value)} className="finput" style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8 }} placeholder="Résumé" />
@@ -173,8 +187,110 @@ function ItemCard({
               {RUBRIQUES.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
             </select>
           )}
+          {onChangeTheme && themeOptions?.filter(t => t.theme !== currentTheme).length > 0 && (
+            <select value="" onChange={e => { if (e.target.value) onChangeTheme(e.target.value) }} className="finput" style={{ marginBottom: 0, padding: '4px 8px', fontSize: 11, width: 'auto' }}>
+              <option value="" disabled>Déplacer vers le thème…</option>
+              {themeOptions.filter(t => t.theme !== currentTheme).map(t => <option key={t.theme} value={t.theme}>{t.label}</option>)}
+            </select>
+          )}
         </div>
       )}
+    </div>
+  )
+}
+
+/** Une rubrique (Constaté/Fait/À faire) et ses items — partagée entre le
+ * rendu par thème (nouveaux reportings) et le rendu à plat (anciens
+ * reportings, sans niveau thème). `themeId` est `null` dans ce second cas :
+ * l'édition de thème (déplacer/fusionner) n'est alors simplement pas proposée. */
+function RubriqueGroup({ rub, poleId, themeId, themeOptions, itemEdit, forceOpen, canToggleDone, onToggleDone, confidentiel }) {
+  const rMeta = rubriqueMeta(rub.rubrique)
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
+        <span style={{ width: 4, height: 14, borderRadius: 2, background: rMeta.color, flexShrink: 0 }} />
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-s)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{rMeta.label}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {rub.items.map((item, i) => (
+          <ItemCard
+            key={i} item={item} canEdit={!!itemEdit} forceOpen={forceOpen} confidentiel={confidentiel}
+            onEdit={itemEdit ? patch => itemEdit.updateItem(poleId, themeId, rub.rubrique, i, patch) : undefined}
+            onRemove={itemEdit ? () => itemEdit.removeItem(poleId, themeId, rub.rubrique, i) : undefined}
+            onMoveUp={itemEdit && i > 0 ? () => itemEdit.moveItem(poleId, themeId, rub.rubrique, i, -1) : null}
+            onMoveDown={itemEdit && i < rub.items.length - 1 ? () => itemEdit.moveItem(poleId, themeId, rub.rubrique, i, 1) : null}
+            onChangePole={itemEdit ? (toPole) => itemEdit.changePole(poleId, themeId, rub.rubrique, i, toPole) : null}
+            onChangeRubrique={itemEdit ? (toRub) => itemEdit.changeRubrique(poleId, themeId, rub.rubrique, i, toRub) : null}
+            onChangeTheme={itemEdit && themeId != null ? (toTheme) => itemEdit.changeTheme(poleId, themeId, rub.rubrique, i, toTheme) : null}
+            themeOptions={themeOptions}
+            currentPole={poleId}
+            currentRubrique={rub.rubrique}
+            currentTheme={themeId}
+            isActionItem={rub.rubrique === 'a_faire'}
+            canToggleDone={canToggleDone}
+            onToggleDone={() => onToggleDone?.(poleId, themeId, rub.rubrique, i, confidentiel)}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Carte d'un thème dans un pôle : titre + nombre de points, avec
+ * renommage/fusion avant publication (`itemEdit` non nul). */
+function ThemeCard({ theme, section, itemEdit, forceOpen, canToggleDone, onToggleDone, confidentiel }) {
+  const [renaming, setRenaming] = useState(false)
+  const [label, setLabel] = useState(theme.label)
+  const [merging, setMerging] = useState(false)
+  const count = theme.rubriques.reduce((n, r) => n + r.items.length, 0)
+  const otherThemes = (section.themes || []).filter(t => t.theme !== theme.theme)
+  const themeOptions = section.themes?.map(t => ({ theme: t.theme, label: t.label }))
+
+  const saveRename = () => {
+    const trimmed = label.trim()
+    if (trimmed && trimmed !== theme.label) itemEdit?.renameTheme(section.pole, theme.theme, trimmed)
+    setRenaming(false)
+  }
+
+  return (
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: '16px 18px', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+        {renaming ? (
+          <>
+            <input value={label} onChange={e => setLabel(e.target.value)} className="finput" style={{ marginBottom: 0, fontSize: 15, fontWeight: 700, flex: '1 1 160px' }} autoFocus />
+            <button onClick={saveRename} className="gbtn no-print" style={{ padding: '4px 12px', fontSize: 11 }}>OK</button>
+            <button onClick={() => { setLabel(theme.label); setRenaming(false) }} className="btn2 no-print" style={{ padding: '4px 12px', fontSize: 11 }}>Annuler</button>
+          </>
+        ) : (
+          <>
+            <span style={{ fontSize: 15.5, fontWeight: 800, color: 'var(--text)', flex: '1 1 auto', minWidth: 0 }}>{theme.label}</span>
+            <span style={{ fontSize: 12.5, color: 'var(--text-m)' }}>{count} point{count > 1 ? 's' : ''}</span>
+            {itemEdit && (
+              <div className="no-print" style={{ display: 'flex', gap: 6 }}>
+                <button onClick={() => setRenaming(true)} className="btn2" style={{ padding: '4px 10px', fontSize: 11 }}>Renommer</button>
+                {otherThemes.length > 0 && (
+                  <button onClick={() => setMerging(m => !m)} className="btn2" style={{ padding: '4px 10px', fontSize: 11 }}>Fusionner…</button>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+      {merging && (
+        <div className="no-print" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-s)' }}>Fusionner avec :</span>
+          <select onChange={e => { if (e.target.value) { itemEdit.mergeThemes(section.pole, theme.theme, e.target.value); setMerging(false) } }} defaultValue="" className="finput" style={{ marginBottom: 0, width: 'auto', fontSize: 12, padding: '4px 8px' }}>
+            <option value="" disabled>Choisir un thème…</option>
+            {otherThemes.map(t => <option key={t.theme} value={t.theme}>{t.label}</option>)}
+          </select>
+        </div>
+      )}
+      {theme.rubriques.map(rub => (
+        <RubriqueGroup
+          key={rub.rubrique} rub={rub} poleId={section.pole} themeId={theme.theme} themeOptions={themeOptions} itemEdit={itemEdit}
+          forceOpen={forceOpen} canToggleDone={canToggleDone} onToggleDone={onToggleDone} confidentiel={confidentiel}
+        />
+      ))}
     </div>
   )
 }
@@ -197,16 +313,18 @@ function SlideContent({ slide, structure, confidentielStructure, reporting, maga
   }
 
   if (slide.type === 'synthese') {
-    const { photos: photoCount, aFaire: aFaireCount } = countAll(structure.sections)
-    const collabCount = structure.collaborateursCites?.length || 0
+    const src = slide.confidentiel ? confidentielStructure : structure
+    const { photos: photoCount, aFaire: aFaireCount } = countAll(src.sections)
+    const collabCount = src.collaborateursCites?.length || 0
     return (
       <div style={{ padding: '12px 4px' }}>
+        {slide.confidentiel && <ConfidentielBanner />}
         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-s)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14, textAlign: 'center' }}>Synthèse de la semaine</div>
         <div style={{ fontSize: 17, color: 'var(--text)', lineHeight: 1.65, textAlign: 'center', maxWidth: 620, margin: '0 auto 28px' }}>
-          {structure.syntheseGlobale}
+          {src.syntheseGlobale}
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-          {structure.sections.map(s => (
+          {src.sections.map(s => (
             <div key={s.pole} style={{
               background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12,
               padding: '10px 18px', textAlign: 'center', minWidth: 84,
@@ -239,96 +357,86 @@ function SlideContent({ slide, structure, confidentielStructure, reporting, maga
   }
 
   if (slide.type === 'pole') {
-    const section = structure.sections.find(s => s.pole === slide.pole)
+    const src = slide.confidentiel ? confidentielStructure : structure
+    const section = src.sections.find(s => s.pole === slide.pole)
     const meta = poleMeta(section.pole)
+    // En lecture (pas d'édition) sur les items confidentiels dans tous les
+    // cas — seul le cochage "fait" est permis (cf. onToggleDone ci-dessous),
+    // jamais la réécriture/reclassement, même par le manager.
+    const itemEdit = slide.confidentiel ? null : edit
     return (
       <div>
+        {slide.confidentiel && <ConfidentielBanner />}
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 22, justifyContent: 'center' }}>
           <span style={{ width: 11, height: 11, borderRadius: '50%', background: meta.color, flexShrink: 0 }} />
           <span style={{ fontSize: 19, fontWeight: 800, color: 'var(--text)' }}>{meta.label}</span>
           <span style={{ fontSize: 13, color: 'var(--text-m)' }}>({poleTotal(section)})</span>
         </div>
-        {section.rubriques.map(rub => {
-          const rMeta = rubriqueMeta(rub.rubrique)
-          return (
-            <div key={rub.rubrique} style={{ marginBottom: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
-                <span style={{ width: 4, height: 14, borderRadius: 2, background: rMeta.color, flexShrink: 0 }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-s)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{rMeta.label}</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {rub.items.map((item, i) => (
-                  <ItemCard
-                    key={i} item={item} canEdit={!!edit} forceOpen={forceOpen}
-                    onEdit={edit ? patch => edit.updateItem(section.pole, rub.rubrique, i, patch) : undefined}
-                    onRemove={edit ? () => edit.removeItem(section.pole, rub.rubrique, i) : undefined}
-                    onMoveUp={edit && i > 0 ? () => edit.moveItem(section.pole, rub.rubrique, i, -1) : null}
-                    onMoveDown={edit && i < rub.items.length - 1 ? () => edit.moveItem(section.pole, rub.rubrique, i, 1) : null}
-                    onChangePole={edit ? (toPole) => edit.changePole(section.pole, rub.rubrique, i, toPole) : null}
-                    onChangeRubrique={edit ? (toRub) => edit.changeRubrique(section.pole, rub.rubrique, i, toRub) : null}
-                    currentPole={section.pole}
-                    currentRubrique={rub.rubrique}
-                    isActionItem={rub.rubrique === 'a_faire'}
-                    canToggleDone={canToggleDone}
-                    onToggleDone={() => onToggleDone?.(section.pole, rub.rubrique, i)}
-                  />
-                ))}
-              </div>
-            </div>
-          )
-        })}
+        {section.themes ? (
+          // Nouveaux reportings : regroupés par thème (cf. edge function) —
+          // une carte par thème, triée par le code, jamais par le modèle.
+          section.themes.map(theme => (
+            <ThemeCard
+              key={theme.theme} theme={theme} section={section} itemEdit={itemEdit} forceOpen={forceOpen}
+              canToggleDone={canToggleDone} onToggleDone={onToggleDone} confidentiel={slide.confidentiel}
+            />
+          ))
+        ) : (
+          // Anciens reportings (générés avant la refonte thèmes) : affichés
+          // tels quels, à plat par rubrique — jamais d'édition de thème ici.
+          section.rubriques.map(rub => (
+            <RubriqueGroup
+              key={rub.rubrique} rub={rub} poleId={section.pole} themeId={null} themeOptions={null} itemEdit={itemEdit}
+              forceOpen={forceOpen} canToggleDone={canToggleDone} onToggleDone={onToggleDone} confidentiel={slide.confidentiel}
+            />
+          ))
+        )}
       </div>
     )
   }
 
   if (slide.type === 'motdelafin') {
+    const src = slide.confidentiel ? confidentielStructure : structure
     return (
       <div style={{ textAlign: 'center', padding: '20px 12px' }}>
+        {slide.confidentiel && <ConfidentielBanner />}
         <div style={{ fontSize: 12, fontWeight: 700, color: '#c4b5fd', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 18 }}>Mot de la fin</div>
         <div style={{ fontSize: 18, color: 'var(--text)', lineHeight: 1.7, fontStyle: 'italic', maxWidth: 600, margin: '0 auto', whiteSpace: 'pre-wrap' }}>
-          « {structure.motDeLaFin} »
-        </div>
-      </div>
-    )
-  }
-
-  if (slide.type === 'confidentiel') {
-    return (
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 20, justifyContent: 'center' }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#b45309', textTransform: 'uppercase', letterSpacing: 1 }}>
-            🔒 Confidentiel — visible uniquement par le manager
-          </span>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 620, margin: '0 auto' }}>
-          {(confidentielStructure?.items || []).map((it, i) => (
-            <div key={i} style={{
-              background: 'var(--card)', border: '1px solid #fcd9a8', borderRadius: 14, padding: '16px 18px',
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#b45309', marginBottom: 6 }}>{fmtDateLong(it.date)}</div>
-              <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{it.texte}</div>
-            </div>
-          ))}
+          « {src.motDeLaFin} »
         </div>
       </div>
     )
   }
 
   // collaborateurs
-  return (
-    <div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-s)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, textAlign: 'center' }}>Collaborateurs cités</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 420, margin: '0 auto' }}>
-        {structure.collaborateursCites.map(c => (
-          <div key={c.id} style={{
-            display: 'flex', justifyContent: 'space-between', fontSize: 14, color: 'var(--text)',
-            padding: '11px 16px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12,
-          }}>
-            <span>{c.nom}</span>
-            <span style={{ color: 'var(--text-s)' }}>{c.count} point{c.count > 1 ? 's' : ''}</span>
-          </div>
-        ))}
+  {
+    const src = slide.confidentiel ? confidentielStructure : structure
+    return (
+      <div>
+        {slide.confidentiel && <ConfidentielBanner />}
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-s)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, textAlign: 'center' }}>Collaborateurs cités</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 420, margin: '0 auto' }}>
+          {src.collaborateursCites.map(c => (
+            <div key={c.id} style={{
+              display: 'flex', justifyContent: 'space-between', fontSize: 14, color: 'var(--text)',
+              padding: '11px 16px', background: 'var(--card)', border: `1px solid ${slide.confidentiel ? '#fcd9a8' : 'var(--border)'}`, borderRadius: 12,
+            }}>
+              <span>{c.nom}</span>
+              <span style={{ color: 'var(--text-s)' }}>{c.count} point{c.count > 1 ? 's' : ''}</span>
+            </div>
+          ))}
+        </div>
       </div>
+    )
+  }
+}
+
+function ConfidentielBanner() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 20, justifyContent: 'center' }}>
+      <span style={{ fontSize: 13, fontWeight: 700, color: '#b45309', textTransform: 'uppercase', letterSpacing: 1 }}>
+        🔒 Confidentiel — visible uniquement par le manager
+      </span>
     </div>
   )
 }
@@ -376,8 +484,11 @@ export default function ReportingDetailView({
   // disponible mais verrouillé (cas manager) — `confidentialAvailable` +
   // `onUnlockConfidential` (async, renvoie la structure ou null) pilotent
   // alors l'affichage d'un bouton de déverrouillage. Le formateur et le
-  // collaborateur ne passent jamais ces deux dernières props.
-  confidentialStructure = null, confidentialAvailable = false, onUnlockConfidential,
+  // collaborateur ne passent jamais ces deux dernières props. Les items
+  // confidentiels ne sont jamais éditables (cf. SlideContent), seulement
+  // cochables "fait" quand canToggleDone est vrai — persisté via
+  // onChangeConfidentiel (manager uniquement, comme confidentialAvailable).
+  confidentialStructure = null, confidentialAvailable = false, onUnlockConfidential, onChangeConfidentiel,
 }) {
   const structure = reporting?.contenu_structure
   const hasStructure = structure && Array.isArray(structure.sections)
@@ -456,61 +567,94 @@ export default function ReportingDetailView({
     )
   }
 
-  // Reconstruit l'arbre pôle → rubrique en retirant/insérant un seul item,
-  // en filtrant les rubriques et pôles devenus vides.
-  const withItemMoved = (poleId, rubriqueId, index, mutate) => {
+  // L'édition (modifier/déplacer/renommer/fusionner) suppose le niveau
+  // `themes` sur chaque section — toujours vrai pour un brouillon fraîchement
+  // généré (cf. edge function), jamais pour un ancien reporting publié avant
+  // la refonte thèmes. Sur un ancien reporting, on désactive l'édition plutôt
+  // que de risquer de planter sur une forme de données qu'elle ne connaît
+  // pas : "les anciens reportings restent affichés tels quels".
+  const structureEditable = structure.sections.every(s => Array.isArray(s.themes))
+
+  // Reconstruit l'arbre pôle → thème → rubrique en retirant/insérant un seul
+  // item, en filtrant les rubriques/thèmes/pôles devenus vides.
+  const withItemMoved = (poleId, themeId, rubriqueId, index, mutate) => {
     let extracted = null
     let next = structure.sections.map(s => {
       if (s.pole !== poleId) return s
       return {
         ...s,
-        rubriques: s.rubriques
-          .map(r => {
-            if (r.rubrique !== rubriqueId) return r
-            const items = [...r.items]
-            extracted = items[index]
-            items.splice(index, 1)
-            return { ...r, items }
+        themes: s.themes
+          .map(t => {
+            if (t.theme !== themeId) return t
+            return {
+              ...t,
+              rubriques: t.rubriques
+                .map(r => {
+                  if (r.rubrique !== rubriqueId) return r
+                  const items = [...r.items]
+                  extracted = items[index]
+                  items.splice(index, 1)
+                  return { ...r, items }
+                })
+                .filter(r => r.items.length > 0),
+            }
           })
-          .filter(r => r.items.length > 0),
+          .filter(t => t.rubriques.length > 0),
       }
-    }).filter(s => s.rubriques.length > 0)
+    }).filter(s => s.themes.length > 0)
     if (!extracted) return
     next = mutate(next, extracted)
     onChange?.({ ...structure, sections: next })
   }
 
-  const insertItem = (list, poleId, rubriqueId, item) => {
+  const insertItem = (list, poleId, themeId, themeLabel, rubriqueId, item) => {
     const poleMetaObj = poleMeta(poleId)
     const rubMetaObj = rubriqueMeta(rubriqueId)
     const existingPole = list.find(s => s.pole === poleId)
     if (!existingPole) {
-      return [...list, { pole: poleId, label: poleMetaObj.label, rubriques: [{ rubrique: rubriqueId, label: rubMetaObj.label, items: [item] }] }]
+      return [...list, {
+        pole: poleId, label: poleMetaObj.label,
+        themes: [{ theme: themeId, label: themeLabel, rubriques: [{ rubrique: rubriqueId, label: rubMetaObj.label, items: [item] }] }],
+      }]
     }
     return list.map(s => {
       if (s.pole !== poleId) return s
-      const existingRub = s.rubriques.find(r => r.rubrique === rubriqueId)
-      if (!existingRub) return { ...s, rubriques: [...s.rubriques, { rubrique: rubriqueId, label: rubMetaObj.label, items: [item] }] }
-      return { ...s, rubriques: s.rubriques.map(r => r.rubrique !== rubriqueId ? r : { ...r, items: [...r.items, item] }) }
+      const existingTheme = s.themes.find(t => t.theme === themeId)
+      if (!existingTheme) {
+        return { ...s, themes: [...s.themes, { theme: themeId, label: themeLabel, rubriques: [{ rubrique: rubriqueId, label: rubMetaObj.label, items: [item] }] }] }
+      }
+      return {
+        ...s,
+        themes: s.themes.map(t => {
+          if (t.theme !== themeId) return t
+          const existingRub = t.rubriques.find(r => r.rubrique === rubriqueId)
+          if (!existingRub) return { ...t, rubriques: [...t.rubriques, { rubrique: rubriqueId, label: rubMetaObj.label, items: [item] }] }
+          return { ...t, rubriques: t.rubriques.map(r => r.rubrique !== rubriqueId ? r : { ...r, items: [...r.items, item] }) }
+        }),
+      }
     })
   }
 
-  const edit = !canEdit ? null : {
-    updateItem: (poleId, rubriqueId, index, patch) => {
+  const edit = (!canEdit || !structureEditable) ? null : {
+    updateItem: (poleId, themeId, rubriqueId, index, patch) => {
       onChange?.({
         ...structure,
         sections: structure.sections.map(s => s.pole !== poleId ? s : {
           ...s,
-          rubriques: s.rubriques.map(r => r.rubrique !== rubriqueId ? r : {
-            ...r, items: r.items.map((it, i) => i === index ? { ...it, ...patch } : it),
+          themes: s.themes.map(t => t.theme !== themeId ? t : {
+            ...t,
+            rubriques: t.rubriques.map(r => r.rubrique !== rubriqueId ? r : {
+              ...r, items: r.items.map((it, i) => i === index ? { ...it, ...patch } : it),
+            }),
           }),
         }),
       })
     },
-    removeItem: (poleId, rubriqueId, index) => withItemMoved(poleId, rubriqueId, index, (list) => list),
-    moveItem: (poleId, rubriqueId, index, dir) => {
+    removeItem: (poleId, themeId, rubriqueId, index) => withItemMoved(poleId, themeId, rubriqueId, index, (list) => list),
+    moveItem: (poleId, themeId, rubriqueId, index, dir) => {
       const section = structure.sections.find(s => s.pole === poleId)
-      const rub = section?.rubriques.find(r => r.rubrique === rubriqueId)
+      const theme = section?.themes.find(t => t.theme === themeId)
+      const rub = theme?.rubriques.find(r => r.rubrique === rubriqueId)
       const target = index + dir
       if (!rub || target < 0 || target >= rub.items.length) return
       const items = [...rub.items]
@@ -518,35 +662,98 @@ export default function ReportingDetailView({
       onChange?.({
         ...structure,
         sections: structure.sections.map(s => s.pole !== poleId ? s : {
-          ...s, rubriques: s.rubriques.map(r => r.rubrique !== rubriqueId ? r : { ...r, items }),
+          ...s, themes: s.themes.map(t => t.theme !== themeId ? t : {
+            ...t, rubriques: t.rubriques.map(r => r.rubrique !== rubriqueId ? r : { ...r, items }),
+          }),
         }),
       })
     },
-    changePole: (fromPole, rubriqueId, index, toPole) => {
+    changePole: (fromPole, themeId, rubriqueId, index, toPole) => {
       if (fromPole === toPole) return
-      withItemMoved(fromPole, rubriqueId, index, (list, item) => insertItem(list, toPole, rubriqueId, item))
+      const theme = structure.sections.find(s => s.pole === fromPole)?.themes.find(t => t.theme === themeId)
+      withItemMoved(fromPole, themeId, rubriqueId, index, (list, item) => insertItem(list, toPole, themeId, theme?.label || themeId, rubriqueId, item))
     },
-    changeRubrique: (poleId, fromRubrique, index, toRubrique) => {
+    changeRubrique: (poleId, themeId, fromRubrique, index, toRubrique) => {
       if (fromRubrique === toRubrique) return
-      withItemMoved(poleId, fromRubrique, index, (list, item) => insertItem(list, poleId, toRubrique, item))
+      const theme = structure.sections.find(s => s.pole === poleId)?.themes.find(t => t.theme === themeId)
+      withItemMoved(poleId, themeId, fromRubrique, index, (list, item) => insertItem(list, poleId, themeId, theme?.label || themeId, toRubrique, item))
+    },
+    changeTheme: (poleId, fromTheme, rubriqueId, index, toTheme) => {
+      if (fromTheme === toTheme) return
+      const targetTheme = structure.sections.find(s => s.pole === poleId)?.themes.find(t => t.theme === toTheme)
+      withItemMoved(poleId, fromTheme, rubriqueId, index, (list, item) => insertItem(list, poleId, toTheme, targetTheme?.label || toTheme, rubriqueId, item))
+    },
+    renameTheme: (poleId, themeId, newLabel) => {
+      const trimmed = newLabel.trim()
+      if (!trimmed) return
+      onChange?.({
+        ...structure,
+        sections: structure.sections.map(s => s.pole !== poleId ? s : {
+          ...s, themes: s.themes.map(t => t.theme !== themeId ? t : { ...t, label: trimmed }),
+        }),
+      })
+    },
+    // Fusionne `fromThemeId` dans `intoThemeId` (même pôle) : items réunis
+    // rubrique par rubrique, le thème d'origine disparaît.
+    mergeThemes: (poleId, fromThemeId, intoThemeId) => {
+      if (fromThemeId === intoThemeId) return
+      const section = structure.sections.find(s => s.pole === poleId)
+      const fromTheme = section?.themes.find(t => t.theme === fromThemeId)
+      const intoTheme = section?.themes.find(t => t.theme === intoThemeId)
+      if (!fromTheme || !intoTheme) return
+      const mergedRubriques = RUBRIQUES.map(rMeta => {
+        const a = intoTheme.rubriques.find(r => r.rubrique === rMeta.id)
+        const b = fromTheme.rubriques.find(r => r.rubrique === rMeta.id)
+        const items = [...(a?.items || []), ...(b?.items || [])]
+        return items.length ? { rubrique: rMeta.id, label: rMeta.label, items } : null
+      }).filter(Boolean)
+      onChange?.({
+        ...structure,
+        sections: structure.sections.map(s => s.pole !== poleId ? s : {
+          ...s,
+          themes: s.themes
+            .filter(t => t.theme !== fromThemeId)
+            .map(t => t.theme !== intoThemeId ? t : { ...t, rubriques: mergedRubriques }),
+        }),
+      })
     },
   }
 
   // Coche/décoche un "à faire" comme fait — indépendant de `canEdit` (le
   // manager peut suivre l'avancement sans avoir le droit de réécrire le
-  // reporting du formateur) ; persisté immédiatement par le parent via onChange.
-  const toggleDone = (poleId, rubriqueId, index) => {
-    onChange?.({
-      ...structure,
-      sections: structure.sections.map(s => s.pole !== poleId ? s : {
-        ...s,
-        rubriques: s.rubriques.map(r => r.rubrique !== rubriqueId ? r : {
-          ...r, items: r.items.map((it, i) => i !== index ? it : {
-            ...it, done: !it.done, doneAt: !it.done ? new Date().toISOString() : null,
+  // reporting du formateur) ; persisté immédiatement par le parent via
+  // onChange (public) ou onChangeConfidentiel (confidentiel — même geste,
+  // destination différente, jamais mélangés). `themeId` vaut `null` sur un
+  // ancien reporting sans niveau thème — la mutation redescend alors
+  // directement dans `rubriques`, comme avant la refonte.
+  const toggleDone = (poleId, themeId, rubriqueId, index, confidentiel) => {
+    const toggleItem = (it, i) => i !== index ? it : {
+      ...it, done: !it.done, doneAt: !it.done ? new Date().toISOString() : null,
+    }
+    const applyToSections = (sections) => sections.map(s => {
+      if (s.pole !== poleId) return s
+      if (themeId != null && s.themes) {
+        return {
+          ...s,
+          themes: s.themes.map(t => t.theme !== themeId ? t : {
+            ...t, rubriques: t.rubriques.map(r => r.rubrique !== rubriqueId ? r : { ...r, items: r.items.map(toggleItem) }),
           }),
-        }),
-      }),
+        }
+      }
+      return {
+        ...s,
+        rubriques: s.rubriques.map(r => r.rubrique !== rubriqueId ? r : { ...r, items: r.items.map(toggleItem) }),
+      }
     })
+
+    if (confidentiel) {
+      if (!resolvedConfidentiel) return
+      const next = { ...resolvedConfidentiel, sections: applyToSections(resolvedConfidentiel.sections) }
+      setUnlockedConfidentiel(next) // reflète immédiatement à l'écran
+      onChangeConfidentiel?.(next) // persistance côté appelant (manager)
+      return
+    }
+    onChange?.({ ...structure, sections: applyToSections(structure.sections) })
   }
 
   const goTo = (i) => setSlideIndex(Math.max(0, Math.min(i, slides.length - 1)))

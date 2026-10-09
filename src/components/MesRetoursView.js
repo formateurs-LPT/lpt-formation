@@ -4,11 +4,11 @@ import {
   getMagasinIdBySlug, getCollaborateursByMagasin,
 } from '@/lib/collaborateursApi'
 import {
-  getFormateurId, getNotesTerrain, addNoteTerrain, getNotesSemaine,
+  getFormateurId, getNotesTerrain, addNoteTerrain,
   getReportingsHebdo, saveReportingHebdo, markReportingEnvoye, currentWeekBounds,
   genererSyntheseSiNecessaire, updateNoteTerrain, deleteNoteTerrain,
   genererReportingStructure, updateReportingStructure, deleteReportingHebdo,
-  buildConfidentielStructure, saveReportingConfidentiel, getReportingConfidentiel,
+  saveReportingConfidentiel, getReportingConfidentiel,
 } from '@/lib/notesTerrainApi'
 import { uploadPieceJointe, getSignedUrl } from '@/lib/storageApi'
 import { getDemandesIntervention, rattacherReporting, notifierReportingRattache } from '@/lib/directionApi'
@@ -28,6 +28,18 @@ function fmtDateLong(isoDate) {
   if (!isoDate) return '—'
   const s = new Date(`${isoDate}T00:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
   return s
+}
+
+/** Nombre total d'items dans une structure — même format pour
+ * contenuStructure et confidentielStructure. Accepte les deux formes
+ * (sections/themes/rubriques/items pour les nouveaux reportings par thème,
+ * sections/rubriques/items pour les anciens). */
+function countItems(structure) {
+  if (!structure?.sections) return 0
+  return structure.sections.reduce((n, s) => {
+    const rubriqueGroups = s.themes ? s.themes.flatMap(t => t.rubriques) : s.rubriques
+    return n + rubriqueGroups.reduce((m, r) => m + r.items.length, 0)
+  }, 0)
 }
 
 function isVideoPath(path) {
@@ -165,6 +177,7 @@ export default function MesRetoursView({ store, pName, onBack }) {
   const [noteFiles, setNoteFiles] = useState([])
   const [notePole, setNotePole] = useState(null)
   const [noteRubrique, setNoteRubrique] = useState(null)
+  const [noteTheme, setNoteTheme] = useState('')
   const [noteMotDeLaFin, setNoteMotDeLaFin] = useState(false)
   const [noteCollaborateurs, setNoteCollaborateurs] = useState([])
   const [noteAudioBlob, setNoteAudioBlob] = useState(null)
@@ -259,6 +272,7 @@ export default function MesRetoursView({ store, pName, onBack }) {
       piecesJointes: paths,
       pole: notePole,
       rubrique: noteRubrique,
+      theme: noteTheme,
       collaborateursCites: noteCollaborateurs,
       motDeLaFin: noteMotDeLaFin,
       confidentiel: false,
@@ -267,6 +281,7 @@ export default function MesRetoursView({ store, pName, onBack }) {
     setNoteFiles([])
     setNotePole(null)
     setNoteRubrique(null)
+    setNoteTheme('')
     setNoteMotDeLaFin(false)
     setNoteCollaborateurs([])
     setNoteAudioBlob(null)
@@ -294,15 +309,12 @@ export default function MesRetoursView({ store, pName, onBack }) {
     setGenerateError(null)
     setGenerating(true)
     const { debut, fin } = currentWeekBounds()
-    const [result, semaineNotes] = await Promise.all([
-      genererReportingStructure({ magasinId, formateurId, semaineDebut: debut, semaineFin: fin }),
-      getNotesSemaine(magasinId, formateurId),
-    ])
+    const result = await genererReportingStructure({ magasinId, formateurId, semaineDebut: debut, semaineFin: fin })
     setGenerating(false)
     if (!result.ok) { setGenerateError(result.error); return }
     setDraftStructure(result.contenuStructure)
     lastGeneratedRef.current = JSON.stringify(result.contenuStructure)
-    setDraftConfidentiel(buildConfidentielStructure(semaineNotes))
+    setDraftConfidentiel(result.confidentielStructure)
   }
 
   const regenererReporting = async () => {
@@ -323,7 +335,7 @@ export default function MesRetoursView({ store, pName, onBack }) {
       row = await saveReportingHebdo({ formateurId, magasinId, contenuGenere, contenuStructure: draftStructure })
     }
     setSavedReporting(row)
-    if (draftConfidentiel?.items?.length && row?.id) {
+    if (countItems(draftConfidentiel) > 0 && row?.id) {
       await saveReportingConfidentiel({ reportingId: row.id, contenuStructure: draftConfidentiel })
     }
     if (rattacherDemande && demandeOuverte && row?.id) {
@@ -454,6 +466,11 @@ export default function MesRetoursView({ store, pName, onBack }) {
                   Mot de la fin
                 </label>
               </div>
+              <input
+                value={noteTheme} onChange={e => setNoteTheme(e.target.value)} className="finput"
+                placeholder="Thème (optionnel) — ex: SMS de paire prête, Casiers Outlet…"
+                style={{ width: '100%', boxSizing: 'border-box', marginBottom: 10 }}
+              />
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
                 <input
                   ref={fileInputRef} type="file" accept="image/*,video/*" multiple
@@ -528,8 +545,8 @@ export default function MesRetoursView({ store, pName, onBack }) {
         {draftStructure && (
           <>
             <p style={{ fontSize: 13, color: 'var(--text-s)', marginBottom: 14 }}>
-              ✓ Reporting généré — {draftStructure.sections.reduce((n, s) => n + s.rubriques.reduce((m, r) => m + r.items.length, 0), 0)} point(s)
-              {draftConfidentiel?.items?.length ? ` + ${draftConfidentiel.items.length} confidentiel(s)` : ''}.
+              ✓ Reporting généré — {countItems(draftStructure)} point(s)
+              {countItems(draftConfidentiel) > 0 ? ` + ${countItems(draftConfidentiel)} confidentiel(s)` : ''}.
               {savedReporting?.id ? ' Déjà publié — tu peux continuer à le modifier.' : ' Vérifie-le avant de publier.'}
             </p>
             {demandeOuverte && (

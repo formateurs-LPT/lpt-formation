@@ -20,7 +20,7 @@ export async function getNotesTerrain(magasinId) {
   return (notes || []).map(n => ({ ...n, auteur: nameById[n.formateur_id] || 'Formateur' }))
 }
 
-export async function addNoteTerrain({ magasinId, formateurId, typeNote = 'texte', contenu, audioUrl, piecesJointes, pole, rubrique, collaborateursCites, motDeLaFin, confidentiel }) {
+export async function addNoteTerrain({ magasinId, formateurId, typeNote = 'texte', contenu, audioUrl, piecesJointes, pole, rubrique, theme, collaborateursCites, motDeLaFin, confidentiel }) {
   return sbInsert('notes_terrain', {
     magasin_id: magasinId,
     formateur_id: formateurId,
@@ -30,6 +30,7 @@ export async function addNoteTerrain({ magasinId, formateurId, typeNote = 'texte
     pieces_jointes: piecesJointes || [],
     pole: pole || null,
     rubrique: rubrique || null,
+    theme: theme?.trim() || null,
     collaborateurs_cites: collaborateursCites?.length ? collaborateursCites : null,
     mot_de_la_fin: !!motDeLaFin,
     confidentiel: !!confidentiel,
@@ -186,23 +187,16 @@ export async function updateReportingStructure(reportingId, contenuStructure) {
 }
 
 // ── Commentaires confidentiels (manager uniquement) ──────────────────────────
-// Jamais passés par l'IA Groq (texte RH potentiellement sensible) : assemblés
-// ici, côté client, tels quels. Stockés dans une table séparée de
-// reportings_hebdo (pas un champ dans contenu_structure) — c'est cette
-// séparation de table, et le fait qu'AUCUNE route collaborateur n'importe
-// jamais getReportingConfidentiel/hasReportingConfidentiel, qui garantit que
-// ce contenu ne transite jamais vers une session collaborateur. À n'appeler
-// que depuis du code manager.
-
-/** Pure, aucun appel réseau — construit la structure confidentielle d'un
- * reporting à partir des notes confidentielles de la semaine. */
-export function buildConfidentielStructure(notes) {
-  const items = (notes || [])
-    .filter(n => n.confidentiel && n.contenu)
-    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
-    .map(n => ({ date: n.date, texte: n.contenu }))
-  return { items }
-}
+// Passent par Groq comme le public (même structuration pole/rubrique, même
+// garantie d'orthographe, items "à faire" cochables), mais via un appel API
+// séparé qui ne reçoit QUE les notes confidentielles (cf.
+// reporting-generate/index.ts) — le modèle ne voit jamais confidentiel et
+// public ensemble. Stockées dans une table séparée de reportings_hebdo (pas
+// un champ dans contenu_structure) — c'est cette séparation de table, et le
+// fait qu'AUCUNE route collaborateur n'importe jamais
+// getReportingConfidentiel/hasReportingConfidentiel, qui garantit que ce
+// contenu ne transite jamais vers une session collaborateur. À n'appeler que
+// depuis du code manager.
 
 /** Enregistre (ou met à jour) le contenu confidentiel d'un reporting publié. */
 export async function saveReportingConfidentiel({ reportingId, contenuStructure }) {
@@ -211,6 +205,14 @@ export async function saveReportingConfidentiel({ reportingId, contenuStructure 
     return sbUpdate('reportings_hebdo_confidentiel', { contenu_structure: contenuStructure }, `id=eq.${existing[0].id}`)
   }
   return sbInsert('reportings_hebdo_confidentiel', { reporting_id: reportingId, contenu_structure: contenuStructure })
+}
+
+/** Republie le contenu confidentiel après édition (cochage d'un "à faire"
+ * par le manager) — même principe que updateReportingStructure côté public. */
+export async function updateReportingConfidentielStructure(reportingId, contenuStructure) {
+  const existing = await sbSelect('reportings_hebdo_confidentiel', `reporting_id=eq.${reportingId}&select=id`)
+  if (!existing?.length) return saveReportingConfidentiel({ reportingId, contenuStructure })
+  return sbUpdate('reportings_hebdo_confidentiel', { contenu_structure: contenuStructure }, `id=eq.${existing[0].id}`)
 }
 
 /** Existence seule (pas le contenu) — utilisée pour décider d'afficher le
@@ -232,10 +234,14 @@ const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 
 /**
  * Appelle l'edge function reporting-generate (clé Groq gardée côté serveur,
- * jamais exposée au client). Retourne { ok:true, contenuStructure } ou
- * { ok:false, error }. N'écrit rien en base elle-même — c'est à l'appelant
- * de saveReportingHebdo ensuite. En cas d'échec, les notes sources ne sont
- * jamais touchées (la fonction ne fait que lire).
+ * jamais exposée au client). Retourne { ok:true, contenuStructure,
+ * confidentielStructure } ou { ok:false, error }. `confidentielStructure`
+ * est `null` si aucune note confidentielle cette semaine — même format que
+ * contenuStructure (sections/rubriques/items), généré par un appel Groq
+ * séparé qui ne voit jamais les notes publiques (cf. edge function).
+ * N'écrit rien en base elle-même — c'est à l'appelant de saveReportingHebdo
+ * / saveReportingConfidentiel ensuite. En cas d'échec, les notes sources ne
+ * sont jamais touchées (la fonction ne fait que lire).
  */
 export async function genererReportingStructure({ magasinId, formateurId, semaineDebut, semaineFin }) {
   try {
@@ -249,7 +255,7 @@ export async function genererReportingStructure({ magasinId, formateurId, semain
       return { ok: false, error: data?.error || `Génération indisponible (${res.status}).` }
     }
     if (!data.contenuStructure) return { ok: false, error: 'Aucune note cette semaine — rien à générer.' }
-    return { ok: true, contenuStructure: data.contenuStructure }
+    return { ok: true, contenuStructure: data.contenuStructure, confidentielStructure: data.confidentielStructure || null }
   } catch {
     return { ok: false, error: 'Génération impossible — vérifiez la connexion. Les notes sont intactes.' }
   }

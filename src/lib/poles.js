@@ -22,21 +22,30 @@ export function rubriqueMeta(rubriqueId) {
   return RUBRIQUES.find(r => r.id === rubriqueId) || RUBRIQUES.find(r => r.id === 'constate')
 }
 
-/** Texte simple (synthèse, puis par pôle → par rubrique, une ligne par
- * point) — utilisé pour `contenu_genere` (rétrocompatibilité) et pour le
- * corps du mail (même structure, en clair). */
+function rubriquesToPlainText(rubriques) {
+  return (rubriques || []).map(r => {
+    const rubriqueLabel = rubriqueMeta(r.rubrique).label
+    const lignes = r.items.map(it => `- ${it.resume}`)
+    return `${rubriqueLabel} :\n${lignes.join('\n')}`
+  }).join('\n\n')
+}
+
+/** Texte simple (synthèse, puis par pôle → par thème → par rubrique, une
+ * ligne par point) — utilisé pour `contenu_genere` (rétrocompatibilité) et
+ * pour le corps du mail (même structure, en clair). Les anciens reportings
+ * (sans niveau `themes`) retombent sur l'ancien rendu pôle → rubrique. */
 export function structureToPlainText(structure) {
   if (!structure) return ''
   const parts = []
   if (structure.syntheseGlobale) parts.push(structure.syntheseGlobale)
   for (const s of (structure.sections || [])) {
     const poleLabel = poleMeta(s.pole).label
-    const rubriquesTexte = (s.rubriques || []).map(r => {
-      const rubriqueLabel = rubriqueMeta(r.rubrique).label
-      const lignes = r.items.map(it => `- ${it.resume}`)
-      return `${rubriqueLabel} :\n${lignes.join('\n')}`
-    })
-    parts.push(`${poleLabel} :\n${rubriquesTexte.join('\n\n')}`)
+    if (s.themes) {
+      const themesTexte = s.themes.map(t => `${t.label} :\n${rubriquesToPlainText(t.rubriques)}`)
+      parts.push(`${poleLabel} :\n\n${themesTexte.join('\n\n')}`)
+    } else {
+      parts.push(`${poleLabel} :\n${rubriquesToPlainText(s.rubriques)}`)
+    }
   }
   if (structure.motDeLaFin) parts.push(`Mot de la fin :\n${structure.motDeLaFin}`)
   return parts.join('\n\n')
