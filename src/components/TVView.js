@@ -8884,26 +8884,14 @@ function TVGroupResults({ moduleId, moduleLabel, quiz, sessionCode }) {
 }
 
 // ── TV Troubles List avec avatar opticien ────────────────────────
-function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSelected, troublesRevealed = [], audioUnlocked }) {
+function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSelected, troublesRevealed = [] }) {
   const [entered, setEntered] = useState(false)
-  const videoRef = useRef(null)
 
   useEffect(() => {
     setEntered(false)
     const t = setTimeout(() => setEntered(true), 60)
     return () => clearTimeout(t)
   }, [page.id])
-
-  useEffect(() => {
-    const v = videoRef.current
-    if (!v) return
-    if (troublesSelected !== null && audioUnlocked) {
-      v.play().catch(() => {})
-    } else if (troublesSelected === null) {
-      v.pause()
-      v.currentTime = 0
-    }
-  }, [troublesSelected, audioUnlocked])
 
   const sel = troublesSelected !== null ? (page.troubles || [])[troublesSelected] : null
 
@@ -8975,26 +8963,6 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSele
               )
             })}
           </div>
-        </div>
-
-        {/* Avatar — petit, bas à droite */}
-        <div style={{
-          position: 'absolute', bottom: 28, right: 36,
-          width: 150, height: 150, borderRadius: '50%',
-          overflow: 'hidden', flexShrink: 0,
-          border: `2px solid ${sel.color}70`,
-          boxShadow: `0 0 0 4px ${sel.color}18, 0 8px 32px rgba(0,0,0,0.5)`,
-        }}>
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-          <video
-            ref={videoRef}
-            key={sel.video}
-            src={sel.video}
-            preload="auto"
-            playsInline
-            muted={!audioUnlocked}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 15%', display: 'block' }}
-          />
         </div>
       </div>
     )
