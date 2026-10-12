@@ -118,8 +118,14 @@ async function rawWrite(item) {
 if (typeof window !== 'undefined') startWriteQueueLoop(rawWrite)
 
 export async function sbSelect(table, filter = null) {
-  let url = `${SB_URL}/rest/v1/${table}?select=*`
-  if (filter) url += '&' + filter
+  // Si le filtre précise déjà select=..., ne pas préfixer select=* devant :
+  // PostgREST garde le premier `select=` rencontré, donc un select=* en tête
+  // rendait muet tout select=colonnes passé par l'appelant (ex: optimisation
+  // de charge sur une grosse table) — silencieux car la lecture du JSON
+  // restait correcte, juste beaucoup plus lourde que prévu.
+  const hasSelect = typeof filter === 'string' && /(^|&)select=/.test(filter)
+  let url = `${SB_URL}/rest/v1/${table}?${hasSelect ? '' : 'select=*'}`
+  if (filter) url += (hasSelect ? '' : '&') + filter
   const r = await fetch(url, { headers: sbHeaders() })
   if (!r.ok) {
     const err = await r.json().catch(() => ({}))

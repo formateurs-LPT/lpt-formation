@@ -315,8 +315,9 @@ function SessionsHistoryView({ pName, onBack, onToast }) {
 
   const load = async () => {
     setLoading(true)
+    const trainer = pName || (typeof window !== 'undefined' ? localStorage.getItem('trainer_name') : '') || ''
     const [history, answers] = await Promise.all([
-      sbSelect('session_history'),
+      sbSelect('session_history', trainer ? `trainer_name=eq.${encodeURIComponent(trainer)}` : null),
       sbSelect('quiz_answers'),
     ])
     setSessions(history || [])
@@ -1702,7 +1703,7 @@ export default function Dashboard({ pName, onLaunchModule, onOpenRoom, onOpenTv,
     try {
       const [state, history, answers] = await Promise.all([
         getSharedState(),
-        sbSelect('session_history'),
+        sbSelect('session_history', 'select=session_date'),
         sbSelect('quiz_answers'),
       ])
       const entrees = state.entrees_data || JSON.parse(localStorage.getItem('entrees_data') || '[]')
