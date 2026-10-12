@@ -63,6 +63,76 @@ export function findRhMatch(inputName, entrees) {
   return null
 }
 
+function levenshtein(a, b) {
+  const m = a.length, n = b.length
+  if (!m) return n
+  if (!n) return m
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0))
+  for (let i = 0; i <= m; i++) dp[i][0] = i
+  for (let j = 0; j <= n; j++) dp[0][j] = j
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
+    }
+  }
+  return dp[m][n]
+}
+
+/**
+ * Repli tolérant quand l'égalité stricte (findRhMatch) échoue : la liste
+ * « Entrées de la semaine » vient d'une extraction OCR (photo d'un tableau,
+ * cf. entrees-extract) — une lettre mal reconnue ou un mot d'un nom composé
+ * tronqué par l'OCR suffisait avant à bloquer complètement l'entrée d'un
+ * formé en présentiel, qui ne pouvait alors répondre à AUCUN quiz (incident
+ * Nadège, semaine du 06/10). On ne rapproche que les cas sans ambiguïté :
+ * même nombre de mots avec un seul mot légèrement différent (coquille), ou
+ * un seul mot manquant d'un côté (nom composé tronqué) — jamais au-delà,
+ * et uniquement si un SEUL candidat de la liste satisfait ce critère, pour
+ * ne jamais confondre deux formés différents.
+ */
+export function findRhMatchFuzzy(inputName, entrees) {
+  const key = normalizeNameKey(inputName)
+  if (!key || !entrees?.length || !key.includes(' ')) return null
+  const inputWords = key.split(' ')
+
+  const candidates = []
+  for (const c of entrees) {
+    const canonical = entreeDisplayName(c)
+    if (!canonical) continue
+    for (const candKey of loginKeysForEntry(c)) {
+      const candWords = candKey.split(' ')
+      const lenDiff = Math.abs(candWords.length - inputWords.length)
+      if (lenDiff > 1) continue
+
+      if (lenDiff === 0) {
+        // Même nombre de mots : au plus un mot différent, et proche (coquille OCR)
+        let diffIdx = -1, diffCount = 0
+        for (let i = 0; i < inputWords.length; i++) {
+          if (inputWords[i] !== candWords[i]) { diffCount++; diffIdx = i }
+        }
+        if (diffCount === 1 && levenshtein(inputWords[diffIdx], candWords[diffIdx]) <= 2) {
+          candidates.push({ canonicalName: canonical, entry: c })
+        }
+      } else {
+        // Un mot en plus/en moins (ex: nom composé tronqué par l'OCR) : tous
+        // les autres mots doivent matcher exactement, aucune tolérance en plus.
+        const [longer, shorter] = candWords.length > inputWords.length ? [candWords, inputWords] : [inputWords, candWords]
+        const shorterSet = new Set(shorter)
+        const extra = longer.filter(w => !shorterSet.has(w))
+        if (extra.length === 1 && shorter.every(w => longer.includes(w))) {
+          candidates.push({ canonicalName: canonical, entry: c })
+        }
+      }
+    }
+  }
+
+  // Dédoublonne (une même entrée peut matcher via plusieurs clés de loginKeysForEntry)
+  const unique = [...new Map(candidates.map(x => [x.canonicalName, x])).values()]
+  return unique.length === 1 ? unique[0] : null
+}
+
 /** Entrées à partir des noms déjà en base (fallback si import RH pas encore lu) */
 export function buildEntreesFromParticipants(rows) {
   return (rows || [])
@@ -174,6 +244,16 @@ export async function renameParticipantIdentity(oldCanonical, newCanonical) {
     { collaborateur: newName },
     `${sessionFilter}&${pgEq('collaborateur', oldName)}`
   )
+  // Questions texte libre en attente de correction (cf. ParticipantModuleView) —
+  // oubliée ici, elles restaient associées à l'ancien nom : invisibles pour le
+  // formateur une fois la fiche renommée, donc jamais corrigées ni comptées
+  // dans le score (incident Nadège, semaine du 06/10 — formés dont le score
+  // restait à zéro malgré des réponses bien enregistrées).
+  await sbUpdate(
+    'open_answers',
+    { participant_name: newName },
+    `${sessionFilter}&${pgEq('participant_name', oldName)}`
+  )
   await sbUpdate('module_results', { collaborateur: newName }, pgEq('collaborateur', oldName))
 
   return true
@@ -223,7 +303,7 @@ export async function resolveParticipantName(rawInput) {
     return { ok: false, reason: 'need_full_name', sessionCode }
   }
 
-  let match = findRhMatch(raw, entrees)
+  let match = findRhMatch(raw, entrees) || findRhMatchFuzzy(raw, entrees)
   if (match) {
     const prenom = match.entry?.prenom?.trim() || raw.split(' ')[0] || ''
     return { ok: true, canonicalName: match.canonicalName, prenom, entry: match.entry }

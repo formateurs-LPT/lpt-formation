@@ -1,4 +1,5 @@
 import { insertSessionHistory, sbDelete, sbSelect, getRoomSharedState, deleteTrainerStateByKey } from './supabase'
+import { buildParticipantRanking } from './scoring'
 
 /**
  * Archive les données d'une salle puis purge les tables live + trainer_state.
@@ -11,11 +12,10 @@ export async function archiveAndPurgeRoom(roomCode, { trainerName } = {}) {
   const enc = encodeURIComponent(code)
   const filter = `session_code=eq.${enc}`
 
-  const [sessionRows, participants, quizResults, quizAnswers, scenarioResponses, moduleResults, openAnswers, roomState] =
+  const [sessionRows, participants, quizAnswers, scenarioResponses, moduleResults, openAnswers, roomState] =
     await Promise.all([
       sbSelect('sessions', `code=eq.${enc}&limit=1`),
       sbSelect('participants', filter),
-      sbSelect('quiz_results', filter),
       sbSelect('quiz_answers', filter),
       sbSelect('scenario_responses', filter),
       sbSelect('module_results', filter),
@@ -26,7 +26,6 @@ export async function archiveAndPurgeRoom(roomCode, { trainerName } = {}) {
   const session = sessionRows?.[0]
   const count =
     (participants?.length || 0) +
-    (quizResults?.length || 0) +
     (quizAnswers?.length || 0) +
     (scenarioResponses?.length || 0) +
     (moduleResults?.length || 0) +
@@ -43,6 +42,16 @@ export async function archiveAndPurgeRoom(roomCode, { trainerName } = {}) {
       session?.label?.replace(/^(Présentiel|Visio|Belgique)\s*—\s*/i, '') ||
       'Formateur'
 
+    // Classement figé au moment de l'archivage (même calcul que le classement
+    // live, cf. scoring.js) — avant, ce champ lisait une table jamais écrite
+    // ailleurs dans l'app et restait toujours vide, même quand des réponses
+    // bien réelles existaient (incident Nadège, semaine du 06/10).
+    const scores = buildParticipantRanking({
+      quizAnswers: quizAnswers || [],
+      openAnswers: openAnswers || [],
+      moduleResults: moduleResults || [],
+    })
+
     archived = await insertSessionHistory({
       sessionCode: `${code}_${Date.now()}`,
       sessionDate: new Date().toISOString(),
@@ -54,7 +63,7 @@ export async function archiveAndPurgeRoom(roomCode, { trainerName } = {}) {
         label: session?.label || null,
         room_type: session?.room_type || null,
         ended_at: new Date().toISOString(),
-        scores: quizResults || [],
+        scores,
         answers: quizAnswers || [],
         module_results: moduleResults || [],
         open_answers: openAnswers || [],
