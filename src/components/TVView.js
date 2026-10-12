@@ -8924,28 +8924,28 @@ function TVTroublesListVideo({ page, pageIndex, total, moduleLabel, troublesSele
             background: `${sel.color}14`,
             border: `2px solid ${sel.color}55`,
             borderLeft: `6px solid ${sel.color}`,
-            borderRadius: 24, padding: '36px 44px', maxWidth: 900,
+            borderRadius: 24, padding: '44px 56px', maxWidth: 1500,
           }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: sel.color, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: sel.color, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 14 }}>
               {sel.num} — Trouble visuel
             </div>
-            <div style={{ fontSize: 64, fontWeight: 900, color: '#fff', lineHeight: 1.05, marginBottom: 20 }}>
+            <div style={{ fontSize: 76, fontWeight: 900, color: '#fff', lineHeight: 1.05, marginBottom: 24 }}>
               {sel.nom}
             </div>
-            <div style={{ fontSize: 24, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>
+            <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>
               {sel.def}
             </div>
           </div>
 
           {sel.visionDemo === 'astigmate' && (
             <div style={{
-              display: 'flex', gap: 48, alignItems: 'center', justifyContent: 'center',
+              display: 'flex', gap: 64, alignItems: 'center', justifyContent: 'center',
               background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 24, padding: '24px 40px', maxWidth: 900,
+              borderRadius: 24, padding: '28px 40px', maxWidth: 1500,
             }}>
-              <HeadlightVision cyl={0} axe={0} size={180} label="Vision normale" sublabel="Point net" />
-              <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.25)' }}>→</div>
-              <HeadlightVision cyl={3} axe={30} size={180} label="Vision astigmate" sublabel="Point déformé en ovale" />
+              <HeadlightVision cyl={0} axe={0} size={200} label="Vision normale" sublabel="Point net" />
+              <div style={{ fontSize: 32, color: 'rgba(255,255,255,0.25)' }}>→</div>
+              <HeadlightVision cyl={3} axe={30} size={200} label="Vision astigmate" sublabel="Point déformé en ovale" />
             </div>
           )}
 
