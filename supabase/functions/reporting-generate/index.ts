@@ -125,17 +125,11 @@ function slugify(s: string): string {
 // Appel 1 — découpage atomique en éléments (pole, rubrique, thème brut)
 // ---------------------------------------------------------------------------
 
-const SYSTEM_PROMPT_PASS1 = `Tu structures le reporting hebdomadaire d'un formateur d'opticiens, à partir de notes de terrain brutes. Tu ne rédiges pas un rapport : tu ÉTIQUETTES chaque note. C'est le code, ensuite, qui regroupe et met en forme — pas toi.
+const SYSTEM_PROMPT_DECOUPAGE = `Tu structures le reporting hebdomadaire d'un formateur d'opticiens, à partir de notes de terrain brutes. Tu ne rédiges pas un rapport : tu ÉTIQUETTES chaque note en éléments atomiques (une idée = un élément). C'est le code, ensuite, qui regroupe et met en forme — pas toi.
 
 RÈGLE D'ORTHOGRAPHE, SANS EXCEPTION : tout texte que tu produis doit être rédigé dans un français impeccable — aucune faute d'orthographe, de conjugaison ou de grammaire tolérée, même si la note source en contient.
 
-Tu produis trois choses de nature différente — ne les confonds pas :
-
-1. UNE SYNTHÈSE GLOBALE ("syntheseGlobale") : un court paragraphe (3-5 phrases) qui condense l'ensemble de la semaine dans tes propres mots — tu PEUX ici reformuler, regrouper les idées et donner une vue d'ensemble. Reste factuel, mais la reformulation est autorisée pour ce champ uniquement.
-
-2. LE MOT DE LA FIN ("motDeLaFin") : les notes marquées "mot de la fin : oui" ne vont JAMAIS dans "elements". Rassemble-les dans "motDeLaFin" (texte unique, une note par ligne, ordre chronologique), en corrigeant uniquement l'orthographe/la grammaire — ZÉRO reformulation du style ou du sens. S'il n'y a aucune note "mot de la fin", mets motDeLaFin à null.
-
-3. LES ÉLÉMENTS ("elements") : toutes les autres notes, découpées en éléments atomiques (une idée = un élément). ZÉRO REFORMULATION DES MOTS DU FORMATEUR : les seules corrections autorisées sont l'orthographe, la grammaire, les accents et la ponctuation. Tu gardes les phrases du formateur telles qu'il les a écrites — tu ne les rends pas "plus pro", tu ne les raccourcis pas, tu ne les développes pas. Si une note mélange clairement plusieurs idées distinctes (ex: un constat ET une action à faire), sépare-les en éléments distincts, chacun gardant le texte exact qui le concerne — mais ne fusionne jamais deux notes différentes en un seul élément, et ne perds aucune phrase.
+ZÉRO REFORMULATION DES MOTS DU FORMATEUR : les seules corrections autorisées sont l'orthographe, la grammaire, les accents et la ponctuation. Tu gardes les phrases du formateur telles qu'il les a écrites — tu ne les rends pas "plus pro", tu ne les raccourcis pas, tu ne les développes pas. Si une note mélange clairement plusieurs idées distinctes (ex: un constat ET une action à faire), sépare-les en éléments distincts, chacun gardant le texte exact qui le concerne — mais ne fusionne jamais deux notes différentes en un seul élément, et ne perds aucune phrase.
 
 Pour chaque élément, détermine :
 - noteId : l'id de la note source (peut se répéter si une note est découpée en plusieurs éléments)
@@ -147,14 +141,12 @@ Pour chaque élément, détermine :
 
 Réponds uniquement avec le JSON demandé, rien d'autre.`
 
-const JSON_SCHEMA_PASS1 = {
+const JSON_SCHEMA_DECOUPAGE = {
   name: 'decoupage_reporting',
   strict: true,
   schema: {
     type: 'object',
     properties: {
-      syntheseGlobale: { type: 'string' },
-      motDeLaFin: { type: ['string', 'null'] },
       elements: {
         type: 'array',
         items: {
@@ -172,26 +164,25 @@ const JSON_SCHEMA_PASS1 = {
         },
       },
     },
-    required: ['syntheseGlobale', 'motDeLaFin', 'elements'],
+    required: ['elements'],
     additionalProperties: false,
   },
 }
 
-function buildUserContentPass1(notes: any[]) {
-  const lines = notes.map((n: any) => {
-    const pole = n.pole ? `pole donné: ${n.pole}` : 'pole: non renseigné'
-    const rubrique = n.rubrique ? `rubrique donnée: ${n.rubrique}` : 'rubrique: non renseignée'
-    const theme = n.theme ? ` · thème donné: ${n.theme}` : ''
-    const motFin = n.mot_de_la_fin ? ' · mot de la fin : oui' : ''
-    return `--- Note id=${n.id} · date=${n.date} · ${pole} · ${rubrique}${theme}${motFin} ---\n${n.contenu || '(pas de texte — pièce jointe seule)'}`
-  })
-  return `Voici les notes de la semaine (l'ordre d'écriture ci-dessous n'a aucune importance pour le classement) :\n\n${lines.join('\n\n')}`
+function buildNoteLine(n: any) {
+  const pole = n.pole ? `pole donné: ${n.pole}` : 'pole: non renseigné'
+  const rubrique = n.rubrique ? `rubrique donnée: ${n.rubrique}` : 'rubrique: non renseignée'
+  const theme = n.theme ? ` · thème donné: ${n.theme}` : ''
+  return `--- Note id=${n.id} · date=${n.date} · ${pole} · ${rubrique}${theme} ---\n${n.contenu || '(pas de texte — pièce jointe seule)'}`
 }
 
-function validatePass1Output(data: any, sourceNotes: any[]) {
+function buildUserContentDecoupage(notes: any[]) {
+  const lines = notes.map(buildNoteLine)
+  return `Voici des notes de la semaine (l'ordre d'écriture ci-dessous n'a aucune importance pour le classement) :\n\n${lines.join('\n\n')}`
+}
+
+function validateDecoupageOutput(data: any, sourceNotes: any[]) {
   if (!data || !Array.isArray(data.elements)) return false
-  if (typeof data.syntheseGlobale !== 'string' || !data.syntheseGlobale.trim()) return false
-  if (data.motDeLaFin !== null && typeof data.motDeLaFin !== 'string') return false
   const sourceIds = new Set(sourceNotes.map((n: any) => String(n.id)))
   for (const item of data.elements) {
     if (!item.noteId || !sourceIds.has(String(item.noteId))) return false
@@ -204,28 +195,152 @@ function validatePass1Output(data: any, sourceNotes: any[]) {
   return true
 }
 
-async function callPass1(notes: any[], apiKey: string) {
+// Découpe les notes en lots dont le texte estimé reste sous un budget
+// prudent : une semaine chargée (beaucoup de notes, ou quelques notes très
+// longues) ne doit jamais faire exploser une seule requête Groq — chaque lot
+// est ensuite soumis séparément au découpage, puis tous les éléments sont
+// recollés avant la suite du pipeline (contrôle de couverture, thèmes).
+// Volontairement bas : en sortie, le JSON (clés répétées par élément, texte
+// quasi verbatim) pèse facilement 3 à 4 fois le texte brut d'entrée — un lot
+// trop gros épuise le budget de réponse et tronque le JSON en plein milieu
+// (constaté en pratique avec un lot de ~1700 tokens de contenu). À l'inverse,
+// des lots trop petits multiplient le nombre d'appels Groq dans la même
+// minute et augmentent le risque de contention sur le plafond glissant — 900
+// est un compromis raisonnable entre les deux risques.
+const DECOUPAGE_CONTENT_BUDGET_PER_CHUNK = 900
+
+function chunkNotes(notes: any[]): any[][] {
+  const chunks: any[][] = []
+  let current: any[] = []
+  let currentTokens = 0
+  for (const note of notes) {
+    const noteTokens = estimateTokens(buildNoteLine(note))
+    if (current.length && currentTokens + noteTokens > DECOUPAGE_CONTENT_BUDGET_PER_CHUNK) {
+      chunks.push(current)
+      current = []
+      currentTokens = 0
+    }
+    current.push(note)
+    currentTokens += noteTokens
+  }
+  if (current.length) chunks.push(current)
+  return chunks
+}
+
+// Le palier gratuit/on-demand de Groq plafonne ce modèle à 8000 tokens par
+// MINUTE au total (prompt + max_tokens réservé pour la réponse — Groq compte
+// la réservation demandée, pas la sortie réelle). Un max_tokens fixe trop
+// haut (ex. 8000) fait systématiquement dépasser ce plafond dès que le
+// prompt (notes de la semaine + instructions) n'est pas minuscule — ce
+// n'était donc pas une panne de Groq mais une réservation mal dimensionnée.
+// On calcule ici le budget restant après avoir estimé la taille du prompt,
+// avec une marge pour le schéma JSON et les tokens de mise en forme du chat.
+const GROQ_TPM_LIMIT = 8000
+const REQUEST_OVERHEAD_TOKENS = 700
+
+function estimateTokens(s: string): number {
+  // Estimation volontairement prudente (surestime légèrement le texte brut)
+  // : mieux vaut réserver un peu moins de tokens de réponse que de
+  // redépasser le plafond. Juste un point de départ — la correction fine se
+  // fait avec les vrais chiffres renvoyés par Groq en cas de dépassement
+  // (cf. parseGroqLimitError), plus fiable qu'un ratio caractères/token.
+  return Math.ceil((s || '').length / 3)
+}
+
+// Groq renvoie deux formes d'erreur liées au même plafond (8000 tokens/min
+// pour ce modèle, palier gratuit) :
+//  - 413 "Limit X, Requested Y" : CETTE requête, à elle seule (prompt +
+//    max_tokens réservé), dépasse le plafond dur → il faut réduire max_tokens.
+//  - 429 "Limit X, Used Y, Requested Z. Please try again in Ns" : le plafond
+//    glissant est déjà partiellement consommé par un appel précédent dans la
+//    même minute (ex: le découpage du lot confidentiel juste après celui du
+//    lot public) → il faut attendre, pas réduire.
+function parseGroqRateLimitError(errText: string): { limit: number; used?: number; requested: number; retryAfterMs?: number } | null {
+  const m = errText.match(/Limit\s+(\d+),\s*(?:Used\s+(\d+),\s*)?Requested\s+(\d+)/)
+  if (!m) return null
+  const retryMatch = errText.match(/try again in ([\d.]+)s/)
+  return {
+    limit: Number(m[1]),
+    used: m[2] !== undefined ? Number(m[2]) : undefined,
+    requested: Number(m[3]),
+    retryAfterMs: retryMatch ? Math.ceil(Number(retryMatch[1]) * 1000) : undefined,
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+const CONTENU_TROP_VOLUMINEUX = "Trop de contenu cette semaine pour générer en une fois (limite du service IA, palier gratuit). Réessaie dans une minute, avec moins de notes à la fois, ou contacte un administrateur pour augmenter le palier Groq."
+
+// Une génération peut enchaîner plusieurs appels Groq (plusieurs lots de
+// découpage + synthèse + fusion des thèmes, x2 si contenu confidentiel) —
+// l'edge function, elle, est tuée après 150s au total (plafond Supabase).
+// On n'attend donc qu'un court instant par tentative (contention passagère,
+// ex. le lot confidentiel juste après le lot public) ; si Groq demande
+// d'attendre plus longtemps que ça, mieux vaut échouer vite avec un message
+// clair que de risquer de dépasser le plafond de la function en interne —
+// l'utilisateur relance alors lui-même depuis le bouton "Régénérer".
+const MAX_TOTAL_WAIT_MS = 30000
+
+type DecoupageRetryState = { maxTokensOverride?: number; totalWaitedMs?: number; shrunkOnce?: boolean }
+
+// Découpe UN lot (déjà dimensionné par chunkNotes, cf. plus haut) en éléments
+// atomiques. `retry` sert uniquement aux tentatives internes (correction
+// 413, ou nouvelle attente après un 429) — jamais positionné par l'appelant.
+async function callDecoupage(chunk: any[], apiKey: string, retry: DecoupageRetryState = {}): Promise<any[]> {
+  const { maxTokensOverride, totalWaitedMs = 0, shrunkOnce = false } = retry
+  const userContent = buildUserContentDecoupage(chunk)
+  const estimatedPromptTokens = estimateTokens(SYSTEM_PROMPT_DECOUPAGE) + estimateTokens(userContent)
+  const budget = GROQ_TPM_LIMIT - estimatedPromptTokens - REQUEST_OVERHEAD_TOKENS
+  if (budget < 800 && !maxTokensOverride) {
+    throw new Error(CONTENU_TROP_VOLUMINEUX)
+  }
+  const maxTokens = maxTokensOverride ?? Math.min(6000, budget)
+
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
     body: JSON.stringify({
       model: GROQ_MODEL,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT_PASS1 },
-        { role: 'user', content: buildUserContentPass1(notes) },
+        { role: 'system', content: SYSTEM_PROMPT_DECOUPAGE },
+        { role: 'user', content: userContent },
       ],
-      response_format: { type: 'json_schema', json_schema: JSON_SCHEMA_PASS1 },
-      // Texte gardé verbatim (zéro reformulation) : la sortie peut être plus
-      // longue qu'avant (plus de notes, plusieurs éléments par note). Sans
-      // ce paramètre explicite, le défaut du modèle peut tronquer la
-      // génération en plein JSON → échec de validation côté Groq.
-      max_tokens: 8000,
+      response_format: { type: 'json_schema', json_schema: JSON_SCHEMA_DECOUPAGE },
+      max_tokens: maxTokens,
     }),
   })
 
   if (!res.ok) {
     const errText = await res.text().catch(() => '')
     console.error('[reporting-generate] Groq API error (découpage)', res.status, errText)
+    if (res.status === 413 || res.status === 429) {
+      const info = parseGroqRateLimitError(errText)
+      if (info?.retryAfterMs) {
+        const waitMs = Math.min(info.retryAfterMs + 1000, 20000)
+        if (totalWaitedMs + waitMs <= MAX_TOTAL_WAIT_MS) {
+          // Plafond glissant déjà consommé par un appel précédent (ex: un
+          // autre lot juste avant, ou une autre génération en cours) : on
+          // attend le délai indiqué par Groq puis on retente, à l'identique.
+          // Peut se répéter plusieurs fois tant que le budget total n'est
+          // pas dépassé.
+          await sleep(waitMs)
+          return callDecoupage(chunk, apiKey, { maxTokensOverride: maxTokens, totalWaitedMs: totalWaitedMs + waitMs, shrunkOnce })
+        }
+      } else if (info && !shrunkOnce) {
+        // 413 pur (pas de délai suggéré) : cette requête dépasse le plafond
+        // à elle seule — on réduit max_tokens avec les vrais chiffres
+        // renvoyés par Groq (plus fiable que notre estimation) et on
+        // retente une fois.
+        const promptTokensReal = info.requested - maxTokens
+        const correctedMaxTokens = info.limit - promptTokensReal - 300
+        if (correctedMaxTokens >= 500) {
+          return callDecoupage(chunk, apiKey, { maxTokensOverride: correctedMaxTokens, totalWaitedMs, shrunkOnce: true })
+        }
+      }
+      throw new Error(CONTENU_TROP_VOLUMINEUX)
+    }
     throw new Error("Génération impossible (API Groq indisponible). Les notes n'ont pas été modifiées.")
   }
 
@@ -241,11 +356,99 @@ async function callPass1(notes: any[], apiKey: string) {
     throw new Error("Structure générée invalide. Les notes n'ont pas été modifiées.")
   }
 
-  if (!validatePass1Output(parsed, notes)) {
+  if (!validateDecoupageOutput(parsed, chunk)) {
     throw new Error("Structure générée invalide. Les notes n'ont pas été modifiées.")
   }
 
-  return parsed as { syntheseGlobale: string; motDeLaFin: string | null; elements: any[] }
+  return parsed.elements
+}
+
+// Découpe toutes les notes (hors "mot de la fin") en lots sous le budget,
+// appelle le découpage pour chaque lot séquentiellement, et recolle tous les
+// éléments. Un lot qui échoue fait échouer tout l'appel (le niveau au-dessus,
+// genererStructureAvecThemes, relance alors l'ensemble une fois).
+async function decouperTousLots(notes: any[], apiKey: string): Promise<any[]> {
+  const aDecouper = notes.filter((n: any) => !n.mot_de_la_fin)
+  const chunks = chunkNotes(aDecouper)
+  const elements: any[] = []
+  for (const chunk of chunks) {
+    const chunkElements = await callDecoupage(chunk, apiKey)
+    elements.push(...chunkElements)
+  }
+  return elements
+}
+
+const SYSTEM_PROMPT_SYNTHESE = `Tu reçois la liste déjà découpée et corrigée des points de la semaine d'un formateur d'opticiens (chacun avec son pôle, sa rubrique et son texte), ainsi que, éventuellement, le texte brut des notes "mot de la fin".
+
+Deux champs à produire, de nature différente :
+
+1. "syntheseGlobale" : un court paragraphe (3-5 phrases) qui condense l'ensemble de la semaine dans tes propres mots, à partir des points fournis — tu PEUX ici reformuler, regrouper les idées et donner une vue d'ensemble. Reste factuel.
+
+2. "motDeLaFin" : corrige uniquement l'orthographe/la grammaire des notes "mot de la fin" fournies (ZÉRO reformulation du style ou du sens) et rassemble-les en un texte unique, une note par ligne, dans l'ordre donné. S'il n'y a aucune note "mot de la fin" fournie, mets motDeLaFin à null.
+
+Réponds uniquement avec le JSON demandé, rien d'autre.`
+
+const JSON_SCHEMA_SYNTHESE = {
+  name: 'synthese_reporting',
+  strict: true,
+  schema: {
+    type: 'object',
+    properties: {
+      syntheseGlobale: { type: 'string' },
+      motDeLaFin: { type: ['string', 'null'] },
+    },
+    required: ['syntheseGlobale', 'motDeLaFin'],
+    additionalProperties: false,
+  },
+}
+
+function buildUserContentSynthese(elements: any[], motDeLaFinNotes: any[]) {
+  const pointsLines = elements.map((e: any) => `- [${e.pole}/${e.rubrique}] ${e.resume}`)
+  const motFinLines = motDeLaFinNotes.map((n: any) => n.contenu || '').filter(Boolean)
+  const parts = [`Points de la semaine :\n${pointsLines.join('\n') || '(aucun)'}`]
+  if (motFinLines.length) parts.push(`Notes "mot de la fin" (à corriger et assembler) :\n${motFinLines.join('\n')}`)
+  return parts.join('\n\n')
+}
+
+// Entrée compacte (résumés déjà corrigés, pas le texte brut des notes) donc
+// cet appel reste petit même sur une semaine très chargée — le risque de
+// dépassement du plafold Groq y est bien plus faible que pour le découpage.
+async function callSynthese(elements: any[], motDeLaFinNotes: any[], apiKey: string): Promise<{ syntheseGlobale: string; motDeLaFin: string | null }> {
+  const fallback = { syntheseGlobale: '', motDeLaFin: motDeLaFinNotes.map((n: any) => n.contenu).filter(Boolean).join('\n') || null }
+  try {
+    const userContent = buildUserContentSynthese(elements, motDeLaFinNotes)
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT_SYNTHESE },
+          { role: 'user', content: userContent },
+        ],
+        response_format: { type: 'json_schema', json_schema: JSON_SCHEMA_SYNTHESE },
+        max_tokens: 1200,
+      }),
+    })
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '')
+      console.error('[reporting-generate] Groq API error (synthèse)', res.status, errText)
+      const info = parseGroqRateLimitError(errText)
+      if (info?.retryAfterMs && info.retryAfterMs <= 20000) {
+        await sleep(info.retryAfterMs + 1000)
+        return callSynthese(elements, motDeLaFinNotes, apiKey)
+      }
+      return fallback // repli : pas de synthèse rédigée, mais le mot de la fin brut est conservé tel quel
+    }
+    const data = await res.json()
+    const content = data.choices?.[0]?.message?.content
+    const parsed = content ? JSON.parse(content) : null
+    if (!parsed || typeof parsed.syntheseGlobale !== 'string') return fallback
+    return { syntheseGlobale: parsed.syntheseGlobale, motDeLaFin: parsed.motDeLaFin ?? fallback.motDeLaFin }
+  } catch (e) {
+    console.error('[reporting-generate] Échec synthèse', e)
+    return fallback
+  }
 }
 
 // Contrôle de couverture : renvoie les ids des notes source dont le texte ne
@@ -343,6 +546,12 @@ function buildUserContentPass2(polesToCluster: [string, PoleThemeInfo][]) {
 // cas d'échec (réseau, HTTP, parsing), jamais ne lève.
 async function callPass2Once(polesToCluster: [string, PoleThemeInfo][], apiKey: string) {
   try {
+    const userContent = buildUserContentPass2(polesToCluster)
+    const estimatedPromptTokens = estimateTokens(SYSTEM_PROMPT_PASS2) + estimateTokens(userContent)
+    const budget = GROQ_TPM_LIMIT - estimatedPromptTokens - REQUEST_OVERHEAD_TOKENS
+    if (budget < 300) return null // repli silencieux (cf. clusterThemes), pas d'erreur bloquante pour cette étape
+    const maxTokens = Math.min(2000, budget)
+
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
@@ -350,14 +559,17 @@ async function callPass2Once(polesToCluster: [string, PoleThemeInfo][], apiKey: 
         model: GROQ_MODEL,
         messages: [
           { role: 'system', content: SYSTEM_PROMPT_PASS2 },
-          { role: 'user', content: buildUserContentPass2(polesToCluster) },
+          { role: 'user', content: userContent },
         ],
         response_format: { type: 'json_schema', json_schema: JSON_SCHEMA_PASS2 },
-        max_tokens: 2000,
+        max_tokens: maxTokens,
       }),
     })
     if (!res.ok) {
-      console.error('[reporting-generate] Groq API error (fusion thèmes)', res.status, await res.text().catch(() => ''))
+      const errText = await res.text().catch(() => '')
+      console.error('[reporting-generate] Groq API error (fusion thèmes)', res.status, errText)
+      const info = parseGroqRateLimitError(errText)
+      if (info?.retryAfterMs) await sleep(Math.min(info.retryAfterMs + 1000, 20000))
       return null
     }
     const data = await res.json()
@@ -547,12 +759,19 @@ function assemble(sourceNotes: any[], modelOutput: { syntheseGlobale: string; mo
 
 async function genererStructureAvecThemes(notes: any[], apiKey: string) {
   const notesById = Object.fromEntries(notes.map((n: any) => [String(n.id), n]))
+  const motDeLaFinNotes = notes.filter((n: any) => n.mot_de_la_fin)
 
-  let pass1 = await callPass1(notes, apiKey)
+  async function decouperEtSynthetiser() {
+    const elements = await decouperTousLots(notes, apiKey)
+    const synthese = await callSynthese(elements, motDeLaFinNotes, apiKey)
+    return { elements, syntheseGlobale: synthese.syntheseGlobale, motDeLaFin: synthese.motDeLaFin }
+  }
+
+  let pass1 = await decouperEtSynthetiser()
   let failing = findFailingNotes(notes, pass1.elements, pass1.motDeLaFin)
   if (failing.length) {
     console.warn('[reporting-generate] Couverture incomplète, relance du découpage', failing)
-    pass1 = await callPass1(notes, apiKey)
+    pass1 = await decouperEtSynthetiser()
     failing = findFailingNotes(notes, pass1.elements, pass1.motDeLaFin)
     if (failing.length) {
       console.warn('[reporting-generate] Couverture toujours incomplète après relance, repli sans IA', failing)
