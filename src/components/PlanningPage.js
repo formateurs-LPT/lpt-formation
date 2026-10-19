@@ -59,6 +59,91 @@ const STATUS_STYLE = {
   done:     { label: 'Terminé',   bg: '#f3f4f6', border: '#e5e7eb', color: '#9aa1ac' },
 }
 
+// ── Tuile "Taux de recouvrement" ────────────────────────────────
+// Classe les magasins par nombre de déplacements terminés (visites déjà
+// effectuées, pas celles à venir/en cours) — tout l'historique, sans limite
+// de date. Respecte le filtre formateur déjà en place sur la page : utile
+// pour voir la couverture d'un formateur en particulier, pas uniquement la
+// vue globale. Magasins jamais visités volontairement absents (liste de
+// couverture, pas un inventaire du réseau).
+function CoverageTile({ deployments, filterTrainer }) {
+  const [expanded, setExpanded] = useState(false)
+
+  const counts = {}
+  deployments
+    .filter(d => statusOf(d) === 'done' && (filterTrainer === 'Tous' || d.trainer === filterTrainer))
+    .forEach(d => { counts[d.store] = (counts[d.store] || 0) + 1 })
+
+  const ranked = Object.entries(counts)
+    .map(([store, count]) => ({ store, count }))
+    .sort((a, b) => b.count - a.count || a.store.localeCompare(b.store))
+
+  const totalVisites = ranked.reduce((sum, r) => sum + r.count, 0) || 1
+  const visibleRows = expanded ? ranked : ranked.slice(0, 5)
+
+  return (
+    <div style={{
+      background: '#fff', border: '1px solid #e5e7eb', borderRadius: 18, padding: 16,
+      boxShadow: '0 1px 2px rgba(16,24,40,.03)', marginBottom: 20,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <span style={{ fontSize: 16 }}>📊</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: '#14161a', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+          Taux de recouvrement
+        </span>
+        <span style={{ fontSize: 11.5, color: '#9aa1ac', fontWeight: 600 }}>
+          — visites terminées{filterTrainer !== 'Tous' ? ` · ${filterTrainer}` : ''}
+        </span>
+      </div>
+      {ranked.length === 0 ? (
+        <div style={{ textAlign: 'center', color: '#9aa1ac', fontSize: 12, padding: '12px 0' }}>
+          Aucune visite terminée{filterTrainer !== 'Tous' ? ` pour ${filterTrainer}` : ''} pour l&apos;instant.
+        </div>
+      ) : (
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {visibleRows.map(({ store, count }, i) => (
+              <div key={store} style={{
+                display: 'flex', alignItems: 'center', gap: 14, padding: '10px 4px',
+                borderBottom: i < visibleRows.length - 1 ? '1px solid #f0f1f3' : 'none',
+              }}>
+                <div style={{
+                  width: 22, height: 22, borderRadius: 7, flexShrink: 0,
+                  background: '#f5f6f8', color: '#9aa1ac', fontSize: 11, fontWeight: 800,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>{i + 1}</div>
+                <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: '#14161a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {store}
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: '#0089ba', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+                  {count}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#9aa1ac', flexShrink: 0, width: 52 }}>
+                  visite{count > 1 ? 's' : ''}
+                </div>
+                <div style={{
+                  fontSize: 13, fontWeight: 800, color: '#6b7280', fontVariantNumeric: 'tabular-nums',
+                  flexShrink: 0, width: 50, textAlign: 'right',
+                }}>
+                  {Math.round((count / totalVisites) * 100)}%
+                </div>
+              </div>
+            ))}
+          </div>
+          {ranked.length > 5 && (
+            <button onClick={() => setExpanded(v => !v)} style={{
+              marginTop: 12, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              fontSize: 12, fontWeight: 700, color: '#0089ba', padding: 0,
+            }}>
+              {expanded ? '▲ Réduire' : `▼ Voir les ${ranked.length - 5} autres`}
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Modal création déplacement ────────────────────────────────
 function CreateModal({ onClose, onCreated }) {
   const [trainer, setTrainer]   = useState('')
@@ -577,6 +662,7 @@ export default function PlanningPage({ pName, onBack }) {
 
         {/* Grille de cartes */}
         <div style={{ overflowY: 'auto', paddingRight: selected ? 16 : 0 }}>
+          {!loading && <CoverageTile deployments={deployments} filterTrainer={filterTrainer} />}
           {loading ? (
             <div style={{ textAlign: 'center', color: '#9aa1ac', padding: 60, fontSize: 14 }}>Chargement…</div>
           ) : filtered.length === 0 ? (

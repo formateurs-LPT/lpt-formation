@@ -13,13 +13,13 @@ export const MANAGERS = {
     { name: 'Romain MAESEELE', email: 'rmaeseele@lunettespourtous.com' },
   ],
   'montparnasse': [
-    { name: 'Victor LEJON', email: 'vlejon@lunettespourtous.com' },
+    { name: 'Thibault NUNES RAMOS', email: 'tnunesramos@lunettespourtous.com' },
   ],
   'saint lazare': [
-    { name: 'Yssoufe SANGARÉ', email: 'ysangare@lunettespourtous.com' },
+    { name: 'Murat AYDEMIR', email: 'maydemir@lunettespourtous.com' },
   ],
   'st lazare': [
-    { name: 'Yssoufe SANGARÉ', email: 'ysangare@lunettespourtous.com' },
+    { name: 'Murat AYDEMIR', email: 'maydemir@lunettespourtous.com' },
   ],
   'bastille': [
     { name: 'Amadou BARRY', email: 'abarry@lunettespourtous.com' },
@@ -31,7 +31,7 @@ export const MANAGERS = {
     { name: 'Vincent SMADJA', email: 'vsmadja@lunettespourtous.com' },
   ],
   'commerce': [
-    { name: 'Steve MAILLARD', email: 'smaillard@lunettespourtous.com' },
+    { name: 'Victor MULER', email: 'vmuler@lunettespourtous.com' },
   ],
   'creteil': [
     { name: 'Toufik BOUKRICHE', email: 'tboukriche@lunettespourtous.com' },
@@ -161,19 +161,19 @@ export const MANAGERS = {
     { name: 'Nathanael PEREZ', email: 'nperez@lunettespourtous.com' },
   ],
   'toulon': [
-    { name: 'Mathias DARMON', email: 'mdarmon@lunettespourtous.com' },
+    { name: 'Manon HENU-CASTILLO', email: 'mhenu-castillo@lunettespourtous.com' },
   ],
   'toulon 83': [
-    { name: 'Mathias DARMON', email: 'mdarmon@lunettespourtous.com' },
+    { name: 'Manon HENU-CASTILLO', email: 'mhenu-castillo@lunettespourtous.com' },
   ],
   'toulon avenue 83': [
-    { name: 'Mathias DARMON', email: 'mdarmon@lunettespourtous.com' },
+    { name: 'Manon HENU-CASTILLO', email: 'mhenu-castillo@lunettespourtous.com' },
   ],
   'avenue 83': [
-    { name: 'Mathias DARMON', email: 'mdarmon@lunettespourtous.com' },
+    { name: 'Manon HENU-CASTILLO', email: 'mhenu-castillo@lunettespourtous.com' },
   ],
   'la valette': [
-    { name: 'Mathias DARMON', email: 'mdarmon@lunettespourtous.com' },
+    { name: 'Manon HENU-CASTILLO', email: 'mhenu-castillo@lunettespourtous.com' },
   ],
   'toulon mayol': [
     { name: 'Thibaud PONTONE', email: 'tpontone@lunettespourtous.com' },
@@ -210,10 +210,10 @@ export const MANAGERS = {
     { name: 'Gwen TATE FERREIRA DOS SANTOS', email: 'gtateferreiradossantos@lunettespourtous.com' },
   ],
   'ixelles': [
-    { name: 'Bryan SABBAH', email: 'bsabbah@lunettespourtous.com' },
+    { name: 'Hammed MOLADE', email: 'homade@lunettespourtous.com' },
   ],
   'charleroi': [
-    { name: 'Maxime DOUMONT', email: 'mdoumont@lunettespourtous.com' },
+    { name: 'Yasmina REGRAGUI', email: 'yregragui@lunettespourtous.com' },
   ],
   'liege': [
     { name: 'Marie KOUTSOUDAKIS', email: 'mkoutsoudakis@lunettespourtous.com' },
