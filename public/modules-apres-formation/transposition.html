@@ -249,6 +249,8 @@
   }
   .numpad-entete { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .numpad-titre { font-size: 14px; font-weight: 700; color: #555; }
+  .numpad-rappel { margin-bottom: 10px; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,0.7); font-size: 15px; font-weight: 700; text-align: center; color: #2A2840; font-variant-numeric: tabular-nums; }
+  .numpad-rappel:empty { display: none; }
   .numpad-fermer { background: transparent; border: none; font-size: 22px; cursor: pointer; color: #888; }
   .numpad-affichage {
     margin-bottom: 14px; background: #fff; border-radius: 12px; padding: 12px 20px; font-size: 30px;
@@ -314,6 +316,7 @@
     <span class="numpad-titre" id="numpadTitre"></span>
     <button class="numpad-fermer" id="numpadFermer">✕</button>
   </div>
+  <div class="numpad-rappel" id="numpadRappel"></div>
   <div class="numpad-affichage" id="numpadAffichage"></div>
   <div class="numpad-grille" id="numpadGrille"></div>
 </div>
@@ -577,21 +580,21 @@ const FORMAT_B = [
 ];
 
 const FORMAT_C = [
-  { enonce: "La transposition change la puissance réelle du verre pour le client.", vrai: false },
-  { enonce: "Pour transposer un cylindre négatif en positif, il suffit de remplacer son signe − par un signe +.", vrai: true },
-  { enonce: "L'axe ne change jamais lors d'une transposition.", vrai: false },
-  { enonce: "La nouvelle sphère s'obtient en additionnant la sphère et le cylindre d'origine.", vrai: true },
-  { enonce: "Une ordonnance écrite en cylindre positif n'a jamais besoin d'être transposée pour vérifier la faisabilité en 10 minutes.", vrai: true },
-  { enonce: "La valeur absolue du cylindre change lors d'une transposition.", vrai: false },
-  { enonce: "Chez nous, la plage de fabrication en 10 minutes est une sphère entre −8.00 et +7.25.", vrai: true },
-  { enonce: "Le cylindre maximum fabricable en 10 minutes est de 3.00.", vrai: true },
-  { enonce: "Si l'axe d'origine est 100°, le nouvel axe après transposition est 190°.", vrai: false },
-  { enonce: "Une ordonnance en cylindre négatif peut sembler fabricable alors qu'elle ne l'est plus une fois transposée en positif.", vrai: true },
-  { enonce: "Une ordonnance en cylindre négatif peut sembler impossible à fabriquer alors qu'elle l'est en réalité une fois transposée en positif.", vrai: true },
-  { enonce: "Si le cylindre affiché dépasse déjà 3.00 en valeur absolue, inutile de transposer : ce n'est pas fabricable en 10 minutes.", vrai: true },
-  { enonce: "La transposition sert uniquement à l'administratif, elle n'a aucun impact sur ce qu'on peut fabriquer en magasin.", vrai: false },
-  { enonce: "On transpose une ordonnance uniquement quand elle est écrite en cylindre négatif, jamais quand elle est déjà en positif.", vrai: true },
-  { enonce: "Il faut systématiquement demander un nouvel examen de vue au client si l'ordonnance est écrite en cylindre négatif.", vrai: false },
+  { enonce: "La transposition change la puissance réelle du verre pour le client.", vrai: false, explication: "Non : le verre reste rigoureusement le même, seule l'écriture change." },
+  { enonce: "Pour transposer un cylindre négatif en positif, il suffit de remplacer son signe − par un signe +.", vrai: true, explication: "Oui : la valeur du cylindre ne change pas, seul son signe change." },
+  { enonce: "L'axe ne change jamais lors d'une transposition.", vrai: false, explication: "Non : on ajoute 90° s'il est inférieur ou égal à 90°, on enlève 90° sinon." },
+  { enonce: "La nouvelle sphère s'obtient en additionnant la sphère et le cylindre d'origine.", vrai: true, explication: "Oui : nouvelle sphère = sphère + cylindre (négatif)." },
+  { enonce: "Une ordonnance écrite en cylindre positif n'a jamais besoin d'être transposée pour vérifier la faisabilité en 10 minutes.", vrai: true, explication: "Oui : c'est déjà notre convention, on la lit directement." },
+  { enonce: "La valeur absolue du cylindre change lors d'une transposition.", vrai: false, explication: "Non : seul le signe change. C'est pour ça qu'un cylindre au-delà de 3.00 n'est jamais fabricable." },
+  { enonce: "Chez nous, la plage de fabrication en 10 minutes est une sphère entre −8.00 et +7.25.", vrai: true, explication: "Oui : sphère de −8.00 à +7.25, une fois l'ordonnance en cylindre positif." },
+  { enonce: "Le cylindre maximum fabricable en 10 minutes est de 3.00.", vrai: true, explication: "Oui : au-delà de 3.00, ce n'est pas fabricable en 10 minutes." },
+  { enonce: "Si l'axe d'origine est 100°, le nouvel axe après transposition est 190°.", vrai: false, explication: "Non : 100° est supérieur à 90°, on enlève 90° : le nouvel axe est 10°." },
+  { enonce: "Une ordonnance en cylindre négatif peut sembler fabricable alors qu'elle ne l'est plus une fois transposée en positif.", vrai: true, explication: "Oui : la sphère peut descendre sous −8.00 une fois transposée." },
+  { enonce: "Une ordonnance en cylindre négatif peut sembler impossible à fabriquer alors qu'elle l'est en réalité une fois transposée en positif.", vrai: true, explication: "Oui : la sphère peut rentrer sous +7.25 une fois transposée." },
+  { enonce: "Si le cylindre affiché dépasse déjà 3.00 en valeur absolue, inutile de transposer : ce n'est pas fabricable en 10 minutes.", vrai: true, explication: "Oui : sa valeur absolue ne change pas en transposant." },
+  { enonce: "La transposition sert uniquement à l'administratif, elle n'a aucun impact sur ce qu'on peut fabriquer en magasin.", vrai: false, explication: "Non : elle décide de ce qu'on peut fabriquer en 10 minutes, et elle sert au SAV." },
+  { enonce: "On transpose une ordonnance uniquement quand elle est écrite en cylindre négatif, jamais quand elle est déjà en positif.", vrai: true, explication: "Oui : une ordonnance déjà en positif se lit telle quelle." },
+  { enonce: "Il faut systématiquement demander un nouvel examen de vue au client si l'ordonnance est écrite en cylindre négatif.", vrai: false, explication: "Non : c'est une simple convention d'écriture, il suffit de transposer." },
 ];
 
 const FORMAT_D = [
@@ -751,6 +754,7 @@ function rendreItemCourant() {
 
   if (formatActuel === 'b') {
     saisieActuelle = { sphere: null, cylindre: null, axe: null }
+    ordonnanceEnCours = item.enonce
     corps.innerHTML = `
       <div class="ordonnance-depart">${item.enonce}</div>
       <div class="grille-saisie">
@@ -783,7 +787,7 @@ function rendreItemCourant() {
           else if (b === btn) b.classList.add('mauvaise-reponse')
           if (b === btn) b.classList.add('selectionne')
         })
-        afficherFeedback(correct, correct ? "Exact." : "Pas tout à fait — relis le point correspondant dans le cours si besoin.")
+        afficherFeedback(correct, correct ? `Exact. ${item.explication}` : item.explication)
       })
     })
   }
@@ -802,6 +806,8 @@ function afficherFeedback(correct, texte) {
 // Cases tapables Sphère/Cylindre/Axe qui ouvrent un pavé numérique en bas
 // d'écran — pas de choix multiple, le formé tape lui-même la valeur transposée.
 let saisieActuelle = { sphere: null, cylindre: null, axe: null }
+// Ordonnance à transposer, rappelée en haut du pavé numérique (sinon le pavé la cache)
+let ordonnanceEnCours = ''
 
 function formatDiop(v) {
   const a = Math.abs(v).toFixed(2).replace('.', ',')
@@ -869,6 +875,7 @@ function ouvrirNumpad(champ, titre, valeurActuelle, onConfirm) {
     numpadRaw = (valeurActuelle < 0 ? '-' : '') + s
   }
   $('#numpadTitre').textContent = titre
+  $('#numpadRappel').textContent = ordonnanceEnCours ? `À transposer : ${ordonnanceEnCours}` : ''
   rendreNumpad()
   $('#numpadOverlay').style.display = 'block'
   $('#numpadSheet').style.display = 'block'
@@ -1032,6 +1039,7 @@ function rendreQuestion() {
 
   if (q.type === 'bonmot' && q.sousType === 'transpose') {
     saisieActuelle = { sphere: null, cylindre: null, axe: null }
+    ordonnanceEnCours = q.enonce
     corps.innerHTML = `
       <div class="ordonnance-depart">${q.enonce}</div>
       <div class="grille-saisie">
@@ -1193,7 +1201,7 @@ Format A — "Fabricable en 10 minutes ?" (10 situations). Le collaborateur voit
 Format B — "Transpose correctement" (5 situations, toutes en cylindre négatif — on ne transpose jamais une ordonnance déjà en positif). Important : ce n'est PAS un choix parmi plusieurs réponses. Le collaborateur doit saisir lui-même la sphère, le cylindre et l'axe transposés, exactement comme dans le module "Bases de l'optique" que tu as déjà construit — reprends le même système :
 - L'ordonnance de départ est affichée en gros dans un encadré.
 - En dessous, trois cases tapables côte à côte, libellées "Sphère", "Cylindre", "Axe", vides au départ (affichent "—").
-- Chaque case ouvre en bas d'écran le même pavé numérique (bottom sheet avec fond assombri, croix de fermeture, affichage de la valeur en cours) que pour la saisie d'ordonnance. Titre du pavé : "Sphère (cylindre positif)", "Cylindre (cylindre positif)" ou "Axe".
+- Chaque case ouvre en bas d'écran le même pavé numérique (bottom sheet avec fond assombri, croix de fermeture, affichage de la valeur en cours) que pour la saisie d'ordonnance. Titre du pavé : "Sphère (cylindre positif)", "Cylindre (cylindre positif)" ou "Axe". Juste sous le titre, un bandeau rappelle l'ordonnance à transposer ("À transposer : +2.00 (−1.50) 30°"), pour que le collaborateur n'ait jamais à fermer le pavé pour la relire.
 - Pavé pour la sphère et le cylindre : touches 1 à 9, "-" (inverse le signe), 0, "," (virgule décimale), "⌫" (effacer), "✓" (valider). Valeur bornée entre −20 et +20. Affichage dans la case au format "+0,50" / "−6,00" / "0,00".
 - Pavé pour l'axe : touches 1 à 9, "⌫", 0, "✓" — pas de signe ni de virgule, valeur bornée entre 0 et 180 (on ne peut pas taper au-delà de 180). Affichage dans la case au format "120°".
 - Un bouton "Vérifier" compare à la bonne réponse : tolérance de 0,01 sur la sphère et le cylindre, valeur exacte (arrondie) sur l'axe. Une case vide compte comme fausse. Chaque case se colore en vert si juste, en rouge si fausse, et la bonne valeur s'affiche en rouge sous chaque case fausse (ex : "✓ +1,50"). Puis l'encadré d'explication et le bouton "Suivant →".
@@ -1204,22 +1212,8 @@ Les 5 ordonnances, leur transposition correcte et l'explication affichée :
 4. 0.00 (−0.75) 50° → −0.75 (+0.75) 140° → "Sphère = 0.00 + (−0.75) = −0.75, cylindre : le − devient un + → +0.75, axe = 50 + 90 = 140° (axe ≤ 90 → on ajoute 90)."
 5. −7.00 (−1.75) 160° → −8.75 (+1.75) 70° → "Sphère = −7.00 + (−1.75) = −8.75, cylindre : le − devient un + → +1.75, axe = 160 − 90 = 70° (axe > 90 → on soustrait 90)."
 
-Format C — "Vrai/Faux éclair" (15 énoncés), 2 boutons "Vrai" / "Faux". Explication affichée : "Exact." si juste, "Pas tout à fait — relis le point correspondant dans le cours si besoin." si faux.
-1. La transposition change la puissance réelle du verre pour le client. → Faux
-2. Pour transposer un cylindre négatif en positif, il suffit de remplacer son signe − par un signe +. → Vrai
-3. L'axe ne change jamais lors d'une transposition. → Faux
-4. La nouvelle sphère s'obtient en additionnant la sphère et le cylindre d'origine. → Vrai
-5. Une ordonnance écrite en cylindre positif n'a jamais besoin d'être transposée pour vérifier la faisabilité en 10 minutes. → Vrai
-6. La valeur absolue du cylindre change lors d'une transposition. → Faux
-7. Chez nous, la plage de fabrication en 10 minutes est une sphère entre −8.00 et +7.25. → Vrai
-8. Le cylindre maximum fabricable en 10 minutes est de 3.00. → Vrai
-9. Si l'axe d'origine est 100°, le nouvel axe après transposition est 190°. → Faux
-10. Une ordonnance en cylindre négatif peut sembler fabricable alors qu'elle ne l'est plus une fois transposée en positif. → Vrai
-11. Une ordonnance en cylindre négatif peut sembler impossible à fabriquer alors qu'elle l'est en réalité une fois transposée en positif. → Vrai
-12. Si le cylindre affiché dépasse déjà 3.00 en valeur absolue, inutile de transposer : ce n'est pas fabricable en 10 minutes. → Vrai
-13. La transposition sert uniquement à l'administratif, elle n'a aucun impact sur ce qu'on peut fabriquer en magasin. → Faux
-14. On transpose une ordonnance uniquement quand elle est écrite en cylindre négatif, jamais quand elle est déjà en positif. → Vrai
-15. Il faut systématiquement demander un nouvel examen de vue au client si l'ordonnance est écrite en cylindre négatif. → Faux
+Format C — "Vrai/Faux éclair" (${FORMAT_C.length} énoncés), 2 boutons "Vrai" / "Faux". Après la réponse, on affiche l'explication propre à l'énoncé, précédée de "Exact. " si la réponse est juste (et de "✗ " si elle est fausse, comme pour les autres formats). Énoncé → bonne réponse → explication :
+${FORMAT_C.map((s, i) => `${i + 1}. ${s.enonce} → ${s.vrai ? 'Vrai' : 'Faux'} → "${s.explication}"`).join('\n')}
 
 Format D — "Le bon raisonnement" (4 situations, 3 options chacune, une seule bonne). Important : l'ordre des 3 options doit être mélangé aléatoirement à chaque affichage, à l'entraînement comme au test, pour que la bonne réponse ne soit jamais toujours à la même place. Chaque option a sa propre explication, affichée quand le collaborateur la choisit (la bonne option est toujours surlignée en vert, celle choisie en rouge si elle est fausse) :
 

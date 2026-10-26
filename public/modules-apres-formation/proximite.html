@@ -518,93 +518,93 @@ document.querySelectorAll('.etape').forEach(el => el.addEventListener('click', (
 
 // ═══════════════════ ENTRAÎNEMENT ═══════════════════
 const FORMAT_A = [
-  { profil: "Graphiste, bascule entre sa tablette (près) et son écran (intermédiaire) toute la journée.", bon: true, explication: "Alternance près/intermédiaire sur la même tâche : cas d'usage typique." },
-  { profil: "Secrétaire médicale, lit son écran et remplit des dossiers papier en alternance.", bon: true, explication: "Écran = intermédiaire, dossiers = près : exactement le besoin couvert." },
-  { profil: "Violoniste, regarde sa partition et alterne avec ses doigts sur les cordes.", bon: true, explication: "Partition = intermédiaire, mains = près : bon candidat musicien." },
-  { profil: "Chauffeur-livreur, conduit toute la journée, veut une seule paire pour tout.", bon: false, explication: "Pour lui, le top c'est le progressif : il conduit au loin avec la VL, et peut lire ses bons de livraison avec la VP — tout dans la même paire. La proximité ne corrige pas le loin, donc inutile ici en paire unique." },
-  { profil: "Jeune de 24 ans, aucune fatigue visuelle de près.", bon: false, explication: "Sans presbytie, pas de besoin de correction de près à graduer — condition indispensable manquante." },
-  { profil: "Retraité qui lit uniquement installé dans son fauteuil, ne regarde jamais plus loin.", bon: false, explication: "Pas de proximité ici : il n'y a pas d'intermédiaire à couvrir en plus du près. Elle peut très bien lire avec le bas de son verre progressif, ou avec un simple unifocal de près — le progressif reste tout à fait adapté pour elle, la 2e paire proximité n'apporterait juste rien de plus dans son cas." },
-  { profil: "Traducteur indépendant, installé à son poste toute la journée : il lit un document papier à traduire (près) tout en tapant sur son écran (intermédiaire), sans jamais avoir besoin de se déplacer pour son travail.", bon: true, explication: "Document papier = près, écran = intermédiaire, et le métier ne demande aucun déplacement dans la journée : bonne alternance, sans le piège du loin." },
-  { profil: "Standardiste, lit son écran et prend des notes toute la journée.", bon: true, explication: "Même logique que la secrétaire médicale : écran + notes en alternance." },
-  { profil: "Bijoutier qui travaille sous une loupe binoculaire toute la journée, toujours à la même distance très rapprochée.", bon: false, explication: "Que du près, à une distance fixe, aucun intermédiaire à couvrir. Un unifocal de près (ou le bas d'un progressif s'il en a déjà un) fait très bien l'affaire — la proximité n'ajoute rien pour cette activité précise." },
-  { profil: "Comptable, toute la journée entre son écran et ses factures posées sur le bureau.", bon: true, explication: "Écran = intermédiaire, factures papier = près, en alternance constante toute la journée : exactement le bon usage de la proximité." },
+  { profil: "Karim, 52 ans, presbyte, graphiste : bascule entre sa tablette (près) et son écran (intermédiaire) toute la journée.", bon: true, explication: "Presbyte, et alternance près/intermédiaire sur la même tâche : cas d'usage typique." },
+  { profil: "Sandrine, 49 ans, presbyte, secrétaire médicale : lit son écran et remplit des dossiers papier en alternance.", bon: true, explication: "Presbyte, écran = intermédiaire, dossiers = près : exactement le besoin couvert." },
+  { profil: "Michel, 58 ans, presbyte, violoniste : regarde sa partition et alterne avec ses doigts sur les cordes.", bon: true, explication: "Presbyte, partition = intermédiaire, mains = près : bon candidat musicien." },
+  { profil: "Patrick, 55 ans, presbyte, chauffeur-livreur : conduit toute la journée et veut une seule paire pour tout.", bon: false, explication: "Il est presbyte, mais pour lui le top c'est le progressif : il conduit au loin avec la VL et lit ses bons de livraison avec la VP, tout dans la même paire. La proximité ne corrige pas le loin, donc inutile ici en paire unique." },
+  { profil: "Léa, 24 ans, non presbyte, développeuse : passe ses journées entre son écran et ses notes, sans aucune fatigue visuelle de près.", bon: false, explication: "Elle alterne bien écran et notes, mais elle n'est pas presbyte : sans presbytie, pas de correction de près à graduer. Condition indispensable manquante." },
+  { profil: "Gérard, 71 ans, presbyte, retraité : lit uniquement installé dans son fauteuil, ne regarde jamais plus loin.", bon: false, explication: "Il n'y a pas d'intermédiaire à couvrir en plus du près. Il peut très bien lire avec le bas de son verre progressif, ou avec un simple unifocal de près : la 2e paire proximité n'apporterait rien de plus dans son cas." },
+  { profil: "Antoine, 54 ans, presbyte, traducteur indépendant : installé à son poste toute la journée, il lit un document papier à traduire (près) tout en tapant sur son écran (intermédiaire).", bon: true, explication: "Presbyte, document papier = près, écran = intermédiaire, sans déplacement pendant son travail : bonne alternance, sans le piège du loin." },
+  { profil: "Nathalie, 47 ans, presbyte, standardiste : lit son écran et prend des notes toute la journée.", bon: true, explication: "Même logique que la secrétaire médicale : presbyte, écran + notes en alternance." },
+  { profil: "Bernard, 60 ans, presbyte, bijoutier : travaille sous une loupe binoculaire toute la journée, toujours à la même distance très rapprochée.", bon: false, explication: "Que du près, à une distance fixe, aucun intermédiaire à couvrir. Un unifocal de près (ou le bas d'un progressif s'il en a déjà un) fait très bien l'affaire." },
+  { profil: "Isabelle, 51 ans, presbyte, comptable : toute la journée entre son écran et ses factures posées sur le bureau.", bon: true, explication: "Presbyte, écran = intermédiaire, factures papier = près, en alternance constante : exactement le bon usage de la proximité." },
 ];
 
 const FORMAT_B = [
   { client: "Pourquoi j'aurais besoin d'une 2e paire, j'ai déjà mes progressifs ?",
     options: [
-      { texte: "Avec vos progressifs, pour regarder votre écran vous devez un peu relever le menton pour trouver la bonne zone, non ? La proximité évite ça pour le bureau.", bon: true, explication: "On relie directement à un inconfort concret qu'il vit déjà." },
-      { texte: "Parce que c'est compris dans l'offre, autant en profiter.", bon: false, explication: "Ça parle de l'offre avant d'avoir montré le besoin — pas convaincant." },
-      { texte: "Le verre de proximité a deux zones au lieu de trois.", bon: false, explication: "Un fait technique, mais ça ne répond pas à sa question \"pourquoi\"." },
+      { texte: "Comment ça se passe pour vous devant l'écran avec vos progressifs ? Vous êtes à l'aise sur une longue journée ?", bon: true, explication: "Une question ouverte : le client décrit lui-même son confort à l'écran. S'il parle d'une gêne, la proximité devient sa solution, pas votre argument." },
+      { texte: "C'est compris dans l'offre 1=1, autant en profiter pour avoir une paire spéciale bureau.", bon: false, explication: "On parle de l'offre avant d'avoir montré le besoin : le client ne sait toujours pas à quoi elle lui servirait." },
+      { texte: "Le verre de proximité a une zone intermédiaire bien plus large que le progressif, c'est plus confortable pour l'écran.", bon: false, explication: "C'est vrai, mais on argumente avant de savoir s'il travaille sur écran et s'il y est gêné. D'abord une question, ensuite l'argument." },
     ] },
   { client: "Je ne sais pas si je suis presbyte.",
     options: [
-      { texte: "Si vous avez plus de 45 ans, vous l'êtes sûrement.", bon: false, explication: "Une généralité qui peut être fausse — on ne devine pas ça à l'âge." },
-      { texte: "C'est votre ordonnance qui nous le dit — ou on peut aussi le vérifier directement avec un examen de vue en magasin.", bon: true, explication: "On s'appuie sur la vraie source d'information (l'ordonnance), et si besoin on peut aussi le vérifier directement en magasin avec un examen de vue — jamais sur une estimation à l'œil." },
-      { texte: "Ce n'est pas grave, on peut essayer quand même.", bon: false, explication: "Dangereux : la presbytie est une condition indispensable, pas une option." },
+      { texte: "À votre âge, c'est presque certain : la presbytie touche tout le monde à partir de 45 ans.", bon: false, explication: "Une généralité qui peut être fausse : on ne devine pas la presbytie à l'âge." },
+      { texte: "Si vous avez du mal à lire de près, c'est que vous l'êtes : on peut partir là-dessus.", bon: false, explication: "Une impression du client ne remplace pas une mesure : la presbytie est une condition indispensable, elle doit être vérifiée." },
+      { texte: "C'est votre ordonnance qui nous le dit, et on peut aussi le vérifier avec un examen de vue en magasin.", bon: true, explication: "On s'appuie sur la vraie source d'information (l'ordonnance) et, si besoin, sur un examen de vue en magasin, jamais sur une estimation." },
     ] },
   { client: "Je pensais que mon progressif suffisait pour tout.",
     options: [
-      { texte: "Non, en fait votre progressif n'est pas très adapté à l'écran.", bon: false, explication: "Ça dénigre le produit qu'il porte déjà et qu'il a payé — mauvaise posture." },
-      { texte: "Le progressif a aussi une zone de loin.", bon: false, explication: "Vrai, mais hors sujet par rapport à ce qu'il vient de dire." },
-      { texte: "Il fait très bien son travail au quotidien — la proximité est juste un complément pensé pour les longues sessions devant un écran, encore plus confortable sur cette activité précise.", bon: true, explication: "On valorise son équipement actuel tout en présentant un complément, pas un reproche." },
+      { texte: "Pour l'écran, le progressif n'est pas l'idéal : la zone intermédiaire est étroite, vous forcez sans vous en rendre compte.", bon: false, explication: "Ça dénigre le produit qu'il porte déjà et qu'il a choisi : mauvaise posture." },
+      { texte: "Il fait très bien son travail au quotidien. La proximité est un complément pensé pour les longues sessions devant un écran, encore plus confortable pour cette activité.", bon: true, explication: "On valorise son équipement actuel tout en présentant un complément, pas un reproche." },
+      { texte: "Oui, il suffit. La proximité, c'est juste si vous avez envie d'une deuxième paire.", bon: false, explication: "On referme la discussion sans chercher à savoir s'il passe du temps sur écran : le complément n'est jamais relié à son besoin." },
     ] },
   { client: "Je n'ai pas de travail de bureau, je joue juste du piano.",
     options: [
-      { texte: "Justement : entre votre partition et votre clavier, vous alternez sans arrêt entre deux distances proches — c'est exactement le cas où ce verre aide.", bon: true, explication: "On relie son activité réelle au bon besoin, même si ce n'est pas du bureau au sens classique." },
-      { texte: "Ah, alors ce n'est pas pour vous.", bon: false, explication: "Faux, et ça referme la conversation trop vite." },
-      { texte: "Le piano n'a rien à voir avec l'optique.", bon: false, explication: "Non-sens, à éviter absolument." },
+      { texte: "Pour le piano, c'est surtout de la vision de près : un unifocal de près serait plus adapté.", bon: false, explication: "La partition est à distance intermédiaire et les mains de près : il alterne entre les deux, c'est justement le cas de la proximité." },
+      { texte: "Justement : entre votre partition et votre clavier, vous alternez sans arrêt entre deux distances proches, c'est exactement le cas où ce verre aide.", bon: true, explication: "On relie son activité réelle au bon besoin, même si ce n'est pas du bureau au sens classique." },
+      { texte: "Pour le piano, votre progressif suffit largement, pas besoin d'autre chose.", bon: false, explication: "On referme la conversation alors que son activité est un cas d'usage typique de la proximité." },
     ] },
   { client: "Et pour le prix ?",
     options: [
-      { texte: "Ça dépend, il faudrait un devis séparé.", bon: false, explication: "Inexact par rapport à la vraie offre existante — à éviter." },
-      { texte: "C'est le verre le moins cher qu'on propose.", bon: false, explication: "Affirmation non vérifiée et hors sujet par rapport à l'utilité du verre." },
-      { texte: "C'est intégré dans notre offre 1=1 avec votre 1ère paire — on regarde ensemble comment la combiner.", bon: true, explication: "On redirige vers le mécanisme d'offre réel, sans détailler de chiffres." },
+      { texte: "Il faudra faire un devis à part, la proximité n'entre pas dans l'offre 1=1.", bon: false, explication: "Faux : la proximité entre dans l'offre 1=1, en 1re comme en 2e paire." },
+      { texte: "C'est intégré dans notre offre 1=1 avec votre 1re paire : on regarde ensemble comment la combiner.", bon: true, explication: "On redirige vers le mécanisme d'offre réel et on construit l'équipement avec lui." },
+      { texte: "On en parlera une fois la monture choisie, ne vous inquiétez pas pour ça.", bon: false, explication: "On esquive une question simple : ça crée de la méfiance au lieu de rassurer." },
     ] },
 ];
 
 const FORMAT_C = [
-  { enonce: "Le verre de proximité corrige aussi la vision de loin.", vrai: false },
-  { enonce: "Il faut être presbyte pour en porter un.", vrai: true },
-  { enonce: "C'est fabriqué par Rodenstock, en Allemagne.", vrai: true },
-  { enonce: "Le délai de fabrication est de 9 jours.", vrai: true },
-  { enonce: "Un pianiste est un bon exemple de candidat.", vrai: true },
-  { enonce: "Quelqu'un qui ne fait que de la couture très rapprochée est le candidat idéal.", vrai: false },
-  { enonce: "C'est fait pour remplacer la paire principale du client.", vrai: false },
-  { enonce: "Le verre de proximité a deux zones de vision : intermédiaire et près.", vrai: true },
-  { enonce: "Un chauffeur-livreur qui veut une seule paire est un bon candidat.", vrai: false },
-  { enonce: "La proximité est compatible avec l'offre 1=1.", vrai: true },
-  { enonce: "Une personne de 24 ans sans fatigue visuelle a besoin d'un verre de proximité.", vrai: false },
-  { enonce: "Le progressif a trois zones : loin, intermédiaire, près.", vrai: true },
-  { enonce: "Le verre de proximité est une variante moins chère du progressif.", vrai: false },
-  { enonce: "Une secrétaire qui alterne écran et dossiers papier est un bon cas d'usage.", vrai: true },
-  { enonce: "On peut recommander ce verre même sans savoir si le client est presbyte.", vrai: false },
+  { enonce: "Le verre de proximité corrige aussi la vision de loin.", vrai: false, explication: "Il ne couvre que l'intermédiaire et le près : pour le loin, le client garde sa paire habituelle." },
+  { enonce: "Il faut être presbyte pour en porter un.", vrai: true, explication: "Comme le progressif, la proximité n'est possible que pour un client presbyte." },
+  { enonce: "C'est fabriqué par Rodenstock, en Allemagne.", vrai: true, explication: "Le verre de proximité est fabriqué par Rodenstock, en Allemagne." },
+  { enonce: "Le délai de fabrication est de 9 jours.", vrai: true, explication: "Fabrication chez Rodenstock en 9 jours." },
+  { enonce: "Un pianiste est un bon exemple de candidat.", vrai: true, explication: "Partition à distance intermédiaire, mains et clavier de près, en alternance constante : cas d'usage typique." },
+  { enonce: "Quelqu'un qui ne fait que de la couture très rapprochée est le candidat idéal.", vrai: false, explication: "Que du près, sans intermédiaire : un simple unifocal de près suffit." },
+  { enonce: "C'est fait pour remplacer la paire principale du client.", vrai: false, explication: "C'est une deuxième paire, pour le poste de travail. Le client garde sa paire habituelle pour conduire et voir de loin." },
+  { enonce: "Le verre de proximité a deux zones de vision : intermédiaire et près.", vrai: true, explication: "Intermédiaire et près, sans zone de loin." },
+  { enonce: "Un chauffeur-livreur qui veut une seule paire est un bon candidat.", vrai: false, explication: "Il a besoin du loin pour conduire : le progressif, qui couvre tout dans la même paire, est le bon choix." },
+  { enonce: "La proximité est compatible avec l'offre 1=1.", vrai: true, explication: "Elle entre dans le 1=1, en 1re ou en 2e paire, dans toutes les combinaisons." },
+  { enonce: "Une personne de 24 ans sans fatigue visuelle a besoin d'un verre de proximité.", vrai: false, explication: "Sans presbytie, pas de correction de près à graduer : ni proximité, ni progressif." },
+  { enonce: "Le progressif a trois zones : loin, intermédiaire, près.", vrai: true, explication: "Loin, intermédiaire et près, alors que la proximité n'en a que deux." },
+  { enonce: "Le verre de proximité est une variante moins chère du progressif.", vrai: false, explication: "Ce n'est pas une version au rabais : c'est un verre conçu pour un autre usage, le travail au poste entre près et intermédiaire." },
+  { enonce: "Une secrétaire qui alterne écran et dossiers papier est un bon cas d'usage.", vrai: true, explication: "Écran = intermédiaire, dossiers = près : exactement le besoin couvert." },
+  { enonce: "On peut recommander ce verre même sans savoir si le client est presbyte.", vrai: false, explication: "La presbytie est une condition indispensable : on la vérifie sur l'ordonnance ou par un examen de vue." },
 ];
 
 const FORMAT_D = [
   { profil: "Client presbyte, travaille sur écran toute la journée.",
     options: [
-      { texte: "Est-ce que vous êtes parfois gêné pour voir votre écran avec vos lunettes actuelles ?", bon: true, explication: "Bonne entrée en matière : on diagnostique le besoin avant de proposer quoi que ce soit — sa 2e paire est de toute façon offerte, la vraie question est juste de trouver le bon verre pour lui." },
-      { texte: "Vous devriez prendre une paire en plus, c'est compris dans l'offre.", bon: false, explication: "Trop commercial d'entrée, pas centré sur son besoin." },
-      { texte: "Le verre de proximité est fabriqué en Allemagne par Rodenstock.", bon: false, explication: "Hors sujet à ce stade de la conversation." },
+      { texte: "Pour l'écran, je vous conseille directement une paire de proximité en 2e paire.", bon: false, explication: "On propose une solution avant d'avoir compris comment il vit sa journée devant l'écran." },
+      { texte: "Comment ça se passe pour vous en fin de journée devant votre écran ?", bon: true, explication: "Question ouverte : on diagnostique le besoin avant de proposer quoi que ce soit. Sa 2e paire est de toute façon offerte, la vraie question est de trouver le bon verre pour lui." },
+      { texte: "Vous avez des progressifs ? Alors pour l'écran, vous êtes déjà bien équipé.", bon: false, explication: "On ferme la porte sans savoir s'il est gêné à l'écran." },
     ] },
   { profil: "Client musicien (pianiste), presbyte.",
     options: [
-      { texte: "Vous devriez clairement prendre une 2e paire, croyez-moi.", bon: false, explication: "Trop pressant, aucun diagnostic." },
-      { texte: "On a un super laboratoire à Paris, vous savez.", bon: false, explication: "Hors sujet par rapport à sa situation." },
-      { texte: "Quand vous jouez, est-ce que vous devez bouger la tête pour bien voir votre partition ET vos mains ?", bon: true, explication: "Question ouverte et pertinente pour son activité précise." },
+      { texte: "Le verre de proximité est idéal pour les musiciens, je vous le mets en 2e paire ?", bon: false, explication: "On propose avant d'avoir fait parler le client de sa pratique : aucun diagnostic." },
+      { texte: "Quand vous jouez, comment ça se passe pour voir à la fois votre partition et vos mains ?", bon: true, explication: "Question ouverte et pertinente pour son activité précise : il décrit lui-même l'alternance." },
+      { texte: "Pour lire vos partitions, des lunettes de lecture en unifocal de près feraient l'affaire.", bon: false, explication: "La partition est à distance intermédiaire : un unifocal de près ne couvre pas l'alternance partition/mains." },
     ] },
   { profil: "Client qui dit avoir déjà un progressif et s'en dire \"très content\".",
     options: [
-      { texte: "Ah très bien, alors vous n'avez besoin de rien d'autre.", bon: false, explication: "Rate l'opportunité de creuser, referme la conversation." },
-      { texte: "Tant mieux ! Juste par curiosité, vous passez beaucoup de temps sur écran ou en activité de précision ?", bon: true, explication: "Ouvre la discussion sans forcer, reste à l'écoute." },
-      { texte: "Le progressif a trois zones de vision.", bon: false, explication: "Un fait, pas une question — ne fait pas avancer la conversation." },
+      { texte: "Ah très bien, alors on garde exactement la même chose pour vos nouvelles lunettes.", bon: false, explication: "On rate l'occasion de creuser : la 2e paire peut lui apporter un vrai plus." },
+      { texte: "Le progressif reste un compromis pour l'écran, vous devriez essayer la proximité.", bon: false, explication: "On dénigre un équipement dont il est content : il va se braquer." },
+      { texte: "Tant mieux ! Juste par curiosité, vous passez beaucoup de temps sur écran ou en activité de précision ?", bon: true, explication: "On ouvre la discussion sans forcer et sans contredire sa satisfaction." },
     ] },
   { profil: "Client hésitant : \"je ne sais pas si j'en ai vraiment besoin\".",
     options: [
-      { texte: "C'est compris dans l'offre, ça ne vous coûte rien de plus.", bon: false, explication: "Évite la vraie question du besoin réel." },
-      { texte: "Il est fabriqué par Rodenstock en Allemagne, en 9 jours.", bon: false, explication: "Trop technique à ce stade, ne répond pas à son hésitation." },
-      { texte: "Racontez-moi une journée type : à quoi ressemble votre travail au quotidien ?", bon: true, explication: "Fait émerger le besoin par la discussion, plutôt que d'argumenter dans le vide." },
+      { texte: "Racontez-moi une journée type : à quoi ressemble votre travail au quotidien ?", bon: true, explication: "On fait émerger le besoin par la discussion, plutôt que d'argumenter dans le vide." },
+      { texte: "Faites-moi confiance, la plupart des clients qui l'essaient l'adoptent.", bon: false, explication: "Un argument de pression : ça ne répond pas à son doute sur son propre besoin." },
+      { texte: "Prenez-la quand même, au pire vous la porterez de temps en temps.", bon: false, explication: "On le pousse à prendre une paire sans savoir si elle lui servira." },
     ] },
 ];
 
@@ -718,17 +718,18 @@ function rendreItemCourant() {
   if (formatActuel === 'b' || formatActuel === 'd') {
     const label = formatActuel === 'b' ? item.client : item.profil
     const classeTexte = formatActuel === 'b' ? 'citation-client' : 'profil-client'
+    const options = melanger(item.options)
     corps.innerHTML = `
       <div class="${classeTexte}">${label}</div>
       <div class="liste-options">
-        ${item.options.map((o, i) => `<button class="btn-option" data-i="${i}">${o.texte}</button>`).join('')}
+        ${options.map((o, i) => `<button class="btn-option" data-i="${i}">${o.texte}</button>`).join('')}
       </div>`
     corps.querySelectorAll('[data-i]').forEach(btn => {
       btn.addEventListener('click', () => {
-        const opt = item.options[Number(btn.dataset.i)]
+        const opt = options[Number(btn.dataset.i)]
         corps.classList.add('choix-fait')
         corps.querySelectorAll('[data-i]').forEach((b, i) => {
-          if (item.options[i].bon) b.classList.add('bonne-reponse')
+          if (options[i].bon) b.classList.add('bonne-reponse')
           else if (b === btn) b.classList.add('mauvaise-reponse', 'selectionne')
         })
         afficherFeedback(opt.bon, opt.explication)
@@ -754,7 +755,7 @@ function rendreItemCourant() {
           else if (b === btn) b.classList.add('mauvaise-reponse')
           if (b === btn) b.classList.add('selectionne')
         })
-        afficherFeedback(correct, correct ? "Exact." : "Pas tout à fait — relis le point correspondant dans le cours si besoin.")
+        afficherFeedback(correct, correct ? 'Exact. ' + item.explication : item.explication)
       })
     })
   }
@@ -999,47 +1000,17 @@ Encart offre : "Compris dans l'offre 1=1 : un client peut prendre une 1ère pair
 
 Titre : "Entraînement" (sous-titre : Pas de pression : tu peux refaire ces exercices autant de fois que tu veux, dans l'ordre que tu veux.). Un menu affiche les 4 formats ci-dessous, chacun avec une icône, un titre, une description courte, et le nombre de situations qu'il contient. Un badge "Terminé" apparaît sur un format déjà fait au moins une fois, avec un compteur global (par exemple "2/4 formats terminés au moins une fois") au-dessus du menu.
 
-Format A — "Proximité ou pas proximité" (10 situations). Le collaborateur voit un profil client et répond "Proximité" ou "Pas proximité" :
-1. Graphiste, bascule entre sa tablette (près) et son écran (intermédiaire) toute la journée. → Proximité. Alternance près/intermédiaire sur la même tâche : cas d'usage typique.
-2. Secrétaire médicale, lit son écran et remplit des dossiers papier en alternance. → Proximité. Écran = intermédiaire, dossiers = près : exactement le besoin couvert.
-3. Violoniste, regarde sa partition et alterne avec ses doigts sur les cordes. → Proximité. Partition = intermédiaire, mains = près : bon candidat musicien.
-4. Chauffeur-livreur, conduit toute la journée, veut une seule paire pour tout. → Pas proximité. Pour lui, le top c'est le progressif : il conduit au loin avec la VL, et peut lire ses bons de livraison avec la VP — tout dans la même paire. La proximité ne corrige pas le loin, donc inutile ici en paire unique.
-5. Jeune de 24 ans, aucune fatigue visuelle de près. → Pas proximité. Sans presbytie, pas de besoin de correction de près à graduer — condition indispensable manquante.
-6. Retraité qui lit uniquement installé dans son fauteuil, ne regarde jamais plus loin. → Pas proximité. Il n'y a pas d'intermédiaire à couvrir en plus du près. Il peut très bien lire avec le bas de son verre progressif, ou avec un simple unifocal de près — le progressif reste tout à fait adapté pour lui, la 2e paire proximité n'apporterait juste rien de plus dans son cas.
-7. Traducteur indépendant, installé à son poste toute la journée : il lit un document papier à traduire (près) tout en tapant sur son écran (intermédiaire), sans jamais avoir besoin de se déplacer pour son travail. → Proximité. Document papier = près, écran = intermédiaire, et le métier ne demande aucun déplacement dans la journée : bonne alternance, sans le piège du loin.
-8. Standardiste, lit son écran et prend des notes toute la journée. → Proximité. Même logique que la secrétaire médicale : écran + notes en alternance.
-9. Bijoutier qui travaille sous une loupe binoculaire toute la journée, toujours à la même distance très rapprochée. → Pas proximité. Que du près, à une distance fixe, aucun intermédiaire à couvrir. Un unifocal de près (ou le bas d'un progressif s'il en a déjà un) fait très bien l'affaire — la proximité n'ajoute rien pour cette activité précise.
-10. Comptable, toute la journée entre son écran et ses factures posées sur le bureau. → Proximité. Écran = intermédiaire, factures papier = près, en alternance constante toute la journée : exactement le bon usage de la proximité.
+Format A — "Proximité ou pas proximité" (${FORMAT_A.length} situations). Le collaborateur voit un profil client (prénom, âge, presbyte ou non, métier) et répond "Proximité" ou "Pas proximité" :
+${FORMAT_A.map((s, i) => `${i + 1}. ${s.profil} → ${s.bon ? 'Proximité' : 'Pas proximité'}. ${s.explication}`).join('\n')}
 
-Format B — "Mise en situation" (5 situations). Le client objecte, le collaborateur choisit la meilleure réponse parmi 3 (une seule bonne, l'ordre des 3 options doit varier d'une situation à l'autre, pas toujours la même position) :
-1. "Pourquoi j'aurais besoin d'une 2e paire, j'ai déjà mes progressifs ?" → Bonne réponse : "Avec vos progressifs, pour regarder votre écran vous devez un peu relever le menton pour trouver la bonne zone, non ? La proximité évite ça pour le bureau." (on relie à un inconfort concret qu'il vit déjà). Mauvaises : "Parce que c'est compris dans l'offre, autant en profiter." / "Le verre de proximité a deux zones au lieu de trois."
-2. "Je ne sais pas si je suis presbyte." → Bonne réponse : "C'est votre ordonnance qui nous le dit — ou on peut aussi le vérifier directement avec un examen de vue en magasin." Mauvaises : "Si vous avez plus de 45 ans, vous l'êtes sûrement." / "Ce n'est pas grave, on peut essayer quand même."
-3. "Je pensais que mon progressif suffisait pour tout." → Bonne réponse : "Il fait très bien son travail au quotidien — la proximité est juste un complément pensé pour les longues sessions devant un écran, encore plus confortable sur cette activité précise." Mauvaises : "Non, en fait votre progressif n'est pas très adapté à l'écran." / "Le progressif a aussi une zone de loin."
-4. "Je n'ai pas de travail de bureau, je joue juste du piano." → Bonne réponse : "Justement : entre votre partition et votre clavier, vous alternez sans arrêt entre deux distances proches — c'est exactement le cas où ce verre aide." Mauvaises : "Ah, alors ce n'est pas pour vous." / "Le piano n'a rien à voir avec l'optique."
-5. "Et pour le prix ?" → Bonne réponse : "C'est intégré dans notre offre 1=1 avec votre 1ère paire — on regarde ensemble comment la combiner." Mauvaises : "Ça dépend, il faudrait un devis séparé." / "C'est le verre le moins cher qu'on propose."
+Format B — "Mise en situation" (${FORMAT_B.length} situations). Le client objecte, le collaborateur choisit la meilleure réponse parmi 3 (une seule bonne). L'ordre des 3 options est tiré au hasard à chaque affichage. Après la réponse, on affiche l'explication de l'option choisie :
+${FORMAT_B.map((s, i) => `${i + 1}. "${s.client}"\n${s.options.map(o => `   - ${o.bon ? 'BONNE' : 'Mauvaise'} : "${o.texte}" → ${o.explication}`).join('\n')}`).join('\n')}
 
-Format C — "Vrai/Faux éclair" (15 énoncés) :
-1. Le verre de proximité corrige aussi la vision de loin. → Faux
-2. Il faut être presbyte pour en porter un. → Vrai
-3. C'est fabriqué par Rodenstock, en Allemagne. → Vrai
-4. Le délai de fabrication est de 9 jours. → Vrai
-5. Un pianiste est un bon exemple de candidat. → Vrai
-6. Quelqu'un qui ne fait que de la couture très rapprochée est le candidat idéal. → Faux
-7. C'est fait pour remplacer la paire principale du client. → Faux
-8. Le verre de proximité a deux zones de vision : intermédiaire et près. → Vrai
-9. Un chauffeur-livreur qui veut une seule paire est un bon candidat. → Faux
-10. La proximité est compatible avec l'offre 1=1. → Vrai
-11. Une personne de 24 ans sans fatigue visuelle a besoin d'un verre de proximité. → Faux
-12. Le progressif a trois zones : loin, intermédiaire, près. → Vrai
-13. Le verre de proximité est une variante moins chère du progressif. → Faux
-14. Une secrétaire qui alterne écran et dossiers papier est un bon cas d'usage. → Vrai
-15. On peut recommander ce verre même sans savoir si le client est presbyte. → Faux
+Format C — "Vrai/Faux éclair" (${FORMAT_C.length} énoncés). 2 boutons "Vrai" / "Faux". Après la réponse, on affiche l'explication propre à l'énoncé, précédée de "Exact. " si la réponse est juste (et de "✗ " si elle est fausse, comme pour les autres formats). Énoncé → bonne réponse → explication :
+${FORMAT_C.map((s, i) => `${i + 1}. ${s.enonce} → ${s.vrai ? 'Vrai' : 'Faux'} → "${s.explication}"`).join('\n')}
 
-Format D — "Le bon mot" (4 situations, 3 options chacune, une seule bonne, ordre des options à varier) :
-1. Client presbyte, travaille sur écran toute la journée. → Bonne réponse : "Est-ce que vous êtes parfois gêné pour voir votre écran avec vos lunettes actuelles ?" (on diagnostique le besoin avant de proposer quoi que ce soit — sa 2e paire est de toute façon offerte, la vraie question est juste de trouver le bon verre pour lui). Mauvaises : "Vous devriez prendre une paire en plus, c'est compris dans l'offre." / "Le verre de proximité est fabriqué en Allemagne par Rodenstock."
-2. Client musicien (pianiste), presbyte. → Bonne réponse : "Quand vous jouez, est-ce que vous devez bouger la tête pour bien voir votre partition ET vos mains ?" Mauvaises : "Vous devriez clairement prendre une 2e paire, croyez-moi." / "On a un super laboratoire à Paris, vous savez."
-3. Client qui dit avoir déjà un progressif et s'en dire "très content". → Bonne réponse : "Tant mieux ! Juste par curiosité, vous passez beaucoup de temps sur écran ou en activité de précision ?" Mauvaises : "Ah très bien, alors vous n'avez besoin de rien d'autre." / "Le progressif a trois zones de vision."
-4. Client hésitant : "je ne sais pas si j'en ai vraiment besoin". → Bonne réponse : "Racontez-moi une journée type : à quoi ressemble votre travail au quotidien ?" Mauvaises : "C'est compris dans l'offre, ça ne vous coûte rien de plus." / "Il est fabriqué par Rodenstock en Allemagne, en 9 jours."
+Format D — "Le bon mot" (${FORMAT_D.length} situations, 3 options chacune, une seule bonne, ordre des options tiré au hasard à chaque affichage, explication de l'option choisie affichée après la réponse) :
+${FORMAT_D.map((s, i) => `${i + 1}. ${s.profil}\n${s.options.map(o => `   - ${o.bon ? 'BONNE' : 'Mauvaise'} : "${o.texte}" → ${o.explication}`).join('\n')}`).join('\n')}
 
 ÉTAPE 3 — TEST
 

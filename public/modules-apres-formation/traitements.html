@@ -311,24 +311,24 @@
 
     <div class="carte">
       <h2>2. Nos verres blancs</h2>
-      <p>Les verres blancs, ce sont les verres clairs, ceux qu'on porte tous les jours. On en a <strong>4</strong>, du plus simple au plus complet :</p>
+      <p>Les verres blancs, ce sont les verres clairs, ceux qu'on porte tous les jours. On en a <strong>4</strong>, du plus simple au plus complet. Le 4e, le <strong>Transition</strong>, est notre verre <strong>photochromique</strong> : il se teinte au soleil.</p>
       <div class="grille-gamme" id="grilleGamme"></div>
       <p style="margin-top:16px">Ce qu'il y a dans chaque verre, en un coup d'œil :</p>
       <div class="tableau-wrap"><table class="tableau" id="tableauTraitements"></table></div>
-      <div class="astuce">💡 <strong>À retenir</strong> : le Premium, c'est le Basic avec tout le confort en plus. Le Digital Protect Pro, c'est le Premium avec l'anti-lumière bleue. Le photochromique, c'est le Premium qui se teinte au soleil.</div>
+      <div class="astuce">💡 <strong>À retenir</strong> : le Premium, c'est le Basic avec tout le confort en plus. Le Digital Protect Pro, c'est le Premium avec l'anti-lumière bleue. Le Transition, c'est le Premium qui se teinte au soleil.</div>
     </div>
 
     <div class="carte">
-      <h2>3. Le verre photochromique</h2>
-      <p>C'est un verre blanc qui <strong>a tout d'un Premium</strong>, et qui <strong>se teinte quand il est exposé aux UV</strong>. À l'intérieur, il est clair. Dehors au soleil, il fonce tout seul. Une seule paire, pas besoin de changer de lunettes en sortant.</p>
-      <p>Les clients l'appellent souvent autrement. Si tu entends l'un de ces noms, on parle de notre verre photochromique :</p>
+      <h2>3. Le verre Transition</h2>
+      <p>C'est notre verre <strong>photochromique</strong> : un verre blanc qui <strong>a tout d'un Premium</strong>, et qui <strong>se teinte quand il est exposé aux UV</strong>. À l'intérieur, il est clair. Dehors au soleil, il fonce tout seul. Une seule paire, pas besoin de changer de lunettes en sortant.</p>
+      <p>Les clients l'appellent souvent autrement. Si tu entends l'un de ces noms, on parle de notre verre Transition :</p>
       <div class="noms-marche">
         <div class="nom-marche"><div class="marque">Transitions</div></div>
         <div class="nom-marche"><div class="marque">Photochromique</div></div>
         <div class="nom-marche"><div class="marque">Verres qui foncent au soleil</div></div>
         <div class="nom-marche"><div class="marque">Verres quatre saisons</div></div>
       </div>
-      <div class="nom-maison">Chez nous, tous ces noms correspondent à <strong>notre verre photochromique</strong>. Sur le téléphone de vente, il s'appelle <strong>Transition</strong> ; dans le back-end, <strong>Solarisation</strong>. C'est le même verre.</div>
+      <div class="nom-maison">Chez nous, tous ces noms correspondent à <strong>notre verre Transition</strong>, son nom sur le téléphone de vente. Dans le back-end, il s'appelle <strong>Solarisation</strong> : c'est le même verre.</div>
     </div>
 
     <div class="grille-schema">
@@ -431,7 +431,7 @@
           <span class="tag">✅ Bon conseil</span>
           <div class="nom">Marc, 45 ans, jardinier</div>
           <div class="desc">Il est dehors toute la journée et en a assez de changer de lunettes.</div>
-          <div class="conclusion">→ Photochromique : clair à l'intérieur, teinté au soleil.</div>
+          <div class="conclusion">→ Transition : clair à l'intérieur, teinté au soleil.</div>
         </div>
         <div class="persona mauvais">
           <span class="tag">⚠️ Attention au piège</span>
@@ -581,11 +581,11 @@ const GAMME_BLANCS = [
   { niveau: "Entrée de gamme", nom: "Basic", contenu: "Anti-rayures, verre durci. Simple et solide.", pourQui: "Uniquement le client qui veut absolument la paire à 10 €, ou qui n'a pas le budget pour l'offre 1=1. La paire à 10 € existe uniquement en unifocal (loin ou près) : pour un client presbyte, elle peut faire une bonne troisième paire après un 1=1, par exemple une paire de lecture." },
   { niveau: "Le confort", nom: "Premium", contenu: "Anti-rayures, anti-reflets, anti-salissures et hydrophobe.", pourQui: "Le client qui veut du confort au quotidien : plus de reflets, des verres faciles à vivre." },
   { niveau: "⭐ Notre meilleur verre blanc", nom: "Digital Protect Pro", star: true, contenu: "Tout le Premium, plus l'anti-lumière bleue.", pourQui: "Le verre par lequel on commence toujours : compris dans l'offre 1=1, sans supplément." },
-  { niveau: "Clair dedans, teinté dehors", nom: "Photochromique", contenu: "Tout le Premium, et il se teinte quand il est exposé aux UV.", pourQui: "Le client souvent dehors qui ne veut pas changer de lunettes en sortant." },
+  { niveau: "Photochromique : clair dedans, teinté dehors", nom: "Transition", contenu: "Tout le Premium, et il se teinte quand il est exposé aux UV.", pourQui: "Le client souvent dehors qui ne veut pas changer de lunettes en sortant." },
 ];
 
-// Colonnes du tableau : Basic, Premium, Digital Protect Pro, Photochromique
-const COLONNES_TABLEAU = ["Basic", "Premium", "Digital Protect Pro", "Photochromique"];
+// Colonnes du tableau : Basic, Premium, Digital Protect Pro, Transition
+const COLONNES_TABLEAU = ["Basic", "Premium", "Digital Protect Pro", "Transition"];
 const LIGNES_TABLEAU = [
   { nom: "Anti-rayures", valeurs: [true, true, true, true] },
   { nom: "Anti-reflets", valeurs: [false, true, true, true] },
@@ -602,7 +602,7 @@ const SOLAIRES = [
 ];
 
 const DELAIS = [
-  { verre: "Basic, Premium, Digital Protect Pro, photochromique", duree: "10 min", rapide: true, precision: "avec ou sans correction" },
+  { verre: "Basic, Premium, Digital Protect Pro, Transition", duree: "10 min", rapide: true, precision: "avec ou sans correction" },
   { verre: "UV Protect", duree: "10 min", rapide: true, precision: "avec ou sans correction" },
   { verre: "Polarisé en plan", duree: "10 min", rapide: true, precision: "" },
   { verre: "Polarisé à la vue", duree: "9 jours", rapide: false, precision: "" },
@@ -613,7 +613,7 @@ const CONSEILS = [
   { situation: "Il conduit souvent la nuit et les reflets le gênent", verre: "Digital Protect Pro (anti-reflets)" },
   { situation: "Il prend l'offre 1=1", verre: "Digital Protect Pro, sur les deux paires" },
   { situation: "Il veut absolument la paire à 10 €, ou n'a pas le budget pour le 1=1", verre: "Basic" },
-  { situation: "Il est souvent dehors et ne veut pas changer de lunettes en sortant", verre: "Photochromique" },
+  { situation: "Il est souvent dehors et ne veut pas changer de lunettes en sortant", verre: "Transition" },
   { situation: "Il veut des solaires à sa vue, prêtes tout de suite", verre: "UV Protect (10 min)" },
   { situation: "Il est ébloui par les reflets : bateau, pêche, ski, route", verre: "Polarisé" },
 ];
@@ -652,7 +652,7 @@ $('#listeConseil').innerHTML = CONSEILS.map(c => `
 const FORMAT_A = [
   { profil: "Julie, 34 ans, comptable, passe ses journées sur écran. On lui propose un Digital Protect Pro.", bon: true, explication: "Anti-reflets et anti-lumière bleue : c'est le verre idéal pour ses journées sur écran." },
   { profil: "Thomas, 28 ans, développeur, 8 heures par jour sur ordinateur. On lui propose un verre Basic.", bon: false, explication: "Le Basic n'a ni anti-reflets ni anti-lumière bleue. Pour ses journées sur écran, c'est le Digital Protect Pro." },
-  { profil: "Marc, 45 ans, jardinier, dehors toute la journée, en a assez de changer de lunettes. On lui propose un photochromique.", bon: true, explication: "Clair à l'intérieur, teinté au soleil : une seule paire pour toute sa journée." },
+  { profil: "Marc, 45 ans, jardinier, dehors toute la journée, en a assez de changer de lunettes. On lui propose un Transition.", bon: true, explication: "Clair à l'intérieur, teinté au soleil : une seule paire pour toute sa journée." },
   { profil: "Paul, 40 ans, myope, veut des solaires à sa vue pour partir en vacances ce soir. On lui propose un polarisé à la vue.", bon: false, explication: "Le polarisé à la vue demande 9 jours. Pour ce soir, c'est l'UV Protect, prêt en 10 minutes." },
   { profil: "Nadia, 26 ans, myope, veut absolument la paire à 10 € et ne souhaite pas l'offre 1=1. On lui propose un verre Basic.", bon: true, explication: "C'est le seul cas où on part sur le Basic : le client veut la paire à 10 €, ou n'a pas le budget pour le 1=1." },
   { profil: "Gérard, 62 ans, presbyte, vient de prendre deux paires de progressifs en 1=1. Il veut en plus une paire de lecture pour sa table de chevet. On lui propose la paire à 10 € en Basic, en vision de près.", bon: true, explication: "Bonne troisième paire : la paire à 10 € est en unifocal, ici en vision de près uniquement, parfait pour lire au lit." },
@@ -662,7 +662,7 @@ const FORMAT_A = [
   { profil: "Bernard, 60 ans, prend l'offre 1=1. Il conduit souvent la nuit et se plaint des reflets des phares. On lui propose un Digital Protect Pro.", bon: true, explication: "L'anti-reflets règle sa gêne la nuit, et le Digital Protect Pro est compris dans le 1=1 sans supplément." },
   { profil: "Léo, 16 ans, passe ses soirées sur son téléphone et sa console. On lui propose un Digital Protect Pro.", bon: true, explication: "Beaucoup d'écrans : l'anti-lumière bleue du Digital Protect Pro lui apporte plus de confort." },
   { profil: "Claire, 38 ans, myope, veut des solaires grises à sa vue, prêtes aujourd'hui. On lui propose un UV Protect gris.", bon: true, explication: "UV Protect gris à la vue : catégorie 3, prêt en 10 minutes." },
-  { profil: "Sophie, 42 ans, veut un verre qui fonce tout seul au soleil. On lui propose un Digital Protect Pro.", bon: false, explication: "Le Digital Protect Pro reste clair. Le verre qui se teinte au soleil, c'est le photochromique." },
+  { profil: "Sophie, 42 ans, veut un verre qui fonce tout seul au soleil. On lui propose un Digital Protect Pro.", bon: false, explication: "Le Digital Protect Pro reste clair. Le verre qui se teinte au soleil, c'est le Transition." },
 ];
 
 const FORMAT_B = [
@@ -674,7 +674,7 @@ const FORMAT_B = [
     ] },
   { profil: "Le client demande : « Ça sert à quoi, l'anti-reflets ? »",
     options: [
-      { texte: "Ça protège vos yeux du soleil.", bon: false, explication: "Non : pour le soleil, ce sont les verres solaires ou le photochromique." },
+      { texte: "Ça protège vos yeux du soleil.", bon: false, explication: "Non : pour le soleil, ce sont les verres solaires ou le Transition." },
       { texte: "Ça supprime les reflets sur vos verres : vous voyez plus net, surtout la nuit en voiture et devant un écran, et on voit vos yeux, pas vos verres.", bon: true, explication: "Exactement : on explique le bénéfice concret pour le client." },
       { texte: "Ça rend le verre incassable.", bon: false, explication: "Faux : l'anti-reflets supprime les reflets, il ne rend pas le verre incassable." },
     ] },
@@ -692,9 +692,9 @@ const FORMAT_B = [
     ] },
   { profil: "Le client demande : « Les verres qui foncent au soleil, vous en avez ? »",
     options: [
-      { texte: "Non, il faut prendre une paire de solaires en plus.", bon: false, explication: "Si : c'est notre verre photochromique." },
-      { texte: "Oui, c'est le Digital Protect Pro.", bon: false, explication: "Non : le Digital Protect Pro reste clair. C'est le photochromique qui se teinte." },
-      { texte: "Oui, notre verre photochromique : il a tout d'un Premium, et il se teinte quand il est exposé aux UV.", bon: true, explication: "Exactement : on nomme le bon verre et ce qu'il apporte." },
+      { texte: "Non, il faut prendre une paire de solaires en plus.", bon: false, explication: "Si : c'est notre verre Transition." },
+      { texte: "Oui, c'est le Digital Protect Pro.", bon: false, explication: "Non : le Digital Protect Pro reste clair. C'est le Transition qui se teinte." },
+      { texte: "Oui, notre verre Transition : il a tout d'un Premium, et il se teinte quand il est exposé aux UV.", bon: true, explication: "Exactement : on nomme le bon verre et ce qu'il apporte." },
     ] },
   { profil: "Le client demande : « Pourquoi je prendrais l'anti-lumière bleue ? »",
     options: [
@@ -705,30 +705,30 @@ const FORMAT_B = [
 ];
 
 const FORMAT_C = [
-  { enonce: "Le Digital Protect Pro est notre meilleur verre blanc.", vrai: true },
-  { enonce: "Le Premium a un anti-lumière bleue.", vrai: false },
-  { enonce: "Le Basic est anti-rayures, avec un verre durci.", vrai: true },
-  { enonce: "Le Basic a un anti-reflets.", vrai: false },
-  { enonce: "Le Digital Protect Pro a tout le Premium, plus l'anti-lumière bleue.", vrai: true },
-  { enonce: "Le photochromique a tout d'un verre Premium, et il se teinte aux UV.", vrai: true },
-  { enonce: "Hydrophobe veut dire que l'eau glisse sur le verre.", vrai: true },
-  { enonce: "Nos verres UV Protect et polarisés sont de catégorie 3.", vrai: true },
-  { enonce: "Le polarisé existe uniquement en gris ou en brun.", vrai: true },
-  { enonce: "À la vue, l'UV Protect existe dans plein de couleurs.", vrai: false },
-  { enonce: "Le polarisé à la vue est prêt en 10 minutes.", vrai: false },
-  { enonce: "Le polarisé en plan est prêt en 10 minutes.", vrai: true },
-  { enonce: "L'UV Protect à la vue est prêt en 10 minutes.", vrai: true },
-  { enonce: "Le photochromique avec correction demande 9 jours.", vrai: false },
-  { enonce: "Dans l'offre 1=1, tous les traitements sont compris, sans supplément.", vrai: true },
-  { enonce: "Dans l'offre 1=1, la deuxième paire n'a droit qu'au verre Basic.", vrai: false },
-  { enonce: "Dans l'offre 1=1, on part toujours sur le Digital Protect Pro.", vrai: true },
-  { enonce: "Le photochromique s'appelle Transition sur le téléphone de vente et Solarisation dans le back-end.", vrai: true },
-  { enonce: "Le vendeur doit choisir lui-même l'indice de l'aminci.", vrai: false },
-  { enonce: "Plus l'indice de l'aminci est élevé, plus le verre est fin.", vrai: true },
-  { enonce: "Le 1.74 est en stock en magasin.", vrai: false },
-  { enonce: "Le polarisé supprime les reflets éblouissants, par exemple sur l'eau.", vrai: true },
-  { enonce: "L'anti-salissures permet de nettoyer les verres plus facilement.", vrai: true },
-  { enonce: "L'anti-reflets protège les yeux du soleil.", vrai: false },
+  { enonce: "Le Digital Protect Pro est notre meilleur verre blanc.", vrai: true, explication: "Oui : il a tous les traitements du Premium, plus l'anti-lumière bleue." },
+  { enonce: "Le Premium a un anti-lumière bleue.", vrai: false, explication: "Non : l'anti-lumière bleue, c'est ce qui distingue le Digital Protect Pro." },
+  { enonce: "Le Basic est anti-rayures, avec un verre durci.", vrai: true, explication: "Oui : c'est son seul traitement." },
+  { enonce: "Le Basic a un anti-reflets.", vrai: false, explication: "Non : l'anti-reflets commence au Premium." },
+  { enonce: "Le Digital Protect Pro a tout le Premium, plus l'anti-lumière bleue.", vrai: true, explication: "Oui : c'est exactement sa définition." },
+  { enonce: "Le Transition a tout d'un verre Premium, et il se teinte aux UV.", vrai: true, explication: "Oui : en plus, il fonce tout seul au soleil." },
+  { enonce: "Hydrophobe veut dire que l'eau glisse sur le verre.", vrai: true, explication: "Oui : sous la pluie, les gouttes gênent beaucoup moins." },
+  { enonce: "Nos verres UV Protect et polarisés sont de catégorie 3.", vrai: true, explication: "Oui : une protection forte, faite pour le plein soleil." },
+  { enonce: "Le polarisé existe uniquement en gris ou en brun.", vrai: true, explication: "Oui : gris ou brun, à la vue comme en plan." },
+  { enonce: "À la vue, l'UV Protect existe dans plein de couleurs.", vrai: false, explication: "Non : à la vue, c'est gris ou brun. Les couleurs, c'est en plan." },
+  { enonce: "Le polarisé à la vue est prêt en 10 minutes.", vrai: false, explication: "Non : à la vue, le polarisé demande 9 jours." },
+  { enonce: "Le polarisé en plan est prêt en 10 minutes.", vrai: true, explication: "Oui : sans correction, il est prêt en 10 minutes." },
+  { enonce: "L'UV Protect à la vue est prêt en 10 minutes.", vrai: true, explication: "Oui : c'est la solution pour des solaires à la vue tout de suite." },
+  { enonce: "Le Transition avec correction demande 9 jours.", vrai: false, explication: "Non : il est prêt en 10 minutes, avec ou sans correction." },
+  { enonce: "Dans l'offre 1=1, tous les traitements sont compris, sans supplément.", vrai: true, explication: "Oui : aucun supplément, sur les deux paires." },
+  { enonce: "Dans l'offre 1=1, la deuxième paire n'a droit qu'au verre Basic.", vrai: false, explication: "Non : tous les traitements sont compris sur les deux paires." },
+  { enonce: "Dans l'offre 1=1, on part toujours sur le Digital Protect Pro.", vrai: true, explication: "Oui : il est compris dans le 1=1, le client a notre meilleur verre blanc au même prix." },
+  { enonce: "Le Transition, notre verre photochromique, s'appelle Solarisation dans le back-end.", vrai: true, explication: "Oui : Transition sur le téléphone de vente, Solarisation dans le back-end, c'est le même verre." },
+  { enonce: "Le vendeur doit choisir lui-même l'indice de l'aminci.", vrai: false, explication: "Non : le logiciel choisit automatiquement l'aminci optimal selon la correction." },
+  { enonce: "Plus l'indice de l'aminci est élevé, plus le verre est fin.", vrai: true, explication: "Oui : 1.74 est plus fin que 1.67, lui-même plus fin que 1.6." },
+  { enonce: "Le 1.74 est en stock en magasin.", vrai: false, explication: "Non : on a tout en stock sauf le 1.74, réservé aux corrections au-delà de la limite du stock." },
+  { enonce: "Le polarisé supprime les reflets éblouissants, par exemple sur l'eau.", vrai: true, explication: "Oui : c'est son atout, sur l'eau, la route mouillée ou la neige." },
+  { enonce: "L'anti-salissures permet de nettoyer les verres plus facilement.", vrai: true, explication: "Oui : traces de doigts et poussière accrochent moins." },
+  { enonce: "L'anti-reflets protège les yeux du soleil.", vrai: false, explication: "Non : il supprime les reflets sur le verre. Pour le soleil, ce sont les solaires ou le Transition." },
 ];
 
 const FORMAT_D = [
@@ -746,9 +746,9 @@ const FORMAT_D = [
     ] },
   { profil: "Une cliente demande un verre qui fonce au soleil. Un collègue lui répond : « Prenez le Digital Protect Pro, il protège de tout. »",
     options: [
-      { texte: "Non : le verre qui se teinte au soleil, c'est le photochromique. Le Digital Protect Pro reste clair.", bon: true, explication: "Exactement : il faut connaître ce que fait chaque verre." },
+      { texte: "Non : le verre qui se teinte au soleil, c'est le Transition. Le Digital Protect Pro reste clair.", bon: true, explication: "Exactement : il faut connaître ce que fait chaque verre." },
       { texte: "Il a raison, le Digital Protect Pro est le meilleur.", bon: false, explication: "C'est notre meilleur verre blanc, mais il ne se teinte pas au soleil." },
-      { texte: "Il aurait dû lui dire que ça n'existe pas.", bon: false, explication: "Faux : c'est notre verre photochromique." },
+      { texte: "Il aurait dû lui dire que ça n'existe pas.", bon: false, explication: "Faux : c'est notre verre Transition." },
     ] },
   { profil: "Un client demande la différence entre le Premium et le Digital Protect Pro. Un collègue répond : « Le Digital Protect Pro est plus résistant aux rayures. »",
     options: [
@@ -902,7 +902,7 @@ function rendreItemCourant() {
   const item = poolActuelle[indexActuel]
   if (formatActuel === 'a') rendreChoixBinaire(corps, item.profil, 'Bon choix', 'Pas le bon verre', item.bon, item.explication, item.explication)
   if (formatActuel === 'b' || formatActuel === 'd') rendreChoixMultiple(corps, item)
-  if (formatActuel === 'c') rendreChoixBinaire(corps, item.enonce, 'Vrai', 'Faux', item.vrai, 'Exact.', 'Pas tout à fait — relis le point correspondant dans le cours si besoin.')
+  if (formatActuel === 'c') rendreChoixBinaire(corps, item.enonce, 'Vrai', 'Faux', item.vrai, 'Exact. ' + item.explication, item.explication)
 }
 
 function afficherFeedback(correct, texte) {
@@ -1063,7 +1063,7 @@ MODULE : "LES TRAITEMENTS DE VERRES"
 
 CONTEXTE
 
-En formation initiale, les traitements ne sont cités que dans une liste. Ce module apprend aux collaborateurs à connaître toute notre gamme de verres : les verres blancs (Basic, Premium, Digital Protect Pro, photochromique) et les verres solaires (UV Protect, polarisé), à savoir ce que chaque traitement apporte au client, à connaître les délais et à conseiller le bon verre.
+En formation initiale, les traitements ne sont cités que dans une liste. Ce module apprend aux collaborateurs à connaître toute notre gamme de verres : les verres blancs (Basic, Premium, Digital Protect Pro, Transition — notre photochromique) et les verres solaires (UV Protect, polarisé), à savoir ce que chaque traitement apporte au client, à connaître les délais et à conseiller le bon verre.
 
 BARRE DE NAVIGATION
 
@@ -1080,19 +1080,19 @@ Liste de ${GLOSSAIRE.length} cartes. Chaque carte : icône + nom en gras, l'expl
 ${GLOSSAIRE.map((g, i) => `${i + 1}. ${g.ico} "${g.nom}" — explication : "${g.simple}" — phrase : "${g.phrase}"`).join('\n')}
 
 2. Nos verres blancs
-Texte : "Les verres blancs, ce sont les verres clairs, ceux qu'on porte tous les jours. On en a 4, du plus simple au plus complet :"
+Texte : "Les verres blancs, ce sont les verres clairs, ceux qu'on porte tous les jours. On en a 4, du plus simple au plus complet. Le 4e, le Transition, est notre verre photochromique : il se teinte au soleil." ("4", "Transition" et "photochromique" en gras)
 Grille de 4 cartes (2 par ligne, 1 sur mobile) :
 ${promptGamme(GAMME_BLANCS)}
 Texte : "Ce qu'il y a dans chaque verre, en un coup d'œil :"
 Tableau (défilable horizontalement sur mobile) avec en colonnes ${COLONNES_TABLEAU.map(c => `"${c}"`).join(', ')} (la colonne "${COLONNES_TABLEAU[COLONNE_STAR]}" est mise en avant en violet clair), une coche verte ✓ quand le verre a le traitement et un tiret gris — sinon :
 ${LIGNES_TABLEAU.map(l => `- "${l.nom}" : ${l.valeurs.map((v, i) => `${COLONNES_TABLEAU[i]} ${v ? '✓' : '—'}`).join(' / ')}`).join('\n')}
-Encart astuce (💡) : "À retenir : le Premium, c'est le Basic avec tout le confort en plus. Le Digital Protect Pro, c'est le Premium avec l'anti-lumière bleue. Le photochromique, c'est le Premium qui se teinte au soleil."
+Encart astuce (💡) : "À retenir : le Premium, c'est le Basic avec tout le confort en plus. Le Digital Protect Pro, c'est le Premium avec l'anti-lumière bleue. Le Transition, c'est le Premium qui se teinte au soleil."
 
-3. Le verre photochromique
-Paragraphe 1 : "C'est un verre blanc qui a tout d'un Premium, et qui se teinte quand il est exposé aux UV. À l'intérieur, il est clair. Dehors au soleil, il fonce tout seul. Une seule paire, pas besoin de changer de lunettes en sortant."
-Paragraphe 2 : "Les clients l'appellent souvent autrement. Si tu entends l'un de ces noms, on parle de notre verre photochromique :"
+3. Le verre Transition
+Paragraphe 1 : "C'est notre verre photochromique : un verre blanc qui a tout d'un Premium, et qui se teinte quand il est exposé aux UV. À l'intérieur, il est clair. Dehors au soleil, il fonce tout seul. Une seule paire, pas besoin de changer de lunettes en sortant."
+Paragraphe 2 : "Les clients l'appellent souvent autrement. Si tu entends l'un de ces noms, on parle de notre verre Transition :"
 Puis 4 tuiles côte à côte (2 par ligne sur mobile), chacune avec un seul nom en gras : "Transitions" — "Photochromique" — "Verres qui foncent au soleil" — "Verres quatre saisons".
-Bandeau en dessous : "Chez nous, tous ces noms correspondent à notre verre photochromique. Sur le téléphone de vente, il s'appelle Transition ; dans le back-end, Solarisation. C'est le même verre." ("notre verre photochromique", "Transition" et "Solarisation" en gras)
+Bandeau en dessous : "Chez nous, tous ces noms correspondent à notre verre Transition, son nom sur le téléphone de vente. Dans le back-end, il s'appelle Solarisation : c'est le même verre." ("notre verre Transition" et "Solarisation" en gras)
 Puis, en dehors de la carte, deux schémas de verre côte à côte, dans le même style que les schémas du module Verre de proximité (verre rond, petit œil dessiné au centre, petit surtitre gris, nom du verre en police serif, sous-titre gris, légende à pastilles de couleur), avec en dessous la mention "Schéma pédagogique · teinte indicative" :
 - Surtitre "01 / À l'intérieur" — verre très clair (bleu très pâle) avec écrit "Clair" — nom "Verre clair" — sous-titre "À la maison, au bureau, en magasin : le verre reste clair, comme un verre Premium." — légende : pastille bleu clair "Verre clair".
 - Surtitre "02 / Au soleil" — même verre mais teinté gris-brun foncé, avec écrit "Teinté" en blanc et un petit soleil jaune dessiné en haut à droite — nom "Verre teinté" — sous-titre "Dehors, les UV du soleil font foncer le verre tout seul : il devient un verre solaire." — légende : pastille gris-brun "Verre teinté par les UV".
@@ -1122,7 +1122,7 @@ Encart astuce (💡) : "On part toujours sur le Digital Protect Pro : dans l'off
 
 8. Exemples concrets (grille de 4 cartes : 2 vertes "✅ Bon conseil", 2 rouges "⚠️ Attention au piège"). Chaque carte : étiquette, nom en gras, description, conclusion.
 - ✅ Bon conseil — "Julie, 34 ans, comptable" — "Elle passe ses journées sur écran." — "→ Digital Protect Pro : anti-reflets et anti-lumière bleue pour ses journées sur écran."
-- ✅ Bon conseil — "Marc, 45 ans, jardinier" — "Il est dehors toute la journée et en a assez de changer de lunettes." — "→ Photochromique : clair à l'intérieur, teinté au soleil."
+- ✅ Bon conseil — "Marc, 45 ans, jardinier" — "Il est dehors toute la journée et en a assez de changer de lunettes." — "→ Transition : clair à l'intérieur, teinté au soleil."
 - ⚠️ Attention au piège — "Paul, 40 ans, myope" — "Il veut des solaires polarisées à sa vue pour partir en vacances ce soir." — "→ Le polarisé à la vue demande 9 jours : pour ce soir, on lui propose l'UV Protect, prêt en 10 minutes."
 - ⚠️ Attention au piège — "Lina, 30 ans, astigmate" — "Elle veut des solaires roses à sa vue." — "→ À la vue, l'UV Protect existe en gris ou en brun. Les couleurs, c'est en plan (sans correction)."
 
@@ -1149,8 +1149,8 @@ Format B — "${FORMATS_INFO.b.titre}" (${FORMAT_B.length} situations, 3 options
 
 ${promptFormatChoix(FORMAT_B)}
 
-Format C — "${FORMATS_INFO.c.titre}" (${FORMAT_C.length} énoncés), 2 boutons "Vrai" / "Faux". Explication affichée : "Exact." si juste, "Pas tout à fait — relis le point correspondant dans le cours si besoin." si faux.
-${FORMAT_C.map((s, i) => `${i + 1}. ${s.enonce} → ${s.vrai ? 'Vrai' : 'Faux'}`).join('\n')}
+Format C — "${FORMATS_INFO.c.titre}" (${FORMAT_C.length} énoncés), 2 boutons "Vrai" / "Faux". Après la réponse, on affiche l'explication propre à l'énoncé, précédée de "Exact. " si la réponse est juste (et de "✗ " si elle est fausse, comme pour les autres formats). Énoncé → bonne réponse → explication :
+${FORMAT_C.map((s, i) => `${i + 1}. ${s.enonce} → ${s.vrai ? 'Vrai' : 'Faux'} → "${s.explication}"`).join('\n')}
 
 Format D — "${FORMATS_INFO.d.titre}" (${FORMAT_D.length} situations, 3 options chacune, une seule bonne). Même mécanique que le Format B, options mélangées aléatoirement à chaque affichage :
 

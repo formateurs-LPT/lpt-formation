@@ -63,6 +63,11 @@
   .schema svg { width: 100%; height: auto; display: block; }
   .schema .titre-schema { font-size: 12.5px; font-weight: 800; margin-bottom: 6px; }
   .schema .legende-schema { font-size: 12px; color: var(--ink-soft); line-height: 1.5; margin-top: 6px; }
+  .schemas-oeil.trois { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 700px) { .schemas-oeil.trois { grid-template-columns: 1fr; } }
+  .cle-schema { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: 10px; font-size: 12px; color: var(--ink-soft); }
+  .cle-schema span { display: inline-flex; align-items: center; gap: 6px; }
+  .cle-schema i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 
   .etapes-mecanisme { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
   .etape-meca { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; color: #3C4450; line-height: 1.55; }
@@ -258,38 +263,24 @@
       <h2>2. Comment ça marche</h2>
       <p>Chez un enfant myope, l'œil est trop long : l'image des objets lointains se forme <strong>devant la rétine</strong> au lieu de se former dessus, d'où le flou de loin. Tant que l'enfant grandit, l'œil peut continuer à s'allonger, et la myopie augmente.</p>
 
-      <div class="schemas-oeil">
+      <div class="schemas-oeil trois">
         <div class="schema">
-          <div class="titre-schema">Verre classique</div>
-          <svg viewBox="0 0 200 110" role="img" aria-label="Verre classique : image nette au centre, image en arrière de la rétine en périphérie">
-            <ellipse cx="120" cy="55" rx="62" ry="44" fill="#fff" stroke="#5B6472" stroke-width="2"/>
-            <path d="M182 30 Q190 55 182 80" fill="none" stroke="#0C8F6B" stroke-width="3"/>
-            <line x1="10" y1="55" x2="182" y2="55" stroke="#0C8F6B" stroke-width="2"/>
-            <line x1="10" y1="25" x2="58" y2="40" stroke="#C0392B" stroke-width="1.5"/>
-            <line x1="58" y1="40" x2="196" y2="70" stroke="#C0392B" stroke-width="1.5" stroke-dasharray="4 3"/>
-            <line x1="10" y1="85" x2="58" y2="70" stroke="#C0392B" stroke-width="1.5"/>
-            <line x1="58" y1="70" x2="196" y2="40" stroke="#C0392B" stroke-width="1.5" stroke-dasharray="4 3"/>
-            <rect x="6" y="18" width="8" height="74" rx="3" fill="#7C3AED" opacity=".35"/>
-          </svg>
-          <div class="legende-schema">Au centre, l'image est nette sur la rétine. Sur les côtés, elle tombe <strong>derrière</strong> la rétine : c'est un signal qui pousse l'œil à continuer de s'allonger.</div>
+          <div class="titre-schema">1. Œil myope, sans lunettes</div>
+          <svg viewBox="0 0 220 130" role="img" aria-label="Œil myope sans lunettes : l'image se forme devant la rétine"><ellipse cx="125" cy="65" rx="72" ry="48" fill="#fff" stroke="#8e8e93" stroke-width="1.5"/><path d="M190 30 Q205 65 190 100" fill="none" stroke="#34c759" stroke-width="5" stroke-linecap="round"/><line x1="2" y1="52" x2="55" y2="52" stroke="#0089ba" stroke-width="1.8"/><line x1="55" y1="52" x2="160" y2="65" stroke="#0089ba" stroke-width="1.8"/><line x1="160" y1="65" x2="194" y2="69.2" stroke="#0089ba" stroke-width="1.8" stroke-dasharray="3 3"/><line x1="2" y1="78" x2="55" y2="78" stroke="#0089ba" stroke-width="1.8"/><line x1="55" y1="78" x2="160" y2="65" stroke="#0089ba" stroke-width="1.8"/><line x1="160" y1="65" x2="194" y2="60.8" stroke="#0089ba" stroke-width="1.8" stroke-dasharray="3 3"/><circle cx="160" cy="65" r="4.5" fill="#0089ba"/></svg>
+          <div class="legende-schema">L'image se forme <strong>devant</strong> la rétine : de loin, tout est flou.</div>
         </div>
         <div class="schema">
-          <div class="titre-schema">Verre Clariteens</div>
-          <svg viewBox="0 0 200 110" role="img" aria-label="Verre freinateur : image nette au centre, image devant la rétine en périphérie">
-            <ellipse cx="120" cy="55" rx="62" ry="44" fill="#fff" stroke="#5B6472" stroke-width="2"/>
-            <path d="M182 30 Q190 55 182 80" fill="none" stroke="#0C8F6B" stroke-width="3"/>
-            <line x1="10" y1="55" x2="182" y2="55" stroke="#0C8F6B" stroke-width="2"/>
-            <line x1="10" y1="25" x2="58" y2="40" stroke="#0C8F6B" stroke-width="1.5"/>
-            <line x1="58" y1="40" x2="150" y2="62" stroke="#0C8F6B" stroke-width="1.5"/>
-            <line x1="10" y1="85" x2="58" y2="70" stroke="#0C8F6B" stroke-width="1.5"/>
-            <line x1="58" y1="70" x2="150" y2="48" stroke="#0C8F6B" stroke-width="1.5"/>
-            <rect x="6" y="18" width="8" height="74" rx="3" fill="#7C3AED" opacity=".35"/>
-            <circle cx="10" cy="26" r="2.2" fill="#7C3AED"/><circle cx="10" cy="34" r="2.2" fill="#7C3AED"/>
-            <circle cx="10" cy="76" r="2.2" fill="#7C3AED"/><circle cx="10" cy="84" r="2.2" fill="#7C3AED"/>
-          </svg>
-          <div class="legende-schema">Au centre, l'image est toujours nette. Sur les côtés, des microlentilles font tomber l'image <strong>devant</strong> la rétine : l'œil reçoit le signal de ralentir son allongement.</div>
+          <div class="titre-schema">2. Avec un verre classique</div>
+          <svg viewBox="0 0 220 130" role="img" aria-label="Verre classique : image nette au centre, image derrière la rétine sur les côtés"><rect x="14" y="16" width="9" height="98" rx="3" fill="#dbe7f3" stroke="#9db6d4" stroke-width="1.5"/><ellipse cx="125" cy="65" rx="72" ry="48" fill="#fff" stroke="#8e8e93" stroke-width="1.5"/><path d="M190 30 Q205 65 190 100" fill="none" stroke="#34c759" stroke-width="5" stroke-linecap="round"/><line x1="2" y1="52" x2="55" y2="52" stroke="#0089ba" stroke-width="1.8"/><line x1="55" y1="52" x2="190" y2="65" stroke="#0089ba" stroke-width="1.8"/><line x1="2" y1="78" x2="55" y2="78" stroke="#0089ba" stroke-width="1.8"/><line x1="55" y1="78" x2="190" y2="65" stroke="#0089ba" stroke-width="1.8"/><circle cx="190" cy="65" r="4.5" fill="#0089ba"/><line x1="2" y1="26" x2="55" y2="26" stroke="#ff9500" stroke-width="1.8"/><line x1="55" y1="26" x2="193" y2="59.8" stroke="#ff9500" stroke-width="1.8"/><line x1="193" y1="59.8" x2="214" y2="65" stroke="#ff9500" stroke-width="1.8" stroke-dasharray="3 3"/><line x1="2" y1="104" x2="55" y2="104" stroke="#ff9500" stroke-width="1.8"/><line x1="55" y1="104" x2="193" y2="70.2" stroke="#ff9500" stroke-width="1.8"/><line x1="193" y1="70.2" x2="214" y2="65" stroke="#ff9500" stroke-width="1.8" stroke-dasharray="3 3"/><circle cx="214" cy="65" r="4.5" fill="#ff9500"/></svg>
+          <div class="legende-schema">Au centre, l'image tombe <strong>sur</strong> la rétine : c'est net. Sur les côtés, elle tombe <strong>derrière</strong> : ce signal pousse l'œil à s'allonger.</div>
+        </div>
+        <div class="schema">
+          <div class="titre-schema">3. Avec un verre Clariteens</div>
+          <svg viewBox="0 0 220 130" role="img" aria-label="Verre Clariteens : image nette au centre, image devant la rétine sur les côtés"><rect x="14" y="16" width="9" height="98" rx="3" fill="#dbe7f3" stroke="#9db6d4" stroke-width="1.5"/><circle cx="18.5" cy="24" r="2.6" fill="#0089ba"/><circle cx="18.5" cy="34" r="2.6" fill="#0089ba"/><circle cx="18.5" cy="96" r="2.6" fill="#0089ba"/><circle cx="18.5" cy="106" r="2.6" fill="#0089ba"/><ellipse cx="125" cy="65" rx="72" ry="48" fill="#fff" stroke="#8e8e93" stroke-width="1.5"/><path d="M190 30 Q205 65 190 100" fill="none" stroke="#34c759" stroke-width="5" stroke-linecap="round"/><line x1="2" y1="52" x2="55" y2="52" stroke="#0089ba" stroke-width="1.8"/><line x1="55" y1="52" x2="190" y2="65" stroke="#0089ba" stroke-width="1.8"/><line x1="2" y1="78" x2="55" y2="78" stroke="#0089ba" stroke-width="1.8"/><line x1="55" y1="78" x2="190" y2="65" stroke="#0089ba" stroke-width="1.8"/><circle cx="190" cy="65" r="4.5" fill="#0089ba"/><line x1="2" y1="26" x2="55" y2="26" stroke="#ff9500" stroke-width="1.8"/><line x1="55" y1="26" x2="165" y2="65.0" stroke="#ff9500" stroke-width="1.8"/><line x1="2" y1="104" x2="55" y2="104" stroke="#ff9500" stroke-width="1.8"/><line x1="55" y1="104" x2="165" y2="65.0" stroke="#ff9500" stroke-width="1.8"/><circle cx="165" cy="65" r="4.5" fill="#ff9500"/></svg>
+          <div class="legende-schema">Au centre, toujours net. Sur les côtés, les microlentilles placent l'image <strong>devant</strong> la rétine : l'œil reçoit le signal de ralentir.</div>
         </div>
       </div>
+      <div class="cle-schema"><span><i style="background:#0089ba"></i>Centre de l'image</span><span><i style="background:#ff9500"></i>Côtés de l'image</span><span><i style="background:#34c759"></i>Rétine</span></div>
 
       <div class="etapes-mecanisme">
         <div class="etape-meca"><span class="puce">1</span><span><strong>Une zone centrale</strong> corrige la myopie normalement. C'est par là que l'enfant regarde, il voit net.</span></div>
@@ -505,7 +496,7 @@ const FORMAT_A = [
   { profil: "Noah, 7 ans, myope −0.75 pour la première fois cette année. Ses deux parents sont myopes.", bon: true, explication: "Myopie qui apparaît tôt et parents myopes : risque élevé que ça monte vite. Plus on commence tôt, plus on gagne." },
   { profil: "Sacha, 14 ans, myope −4.00. Sa myopie a augmenté de 1.00 en un an et demi.", bon: true, explication: "Adolescent dont la myopie progresse encore : les Clariteens ont tout leur intérêt pour limiter la suite." },
   { profil: "Mme Durand, 55 ans, myope et presbyte, veut « freiner sa myopie ».", bon: false, explication: "À 55 ans, l'œil ne grandit plus : ces verres n'ont aucun effet. Ce sont des verres pour enfants et adolescents." },
-  { profil: "Jules, 10 ans, myope −2.00 qui progresse. Ses parents préviennent qu'il ne mettra ses lunettes que pour voir le tableau.", bon: false, explication: "En l'état, non : l'effet freinateur demande au moins 12 heures de port par jour. Il faut d'abord expliquer aux parents que les lunettes se portent toute la journée." },
+  { profil: "Jules, 10 ans, myope −2.00 qui progresse : son profil est adapté. Mais ses parents annoncent qu'il ne mettra ses lunettes que pour voir le tableau. Avec ce port occasionnel, les conditions sont-elles réunies pour l'effet freinateur ?", bon: false, explication: "Non : son profil est bon, mais l'effet freinateur demande de porter les lunettes toute la journée (au moins 12 heures). Il faut d'abord expliquer aux parents que les lunettes se portent du lever au coucher." },
   { profil: "Emma, 12 ans, myope −2.25 avec un petit astigmatisme de 0.75. Sa myopie augmente chaque année.", bon: true, explication: "Un petit astigmatisme n'empêche pas les verres freinateurs. Myopie qui progresse : bon candidat." },
   { profil: "Lucas, 8 ans, aucune correction. Ses parents, tous deux myopes, veulent « prévenir » sa myopie.", bon: false, explication: "Lucas n'est pas myope : les verres freinateurs ne le concernent pas." },
   { profil: "Zoé, 6 ans, déjà myope −2.00.", bon: true, explication: "Myopie forte pour son âge : le risque qu'elle monte beaucoup est élevé. C'est un cas où les Clariteens sont particulièrement utiles." },
@@ -539,24 +530,24 @@ const FORMAT_B = [
 ];
 
 const FORMAT_C = [
-  { enonce: "Clariteens, Stellest, MiYOSMART et MyoCare désignent la même famille de verres : les verres freinateurs de myopie.", vrai: true },
-  { enonce: "Les verres Clariteens corrigent la myopie de l'enfant en plus de la freiner.", vrai: true },
-  { enonce: "Les verres Clariteens guérissent la myopie après quelques années de port.", vrai: false },
-  { enonce: "Pour être efficaces, les verres doivent être portés au moins 12 heures par jour.", vrai: true },
-  { enonce: "Les verres Clariteens sont adaptés aux adultes dont la myopie est stable.", vrai: false },
-  { enonce: "Chez un enfant myope, l'image des objets lointains se forme devant la rétine.", vrai: true },
-  { enonce: "Les microlentilles du verre sont placées au centre, là où l'enfant regarde.", vrai: false },
-  { enonce: "Les verres freinateurs ralentissent la myopie d'environ 60 % en moyenne par rapport à un verre classique.", vrai: true },
-  { enonce: "Un enfant hypermétrope peut porter des Clariteens pour éviter de devenir myope.", vrai: false },
-  { enonce: "Avec des verres Clariteens, l'enfant voit net de loin grâce à la zone centrale du verre.", vrai: true },
-  { enonce: "Une monture qui glisse sur le nez peut réduire l'efficacité des verres.", vrai: true },
-  { enonce: "Un petit astigmatisme empêche de porter des verres freinateurs.", vrai: false },
-  { enonce: "Plus on commence tôt, plus le gain sur la myopie est important.", vrai: true },
-  { enonce: "Les verres Clariteens sont des verres de stock : on les fabrique en 10 minutes en magasin.", vrai: true },
-  { enonce: "Les verres Clariteens sont compris dans le parcours Suprême.", vrai: true },
-  { enonce: "En offre 1=1, il faut un supplément de 150 € pour une seule paire en Clariteens.", vrai: false },
-  { enonce: "Les microlentilles du verre se voient facilement quand on regarde l'enfant.", vrai: false },
-  { enonce: "Des lunettes Clariteens laissées dans le cartable ne freinent pas la myopie.", vrai: true },
+  { enonce: "Clariteens, Stellest, MiYOSMART et MyoCare désignent la même famille de verres : les verres freinateurs de myopie.", vrai: true, explication: "Ce sont différents noms pour les verres freinateurs de myopie. Chez nous, ce sont les Clariteens." },
+  { enonce: "Les verres Clariteens corrigent la myopie de l'enfant en plus de la freiner.", vrai: true, explication: "Oui : la zone centrale corrige comme un verre classique, les microlentilles freinent." },
+  { enonce: "Les verres Clariteens guérissent la myopie après quelques années de port.", vrai: false, explication: "Non : ils ralentissent la myopie, ils ne la font pas disparaître." },
+  { enonce: "Pour être efficaces, les verres doivent être portés au moins 12 heures par jour.", vrai: true, explication: "Oui : c'est le temps de port qui fait l'efficacité. Dans le cartable, ils ne freinent rien." },
+  { enonce: "Les verres Clariteens sont adaptés aux adultes dont la myopie est stable.", vrai: false, explication: "Non : chez l'adulte, l'œil ne grandit plus, il n'y a rien à freiner." },
+  { enonce: "Chez un enfant myope, l'image des objets lointains se forme devant la rétine.", vrai: true, explication: "Oui : l'œil est trop long, l'image se forme avant la rétine, d'où le flou de loin." },
+  { enonce: "Les microlentilles du verre sont placées au centre, là où l'enfant regarde.", vrai: false, explication: "Non : elles sont autour de la zone centrale. Le centre corrige normalement." },
+  { enonce: "Les verres freinateurs ralentissent la myopie d'environ 60 % en moyenne par rapport à un verre classique.", vrai: true, explication: "Oui : c'est l'ordre de grandeur mesuré par les études des fabricants." },
+  { enonce: "Un enfant hypermétrope peut porter des Clariteens pour éviter de devenir myope.", vrai: false, explication: "Non : ces verres ne servent qu'à freiner une myopie qui existe déjà." },
+  { enonce: "Avec des verres Clariteens, l'enfant voit net de loin grâce à la zone centrale du verre.", vrai: true, explication: "Oui : la zone centrale corrige sa myopie comme un verre classique." },
+  { enonce: "Une monture qui glisse sur le nez peut réduire l'efficacité des verres.", vrai: true, explication: "Oui : l'enfant ne regarde plus par le centre du verre, l'effet diminue." },
+  { enonce: "Un petit astigmatisme empêche de porter des verres freinateurs.", vrai: false, explication: "Non : un petit astigmatisme n'empêche pas les verres freinateurs." },
+  { enonce: "Plus on commence tôt, plus le gain sur la myopie est important.", vrai: true, explication: "Oui : la myopie évolue le plus vite avant 10 ans, c'est là qu'on gagne le plus." },
+  { enonce: "Les verres Clariteens sont des verres de stock : on les fabrique en 10 minutes en magasin.", vrai: true, explication: "Oui : ils sont en stock et fabriqués en 10 minutes en magasin." },
+  { enonce: "Les verres Clariteens sont compris dans le parcours Suprême.", vrai: true, explication: "Oui : ils sont compris dans le Suprême, sans supplément." },
+  { enonce: "En offre 1=1, il faut un supplément de 150 € pour une seule paire en Clariteens.", vrai: false, explication: "Non : c'est +90 € pour une paire, +150 € pour les deux paires." },
+  { enonce: "Les microlentilles du verre se voient facilement quand on regarde l'enfant.", vrai: false, explication: "Non : elles sont invisibles à l'œil nu." },
+  { enonce: "Des lunettes Clariteens laissées dans le cartable ne freinent pas la myopie.", vrai: true, explication: "Oui : sans port, pas d'effet freinateur." },
 ];
 
 const FORMAT_D = [
@@ -712,7 +703,7 @@ function rendreItemCourant() {
   const item = poolActuelle[indexActuel]
   if (formatActuel === 'a') rendreChoixBinaire(corps, item.profil, 'Bon candidat', 'Pas adapté', item.bon, item.explication, item.explication)
   if (formatActuel === 'b' || formatActuel === 'd') rendreChoixMultiple(corps, item)
-  if (formatActuel === 'c') rendreChoixBinaire(corps, item.enonce, 'Vrai', 'Faux', item.vrai, 'Exact.', 'Pas tout à fait — relis le point correspondant dans le cours si besoin.')
+  if (formatActuel === 'c') rendreChoixBinaire(corps, item.enonce, 'Vrai', 'Faux', item.vrai, 'Exact. ' + item.explication, item.explication)
 }
 
 function afficherFeedback(correct, texte) {
@@ -887,9 +878,11 @@ Bandeau en dessous : "Chez nous, tous ces noms correspondent à nos verres Clari
 
 2. Comment ça marche
 Texte : "Chez un enfant myope, l'œil est trop long : l'image des objets lointains se forme devant la rétine au lieu de se former dessus, d'où le flou de loin. Tant que l'enfant grandit, l'œil peut continuer à s'allonger, et la myopie augmente."
-Deux petits schémas d'œil côte à côte (un verre à gauche, l'œil vu de profil, rayons lumineux) :
-- "Verre classique" : rayon central qui arrive net sur la rétine, rayons périphériques qui se croisent derrière la rétine. Légende : "Au centre, l'image est nette sur la rétine. Sur les côtés, elle tombe derrière la rétine : c'est un signal qui pousse l'œil à continuer de s'allonger."
-- "Verre Clariteens" : même rayon central net, des points sur les bords du verre (les microlentilles), rayons périphériques qui se croisent devant la rétine. Légende : "Au centre, l'image est toujours nette. Sur les côtés, des microlentilles font tomber l'image devant la rétine : l'œil reçoit le signal de ralentir son allongement."
+Trois petits schémas d'œil côte à côte (empilés sur mobile), l'œil vu de profil, avec les rayons du centre de l'image en bleu, ceux des côtés en orange, la rétine en vert, et un point à l'endroit où chaque image se forme :
+- "1. Œil myope, sans lunettes" : pas de verre, les rayons du centre se croisent avant la rétine (point bleu devant la rétine, rayons en pointillés ensuite). Légende : "L'image se forme devant la rétine : de loin, tout est flou."
+- "2. Avec un verre classique" : un verre à gauche, le point bleu tombe pile sur la rétine ; les rayons orange des côtés se croisent derrière la rétine (point orange en dehors de l'œil). Légende : "Au centre, l'image tombe sur la rétine : c'est net. Sur les côtés, elle tombe derrière : ce signal pousse l'œil à s'allonger."
+- "3. Avec un verre Clariteens" : un verre avec des petits points (les microlentilles) en haut et en bas, le point bleu sur la rétine, le point orange devant la rétine. Légende : "Au centre, toujours net. Sur les côtés, les microlentilles placent l'image devant la rétine : l'œil reçoit le signal de ralentir."
+Sous les schémas, une petite légende à pastilles : bleu "Centre de l'image", orange "Côtés de l'image", vert "Rétine".
 Puis 3 étapes numérotées :
 1. "Une zone centrale corrige la myopie normalement. C'est par là que l'enfant regarde, il voit net."
 2. "Autour de cette zone, le verre porte des microlentilles invisibles à l'œil nu."
@@ -943,8 +936,8 @@ Format B — "${FORMATS_INFO.b.titre}" (${FORMAT_B.length} situations, 3 options
 
 ${promptFormatChoix(FORMAT_B)}
 
-Format C — "${FORMATS_INFO.c.titre}" (${FORMAT_C.length} énoncés), 2 boutons "Vrai" / "Faux". Explication affichée : "Exact." si juste, "Pas tout à fait — relis le point correspondant dans le cours si besoin." si faux.
-${FORMAT_C.map((s, i) => `${i + 1}. ${s.enonce} → ${s.vrai ? 'Vrai' : 'Faux'}`).join('\n')}
+Format C — "${FORMATS_INFO.c.titre}" (${FORMAT_C.length} énoncés), 2 boutons "Vrai" / "Faux". Après la réponse, on affiche l'explication propre à l'énoncé, précédée de "Exact. " si la réponse est juste (et de "✗ " si elle est fausse, comme pour les autres formats). Énoncé → bonne réponse → explication :
+${FORMAT_C.map((s, i) => `${i + 1}. ${s.enonce} → ${s.vrai ? 'Vrai' : 'Faux'} → "${s.explication}"`).join('\n')}
 
 Format D — "${FORMATS_INFO.d.titre}" (${FORMAT_D.length} situations, 3 options chacune, une seule bonne). Même mécanique que le Format B, options mélangées aléatoirement à chaque affichage :
 

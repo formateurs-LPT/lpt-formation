@@ -313,8 +313,8 @@
           <ul><li>Le client vient d'arriver et n'a encore rien essayé : on le noie sous les choix.</li></ul>
         </div>
         <div class="critere non">
-          <span class="tag">❌ Trop tard</span>
-          <ul><li>Le client a payé et part : la proposition arrive comme un cheveu sur la soupe.</li></ul>
+          <span class="tag">❌ Moins favorable</span>
+          <ul><li>Le client a payé et s'en va : la proposition tombe moins bien. Ce n'est pas forcément trop tard (la remise reste valable jusqu'au retrait de sa paire), mais l'occasion est moins bonne.</li></ul>
         </div>
       </div>
       <div class="critere oui" style="margin-top:14px">
@@ -342,13 +342,13 @@
     </div>
 
     <div class="carte">
-      <h2>6. L'argument qui fait la différence : le 1=1 remboursé</h2>
-      <p>Un client qui fait un <strong>1=1 avec remboursement</strong> a ses deux paires pour <strong>0 €</strong>. Lui proposer une troisième paire devient facile : il repart avec <strong>trois paires de lunettes</strong> et n'en paie qu'<strong>une seule</strong>, en plus avec <strong>20 % de remise</strong>.</p>
-      <div class="offre-1-1">💡 <strong>Exemple</strong> : un client prend un 1=1 en progressifs, remboursé. En troisième paire, il prend une vision de près en Premium avec une monture à 5 €, prête en 10 minutes. Il repart avec <strong>deux paires de progressifs et une paire de vision de près, pour moins de 50 €</strong>. Nulle part ailleurs il n'aura ça.</div>
+      <h2>6. L'argument qui fait la différence : le 1=1 pris en charge</h2>
+      <p>Quand le 1=1 d'un client est <strong>intégralement pris en charge</strong>, ses deux paires lui reviennent à <strong>0 €</strong>. Lui proposer une troisième paire devient facile : il repart avec <strong>trois paires de lunettes</strong> et n'en paie qu'<strong>une seule</strong>, en plus avec <strong>20 % de remise</strong>.</p>
+      <div class="offre-1-1">💡 <strong>Exemple</strong> : un client prend un 1=1 en progressifs, intégralement pris en charge. En troisième paire, il prend une vision de près en Premium avec une monture à 5 €, prête en 10 minutes. Il repart avec <strong>deux paires de progressifs et une paire de vision de près, pour moins de 50 €</strong>.</div>
       <div class="arg" style="margin-top:14px">
         <div class="titre-arg">💬 Comment le présenter</div>
         <div class="gain">On expose simplement le total, sans insister. Le client dit oui ou non : c'est lui qui décide, et un client qui n'a pas le budget ne doit jamais se sentir rabaissé.</div>
-        <div class="phrase">« Avec votre 1=1 remboursé et cette troisième paire, ça vous fait vos trois paires de lunettes pour [prix de la troisième paire]. »</div>
+        <div class="phrase">« Avec votre 1=1 pris en charge et cette troisième paire, ça vous fait vos trois paires de lunettes pour [prix de la troisième paire]. »</div>
       </div>
     </div>
 
@@ -573,7 +573,7 @@ const OBJECTIONS = [
 
 const ERREURS = [
   "Parler de la troisième paire dès l'arrivée du client, avant même l'essayage : il se perd dans les choix.",
-  "La proposer quand le client a déjà payé et s'en va : c'est trop tard.",
+  "Attendre que le client ait payé et s'en aille : la remise reste valable jusqu'au retrait, mais l'occasion est bien moins bonne.",
   "Poser la question « Vous voulez une troisième paire ? » : le client répond non par réflexe.",
   "Ne parler que de la remise : le client achète un usage, pas une promotion.",
   "Insister après un vrai « non » : le client doit repartir content, sinon il ne reviendra pas.",
@@ -614,7 +614,7 @@ const FORMAT_A = [
   { profil: "Sarah, 32 ans, myope, a pris en 1=1 une paire de vue et une solaire à sa vue. Elle fait du sport plusieurs fois par semaine. On lui propose une paire de sport en troisième paire.", bon: true, explication: "Ses deux paires du 1=1 couvrent déjà le quotidien et le soleil : la paire de sport répond à un besoin de plus." },
   { profil: "Lucie, 40 ans, myope, est souvent dehors et ne veut pas changer de lunettes en sortant. Elle choisit son 1=1 : le vendeur met deux paires claires classiques et garde le photochromique pour la troisième paire.", bon: false, explication: "Le photochromique, elle peut très bien le prendre en deuxième paire du 1=1. On garde la troisième paire pour un besoin de plus." },
   { profil: "Pendant l'essayage, le vendeur laisse un client mettre de côté six montures, puis l'aide à en éliminer. Il en reste trois et le client n'arrive pas à choisir. Le vendeur lui propose de garder les trois : deux dans le 1=1, la troisième à −20 %.", bon: true, explication: "C'est la technique de l'élimination : la troisième paire arrive comme la solution à son hésitation." },
-  { profil: "Un client fait un 1=1 en progressifs, remboursé. Il aimerait une paire pour lire au lit. Le vendeur lui propose une vision de près en Premium avec une monture à 5 €, en troisième paire.", bon: true, explication: "Deux progressifs remboursés et une vision de près prête en 10 minutes : trois paires pour moins de 50 €, nulle part ailleurs il n'aura ça." },
+  { profil: "Un client fait un 1=1 en progressifs, intégralement pris en charge. Il aimerait une paire pour lire au lit. Le vendeur lui propose une vision de près en Premium avec une monture à 5 €, en troisième paire.", bon: true, explication: "Deux progressifs pris en charge et une vision de près prête en 10 minutes : ses trois paires lui reviennent à moins de 50 €." },
   { profil: "Un client vient d'arriver et n'a encore rien essayé. Le vendeur lui parle déjà de la troisième paire.", bon: false, explication: "Trop tôt : on attend que les deux paires du 1=1 soient choisies, sinon le client se perd dans les choix." },
   { profil: "Michel, 55 ans, presbyte, comptable, a pris deux paires de progressifs. On lui propose une paire de bureau en verre de proximité en troisième paire.", bon: true, explication: "Ses journées au bureau : une paire dédiée à l'écran et aux documents, c'est le bon conseil." },
   { profil: "Chantal, 58 ans, presbyte, veut une troisième paire « pour voir de loin et de près ». On lui propose la paire à 10 €.", bon: false, explication: "La paire à 10 € est uniquement en unifocal : loin OU près. Pour voir loin et près avec une paire, c'est un progressif en troisième paire à −20 %." },
@@ -627,13 +627,13 @@ const FORMAT_A = [
   { profil: "Le vendeur conclut le 1=1 en demandant simplement : « Vous voulez une troisième paire ? »", bon: false, explication: "Question fermée sans lien avec le besoin : le client répond non par réflexe. Il faut partir de ce qu'il a dit." },
   { profil: "Inès, 35 ans, aime changer de lunettes selon ses tenues. On lui propose une troisième monture dans un style différent.", bon: true, explication: "Elle aime changer de style : une troisième monture, c'est un vrai plaisir pour elle." },
   { profil: "Paul, 50 ans, presbyte, a pris en 1=1 un progressif clair et un progressif solaire. Il veut aussi une paire de lecture à laisser au bureau, pour pas cher. On lui propose la paire à 10 € en unifocal de près, à 8 € avec la remise.", bon: true, explication: "Besoin simple de lecture : la paire à 10 € en unifocal de près, qui tombe à 8 € en troisième paire, est parfaite." },
-  { profil: "Le client vient de payer son 1=1 et passe la porte. Le vendeur le rattrape pour lui parler de la troisième paire.", bon: false, explication: "Trop tard : on la propose une fois les deux paires choisies, avant de finaliser." },
+  { profil: "Le client vient de payer son 1=1 et passe la porte. Le vendeur le rattrape pour lui parler de la troisième paire.", bon: false, explication: "Pas le meilleur moment : la remise reste valable jusqu'au retrait, mais la proposition tombe moins bien quand il s'en va. Mieux vaut la proposer une fois les deux paires choisies, avant de finaliser." },
 ];
 
 const FORMAT_B = [
-  { profil: "Un client presbyte fait un 1=1 en progressifs, remboursé. Il aimerait une paire de lecture et tu lui proposes la paire à 10 € en unifocal de près, en troisième paire. Comment tu lui présentes le prix ?",
+  { profil: "Un client presbyte fait un 1=1 en progressifs, intégralement pris en charge. Il aimerait une paire de lecture et tu lui proposes la paire à 10 € en unifocal de près, en troisième paire. Comment tu lui présentes le prix ?",
     options: [
-      { texte: "« Avec votre 1=1 remboursé et cette paire de lecture, ça vous fait vos trois paires de lunettes pour 8 €. »", bon: true, explication: "Exactement : on expose simplement le total, et c'est le client qui décide." },
+      { texte: "« Avec votre 1=1 pris en charge et cette paire de lecture, ça vous fait vos trois paires de lunettes pour 8 €. »", bon: true, explication: "Exactement : on expose simplement le total, et c'est le client qui décide." },
       { texte: "« Vous ne payez rien sur les deux premières, vous pouvez bien vous offrir la troisième. »", bon: false, explication: "Un client qui n'a pas le budget se sent rabaissé. On présente le total, sans juger." },
       { texte: "« Les autres opticiens sont bien plus chers. »", bon: false, explication: "On parle des autres au lieu de lui donner simplement le total de ses trois paires." },
     ] },
@@ -676,38 +676,38 @@ const FORMAT_B = [
 ];
 
 const FORMAT_C = [
-  { enonce: "Après un 1=1, le client peut obtenir une troisième paire avec 20 % de remise, en parcours classique.", vrai: true },
-  { enonce: "On parle de la troisième paire dès l'arrivée du client, avant même l'essayage.", vrai: false },
-  { enonce: "Laisser le client mettre de côté beaucoup de montures, puis l'aider à en éliminer, montre qu'on ne force pas la vente.", vrai: true },
-  { enonce: "Quand le client hésite entre ses trois dernières montures, on peut lui proposer de garder les trois grâce à la troisième paire.", vrai: true },
-  { enonce: "Avec un 1=1 remboursé, le client ne paie que la troisième paire, et en plus avec 20 % de remise.", vrai: true },
-  { enonce: "Il faut limiter le client à deux montures pour ne pas le perdre.", vrai: false },
-  { enonce: "Le bon moment, c'est une fois les deux paires du 1=1 choisies, avant de finaliser.", vrai: true },
-  { enonce: "« Vous voulez une troisième paire ? » est la meilleure façon de la proposer.", vrai: false },
-  { enonce: "On relie toujours la troisième paire à un besoin que le client a exprimé.", vrai: true },
-  { enonce: "Une solaire à la vue est une bonne idée de troisième paire.", vrai: true },
-  { enonce: "La paire à 10 € peut être une paire progressive.", vrai: false },
-  { enonce: "Pour un presbyte, la paire à 10 € peut servir de paire de lecture, en unifocal.", vrai: true },
-  { enonce: "Si le client dit clairement non, on insiste jusqu'à ce qu'il accepte.", vrai: false },
-  { enonce: "On parle d'abord de l'usage, la remise vient ensuite.", vrai: true },
-  { enonce: "Faire essayer une troisième monture aide le client à se projeter.", vrai: true },
-  { enonce: "La troisième paire ne peut être qu'une paire de vue claire.", vrai: false },
-  { enonce: "Une paire de bureau en verre de proximité peut être une bonne troisième paire pour un presbyte.", vrai: true },
-  { enonce: "Pendant la découverte, on repère les moments de vie du client : lecture, soleil, sport, écrans.", vrai: true },
-  { enonce: "Proposer une troisième paire, c'est forcer la vente.", vrai: false },
-  { enonce: "La question alternative, c'est laisser le client choisir entre deux idées de paire.", vrai: true },
-  { enonce: "En troisième paire, la paire à 10 € tombe à 8 € avec la remise.", vrai: true },
-  { enonce: "La remise de troisième paire est valable jusqu'au retrait de la paire principale.", vrai: true },
-  { enonce: "La troisième paire peut être faite à la vue d'une autre personne.", vrai: false },
-  { enonce: "Une troisième paire sans correction (en plan) peut être pour une autre personne.", vrai: true },
-  { enonce: "La troisième paire peut avoir une autre correction que celle du client.", vrai: false },
-  { enonce: "La troisième paire, c'est toujours une monture + des verres.", vrai: true },
-  { enonce: "En parcours classique, un client qui prend deux paires à 10 € paie 18 €.", vrai: true },
-  { enonce: "En parcours classique, les 20 % de remise s'appliquent sur la paire la plus chère.", vrai: false },
-  { enonce: "En parcours classique, la deuxième paire remisée peut être à la vue d'une autre personne.", vrai: false },
-  { enonce: "Un modèle prémonté peut être pris en troisième paire avec la remise de 20 %.", vrai: false },
-  { enonce: "Un photochromique ou une solaire à la vue peut très bien être la deuxième paire du 1=1.", vrai: true },
-  { enonce: "Il faut toujours garder la solaire ou le photochromique pour la troisième paire.", vrai: false },
+  { enonce: "Après un 1=1, le client peut obtenir une troisième paire avec 20 % de remise, en parcours classique.", vrai: true, explication: "Oui : c'est le principe de la troisième paire." },
+  { enonce: "On parle de la troisième paire dès l'arrivée du client, avant même l'essayage.", vrai: false, explication: "Non : trop tôt, le client se perd dans les choix. On attend qu'il ait choisi ou qu'il hésite entre trois montures." },
+  { enonce: "Laisser le client mettre de côté beaucoup de montures, puis l'aider à en éliminer, montre qu'on ne force pas la vente.", vrai: true, explication: "Oui : c'est la technique de l'élimination." },
+  { enonce: "Quand le client hésite entre ses trois dernières montures, on peut lui proposer de garder les trois grâce à la troisième paire.", vrai: true, explication: "Oui : ses deux préférées dans le 1=1, la troisième avec 20 % de remise." },
+  { enonce: "Avec un 1=1 intégralement pris en charge, le client ne paie que la troisième paire, et en plus avec 20 % de remise.", vrai: true, explication: "Oui : ses deux paires lui reviennent à 0 €, il ne paie que la troisième." },
+  { enonce: "Il faut limiter le client à deux montures pour ne pas le perdre.", vrai: false, explication: "Non : le laisser choisir large, puis éliminer ensemble, est justement ce qui fonctionne." },
+  { enonce: "Le bon moment, c'est une fois les deux paires du 1=1 choisies, avant de finaliser.", vrai: true, explication: "Oui : c'est le moment le plus naturel, même si la remise reste valable jusqu'au retrait." },
+  { enonce: "« Vous voulez une troisième paire ? » est la meilleure façon de la proposer.", vrai: false, explication: "Non : le client répond non par réflexe. On part de son besoin et on propose une paire précise." },
+  { enonce: "On relie toujours la troisième paire à un besoin que le client a exprimé.", vrai: true, explication: "Oui : une proposition liée à son quotidien a du sens pour lui." },
+  { enonce: "Une solaire à la vue est une bonne idée de troisième paire.", vrai: true, explication: "Oui, surtout si ses deux paires du 1=1 sont des paires claires." },
+  { enonce: "La paire à 10 € peut être une paire progressive.", vrai: false, explication: "Non : la paire à 10 € existe uniquement en unifocal." },
+  { enonce: "Pour un presbyte, la paire à 10 € peut servir de paire de lecture, en unifocal.", vrai: true, explication: "Oui : en unifocal de près, c'est une bonne paire de lecture." },
+  { enonce: "Si le client dit clairement non, on insiste jusqu'à ce qu'il accepte.", vrai: false, explication: "Non : un vrai non se respecte, le client doit repartir content." },
+  { enonce: "On parle d'abord de l'usage, la remise vient ensuite.", vrai: true, explication: "Oui : le client achète une paire pour un moment de sa vie, pas une promotion." },
+  { enonce: "Faire essayer une troisième monture aide le client à se projeter.", vrai: true, explication: "Oui : une monture en main aide le client à se projeter." },
+  { enonce: "La troisième paire ne peut être qu'une paire de vue claire.", vrai: false, explication: "Non : solaire, lecture, bureau, sport… tant qu'elle est à sa correction ou en plan." },
+  { enonce: "Une paire de bureau en verre de proximité peut être une bonne troisième paire pour un presbyte.", vrai: true, explication: "Oui : c'est un bon complément à ses progressifs pour les journées d'écran." },
+  { enonce: "Pendant la découverte, on repère les moments de vie du client : lecture, soleil, sport, écrans.", vrai: true, explication: "Oui : chaque moment de vie est une idée de troisième paire." },
+  { enonce: "Proposer une troisième paire, c'est forcer la vente.", vrai: false, explication: "Non : c'est compléter son équipement. On propose, le client décide." },
+  { enonce: "La question alternative, c'est laisser le client choisir entre deux idées de paire.", vrai: true, explication: "Oui : « plutôt en solaire ou pour la lecture ? » plutôt qu'une question à oui ou non." },
+  { enonce: "En troisième paire, la paire à 10 € tombe à 8 € avec la remise.", vrai: true, explication: "Oui : avec la remise de 20 %, elle revient à 8 €." },
+  { enonce: "La remise de troisième paire est valable jusqu'au retrait de la paire principale.", vrai: true, explication: "Oui : jusqu'au retrait de la paire principale, souvent le jour même en unifocal." },
+  { enonce: "La troisième paire peut être faite à la vue d'une autre personne.", vrai: false, explication: "Non : elle est à la correction du client, ou sans correction." },
+  { enonce: "Une troisième paire sans correction (en plan) peut être pour une autre personne.", vrai: true, explication: "Oui : une paire en plan, monture + verres, peut être pour quelqu'un d'autre." },
+  { enonce: "La troisième paire peut avoir une autre correction que celle du client.", vrai: false, explication: "Non : même correction que le client, ou en plan." },
+  { enonce: "La troisième paire, c'est toujours une monture + des verres.", vrai: true, explication: "Oui : un modèle prémonté compte comme une simple monture." },
+  { enonce: "En parcours classique, un client qui prend deux paires à 10 € paie 18 €.", vrai: true, explication: "Oui : la deuxième a 20 % de remise, soit 8 €." },
+  { enonce: "En parcours classique, les 20 % de remise s'appliquent sur la paire la plus chère.", vrai: false, explication: "Non : c'est toujours la paire la moins chère qui est remisée." },
+  { enonce: "En parcours classique, la deuxième paire remisée peut être à la vue d'une autre personne.", vrai: false, explication: "Non : mêmes règles que la troisième paire, à sa correction ou en plan." },
+  { enonce: "Un modèle prémonté peut être pris en troisième paire avec la remise de 20 %.", vrai: false, explication: "Non : un prémonté compte comme une simple monture, la remise ne s'applique pas." },
+  { enonce: "Un photochromique ou une solaire à la vue peut très bien être la deuxième paire du 1=1.", vrai: true, explication: "Oui : les besoins évidents se casent souvent dans le 1=1. La troisième paire, c'est un besoin de plus." },
+  { enonce: "Il faut toujours garder la solaire ou le photochromique pour la troisième paire.", vrai: false, explication: "Non : ils peuvent très bien être la deuxième paire du 1=1." },
 ];
 
 const FORMAT_D = [
@@ -720,7 +720,7 @@ const FORMAT_D = [
   { profil: "Le client a payé son 1=1 et se dirige vers la sortie. Un collègue lui lance : « Ah, au fait, vous voulez une troisième paire ? »",
     options: [
       { texte: "C'est bien, il vaut mieux tard que jamais.", bon: false, explication: "À ce moment-là, le client est parti dans sa tête : la proposition tombe à plat." },
-      { texte: "C'est trop tard et sans lien avec son besoin : il fallait la proposer une fois les deux paires choisies, en la reliant à ce qu'il avait dit.", bon: true, explication: "Exactement : le bon moment, et une proposition précise." },
+      { texte: "Ce n'est pas le meilleur moment, et la question n'est liée à aucun besoin : il fallait la proposer une fois les deux paires choisies, en la reliant à ce qu'il avait dit.", bon: true, explication: "Exactement : la remise reste valable jusqu'au retrait, mais l'occasion est bien meilleure avant le paiement, avec une proposition précise." },
       { texte: "Il aurait dû la proposer dès l'entrée du client.", bon: false, explication: "Trop tôt : le client n'a pas encore choisi son 1=1." },
     ] },
   { profil: "Une cliente presbyte veut une troisième paire pour tout faire. Un collègue lui propose « un progressif à 10 € ».",
@@ -875,7 +875,7 @@ function rendreItemCourant() {
   const item = poolActuelle[indexActuel]
   if (formatActuel === 'a') rendreChoixBinaire(corps, item.profil, 'Bonne idée', 'Pas la bonne', item.bon, item.explication, item.explication)
   if (formatActuel === 'b' || formatActuel === 'd') rendreChoixMultiple(corps, item)
-  if (formatActuel === 'c') rendreChoixBinaire(corps, item.enonce, 'Vrai', 'Faux', item.vrai, 'Exact.', 'Pas tout à fait — relis le point correspondant dans le cours si besoin.')
+  if (formatActuel === 'c') rendreChoixBinaire(corps, item.enonce, 'Vrai', 'Faux', item.vrai, 'Exact. ' + item.explication, item.explication)
 }
 
 function afficherFeedback(correct, texte) {
@@ -1060,7 +1060,7 @@ Encart astuce (💡) : "La paire à 10 € peut aussi faire une troisième paire
 
 3. Le bon moment
 Texte : "On propose la troisième paire une fois les deux paires du 1=1 choisies, avant de finaliser la vente. Ou pendant le choix des montures, quand le client hésite entre trois (voir la technique de l'élimination)."
-Deux encarts rouges côte à côte : "❌ Trop tôt" — "Le client vient d'arriver et n'a encore rien essayé : on le noie sous les choix." / "❌ Trop tard" — "Le client a payé et part : la proposition arrive comme un cheveu sur la soupe."
+Deux encarts rouges côte à côte : "❌ Trop tôt" — "Le client vient d'arriver et n'a encore rien essayé : on le noie sous les choix." / "❌ Moins favorable" — "Le client a payé et s'en va : la proposition tombe moins bien. Ce n'est pas forcément trop tard (la remise reste valable jusqu'au retrait de sa paire), mais l'occasion est moins bonne."
 Puis un encart vert pleine largeur : "✅ Le bon moment" avec 2 puces — "Les deux paires sont choisies, le client est content de son équipement : c'est là qu'on lui propose de le compléter." / "Le client n'arrive pas à choisir entre ses trois dernières montures : la troisième paire règle son hésitation."
 
 4. Comment l'amener
@@ -1077,10 +1077,10 @@ Texte : "C'est le moyen le plus efficace de vendre une troisième paire : laisse
 3. "Quand il en reste trois" — "Le client n'arrive souvent plus à se décider. C'est le moment : « Vous n'êtes pas obligé de choisir : vos deux préférées dans le 1=1, et la troisième avec 20 % de remise. »"
 Encart astuce (💡) : "Ça ne marche pas à tous les coups, mais c'est très efficace : la troisième paire arrive comme la solution à son hésitation, pas comme une vente de plus."
 
-6. L'argument qui fait la différence : le 1=1 remboursé
-Texte : "Un client qui fait un 1=1 avec remboursement a ses deux paires pour 0 €. Lui proposer une troisième paire devient facile : il repart avec trois paires de lunettes et n'en paie qu'une seule, en plus avec 20 % de remise." ("1=1 avec remboursement", "0 €", "trois paires de lunettes", "une seule" et "20 % de remise" en gras)
-Encart violet clair (💡) : "Exemple : un client prend un 1=1 en progressifs, remboursé. En troisième paire, il prend une vision de près en Premium avec une monture à 5 €, prête en 10 minutes. Il repart avec deux paires de progressifs et une paire de vision de près, pour moins de 50 €. Nulle part ailleurs il n'aura ça." ("Exemple" et "deux paires de progressifs et une paire de vision de près, pour moins de 50 €" en gras)
-Carte "💬 Comment le présenter" : texte "On expose simplement le total, sans insister. Le client dit oui ou non : c'est lui qui décide, et un client qui n'a pas le budget ne doit jamais se sentir rabaissé." puis, en italique sur fond violet clair : "« Avec votre 1=1 remboursé et cette troisième paire, ça vous fait vos trois paires de lunettes pour [prix de la troisième paire]. »"
+6. L'argument qui fait la différence : le 1=1 pris en charge
+Texte : "Quand le 1=1 d'un client est intégralement pris en charge, ses deux paires lui reviennent à 0 €. Lui proposer une troisième paire devient facile : il repart avec trois paires de lunettes et n'en paie qu'une seule, en plus avec 20 % de remise." ("intégralement pris en charge", "0 €", "trois paires de lunettes", "une seule" et "20 % de remise" en gras)
+Encart violet clair (💡) : "Exemple : un client prend un 1=1 en progressifs, intégralement pris en charge. En troisième paire, il prend une vision de près en Premium avec une monture à 5 €, prête en 10 minutes. Il repart avec deux paires de progressifs et une paire de vision de près, pour moins de 50 €." ("Exemple" et "deux paires de progressifs et une paire de vision de près, pour moins de 50 €" en gras)
+Carte "💬 Comment le présenter" : texte "On expose simplement le total, sans insister. Le client dit oui ou non : c'est lui qui décide, et un client qui n'a pas le budget ne doit jamais se sentir rabaissé." puis, en italique sur fond violet clair : "« Avec votre 1=1 pris en charge et cette troisième paire, ça vous fait vos trois paires de lunettes pour [prix de la troisième paire]. »"
 
 7. Comment la tourner
 Texte : "Des phrases qui marchent, à adapter à ce que le client t'a dit :"
@@ -1128,8 +1128,8 @@ Format B — "${FORMATS_INFO.b.titre}" (${FORMAT_B.length} situations, 3 options
 
 ${promptFormatChoix(FORMAT_B)}
 
-Format C — "${FORMATS_INFO.c.titre}" (${FORMAT_C.length} énoncés), 2 boutons "Vrai" / "Faux". Explication affichée : "Exact." si juste, "Pas tout à fait — relis le point correspondant dans le cours si besoin." si faux.
-${FORMAT_C.map((s, i) => `${i + 1}. ${s.enonce} → ${s.vrai ? 'Vrai' : 'Faux'}`).join('\n')}
+Format C — "${FORMATS_INFO.c.titre}" (${FORMAT_C.length} énoncés), 2 boutons "Vrai" / "Faux". Après la réponse, on affiche l'explication propre à l'énoncé, précédée de "Exact. " si la réponse est juste (et de "✗ " si elle est fausse, comme pour les autres formats). Énoncé → bonne réponse → explication :
+${FORMAT_C.map((s, i) => `${i + 1}. ${s.enonce} → ${s.vrai ? 'Vrai' : 'Faux'} → "${s.explication}"`).join('\n')}
 
 Format D — "${FORMATS_INFO.d.titre}" (${FORMAT_D.length} situations, 3 options chacune, une seule bonne). Même mécanique que le Format B, options mélangées aléatoirement à chaque affichage :
 

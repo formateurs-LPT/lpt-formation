@@ -547,16 +547,16 @@ document.querySelectorAll('.etape').forEach(el => el.addEventListener('click', (
 
 // ═══════════════════ ENTRAÎNEMENT ═══════════════════
 const FORMAT_A = [
-  { profil: "Test Suprême sur LPT Santé : la mutuelle renvoie « non réalisable ».", bon: true, explication: "« Non réalisable » veut dire que la mutuelle ne répond pas via LPT Santé : c'est exactement le cas Granit." },
-  { profil: "Test Suprême sur LPT Santé : « remboursement trop faible ».", bon: false, explication: "C'est une vraie réponse de la mutuelle : le Suprême n'est pas pris en charge pour ce forfait. On passe en 1=1 100 % Santé, pas de Granit." },
-  { profil: "Test Suprême sur LPT Santé : remboursement accepté.", bon: false, explication: "La mutuelle a répondu oui : on part directement en Suprême, pas besoin de Granit." },
-  { profil: "La mutuelle d'un client ne fonctionne pas en direct avec LPT Santé : impossible d'obtenir une réponse au test Suprême.", bon: true, explication: "Granit sert justement aux mutuelles avec lesquelles on ne peut pas obtenir de réponse via LPT Santé." },
-  { profil: "Une cliente veut savoir si sa mutuelle prend en charge le Suprême. LPT Santé affiche un message indiquant que le test n'est pas réalisable.", bon: true, explication: "Message « non réalisable » = on fait un Granit. Ce n'est ni un refus, ni un échec." },
-  { profil: "Un client a déjà eu « remboursement trop faible » sur LPT Santé et demande qu'on « essaie autrement ».", bon: false, explication: "La mutuelle a déjà répondu : le Suprême n'est pas pris en charge. Granit n'y changera rien, on lui propose le 1=1 100 % Santé." },
-  { profil: "Test Suprême : LPT Santé renvoie un message inhabituel qui indique que la demande n'a pas pu aboutir sur LPT Santé.", bon: true, explication: "Tout message qui indique que le test n'est pas réalisable sur LPT Santé mène à un Granit." },
-  { profil: "Le test Suprême d'un client est accepté, mais le vendeur hésite et veut « vérifier avec Granit ».", bon: false, explication: "La réponse est déjà là et elle est positive : on saisit en Suprême, Granit est inutile." },
-  { profil: "Sur LPT Santé, la mutuelle d'une cliente renvoie « remboursement trop faible » pour son forfait.", bon: false, explication: "Remboursement trop faible : on oublie le Suprême et on passe en 1=1 100 % Santé." },
-  { profil: "Un client avec une mutuelle qui ne passe pas par LPT Santé a choisi sa monture et veut des verres Suprême.", bon: true, explication: "Sans réponse possible via LPT Santé, c'est Granit qui ira chercher la réponse de la mutuelle." },
+  { profil: "Tu lances le test Suprême sur LPT Santé : la mutuelle renvoie « non réalisable ».", bon: true, explication: "« Non réalisable » veut dire que la mutuelle ne répond pas via LPT Santé : c'est exactement le cas Granit." },
+  { profil: "Tu lances le test Suprême sur LPT Santé : réponse « remboursement trop faible ».", bon: false, explication: "C'est une vraie réponse de la mutuelle : le Suprême n'est pas pris en charge pour ce forfait. On passe en 1=1 100 % Santé, pas de Granit." },
+  { profil: "Tu lances le test Suprême sur LPT Santé : remboursement accepté.", bon: false, explication: "La mutuelle a répondu oui : on part directement en Suprême, pas besoin de Granit." },
+  { profil: "Tu lances le test Suprême pour un client, mais sa mutuelle ne fonctionne pas en direct avec LPT Santé : impossible d'obtenir une réponse.", bon: true, explication: "Granit sert justement aux mutuelles avec lesquelles on ne peut pas obtenir de réponse via LPT Santé." },
+  { profil: "Tu vérifies sur LPT Santé si le Suprême est pris en charge pour une cliente : le message indique que le test n'est pas réalisable.", bon: true, explication: "Message « non réalisable » = on fait un Granit. Ce n'est ni un refus, ni un échec." },
+  { profil: "Ton test Suprême sur LPT Santé a donné « remboursement trop faible ». Tu te demandes s'il faut « essayer autrement » avec Granit.", bon: false, explication: "La mutuelle a déjà répondu : le Suprême n'est pas pris en charge. Granit n'y changera rien, on lui propose le 1=1 100 % Santé." },
+  { profil: "Tu lances le test Suprême : LPT Santé affiche un message inhabituel qui indique que la demande n'a pas pu aboutir.", bon: true, explication: "Tout message qui indique que le test n'est pas réalisable sur LPT Santé mène à un Granit." },
+  { profil: "Ton test Suprême sur LPT Santé est accepté, mais tu hésites et tu voudrais « vérifier avec Granit ».", bon: false, explication: "La réponse est déjà là et elle est positive : on saisit en Suprême, Granit est inutile." },
+  { profil: "Tu fais le test Suprême d'une cliente sur LPT Santé : sa mutuelle renvoie « remboursement trop faible » pour son forfait.", bon: false, explication: "Remboursement trop faible : on oublie le Suprême et on passe en 1=1 100 % Santé." },
+  { profil: "Ton client a choisi sa monture en Suprême. Au moment du test sur LPT Santé, tu vois que sa mutuelle ne passe pas par LPT Santé.", bon: true, explication: "Sans réponse possible via LPT Santé, c'est Granit qui ira chercher la réponse de la mutuelle." },
 ];
 
 const FORMAT_B = [
@@ -605,26 +605,26 @@ const FORMAT_B = [
 ];
 
 const FORMAT_C = [
-  { enonce: "Granit est une intelligence artificielle qui saisit la demande de remboursement sur les plateformes des mutuelles à notre place.", vrai: true },
-  { enonce: "Avec Granit, c'est au vendeur de saisir la demande sur le site de la mutuelle.", vrai: false },
-  { enonce: "Un message « non réalisable » sur LPT Santé veut dire que la mutuelle refuse le remboursement.", vrai: false },
-  { enonce: "Quand LPT Santé répond « remboursement trop faible », on fait un Granit.", vrai: false },
-  { enonce: "Quand LPT Santé répond « remboursement trop faible », on passe en 1=1 100 % Santé.", vrai: true },
-  { enonce: "La demande Granit se fait sur Slack, dans le canal « tiers payant ».", vrai: true },
-  { enonce: "Dans le message, on indique son magasin, la référence de la monture et RA ou première délivrance.", vrai: true },
-  { enonce: "« RA » veut dire renouvellement adapté.", vrai: true },
-  { enonce: "Un client qui n'a pas fait de lunettes depuis plus de deux ans est en première délivrance.", vrai: true },
-  { enonce: "Une photo de la carte de mutuelle suffit pour lancer un Granit.", vrai: false },
-  { enonce: "Le service tiers payant vérifie que les documents sont conformes avant de déclencher Granit.", vrai: true },
-  { enonce: "Une demande en instance reçoit sa réponse sous 24 à 48 heures.", vrai: true },
-  { enonce: "Pendant qu'une demande est en instance, il faut attendre la réponse avant de faire le devis.", vrai: false },
-  { enonce: "Quand la demande est en instance, Granit lance tout seul une demande en classe A en parallèle.", vrai: true },
-  { enonce: "Quand la demande est en instance, il faut demander à Granit de lancer aussi une demande en classe A.", vrai: false },
-  { enonce: "Avant de valider la commande, on met dans le back-end la capture de la PEC acceptée envoyée par Granit.", vrai: true },
-  { enonce: "Quand Granit répond « PEC accordée — Classe B », on part en Suprême direct.", vrai: true },
-  { enonce: "Si le Suprême (classe B) est refusé, Granit lance tout seul la classe A, même quand la réponse est instantanée.", vrai: true },
-  { enonce: "« Remb. accordé sous le tarif plancher » en classe B veut dire que le Suprême est accepté.", vrai: false },
-  { enonce: "Quand Granit répond, le client doit revenir en magasin pour valider sa commande.", vrai: false },
+  { enonce: "Granit est une intelligence artificielle qui saisit la demande de remboursement sur les plateformes des mutuelles à notre place.", vrai: true, explication: "Oui : c'est elle qui fait la saisie chez la mutuelle, pas toi." },
+  { enonce: "Avec Granit, c'est au vendeur de saisir la demande sur le site de la mutuelle.", vrai: false, explication: "Non : tu transmets un dossier complet sur Slack, Granit fait la saisie." },
+  { enonce: "Un message « non réalisable » sur LPT Santé veut dire que la mutuelle refuse le remboursement.", vrai: false, explication: "Non : ce n'est ni un refus ni un échec. La mutuelle ne répond pas via LPT Santé, on fait un Granit." },
+  { enonce: "Quand LPT Santé répond « remboursement trop faible », on fait un Granit.", vrai: false, explication: "Non : la mutuelle a déjà répondu. On passe en 1=1 100 % Santé." },
+  { enonce: "Quand LPT Santé répond « remboursement trop faible », on passe en 1=1 100 % Santé.", vrai: true, explication: "Oui : le Suprême n'est pas pris en charge pour ce forfait." },
+  { enonce: "La demande Granit se fait sur Slack, dans le canal « tiers payant ».", vrai: true, explication: "Oui : dans le canal « tiers payant »." },
+  { enonce: "Dans le message, on indique son magasin, la référence de la monture et RA ou première délivrance.", vrai: true, explication: "Oui : avec les 3 photos (ordonnance, carte de mutuelle, écran LPT Santé)." },
+  { enonce: "« RA » veut dire renouvellement adapté.", vrai: true, explication: "Oui : renouvellement adapté." },
+  { enonce: "Un client qui n'a pas fait de lunettes depuis plus de deux ans est en première délivrance.", vrai: true, explication: "Oui : au-delà de deux ans, c'est une première délivrance." },
+  { enonce: "Une photo de la carte de mutuelle suffit pour lancer un Granit.", vrai: false, explication: "Non : il faut 3 photos nettes : ordonnance, carte de mutuelle et écran LPT Santé." },
+  { enonce: "Le service tiers payant vérifie que les documents sont conformes avant de déclencher Granit.", vrai: true, explication: "Oui : un dossier incomplet ou illisible retarde la demande." },
+  { enonce: "Une demande en instance reçoit sa réponse sous 24 à 48 heures.", vrai: true, explication: "Oui : Granit répond dans la conversation Slack sous 24 à 48 heures." },
+  { enonce: "Pendant qu'une demande est en instance, il faut attendre la réponse avant de faire le devis.", vrai: false, explication: "Non : on fait le devis tout de suite, pour pouvoir valider seul ensuite." },
+  { enonce: "Quand la demande est en instance, Granit lance tout seul une demande en classe A en parallèle.", vrai: true, explication: "Oui : dans tous les cas, tu auras une solution." },
+  { enonce: "Quand la demande est en instance, il faut demander à Granit de lancer aussi une demande en classe A.", vrai: false, explication: "Non : Granit la lance tout seul, rien à demander." },
+  { enonce: "Avant de valider la commande, on met dans le back-end la capture de la PEC acceptée envoyée par Granit.", vrai: true, explication: "Oui : c'est la preuve de la prise en charge." },
+  { enonce: "Quand Granit répond « PEC accordée — Classe B », on part en Suprême direct.", vrai: true, explication: "Oui : la classe B accordée, c'est le Suprême accepté." },
+  { enonce: "Si le Suprême (classe B) est refusé, Granit lance tout seul la classe A, même quand la réponse est instantanée.", vrai: true, explication: "Oui : tu reçois directement la PEC en classe A pour faire le 1=1 100 % Santé." },
+  { enonce: "« Remb. accordé sous le tarif plancher » en classe B veut dire que le Suprême est accepté.", vrai: false, explication: "Non : le remboursement est trop faible pour le Suprême, on passe en 1=1 100 % Santé." },
+  { enonce: "Quand Granit répond, le client doit revenir en magasin pour valider sa commande.", vrai: false, explication: "Non : grâce au devis déjà fait, tu valides seul en mode dégradé et tu le préviens." },
 ];
 
 const FORMAT_D = [
@@ -786,7 +786,7 @@ function rendreItemCourant() {
   const item = poolActuelle[indexActuel]
   if (formatActuel === 'a') rendreChoixBinaire(corps, item.profil, 'Granit', 'Pas de Granit', item.bon, item.explication, item.explication)
   if (formatActuel === 'b' || formatActuel === 'd') rendreChoixMultiple(corps, item)
-  if (formatActuel === 'c') rendreChoixBinaire(corps, item.enonce, 'Vrai', 'Faux', item.vrai, 'Exact.', 'Pas tout à fait — relis le point correspondant dans le cours si besoin.')
+  if (formatActuel === 'c') rendreChoixBinaire(corps, item.enonce, 'Vrai', 'Faux', item.vrai, 'Exact. ' + item.explication, item.explication)
 }
 
 function afficherFeedback(correct, texte) {
@@ -1026,8 +1026,8 @@ Format B — "${FORMATS_INFO.b.titre}" (${FORMAT_B.length} situations, 3 options
 
 ${promptFormatChoix(FORMAT_B)}
 
-Format C — "${FORMATS_INFO.c.titre}" (${FORMAT_C.length} énoncés), 2 boutons "Vrai" / "Faux". Explication affichée : "Exact." si juste, "Pas tout à fait — relis le point correspondant dans le cours si besoin." si faux.
-${FORMAT_C.map((s, i) => `${i + 1}. ${s.enonce} → ${s.vrai ? 'Vrai' : 'Faux'}`).join('\n')}
+Format C — "${FORMATS_INFO.c.titre}" (${FORMAT_C.length} énoncés), 2 boutons "Vrai" / "Faux". Après la réponse, on affiche l'explication propre à l'énoncé, précédée de "Exact. " si la réponse est juste (et de "✗ " si elle est fausse, comme pour les autres formats). Énoncé → bonne réponse → explication :
+${FORMAT_C.map((s, i) => `${i + 1}. ${s.enonce} → ${s.vrai ? 'Vrai' : 'Faux'} → "${s.explication}"`).join('\n')}
 
 Format D — "${FORMATS_INFO.d.titre}" (${FORMAT_D.length} situations, 3 options chacune, une seule bonne). Même mécanique que le Format B, options mélangées aléatoirement à chaque affichage :
 
