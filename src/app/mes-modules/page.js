@@ -159,18 +159,22 @@ function sauverSession(session) {
 }
 
 // ── Connexion ─────────────────────────────────────────────────────────────
-function Connexion({ onLogin }) {
-  const [login, setLogin] = useState('')
+function Connexion({ onLogin, depuisQr }) {
+  const [login, setLogin] = useState(depuisQr?.identifiant || '')
   const [code, setCode] = useState('')
   const [erreur, setErreur] = useState('')
   const [chargement, setChargement] = useState(false)
+  const codeRef = useRef(null)
 
-  const submit = async e => {
-    e.preventDefault()
-    if (!login.trim() || !code.trim() || chargement) return
+  const seConnecter = useCallback(async (identifiant, codeSaisi) => {
+    if (!identifiant.trim() || !codeSaisi.trim()) return
     setChargement(true); setErreur('')
-    const row = await apiGetCollaborateurByLogin(login.trim().toLowerCase(), code.trim())
-    if (!row) { setChargement(false); setErreur('Identifiant ou code incorrect.'); return }
+    const row = await apiGetCollaborateurByLogin(identifiant.trim().toLowerCase(), codeSaisi.trim())
+    if (!row) {
+      setChargement(false)
+      setErreur(depuisQr?.code ? 'Ce QR code n\'est plus valable. Demande à ton formateur d\'en afficher un nouveau.' : 'Identifiant ou code incorrect.')
+      return
+    }
     const magasins = await sbSelect('magasins', `id=eq.${row.magasin_id}&select=id,nom`)
     setChargement(false)
     const session = {
@@ -179,6 +183,19 @@ function Connexion({ onLogin }) {
     }
     sauverSession(session)
     onLogin(session)
+  }, [onLogin, depuisQr])
+
+  // QR code du formateur : connexion directe s'il contient le code provisoire,
+  // sinon identifiant prérempli et curseur dans le champ du code.
+  useEffect(() => {
+    if (depuisQr?.identifiant && depuisQr?.code) seConnecter(depuisQr.identifiant, depuisQr.code)
+    else if (depuisQr?.identifiant) codeRef.current?.focus()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const submit = e => {
+    e.preventDefault()
+    if (!chargement) seConnecter(login, code)
   }
 
   return (
@@ -195,7 +212,7 @@ function Connexion({ onLogin }) {
           <label htmlFor="mm-login" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>Identifiant</label>
           <input id="mm-login" className="mm-champ-ios" value={login} onChange={e => setLogin(e.target.value)} placeholder="Identifiant" autoCapitalize="off" autoCorrect="off" spellCheck={false} autoComplete="username" enterKeyHint="next" />
           <label htmlFor="mm-code" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>Code</label>
-          <input id="mm-code" className="mm-champ-ios" value={code} onChange={e => setCode(e.target.value)} placeholder="Code" type="password" autoComplete="current-password" enterKeyHint="go" />
+          <input id="mm-code" ref={codeRef} className="mm-champ-ios" value={code} onChange={e => setCode(e.target.value)} placeholder="Code" type="password" autoComplete="current-password" enterKeyHint="go" />
         </div>
         {erreur
           ? <div role="alert" className="mm-erreur">{erreur}</div>
@@ -615,6 +632,7 @@ function Dashboard({ session, onLogout }) {
 
 export default function MesModulesPage() {
   const [session, setSession] = useState(undefined)
+  const [depuisQr, setDepuisQr] = useState(null)
 
   // Raccourci « Sur l'écran d'accueil » : sans ça, le téléphone reprend le
   // manifeste général de l'app et le raccourci s'ouvre sur l'accueil (choix
@@ -645,6 +663,18 @@ export default function MesModulesPage() {
   useEffect(() => {
     let annule = false
     ;(async () => {
+      // QR code de connexion affiché par le formateur : on lit l'identifiant
+      // (et le code provisoire), puis on les retire aussitôt de l'adresse.
+      const params = new URLSearchParams(window.location.search)
+      const qr = params.get('identifiant') ? { identifiant: params.get('identifiant'), code: params.get('code') || null } : null
+      if (qr) {
+        try { window.history.replaceState(null, '', window.location.pathname) } catch {}
+        // Téléphone déjà connecté avec quelqu'un d'autre : on repart de zéro.
+        try { localStorage.removeItem(SESSION_KEY) } catch {}
+        setDepuisQr(qr)
+        setSession(null)
+        return
+      }
       let brut = null
       try { brut = localStorage.getItem(SESSION_KEY) } catch {}
       if (!brut) { if (!annule) setSession(null); return }
@@ -670,7 +700,7 @@ export default function MesModulesPage() {
 
   if (session === undefined) return null
   let ecran
-  if (!session) ecran = <Connexion onLogin={setSession} />
+  if (!session) ecran = <Connexion onLogin={setSession} depuisQr={depuisQr} />
   else if (session.doitChangerCode) ecran = <ChangerCode session={session} onChanged={setSession} />
   else ecran = <Dashboard session={session} onLogout={onLogout} />
   return (

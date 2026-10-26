@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import qrcode from 'qrcode-generator'
 import { getCollaborateurDbId } from '@/lib/notesCollaborateurApi'
 import { getCollaborateurById } from '@/lib/collaborateursApi'
 import {
@@ -24,10 +25,48 @@ const STATUTS = {
   'a-faire': { label: 'À faire', color: 'var(--text-m)', bg: 'var(--dh-badge-bg)' },
 }
 
+// QR code généré sur l'appareil du formateur (jamais via un service externe :
+// il peut contenir le code provisoire). Le collaborateur le scanne avec
+// l'appareil photo et arrive sur /mes-modules, identifiant prérempli — et
+// connecté directement si le code provisoire est inclus.
+function QrConnexion({ login, code, prenom, onFermer }) {
+  const svg = useMemo(() => {
+    const params = new URLSearchParams({ identifiant: login })
+    if (code) params.set('code', code)
+    const qr = qrcode(0, 'M')
+    qr.addData(`${window.location.origin}/mes-modules/?${params}`)
+    qr.make()
+    return qr.createSvgTag({ cellSize: 8, margin: 4, scalable: true })
+  }, [login, code])
+
+  useEffect(() => {
+    const echap = e => { if (e.key === 'Escape') onFermer() }
+    window.addEventListener('keydown', echap)
+    return () => window.removeEventListener('keydown', echap)
+  }, [onFermer])
+
+  return (
+    <div onClick={onFermer} role="dialog" aria-modal="true" aria-label={`QR code de connexion à Mes modules pour ${prenom}`} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 22, padding: '26px 22px 20px', width: '100%', maxWidth: 360, textAlign: 'center', fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif", color: '#000' }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#0089ba', marginBottom: 2 }}>{prenom}</div>
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>Connexion à Mes modules</div>
+        <div style={{ fontSize: 15, color: 'rgba(60,60,67,0.6)', marginTop: 6, lineHeight: 1.4 }}>
+          {code ? 'À scanner avec l\'appareil photo : il sera connecté directement et choisira son code.' : 'À scanner avec l\'appareil photo : son identifiant sera déjà rempli, il tape son code.'}
+        </div>
+        <div style={{ margin: '20px auto 16px', width: 'min(260px, 100%)', aspectRatio: '1', padding: 0, background: '#fff', borderRadius: 14, boxShadow: '0 0 0 1px rgba(60,60,67,0.12)' }} dangerouslySetInnerHTML={{ __html: svg }} />
+        <div style={{ fontSize: 13, color: 'rgba(60,60,67,0.6)' }}>Identifiant</div>
+        <div style={{ fontSize: 17, fontWeight: 600, fontFamily: 'ui-monospace, Menlo, monospace' }}>{login}</div>
+        <button onClick={onFermer} style={{ marginTop: 18, width: '100%', minHeight: 48, border: 'none', borderRadius: 12, background: 'rgba(118,118,128,0.12)', color: '#0089ba', fontSize: 17, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Fermer</button>
+      </div>
+    </div>
+  )
+}
+
 function BlocAcces({ collab, onCree }) {
   const [creation, setCreation] = useState(false)
   const [acces, setAcces] = useState(null)
   const [erreur, setErreur] = useState(null)
+  const [qrVisible, setQrVisible] = useState(false)
 
   const generer = async () => {
     setCreation(true); setErreur(null)
@@ -35,8 +74,13 @@ function BlocAcces({ collab, onCree }) {
     setCreation(false)
     if (!res) { setErreur('L\'accès n\'a pas pu être créé. Réessaie dans un instant.'); return }
     setAcces(res)
+    setQrVisible(true)
     onCree()
   }
+
+  const boutonQr = (
+    <button onClick={() => setQrVisible(true)} className="btn2" style={{ padding: '6px 12px', fontSize: 12 }}>📱 QR code de connexion</button>
+  )
 
   return (
     <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
@@ -46,7 +90,8 @@ function BlocAcces({ collab, onCree }) {
           <div>Adresse : <strong>/mes-modules</strong></div>
           <div>Identifiant : <strong style={{ fontFamily: 'ui-monospace, Menlo, monospace' }}>{acces.login}</strong></div>
           <div>Code provisoire : <strong style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 16 }}>{acces.code}</strong></div>
-          <div style={{ fontSize: 12, color: 'var(--text-m)', marginTop: 4 }}>Donne-lui ces informations : il choisira son propre code à 6 chiffres à la 1re connexion. Ce code provisoire ne sera plus affiché ensuite.</div>
+          <div style={{ fontSize: 12, color: 'var(--text-m)', marginTop: 4 }}>Le plus simple : fais-lui scanner le QR code, il sera connecté directement et choisira son propre code à 6 chiffres. Ce code provisoire ne sera plus affiché ensuite.</div>
+          <div style={{ marginTop: 8 }}>{boutonQr}</div>
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
@@ -55,12 +100,23 @@ function BlocAcces({ collab, onCree }) {
               ? <>Identifiant : <strong style={{ fontFamily: 'ui-monospace, Menlo, monospace' }}>{collab.login}</strong>{collab.doit_changer_code ? ' · code provisoire pas encore changé' : ' · code personnel choisi'}</>
               : 'Pas encore d\'accès.'}
           </div>
-          <button onClick={generer} disabled={creation} className="btn2" style={{ padding: '6px 12px', fontSize: 12 }}>
-            {creation ? 'Création…' : collab.login ? '🔑 Nouveau code provisoire' : '🔑 Créer son accès'}
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {collab.login && boutonQr}
+            <button onClick={generer} disabled={creation} className="btn2" style={{ padding: '6px 12px', fontSize: 12 }}>
+              {creation ? 'Création…' : collab.login ? '🔑 Nouveau code provisoire' : '🔑 Créer son accès'}
+            </button>
+          </div>
         </div>
       )}
       {erreur && <div style={{ fontSize: 12.5, color: '#f87171', marginTop: 8 }}>{erreur}</div>}
+      {qrVisible && (acces?.login || collab.login) && (
+        <QrConnexion
+          login={acces?.login || collab.login}
+          code={acces?.code || null}
+          prenom={collab.prenom}
+          onFermer={() => setQrVisible(false)}
+        />
+      )}
     </div>
   )
 }
