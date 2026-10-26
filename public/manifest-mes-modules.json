@@ -1,0 +1,26 @@
+{
+  "name": "Mes modules — Lunettes Pour Tous",
+  "short_name": "Mes modules",
+  "description": "Les modules après-formation Lunettes Pour Tous",
+  "id": "/mes-modules/",
+  "start_url": "/mes-modules/",
+  "scope": "/mes-modules/",
+  "display": "standalone",
+  "background_color": "#f2f2f7",
+  "theme_color": "#f2f2f7",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

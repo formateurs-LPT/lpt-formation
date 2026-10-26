@@ -1,152 +1,304 @@
-/* Thème de l'app LPT Formation appliqué aux modules après-formation.
-   Chargé juste après le style propre du module : mêmes jetons que l'espace
-   collaborateur (DM Sans, fond #f5f6f8, cartes blanches #e5e7eb, bleu LPT
-   #0089ba → #00abe9, badges vert/orange), pour que les modules aient l'air
-   d'écrans natifs de l'app et non de pages à part. */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+/* Thème « iOS » des modules après-formation, chargé juste après le style
+   propre de chaque module quand il est ouvert depuis /mes-modules.
+   Principes appliqués (skill apple-design) :
+   - police système de l'iPhone et échelle typographique iOS (34/28/22/20/17/
+     15/13/12), approche resserrée sur les grands titres, neutre sur le texte ;
+   - couleurs système iOS (fond groupé #f2f2f7, libellés secondaires gris),
+     teinte d'accent = bleu LPT ;
+   - cartes en « listes groupées » (blanc, coins 12, sans bordure ni ombre) ;
+   - onglets Cours / Entraînement / Test en contrôle segmenté ;
+   - retour visuel immédiat au toucher (pression, surbrillance) ;
+   - variantes sans mouvement / sans transparence / contraste renforcé. */
 
 :root {
-  --bg: #f5f6f8;
-  --bg-panel: #ffffff;
-  --line: #e5e7eb;
-  --ink: #14161a;
-  --ink-soft: #6b7280;
-  --accent: #0089ba;
-  --accent-wash: #eaf3fd;
-  --vert: #15803d;
-  --vert-wash: #dcfce7;
-  --rouge: #dc2626;
-  --rouge-wash: #fef2f2;
-  --jaune: #92400e;
-  --jaune-wash: #fffbeb;
-  --radius: 16px;
-  --font: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --app-texte: #374151;
-  --app-gradient: linear-gradient(135deg, #0089ba, #00abe9);
-  --app-ombre: 0 1px 2px rgba(16, 24, 40, 0.03);
-  --app-bleu-texte: #0369a1;
+  --ios-fond: #f2f2f7;
+  --ios-carte: #ffffff;
+  --ios-label: #000000;
+  --ios-label-2: rgba(60, 60, 67, 0.6);
+  --ios-label-3: rgba(60, 60, 67, 0.3);
+  --ios-separateur: rgba(60, 60, 67, 0.18);
+  --ios-remplissage: rgba(118, 118, 128, 0.12);
+  --ios-surbrillance: #e5e5ea;
+  --ios-teinte: #0089ba;
+  --ios-teinte-fond: rgba(0, 137, 186, 0.1);
+  --ios-vert: #34c759;
+  --ios-vert-texte: #248a3d;
+  --ios-vert-fond: rgba(52, 199, 89, 0.14);
+  --ios-rouge: #ff3b30;
+  --ios-rouge-texte: #d70015;
+  --ios-rouge-fond: rgba(255, 59, 48, 0.1);
+  --ios-orange-texte: #c93400;
+  --ios-jaune-fond: rgba(255, 204, 0, 0.16);
+  --ios-jaune-texte: #8a5a00;
+  --ios-police: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --ios-courbe: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Jetons d'origine des modules, remappés */
+  --bg: var(--ios-fond);
+  --bg-panel: var(--ios-carte);
+  --line: var(--ios-separateur);
+  --ink: var(--ios-label);
+  --ink-soft: var(--ios-label-2);
+  --accent: var(--ios-teinte);
+  --accent-wash: var(--ios-teinte-fond);
+  --vert: var(--ios-vert-texte);
+  --vert-wash: var(--ios-vert-fond);
+  --rouge: var(--ios-rouge-texte);
+  --rouge-wash: var(--ios-rouge-fond);
+  --jaune: var(--ios-jaune-texte);
+  --jaune-wash: var(--ios-jaune-fond);
+  --radius: 12px;
+  --font: var(--ios-police);
 }
 
-html, body { font-family: var(--font); }
+html, body, button, input, select, textarea { font-family: var(--ios-police) !important; }
 body {
-  background: var(--bg) !important;
+  background: var(--ios-fond) !important;
   background-image: none !important;
-  color: var(--ink);
+  color: var(--ios-label);
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  font-size: 17px;
+  letter-spacing: -0.01em;
 }
-.page { max-width: 640px; padding: 20px 16px 48px; }
-@media (max-width: 560px) { .page { padding-top: 16px; } }
+.page { max-width: 680px; padding: 16px 16px 56px; }
+@media (max-width: 560px) { .page { padding-top: 14px; } }
 
-/* ── En-tête du module ── */
-.eyebrow { color: var(--accent); font-size: 11px; letter-spacing: 1px; }
-h1 { font-size: 24px; font-weight: 800; color: var(--ink); letter-spacing: -0.2px; }
-.sous-titre { font-size: 14px; color: var(--ink-soft); line-height: 1.55; margin-bottom: 20px; }
+/* ── Typographie ───────────────────────────────────────────── */
+.eyebrow { color: var(--ios-label-2); font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.022em; line-height: 1.15; color: var(--ios-label); margin: 4px 0 6px; }
+.sous-titre { font-size: 15px; color: var(--ios-label-2); line-height: 1.4; letter-spacing: -0.01em; margin-bottom: 20px; }
+.carte h2, #vueCours .carte h2, #vueTest .carte h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; color: var(--ios-label); margin-bottom: 10px; }
+.carte p, .carte ul.liste, .carte ul.liste li { font-size: 16px; line-height: 1.45; color: var(--ios-label); letter-spacing: -0.01em; }
+.carte strong { color: var(--ios-label); font-weight: 600; }
 
-/* ── Onglets Cours / Entraînement / Test : même rendu que la navigation
-   du dashboard collaborateur ── */
+/* ── Contrôle segmenté (Cours / Entraînement / Test) ──────────── */
 .etapes {
-  background: #fff; border: 1px solid var(--line); border-radius: 14px;
-  padding: 4px; gap: 4px; margin-bottom: 20px; box-shadow: var(--app-ombre);
+  background: var(--ios-remplissage); border: none; border-radius: 9px;
+  padding: 2px; gap: 2px; margin-bottom: 20px; box-shadow: none;
 }
 .etape {
-  border: none; background: transparent; color: var(--ink-soft);
-  border-radius: 10px; padding: 9px 6px; font-weight: 600; font-size: 13px;
+  border: none; background: transparent; color: var(--ios-label);
+  border-radius: 7px; padding: 7px 6px; font-size: 13px; font-weight: 500; letter-spacing: -0.01em;
+  transition: background-color 200ms var(--ios-courbe), box-shadow 200ms var(--ios-courbe);
 }
-.etape:hover { color: var(--accent); background: #f5f6f8; }
-.etape.actif, .etape.actif:hover { background: var(--accent-wash); color: var(--accent); font-weight: 700; }
-.etape .num { font-size: 9.5px; opacity: .65; letter-spacing: .6px; }
-
-/* ── Cartes ── */
-.carte { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--app-ombre); }
-#vueCours .carte { padding: 20px; margin-bottom: 14px; }
-#vueCours .carte h2 { font-size: 16.5px; color: var(--ink); }
-#vueTest .carte { padding: 22px 20px; box-shadow: var(--app-ombre); }
-.carte p, .carte ul.liste { color: var(--app-texte); font-size: 14px; }
-.carte strong { color: var(--ink); }
-
-/* ── Encarts ── */
-.astuce, .offre-1-1, .nom-maison {
-  background: var(--accent-wash); color: var(--app-bleu-texte);
-  border: 1px solid #bae0f7; border-radius: 12px;
+.etape:hover { color: var(--ios-label); background: transparent; }
+.etape:active { background: rgba(255, 255, 255, 0.5); }
+.etape.actif, .etape.actif:hover {
+  background: #fff; color: var(--ios-label); font-weight: 600;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
 }
-.astuce strong, .offre-1-1 strong, .nom-maison strong, .astuce-cylindre strong { color: var(--accent); }
-.astuce-cylindre { background: var(--accent-wash); color: var(--app-bleu-texte); border: 1px solid #bae0f7; border-radius: 12px; }
-.note-attention, .note-presbytie { background: var(--rouge-wash); border: 1px solid #fecaca; color: #991b1b; border-radius: 12px; }
-.note-attention strong, .note-presbytie strong { color: var(--rouge); }
-.a-valider, .alerte-manquant { background: var(--jaune-wash); border: 1px solid #fde68a; color: var(--jaune); border-radius: 12px; }
+.etape .num { display: none; }
 
-.nom-marche { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; }
-.nom-marche .marque { font-size: 14px; color: var(--ink); }
+/* ── Cartes = listes groupées ─────────────────────────────── */
+.carte, #vueCours .carte, #vueTest .carte, .carte-drill {
+  background: var(--ios-carte); border: none; border-radius: 12px; box-shadow: none;
+}
+#vueCours .carte { padding: 16px; margin-bottom: 20px; }
+#vueTest .carte, .carte-drill { padding: 18px 16px; }
 
-.info-item { background: var(--accent-wash); border: 1px solid #bae0f7; border-radius: 12px; }
-.info-item .valeur { color: var(--accent); }
+/* ── Encarts ─────────────────────────────────────────────── */
+.astuce, .offre-1-1, .nom-maison, .astuce-cylindre {
+  background: var(--ios-teinte-fond); color: var(--ios-label); border: none; border-radius: 10px;
+  font-size: 15px; line-height: 1.45;
+}
+.astuce strong, .offre-1-1 strong, .nom-maison strong, .astuce-cylindre strong { color: var(--ios-teinte); }
+.note-attention, .note-presbytie {
+  background: var(--ios-rouge-fond); border: none; color: var(--ios-label); border-radius: 10px; font-size: 15px; line-height: 1.45;
+}
+.note-attention strong, .note-presbytie strong { color: var(--ios-rouge-texte); }
+.a-valider, .alerte-manquant {
+  background: var(--ios-jaune-fond); border: none; color: var(--ios-jaune-texte); border-radius: 10px; font-size: 15px;
+}
+.exemple-formule { background: var(--ios-fond); border-radius: 10px; font-size: 15px; color: var(--ios-label); }
 
-.etape-meca .puce, .regle .puce { background: var(--accent-wash); color: var(--accent); }
-.etape-meca .puce { background: var(--app-gradient); color: #fff; }
-.etape-meca { color: var(--app-texte); }
+/* Pastilles de noms du marché, infos pratiques */
+.nom-marche { background: var(--ios-fond); border: none; border-radius: 10px; }
+.nom-marche .marque { font-size: 15px; font-weight: 600; color: var(--ios-label); letter-spacing: -0.01em; }
+.info-item { background: var(--ios-fond); border: none; border-radius: 10px; }
+.info-item .valeur { color: var(--ios-teinte); font-weight: 700; letter-spacing: -0.02em; }
+.info-item .label { color: var(--ios-label-2); font-size: 12px; }
 
-.critere.oui { background: var(--vert-wash); }
-.critere.non { background: var(--rouge-wash); }
-.critere ul, .persona .desc, .compar ul, .gamme .contenu, .arg .gain { color: var(--app-texte); }
-.persona { border-radius: 14px; }
-.persona.bon { background: #f0fdf4; border-color: #bbf7d0; }
-.persona.mauvais { background: var(--rouge-wash); border-color: #fecaca; }
+/* Étapes numérotées */
+.etape-meca { color: var(--ios-label); font-size: 16px; }
+.etape-meca .puce { background: var(--ios-teinte); color: #fff; font-size: 13px; }
+.regle { font-size: 16px; color: var(--ios-label); }
+.regle .puce { background: var(--ios-teinte-fond); color: var(--ios-teinte); }
 
-/* Cartes d'arguments, comparatifs, gammes, objections */
-.arg { border-color: var(--line); background: #fff; }
-.arg .phrase { background: var(--accent-wash); color: var(--app-bleu-texte); }
-.badge-lpt { background: var(--accent-wash); color: var(--accent); }
-.compar, .gamme { background: var(--bg); border: 1px solid var(--line); }
-.compar.star, .gamme.star { background: var(--accent-wash); border: 1px solid #bae0f7; }
-.compar.star .nom, .gamme.star .niveau { color: var(--accent); }
-.objection { border-color: var(--line); }
-.objection .dit { background: var(--bg); color: var(--ink); }
-.objection .reponse { color: #166534; }
-.objection .reponse strong { color: var(--vert); }
-.conseil { background: var(--bg); border: 1px solid var(--line); }
-.conseil .verre { color: var(--accent); }
-.tableau td.col-star { background: var(--accent-wash); }
-.tableau th.star { color: var(--accent); }
+/* Critères, profils, comparatifs */
+.critere { border-radius: 10px; }
+.critere.oui { background: var(--ios-vert-fond); }
+.critere.non { background: var(--ios-rouge-fond); }
+.critere.orange { background: rgba(255, 149, 0, 0.14); }
+.critere .tag, .persona .tag { font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.critere.oui .tag, .persona.bon .tag, .persona.bon .conclusion { color: var(--ios-vert-texte); }
+.critere.non .tag, .persona.mauvais .tag, .persona.mauvais .conclusion { color: var(--ios-rouge-texte); }
+.critere ul, .persona .desc, .compar ul, .gamme .contenu, .arg .gain, .objection .derriere { color: var(--ios-label); font-size: 15px; }
+.persona { border: none; border-radius: 10px; }
+.persona.bon { background: var(--ios-vert-fond); }
+.persona.mauvais { background: var(--ios-rouge-fond); }
+.persona .nom { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+.reponse-lpt { border-radius: 10px; }
+.reponse-lpt.verte { background: var(--ios-vert-fond); }
+.reponse-lpt.orange { background: rgba(255, 149, 0, 0.14); }
+.reponse-lpt.violette { background: var(--ios-teinte-fond); }
+.reponse-lpt.violette .tag { color: var(--ios-teinte); }
 
-/* Schémas de verres : même typo que le reste de l'app */
-.carte-schema { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--app-ombre); }
-.nom-verre { font-family: var(--font); font-weight: 700; font-size: 18px; color: var(--ink); }
-.eyebrow-schema, .caption-schema { color: #9aa1ac; }
-.sous-verre, .legende-verre { color: var(--ink-soft); }
+.arg { border: none; background: var(--ios-fond); border-radius: 10px; }
+.arg .titre-arg { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+.arg .phrase { background: #fff; color: var(--ios-label); border-radius: 8px; font-size: 15px; }
+.badge-lpt { background: var(--ios-teinte-fond); color: var(--ios-teinte); text-transform: none; letter-spacing: 0; font-weight: 600; }
+.compar, .gamme { background: var(--ios-fond); border: none; border-radius: 10px; }
+.compar.star, .gamme.star { background: var(--ios-teinte-fond); border: none; }
+.compar .nom, .gamme .nom { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+.compar.star .nom, .gamme.star .niveau { color: var(--ios-teinte); }
+.gamme .niveau { text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 600; color: var(--ios-label-2); }
+.objection { border: none; background: var(--ios-fond); border-radius: 10px; }
+.objection .dit { background: transparent; color: var(--ios-label); font-size: 16px; font-weight: 600; }
+.objection .reponse { color: var(--ios-label); font-size: 15px; }
+.objection .reponse strong { color: var(--ios-vert-texte); }
+.conseil { background: var(--ios-fond); border: none; border-radius: 10px; font-size: 15px; color: var(--ios-label); }
+.conseil .verre { color: var(--ios-teinte); font-weight: 600; }
+.delai { border-bottom: 0.5px solid var(--ios-separateur); font-size: 15px; color: var(--ios-label); }
+.tableau th, .tableau td { border-bottom: 0.5px solid var(--ios-separateur); font-size: 14px; }
+.tableau td.col-star { background: var(--ios-teinte-fond); }
+.tableau th.star { color: var(--ios-teinte); }
+.tableau td.oui { color: var(--ios-vert); }
+.checklist { background: var(--ios-vert-fond); color: var(--ios-label); border-radius: 10px; }
+.case-formule { background: var(--ios-teinte-fond); color: var(--ios-teinte); border-radius: 8px; }
+.case-formule.resultat { background: var(--ios-vert-fond); color: var(--ios-vert-texte); }
+.slack-mock { border: none; background: var(--ios-fond); border-radius: 12px; }
+.slack-photo, .slack-capture { background: #fff; }
+
+/* Schémas de verres */
+.carte-schema { border: none; border-radius: 12px; box-shadow: none; background: var(--ios-carte); }
+.nom-verre { font-family: var(--ios-police); font-weight: 600; font-size: 20px; letter-spacing: -0.02em; color: var(--ios-label); }
+.eyebrow-schema, .caption-schema { color: var(--ios-label-3); letter-spacing: 0.04em; }
+.sous-verre, .legende-verre, .legende-schema { color: var(--ios-label-2); }
+.schema { background: var(--ios-fond); border-radius: 10px; }
 svg [fill="#7C3AED"] { fill: #0089ba; }
 svg [fill="#B79CE6"] { fill: #7cc7e6; }
 svg [fill="#E2D6F5"] { fill: #d4ecf8; }
 .legende-verre i[style*="#B79CE6"] { background: #7cc7e6 !important; }
 
-/* ── Entraînement ── */
-.progress-formats { color: var(--ink-soft); }
-.carte-format { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--app-ombre); }
-.carte-format:hover { border-color: #00abe9; }
-.carte-format .compteur-format { color: var(--accent); }
-.badge-fait { background: var(--vert-wash); color: var(--vert); }
-.carte-drill { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--app-ombre); padding: 22px 20px; }
-.lien-retour { color: var(--accent); }
-.profil-client, .citation-client { color: var(--ink); font-size: 16px; }
-.btn-choix, .btn-option, .btn-rep { border: 1.5px solid var(--line); border-radius: 12px; color: var(--ink); font-family: var(--font); }
-.btn-choix:hover, .btn-option:hover, .btn-rep:hover { border-color: #00abe9; background: #f8fbfd; }
-.feedback.ok { background: var(--vert-wash); color: #166534; }
-.feedback.non { background: var(--rouge-wash); color: #991b1b; }
-
-/* ── Boutons : dégradé bleu de l'app ── */
-.btn-principal, .btn-suivant {
-  background: var(--app-gradient); border-radius: 12px; font-family: var(--font); font-weight: 700;
+/* ── Entraînement ────────────────────────────────────────── */
+.progress-formats { color: var(--ios-label-2); font-size: 13px; font-weight: 400; padding-left: 16px; text-transform: uppercase; letter-spacing: 0.01em; }
+.grille-formats { gap: 10px; }
+.carte-format {
+  background: var(--ios-carte); border: none; border-radius: 12px; box-shadow: none; padding: 16px;
+  transition: transform 100ms ease-out, background-color 120ms ease-out;
 }
-.btn-principal:hover, .btn-suivant:hover { background: linear-gradient(135deg, #007aa6, #0099d0); }
-.btn-secondaire { color: var(--accent); border-color: var(--accent); border-radius: 12px; font-family: var(--font); }
+.carte-format:hover { border: none; }
+.carte-format:active { transform: scale(0.97); background: var(--ios-surbrillance); }
+.carte-format .titre-format { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+.carte-format .desc-format { font-size: 13px; color: var(--ios-label-2); line-height: 1.35; }
+.carte-format .compteur-format { color: var(--ios-teinte); font-size: 13px; font-weight: 500; }
+.badge-fait, .badge-acquis { background: var(--ios-vert-fond); color: var(--ios-vert-texte); font-weight: 600; }
+.lien-retour { color: var(--ios-teinte); font-size: 17px; font-weight: 400; transition: opacity 120ms; }
+.lien-retour:active { opacity: 0.4; }
+.score-drill { font-size: 15px; color: var(--ios-label-2); }
+.score-drill b.ok { color: var(--ios-vert-texte); }
+.score-drill b.non { color: var(--ios-rouge-texte); }
+.profil-client, .citation-client { color: var(--ios-label); font-size: 17px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.35; }
 
-/* ── Test ── */
-.seg-quiz { background: #eef0f2; }
-.seg-quiz.fait { background: #00abe9; }
-.compteur-quiz { color: var(--ink-soft); }
-.score-rond.reussi { border-color: #16a34a; background: var(--vert-wash); }
-.score-rond.echec { border-color: #ef4444; background: var(--rouge-wash); }
-.badge-acquis { background: var(--vert-wash); color: var(--vert); }
-.detail-reponse .texte-q { color: var(--app-texte); }
+/* Réponses : cellules iOS qui se surlignent au toucher */
+.btn-choix, .btn-option, .btn-rep {
+  background: var(--ios-fond); border: 2px solid transparent; border-radius: 12px;
+  color: var(--ios-label); font-size: 16px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.35;
+  transition: transform 100ms ease-out, background-color 120ms ease-out, border-color 160ms ease-out;
+}
+.btn-choix:hover, .btn-option:hover, .btn-rep:hover { border-color: transparent; background: var(--ios-fond); }
+.btn-choix:active, .btn-option:active, .btn-rep:active { transform: scale(0.98); background: var(--ios-surbrillance); }
+.choix-binaire .btn-rep, .btn-choix { font-weight: 600; text-align: center; }
+.choix-fait .btn-choix, .choix-fait .btn-option, .choix-fait .btn-rep { opacity: 0.45; }
+.choix-fait .bonne-reponse { border-color: var(--ios-vert) !important; background: var(--ios-vert-fond) !important; opacity: 1 !important; }
+.choix-fait .mauvaise-reponse { border-color: var(--ios-rouge) !important; background: var(--ios-rouge-fond) !important; opacity: 1 !important; }
+.feedback { border-radius: 12px; font-size: 15px; line-height: 1.45; }
+.feedback.ok { background: var(--ios-vert-fond); color: var(--ios-label); }
+.feedback.non { background: var(--ios-rouge-fond); color: var(--ios-label); }
+
+/* ── Boutons iOS (remplis / grisés) ───────────────────────── */
+.btn-principal, .btn-suivant, .btn-verifier {
+  background: var(--ios-teinte) !important; color: #fff; border: none; border-radius: 12px;
+  font-size: 17px; font-weight: 600; letter-spacing: -0.02em;
+  transition: transform 100ms ease-out, opacity 120ms ease-out;
+}
+.btn-principal { min-height: 50px; }
+.btn-suivant { padding: 12px 22px; }
+.btn-principal:hover, .btn-suivant:hover { background: var(--ios-teinte) !important; }
+.btn-principal:active, .btn-suivant:active, .btn-verifier:active { transform: scale(0.97); opacity: 0.8; }
+.btn-secondaire {
+  background: var(--ios-remplissage); color: var(--ios-teinte); border: none; border-radius: 12px;
+  font-size: 17px; font-weight: 600; letter-spacing: -0.02em; min-height: 50px;
+  transition: transform 100ms ease-out, opacity 120ms ease-out;
+}
+.btn-secondaire:active { transform: scale(0.97); opacity: 0.7; }
+.btn-principal:focus-visible, .btn-secondaire:focus-visible, .btn-suivant:focus-visible,
+.btn-choix:focus-visible, .btn-option:focus-visible, .btn-rep:focus-visible, .carte-format:focus-visible, .etape:focus-visible {
+  outline: 2px solid var(--ios-teinte); outline-offset: 2px;
+}
+
+/* ── Saisie de la transposition (cases + pavé) ────────────── */
+.value-box { border: none; background: var(--ios-fond); border-radius: 10px; color: var(--ios-label); font-weight: 600; }
+.value-box:active { background: var(--ios-surbrillance); }
+.value-box.correcte { background: var(--ios-vert-fond); box-shadow: inset 0 0 0 2px var(--ios-vert); }
+.value-box.incorrecte { background: var(--ios-rouge-fond); box-shadow: inset 0 0 0 2px var(--ios-rouge); }
+.label-champ-saisie { color: var(--ios-label-2); text-transform: none; letter-spacing: 0; font-size: 13px; }
+.ordonnance-depart { background: var(--ios-fond); border-radius: 12px; font-weight: 600; letter-spacing: -0.02em; }
+.numpad-overlay { background: rgba(0, 0, 0, 0.25); }
+.numpad-sheet {
+  background: rgba(209, 211, 217, 0.92); border-radius: 14px 14px 0 0;
+  -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%);
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+.numpad-affichage { border: none; border-radius: 10px; color: #000; }
+.numpad-touche { border: none; border-radius: 8px; background: #fff; color: #000; font-weight: 400; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3); transition: background-color 80ms; }
+.numpad-touche:active { background: #bcbfc6; }
+.numpad-touche.speciale { background: #abb0ba; }
+.numpad-touche.confirmer { background: var(--ios-teinte); color: #fff; }
+
+/* ── Test ────────────────────────────────────────────────── */
+.compteur-quiz { color: var(--ios-label-2); font-size: 13px; font-weight: 500; }
+.barre-quiz { gap: 3px; }
+.seg-quiz { background: var(--ios-remplissage); height: 4px; transition: background-color 250ms var(--ios-courbe); }
+.seg-quiz.fait { background: var(--ios-teinte); }
+.score-rond { border-width: 6px; }
+.score-rond.reussi { border-color: var(--ios-vert); background: var(--ios-vert-fond); }
+.score-rond.echec { border-color: var(--ios-rouge); background: var(--ios-rouge-fond); }
+.score-rond .chiffre { letter-spacing: -0.03em; }
+.titre-resultat { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.sous-resultat { font-size: 15px; color: var(--ios-label-2); }
+.detail-reponse { border-bottom: 0.5px solid var(--ios-separateur); font-size: 15px; }
+.detail-reponse .texte-q { color: var(--ios-label); }
+.detail-reponse.ok .icone { color: var(--ios-vert); }
+.detail-reponse.non .icone { color: var(--ios-rouge); }
 
 /* Le bouton « Prompt pour Paul » est réservé aux formateurs */
 .btn-prompt-paul { display: none !important; }
+
+/* ── Accessibilité ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .vue-etape { animation: none; }
+  .btn-choix:active, .btn-option:active, .btn-rep:active, .carte-format:active,
+  .btn-principal:active, .btn-secondaire:active, .btn-suivant:active { transform: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .numpad-sheet { background: #d1d3d9; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  :root { --ios-label-2: rgba(60, 60, 67, 0.85); --ios-separateur: rgba(60, 60, 67, 0.45); }
+  .carte, .carte-format, .btn-choix, .btn-option, .btn-rep { box-shadow: inset 0 0 0 1px rgba(60, 60, 67, 0.4); }
+}
+
+/* ── Finitions ───────────────────────────────────────────── */
+/* Le nom du module est déjà dans l'en-tête de la feuille : pas de surtitre en double */
+.eyebrow { display: none; }
+
+/* Cartes d'exercices en cellules iOS : pictogramme dans une pastille à gauche */
+.carte-format { display: grid; grid-template-columns: 44px 1fr; column-gap: 14px; row-gap: 3px; align-items: start; }
+.carte-format > * { grid-column: 2; }
+.carte-format .ico {
+  grid-column: 1; grid-row: 1 / span 4; width: 44px; height: 44px; border-radius: 11px;
+  background: var(--ios-fond); display: flex; align-items: center; justify-content: center; font-size: 22px;
+}
+.carte-format .badge-fait { justify-self: start; font-size: 12px; padding: 2px 9px; }

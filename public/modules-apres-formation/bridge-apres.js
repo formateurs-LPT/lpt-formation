@@ -16,6 +16,10 @@
   var btnPrompt = document.getElementById('btnPromptPaul')
   if (btnPrompt) btnPrompt.style.display = 'none'
 
+  // Safari iOS n'applique :active (retour visuel au toucher) que si la page
+  // écoute les touchers.
+  document.addEventListener('touchstart', function () {}, { passive: true })
+
   if (typeof marquerFormatFait === 'function' && typeof getFormatsFaits === 'function') {
     var marquerOrigine = marquerFormatFait
     marquerFormatFait = function (cle) {
