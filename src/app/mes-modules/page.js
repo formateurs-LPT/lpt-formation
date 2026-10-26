@@ -174,7 +174,10 @@ function LecteurModule({ module, etat, onFermer, onMessage }) {
   // plein exercice. L'état initial vient de la base (bridge-avant.js).
   const [src] = useState(() => {
     const p = new URLSearchParams({ m: module.id, faits: [...etat.formats].join(','), acquis: etat.acquis ? '1' : '0' })
-    return `/modules-apres-formation/${module.fichier}?${p}`
+    // En production, Vercel sert les .html sans extension (granit.html →
+    // /granit/) ; `next dev` ne sert que le chemin exact du fichier.
+    const chemin = process.env.NODE_ENV === 'development' ? module.fichier : `${module.id}/`
+    return `/modules-apres-formation/${chemin}?${p}`
   })
 
   useEffect(() => {
