@@ -1,0 +1,1289 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<script src="bridge-avant.js"></script>
+<meta charset="utf-8">
+<title>Module — La Transposition</title>
+<style>
+  :root {
+    --bg: #F2F4F7; --bg-panel: #FFFFFF; --line: rgba(17,21,27,0.10);
+    --ink: #11151B; --ink-soft: #5B6472;
+    --accent: #7C3AED; --accent-wash: #F2ECFE;
+    --vert: #0C8F6B; --vert-wash: #E7F7F1;
+    --rouge: #C0392B; --rouge-wash: #FBEAE8;
+    --radius: 18px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink); font-family: var(--font);
+    background: #F3F6F4;
+    background-image: radial-gradient(900px 500px at 100% -10%, rgba(176, 207, 192, 0.35), transparent 60%);
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 28px 22px 60px; }
+  .serif { font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; }
+
+  .vue-etape { animation: apparition .15s ease; }
+  @keyframes apparition { from { opacity: 0 } to { opacity: 1 } }
+
+  .etapes { display: flex; gap: 8px; margin-bottom: 24px; }
+  .etape {
+    flex: 1; text-align: center; padding: 10px 6px; border-radius: 12px; font-size: 12.5px; font-weight: 700;
+    border: 1.5px solid var(--line); color: var(--ink-soft); background: #fff; cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  .etape:hover { border-color: var(--accent); color: var(--accent); }
+  .etape.actif { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .etape.actif:hover { color: #fff; }
+  .etape .num { display: block; font-size: 10px; opacity: .8; margin-bottom: 2px; text-transform: uppercase; letter-spacing: .5px; }
+
+  .eyebrow { font-size: 11.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: 30px; font-weight: 800; margin: 6px 0 4px; letter-spacing: -0.4px; }
+  .sous-titre { color: var(--ink-soft); margin: 0 0 26px; font-size: 15px; }
+
+  /* Carte générique — utilisée par Cours et Test, déclinée par section */
+  .carte { border: 1px solid var(--line); border-radius: var(--radius); }
+  .carte h2 { font-weight: 800; margin: 0 0 12px; }
+  .carte p { line-height: 1.6; color: #3C4450; margin: 0 0 10px; }
+  #vueCours .carte { background: var(--bg-panel); padding: 24px; margin-bottom: 18px; }
+  #vueCours .carte h2 { font-size: 18px; }
+  #vueTest .carte { background: #fff; padding: 28px 24px; box-shadow: 0 2px 8px rgba(17,21,27,0.03); }
+  #vueTest .carte h2 { font-size: 17px; }
+
+  /* ───────────────── Cours : formule de transposition ───────────────── */
+  .formule-transposition { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
+  .ligne-formule { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+  .case-formule { background: var(--accent-wash); color: var(--accent); font-weight: 800; padding: 8px 14px; border-radius: 10px; font-size: 13.5px; }
+  .case-formule.resultat { background: var(--vert-wash); color: var(--vert); }
+  .op-formule { color: var(--ink-soft); font-weight: 700; font-size: 15px; }
+  .caption-schema { text-align: right; font-size: 9.5px; letter-spacing: 1px; text-transform: uppercase; color: #AEB6BE; margin-top: 10px; }
+  .exemple-formule { background: var(--bg); border-radius: 12px; padding: 12px 16px; font-size: 13.5px; color: #3C4450; margin-top: 16px; font-variant-numeric: tabular-nums; }
+  .exemple-formule strong { color: var(--ink); }
+
+  .astuce-cylindre {
+    background: var(--accent-wash); border-radius: 14px; padding: 14px 16px;
+    font-size: 13px; color: #4A2E8F; line-height: 1.55; margin-top: 16px;
+  }
+  .astuce-cylindre strong { color: var(--accent); }
+
+  .note-attention {
+    background: #FBEAE8; border: 1.5px solid #F1C9C4; border-radius: 14px; padding: 14px 16px;
+    font-size: 13px; color: #8A2A1E; line-height: 1.55; margin-top: 16px;
+  }
+  .note-attention strong { color: #C0392B; }
+  .note-attention ul { margin: 8px 0 0; padding-left: 18px; }
+  .note-attention li { margin-bottom: 4px; }
+
+  /* Jauge de la plage de fabrication */
+  .jauge-plage { margin-top: 10px; }
+  .jauge-barre { position: relative; height: 10px; background: var(--line); border-radius: 999px; margin: 34px 0 6px; }
+  .jauge-zone { position: absolute; top: 0; bottom: 0; background: var(--vert); border-radius: 999px; }
+  .jauge-tick { position: absolute; top: -24px; transform: translateX(-50%); font-size: 11px; font-weight: 800; color: var(--ink-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .jauge-tick::after { content: ''; position: absolute; left: 50%; top: 22px; width: 2px; height: 10px; background: var(--ink-soft); transform: translateX(-50%); }
+  .jauge-legende { font-size: 12px; color: var(--ink-soft); text-align: center; margin-top: 4px; }
+
+  .grille-personas { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+  .persona { border-radius: 14px; padding: 16px; border: 1.5px solid var(--line); }
+  .persona.bon { background: var(--vert-wash); border-color: #BFE6D6; }
+  .persona.mauvais { background: var(--rouge-wash); border-color: #F1C9C4; }
+  .persona .tag { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; display: block; }
+  .persona.bon .tag { color: var(--vert); }
+  .persona.mauvais .tag { color: var(--rouge); }
+  .persona .nom { font-weight: 800; font-size: 14.5px; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  .persona .desc { font-size: 13px; color: #3C4450; line-height: 1.5; margin-bottom: 8px; }
+  .persona .conclusion { font-size: 12.5px; font-weight: 700; }
+  .persona.bon .conclusion { color: var(--vert); }
+  .persona.mauvais .conclusion { color: var(--rouge); }
+
+  .infos-pratiques { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .info-item { background: var(--accent-wash); border-radius: 12px; padding: 14px; text-align: center; }
+  .info-item .valeur { font-weight: 800; font-size: 17px; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .info-item .label { font-size: 11.5px; color: var(--ink-soft); margin-top: 3px; }
+
+  /* ───────────────── Entraînement ───────────────── */
+  .progress-formats { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 14px; font-weight: 600; }
+
+  .grille-formats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .carte-format {
+    background: #fff; border-radius: 18px; padding: 20px; border: 1px solid var(--line);
+    box-shadow: 0 2px 6px rgba(17,21,27,0.03); cursor: pointer; text-align: left;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .carte-format:hover { border-color: var(--accent); }
+  .carte-format .ico { font-size: 22px; }
+  .carte-format .titre-format { font-weight: 800; font-size: 14.5px; }
+  .carte-format .desc-format { font-size: 12px; color: var(--ink-soft); line-height: 1.5; flex: 1; }
+  .carte-format .compteur-format { font-size: 11px; color: var(--accent); font-weight: 700; }
+  .badge-fait {
+    align-self: flex-start; background: var(--vert-wash); color: var(--vert);
+    font-size: 10.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px;
+  }
+
+  .carte-drill { background: #fff; border-radius: var(--radius); padding: 28px 24px; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(17,21,27,0.03); }
+  .entete-drill { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .lien-retour { background: none; border: none; color: var(--accent); font-weight: 700; font-size: 13.5px; cursor: pointer; padding: 0; }
+  .score-drill { font-size: 12.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .score-drill b.ok { color: var(--vert); }
+  .score-drill b.non { color: var(--rouge); }
+
+  .profil-client { font-size: 17px; font-weight: 600; line-height: 1.5; margin-bottom: 20px; color: #1C2430; font-variant-numeric: tabular-nums; }
+  .citation-client { font-size: 17px; font-weight: 600; line-height: 1.5; margin-bottom: 20px; font-style: italic; color: #1C2430; }
+  .citation-client::before { content: "“"; } .citation-client::after { content: "”"; }
+
+  .choix-binaire { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .btn-choix {
+    padding: 15px 10px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff;
+    font-weight: 700; font-size: 14.5px; cursor: pointer; color: var(--ink);
+  }
+  .btn-choix:hover { border-color: var(--accent); }
+
+  .liste-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .btn-option {
+    text-align: left; padding: 13px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff;
+    font-size: 14px; cursor: pointer; color: var(--ink); line-height: 1.45; font-variant-numeric: tabular-nums;
+  }
+  .btn-option:hover { border-color: var(--accent); }
+
+  .choix-fait .btn-choix, .choix-fait .btn-option, .choix-fait .btn-rep { pointer-events: none; opacity: .55; }
+  .choix-fait .selectionne { opacity: 1; }
+  .choix-fait .bonne-reponse { opacity: 1 !important; border-color: var(--vert); background: var(--vert-wash); }
+  .choix-fait .mauvaise-reponse { opacity: 1 !important; border-color: var(--rouge); background: var(--rouge-wash); }
+
+  .feedback { border-radius: 12px; padding: 14px 16px; font-size: 13.5px; line-height: 1.55; margin-bottom: 18px; display: none; }
+  .feedback.visible { display: block; }
+  .feedback.ok { background: var(--vert-wash); color: #0A5E47; }
+  .feedback.non { background: var(--rouge-wash); color: #8A2A1E; }
+
+  .pied-drill { display: flex; justify-content: flex-end; }
+  .btn-suivant {
+    background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 12px 22px;
+    font-weight: 700; font-size: 14px; cursor: pointer; display: none;
+  }
+  .btn-suivant.visible { display: inline-block; }
+
+  /* ───────────────── Test ───────────────── */
+  .regle { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; font-size: 14px; color: #3C4450; line-height: 1.5; }
+  .regle .puce { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-wash); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+
+  .btn-principal {
+    background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 14px 22px;
+    font-weight: 800; font-size: 15px; cursor: pointer; width: 100%; margin-top: 16px;
+  }
+  .btn-principal:hover { background: #6A2FD1; }
+  .btn-secondaire {
+    background: #fff; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 12px; padding: 13px 22px;
+    font-weight: 700; font-size: 14.5px; cursor: pointer; width: 100%; margin-top: 10px;
+  }
+
+  .alerte-manquant {
+    background: #FFF8E6; border: 1.5px dashed #E0B341; border-radius: 12px; padding: 13px 15px;
+    font-size: 13px; color: #7A5A0A; margin: 14px 0 0; line-height: 1.55;
+  }
+
+  .entete-quiz { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .compteur-quiz { font-size: 12.5px; color: var(--ink-soft); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .barre-quiz { display: flex; gap: 4px; margin-bottom: 22px; }
+  .seg-quiz { flex: 1; height: 4px; border-radius: 999px; background: var(--line); }
+  .seg-quiz.fait { background: var(--accent); }
+
+  .btn-rep {
+    padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff;
+    font-weight: 600; font-size: 14px; cursor: pointer; color: var(--ink); text-align: left; line-height: 1.45;
+    font-variant-numeric: tabular-nums;
+  }
+  .btn-rep:hover { border-color: var(--accent); }
+  .choix-binaire .btn-rep { text-align: center; font-weight: 700; }
+
+  .score-rond {
+    width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 18px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; border: 6px solid var(--line);
+  }
+  .score-rond.reussi { border-color: var(--vert); background: var(--vert-wash); }
+  .score-rond.echec { border-color: var(--rouge); background: var(--rouge-wash); }
+  .score-rond .chiffre { font-size: 30px; font-weight: 800; line-height: 1; }
+  .score-rond .sur { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+
+  .titre-resultat { text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+  .sous-resultat { text-align: center; color: var(--ink-soft); font-size: 14px; margin-bottom: 24px; }
+
+  .detail-reponse { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .detail-reponse:last-child { border-bottom: none; }
+  .detail-reponse .icone { flex-shrink: 0; font-weight: 800; }
+  .detail-reponse.ok .icone { color: var(--vert); }
+  .detail-reponse.non .icone { color: var(--rouge); }
+  .detail-reponse .texte-q { color: #3C4450; line-height: 1.5; }
+
+  .badge-acquis {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--vert-wash); color: var(--vert);
+    font-weight: 800; font-size: 13px; padding: 8px 16px; border-radius: 999px; margin: 0 auto 18px; width: fit-content;
+  }
+
+  /* ───────────────── Saisie transposition (cases tapables + pavé numérique, même système que l'appli) ───────────────── */
+  .ordonnance-depart {
+    background: var(--bg); border-radius: 12px; padding: 14px 18px; font-size: 18px; font-weight: 700;
+    text-align: center; margin-bottom: 16px; font-variant-numeric: tabular-nums; color: var(--ink);
+  }
+  .grille-saisie { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .champ-saisie { display: flex; flex-direction: column; gap: 6px; }
+  .label-champ-saisie { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); text-align: center; text-transform: uppercase; letter-spacing: .4px; }
+  .value-box {
+    width: 100%; min-height: 52px; padding: 12px 6px; border-radius: 12px; border: 2px solid rgba(200,165,42,0.55);
+    background: #fff; font-size: 18px; font-weight: 800; color: #2A2840; cursor: pointer;
+    font-variant-numeric: tabular-nums; font-family: var(--font);
+  }
+  .value-box:hover { border-color: #C8A52A; }
+  .choix-fait .value-box { pointer-events: none; opacity: 1; }
+  .value-box.correcte { border-color: #22c55e; background: rgba(34,197,94,0.12); }
+  .value-box.incorrecte { border-color: #ef4444; background: rgba(239,68,68,0.1); }
+  .correction-champ { font-size: 11px; color: #ef4444; font-weight: 700; text-align: center; margin-top: 2px; }
+  .btn-verifier {
+    width: 100%; padding: 13px; border-radius: 12px; background: #2A2840; border: none; color: #fff;
+    font-size: 14px; font-weight: 800; cursor: pointer;
+  }
+  .btn-verifier:disabled { opacity: .5; cursor: default; }
+
+  /* Pavé numérique (bottom sheet) */
+  .numpad-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; }
+  .numpad-sheet {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 201; background: #EAE7F0;
+    border-radius: 20px 20px 0 0; padding: 18px 18px 36px; box-shadow: 0 -8px 40px rgba(0,0,0,0.25);
+    max-width: 480px; margin: 0 auto;
+  }
+  .numpad-entete { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .numpad-titre { font-size: 14px; font-weight: 700; color: #555; }
+  .numpad-fermer { background: transparent; border: none; font-size: 22px; cursor: pointer; color: #888; }
+  .numpad-affichage {
+    margin-bottom: 14px; background: #fff; border-radius: 12px; padding: 12px 20px; font-size: 30px;
+    font-weight: 800; color: #2A2840; text-align: center; border: 2px solid #C8A52A; font-variant-numeric: tabular-nums;
+  }
+  .numpad-grille { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .numpad-touche {
+    padding: 15px 8px; border-radius: 12px; cursor: pointer; border: 1px solid #ddd9ec;
+    background: #fff; color: #2A2840; font-size: 22px; font-weight: 700; font-family: var(--font);
+  }
+  .numpad-touche.speciale { background: #e0dcf0; }
+  .numpad-touche.confirmer { background: #C8A52A; color: #fff; font-size: 20px; }
+
+  /* ───────────────── Bouton + modale "Prompt pour Paul" ───────────────── */
+  .btn-prompt-paul {
+    position: fixed; top: 16px; left: 16px; z-index: 50;
+    background: #fff; border: 1.5px solid var(--line); color: var(--ink-soft);
+    font-size: 11px; font-weight: 700; padding: 7px 12px; border-radius: 999px;
+    cursor: pointer; box-shadow: 0 2px 6px rgba(17,21,27,0.06);
+  }
+  .btn-prompt-paul:hover { border-color: var(--accent); color: var(--accent); }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(17,21,27,0.45); z-index: 100;
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-prompt {
+    background: #fff; border-radius: 18px; max-width: 720px; width: 100%; max-height: 85vh;
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(17,21,27,0.25);
+  }
+  .modal-entete {
+    display: flex; align-items: center; justify-content: space-between; padding: 16px 20px;
+    border-bottom: 1px solid var(--line); font-weight: 800; font-size: 14px; flex-shrink: 0;
+  }
+  .btn-fermer { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--ink-soft); line-height: 1; padding: 4px; }
+  .btn-fermer:hover { color: var(--ink); }
+  .texte-prompt {
+    margin: 0; padding: 20px; overflow-y: auto; white-space: pre-wrap; font-family: var(--font);
+    font-size: 12.5px; line-height: 1.6; color: #2A3342; flex: 1;
+  }
+  .modal-pied { padding: 14px 20px; border-top: 1px solid var(--line); flex-shrink: 0; }
+</style>
+<link rel="stylesheet" href="theme-app.css">
+
+<button class="btn-prompt-paul" id="btnPromptPaul">📋 Prompt pour Paul</button>
+
+<div class="modal-overlay" id="modalPrompt" style="display:none">
+  <div class="modal-prompt">
+    <div class="modal-entete">
+      <span>Prompt pour Paul — Module La Transposition</span>
+      <button class="btn-fermer" id="btnFermerModal">✕</button>
+    </div>
+    <pre class="texte-prompt" id="textePrompt"></pre>
+    <div class="modal-pied">
+      <button class="btn-principal" id="btnCopierPrompt" style="margin-top:0">Copier le prompt</button>
+    </div>
+  </div>
+</div>
+
+<div class="numpad-overlay" id="numpadOverlay" style="display:none"></div>
+<div class="numpad-sheet" id="numpadSheet" style="display:none">
+  <div class="numpad-entete">
+    <span class="numpad-titre" id="numpadTitre"></span>
+    <button class="numpad-fermer" id="numpadFermer">✕</button>
+  </div>
+  <div class="numpad-affichage" id="numpadAffichage"></div>
+  <div class="numpad-grille" id="numpadGrille"></div>
+</div>
+
+<div class="page">
+  <div class="etapes">
+    <div class="etape actif" data-etape="cours"><span class="num">Étape 1</span>Cours</div>
+    <div class="etape" data-etape="entrainement"><span class="num">Étape 2</span>Entraînement</div>
+    <div class="etape" data-etape="test"><span class="num">Étape 3</span>Test</div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 1 — COURS ═══════════════════ -->
+  <div id="vueCours" class="vue-etape">
+    <span class="eyebrow">Module Après-Formation · Fabrication</span>
+    <h1>La Transposition</h1>
+    <p class="sous-titre">Lire n'importe quelle ordonnance dans le bon sens, et savoir ce qu'on peut vraiment fabriquer en 10 minutes.</p>
+
+    <div class="carte">
+      <h2>1. C'est quoi ?</h2>
+      <p>Une même prescription peut s'écrire en <strong>cylindre positif</strong> ou en <strong>cylindre négatif</strong> selon l'habitude de l'ophtalmologiste qui l'a rédigée. Chez nous, <strong>tous nos verres sont notés en cylindre positif</strong> — c'est notre seule convention de travail.</p>
+      <p>La transposition, c'est la technique qui permet de remettre une ordonnance en cylindre positif quand elle a été écrite en négatif. <strong>On ne la fait que dans ce sens-là</strong> : si une ordonnance est déjà en cylindre positif, il n'y a rien à transposer, on la lit directement. Le verre reste <strong>rigoureusement identique</strong> : seule la façon de l'écrire change, jamais la correction réelle du client.</p>
+    </div>
+
+    <div class="carte">
+      <h2>2. Comment on fait</h2>
+      <p>On commence par regarder le signe du cylindre : s'il est déjà positif, on s'arrête là. S'il est négatif, on transpose en 3 étapes :</p>
+
+      <div class="formule-transposition">
+        <div class="ligne-formule">
+          <span class="case-formule">Sphère</span>
+          <span class="op-formule">+</span>
+          <span class="case-formule">Cylindre (négatif)</span>
+          <span class="op-formule">=</span>
+          <span class="case-formule resultat">Nouvelle sphère</span>
+        </div>
+        <div class="ligne-formule">
+          <span class="case-formule">Cylindre −</span>
+          <span class="op-formule">→</span>
+          <span class="case-formule resultat">Cylindre + (on remplace juste le signe)</span>
+        </div>
+        <div class="ligne-formule">
+          <span class="case-formule">Axe</span>
+          <span class="op-formule">→</span>
+          <span class="case-formule resultat">Nouvel axe (toujours entre 0° et 180°)</span>
+        </div>
+      </div>
+      <p style="margin-top:14px"><strong>Règle de l'axe</strong> : s'il est supérieur à 90°, on lui enlève 90°. S'il est inférieur (ou égal) à 90°, on lui ajoute 90°. Comme ça, on ne sort jamais de 0°-180°.</p>
+
+      <div class="exemple-formule">Exemple : <strong>−2.00 (−1.50) 30°</strong> (cylindre négatif) devient <strong>−3.50 (+1.50) 120°</strong> une fois transposé en positif. C'est exactement le même verre, écrit dans notre convention.</div>
+    </div>
+
+    <div class="carte">
+      <h2>3. Pourquoi ça existe</h2>
+      <p>Les ophtalmologistes n'utilisent pas tous la même convention : certains écrivent en cylindre positif, d'autres en cylindre négatif, selon leur formation ou leur logiciel. Nos verres et notre machine de fabrication en magasin, eux, se basent toujours sur la convention <strong>cylindre positif</strong> — c'est notre seule norme de travail.</p>
+      <p>Il faut donc savoir repérer le signe du cylindre sur une ordonnance : s'il est négatif, on la transpose en positif avant de l'exploiter. S'il est déjà positif, pas besoin de transposer quoi que ce soit, on la lit telle quelle.</p>
+      <div class="astuce-cylindre">💡 <strong>Astuce qui fait gagner du temps</strong> : la valeur absolue du cylindre ne change jamais pendant une transposition — seul son signe change. Si un cylindre dépasse déjà 3.00 en valeur absolue sur l'ordonnance telle qu'elle est écrite, inutile de transposer quoi que ce soit : ce n'est de toute façon pas fabricable en 10 minutes.</div>
+    </div>
+
+    <div class="carte">
+      <h2>4. Pourquoi c'est important chez nous</h2>
+      <p>On fabrique les lunettes en 10 minutes directement en magasin, mais seulement dans une plage précise, toujours vérifiée une fois l'ordonnance exprimée en cylindre positif (notre convention de travail) :</p>
+
+      <div class="jauge-plage">
+        <div class="jauge-barre">
+          <div class="jauge-zone" style="left:5.88%;width:89.71%"></div>
+          <div class="jauge-tick" style="left:5.88%">−8.00</div>
+          <div class="jauge-tick" style="left:52.94%">0</div>
+          <div class="jauge-tick" style="left:95.59%">+7.25</div>
+        </div>
+        <div class="jauge-legende">Sphère fabricable en 10 minutes (zone verte) · Cylindre max 3.00, dans les deux sens</div>
+      </div>
+
+      <div class="note-attention">
+        ⚠️ <strong>Attention à l'erreur courante</strong> : si une ordonnance est écrite en cylindre négatif, ne jamais juger de la faisabilité sur les chiffres bruts tels qu'ils sont écrits — il faut d'abord la transposer en positif. Dans un sens comme dans l'autre, le résultat peut changer :
+        <ul>
+          <li><strong>Piège n°1</strong> : la sphère affichée semble correcte, mais une fois transposée en positif elle descend sous la limite basse (−8.00) — ce n'est en réalité pas fabricable.</li>
+          <li><strong>Piège n°2</strong> : la sphère affichée semble trop forte (hors plage), mais une fois transposée en positif elle rentre parfaitement dans la limite haute (+7.25) — c'est en réalité fabricable.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>5. Autre cas d'usage : le SAV</h2>
+      <p>La fabrication en 10 minutes n'est pas le seul moment où la transposition sert. Dans notre base de données, la correction de chaque client est <strong>toujours enregistrée transposée en cylindre positif</strong> — c'est la même convention que pour la fabrication.</p>
+      <p>Au SAV, quand on veut vérifier que la correction enregistrée dans le dossier du client correspond bien à son ordonnance d'origine, il faut comparer les deux. Si l'ordonnance d'origine est écrite en <strong>cylindre négatif</strong>, il faut d'abord la transposer en positif avant de la comparer à ce qui est dans le dossier.</p>
+      <div class="note-attention">
+        ⚠️ <strong>Attention à l'erreur courante</strong> : ne jamais comparer directement une ordonnance en cylindre négatif aux chiffres de la base de données sans l'avoir transposée en positif d'abord — les chiffres ne se ressembleront pas, alors que c'est peut-être exactement la même correction.
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>6. Exemples concrets</h2>
+      <div class="grille-personas">
+        <div class="persona bon">
+          <span class="tag">✅ Fabricable</span>
+          <div class="nom">+8.50 (−2.50) 60°</div>
+          <div class="desc">Écrite en cylindre négatif. Transposée : +6.00 (+2.50) 150°.</div>
+          <div class="conclusion">→ Sphère +6.00 dans la plage, cylindre 2.50 ≤ 3 : fabricable, malgré une sphère affichée qui semblait trop forte.</div>
+        </div>
+        <div class="persona bon">
+          <span class="tag">✅ Fabricable</span>
+          <div class="nom">+4.00 (+1.00) 20°</div>
+          <div class="desc">Déjà écrite en cylindre positif — c'est directement notre convention de travail.</div>
+          <div class="conclusion">→ Sphère et cylindre dans la plage sans avoir besoin de transposer.</div>
+        </div>
+        <div class="persona mauvais">
+          <span class="tag">❌ Pas fabricable</span>
+          <div class="nom">−6.00 (−2.50) 100°</div>
+          <div class="desc">Écrite en cylindre négatif. Transposée : −8.50 (+2.50) 10°.</div>
+          <div class="conclusion">→ Une fois transposée, la sphère descend sous −8.00 : pas fabricable, alors que la sphère affichée semblait correcte.</div>
+        </div>
+        <div class="persona mauvais">
+          <span class="tag">❌ Pas fabricable</span>
+          <div class="nom">+2.00 (+3.50) 120°</div>
+          <div class="desc">Déjà écrite en cylindre positif.</div>
+          <div class="conclusion">→ Le cylindre 3.50 dépasse déjà 3.00 en valeur absolue : pas fabricable, peu importe la sphère.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>7. Infos pratiques</h2>
+      <div class="infos-pratiques">
+        <div class="info-item"><div class="valeur">−8.00 à +7.25</div><div class="label">sphère disponible en 10 min en magasin</div></div>
+        <div class="info-item"><div class="valeur">3.00</div><div class="label">cylindre max en 10 min en magasin</div></div>
+        <div class="info-item"><div class="valeur">Positif</div><div class="label">convention de travail</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 2 — ENTRAÎNEMENT ═══════════════════ -->
+  <div id="vueEntrainement" class="vue-etape" style="display:none">
+    <span class="eyebrow">Module Après-Formation · La Transposition</span>
+    <h1>Entraînement</h1>
+    <p class="sous-titre">Pas de pression : tu peux refaire ces exercices autant de fois que tu veux, dans l'ordre que tu veux.</p>
+
+    <div id="vueMenu">
+      <div class="progress-formats" id="progressFormats"></div>
+      <div class="grille-formats" id="grilleFormats"></div>
+    </div>
+
+    <div id="vueDrill" style="display:none">
+      <div class="carte-drill">
+        <div class="entete-drill">
+          <button class="lien-retour" id="btnRetourMenu">← Retour aux exercices</button>
+          <span class="score-drill" id="scoreDrill"></span>
+        </div>
+        <div id="corpsDrill"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="pied-drill">
+          <button class="btn-suivant" id="btnSuivant">Suivant →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 3 — TEST ═══════════════════ -->
+  <div id="vueTest" class="vue-etape" style="display:none">
+    <span class="eyebrow">Module Après-Formation · La Transposition</span>
+    <h1>Test</h1>
+    <p class="sous-titre">Une seule fois pour verrouiller le module — mais tu peux retenter autant de fois que nécessaire si besoin.</p>
+
+    <div id="vueIntro">
+      <div class="carte">
+        <h2>Avant de commencer</h2>
+        <div class="regle"><span class="puce">1</span><span>12 questions, mélange de ce qu'on a vu dans le cours et à l'entraînement.</span></div>
+        <div class="regle"><span class="puce">2</span><span>Pas de correction affichée en cours de route — le score tombe à la fin.</span></div>
+        <div class="regle"><span class="puce">3</span><span>Il faut <strong>10/12</strong> pour valider le module.</span></div>
+        <div class="regle"><span class="puce">4</span><span>En dessous, pas de souci : retourne t'entraîner et retente quand tu veux.</span></div>
+
+        <div class="alerte-manquant" id="gateManquant" style="display:none">
+          ⚠️ Pas encore accessible : il faut avoir fait au moins une fois chaque format d'entraînement. Il reste : <strong id="texteManquant"></strong>.
+          <button class="btn-secondaire" id="btnAllerEntrainement">Aller à l'entraînement</button>
+        </div>
+
+        <button class="btn-principal" id="btnCommencer">Commencer le test</button>
+      </div>
+    </div>
+
+    <div id="vueDejaAcquis" style="display:none">
+      <div class="carte" style="text-align:center">
+        <div class="badge-acquis" style="margin:0 auto 14px">✓ Module déjà acquis</div>
+        <p>Tu as déjà validé ce module. Pas besoin de le repasser.</p>
+        <button class="btn-secondaire" id="btnRepasserQuandMeme">Le repasser quand même</button>
+      </div>
+    </div>
+
+    <div id="vueQuiz" style="display:none">
+      <div class="carte">
+        <div class="entete-quiz">
+          <span class="compteur-quiz" id="compteurQuiz"></span>
+        </div>
+        <div class="barre-quiz" id="barreQuiz"></div>
+        <div id="corpsQuestion"></div>
+      </div>
+    </div>
+
+    <div id="vueResultat" style="display:none">
+      <div class="carte">
+        <div class="score-rond" id="scoreRond">
+          <div class="chiffre" id="scoreChiffre"></div>
+          <div class="sur">sur 12</div>
+        </div>
+        <div class="titre-resultat" id="titreResultat"></div>
+        <div class="sous-resultat" id="sousResultat"></div>
+        <div id="detailResultat"></div>
+        <button class="btn-principal" id="btnRefaire" style="display:none">Retenter le test</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Utilitaires partagés ───────────────────────────────────────
+function $(sel) { return document.querySelector(sel) }
+
+function melanger(tableau) {
+  const copie = [...tableau]
+  for (let i = copie.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copie[i], copie[j]] = [copie[j], copie[i]]
+  }
+  return copie
+}
+
+// ── Navigation entre étapes ─────────────────────────────────────
+function irAEtape(cle) {
+  document.querySelectorAll('.etape').forEach(el => el.classList.toggle('actif', el.dataset.etape === cle))
+  $('#vueCours').style.display = cle === 'cours' ? 'block' : 'none'
+  $('#vueEntrainement').style.display = cle === 'entrainement' ? 'block' : 'none'
+  $('#vueTest').style.display = cle === 'test' ? 'block' : 'none'
+  if (cle === 'test') majGateTest()
+}
+document.querySelectorAll('.etape').forEach(el => el.addEventListener('click', () => irAEtape(el.dataset.etape)))
+
+// ═══════════════════ ENTRAÎNEMENT ═══════════════════
+const FORMAT_A = [
+  { profil: "+4.00 (+1.00) 20°", bon: true, explication: "Déjà en cylindre positif, on vérifie directement : sphère +4.00 dans la plage −8/+7.25, cylindre 1.00 ≤ 3 → fabricable en 10 minutes." },
+  { profil: "+8.50 (−2.50) 60°", bon: true, explication: "Écrite en cylindre négatif : il faut transposer avant de juger. Sphère + Cylindre = 8.50 + (−2.50) = +6.00 une fois en positif — bien dans la plage, alors que la sphère affichée (+8.50) semblait trop forte au premier regard." },
+  { profil: "−6.00 (−2.50) 100°", bon: false, explication: "Écrite en cylindre négatif, donc il faut transposer avant de juger : −6.00 + (−2.50) = −8.50 une fois en positif, ce qui descend sous la limite basse de −8.00 — pas fabricable, alors que la sphère affichée semblait correcte." },
+  { profil: "+3.00 (+3.50) 170°", bon: false, explication: "Déjà en cylindre positif : la sphère +3.00 est dans la plage, mais le cylindre 3.50 dépasse la limite de 3.00 — pas fabricable malgré une sphère tout à fait correcte." },
+  { profil: "−1.00 (−0.75) 90°", bon: true, explication: "Écrite en cylindre négatif. Transposée : −1.00 + (−0.75) = −1.75, cylindre +0.75. Sphère et cylindre largement dans la plage — fabricable." },
+  { profil: "+7.50 (+0.50) 10°", bon: false, explication: "Déjà en cylindre positif : la sphère +7.50 dépasse la limite haute de +7.25 — pas fabricable, même si le cylindre est très faible." },
+  { profil: "−7.75 (−0.25) 5°", bon: true, explication: "Écrite en cylindre négatif. Transposée : −7.75 + (−0.25) = −8.00, pile à la limite basse de la plage — fabricable, cylindre 0.25 largement dans la limite." },
+  { profil: "−5.00 (−3.25) 120°", bon: false, explication: "La valeur absolue du cylindre (3.25) dépasse déjà 3.00 — pas besoin de transposer, ce n'est pas fabricable quelle que soit la sphère." },
+  { profil: "−3.00 (+2.00) 85°", bon: true, explication: "Déjà en cylindre positif : sphère −3.00 et cylindre 2.00 sont tous les deux dans la plage — fabricable directement." },
+  { profil: "+1.00 (−2.50) 15°", bon: true, explication: "Écrite en cylindre négatif. Transposée : +1.00 + (−2.50) = −1.50, confortablement dans la plage, cylindre 2.50 ≤ 3 — fabricable." },
+];
+
+const FORMAT_B = [
+  { enonce: "+2.00 (−1.50) 30°", sphereCorrecte: 0.50, cylindreCorrecte: 1.50, axeCorrecte: 120,
+    explication: "Sphère = 2.00 + (−1.50) = 0.50, cylindre : le − devient un + → +1.50, axe = 30 + 90 = 120° (axe ≤ 90 → on ajoute 90)." },
+  { enonce: "−4.00 (−2.00) 75°", sphereCorrecte: -6.00, cylindreCorrecte: 2.00, axeCorrecte: 165,
+    explication: "Sphère = −4.00 + (−2.00) = −6.00, cylindre : le − devient un + → +2.00, axe = 75 + 90 = 165° (axe ≤ 90 → on ajoute 90)." },
+  { enonce: "+6.00 (−1.00) 100°", sphereCorrecte: 5.00, cylindreCorrecte: 1.00, axeCorrecte: 10,
+    explication: "Sphère = 6.00 + (−1.00) = 5.00, cylindre : le − devient un + → +1.00, axe = 100 − 90 = 10° (axe > 90 → on soustrait 90)." },
+  { enonce: "0.00 (−0.75) 50°", sphereCorrecte: -0.75, cylindreCorrecte: 0.75, axeCorrecte: 140,
+    explication: "Sphère = 0.00 + (−0.75) = −0.75, cylindre : le − devient un + → +0.75, axe = 50 + 90 = 140° (axe ≤ 90 → on ajoute 90)." },
+  { enonce: "−7.00 (−1.75) 160°", sphereCorrecte: -8.75, cylindreCorrecte: 1.75, axeCorrecte: 70,
+    explication: "Sphère = −7.00 + (−1.75) = −8.75, cylindre : le − devient un + → +1.75, axe = 160 − 90 = 70° (axe > 90 → on soustrait 90)." },
+];
+
+const FORMAT_C = [
+  { enonce: "La transposition change la puissance réelle du verre pour le client.", vrai: false },
+  { enonce: "Pour transposer un cylindre négatif en positif, il suffit de remplacer son signe − par un signe +.", vrai: true },
+  { enonce: "L'axe ne change jamais lors d'une transposition.", vrai: false },
+  { enonce: "La nouvelle sphère s'obtient en additionnant la sphère et le cylindre d'origine.", vrai: true },
+  { enonce: "Une ordonnance écrite en cylindre positif n'a jamais besoin d'être transposée pour vérifier la faisabilité en 10 minutes.", vrai: true },
+  { enonce: "La valeur absolue du cylindre change lors d'une transposition.", vrai: false },
+  { enonce: "Chez nous, la plage de fabrication en 10 minutes est une sphère entre −8.00 et +7.25.", vrai: true },
+  { enonce: "Le cylindre maximum fabricable en 10 minutes est de 3.00.", vrai: true },
+  { enonce: "Si l'axe d'origine est 100°, le nouvel axe après transposition est 190°.", vrai: false },
+  { enonce: "Une ordonnance en cylindre négatif peut sembler fabricable alors qu'elle ne l'est plus une fois transposée en positif.", vrai: true },
+  { enonce: "Une ordonnance en cylindre négatif peut sembler impossible à fabriquer alors qu'elle l'est en réalité une fois transposée en positif.", vrai: true },
+  { enonce: "Si le cylindre affiché dépasse déjà 3.00 en valeur absolue, inutile de transposer : ce n'est pas fabricable en 10 minutes.", vrai: true },
+  { enonce: "La transposition sert uniquement à l'administratif, elle n'a aucun impact sur ce qu'on peut fabriquer en magasin.", vrai: false },
+  { enonce: "On transpose une ordonnance uniquement quand elle est écrite en cylindre négatif, jamais quand elle est déjà en positif.", vrai: true },
+  { enonce: "Il faut systématiquement demander un nouvel examen de vue au client si l'ordonnance est écrite en cylindre négatif.", vrai: false },
+];
+
+const FORMAT_D = [
+  { profil: "Un collègue voit une ordonnance +8.50 (−2.50) 60° et dit : \"Sphère trop forte, impossible en 10 minutes.\"",
+    options: [
+      { texte: "Oui tu as raison, il faut refuser directement.", bon: false, explication: "Conclusion prise trop vite sur les chiffres bruts, sans transposer." },
+      { texte: "Attends, elle est en cylindre négatif — il faut d'abord la transposer en positif avant de juger, le vrai résultat peut être différent.", bon: true, explication: "Exactement : une fois transposée (8.50 + (−2.50) = +6.00), cette ordonnance rentre bien dans la plage." },
+      { texte: "On ne peut jamais savoir sans rappeler l'ophtalmologiste.", bon: false, explication: "Pas besoin : on peut transposer soi-même, pas besoin de recontacter qui que ce soit." },
+    ] },
+  { profil: "Un collègue voit une ordonnance −6.00 (−2.50) 100° et dit : \"Sphère −6.00, large dans la plage, pas de souci.\"",
+    options: [
+      { texte: "Oui, aucun souci, vas-y.", bon: false, explication: "Dangereux : la sphère affichée en cylindre négatif ne dit rien de la vraie valeur à vérifier une fois transposée en positif." },
+      { texte: "Attends, elle est en cylindre négatif — il faut transposer avant de conclure, la sphère réelle à vérifier pourrait être plus basse qu'elle n'en a l'air.", bon: true, explication: "Exactement le bon réflexe : une fois transposée (−6.00 + (−2.50) = −8.50), elle descend en réalité sous la limite basse." },
+      { texte: "Non, jamais fabricable avec du cylindre négatif.", bon: false, explication: "Faux : le cylindre négatif n'empêche rien en soi, il faut juste transposer avant de conclure." },
+    ] },
+  { profil: "Une ordonnance affiche un cylindre de −3.50. Un collègue hésite à transposer pour vérifier si c'est fabricable.",
+    options: [
+      { texte: "Il faut absolument transposer avant de pouvoir conclure quoi que ce soit.", bon: false, explication: "Pas nécessaire ici : la valeur absolue du cylindre ne change jamais en transposant." },
+      { texte: "Pas besoin de transposer ici : la valeur absolue du cylindre (3.50) dépasse déjà 3.00, donc ce n'est pas fabricable en 10 minutes, quelle que soit la convention.", bon: true, explication: "Exactement le raccourci à connaître : le cylindre en valeur absolue est invariant par transposition." },
+      { texte: "Le cylindre ne compte pas, seule la sphère importe.", bon: false, explication: "Faux : le cylindre a lui aussi sa propre limite (3.00 maximum), indépendamment de la sphère." },
+    ] },
+  { profil: "Un nouveau collaborateur demande : \"Pourquoi certaines ordonnances sont en + et d'autres en − ?\"",
+    options: [
+      { texte: "C'est une erreur de l'ophtalmologiste, il faut toujours lui redemander.", bon: false, explication: "Non, ce n'est pas une erreur — c'est une simple convention d'écriture, parfaitement valable dans les deux cas." },
+      { texte: "Le cylindre négatif est pour les myopes, le positif pour les hypermétropes.", bon: false, explication: "Faux : le signe du cylindre n'a rien à voir avec myopie ou hypermétropie, c'est juste une convention d'écriture." },
+      { texte: "Ça dépend juste de l'habitude ou du logiciel de l'ophtalmologiste qui l'a rédigée — le verre est rigoureusement le même, seule l'écriture change selon la convention utilisée.", bon: true, explication: "Exactement la bonne explication à donner." },
+    ] },
+];
+
+let formatActuel = null;
+let poolActuelle = [];
+let indexActuel = null;
+let scoreOk = 0, scoreNon = 0;
+
+const FORMATS_INFO = {
+  a: { titre: "Fabricable en 10 minutes ?", ico: "⏱️", desc: "Une ordonnance, tu dis si on peut la fabriquer en 10 minutes ou pas.", data: FORMAT_A },
+  b: { titre: "Transpose correctement", ico: "🔁", desc: "Une ordonnance donnée, saisis toi-même sa version transposée.", data: FORMAT_B },
+  c: { titre: "Vrai/Faux éclair", ico: "⚡", desc: "Rafale de questions rapides pour ancrer les bases.", data: FORMAT_C },
+  d: { titre: "Le bon raisonnement", ico: "🗣️", desc: "Un collègue se trompe (ou pas) — identifie le bon raisonnement.", data: FORMAT_D },
+};
+
+const CLE_FORMATS = 'transposition_entrainement_formats';
+
+function getFormatsFaits() {
+  try { return JSON.parse(localStorage.getItem(CLE_FORMATS)) || {} } catch (e) { return {} }
+}
+function marquerFormatFait(cle) {
+  const faits = getFormatsFaits()
+  if (!faits[cle]) {
+    faits[cle] = true
+    localStorage.setItem(CLE_FORMATS, JSON.stringify(faits))
+  }
+}
+
+function rendreMenu() {
+  const faits = getFormatsFaits()
+  const nbFaits = Object.keys(FORMATS_INFO).filter(c => faits[c]).length
+  $('#progressFormats').textContent = `${nbFaits}/4 formats terminés au moins une fois`
+
+  $('#grilleFormats').innerHTML = Object.entries(FORMATS_INFO).map(([cle, f]) => `
+    <div class="carte-format" data-format="${cle}">
+      ${faits[cle] ? '<div class="badge-fait">✓ Terminé</div>' : ''}
+      <div class="ico">${f.ico}</div>
+      <div class="titre-format">${f.titre}</div>
+      <div class="desc-format">${f.desc}</div>
+      <div class="compteur-format">${f.data.length} situations</div>
+    </div>
+  `).join('')
+  document.querySelectorAll('[data-format]').forEach(el => {
+    el.addEventListener('click', () => lancerFormat(el.dataset.format))
+  })
+  majGateTest()
+}
+
+function lancerFormat(cle) {
+  formatActuel = cle
+  poolActuelle = melanger(FORMATS_INFO[cle].data)
+  indexActuel = 0
+  scoreOk = 0; scoreNon = 0
+  $('#vueMenu').style.display = 'none'
+  $('#vueDrill').style.display = 'block'
+  rendreItemCourant()
+}
+
+function retourMenu() {
+  $('#vueDrill').style.display = 'none'
+  $('#vueMenu').style.display = 'block'
+  formatActuel = null
+  rendreMenu()
+}
+
+function majScore() {
+  $('#scoreDrill').innerHTML = `<b class="ok">${scoreOk} ✓</b> &nbsp; <b class="non">${scoreNon} ✗</b>`
+}
+
+function rendreItemCourant() {
+  majScore()
+  const corps = $('#corpsDrill')
+  const feedback = $('#feedback')
+  feedback.className = 'feedback'
+  feedback.textContent = ''
+  $('#btnSuivant').classList.remove('visible')
+  corps.classList.remove('choix-fait')
+
+  if (indexActuel >= poolActuelle.length) {
+    marquerFormatFait(formatActuel)
+    majGateTest()
+    corps.innerHTML = `<p style="text-align:center;color:var(--ink-soft);font-size:14px;padding:20px 0">Tu as fait le tour de ce pool — relance l'exercice pour un nouvel ordre, ou choisis un autre format.</p>`
+    return
+  }
+
+  const item = poolActuelle[indexActuel]
+
+  if (formatActuel === 'a') {
+    corps.innerHTML = `
+      <div class="profil-client">${item.profil}</div>
+      <div class="choix-binaire">
+        <button class="btn-choix" data-rep="true">Fabricable</button>
+        <button class="btn-choix" data-rep="false">Pas fabricable</button>
+      </div>`
+    corps.querySelectorAll('[data-rep]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const choisiBon = btn.dataset.rep === 'true'
+        const correct = choisiBon === item.bon
+        corps.classList.add('choix-fait')
+        corps.querySelectorAll('[data-rep]').forEach(b => {
+          const estBon = (b.dataset.rep === 'true') === item.bon
+          if (estBon) b.classList.add('bonne-reponse')
+          else if (b === btn) b.classList.add('mauvaise-reponse')
+          if (b === btn) b.classList.add('selectionne')
+        })
+        afficherFeedback(correct, item.explication)
+      })
+    })
+  }
+
+  if (formatActuel === 'd') {
+    // Options mélangées à chaque affichage pour que la bonne réponse ne soit jamais à une place prévisible
+    const options = melanger(item.options)
+    corps.innerHTML = `
+      <div class="profil-client">${item.profil}</div>
+      <div class="liste-options">
+        ${options.map((o, i) => `<button class="btn-option" data-i="${i}">${o.texte}</button>`).join('')}
+      </div>`
+    corps.querySelectorAll('[data-i]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const opt = options[Number(btn.dataset.i)]
+        corps.classList.add('choix-fait')
+        corps.querySelectorAll('[data-i]').forEach((b, i) => {
+          if (options[i].bon) b.classList.add('bonne-reponse')
+          else if (b === btn) b.classList.add('mauvaise-reponse', 'selectionne')
+        })
+        afficherFeedback(opt.bon, opt.explication)
+      })
+    })
+  }
+
+  if (formatActuel === 'b') {
+    saisieActuelle = { sphere: null, cylindre: null, axe: null }
+    corps.innerHTML = `
+      <div class="ordonnance-depart">${item.enonce}</div>
+      <div class="grille-saisie">
+        ${rendreChampSaisie('sphere', 'Sphère')}
+        ${rendreChampSaisie('cylindre', 'Cylindre')}
+        ${rendreChampSaisie('axe', 'Axe')}
+      </div>
+      <button class="btn-verifier" id="btnVerifierSaisie">Vérifier</button>`
+    corps.querySelectorAll('.value-box').forEach(btn => {
+      btn.addEventListener('click', () => ouvrirSaisieChamp(btn))
+    })
+    $('#btnVerifierSaisie').addEventListener('click', () => validerSaisieTransposition(item))
+  }
+
+  if (formatActuel === 'c') {
+    corps.innerHTML = `
+      <div class="profil-client">${item.enonce}</div>
+      <div class="choix-binaire">
+        <button class="btn-choix" data-rep="true">Vrai</button>
+        <button class="btn-choix" data-rep="false">Faux</button>
+      </div>`
+    corps.querySelectorAll('[data-rep]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const choisiVrai = btn.dataset.rep === 'true'
+        const correct = choisiVrai === item.vrai
+        corps.classList.add('choix-fait')
+        corps.querySelectorAll('[data-rep]').forEach(b => {
+          const estBon = (b.dataset.rep === 'true') === item.vrai
+          if (estBon) b.classList.add('bonne-reponse')
+          else if (b === btn) b.classList.add('mauvaise-reponse')
+          if (b === btn) b.classList.add('selectionne')
+        })
+        afficherFeedback(correct, correct ? "Exact." : "Pas tout à fait — relis le point correspondant dans le cours si besoin.")
+      })
+    })
+  }
+}
+
+function afficherFeedback(correct, texte) {
+  const feedback = $('#feedback')
+  feedback.textContent = (correct ? '✓ ' : '✗ ') + texte
+  feedback.classList.add('visible', correct ? 'ok' : 'non')
+  if (correct) scoreOk++; else scoreNon++
+  majScore()
+  $('#btnSuivant').classList.add('visible')
+}
+
+// ═══════════════════ SAISIE TRANSPOSITION (même principe que l'appli) ═══════════════════
+// Cases tapables Sphère/Cylindre/Axe qui ouvrent un pavé numérique en bas
+// d'écran — pas de choix multiple, le formé tape lui-même la valeur transposée.
+let saisieActuelle = { sphere: null, cylindre: null, axe: null }
+
+function formatDiop(v) {
+  const a = Math.abs(v).toFixed(2).replace('.', ',')
+  return v > 0.001 ? `+${a}` : v < -0.001 ? `−${a}` : '0,00'
+}
+function formatAxeVal(v) { return `${Math.round(v)}°` }
+
+function rendreChampSaisie(champ, label) {
+  return `
+    <div class="champ-saisie">
+      <div class="label-champ-saisie">${label}</div>
+      <button class="value-box" data-champ="${champ}">—</button>
+    </div>`
+}
+
+function ouvrirSaisieChamp(btn) {
+  const champ = btn.dataset.champ
+  const titres = { sphere: 'Sphère (cylindre positif)', cylindre: 'Cylindre (cylindre positif)', axe: 'Axe' }
+  ouvrirNumpad(champ, titres[champ], saisieActuelle[champ], (val) => {
+    saisieActuelle[champ] = val
+    btn.textContent = champ === 'axe' ? formatAxeVal(val) : formatDiop(val)
+  })
+}
+
+function validerSaisieTransposition(item) {
+  const near = (a, b) => Math.abs(a - b) < 0.01
+  const okS = saisieActuelle.sphere !== null && near(saisieActuelle.sphere, item.sphereCorrecte)
+  const okC = saisieActuelle.cylindre !== null && near(saisieActuelle.cylindre, item.cylindreCorrecte)
+  const okA = saisieActuelle.axe !== null && Math.round(saisieActuelle.axe) === item.axeCorrecte
+  const correct = okS && okC && okA
+  const corps = $('#corpsDrill')
+  corps.classList.add('choix-fait')
+  corps.querySelectorAll('.value-box').forEach(btn => {
+    const champ = btn.dataset.champ
+    const ok = champ === 'sphere' ? okS : champ === 'cylindre' ? okC : okA
+    btn.classList.add(ok ? 'correcte' : 'incorrecte')
+    btn.disabled = true
+    if (!ok) {
+      const correction = document.createElement('div')
+      correction.className = 'correction-champ'
+      correction.textContent = '✓ ' + (champ === 'axe' ? formatAxeVal(item.axeCorrecte) : formatDiop(champ === 'sphere' ? item.sphereCorrecte : item.cylindreCorrecte))
+      btn.insertAdjacentElement('afterend', correction)
+    }
+  })
+  $('#btnVerifierSaisie').disabled = true
+  afficherFeedback(correct, item.explication)
+}
+
+// ── Pavé numérique (bottom sheet) — même système que le module Bases de l'optique ──
+let numpadChamp = null
+let numpadRaw = ''
+let numpadDeg = '0'
+let numpadOnConfirm = null
+
+function ouvrirNumpad(champ, titre, valeurActuelle, onConfirm) {
+  numpadChamp = champ
+  numpadOnConfirm = onConfirm
+  if (champ === 'axe') {
+    numpadDeg = String(Math.max(0, Math.round(valeurActuelle || 0)))
+  } else if (!valeurActuelle) {
+    numpadRaw = ''
+  } else {
+    const abs = Math.abs(valeurActuelle)
+    const s = Number.isInteger(abs) ? String(abs) : String(abs).replace('.', ',')
+    numpadRaw = (valeurActuelle < 0 ? '-' : '') + s
+  }
+  $('#numpadTitre').textContent = titre
+  rendreNumpad()
+  $('#numpadOverlay').style.display = 'block'
+  $('#numpadSheet').style.display = 'block'
+}
+
+function fermerNumpad() {
+  $('#numpadOverlay').style.display = 'none'
+  $('#numpadSheet').style.display = 'none'
+  numpadChamp = null
+}
+
+function rendreNumpad() {
+  const isDeg = numpadChamp === 'axe'
+  const display = isDeg ? `${numpadDeg}°` : (numpadRaw === '' || numpadRaw === '-' ? `${numpadRaw}0` : numpadRaw)
+  $('#numpadAffichage').textContent = display
+  const touches = isDeg
+    ? ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✓']
+    : ['1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '0', ',', '⌫', '✓']
+  $('#numpadGrille').innerHTML = touches.map(k => {
+    const classe = k === '✓' ? 'numpad-touche confirmer' : (k === '⌫' || k === '-' || k === ',') ? 'numpad-touche speciale' : 'numpad-touche'
+    return `<button class="${classe}" data-touche="${k}">${k}</button>`
+  }).join('')
+  $('#numpadGrille').querySelectorAll('[data-touche]').forEach(btn => {
+    btn.addEventListener('click', () => toucheNumpad(btn.dataset.touche))
+  })
+}
+
+function toucheNumpad(k) {
+  const isDeg = numpadChamp === 'axe'
+  if (k === '⌫') {
+    if (isDeg) numpadDeg = numpadDeg.length <= 1 ? '0' : numpadDeg.slice(0, -1)
+    else numpadRaw = numpadRaw.slice(0, -1)
+  } else if (k === '✓') {
+    let valeur
+    if (isDeg) valeur = Math.max(0, Math.min(180, parseInt(numpadDeg) || 0))
+    else valeur = Math.max(-20, Math.min(20, parseFloat(numpadRaw.replace(',', '.')) || 0))
+    const cb = numpadOnConfirm
+    fermerNumpad()
+    cb(valeur)
+    return
+  } else if (k === '-') {
+    numpadRaw = numpadRaw.startsWith('-') ? numpadRaw.slice(1) : `-${numpadRaw}`
+  } else if (k === ',') {
+    if (!numpadRaw.includes(',')) numpadRaw = (numpadRaw === '' || numpadRaw === '-') ? `${numpadRaw}0,` : `${numpadRaw},`
+  } else if (isDeg) {
+    const s = numpadDeg === '0' ? k : numpadDeg + k
+    numpadDeg = parseInt(s) <= 180 ? s : numpadDeg
+  } else {
+    numpadRaw += k
+  }
+  rendreNumpad()
+}
+
+$('#numpadOverlay').addEventListener('click', fermerNumpad)
+$('#numpadFermer').addEventListener('click', fermerNumpad)
+
+$('#btnRetourMenu').addEventListener('click', retourMenu)
+$('#btnSuivant').addEventListener('click', () => { indexActuel++; rendreItemCourant() })
+
+// ═══════════════════ TEST ═══════════════════
+const VRAI_FAUX_POOL = FORMAT_C;
+const CANDIDAT_POOL = FORMAT_A.map(({ profil, bon }) => ({ profil, bon }));
+const BONMOT_POOL = [
+  ...FORMAT_B.map(({ enonce, sphereCorrecte, cylindreCorrecte, axeCorrecte }) => ({ sousType: 'transpose', enonce, sphereCorrecte, cylindreCorrecte, axeCorrecte })),
+  ...FORMAT_D.map(({ profil, options }) => ({ sousType: 'dialogue', client: profil, options: options.map(({ texte, bon }) => ({ texte, bon })) })),
+];
+
+const SEUIL_REUSSITE = 10;
+const TOTAL_QUESTIONS = 12;
+const CLE_ACQUIS = 'transposition_test_acquis';
+
+let questionsQuiz = [];
+let indexQuestion = 0;
+let reponsesDonnees = [];
+
+function majGateTest() {
+  const faits = getFormatsFaits()
+  const manquants = Object.entries(FORMATS_INFO).filter(([cle]) => !faits[cle]).map(([, f]) => f.titre)
+  const btn = $('#btnCommencer')
+  const gate = $('#gateManquant')
+  if (!btn || !gate) return
+  if (manquants.length === 0) {
+    gate.style.display = 'none'
+    btn.style.display = 'block'
+  } else {
+    gate.style.display = 'block'
+    btn.style.display = 'none'
+    $('#texteManquant').textContent = manquants.join(', ')
+  }
+}
+
+function construireQuestions() {
+  const vf = melanger(VRAI_FAUX_POOL).slice(0, 5).map(q => ({ type: 'vf', ...q }))
+  const cand = melanger(CANDIDAT_POOL).slice(0, 5).map(q => ({ type: 'candidat', ...q }))
+  const bm = melanger(BONMOT_POOL).slice(0, 2).map(q => q.sousType === 'dialogue' ? { type: 'bonmot', ...q, options: melanger(q.options) } : { type: 'bonmot', ...q })
+  return melanger([...vf, ...cand, ...bm])
+}
+
+function demarrerQuiz() {
+  if (!getFormatsFaitsTousOk()) { majGateTest(); return }
+  questionsQuiz = construireQuestions()
+  indexQuestion = 0
+  reponsesDonnees = []
+  $('#vueIntro').style.display = 'none'
+  $('#vueDejaAcquis').style.display = 'none'
+  $('#vueResultat').style.display = 'none'
+  $('#vueQuiz').style.display = 'block'
+  rendreQuestion()
+}
+
+function getFormatsFaitsTousOk() {
+  const faits = getFormatsFaits()
+  return Object.keys(FORMATS_INFO).every(cle => faits[cle])
+}
+
+function rendreBarre() {
+  $('#barreQuiz').innerHTML = Array.from({ length: TOTAL_QUESTIONS }, (_, i) =>
+    `<div class="seg-quiz ${i < indexQuestion ? 'fait' : ''}"></div>`).join('')
+}
+
+function rendreQuestion() {
+  $('#compteurQuiz').textContent = `Question ${indexQuestion + 1} / ${TOTAL_QUESTIONS}`
+  rendreBarre()
+  const q = questionsQuiz[indexQuestion]
+  const corps = $('#corpsQuestion')
+
+  if (q.type === 'vf') {
+    corps.innerHTML = `
+      <div class="profil-client">${q.enonce}</div>
+      <div class="choix-binaire">
+        <button class="btn-rep" data-rep="true">Vrai</button>
+        <button class="btn-rep" data-rep="false">Faux</button>
+      </div>`
+    corps.querySelectorAll('[data-rep]').forEach(btn => {
+      btn.addEventListener('click', () => valider(btn.dataset.rep === 'true', q.vrai, q.enonce))
+    })
+  }
+
+  if (q.type === 'candidat') {
+    corps.innerHTML = `
+      <div class="profil-client">${q.profil}</div>
+      <div class="choix-binaire">
+        <button class="btn-rep" data-rep="true">Fabricable</button>
+        <button class="btn-rep" data-rep="false">Pas fabricable</button>
+      </div>`
+    corps.querySelectorAll('[data-rep]').forEach(btn => {
+      btn.addEventListener('click', () => valider(btn.dataset.rep === 'true', q.bon, q.profil))
+    })
+  }
+
+  if (q.type === 'bonmot' && q.sousType === 'dialogue') {
+    corps.innerHTML = `
+      <div class="citation-client">${q.client}</div>
+      <div class="liste-options">
+        ${q.options.map((o, i) => `<button class="btn-rep" data-i="${i}">${o.texte}</button>`).join('')}
+      </div>`
+    corps.querySelectorAll('[data-i]').forEach(btn => {
+      btn.addEventListener('click', () => valider(true, true, q.client, q.options[Number(btn.dataset.i)].bon))
+    })
+  }
+
+  if (q.type === 'bonmot' && q.sousType === 'transpose') {
+    saisieActuelle = { sphere: null, cylindre: null, axe: null }
+    corps.innerHTML = `
+      <div class="ordonnance-depart">${q.enonce}</div>
+      <div class="grille-saisie">
+        ${rendreChampSaisie('sphere', 'Sphère')}
+        ${rendreChampSaisie('cylindre', 'Cylindre')}
+        ${rendreChampSaisie('axe', 'Axe')}
+      </div>
+      <button class="btn-verifier" id="btnVerifierSaisie">Valider la réponse</button>`
+    corps.querySelectorAll('.value-box').forEach(btn => {
+      btn.addEventListener('click', () => ouvrirSaisieChamp(btn))
+    })
+    $('#btnVerifierSaisie').addEventListener('click', () => {
+      const near = (a, b) => Math.abs(a - b) < 0.01
+      const okS = saisieActuelle.sphere !== null && near(saisieActuelle.sphere, q.sphereCorrecte)
+      const okC = saisieActuelle.cylindre !== null && near(saisieActuelle.cylindre, q.cylindreCorrecte)
+      const okA = saisieActuelle.axe !== null && Math.round(saisieActuelle.axe) === q.axeCorrecte
+      valider(true, true, q.enonce, okS && okC && okA)
+    })
+  }
+}
+
+function valider(reponseDonnee, reponseAttendue, libelleQuestion, correctOverride) {
+  const correct = correctOverride !== undefined ? correctOverride : (reponseDonnee === reponseAttendue)
+  reponsesDonnees.push({ libelle: libelleQuestion, correct })
+  indexQuestion++
+  if (indexQuestion >= TOTAL_QUESTIONS) {
+    afficherResultat()
+  } else {
+    rendreQuestion()
+  }
+}
+
+function afficherResultat() {
+  $('#vueQuiz').style.display = 'none'
+  $('#vueResultat').style.display = 'block'
+
+  const score = reponsesDonnees.filter(r => r.correct).length
+  const reussi = score >= SEUIL_REUSSITE
+
+  $('#scoreChiffre').textContent = score
+  $('#scoreRond').className = 'score-rond ' + (reussi ? 'reussi' : 'echec')
+  $('#titreResultat').textContent = reussi ? '✅ Module acquis !' : 'Pas encore cette fois'
+  $('#sousResultat').textContent = reussi
+    ? 'Le module est verrouillé — bravo.'
+    : `Il fallait ${SEUIL_REUSSITE}/12 pour valider. Retourne t'entraîner et retente quand tu veux.`
+
+  $('#detailResultat').innerHTML = reponsesDonnees.map(r => `
+    <div class="detail-reponse ${r.correct ? 'ok' : 'non'}">
+      <span class="icone">${r.correct ? '✓' : '✗'}</span>
+      <span class="texte-q">${r.libelle}</span>
+    </div>
+  `).join('')
+
+  const btnRefaire = $('#btnRefaire')
+  btnRefaire.style.display = 'block'
+  btnRefaire.textContent = reussi ? 'Repasser le test quand même' : 'Retenter le test'
+
+  if (reussi) localStorage.setItem(CLE_ACQUIS, '1')
+}
+
+$('#btnCommencer').addEventListener('click', demarrerQuiz)
+$('#btnRefaire').addEventListener('click', demarrerQuiz)
+$('#btnRepasserQuandMeme').addEventListener('click', demarrerQuiz)
+$('#btnAllerEntrainement').addEventListener('click', () => irAEtape('entrainement'))
+
+if (localStorage.getItem(CLE_ACQUIS) === '1') {
+  $('#vueIntro').style.display = 'none'
+  $('#vueDejaAcquis').style.display = 'block'
+}
+
+// ── Initialisation ──────────────────────────────────────────────
+rendreMenu()
+majGateTest()
+
+// ═══════════════════ PROMPT POUR PAUL ═══════════════════
+const PROMPT_PAUL = `Je veux que tu ajoutes un deuxième module au système de modules post-formation ("Perfectionnement") dont je t'ai déjà donné les règles générales avec le module Verre de proximité (structure Cours/Entraînement/Test, barre de navigation à 3 étapes, verrou du Test tant que les 4 formats d'entraînement ne sont pas faits, verrouillage définitif du module une fois le Test réussi). Ce nouveau module utilise exactement le même moteur — inutile de le reconstruire, applique-le simplement à ce contenu. Tous les textes entre guillemets ci-dessous sont à reprendre mot pour mot.
+
+Petit rappel rapide des règles du moteur, au cas où : un module a 3 étapes (Cours, Entraînement, Test) ; l'Entraînement propose plusieurs formats d'exercices répétables à volonté, sans enjeu, chacun marqué "fait" dès que le collaborateur est allé au bout du pool une fois ; le Test reste verrouillé tant que tous les formats d'Entraînement n'ont pas été faits au moins une fois ; le Test tire des questions au hasard, mélange leur ordre, affiche le score uniquement à la fin ; une réussite verrouille le module en "acquis" de façon définitive (retentable volontairement) ; un échec ne pénalise pas et autorise un nombre illimité de nouvelles tentatives.
+
+MODULE : "LA TRANSPOSITION"
+
+CONTEXTE
+
+Une même prescription peut s'écrire en cylindre positif ou en cylindre négatif selon l'habitude de l'ophtalmologiste qui l'a rédigée — le verre reste rigoureusement identique dans les deux cas, seule l'écriture change. Nos verres et notre machine de fabrication en magasin fonctionnent sur la convention cylindre positif. On fabrique les lunettes en 10 minutes directement en magasin, mais uniquement dans une plage précise : sphère entre −8.00 et +7.25, et cylindre jusqu'à 3.00 maximum, toujours vérifiée une fois l'ordonnance exprimée en cylindre positif. Ce module apprend aux collaborateurs à transposer une ordonnance et à vérifier correctement si une paire est fabricable en 10 minutes.
+
+BARRE DE NAVIGATION
+
+3 onglets cliquables : "Étape 1 — Cours", "Étape 2 — Entraînement", "Étape 3 — Test" (l'onglet actif est mis en avant).
+
+ÉTAPE 1 — COURS
+
+Surtitre : "Module Après-Formation · Fabrication". Titre : "La Transposition". Sous-titre : "Lire n'importe quelle ordonnance dans le bon sens, et savoir ce qu'on peut vraiment fabriquer en 10 minutes." Voici le contenu exact à reproduire, section par section (une carte par section) :
+
+1. C'est quoi ?
+Paragraphe 1 : "Une même prescription peut s'écrire en cylindre positif ou en cylindre négatif selon l'habitude de l'ophtalmologiste qui l'a rédigée. Chez nous, tous nos verres sont notés en cylindre positif — c'est notre seule convention de travail."
+Paragraphe 2 : "La transposition, c'est la technique qui permet de remettre une ordonnance en cylindre positif quand elle a été écrite en négatif. On ne la fait que dans ce sens-là : si une ordonnance est déjà en cylindre positif, il n'y a rien à transposer, on la lit directement. Le verre reste rigoureusement identique : seule la façon de l'écrire change, jamais la correction réelle du client."
+
+2. Comment on fait
+Texte : "On commence par regarder le signe du cylindre : s'il est déjà positif, on s'arrête là. S'il est négatif, on transpose en 3 étapes :"
+Puis un petit schéma en 3 lignes, avec des pastilles colorées (résultat en vert) :
+- "Sphère" + "Cylindre (négatif)" = "Nouvelle sphère"
+- "Cylindre −" → "Cylindre + (on remplace juste le signe)"
+- "Axe" → "Nouvel axe (toujours entre 0° et 180°)"
+Juste sous le schéma : "Règle de l'axe : s'il est supérieur à 90°, on lui enlève 90°. S'il est inférieur (ou égal) à 90°, on lui ajoute 90°. Comme ça, on ne sort jamais de 0°-180°."
+Encadré exemple en dessous : "Exemple : −2.00 (−1.50) 30° (cylindre négatif) devient −3.50 (+1.50) 120° une fois transposé en positif. C'est exactement le même verre, écrit dans notre convention."
+
+3. Pourquoi ça existe
+Paragraphe 1 : "Les ophtalmologistes n'utilisent pas tous la même convention : certains écrivent en cylindre positif, d'autres en cylindre négatif, selon leur formation ou leur logiciel. Nos verres et notre machine de fabrication en magasin, eux, se basent toujours sur la convention cylindre positif — c'est notre seule norme de travail."
+Paragraphe 2 : "Il faut donc savoir repérer le signe du cylindre sur une ordonnance : s'il est négatif, on la transpose en positif avant de l'exploiter. S'il est déjà positif, pas besoin de transposer quoi que ce soit, on la lit telle quelle."
+Encart astuce (💡) : "Astuce qui fait gagner du temps : la valeur absolue du cylindre ne change jamais pendant une transposition — seul son signe change. Si un cylindre dépasse déjà 3.00 en valeur absolue sur l'ordonnance telle qu'elle est écrite, inutile de transposer quoi que ce soit : ce n'est de toute façon pas fabricable en 10 minutes."
+
+4. Pourquoi c'est important chez nous
+Texte : "On fabrique les lunettes en 10 minutes directement en magasin, mais seulement dans une plage précise, toujours vérifiée une fois l'ordonnance exprimée en cylindre positif (notre convention de travail) :"
+Jauge horizontale : barre grise avec une zone verte entre −8.00 et +7.25, et trois repères affichés au-dessus : "−8.00", "0", "+7.25". Légende sous la jauge : "Sphère fabricable en 10 minutes (zone verte) · Cylindre max 3.00, dans les deux sens".
+Encart d'avertissement (⚠️, rouge) : "Attention à l'erreur courante : si une ordonnance est écrite en cylindre négatif, ne jamais juger de la faisabilité sur les chiffres bruts tels qu'ils sont écrits — il faut d'abord la transposer en positif. Dans un sens comme dans l'autre, le résultat peut changer :" suivi de 2 puces :
+- "Piège n°1 : la sphère affichée semble correcte, mais une fois transposée en positif elle descend sous la limite basse (−8.00) — ce n'est en réalité pas fabricable."
+- "Piège n°2 : la sphère affichée semble trop forte (hors plage), mais une fois transposée en positif elle rentre parfaitement dans la limite haute (+7.25) — c'est en réalité fabricable."
+
+5. Autre cas d'usage : le SAV
+Paragraphe 1 : "La fabrication en 10 minutes n'est pas le seul moment où la transposition sert. Dans notre base de données, la correction de chaque client est toujours enregistrée transposée en cylindre positif — c'est la même convention que pour la fabrication."
+Paragraphe 2 : "Au SAV, quand on veut vérifier que la correction enregistrée dans le dossier du client correspond bien à son ordonnance d'origine, il faut comparer les deux. Si l'ordonnance d'origine est écrite en cylindre négatif, il faut d'abord la transposer en positif avant de la comparer à ce qui est dans le dossier."
+Encart d'avertissement (⚠️, rouge) : "Attention à l'erreur courante : ne jamais comparer directement une ordonnance en cylindre négatif aux chiffres de la base de données sans l'avoir transposée en positif d'abord — les chiffres ne se ressembleront pas, alors que c'est peut-être exactement la même correction."
+
+6. Exemples concrets (grille de 4 cartes : 2 vertes "✅ Fabricable", 2 rouges "❌ Pas fabricable"). Chaque carte : étiquette, ordonnance en gras, description, conclusion.
+- ✅ Fabricable — "+8.50 (−2.50) 60°" — "Écrite en cylindre négatif. Transposée : +6.00 (+2.50) 150°." — "→ Sphère +6.00 dans la plage, cylindre 2.50 ≤ 3 : fabricable, malgré une sphère affichée qui semblait trop forte."
+- ✅ Fabricable — "+4.00 (+1.00) 20°" — "Déjà écrite en cylindre positif — c'est directement notre convention de travail." — "→ Sphère et cylindre dans la plage sans avoir besoin de transposer."
+- ❌ Pas fabricable — "−6.00 (−2.50) 100°" — "Écrite en cylindre négatif. Transposée : −8.50 (+2.50) 10°." — "→ Une fois transposée, la sphère descend sous −8.00 : pas fabricable, alors que la sphère affichée semblait correcte."
+- ❌ Pas fabricable — "+2.00 (+3.50) 120°" — "Déjà écrite en cylindre positif." — "→ Le cylindre 3.50 dépasse déjà 3.00 en valeur absolue : pas fabricable, peu importe la sphère."
+
+7. Infos pratiques (3 tuiles côte à côte, valeur en gros + libellé en dessous)
+- "−8.00 à +7.25" / "sphère disponible en 10 min en magasin"
+- "3.00" / "cylindre max en 10 min en magasin"
+- "Positif" / "convention de travail"
+
+ÉTAPE 2 — ENTRAÎNEMENT
+
+Surtitre : "Module Après-Formation · La Transposition". Titre : "Entraînement". Sous-titre : "Pas de pression : tu peux refaire ces exercices autant de fois que tu veux, dans l'ordre que tu veux."
+
+Écran d'accueil : un compteur "X/4 formats terminés au moins une fois", puis une grille de 4 cartes cliquables (icône, titre, description, nombre de situations, et un badge "✓ Terminé" quand le format a été fait au moins une fois) :
+- ⏱️ "Fabricable en 10 minutes ?" — "Une ordonnance, tu dis si on peut la fabriquer en 10 minutes ou pas." — 10 situations
+- 🔁 "Transpose correctement" — "Une ordonnance donnée, saisis toi-même sa version transposée." — 5 situations
+- ⚡ "Vrai/Faux éclair" — "Rafale de questions rapides pour ancrer les bases." — 15 situations
+- 🗣️ "Le bon raisonnement" — "Un collègue se trompe (ou pas) — identifie le bon raisonnement." — 4 situations
+
+Mécanique commune aux 4 formats : à chaque lancement, l'ordre des situations est mélangé aléatoirement. En haut de l'exercice : un lien "← Retour aux exercices" et un compteur de bonnes/mauvaises réponses de la session ("X ✓  Y ✗"). Après chaque réponse : la bonne réponse est surlignée en vert, la mauvaise choisie en rouge, un encadré d'explication apparaît (vert si juste, rouge si faux, précédé de "✓ " ou "✗ "), puis un bouton "Suivant →". Quand toutes les situations du pool sont passées, le format est marqué "fait" et on affiche : "Tu as fait le tour de ce pool — relance l'exercice pour un nouvel ordre, ou choisis un autre format."
+
+Format A — "Fabricable en 10 minutes ?" (10 situations). Le collaborateur voit une ordonnance et répond avec 2 boutons "Fabricable" / "Pas fabricable". Ordonnance → bonne réponse → explication affichée :
+1. +4.00 (+1.00) 20° → Fabricable → "Déjà en cylindre positif, on vérifie directement : sphère +4.00 dans la plage −8/+7.25, cylindre 1.00 ≤ 3 → fabricable en 10 minutes."
+2. +8.50 (−2.50) 60° → Fabricable → "Écrite en cylindre négatif : il faut transposer avant de juger. Sphère + Cylindre = 8.50 + (−2.50) = +6.00 une fois en positif — bien dans la plage, alors que la sphère affichée (+8.50) semblait trop forte au premier regard."
+3. −6.00 (−2.50) 100° → Pas fabricable → "Écrite en cylindre négatif, donc il faut transposer avant de juger : −6.00 + (−2.50) = −8.50 une fois en positif, ce qui descend sous la limite basse de −8.00 — pas fabricable, alors que la sphère affichée semblait correcte."
+4. +3.00 (+3.50) 170° → Pas fabricable → "Déjà en cylindre positif : la sphère +3.00 est dans la plage, mais le cylindre 3.50 dépasse la limite de 3.00 — pas fabricable malgré une sphère tout à fait correcte."
+5. −1.00 (−0.75) 90° → Fabricable → "Écrite en cylindre négatif. Transposée : −1.00 + (−0.75) = −1.75, cylindre +0.75. Sphère et cylindre largement dans la plage — fabricable."
+6. +7.50 (+0.50) 10° → Pas fabricable → "Déjà en cylindre positif : la sphère +7.50 dépasse la limite haute de +7.25 — pas fabricable, même si le cylindre est très faible."
+7. −7.75 (−0.25) 5° → Fabricable → "Écrite en cylindre négatif. Transposée : −7.75 + (−0.25) = −8.00, pile à la limite basse de la plage — fabricable, cylindre 0.25 largement dans la limite."
+8. −5.00 (−3.25) 120° → Pas fabricable → "La valeur absolue du cylindre (3.25) dépasse déjà 3.00 — pas besoin de transposer, ce n'est pas fabricable quelle que soit la sphère."
+9. −3.00 (+2.00) 85° → Fabricable → "Déjà en cylindre positif : sphère −3.00 et cylindre 2.00 sont tous les deux dans la plage — fabricable directement."
+10. +1.00 (−2.50) 15° → Fabricable → "Écrite en cylindre négatif. Transposée : +1.00 + (−2.50) = −1.50, confortablement dans la plage, cylindre 2.50 ≤ 3 — fabricable."
+
+Format B — "Transpose correctement" (5 situations, toutes en cylindre négatif — on ne transpose jamais une ordonnance déjà en positif). Important : ce n'est PAS un choix parmi plusieurs réponses. Le collaborateur doit saisir lui-même la sphère, le cylindre et l'axe transposés, exactement comme dans le module "Bases de l'optique" que tu as déjà construit — reprends le même système :
+- L'ordonnance de départ est affichée en gros dans un encadré.
+- En dessous, trois cases tapables côte à côte, libellées "Sphère", "Cylindre", "Axe", vides au départ (affichent "—").
+- Chaque case ouvre en bas d'écran le même pavé numérique (bottom sheet avec fond assombri, croix de fermeture, affichage de la valeur en cours) que pour la saisie d'ordonnance. Titre du pavé : "Sphère (cylindre positif)", "Cylindre (cylindre positif)" ou "Axe".
+- Pavé pour la sphère et le cylindre : touches 1 à 9, "-" (inverse le signe), 0, "," (virgule décimale), "⌫" (effacer), "✓" (valider). Valeur bornée entre −20 et +20. Affichage dans la case au format "+0,50" / "−6,00" / "0,00".
+- Pavé pour l'axe : touches 1 à 9, "⌫", 0, "✓" — pas de signe ni de virgule, valeur bornée entre 0 et 180 (on ne peut pas taper au-delà de 180). Affichage dans la case au format "120°".
+- Un bouton "Vérifier" compare à la bonne réponse : tolérance de 0,01 sur la sphère et le cylindre, valeur exacte (arrondie) sur l'axe. Une case vide compte comme fausse. Chaque case se colore en vert si juste, en rouge si fausse, et la bonne valeur s'affiche en rouge sous chaque case fausse (ex : "✓ +1,50"). Puis l'encadré d'explication et le bouton "Suivant →".
+Les 5 ordonnances, leur transposition correcte et l'explication affichée :
+1. +2.00 (−1.50) 30° → +0.50 (+1.50) 120° → "Sphère = 2.00 + (−1.50) = 0.50, cylindre : le − devient un + → +1.50, axe = 30 + 90 = 120° (axe ≤ 90 → on ajoute 90)."
+2. −4.00 (−2.00) 75° → −6.00 (+2.00) 165° → "Sphère = −4.00 + (−2.00) = −6.00, cylindre : le − devient un + → +2.00, axe = 75 + 90 = 165° (axe ≤ 90 → on ajoute 90)."
+3. +6.00 (−1.00) 100° → +5.00 (+1.00) 10° → "Sphère = 6.00 + (−1.00) = 5.00, cylindre : le − devient un + → +1.00, axe = 100 − 90 = 10° (axe > 90 → on soustrait 90)."
+4. 0.00 (−0.75) 50° → −0.75 (+0.75) 140° → "Sphère = 0.00 + (−0.75) = −0.75, cylindre : le − devient un + → +0.75, axe = 50 + 90 = 140° (axe ≤ 90 → on ajoute 90)."
+5. −7.00 (−1.75) 160° → −8.75 (+1.75) 70° → "Sphère = −7.00 + (−1.75) = −8.75, cylindre : le − devient un + → +1.75, axe = 160 − 90 = 70° (axe > 90 → on soustrait 90)."
+
+Format C — "Vrai/Faux éclair" (15 énoncés), 2 boutons "Vrai" / "Faux". Explication affichée : "Exact." si juste, "Pas tout à fait — relis le point correspondant dans le cours si besoin." si faux.
+1. La transposition change la puissance réelle du verre pour le client. → Faux
+2. Pour transposer un cylindre négatif en positif, il suffit de remplacer son signe − par un signe +. → Vrai
+3. L'axe ne change jamais lors d'une transposition. → Faux
+4. La nouvelle sphère s'obtient en additionnant la sphère et le cylindre d'origine. → Vrai
+5. Une ordonnance écrite en cylindre positif n'a jamais besoin d'être transposée pour vérifier la faisabilité en 10 minutes. → Vrai
+6. La valeur absolue du cylindre change lors d'une transposition. → Faux
+7. Chez nous, la plage de fabrication en 10 minutes est une sphère entre −8.00 et +7.25. → Vrai
+8. Le cylindre maximum fabricable en 10 minutes est de 3.00. → Vrai
+9. Si l'axe d'origine est 100°, le nouvel axe après transposition est 190°. → Faux
+10. Une ordonnance en cylindre négatif peut sembler fabricable alors qu'elle ne l'est plus une fois transposée en positif. → Vrai
+11. Une ordonnance en cylindre négatif peut sembler impossible à fabriquer alors qu'elle l'est en réalité une fois transposée en positif. → Vrai
+12. Si le cylindre affiché dépasse déjà 3.00 en valeur absolue, inutile de transposer : ce n'est pas fabricable en 10 minutes. → Vrai
+13. La transposition sert uniquement à l'administratif, elle n'a aucun impact sur ce qu'on peut fabriquer en magasin. → Faux
+14. On transpose une ordonnance uniquement quand elle est écrite en cylindre négatif, jamais quand elle est déjà en positif. → Vrai
+15. Il faut systématiquement demander un nouvel examen de vue au client si l'ordonnance est écrite en cylindre négatif. → Faux
+
+Format D — "Le bon raisonnement" (4 situations, 3 options chacune, une seule bonne). Important : l'ordre des 3 options doit être mélangé aléatoirement à chaque affichage, à l'entraînement comme au test, pour que la bonne réponse ne soit jamais toujours à la même place. Chaque option a sa propre explication, affichée quand le collaborateur la choisit (la bonne option est toujours surlignée en vert, celle choisie en rouge si elle est fausse) :
+
+1. Situation : "Un collègue voit une ordonnance +8.50 (−2.50) 60° et dit : "Sphère trop forte, impossible en 10 minutes.""
+- ✅ "Attends, elle est en cylindre négatif — il faut d'abord la transposer en positif avant de juger, le vrai résultat peut être différent." → explication : "Exactement : une fois transposée (8.50 + (−2.50) = +6.00), cette ordonnance rentre bien dans la plage."
+- ❌ "Oui tu as raison, il faut refuser directement." → explication : "Conclusion prise trop vite sur les chiffres bruts, sans transposer."
+- ❌ "On ne peut jamais savoir sans rappeler l'ophtalmologiste." → explication : "Pas besoin : on peut transposer soi-même, pas besoin de recontacter qui que ce soit."
+
+2. Situation : "Un collègue voit une ordonnance −6.00 (−2.50) 100° et dit : "Sphère −6.00, large dans la plage, pas de souci.""
+- ✅ "Attends, elle est en cylindre négatif — il faut transposer avant de conclure, la sphère réelle à vérifier pourrait être plus basse qu'elle n'en a l'air." → explication : "Exactement le bon réflexe : une fois transposée (−6.00 + (−2.50) = −8.50), elle descend en réalité sous la limite basse."
+- ❌ "Oui, aucun souci, vas-y." → explication : "Dangereux : la sphère affichée en cylindre négatif ne dit rien de la vraie valeur à vérifier une fois transposée en positif."
+- ❌ "Non, jamais fabricable avec du cylindre négatif." → explication : "Faux : le cylindre négatif n'empêche rien en soi, il faut juste transposer avant de conclure."
+
+3. Situation : "Une ordonnance affiche un cylindre de −3.50. Un collègue hésite à transposer pour vérifier si c'est fabricable."
+- ✅ "Pas besoin de transposer ici : la valeur absolue du cylindre (3.50) dépasse déjà 3.00, donc ce n'est pas fabricable en 10 minutes, quelle que soit la convention." → explication : "Exactement le raccourci à connaître : le cylindre en valeur absolue est invariant par transposition."
+- ❌ "Il faut absolument transposer avant de pouvoir conclure quoi que ce soit." → explication : "Pas nécessaire ici : la valeur absolue du cylindre ne change jamais en transposant."
+- ❌ "Le cylindre ne compte pas, seule la sphère importe." → explication : "Faux : le cylindre a lui aussi sa propre limite (3.00 maximum), indépendamment de la sphère."
+
+4. Situation : "Un nouveau collaborateur demande : "Pourquoi certaines ordonnances sont en + et d'autres en − ?""
+- ✅ "Ça dépend juste de l'habitude ou du logiciel de l'ophtalmologiste qui l'a rédigée — le verre est rigoureusement le même, seule l'écriture change selon la convention utilisée." → explication : "Exactement la bonne explication à donner."
+- ❌ "C'est une erreur de l'ophtalmologiste, il faut toujours lui redemander." → explication : "Non, ce n'est pas une erreur — c'est une simple convention d'écriture, parfaitement valable dans les deux cas."
+- ❌ "Le cylindre négatif est pour les myopes, le positif pour les hypermétropes." → explication : "Faux : le signe du cylindre n'a rien à voir avec myopie ou hypermétropie, c'est juste une convention d'écriture."
+
+ÉTAPE 3 — TEST
+
+Surtitre : "Module Après-Formation · La Transposition". Titre : "Test". Sous-titre : "Une seule fois pour verrouiller le module — mais tu peux retenter autant de fois que nécessaire si besoin."
+
+Écran d'introduction, carte "Avant de commencer" avec 4 règles numérotées :
+1. "12 questions, mélange de ce qu'on a vu dans le cours et à l'entraînement."
+2. "Pas de correction affichée en cours de route — le score tombe à la fin."
+3. "Il faut 10/12 pour valider le module."
+4. "En dessous, pas de souci : retourne t'entraîner et retente quand tu veux."
+Puis le bouton "Commencer le test". Tant que les 4 formats d'entraînement n'ont pas tous été faits au moins une fois, ce bouton est remplacé par un encart jaune : "⚠️ Pas encore accessible : il faut avoir fait au moins une fois chaque format d'entraînement. Il reste : [liste des titres des formats manquants, séparés par des virgules]." avec un bouton "Aller à l'entraînement" qui bascule sur l'étape 2.
+
+Si le module est déjà acquis, l'écran d'introduction est remplacé par : badge "✓ Module déjà acquis", texte "Tu as déjà validé ce module. Pas besoin de le repasser." et bouton "Le repasser quand même" (qui lance un nouveau test).
+
+Composition du test : 12 questions tirées au hasard et mélangées à chaque tentative —
+- 5 parmi les 15 énoncés Vrai/Faux du Format C (boutons "Vrai" / "Faux") ;
+- 5 parmi les 10 ordonnances du Format A (boutons "Fabricable" / "Pas fabricable") ;
+- 2 parmi un pool de 9 fusionnant les 5 du Format B et les 4 du Format D. Les 5 issues du Format B sont des questions de saisie (mêmes cases tapables + pavé numérique que décrit plus haut, bouton "Valider la réponse" au lieu de "Vérifier") ; la réponse n'est juste que si les 3 valeurs (sphère, cylindre, axe) sont toutes justes. Les 4 issues du Format D restent des questions à choix parmi 3 réponses, options mélangées, la situation affichée entre guillemets.
+
+Pendant le quiz : un compteur "Question X / 12" et une barre de progression en 12 segments. Aucune correction affichée — dès qu'une réponse est donnée (ou "Valider la réponse" cliqué), on passe directement à la question suivante.
+
+Écran de résultat : un rond avec le score "X sur 12" (vert si réussi, rouge sinon).
+- Si score ≥ 10 : titre "✅ Module acquis !", sous-titre "Le module est verrouillé — bravo.", bouton "Repasser le test quand même". Le module passe en "acquis" définitivement.
+- Si score < 10 : titre "Pas encore cette fois", sous-titre "Il fallait 10/12 pour valider. Retourne t'entraîner et retente quand tu veux.", bouton "Retenter le test".
+Sous le titre, le détail des 12 questions : une ligne par question avec ✓ (vert) ou ✗ (rouge) suivi de l'énoncé de la question (l'ordonnance, l'énoncé Vrai/Faux ou la situation).
+
+Ne te préoccupe pas du stockage ni de la façon dont tu notes "acquis"/"non acquis" et "format fait" par collaborateur — gère ça comme tu le souhaites de ton côté.`
+
+$('#textePrompt').textContent = PROMPT_PAUL
+$('#btnPromptPaul').addEventListener('click', () => { $('#modalPrompt').style.display = 'flex' })
+$('#btnFermerModal').addEventListener('click', () => { $('#modalPrompt').style.display = 'none' })
+$('#modalPrompt').addEventListener('click', (e) => { if (e.target.id === 'modalPrompt') $('#modalPrompt').style.display = 'none' })
+$('#btnCopierPrompt').addEventListener('click', () => {
+  navigator.clipboard.writeText(PROMPT_PAUL).then(() => {
+    const btn = $('#btnCopierPrompt')
+    const original = btn.textContent
+    btn.textContent = 'Copié !'
+    setTimeout(() => { btn.textContent = original }, 1500)
+  })
+})
+</script>
+
+
+<script src="bridge-apres.js"></script>
+</body></html>

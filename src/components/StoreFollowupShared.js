@@ -9,6 +9,7 @@ import { sbSelect } from '@/lib/supabase'
 import { TRAINING_THEMES } from '@/lib/trainingSlots'
 import OrdonnanceExercise from './OrdonnanceExercise'
 import CollaborateurNotesSection from './CollaborateurNotesSection'
+import ModulesApresFormationSection from './ModulesApresFormationSection'
 import { RegistrationModal } from './TrainingRegistrationTile'
 
 function trainingThemeLabel(id) {
@@ -1344,7 +1345,7 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
   )
 }
 
-export function CollaborateurFiche({ store, sectionId, collaborateur, progress, history, onSetScore, onSaveNote, onReset, onBack, pName, role = 'formateur' }) {
+export function CollaborateurFiche({ store, sectionId, collaborateur, progress, history, onSetScore, onSaveNote, onReset, onBack, pName, role = 'formateur', showModulesApresFormation = false }) {
   const items = getSkillItems(sectionId, isBelgiqueStore(store.id))
   const categories = useMemo(() => {
     const groups = {}
@@ -1397,6 +1398,8 @@ export function CollaborateurFiche({ store, sectionId, collaborateur, progress, 
           ))}
         </div>
       ))}
+
+      {showModulesApresFormation && <ModulesApresFormationSection store={store} collaborateur={collaborateur} />}
 
       <CollaborateurNotesSection store={store} collaborateur={collaborateur} pName={pName} role={role} />
     </div>

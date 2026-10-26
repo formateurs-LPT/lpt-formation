@@ -1,0 +1,1179 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<script src="bridge-avant.js"></script>
+<meta charset="utf-8">
+<title>Module — La troisième paire</title>
+<style>
+  :root {
+    --bg: #F2F4F7; --bg-panel: #FFFFFF; --line: rgba(17,21,27,0.10);
+    --ink: #11151B; --ink-soft: #5B6472;
+    --accent: #7C3AED; --accent-wash: #F2ECFE;
+    --vert: #0C8F6B; --vert-wash: #E7F7F1;
+    --rouge: #C0392B; --rouge-wash: #FBEAE8;
+    --jaune: #7A5A0A; --jaune-wash: #FFF8E6;
+    --radius: 18px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink); font-family: var(--font);
+    background: #F3F6F4;
+    background-image: radial-gradient(900px 500px at 100% -10%, rgba(176, 207, 192, 0.35), transparent 60%);
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 28px 22px 60px; }
+
+  .vue-etape { animation: apparition .15s ease; }
+  @keyframes apparition { from { opacity: 0 } to { opacity: 1 } }
+  @media (prefers-reduced-motion: reduce) { .vue-etape { animation: none; } }
+
+  .etapes { display: flex; gap: 8px; margin-bottom: 24px; }
+  .etape {
+    flex: 1; text-align: center; padding: 10px 6px; border-radius: 12px; font-size: 12.5px; font-weight: 700;
+    border: 1.5px solid var(--line); color: var(--ink-soft); background: #fff; cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  .etape:hover { border-color: var(--accent); color: var(--accent); }
+  .etape.actif { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .etape.actif:hover { color: #fff; }
+  .etape .num { display: block; font-size: 10px; opacity: .8; margin-bottom: 2px; text-transform: uppercase; letter-spacing: .5px; }
+
+  .eyebrow { font-size: 11.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: 30px; font-weight: 800; margin: 6px 0 4px; letter-spacing: -0.4px; text-wrap: balance; }
+  .sous-titre { color: var(--ink-soft); margin: 0 0 26px; font-size: 15px; }
+
+  .carte { border: 1px solid var(--line); border-radius: var(--radius); }
+  .carte h2 { font-weight: 800; margin: 0 0 12px; }
+  .carte p { line-height: 1.6; color: #3C4450; margin: 0 0 10px; }
+  .carte ul.liste { margin: 0 0 10px; padding-left: 20px; color: #3C4450; line-height: 1.6; }
+  .carte ul.liste li { margin-bottom: 4px; }
+  #vueCours .carte { background: var(--bg-panel); padding: 24px; margin-bottom: 18px; }
+  #vueCours .carte h2 { font-size: 18px; }
+  #vueTest .carte { background: #fff; padding: 28px 24px; box-shadow: 0 2px 8px rgba(17,21,27,0.03); }
+  #vueTest .carte h2 { font-size: 17px; }
+
+  /* Correspondance des noms */
+  .noms-marche { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+  .nom-marche { background: var(--bg); border-radius: 12px; padding: 12px; text-align: center; }
+  .nom-marche .marque { font-weight: 800; font-size: 14.5px; }
+  .nom-maison { background: var(--accent-wash); border-radius: 12px; padding: 12px 16px; margin-top: 10px; font-size: 13.5px; color: #4A2E8F; text-align: center; }
+  .nom-maison strong { color: var(--accent); }
+
+  /* Schéma œil */
+  .schemas-oeil { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .schema { background: var(--bg); border-radius: 14px; padding: 14px; }
+  .schema svg { width: 100%; height: auto; display: block; }
+  .schema .titre-schema { font-size: 12.5px; font-weight: 800; margin-bottom: 6px; }
+  .schema .legende-schema { font-size: 12px; color: var(--ink-soft); line-height: 1.5; margin-top: 6px; }
+
+
+  /* Schémas verres — même style que le module Verre de proximité */
+  .grille-schema { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 8px; }
+  .carte-schema {
+    background: #FFFFFF; border-radius: 20px; padding: 34px 24px 26px; text-align: center;
+    box-shadow: 0 2px 8px rgba(17,21,27,0.03), 0 20px 40px rgba(17,21,27,0.05);
+  }
+  .eyebrow-schema { font-size: 10.5px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: #97A2AC; margin-bottom: 22px; }
+  .cercle-wrap { width: 180px; height: 180px; margin: 0 auto 20px; }
+  .cercle-svg { display: block; width: 100%; height: 100%; }
+  .nom-verre { font-size: 21px; font-weight: 600; color: #2A3342; margin-bottom: 6px; font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; }
+  .sous-verre { font-size: 12.5px; color: #97A2AC; line-height: 1.5; max-width: 26ch; margin: 0 auto 18px; }
+  .legende-verre { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11.5px; color: #6B7480; }
+  .legende-verre span { display: inline-flex; align-items: center; gap: 6px; }
+  .legende-verre i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .caption-schema { text-align: right; font-size: 9.5px; letter-spacing: 1px; text-transform: uppercase; color: #AEB6BE; margin: 10px 0 18px; }
+  .etapes-mecanisme { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .etape-meca { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; color: #3C4450; line-height: 1.55; }
+  .etape-meca .puce { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+
+  .astuce {
+    background: var(--accent-wash); border-radius: 14px; padding: 14px 16px;
+    font-size: 13px; color: #4A2E8F; line-height: 1.55; margin-top: 16px;
+  }
+  .astuce strong { color: var(--accent); }
+
+  .note-attention {
+    background: var(--rouge-wash); border: 1.5px solid #F1C9C4; border-radius: 14px; padding: 14px 16px;
+    font-size: 13px; color: #8A2A1E; line-height: 1.55; margin-top: 16px;
+  }
+  .note-attention strong { color: var(--rouge); }
+  .note-attention ul { margin: 8px 0 0; padding-left: 18px; }
+  .note-attention li { margin-bottom: 4px; }
+
+  .offre-1-1 { background: var(--accent-wash); border-radius: 14px; padding: 16px 18px; margin-top: 14px; font-size: 13.5px; line-height: 1.6; color: #3C4450; }
+  .offre-1-1 strong { color: var(--accent); }
+  .a-valider {
+    background: var(--jaune-wash); border: 1.5px dashed #E0B341; border-radius: 12px; padding: 13px 15px;
+    font-size: 13px; color: var(--jaune); margin-top: 14px; line-height: 1.55;
+  }
+
+  .grille-criteres { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px; }
+  .critere { border-radius: 14px; padding: 16px; }
+  .critere.oui { background: var(--vert-wash); }
+  .critere.non { background: var(--rouge-wash); }
+  .critere .tag { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; display: block; margin-bottom: 8px; }
+  .critere.oui .tag { color: var(--vert); }
+  .critere.non .tag { color: var(--rouge); }
+  .critere ul { margin: 0; padding-left: 18px; font-size: 13px; color: #3C4450; line-height: 1.55; }
+  .critere li { margin-bottom: 4px; }
+
+  .grille-personas { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+  .persona { border-radius: 14px; padding: 16px; border: 1.5px solid var(--line); }
+  .persona.bon { background: var(--vert-wash); border-color: #BFE6D6; }
+  .persona.mauvais { background: var(--rouge-wash); border-color: #F1C9C4; }
+  .persona .tag { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; display: block; }
+  .persona.bon .tag { color: var(--vert); }
+  .persona.mauvais .tag { color: var(--rouge); }
+  .persona .nom { font-weight: 800; font-size: 14.5px; margin-bottom: 4px; }
+  .persona .desc { font-size: 13px; color: #3C4450; line-height: 1.5; margin-bottom: 8px; }
+  .persona .conclusion { font-size: 12.5px; font-weight: 700; }
+  .persona.bon .conclusion { color: var(--vert); }
+  .persona.mauvais .conclusion { color: var(--rouge); }
+
+  .infos-pratiques { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .info-item { background: var(--accent-wash); border-radius: 12px; padding: 14px; text-align: center; }
+  .info-item .valeur { font-weight: 800; font-size: 17px; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .info-item .label { font-size: 11.5px; color: var(--ink-soft); margin-top: 3px; }
+
+  /* ───────────────── Entraînement ───────────────── */
+  .progress-formats { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 14px; font-weight: 600; }
+  .grille-formats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .carte-format {
+    background: #fff; border-radius: 18px; padding: 20px; border: 1px solid var(--line);
+    box-shadow: 0 2px 6px rgba(17,21,27,0.03); cursor: pointer; text-align: left;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .carte-format:hover { border-color: var(--accent); }
+  .carte-format .ico { font-size: 22px; }
+  .carte-format .titre-format { font-weight: 800; font-size: 14.5px; }
+  .carte-format .desc-format { font-size: 12px; color: var(--ink-soft); line-height: 1.5; flex: 1; }
+  .carte-format .compteur-format { font-size: 11px; color: var(--accent); font-weight: 700; }
+  .badge-fait { align-self: flex-start; background: var(--vert-wash); color: var(--vert); font-size: 10.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
+
+  .carte-drill { background: #fff; border-radius: var(--radius); padding: 28px 24px; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(17,21,27,0.03); }
+  .entete-drill { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .lien-retour { background: none; border: none; color: var(--accent); font-weight: 700; font-size: 13.5px; cursor: pointer; padding: 0; }
+  .score-drill { font-size: 12.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .score-drill b.ok { color: var(--vert); }
+  .score-drill b.non { color: var(--rouge); }
+
+  .profil-client { font-size: 17px; font-weight: 600; line-height: 1.5; margin-bottom: 20px; color: #1C2430; }
+  .citation-client { font-size: 17px; font-weight: 600; line-height: 1.5; margin-bottom: 20px; font-style: italic; color: #1C2430; }
+
+  .choix-binaire { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .btn-choix { padding: 15px 10px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-weight: 700; font-size: 14.5px; cursor: pointer; color: var(--ink); }
+  .btn-choix:hover { border-color: var(--accent); }
+  .liste-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .btn-option { text-align: left; padding: 13px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-size: 14px; cursor: pointer; color: var(--ink); line-height: 1.45; }
+  .btn-option:hover { border-color: var(--accent); }
+
+  .choix-fait .btn-choix, .choix-fait .btn-option, .choix-fait .btn-rep { pointer-events: none; opacity: .55; }
+  .choix-fait .selectionne { opacity: 1; }
+  .choix-fait .bonne-reponse { opacity: 1 !important; border-color: var(--vert); background: var(--vert-wash); }
+  .choix-fait .mauvaise-reponse { opacity: 1 !important; border-color: var(--rouge); background: var(--rouge-wash); }
+
+  .feedback { border-radius: 12px; padding: 14px 16px; font-size: 13.5px; line-height: 1.55; margin-bottom: 18px; display: none; }
+  .feedback.visible { display: block; }
+  .feedback.ok { background: var(--vert-wash); color: #0A5E47; }
+  .feedback.non { background: var(--rouge-wash); color: #8A2A1E; }
+  .pied-drill { display: flex; justify-content: flex-end; }
+  .btn-suivant { background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 12px 22px; font-weight: 700; font-size: 14px; cursor: pointer; display: none; }
+  .btn-suivant.visible { display: inline-block; }
+
+  /* ───────────────── Test ───────────────── */
+  .regle { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; font-size: 14px; color: #3C4450; line-height: 1.5; }
+  .regle .puce { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-wash); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+  .btn-principal { background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 14px 22px; font-weight: 800; font-size: 15px; cursor: pointer; width: 100%; margin-top: 16px; }
+  .btn-principal:hover { background: #6A2FD1; }
+  .btn-secondaire { background: #fff; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 12px; padding: 13px 22px; font-weight: 700; font-size: 14.5px; cursor: pointer; width: 100%; margin-top: 10px; }
+  .alerte-manquant { background: var(--jaune-wash); border: 1.5px dashed #E0B341; border-radius: 12px; padding: 13px 15px; font-size: 13px; color: var(--jaune); margin: 14px 0 0; line-height: 1.55; }
+
+  .entete-quiz { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .compteur-quiz { font-size: 12.5px; color: var(--ink-soft); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .barre-quiz { display: flex; gap: 4px; margin-bottom: 22px; }
+  .seg-quiz { flex: 1; height: 4px; border-radius: 999px; background: var(--line); }
+  .seg-quiz.fait { background: var(--accent); }
+  .btn-rep { padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-weight: 600; font-size: 14px; cursor: pointer; color: var(--ink); text-align: left; line-height: 1.45; }
+  .btn-rep:hover { border-color: var(--accent); }
+  .choix-binaire .btn-rep { text-align: center; font-weight: 700; }
+
+  .score-rond { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 6px solid var(--line); }
+  .score-rond.reussi { border-color: var(--vert); background: var(--vert-wash); }
+  .score-rond.echec { border-color: var(--rouge); background: var(--rouge-wash); }
+  .score-rond .chiffre { font-size: 30px; font-weight: 800; line-height: 1; }
+  .score-rond .sur { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .titre-resultat { text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+  .sous-resultat { text-align: center; color: var(--ink-soft); font-size: 14px; margin-bottom: 24px; }
+  .detail-reponse { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .detail-reponse:last-child { border-bottom: none; }
+  .detail-reponse .icone { flex-shrink: 0; font-weight: 800; }
+  .detail-reponse.ok .icone { color: var(--vert); }
+  .detail-reponse.non .icone { color: var(--rouge); }
+  .detail-reponse .texte-q { color: #3C4450; line-height: 1.5; }
+  .badge-acquis { display: inline-flex; align-items: center; gap: 6px; background: var(--vert-wash); color: var(--vert); font-weight: 800; font-size: 13px; padding: 8px 16px; border-radius: 999px; margin: 0 auto 18px; width: fit-content; }
+
+  /* ───────────────── Bouton + modale "Prompt pour Paul" ───────────────── */
+  .btn-prompt-paul { position: fixed; top: 16px; left: 16px; z-index: 50; background: #fff; border: 1.5px solid var(--line); color: var(--ink-soft); font-size: 11px; font-weight: 700; padding: 7px 12px; border-radius: 999px; cursor: pointer; box-shadow: 0 2px 6px rgba(17,21,27,0.06); }
+  .btn-prompt-paul:hover { border-color: var(--accent); color: var(--accent); }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(17,21,27,0.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .modal-prompt { background: #fff; border-radius: 18px; max-width: 720px; width: 100%; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(17,21,27,0.25); }
+  .modal-entete { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); font-weight: 800; font-size: 14px; flex-shrink: 0; }
+  .btn-fermer { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--ink-soft); line-height: 1; padding: 4px; }
+  .texte-prompt { margin: 0; padding: 20px; overflow-y: auto; white-space: pre-wrap; font-family: var(--font); font-size: 12.5px; line-height: 1.6; color: #2A3342; flex: 1; }
+  .modal-pied { padding: 14px 20px; border-top: 1px solid var(--line); flex-shrink: 0; }
+
+
+  /* Comparatif des solutions */
+  .grille-compar { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
+  .compar { border-radius: 14px; padding: 16px; background: var(--bg); }
+  .compar.star { background: var(--accent-wash); border: 1.5px solid #D6C4FA; }
+  .compar .nom { font-weight: 800; font-size: 14.5px; margin-bottom: 8px; }
+  .compar.star .nom { color: var(--accent); }
+  .compar ul { margin: 0; padding: 0; list-style: none; font-size: 13px; color: #3C4450; line-height: 1.5; }
+  .compar li { margin-bottom: 4px; padding-left: 18px; position: relative; }
+  .compar li::before { position: absolute; left: 0; font-weight: 800; }
+  .compar li.plus::before { content: '+'; color: var(--vert); }
+  .compar li.moins::before { content: '−'; color: var(--rouge); }
+
+  /* Arguments */
+  .liste-args { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+  .arg { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .arg .titre-arg { font-weight: 800; font-size: 14.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .arg .gain { font-size: 13.5px; color: #3C4450; line-height: 1.55; margin-bottom: 8px; }
+  .arg .phrase { font-size: 13px; color: #4A2E8F; background: var(--accent-wash); border-radius: 10px; padding: 9px 12px; line-height: 1.5; font-style: italic; }
+  .badge-lpt { font-size: 10px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; color: var(--accent); background: var(--accent-wash); padding: 2px 8px; border-radius: 999px; }
+
+  /* Objections */
+  .liste-objections { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+  .objection { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+  .objection .dit { background: var(--bg); padding: 12px 16px; font-weight: 700; font-style: italic; font-size: 14px; }
+  .objection .derriere { padding: 10px 16px 0; font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+  .objection .reponse { padding: 8px 16px 14px; font-size: 13.5px; color: #0A5E47; line-height: 1.55; }
+  .objection .reponse strong { color: var(--vert); }
+
+  @media (max-width: 560px) {
+    .noms-marche { grid-template-columns: 1fr 1fr; }
+    .infos-pratiques { grid-template-columns: 1fr; }
+    .grille-schema, .grille-criteres, .grille-personas, .grille-formats, .grille-compar { grid-template-columns: 1fr; }
+    .page { padding-top: 60px; }
+  }
+</style>
+<link rel="stylesheet" href="theme-app.css">
+
+<button class="btn-prompt-paul" id="btnPromptPaul">📋 Prompt pour Paul</button>
+
+<div class="modal-overlay" id="modalPrompt" style="display:none">
+  <div class="modal-prompt">
+    <div class="modal-entete">
+      <span>Prompt pour Paul — Module La troisième paire</span>
+      <button class="btn-fermer" id="btnFermerModal">✕</button>
+    </div>
+    <pre class="texte-prompt" id="textePrompt"></pre>
+    <div class="modal-pied">
+      <button class="btn-principal" id="btnCopierPrompt" style="margin-top:0">Copier le prompt</button>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="etapes">
+    <div class="etape actif" data-etape="cours"><span class="num">Étape 1</span>Cours</div>
+    <div class="etape" data-etape="entrainement"><span class="num">Étape 2</span>Entraînement</div>
+    <div class="etape" data-etape="test"><span class="num">Étape 3</span>Test</div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 1 — COURS ═══════════════════ -->
+  <div id="vueCours" class="vue-etape">
+    <span class="eyebrow">Module Après-Formation · Vente</span>
+    <h1>La troisième paire</h1>
+    <p class="sous-titre">Après un 1=1, savoir quand proposer une troisième paire, comment l'amener naturellement et comment répondre au client qui hésite.</p>
+
+    <div class="carte">
+      <h2>1. C'est quoi ?</h2>
+      <p>Quand un client fait un <strong>1=1</strong>, il peut, s'il le souhaite, ajouter une <strong>troisième paire avec 20 % de remise</strong>, en parcours classique.</p>
+      <div class="infos-pratiques">
+        <div class="info-item"><div class="valeur">1=1</div><div class="label">le client a choisi ses deux paires</div></div>
+        <div class="info-item"><div class="valeur">+ 1 paire</div><div class="label">une troisième paire, en parcours classique</div></div>
+        <div class="info-item"><div class="valeur">− 20 %</div><div class="label">de remise sur cette troisième paire</div></div>
+      </div>
+      <div class="astuce">💡 <strong>Ce n'est pas forcer la vente</strong> : c'est compléter l'équipement du client. Une paire pour chaque moment de sa vie, c'est un client mieux équipé, plus content, et qui revient.</div>
+    </div>
+
+    <div class="carte">
+      <h2>2. Les cas où elle est intéressante</h2>
+      <p>Le 1=1 répond déjà à deux besoins. Bien choisie, la <strong>deuxième paire</strong> couvre souvent le besoin le plus évident : une solaire à la vue, un photochromique, une paire de bureau… La <strong>troisième paire</strong>, c'est pour <strong>un besoin de plus</strong>, un autre moment de la vie du client. Voici les situations à repérer :</p>
+      <div class="liste-args" id="listeCas"></div>
+      <div class="astuce">💡 <strong>La paire à 10 €</strong> peut aussi faire une troisième paire, pour un besoin simple. Avec la remise de 20 %, elle tombe à <strong>8 €</strong>. Attention : elle existe uniquement en <strong>unifocal</strong> (loin ou près). Pour un presbyte, c'est donc une paire de lecture, jamais un progressif.</div>
+    </div>
+
+    <div class="carte">
+      <h2>3. Le bon moment</h2>
+      <p>On propose la troisième paire <strong>une fois les deux paires du 1=1 choisies</strong>, avant de finaliser la vente. Ou pendant le choix des montures, quand le client <strong>hésite entre trois</strong> (voir la technique de l'élimination).</p>
+      <div class="grille-criteres">
+        <div class="critere non">
+          <span class="tag">❌ Trop tôt</span>
+          <ul><li>Le client vient d'arriver et n'a encore rien essayé : on le noie sous les choix.</li></ul>
+        </div>
+        <div class="critere non">
+          <span class="tag">❌ Trop tard</span>
+          <ul><li>Le client a payé et part : la proposition arrive comme un cheveu sur la soupe.</li></ul>
+        </div>
+      </div>
+      <div class="critere oui" style="margin-top:14px">
+        <span class="tag">✅ Le bon moment</span>
+        <ul><li>Les deux paires sont choisies, le client est content de son équipement : c'est là qu'on lui propose de le compléter.</li><li>Le client n'arrive pas à choisir entre ses trois dernières montures : la troisième paire règle son hésitation.</li></ul>
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>4. Comment l'amener</h2>
+      <p>La troisième paire se prépare <strong>dès la découverte</strong> : tout ce que le client te dit sur son quotidien, c'est une idée de troisième paire. On suit 4 étapes :</p>
+      <div class="etapes-mecanisme" id="listeMethode"></div>
+      <div class="astuce">💡 <strong>La question à éviter</strong> : « Vous voulez une troisième paire ? ». Le client répond « non » par réflexe. Pars toujours de son besoin, puis propose une paire précise.</div>
+    </div>
+
+    <div class="carte">
+      <h2>5. La technique de l'élimination</h2>
+      <p>C'est le moyen le plus efficace de vendre une troisième paire : <strong>laisser le client choisir trop de montures</strong>, puis l'aider à en éliminer.</p>
+      <div class="etapes-mecanisme">
+        <div class="etape-meca"><span class="puce">1</span><span><strong>Laisser choisir large</strong> — Pendant l'essayage, le client met de côté toutes les montures qui lui plaisent, même s'il y en a cinq ou six.</span></div>
+        <div class="etape-meca"><span class="puce">2</span><span><strong>Éliminer ensemble</strong> — On l'aide à retirer celles qu'il aime le moins. En éliminant avec lui, tu lui montres que <strong>tu ne forces pas la vente</strong>.</span></div>
+        <div class="etape-meca"><span class="puce">3</span><span><strong>Quand il en reste trois</strong> — Le client n'arrive souvent plus à se décider. C'est le moment : « Vous n'êtes pas obligé de choisir : vos deux préférées dans le 1=1, et la troisième avec 20 % de remise. »</span></div>
+      </div>
+      <div class="astuce">💡 <strong>Ça ne marche pas à tous les coups</strong>, mais c'est très efficace : la troisième paire arrive comme la solution à son hésitation, pas comme une vente de plus.</div>
+    </div>
+
+    <div class="carte">
+      <h2>6. L'argument qui fait la différence : le 1=1 remboursé</h2>
+      <p>Un client qui fait un <strong>1=1 avec remboursement</strong> a ses deux paires pour <strong>0 €</strong>. Lui proposer une troisième paire devient facile : il repart avec <strong>trois paires de lunettes</strong> et n'en paie qu'<strong>une seule</strong>, en plus avec <strong>20 % de remise</strong>.</p>
+      <div class="offre-1-1">💡 <strong>Exemple</strong> : un client prend un 1=1 en progressifs, remboursé. En troisième paire, il prend une vision de près en Premium avec une monture à 5 €, prête en 10 minutes. Il repart avec <strong>deux paires de progressifs et une paire de vision de près, pour moins de 50 €</strong>. Nulle part ailleurs il n'aura ça.</div>
+      <div class="arg" style="margin-top:14px">
+        <div class="titre-arg">💬 Comment le présenter</div>
+        <div class="gain">On expose simplement le total, sans insister. Le client dit oui ou non : c'est lui qui décide, et un client qui n'a pas le budget ne doit jamais se sentir rabaissé.</div>
+        <div class="phrase">« Avec votre 1=1 remboursé et cette troisième paire, ça vous fait vos trois paires de lunettes pour [prix de la troisième paire]. »</div>
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>7. Comment la tourner</h2>
+      <p>Des phrases qui marchent, à adapter à ce que le client t'a dit :</p>
+      <div class="liste-args" id="listePhrases"></div>
+      <div class="astuce">💡 <strong>Parle d'abord de l'usage, la remise vient ensuite.</strong> Le client achète une paire pour lire au lit ou pour le soleil, pas une remise. Les 20 %, c'est ce qui le décide une fois qu'il a vu l'intérêt.</div>
+    </div>
+
+    <div class="carte">
+      <h2>8. Répondre au client qui hésite</h2>
+      <p>Une hésitation n'est pas un refus. Comprends ce qui se cache derrière, puis réponds à ça. Et si le client dit vraiment non, on le respecte.</p>
+      <div class="liste-objections" id="listeObjections"></div>
+    </div>
+
+    <div class="carte">
+      <h2>9. Les erreurs à éviter</h2>
+      <div class="note-attention" style="margin-top:0">
+        ⚠️ <strong>Ce qui fait rater la troisième paire</strong> :
+        <ul id="listeErreurs"></ul>
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>10. Exemples concrets</h2>
+      <div class="grille-personas">
+        <div class="persona bon">
+          <span class="tag">✅ Bonne idée</span>
+          <div class="nom">Gérard, 62 ans, presbyte</div>
+          <div class="desc">En 1=1, il a pris un progressif clair et un progressif solaire. Il lit tous les soirs au lit.</div>
+          <div class="conclusion">→ Une paire de lecture pour la table de chevet : par exemple la paire à 10 € en unifocal de près, qui tombe à 8 € avec la remise.</div>
+        </div>
+        <div class="persona bon">
+          <span class="tag">✅ Bonne idée</span>
+          <div class="nom">Sarah, 32 ans, myope</div>
+          <div class="desc">En 1=1, elle a pris une paire de vue et une solaire à sa vue. Elle fait du sport plusieurs fois par semaine et a peur d'abîmer ses lunettes.</div>
+          <div class="conclusion">→ Une paire de sport en troisième paire, avec 20 % de remise.</div>
+        </div>
+        <div class="persona bon">
+          <span class="tag">✅ Bonne idée</span>
+          <div class="nom">Michel, 55 ans, presbyte, comptable</div>
+          <div class="desc">En 1=1, il a pris un progressif clair et un progressif solaire. Il passe ses journées au bureau.</div>
+          <div class="conclusion">→ Une paire de bureau en verre de proximité, en troisième paire.</div>
+        </div>
+        <div class="persona mauvais">
+          <span class="tag">⚠️ Attention au piège</span>
+          <div class="nom">Chantal, 58 ans, presbyte</div>
+          <div class="desc">Elle veut une troisième paire à 10 € « pour voir de loin et de près ».</div>
+          <div class="conclusion">→ La paire à 10 € (8 € avec la remise) est uniquement en unifocal : loin OU près. Pour tout voir avec une paire, c'est un progressif en troisième paire à −20 %.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>11. Infos pratiques</h2>
+      <div class="infos-pratiques">
+        <div class="info-item"><div class="valeur">Après un 1=1</div><div class="label">la troisième paire se propose une fois les deux paires choisies</div></div>
+        <div class="info-item"><div class="valeur">− 20 %</div><div class="label">sur la troisième paire, en parcours classique</div></div>
+        <div class="info-item"><div class="valeur">Si le client le souhaite</div><div class="label">on propose, on ne force jamais</div></div>
+      </div>
+      <div class="grille-criteres" style="margin-top:14px">
+        <div class="critere oui">
+          <span class="tag">✅ Les règles</span>
+          <ul>
+            <li>La remise est valable <strong>jusqu'au retrait de la paire principale</strong>. En unifocal, c'est souvent le jour même : le mieux, c'est de faire la troisième paire <strong>le jour de la vente</strong>.</li>
+            <li>La troisième paire est <strong>à la même correction</strong> que le client, ou <strong>sans correction</strong> (en plan).</li>
+            <li>Une paire <strong>en plan</strong> peut être pour une autre personne : par exemple une solaire pour un enfant ou un conjoint.</li>
+            <li>C'est toujours <strong>une monture + des verres</strong>.</li>
+          </ul>
+        </div>
+        <div class="critere non">
+          <span class="tag">❌ Pas possible</span>
+          <ul>
+            <li>Faire la troisième paire <strong>à la vue d'une autre personne</strong> (conjoint, enfant…).</li>
+            <li>Faire la troisième paire avec une autre correction que celle du client.</li>
+            <li>Prendre un <strong>modèle prémonté</strong> : il est considéré comme une simple monture, la remise ne s'applique pas dessus.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="offre-1-1">💡 <strong>Bon à savoir : les −20 % marchent aussi en parcours classique.</strong><br>Le client n'a pas le budget pour le 1=1 ? On passe en parcours classique, et là aussi, s'il prend deux paires, la <strong>moins chère des deux</strong> a 20 % de remise.<br>Exemple : deux paires à 10 € lui reviennent à <strong>18 €</strong>. Il repart avec <strong>deux paires, en 10 minutes, pour 18 €</strong>. Ça marche aussi avec des paires plus chères : c'est toujours la moins chère qui est remisée.<br>Mêmes règles que pour la troisième paire : la deuxième paire est à la <strong>même correction</strong> que la première ou <strong>en plan</strong>, et la remise ne marche pas sur les <strong>modèles prémontés</strong>.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 2 — ENTRAÎNEMENT ═══════════════════ -->
+  <div id="vueEntrainement" class="vue-etape" style="display:none">
+    <span class="eyebrow">Module Après-Formation · La troisième paire</span>
+    <h1>Entraînement</h1>
+    <p class="sous-titre">Pas de pression : tu peux refaire ces exercices autant de fois que tu veux, dans l'ordre que tu veux.</p>
+
+    <div id="vueMenu">
+      <div class="progress-formats" id="progressFormats"></div>
+      <div class="grille-formats" id="grilleFormats"></div>
+    </div>
+
+    <div id="vueDrill" style="display:none">
+      <div class="carte-drill">
+        <div class="entete-drill">
+          <button class="lien-retour" id="btnRetourMenu">← Retour aux exercices</button>
+          <span class="score-drill" id="scoreDrill"></span>
+        </div>
+        <div id="corpsDrill"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="pied-drill">
+          <button class="btn-suivant" id="btnSuivant">Suivant →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 3 — TEST ═══════════════════ -->
+  <div id="vueTest" class="vue-etape" style="display:none">
+    <span class="eyebrow">Module Après-Formation · La troisième paire</span>
+    <h1>Test</h1>
+    <p class="sous-titre">Une seule fois pour verrouiller le module — mais tu peux retenter autant de fois que nécessaire si besoin.</p>
+
+    <div id="vueIntro">
+      <div class="carte">
+        <h2>Avant de commencer</h2>
+        <div class="regle"><span class="puce">1</span><span>12 questions, mélange de ce qu'on a vu dans le cours et à l'entraînement.</span></div>
+        <div class="regle"><span class="puce">2</span><span>Pas de correction affichée en cours de route — le score tombe à la fin.</span></div>
+        <div class="regle"><span class="puce">3</span><span>Il faut <strong>10/12</strong> pour valider le module.</span></div>
+        <div class="regle"><span class="puce">4</span><span>En dessous, pas de souci : retourne t'entraîner et retente quand tu veux.</span></div>
+
+        <div class="alerte-manquant" id="gateManquant" style="display:none">
+          ⚠️ Pas encore accessible : il faut avoir fait au moins une fois chaque format d'entraînement. Il reste : <strong id="texteManquant"></strong>.
+          <button class="btn-secondaire" id="btnAllerEntrainement">Aller à l'entraînement</button>
+        </div>
+
+        <button class="btn-principal" id="btnCommencer">Commencer le test</button>
+      </div>
+    </div>
+
+    <div id="vueDejaAcquis" style="display:none">
+      <div class="carte" style="text-align:center">
+        <div class="badge-acquis" style="margin:0 auto 14px">✓ Module déjà acquis</div>
+        <p>Tu as déjà validé ce module. Pas besoin de le repasser.</p>
+        <button class="btn-secondaire" id="btnRepasserQuandMeme">Le repasser quand même</button>
+      </div>
+    </div>
+
+    <div id="vueQuiz" style="display:none">
+      <div class="carte">
+        <div class="entete-quiz"><span class="compteur-quiz" id="compteurQuiz"></span></div>
+        <div class="barre-quiz" id="barreQuiz"></div>
+        <div id="corpsQuestion"></div>
+      </div>
+    </div>
+
+    <div id="vueResultat" style="display:none">
+      <div class="carte">
+        <div class="score-rond" id="scoreRond">
+          <div class="chiffre" id="scoreChiffre"></div>
+          <div class="sur">sur 12</div>
+        </div>
+        <div class="titre-resultat" id="titreResultat"></div>
+        <div class="sous-resultat" id="sousResultat"></div>
+        <div id="detailResultat"></div>
+        <button class="btn-principal" id="btnRefaire" style="display:none">Retenter le test</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Utilitaires partagés ───────────────────────────────────────
+function $(sel) { return document.querySelector(sel) }
+
+function melanger(tableau) {
+  const copie = [...tableau]
+  for (let i = copie.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copie[i], copie[j]] = [copie[j], copie[i]]
+  }
+  return copie
+}
+
+function lireStockage(cle) { try { return localStorage.getItem(cle) } catch (e) { return null } }
+function ecrireStockage(cle, val) { try { localStorage.setItem(cle, val) } catch (e) {} }
+
+// ── Navigation entre étapes ─────────────────────────────────────
+function irAEtape(cle) {
+  document.querySelectorAll('.etape').forEach(el => el.classList.toggle('actif', el.dataset.etape === cle))
+  $('#vueCours').style.display = cle === 'cours' ? 'block' : 'none'
+  $('#vueEntrainement').style.display = cle === 'entrainement' ? 'block' : 'none'
+  $('#vueTest').style.display = cle === 'test' ? 'block' : 'none'
+  if (cle === 'test') majGateTest()
+  window.scrollTo(0, 0)
+}
+document.querySelectorAll('.etape').forEach(el => el.addEventListener('click', () => irAEtape(el.dataset.etape)))
+
+// ═══════════════════ COURS (contenus générés) ═══════════════════
+// Ces listes alimentent à la fois la page et le prompt pour Paul.
+const CAS = [
+  { ico: "📖", titre: "Le presbyte qui lit au lit ou dans son canapé", gain: "Une paire de lecture à laisser à côté du lit : il n'a plus à chercher ses progressifs.", phrase: "Idée : une paire de lecture (troisième paire à −20 %, ou paire à 10 € en unifocal de près)." },
+  { ico: "🖥️", titre: "Le presbyte qui passe ses journées au bureau", gain: "Une paire dédiée à l'écran et aux documents, très confortable pour travailler.", phrase: "Idée : une paire de bureau en verre de proximité." },
+  { ico: "☀️", titre: "Le client qui a pris deux paires claires et part au soleil", gain: "Sa deuxième paire sert déjà à autre chose (bureau, secours) : une solaire à sa vue complète l'équipement.", phrase: "Idée : une solaire à sa vue (UV Protect prêt en 10 minutes, ou polarisé)." },
+  { ico: "⚽", titre: "Le client sportif, bricoleur, ou qui casse souvent ses lunettes", gain: "Une paire qu'il ne craint pas d'abîmer, et ses belles lunettes sont préservées.", phrase: "Idée : une paire de sport ou de secours." },
+  { ico: "👗", titre: "Le client qui aime changer de style", gain: "Une monture différente selon la tenue ou l'occasion.", phrase: "Idée : une troisième monture, dans un autre style." },
+];
+
+const METHODE = [
+  { titre: "Repérer", texte: "Pendant la découverte, note les moments de vie du client : lecture au lit, soleil, sport, journées sur écran, voiture." },
+  { titre: "Relier", texte: "Une fois le 1=1 choisi, rappelle ce qu'il t'a dit : « Vous m'avez dit que vous lisez beaucoup au lit… »" },
+  { titre: "Proposer une paire précise", texte: "« …vous pouvez ajouter une troisième paire juste pour la lecture, avec 20 % de remise. »" },
+  { titre: "Faire essayer", texte: "Mets-lui une monture dans les mains : un client qui essaie se projette beaucoup plus facilement." },
+];
+
+const PHRASES = [
+  { ico: "☀️", titre: "Pour une solaire", gain: "Quand le client part en vacances, conduit ou fait du sport au soleil.", phrase: "« Vous partez au soleil : on vous fait une solaire à votre vue en troisième paire, avec 20 % de remise ? Elle est prête en 10 minutes. »" },
+  { ico: "📖", titre: "Pour une paire de lecture", gain: "Quand un client presbyte lit au lit ou dans son canapé.", phrase: "« Beaucoup de nos clients en profitent pour avoir une paire de lecture à laisser à côté du lit. »" },
+  { ico: "🖥️", titre: "Pour une paire de bureau", gain: "Quand un client presbyte passe ses journées sur écran.", phrase: "« Vous m'avez parlé de vos journées sur ordinateur : une paire dédiée au bureau, vous allez sentir la différence. »" },
+  { ico: "🎯", titre: "La question alternative", gain: "Au lieu d'une question à laquelle on répond oui ou non, on laisse le client choisir entre deux idées.", phrase: "« Votre troisième paire, vous la verriez plutôt en solaire ou pour la lecture ? »" },
+];
+
+const OBJECTIONS = [
+  { dit: "« Deux paires, c'est déjà bien. »", derriere: "Il ne voit pas encore à quoi lui servirait une troisième.", reponse: "« Bien sûr. Je vous en parle parce que vous m'avez dit que vous lisez tous les soirs au lit : une paire de lecture à laisser sur la table de chevet, avec 20 % de remise, c'est le bon moment pour en profiter. »" },
+  { dit: "« Je n'ai pas le budget pour une troisième paire. »", derriere: "Il a déjà fait un effort avec le 1=1.", reponse: "« Je comprends. Si c'est pour lire, il existe aussi notre paire à 10 €, en unifocal de près : avec la remise, elle vous revient à 8 €. » Et si ce n'est vraiment pas le moment, on n'insiste pas." },
+  { dit: "« Je reviendrai plus tard pour la troisième. »", derriere: "Il hésite et repousse la décision.", reponse: "« Bien sûr. Sachez juste que la remise est valable jusqu'au retrait de votre paire. Le plus simple, c'est de la faire aujourd'hui : on a déjà votre ordonnance et vos mesures, et vous repartez équipé pour tout. »" },
+  { dit: "« À quoi ça me servirait, une troisième paire ? »", derriere: "Il ne fait pas le lien avec son quotidien.", reponse: "« Vous faites comment quand vous êtes au soleil, ou quand vous lisez au lit ? Une troisième paire, c'est une paire dédiée à ce moment-là. »" },
+];
+
+const ERREURS = [
+  "Parler de la troisième paire dès l'arrivée du client, avant même l'essayage : il se perd dans les choix.",
+  "La proposer quand le client a déjà payé et s'en va : c'est trop tard.",
+  "Poser la question « Vous voulez une troisième paire ? » : le client répond non par réflexe.",
+  "Ne parler que de la remise : le client achète un usage, pas une promotion.",
+  "Insister après un vrai « non » : le client doit repartir content, sinon il ne reviendra pas.",
+  "Proposer un progressif à 10 € : la paire à 10 € existe uniquement en unifocal.",
+  "Proposer la troisième paire à la vue d'une autre personne : elle est obligatoirement à la correction du client, ou sans correction.",
+  "Proposer un modèle prémonté en troisième paire : il compte comme une simple monture, la remise ne s'applique pas.",
+];
+
+$('#listeCas').innerHTML = CAS.map(a => `
+  <div class="arg">
+    <div class="titre-arg">${a.ico} ${a.titre}</div>
+    <div class="gain">${a.gain}</div>
+    <div class="phrase">${a.phrase}</div>
+  </div>`).join('')
+
+$('#listeMethode').innerHTML = METHODE.map((m, i) => `
+  <div class="etape-meca"><span class="puce">${i + 1}</span><span><strong>${m.titre}</strong> — ${m.texte}</span></div>`).join('')
+
+$('#listePhrases').innerHTML = PHRASES.map(a => `
+  <div class="arg">
+    <div class="titre-arg">${a.ico} ${a.titre}</div>
+    <div class="gain">${a.gain}</div>
+    <div class="phrase">${a.phrase}</div>
+  </div>`).join('')
+
+$('#listeObjections').innerHTML = OBJECTIONS.map(o => `
+  <div class="objection">
+    <div class="dit">${o.dit}</div>
+    <div class="derriere">🔎 Ce qui se cache derrière : ${o.derriere}</div>
+    <div class="reponse"><strong>Ta réponse :</strong> ${o.reponse}</div>
+  </div>`).join('')
+
+$('#listeErreurs').innerHTML = ERREURS.map(e => `<li>${e}</li>`).join('')
+
+// ═══════════════════ ENTRAÎNEMENT ═══════════════════
+const FORMAT_A = [
+  { profil: "Gérard, 62 ans, presbyte, vient de prendre en 1=1 un progressif clair et un progressif solaire. Il lit tous les soirs au lit. On lui propose une paire de lecture en troisième paire.", bon: true, explication: "Il a exprimé un vrai moment de vie : une paire de lecture à côté du lit, c'est exactement ce qu'il lui faut." },
+  { profil: "Sarah, 32 ans, myope, a pris en 1=1 une paire de vue et une solaire à sa vue. Elle fait du sport plusieurs fois par semaine. On lui propose une paire de sport en troisième paire.", bon: true, explication: "Ses deux paires du 1=1 couvrent déjà le quotidien et le soleil : la paire de sport répond à un besoin de plus." },
+  { profil: "Lucie, 40 ans, myope, est souvent dehors et ne veut pas changer de lunettes en sortant. Elle choisit son 1=1 : le vendeur met deux paires claires classiques et garde le photochromique pour la troisième paire.", bon: false, explication: "Le photochromique, elle peut très bien le prendre en deuxième paire du 1=1. On garde la troisième paire pour un besoin de plus." },
+  { profil: "Pendant l'essayage, le vendeur laisse un client mettre de côté six montures, puis l'aide à en éliminer. Il en reste trois et le client n'arrive pas à choisir. Le vendeur lui propose de garder les trois : deux dans le 1=1, la troisième à −20 %.", bon: true, explication: "C'est la technique de l'élimination : la troisième paire arrive comme la solution à son hésitation." },
+  { profil: "Un client fait un 1=1 en progressifs, remboursé. Il aimerait une paire pour lire au lit. Le vendeur lui propose une vision de près en Premium avec une monture à 5 €, en troisième paire.", bon: true, explication: "Deux progressifs remboursés et une vision de près prête en 10 minutes : trois paires pour moins de 50 €, nulle part ailleurs il n'aura ça." },
+  { profil: "Un client vient d'arriver et n'a encore rien essayé. Le vendeur lui parle déjà de la troisième paire.", bon: false, explication: "Trop tôt : on attend que les deux paires du 1=1 soient choisies, sinon le client se perd dans les choix." },
+  { profil: "Michel, 55 ans, presbyte, comptable, a pris deux paires de progressifs. On lui propose une paire de bureau en verre de proximité en troisième paire.", bon: true, explication: "Ses journées au bureau : une paire dédiée à l'écran et aux documents, c'est le bon conseil." },
+  { profil: "Chantal, 58 ans, presbyte, veut une troisième paire « pour voir de loin et de près ». On lui propose la paire à 10 €.", bon: false, explication: "La paire à 10 € est uniquement en unifocal : loin OU près. Pour voir loin et près avec une paire, c'est un progressif en troisième paire à −20 %." },
+  { profil: "Un client a dit clairement « non merci, deux paires me suffisent ». Le vendeur repropose la troisième paire trois fois.", bon: false, explication: "Un vrai non, on le respecte : le client doit repartir content." },
+  { profil: "Yanis, 29 ans, joue au foot le week-end et casse régulièrement ses lunettes. On lui propose une paire de sport en troisième paire.", bon: true, explication: "Une paire qu'il ne craint pas d'abîmer : ses lunettes de tous les jours sont préservées." },
+  { profil: "Une cliente fait son 1=1. Elle veut une troisième paire à −20 % pour son mari, avec la correction de son mari.", bon: false, explication: "Impossible : la troisième paire est à la correction de la cliente, ou sans correction. Elle ne peut pas être à la vue d'une autre personne." },
+  { profil: "Un client fait son 1=1 et veut, en troisième paire, une solaire sans correction pour sa fille : une monture avec des verres solaires en plan. On la lui propose à −20 %.", bon: true, explication: "Une paire en plan, monture + verres, peut être pour une autre personne : c'est possible." },
+  { profil: "Un client fait son 1=1 et veut, en troisième paire, un modèle de solaires prémonté du présentoir avec la remise de 20 %.", bon: false, explication: "Un modèle prémonté est considéré comme une simple monture : la remise ne s'applique pas. La troisième paire, c'est toujours une monture + des verres." },
+  { profil: "Un client n'a pas le budget pour le 1=1. Le vendeur passe en parcours classique et lui propose deux paires à 10 € : la deuxième a 20 % de remise, il repart avec ses deux paires en 10 minutes pour 18 €.", bon: true, explication: "En parcours classique aussi, la moins chère des deux paires a 20 % de remise : deux paires pour 18 €." },
+  { profil: "Le vendeur conclut le 1=1 en demandant simplement : « Vous voulez une troisième paire ? »", bon: false, explication: "Question fermée sans lien avec le besoin : le client répond non par réflexe. Il faut partir de ce qu'il a dit." },
+  { profil: "Inès, 35 ans, aime changer de lunettes selon ses tenues. On lui propose une troisième monture dans un style différent.", bon: true, explication: "Elle aime changer de style : une troisième monture, c'est un vrai plaisir pour elle." },
+  { profil: "Paul, 50 ans, presbyte, a pris en 1=1 un progressif clair et un progressif solaire. Il veut aussi une paire de lecture à laisser au bureau, pour pas cher. On lui propose la paire à 10 € en unifocal de près, à 8 € avec la remise.", bon: true, explication: "Besoin simple de lecture : la paire à 10 € en unifocal de près, qui tombe à 8 € en troisième paire, est parfaite." },
+  { profil: "Le client vient de payer son 1=1 et passe la porte. Le vendeur le rattrape pour lui parler de la troisième paire.", bon: false, explication: "Trop tard : on la propose une fois les deux paires choisies, avant de finaliser." },
+];
+
+const FORMAT_B = [
+  { profil: "Un client presbyte fait un 1=1 en progressifs, remboursé. Il aimerait une paire de lecture et tu lui proposes la paire à 10 € en unifocal de près, en troisième paire. Comment tu lui présentes le prix ?",
+    options: [
+      { texte: "« Avec votre 1=1 remboursé et cette paire de lecture, ça vous fait vos trois paires de lunettes pour 8 €. »", bon: true, explication: "Exactement : on expose simplement le total, et c'est le client qui décide." },
+      { texte: "« Vous ne payez rien sur les deux premières, vous pouvez bien vous offrir la troisième. »", bon: false, explication: "Un client qui n'a pas le budget se sent rabaissé. On présente le total, sans juger." },
+      { texte: "« Les autres opticiens sont bien plus chers. »", bon: false, explication: "On parle des autres au lieu de lui donner simplement le total de ses trois paires." },
+    ] },
+  { profil: "Pendant la découverte, le client a dit qu'il lit beaucoup au lit. Son 1=1 est choisi. Comment tu amènes la troisième paire ?",
+    options: [
+      { texte: "« Vous voulez une troisième paire ? »", bon: false, explication: "Question fermée : le client répond non par réflexe." },
+      { texte: "« Vous m'avez dit que vous lisez beaucoup au lit : vous pouvez ajouter une troisième paire juste pour la lecture, avec 20 % de remise. »", bon: true, explication: "Exactement : on relie la proposition à ce qu'il a dit, puis on propose une paire précise." },
+      { texte: "« On a une promo sur la troisième paire, ça vous intéresse ? »", bon: false, explication: "On parle de la remise avant le besoin : le client ne voit pas à quoi elle lui servirait." },
+    ] },
+  { profil: "Le client dit : « Deux paires, c'est déjà bien. » Il t'a parlé de ses soirées de lecture au lit.",
+    options: [
+      { texte: "« Mais tout le monde la prend, vous savez. »", bon: false, explication: "On ne fait pas pression avec les autres : on part de son besoin à lui." },
+      { texte: "« Vous allez le regretter. »", bon: false, explication: "Culpabiliser le client le braque." },
+      { texte: "« Bien sûr. Je vous en parle parce que vous lisez tous les soirs au lit : une paire de lecture à laisser sur la table de chevet, avec 20 % de remise, c'est le bon moment pour en profiter. »", bon: true, explication: "Exactement : on respecte son avis et on rappelle le besoin qu'il a exprimé." },
+    ] },
+  { profil: "Une cliente presbyte dit : « Je n'ai pas le budget pour une troisième paire, mais j'aimerais une paire pour lire. »",
+    options: [
+      { texte: "« Je comprends. Pour lire, il existe aussi notre paire à 10 €, en unifocal de près : avec la remise, elle vous revient à 8 €. »", bon: true, explication: "Exactement : une solution simple pour son besoin, en unifocal." },
+      { texte: "« On peut vous faire un progressif à 10 €. »", bon: false, explication: "Faux : la paire à 10 € est uniquement en unifocal." },
+      { texte: "« Prenez-la quand même, vous verrez bien. »", bon: false, explication: "On ne force pas un client qui parle de budget." },
+    ] },
+  { profil: "Le client dit : « Je reviendrai plus tard pour la troisième. »",
+    options: [
+      { texte: "« Si vous partez, vous perdez la remise. »", bon: false, explication: "Pression inutile, et c'est inexact : la remise reste valable jusqu'au retrait de sa paire principale." },
+      { texte: "« Bien sûr. Sachez juste que la remise est valable jusqu'au retrait de votre paire. Le plus simple, c'est de la faire aujourd'hui : on a déjà votre ordonnance et vos mesures. »", bon: true, explication: "Exactement : on montre que c'est plus simple maintenant, sans forcer." },
+      { texte: "« Pas de problème, au revoir. »", bon: false, explication: "On abandonne sans lui montrer l'intérêt de le faire aujourd'hui." },
+    ] },
+  { profil: "Le client demande : « À quoi ça me servirait, une troisième paire ? »",
+    options: [
+      { texte: "« À rien de spécial, c'est juste une offre. »", bon: false, explication: "On enlève tout l'intérêt de la paire." },
+      { texte: "« Vous faites comment quand vous êtes au soleil, ou quand vous lisez au lit ? Une troisième paire, c'est une paire dédiée à ce moment-là. »", bon: true, explication: "Exactement : une question sur son quotidien lui fait trouver lui-même l'usage." },
+      { texte: "« Ça sert à avoir plus de lunettes. »", bon: false, explication: "Ça ne lui dit pas ce qu'il y gagne dans sa vie." },
+    ] },
+  { profil: "Le client hésite entre une solaire et une paire de lecture. Comment tu l'aides ?",
+    options: [
+      { texte: "« Prenez les deux, comme ça c'est réglé. »", bon: false, explication: "On pousse au lieu de conseiller : le client se sent forcé." },
+      { texte: "« Je ne sais pas, c'est vous qui voyez. »", bon: false, explication: "Le client attend un conseil." },
+      { texte: "« Qu'est-ce qui vous gêne le plus au quotidien : le soleil ou la lecture au lit ? » puis on lui fait essayer une monture pour celle-là.", bon: true, explication: "Exactement : on l'aide à choisir à partir de sa gêne principale, puis on le fait essayer." },
+    ] },
+];
+
+const FORMAT_C = [
+  { enonce: "Après un 1=1, le client peut obtenir une troisième paire avec 20 % de remise, en parcours classique.", vrai: true },
+  { enonce: "On parle de la troisième paire dès l'arrivée du client, avant même l'essayage.", vrai: false },
+  { enonce: "Laisser le client mettre de côté beaucoup de montures, puis l'aider à en éliminer, montre qu'on ne force pas la vente.", vrai: true },
+  { enonce: "Quand le client hésite entre ses trois dernières montures, on peut lui proposer de garder les trois grâce à la troisième paire.", vrai: true },
+  { enonce: "Avec un 1=1 remboursé, le client ne paie que la troisième paire, et en plus avec 20 % de remise.", vrai: true },
+  { enonce: "Il faut limiter le client à deux montures pour ne pas le perdre.", vrai: false },
+  { enonce: "Le bon moment, c'est une fois les deux paires du 1=1 choisies, avant de finaliser.", vrai: true },
+  { enonce: "« Vous voulez une troisième paire ? » est la meilleure façon de la proposer.", vrai: false },
+  { enonce: "On relie toujours la troisième paire à un besoin que le client a exprimé.", vrai: true },
+  { enonce: "Une solaire à la vue est une bonne idée de troisième paire.", vrai: true },
+  { enonce: "La paire à 10 € peut être une paire progressive.", vrai: false },
+  { enonce: "Pour un presbyte, la paire à 10 € peut servir de paire de lecture, en unifocal.", vrai: true },
+  { enonce: "Si le client dit clairement non, on insiste jusqu'à ce qu'il accepte.", vrai: false },
+  { enonce: "On parle d'abord de l'usage, la remise vient ensuite.", vrai: true },
+  { enonce: "Faire essayer une troisième monture aide le client à se projeter.", vrai: true },
+  { enonce: "La troisième paire ne peut être qu'une paire de vue claire.", vrai: false },
+  { enonce: "Une paire de bureau en verre de proximité peut être une bonne troisième paire pour un presbyte.", vrai: true },
+  { enonce: "Pendant la découverte, on repère les moments de vie du client : lecture, soleil, sport, écrans.", vrai: true },
+  { enonce: "Proposer une troisième paire, c'est forcer la vente.", vrai: false },
+  { enonce: "La question alternative, c'est laisser le client choisir entre deux idées de paire.", vrai: true },
+  { enonce: "En troisième paire, la paire à 10 € tombe à 8 € avec la remise.", vrai: true },
+  { enonce: "La remise de troisième paire est valable jusqu'au retrait de la paire principale.", vrai: true },
+  { enonce: "La troisième paire peut être faite à la vue d'une autre personne.", vrai: false },
+  { enonce: "Une troisième paire sans correction (en plan) peut être pour une autre personne.", vrai: true },
+  { enonce: "La troisième paire peut avoir une autre correction que celle du client.", vrai: false },
+  { enonce: "La troisième paire, c'est toujours une monture + des verres.", vrai: true },
+  { enonce: "En parcours classique, un client qui prend deux paires à 10 € paie 18 €.", vrai: true },
+  { enonce: "En parcours classique, les 20 % de remise s'appliquent sur la paire la plus chère.", vrai: false },
+  { enonce: "En parcours classique, la deuxième paire remisée peut être à la vue d'une autre personne.", vrai: false },
+  { enonce: "Un modèle prémonté peut être pris en troisième paire avec la remise de 20 %.", vrai: false },
+  { enonce: "Un photochromique ou une solaire à la vue peut très bien être la deuxième paire du 1=1.", vrai: true },
+  { enonce: "Il faut toujours garder la solaire ou le photochromique pour la troisième paire.", vrai: false },
+];
+
+const FORMAT_D = [
+  { profil: "Un client hésite entre ses trois dernières montures pour son 1=1. Un collègue lui dit : « Il faut en choisir deux, sinon on n'y arrivera jamais. »",
+    options: [
+      { texte: "Il a raison, il faut aller à l'essentiel.", bon: false, explication: "On rate la solution la plus simple à son hésitation." },
+      { texte: "Il aurait dû lui proposer de garder les trois : ses deux préférées dans le 1=1, et la troisième avec 20 % de remise.", bon: true, explication: "Exactement : c'est le moment idéal pour la troisième paire." },
+      { texte: "Il aurait dû lui dire de revenir quand il aura décidé.", bon: false, explication: "Le client risque de ne pas revenir, alors qu'une solution existe tout de suite." },
+    ] },
+  { profil: "Le client a payé son 1=1 et se dirige vers la sortie. Un collègue lui lance : « Ah, au fait, vous voulez une troisième paire ? »",
+    options: [
+      { texte: "C'est bien, il vaut mieux tard que jamais.", bon: false, explication: "À ce moment-là, le client est parti dans sa tête : la proposition tombe à plat." },
+      { texte: "C'est trop tard et sans lien avec son besoin : il fallait la proposer une fois les deux paires choisies, en la reliant à ce qu'il avait dit.", bon: true, explication: "Exactement : le bon moment, et une proposition précise." },
+      { texte: "Il aurait dû la proposer dès l'entrée du client.", bon: false, explication: "Trop tôt : le client n'a pas encore choisi son 1=1." },
+    ] },
+  { profil: "Une cliente presbyte veut une troisième paire pour tout faire. Un collègue lui propose « un progressif à 10 € ».",
+    options: [
+      { texte: "La paire à 10 € est uniquement en unifocal. Pour tout faire avec une paire, c'est un progressif en troisième paire à −20 %.", bon: true, explication: "Exactement : on ne promet pas un progressif à 10 €." },
+      { texte: "Bonne idée, c'est la solution la moins chère.", bon: false, explication: "Le progressif à 10 € n'existe pas : la paire à 10 € est en unifocal." },
+      { texte: "Il aurait dû refuser de lui faire une troisième paire.", bon: false, explication: "Non : elle peut avoir un progressif en troisième paire à −20 %." },
+    ] },
+  { profil: "Un collègue propose la troisième paire en disant seulement : « Profitez de −20 %, c'est une super promo ! »",
+    options: [
+      { texte: "Parfait, la remise suffit à convaincre.", bon: false, explication: "Sans usage, le client ne voit pas pourquoi il en aurait besoin." },
+      { texte: "Il aurait dû baisser encore le prix.", bon: false, explication: "On ne brade pas : on montre l'intérêt de la paire." },
+      { texte: "Il faut d'abord parler du besoin : « Vous lisez au lit, une paire dédiée à la lecture… ». La remise vient ensuite.", bon: true, explication: "Exactement : l'usage d'abord, la remise ensuite." },
+    ] },
+  { profil: "Un client a dit « non merci, vraiment, deux paires me suffisent ». Un collègue insiste encore quatre fois.",
+    options: [
+      { texte: "Il a raison, il faut toujours insister.", bon: false, explication: "Insister après un vrai non agace le client." },
+      { texte: "Un non clair, on le respecte : le client doit repartir content, sinon il ne reviendra pas.", bon: true, explication: "Exactement : on propose, on ne force jamais." },
+      { texte: "Il aurait dû lui proposer une remise plus forte.", bon: false, explication: "Le problème n'est pas le prix : le client a dit non." },
+    ] },
+  { profil: "Un client a pris deux paires claires en 1=1 (une de vue, une de bureau) et a parlé de ses parties de golf au soleil. Un collègue lui propose une troisième paire pour la lecture.",
+    options: [
+      { texte: "Il faut partir de ce que le client a dit : le golf au soleil, c'est une solaire à sa vue.", bon: true, explication: "Exactement : la meilleure idée de troisième paire vient de son quotidien." },
+      { texte: "C'est bien, une paire de lecture, ça sert toujours.", bon: false, explication: "On passe à côté du besoin qu'il a exprimé." },
+      { texte: "Il ne fallait rien proposer du tout.", bon: false, explication: "Si : il a exprimé un besoin, c'est le moment idéal." },
+    ] },
+];
+
+let formatActuel = null;
+let poolActuelle = [];
+let indexActuel = null;
+let scoreOk = 0, scoreNon = 0;
+
+const FORMATS_INFO = {
+  a: { titre: "Bonne idée ou pas ?", ico: "👓", desc: "Une situation de vente : la proposition de troisième paire est-elle la bonne ?", data: FORMAT_A },
+  b: { titre: "Comment tu l'amènes ?", ico: "💬", desc: "Un client, un moment : choisis la meilleure façon de proposer ou de répondre.", data: FORMAT_B },
+  c: { titre: "Vrai/Faux éclair", ico: "⚡", desc: "Rafale de questions rapides pour ancrer les bases.", data: FORMAT_C },
+  d: { titre: "Le bon raisonnement", ico: "🗣️", desc: "Un collègue se trompe (ou pas) — identifie le bon raisonnement.", data: FORMAT_D },
+};
+
+const CLE_FORMATS = 'troisieme_paire_entrainement_formats';
+
+function getFormatsFaits() {
+  try { return JSON.parse(lireStockage(CLE_FORMATS)) || {} } catch (e) { return {} }
+}
+function marquerFormatFait(cle) {
+  const faits = getFormatsFaits()
+  if (!faits[cle]) {
+    faits[cle] = true
+    ecrireStockage(CLE_FORMATS, JSON.stringify(faits))
+  }
+}
+
+function rendreMenu() {
+  const faits = getFormatsFaits()
+  const nbFaits = Object.keys(FORMATS_INFO).filter(c => faits[c]).length
+  $('#progressFormats').textContent = `${nbFaits}/4 formats terminés au moins une fois`
+  $('#grilleFormats').innerHTML = Object.entries(FORMATS_INFO).map(([cle, f]) => `
+    <div class="carte-format" data-format="${cle}">
+      ${faits[cle] ? '<div class="badge-fait">✓ Terminé</div>' : ''}
+      <div class="ico">${f.ico}</div>
+      <div class="titre-format">${f.titre}</div>
+      <div class="desc-format">${f.desc}</div>
+      <div class="compteur-format">${f.data.length} situations</div>
+    </div>
+  `).join('')
+  document.querySelectorAll('[data-format]').forEach(el => {
+    el.addEventListener('click', () => lancerFormat(el.dataset.format))
+  })
+  majGateTest()
+}
+
+function lancerFormat(cle) {
+  formatActuel = cle
+  poolActuelle = melanger(FORMATS_INFO[cle].data)
+  indexActuel = 0
+  scoreOk = 0; scoreNon = 0
+  $('#vueMenu').style.display = 'none'
+  $('#vueDrill').style.display = 'block'
+  rendreItemCourant()
+}
+
+function retourMenu() {
+  $('#vueDrill').style.display = 'none'
+  $('#vueMenu').style.display = 'block'
+  formatActuel = null
+  rendreMenu()
+}
+
+function majScore() {
+  $('#scoreDrill').innerHTML = `<b class="ok">${scoreOk} ✓</b> &nbsp; <b class="non">${scoreNon} ✗</b>`
+}
+
+function rendreChoixBinaire(corps, texte, libVrai, libFaux, attendu, explicationOk, explicationNon) {
+  corps.innerHTML = `
+    <div class="profil-client">${texte}</div>
+    <div class="choix-binaire">
+      <button class="btn-choix" data-rep="true">${libVrai}</button>
+      <button class="btn-choix" data-rep="false">${libFaux}</button>
+    </div>`
+  corps.querySelectorAll('[data-rep]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const correct = (btn.dataset.rep === 'true') === attendu
+      corps.classList.add('choix-fait')
+      corps.querySelectorAll('[data-rep]').forEach(b => {
+        if ((b.dataset.rep === 'true') === attendu) b.classList.add('bonne-reponse')
+        else if (b === btn) b.classList.add('mauvaise-reponse')
+        if (b === btn) b.classList.add('selectionne')
+      })
+      afficherFeedback(correct, correct ? explicationOk : explicationNon)
+    })
+  })
+}
+
+function rendreChoixMultiple(corps, item) {
+  // Options mélangées à chaque affichage pour que la bonne réponse ne soit jamais à une place prévisible
+  const options = melanger(item.options)
+  corps.innerHTML = `
+    <div class="profil-client">${item.profil}</div>
+    <div class="liste-options">
+      ${options.map((o, i) => `<button class="btn-option" data-i="${i}">${o.texte}</button>`).join('')}
+    </div>`
+  corps.querySelectorAll('[data-i]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const opt = options[Number(btn.dataset.i)]
+      corps.classList.add('choix-fait')
+      corps.querySelectorAll('[data-i]').forEach((b, i) => {
+        if (options[i].bon) b.classList.add('bonne-reponse')
+        else if (b === btn) b.classList.add('mauvaise-reponse', 'selectionne')
+      })
+      afficherFeedback(opt.bon, opt.explication)
+    })
+  })
+}
+
+function rendreItemCourant() {
+  majScore()
+  const corps = $('#corpsDrill')
+  const feedback = $('#feedback')
+  feedback.className = 'feedback'
+  feedback.textContent = ''
+  $('#btnSuivant').classList.remove('visible')
+  corps.classList.remove('choix-fait')
+
+  if (indexActuel >= poolActuelle.length) {
+    marquerFormatFait(formatActuel)
+    majGateTest()
+    corps.innerHTML = `<p style="text-align:center;color:var(--ink-soft);font-size:14px;padding:20px 0">Tu as fait le tour de ce pool — relance l'exercice pour un nouvel ordre, ou choisis un autre format.</p>`
+    return
+  }
+
+  const item = poolActuelle[indexActuel]
+  if (formatActuel === 'a') rendreChoixBinaire(corps, item.profil, 'Bonne idée', 'Pas la bonne', item.bon, item.explication, item.explication)
+  if (formatActuel === 'b' || formatActuel === 'd') rendreChoixMultiple(corps, item)
+  if (formatActuel === 'c') rendreChoixBinaire(corps, item.enonce, 'Vrai', 'Faux', item.vrai, 'Exact.', 'Pas tout à fait — relis le point correspondant dans le cours si besoin.')
+}
+
+function afficherFeedback(correct, texte) {
+  const feedback = $('#feedback')
+  feedback.textContent = (correct ? '✓ ' : '✗ ') + texte
+  feedback.classList.add('visible', correct ? 'ok' : 'non')
+  if (correct) scoreOk++; else scoreNon++
+  majScore()
+  $('#btnSuivant').classList.add('visible')
+}
+
+$('#btnRetourMenu').addEventListener('click', retourMenu)
+$('#btnSuivant').addEventListener('click', () => { indexActuel++; rendreItemCourant() })
+
+// ═══════════════════ TEST ═══════════════════
+const SEUIL_REUSSITE = 10;
+const TOTAL_QUESTIONS = 12;
+const CLE_ACQUIS = 'troisieme_paire_test_acquis';
+
+let questionsQuiz = [];
+let indexQuestion = 0;
+let reponsesDonnees = [];
+
+function majGateTest() {
+  const faits = getFormatsFaits()
+  const manquants = Object.entries(FORMATS_INFO).filter(([cle]) => !faits[cle]).map(([, f]) => f.titre)
+  const btn = $('#btnCommencer')
+  const gate = $('#gateManquant')
+  if (!btn || !gate) return
+  if (manquants.length === 0) {
+    gate.style.display = 'none'
+    btn.style.display = 'block'
+  } else {
+    gate.style.display = 'block'
+    btn.style.display = 'none'
+    $('#texteManquant').textContent = manquants.join(', ')
+  }
+}
+
+function getFormatsFaitsTousOk() {
+  const faits = getFormatsFaits()
+  return Object.keys(FORMATS_INFO).every(cle => faits[cle])
+}
+
+// Module centré sur la vente : on donne plus de poids aux mises en situation (4 questions à choix)
+function construireQuestions() {
+  const vf = melanger(FORMAT_C).slice(0, 4).map(q => ({ type: 'vf', ...q }))
+  const cand = melanger(FORMAT_A).slice(0, 4).map(q => ({ type: 'candidat', ...q }))
+  const choix = melanger([...FORMAT_B, ...FORMAT_D]).slice(0, 4).map(q => ({ type: 'choix', profil: q.profil, options: melanger(q.options) }))
+  return melanger([...vf, ...cand, ...choix])
+}
+
+function demarrerQuiz() {
+  if (!getFormatsFaitsTousOk()) { majGateTest(); return }
+  questionsQuiz = construireQuestions()
+  indexQuestion = 0
+  reponsesDonnees = []
+  $('#vueIntro').style.display = 'none'
+  $('#vueDejaAcquis').style.display = 'none'
+  $('#vueResultat').style.display = 'none'
+  $('#vueQuiz').style.display = 'block'
+  rendreQuestion()
+}
+
+function rendreQuestion() {
+  $('#compteurQuiz').textContent = `Question ${indexQuestion + 1} / ${TOTAL_QUESTIONS}`
+  $('#barreQuiz').innerHTML = Array.from({ length: TOTAL_QUESTIONS }, (_, i) =>
+    `<div class="seg-quiz ${i < indexQuestion ? 'fait' : ''}"></div>`).join('')
+  const q = questionsQuiz[indexQuestion]
+  const corps = $('#corpsQuestion')
+
+  if (q.type === 'vf' || q.type === 'candidat') {
+    const texte = q.type === 'vf' ? q.enonce : q.profil
+    const attendu = q.type === 'vf' ? q.vrai : q.bon
+    const [libVrai, libFaux] = q.type === 'vf' ? ['Vrai', 'Faux'] : ['Bonne idée', 'Pas la bonne']
+    corps.innerHTML = `
+      <div class="profil-client">${texte}</div>
+      <div class="choix-binaire">
+        <button class="btn-rep" data-rep="true">${libVrai}</button>
+        <button class="btn-rep" data-rep="false">${libFaux}</button>
+      </div>`
+    corps.querySelectorAll('[data-rep]').forEach(btn => {
+      btn.addEventListener('click', () => valider(texte, (btn.dataset.rep === 'true') === attendu))
+    })
+  }
+
+  if (q.type === 'choix') {
+    corps.innerHTML = `
+      <div class="citation-client">${q.profil}</div>
+      <div class="liste-options">
+        ${q.options.map((o, i) => `<button class="btn-rep" data-i="${i}">${o.texte}</button>`).join('')}
+      </div>`
+    corps.querySelectorAll('[data-i]').forEach(btn => {
+      btn.addEventListener('click', () => valider(q.profil, q.options[Number(btn.dataset.i)].bon))
+    })
+  }
+}
+
+function valider(libelleQuestion, correct) {
+  reponsesDonnees.push({ libelle: libelleQuestion, correct })
+  indexQuestion++
+  if (indexQuestion >= TOTAL_QUESTIONS) afficherResultat()
+  else rendreQuestion()
+}
+
+function afficherResultat() {
+  $('#vueQuiz').style.display = 'none'
+  $('#vueResultat').style.display = 'block'
+  const score = reponsesDonnees.filter(r => r.correct).length
+  const reussi = score >= SEUIL_REUSSITE
+  $('#scoreChiffre').textContent = score
+  $('#scoreRond').className = 'score-rond ' + (reussi ? 'reussi' : 'echec')
+  $('#titreResultat').textContent = reussi ? '✅ Module acquis !' : 'Pas encore cette fois'
+  $('#sousResultat').textContent = reussi
+    ? 'Le module est verrouillé — bravo.'
+    : `Il fallait ${SEUIL_REUSSITE}/12 pour valider. Retourne t'entraîner et retente quand tu veux.`
+  $('#detailResultat').innerHTML = reponsesDonnees.map(r => `
+    <div class="detail-reponse ${r.correct ? 'ok' : 'non'}">
+      <span class="icone">${r.correct ? '✓' : '✗'}</span>
+      <span class="texte-q">${r.libelle}</span>
+    </div>
+  `).join('')
+  const btnRefaire = $('#btnRefaire')
+  btnRefaire.style.display = 'block'
+  btnRefaire.textContent = reussi ? 'Repasser le test quand même' : 'Retenter le test'
+  if (reussi) ecrireStockage(CLE_ACQUIS, '1')
+}
+
+$('#btnCommencer').addEventListener('click', demarrerQuiz)
+$('#btnRefaire').addEventListener('click', demarrerQuiz)
+$('#btnRepasserQuandMeme').addEventListener('click', demarrerQuiz)
+$('#btnAllerEntrainement').addEventListener('click', () => irAEtape('entrainement'))
+
+if (lireStockage(CLE_ACQUIS) === '1') {
+  $('#vueIntro').style.display = 'none'
+  $('#vueDejaAcquis').style.display = 'block'
+}
+
+rendreMenu()
+majGateTest()
+
+
+// ═══════════════════ PROMPT POUR PAUL ═══════════════════
+// Les sections générées (cas, méthode, phrases, objections, erreurs, entraînement)
+// partent des mêmes données que la page : le prompt reste toujours aligné avec ce qui est affiché.
+function promptFormatChoix(liste) {
+  return liste.map((s, i) => `${i + 1}. Situation : "${s.profil}"\n` + s.options.map(o =>
+    `- ${o.bon ? '✅' : '❌'} "${o.texte}" → explication : "${o.explication}"`).join('\n')).join('\n\n')
+}
+function promptCartes(liste) {
+  return liste.map((a, i) => `${i + 1}. ${a.ico} "${a.titre}" — "${a.gain}" — encadré violet : "${a.phrase}"`).join('\n')
+}
+
+const PROMPT_PAUL = `Je veux que tu ajoutes un nouveau module au système de modules post-formation ("Perfectionnement") dont je t'ai déjà donné les règles générales avec le module Verre de proximité (structure Cours/Entraînement/Test, barre de navigation à 3 étapes, verrou du Test tant que les 4 formats d'entraînement ne sont pas faits, verrouillage définitif du module une fois le Test réussi). Ce nouveau module utilise exactement le même moteur — inutile de le reconstruire, applique-le simplement à ce contenu. Tous les textes entre guillemets ci-dessous sont à reprendre mot pour mot.
+
+Petit rappel rapide des règles du moteur, au cas où : un module a 3 étapes (Cours, Entraînement, Test) ; l'Entraînement propose plusieurs formats d'exercices répétables à volonté, sans enjeu, chacun marqué "fait" dès que le collaborateur est allé au bout du pool une fois ; le Test reste verrouillé tant que tous les formats d'Entraînement n'ont pas été faits au moins une fois ; le Test tire des questions au hasard, mélange leur ordre, affiche le score uniquement à la fin ; une réussite verrouille le module en "acquis" de façon définitive (retentable volontairement) ; un échec ne pénalise pas et autorise un nombre illimité de nouvelles tentatives.
+
+MODULE : "LA TROISIÈME PAIRE"
+
+CONTEXTE
+
+Chez Lunettes Pour Tous, quand un client fait un 1=1, il peut, s'il le souhaite, ajouter une troisième paire avec 20 % de remise en parcours classique. Ce module apprend aux collaborateurs à repérer les cas où une troisième paire est intéressante, à choisir le bon moment, à l'amener naturellement à partir des besoins du client, et à répondre à un client qui hésite, sans jamais forcer.
+
+BARRE DE NAVIGATION
+
+3 onglets cliquables : "Étape 1 — Cours", "Étape 2 — Entraînement", "Étape 3 — Test" (l'onglet actif est mis en avant).
+
+ÉTAPE 1 — COURS
+
+Surtitre : "Module Après-Formation · Vente". Titre : "La troisième paire". Sous-titre : "Après un 1=1, savoir quand proposer une troisième paire, comment l'amener naturellement et comment répondre au client qui hésite." Une carte par section :
+
+1. C'est quoi ?
+Texte : "Quand un client fait un 1=1, il peut, s'il le souhaite, ajouter une troisième paire avec 20 % de remise, en parcours classique." (1=1 et "troisième paire avec 20 % de remise" en gras)
+Puis 3 tuiles côte à côte (valeur en gros + libellé) : "1=1" / "le client a choisi ses deux paires" — "+ 1 paire" / "une troisième paire, en parcours classique" — "− 20 %" / "de remise sur cette troisième paire".
+Encart astuce (💡) : "Ce n'est pas forcer la vente : c'est compléter l'équipement du client. Une paire pour chaque moment de sa vie, c'est un client mieux équipé, plus content, et qui revient."
+
+2. Les cas où elle est intéressante
+Texte : "Le 1=1 répond déjà à deux besoins. Bien choisie, la deuxième paire couvre souvent le besoin le plus évident : une solaire à la vue, un photochromique, une paire de bureau… La troisième paire, c'est pour un besoin de plus, un autre moment de la vie du client. Voici les situations à repérer :" ("deuxième paire", "troisième paire" et "un besoin de plus" en gras)
+Liste de ${CAS.length} cartes (icône + situation en gras, ce que le client y gagne, puis l'idée de paire dans un encadré violet clair en italique) :
+${promptCartes(CAS)}
+Encart astuce (💡) : "La paire à 10 € peut aussi faire une troisième paire, pour un besoin simple. Avec la remise de 20 %, elle tombe à 8 €. Attention : elle existe uniquement en unifocal (loin ou près). Pour un presbyte, c'est donc une paire de lecture, jamais un progressif."
+
+3. Le bon moment
+Texte : "On propose la troisième paire une fois les deux paires du 1=1 choisies, avant de finaliser la vente. Ou pendant le choix des montures, quand le client hésite entre trois (voir la technique de l'élimination)."
+Deux encarts rouges côte à côte : "❌ Trop tôt" — "Le client vient d'arriver et n'a encore rien essayé : on le noie sous les choix." / "❌ Trop tard" — "Le client a payé et part : la proposition arrive comme un cheveu sur la soupe."
+Puis un encart vert pleine largeur : "✅ Le bon moment" avec 2 puces — "Les deux paires sont choisies, le client est content de son équipement : c'est là qu'on lui propose de le compléter." / "Le client n'arrive pas à choisir entre ses trois dernières montures : la troisième paire règle son hésitation."
+
+4. Comment l'amener
+Texte : "La troisième paire se prépare dès la découverte : tout ce que le client te dit sur son quotidien, c'est une idée de troisième paire. On suit 4 étapes :"
+${METHODE.length} étapes numérotées (pastille violette avec le numéro, titre en gras, tiret, texte) :
+${METHODE.map((m, i) => `${i + 1}. "${m.titre}" — "${m.texte}"`).join('\n')}
+Encart astuce (💡) : "La question à éviter : « Vous voulez une troisième paire ? ». Le client répond « non » par réflexe. Pars toujours de son besoin, puis propose une paire précise."
+
+5. La technique de l'élimination
+Texte : "C'est le moyen le plus efficace de vendre une troisième paire : laisser le client choisir trop de montures, puis l'aider à en éliminer." ("laisser le client choisir trop de montures" en gras)
+3 étapes numérotées (pastille violette, titre en gras, tiret, texte) :
+1. "Laisser choisir large" — "Pendant l'essayage, le client met de côté toutes les montures qui lui plaisent, même s'il y en a cinq ou six."
+2. "Éliminer ensemble" — "On l'aide à retirer celles qu'il aime le moins. En éliminant avec lui, tu lui montres que tu ne forces pas la vente."
+3. "Quand il en reste trois" — "Le client n'arrive souvent plus à se décider. C'est le moment : « Vous n'êtes pas obligé de choisir : vos deux préférées dans le 1=1, et la troisième avec 20 % de remise. »"
+Encart astuce (💡) : "Ça ne marche pas à tous les coups, mais c'est très efficace : la troisième paire arrive comme la solution à son hésitation, pas comme une vente de plus."
+
+6. L'argument qui fait la différence : le 1=1 remboursé
+Texte : "Un client qui fait un 1=1 avec remboursement a ses deux paires pour 0 €. Lui proposer une troisième paire devient facile : il repart avec trois paires de lunettes et n'en paie qu'une seule, en plus avec 20 % de remise." ("1=1 avec remboursement", "0 €", "trois paires de lunettes", "une seule" et "20 % de remise" en gras)
+Encart violet clair (💡) : "Exemple : un client prend un 1=1 en progressifs, remboursé. En troisième paire, il prend une vision de près en Premium avec une monture à 5 €, prête en 10 minutes. Il repart avec deux paires de progressifs et une paire de vision de près, pour moins de 50 €. Nulle part ailleurs il n'aura ça." ("Exemple" et "deux paires de progressifs et une paire de vision de près, pour moins de 50 €" en gras)
+Carte "💬 Comment le présenter" : texte "On expose simplement le total, sans insister. Le client dit oui ou non : c'est lui qui décide, et un client qui n'a pas le budget ne doit jamais se sentir rabaissé." puis, en italique sur fond violet clair : "« Avec votre 1=1 remboursé et cette troisième paire, ça vous fait vos trois paires de lunettes pour [prix de la troisième paire]. »"
+
+7. Comment la tourner
+Texte : "Des phrases qui marchent, à adapter à ce que le client t'a dit :"
+Liste de ${PHRASES.length} cartes, même style que la section 2 :
+${promptCartes(PHRASES)}
+Encart astuce (💡) : "Parle d'abord de l'usage, la remise vient ensuite. Le client achète une paire pour lire au lit ou pour le soleil, pas une remise. Les 20 %, c'est ce qui le décide une fois qu'il a vu l'intérêt."
+
+8. Répondre au client qui hésite
+Texte : "Une hésitation n'est pas un refus. Comprends ce qui se cache derrière, puis réponds à ça. Et si le client dit vraiment non, on le respecte."
+Liste de ${OBJECTIONS.length} cartes. Chaque carte : en haut sur fond gris, la phrase du client en gras italique ; en dessous en petit gris "🔎 Ce qui se cache derrière : [texte]" ; puis en vert "Ta réponse : [texte]" :
+${OBJECTIONS.map((o, i) => `${i + 1}. Client : "${o.dit}" — Ce qui se cache derrière : "${o.derriere}" — Ta réponse : "${o.reponse}"`).join('\n')}
+
+9. Les erreurs à éviter
+Encart d'avertissement rouge (⚠️) : "Ce qui fait rater la troisième paire :" suivi de ${ERREURS.length} puces :
+${ERREURS.map(e => `- "${e}"`).join('\n')}
+
+10. Exemples concrets (grille de 4 cartes : 3 vertes "✅ Bonne idée", 1 rouge "⚠️ Attention au piège"). Chaque carte : étiquette, nom en gras, description, conclusion.
+- ✅ Bonne idée — "Gérard, 62 ans, presbyte" — "En 1=1, il a pris un progressif clair et un progressif solaire. Il lit tous les soirs au lit." — "→ Une paire de lecture pour la table de chevet : par exemple la paire à 10 € en unifocal de près, qui tombe à 8 € avec la remise."
+- ✅ Bonne idée — "Sarah, 32 ans, myope" — "En 1=1, elle a pris une paire de vue et une solaire à sa vue. Elle fait du sport plusieurs fois par semaine et a peur d'abîmer ses lunettes." — "→ Une paire de sport en troisième paire, avec 20 % de remise."
+- ✅ Bonne idée — "Michel, 55 ans, presbyte, comptable" — "En 1=1, il a pris un progressif clair et un progressif solaire. Il passe ses journées au bureau." — "→ Une paire de bureau en verre de proximité, en troisième paire."
+- ⚠️ Attention au piège — "Chantal, 58 ans, presbyte" — "Elle veut une troisième paire à 10 € « pour voir de loin et de près »." — "→ La paire à 10 € (8 € avec la remise) est uniquement en unifocal : loin OU près. Pour tout voir avec une paire, c'est un progressif en troisième paire à −20 %."
+
+11. Infos pratiques (3 tuiles côte à côte, valeur en gros + libellé en dessous)
+- "Après un 1=1" / "la troisième paire se propose une fois les deux paires choisies"
+- "− 20 %" / "sur la troisième paire, en parcours classique"
+- "Si le client le souhaite" / "on propose, on ne force jamais"
+Puis 2 encarts côte à côte (empilés sur mobile) :
+- Vert "✅ Les règles" : "La remise est valable jusqu'au retrait de la paire principale. En unifocal, c'est souvent le jour même : le mieux, c'est de faire la troisième paire le jour de la vente." / "La troisième paire est à la même correction que le client, ou sans correction (en plan)." / "Une paire en plan peut être pour une autre personne : par exemple une solaire pour un enfant ou un conjoint." / "C'est toujours une monture + des verres."
+- Rouge "❌ Pas possible" : "Faire la troisième paire à la vue d'une autre personne (conjoint, enfant…)." / "Faire la troisième paire avec une autre correction que celle du client." / "Prendre un modèle prémonté : il est considéré comme une simple monture, la remise ne s'applique pas dessus."
+Puis un encart violet clair (💡) : "Bon à savoir : les −20 % marchent aussi en parcours classique." (en gras), puis à la ligne : "Le client n'a pas le budget pour le 1=1 ? On passe en parcours classique, et là aussi, s'il prend deux paires, la moins chère des deux a 20 % de remise." puis à la ligne : "Exemple : deux paires à 10 € lui reviennent à 18 €. Il repart avec deux paires, en 10 minutes, pour 18 €. Ça marche aussi avec des paires plus chères : c'est toujours la moins chère qui est remisée." puis à la ligne : "Mêmes règles que pour la troisième paire : la deuxième paire est à la même correction que la première ou en plan, et la remise ne marche pas sur les modèles prémontés." ("moins chère des deux", "même correction", "en plan", "modèles prémontés", "18 €" et "deux paires, en 10 minutes, pour 18 €" en gras)
+
+ÉTAPE 2 — ENTRAÎNEMENT
+
+Surtitre : "Module Après-Formation · La troisième paire". Titre : "Entraînement". Sous-titre : "Pas de pression : tu peux refaire ces exercices autant de fois que tu veux, dans l'ordre que tu veux."
+
+Écran d'accueil : un compteur "X/4 formats terminés au moins une fois", puis une grille de 4 cartes cliquables (icône, titre, description, nombre de situations, et un badge "✓ Terminé" quand le format a été fait au moins une fois) :
+${Object.values(FORMATS_INFO).map(f => `- ${f.ico} "${f.titre}" — "${f.desc}" — ${f.data.length} situations`).join('\n')}
+
+Mécanique commune aux 4 formats : à chaque lancement, l'ordre des situations est mélangé aléatoirement. En haut de l'exercice : un lien "← Retour aux exercices" et un compteur de bonnes/mauvaises réponses de la session ("X ✓  Y ✗"). Après chaque réponse : la bonne réponse est surlignée en vert, la mauvaise choisie en rouge, un encadré d'explication apparaît (vert si juste, rouge si faux, précédé de "✓ " ou "✗ "), puis un bouton "Suivant →". Quand toutes les situations du pool sont passées, le format est marqué "fait" et on affiche : "Tu as fait le tour de ce pool — relance l'exercice pour un nouvel ordre, ou choisis un autre format."
+
+Format A — "${FORMATS_INFO.a.titre}" (${FORMAT_A.length} situations). Le collaborateur voit une situation et répond avec 2 boutons "Bonne idée" / "Pas la bonne". Situation → bonne réponse → explication affichée (la même que la réponse soit juste ou fausse) :
+${FORMAT_A.map((s, i) => `${i + 1}. "${s.profil}" → ${s.bon ? 'Bonne idée' : 'Pas la bonne'} → "${s.explication}"`).join('\n')}
+
+Format B — "${FORMATS_INFO.b.titre}" (${FORMAT_B.length} situations, 3 options chacune, une seule bonne). Important : l'ordre des 3 options doit être mélangé aléatoirement à chaque affichage, à l'entraînement comme au test, pour que la bonne réponse ne soit jamais toujours à la même place. Chaque option a sa propre explication, affichée quand le collaborateur la choisit (la bonne option est toujours surlignée en vert, celle choisie en rouge si elle est fausse) :
+
+${promptFormatChoix(FORMAT_B)}
+
+Format C — "${FORMATS_INFO.c.titre}" (${FORMAT_C.length} énoncés), 2 boutons "Vrai" / "Faux". Explication affichée : "Exact." si juste, "Pas tout à fait — relis le point correspondant dans le cours si besoin." si faux.
+${FORMAT_C.map((s, i) => `${i + 1}. ${s.enonce} → ${s.vrai ? 'Vrai' : 'Faux'}`).join('\n')}
+
+Format D — "${FORMATS_INFO.d.titre}" (${FORMAT_D.length} situations, 3 options chacune, une seule bonne). Même mécanique que le Format B, options mélangées aléatoirement à chaque affichage :
+
+${promptFormatChoix(FORMAT_D)}
+
+ÉTAPE 3 — TEST
+
+Surtitre : "Module Après-Formation · La troisième paire". Titre : "Test". Sous-titre : "Une seule fois pour verrouiller le module — mais tu peux retenter autant de fois que nécessaire si besoin."
+
+Écran d'introduction, carte "Avant de commencer" avec 4 règles numérotées :
+1. "12 questions, mélange de ce qu'on a vu dans le cours et à l'entraînement."
+2. "Pas de correction affichée en cours de route — le score tombe à la fin."
+3. "Il faut 10/12 pour valider le module."
+4. "En dessous, pas de souci : retourne t'entraîner et retente quand tu veux."
+Puis le bouton "Commencer le test". Tant que les 4 formats d'entraînement n'ont pas tous été faits au moins une fois, ce bouton est remplacé par un encart jaune : "⚠️ Pas encore accessible : il faut avoir fait au moins une fois chaque format d'entraînement. Il reste : [liste des titres des formats manquants, séparés par des virgules]." avec un bouton "Aller à l'entraînement" qui bascule sur l'étape 2.
+
+Si le module est déjà acquis, l'écran d'introduction est remplacé par : badge "✓ Module déjà acquis", texte "Tu as déjà validé ce module. Pas besoin de le repasser." et bouton "Le repasser quand même" (qui lance un nouveau test).
+
+Composition du test : 12 questions tirées au hasard et mélangées à chaque tentative. Comme pour le module progressif, ce module porte sur la vente, donc les mises en situation pèsent plus lourd —
+- 4 parmi les ${FORMAT_C.length} énoncés Vrai/Faux du Format C (boutons "Vrai" / "Faux") ;
+- 4 parmi les ${FORMAT_A.length} situations du Format A (boutons "Bonne idée" / "Pas la bonne") ;
+- 4 parmi un pool de ${FORMAT_B.length + FORMAT_D.length} fusionnant les ${FORMAT_B.length} situations du Format B et les ${FORMAT_D.length} du Format D : questions à choix parmi 3 réponses, options mélangées, la situation affichée en italique.
+
+Pendant le quiz : un compteur "Question X / 12" et une barre de progression en 12 segments. Aucune correction affichée — dès qu'une réponse est donnée, on passe directement à la question suivante.
+
+Écran de résultat : un rond avec le score "X sur 12" (vert si réussi, rouge sinon).
+- Si score ≥ 10 : titre "✅ Module acquis !", sous-titre "Le module est verrouillé — bravo.", bouton "Repasser le test quand même". Le module passe en "acquis" définitivement.
+- Si score < 10 : titre "Pas encore cette fois", sous-titre "Il fallait 10/12 pour valider. Retourne t'entraîner et retente quand tu veux.", bouton "Retenter le test".
+Sous le titre, le détail des 12 questions : une ligne par question avec ✓ (vert) ou ✗ (rouge) suivi de l'énoncé de la question.
+
+Ne te préoccupe pas du stockage ni de la façon dont tu notes "acquis"/"non acquis" et "format fait" par collaborateur — gère ça comme tu le souhaites de ton côté.`
+
+$('#textePrompt').textContent = PROMPT_PAUL
+$('#btnPromptPaul').addEventListener('click', () => { $('#modalPrompt').style.display = 'flex' })
+$('#btnFermerModal').addEventListener('click', () => { $('#modalPrompt').style.display = 'none' })
+$('#modalPrompt').addEventListener('click', (e) => { if (e.target.id === 'modalPrompt') $('#modalPrompt').style.display = 'none' })
+$('#btnCopierPrompt').addEventListener('click', () => {
+  navigator.clipboard.writeText(PROMPT_PAUL).then(() => {
+    const btn = $('#btnCopierPrompt')
+    const original = btn.textContent
+    btn.textContent = 'Copié !'
+    setTimeout(() => { btn.textContent = original }, 1500)
+  })
+})
+</script>
+<script src="bridge-apres.js"></script>
+</body></html>

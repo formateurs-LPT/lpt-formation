@@ -1,0 +1,152 @@
+/* Thème de l'app LPT Formation appliqué aux modules après-formation.
+   Chargé juste après le style propre du module : mêmes jetons que l'espace
+   collaborateur (DM Sans, fond #f5f6f8, cartes blanches #e5e7eb, bleu LPT
+   #0089ba → #00abe9, badges vert/orange), pour que les modules aient l'air
+   d'écrans natifs de l'app et non de pages à part. */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --bg: #f5f6f8;
+  --bg-panel: #ffffff;
+  --line: #e5e7eb;
+  --ink: #14161a;
+  --ink-soft: #6b7280;
+  --accent: #0089ba;
+  --accent-wash: #eaf3fd;
+  --vert: #15803d;
+  --vert-wash: #dcfce7;
+  --rouge: #dc2626;
+  --rouge-wash: #fef2f2;
+  --jaune: #92400e;
+  --jaune-wash: #fffbeb;
+  --radius: 16px;
+  --font: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --app-texte: #374151;
+  --app-gradient: linear-gradient(135deg, #0089ba, #00abe9);
+  --app-ombre: 0 1px 2px rgba(16, 24, 40, 0.03);
+  --app-bleu-texte: #0369a1;
+}
+
+html, body { font-family: var(--font); }
+body {
+  background: var(--bg) !important;
+  background-image: none !important;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+.page { max-width: 640px; padding: 20px 16px 48px; }
+@media (max-width: 560px) { .page { padding-top: 16px; } }
+
+/* ── En-tête du module ── */
+.eyebrow { color: var(--accent); font-size: 11px; letter-spacing: 1px; }
+h1 { font-size: 24px; font-weight: 800; color: var(--ink); letter-spacing: -0.2px; }
+.sous-titre { font-size: 14px; color: var(--ink-soft); line-height: 1.55; margin-bottom: 20px; }
+
+/* ── Onglets Cours / Entraînement / Test : même rendu que la navigation
+   du dashboard collaborateur ── */
+.etapes {
+  background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  padding: 4px; gap: 4px; margin-bottom: 20px; box-shadow: var(--app-ombre);
+}
+.etape {
+  border: none; background: transparent; color: var(--ink-soft);
+  border-radius: 10px; padding: 9px 6px; font-weight: 600; font-size: 13px;
+}
+.etape:hover { color: var(--accent); background: #f5f6f8; }
+.etape.actif, .etape.actif:hover { background: var(--accent-wash); color: var(--accent); font-weight: 700; }
+.etape .num { font-size: 9.5px; opacity: .65; letter-spacing: .6px; }
+
+/* ── Cartes ── */
+.carte { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--app-ombre); }
+#vueCours .carte { padding: 20px; margin-bottom: 14px; }
+#vueCours .carte h2 { font-size: 16.5px; color: var(--ink); }
+#vueTest .carte { padding: 22px 20px; box-shadow: var(--app-ombre); }
+.carte p, .carte ul.liste { color: var(--app-texte); font-size: 14px; }
+.carte strong { color: var(--ink); }
+
+/* ── Encarts ── */
+.astuce, .offre-1-1, .nom-maison {
+  background: var(--accent-wash); color: var(--app-bleu-texte);
+  border: 1px solid #bae0f7; border-radius: 12px;
+}
+.astuce strong, .offre-1-1 strong, .nom-maison strong, .astuce-cylindre strong { color: var(--accent); }
+.astuce-cylindre { background: var(--accent-wash); color: var(--app-bleu-texte); border: 1px solid #bae0f7; border-radius: 12px; }
+.note-attention, .note-presbytie { background: var(--rouge-wash); border: 1px solid #fecaca; color: #991b1b; border-radius: 12px; }
+.note-attention strong, .note-presbytie strong { color: var(--rouge); }
+.a-valider, .alerte-manquant { background: var(--jaune-wash); border: 1px solid #fde68a; color: var(--jaune); border-radius: 12px; }
+
+.nom-marche { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; }
+.nom-marche .marque { font-size: 14px; color: var(--ink); }
+
+.info-item { background: var(--accent-wash); border: 1px solid #bae0f7; border-radius: 12px; }
+.info-item .valeur { color: var(--accent); }
+
+.etape-meca .puce, .regle .puce { background: var(--accent-wash); color: var(--accent); }
+.etape-meca .puce { background: var(--app-gradient); color: #fff; }
+.etape-meca { color: var(--app-texte); }
+
+.critere.oui { background: var(--vert-wash); }
+.critere.non { background: var(--rouge-wash); }
+.critere ul, .persona .desc, .compar ul, .gamme .contenu, .arg .gain { color: var(--app-texte); }
+.persona { border-radius: 14px; }
+.persona.bon { background: #f0fdf4; border-color: #bbf7d0; }
+.persona.mauvais { background: var(--rouge-wash); border-color: #fecaca; }
+
+/* Cartes d'arguments, comparatifs, gammes, objections */
+.arg { border-color: var(--line); background: #fff; }
+.arg .phrase { background: var(--accent-wash); color: var(--app-bleu-texte); }
+.badge-lpt { background: var(--accent-wash); color: var(--accent); }
+.compar, .gamme { background: var(--bg); border: 1px solid var(--line); }
+.compar.star, .gamme.star { background: var(--accent-wash); border: 1px solid #bae0f7; }
+.compar.star .nom, .gamme.star .niveau { color: var(--accent); }
+.objection { border-color: var(--line); }
+.objection .dit { background: var(--bg); color: var(--ink); }
+.objection .reponse { color: #166534; }
+.objection .reponse strong { color: var(--vert); }
+.conseil { background: var(--bg); border: 1px solid var(--line); }
+.conseil .verre { color: var(--accent); }
+.tableau td.col-star { background: var(--accent-wash); }
+.tableau th.star { color: var(--accent); }
+
+/* Schémas de verres : même typo que le reste de l'app */
+.carte-schema { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--app-ombre); }
+.nom-verre { font-family: var(--font); font-weight: 700; font-size: 18px; color: var(--ink); }
+.eyebrow-schema, .caption-schema { color: #9aa1ac; }
+.sous-verre, .legende-verre { color: var(--ink-soft); }
+svg [fill="#7C3AED"] { fill: #0089ba; }
+svg [fill="#B79CE6"] { fill: #7cc7e6; }
+svg [fill="#E2D6F5"] { fill: #d4ecf8; }
+.legende-verre i[style*="#B79CE6"] { background: #7cc7e6 !important; }
+
+/* ── Entraînement ── */
+.progress-formats { color: var(--ink-soft); }
+.carte-format { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--app-ombre); }
+.carte-format:hover { border-color: #00abe9; }
+.carte-format .compteur-format { color: var(--accent); }
+.badge-fait { background: var(--vert-wash); color: var(--vert); }
+.carte-drill { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--app-ombre); padding: 22px 20px; }
+.lien-retour { color: var(--accent); }
+.profil-client, .citation-client { color: var(--ink); font-size: 16px; }
+.btn-choix, .btn-option, .btn-rep { border: 1.5px solid var(--line); border-radius: 12px; color: var(--ink); font-family: var(--font); }
+.btn-choix:hover, .btn-option:hover, .btn-rep:hover { border-color: #00abe9; background: #f8fbfd; }
+.feedback.ok { background: var(--vert-wash); color: #166534; }
+.feedback.non { background: var(--rouge-wash); color: #991b1b; }
+
+/* ── Boutons : dégradé bleu de l'app ── */
+.btn-principal, .btn-suivant {
+  background: var(--app-gradient); border-radius: 12px; font-family: var(--font); font-weight: 700;
+}
+.btn-principal:hover, .btn-suivant:hover { background: linear-gradient(135deg, #007aa6, #0099d0); }
+.btn-secondaire { color: var(--accent); border-color: var(--accent); border-radius: 12px; font-family: var(--font); }
+
+/* ── Test ── */
+.seg-quiz { background: #eef0f2; }
+.seg-quiz.fait { background: #00abe9; }
+.compteur-quiz { color: var(--ink-soft); }
+.score-rond.reussi { border-color: #16a34a; background: var(--vert-wash); }
+.score-rond.echec { border-color: #ef4444; background: var(--rouge-wash); }
+.badge-acquis { background: var(--vert-wash); color: var(--vert); }
+.detail-reponse .texte-q { color: var(--app-texte); }
+
+/* Le bouton « Prompt pour Paul » est réservé aux formateurs */
+.btn-prompt-paul { display: none !important; }

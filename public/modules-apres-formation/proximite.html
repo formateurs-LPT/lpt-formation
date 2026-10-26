@@ -1,0 +1,1074 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<script src="bridge-avant.js"></script>
+<meta charset="utf-8">
+<title>Module — Verre de Proximité</title>
+<style>
+  :root {
+    --bg: #F2F4F7; --bg-panel: #FFFFFF; --line: rgba(17,21,27,0.10);
+    --ink: #11151B; --ink-soft: #5B6472;
+    --accent: #7C3AED; --accent-wash: #F2ECFE;
+    --vert: #0C8F6B; --vert-wash: #E7F7F1;
+    --rouge: #C0392B; --rouge-wash: #FBEAE8;
+    --radius: 18px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink); font-family: var(--font);
+    background: #F3F6F4;
+    background-image: radial-gradient(900px 500px at 100% -10%, rgba(176, 207, 192, 0.35), transparent 60%);
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 28px 22px 60px; }
+  .serif { font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; }
+
+  .vue-etape { animation: apparition .15s ease; }
+  @keyframes apparition { from { opacity: 0 } to { opacity: 1 } }
+
+  .etapes { display: flex; gap: 8px; margin-bottom: 24px; }
+  .etape {
+    flex: 1; text-align: center; padding: 10px 6px; border-radius: 12px; font-size: 12.5px; font-weight: 700;
+    border: 1.5px solid var(--line); color: var(--ink-soft); background: #fff; cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  .etape:hover { border-color: var(--accent); color: var(--accent); }
+  .etape.actif { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .etape.actif:hover { color: #fff; }
+  .etape .num { display: block; font-size: 10px; opacity: .8; margin-bottom: 2px; text-transform: uppercase; letter-spacing: .5px; }
+
+  .eyebrow { font-size: 11.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: 30px; font-weight: 800; margin: 6px 0 4px; letter-spacing: -0.4px; }
+  .sous-titre { color: var(--ink-soft); margin: 0 0 26px; font-size: 15px; }
+
+  /* Carte générique — utilisée par Cours et Test, déclinée par section */
+  .carte { border: 1px solid var(--line); border-radius: var(--radius); }
+  .carte h2 { font-weight: 800; margin: 0 0 12px; }
+  .carte p { line-height: 1.6; color: #3C4450; margin: 0 0 10px; }
+  #vueCours .carte { background: var(--bg-panel); padding: 24px; margin-bottom: 18px; }
+  #vueCours .carte h2 { font-size: 18px; }
+  #vueTest .carte { background: #fff; padding: 28px 24px; box-shadow: 0 2px 8px rgba(17,21,27,0.03); }
+  #vueTest .carte h2 { font-size: 17px; }
+
+  /* ───────────────── Cours : schémas verres ───────────────── */
+  .grille-schema { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 18px; }
+  .carte-schema {
+    background: #FFFFFF; border-radius: 20px; padding: 34px 24px 26px; text-align: center;
+    box-shadow: 0 2px 8px rgba(17,21,27,0.03), 0 20px 40px rgba(17,21,27,0.05);
+  }
+  .eyebrow-schema {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase;
+    color: #97A2AC; margin-bottom: 22px;
+  }
+  .cercle-wrap { width: 180px; height: 180px; margin: 0 auto 20px; }
+  .cercle-svg { display: block; width: 100%; height: 100%; }
+  .nom-verre { font-size: 21px; font-weight: 600; color: #2A3342; margin-bottom: 6px; }
+  .sous-verre { font-size: 12.5px; color: #97A2AC; line-height: 1.5; max-width: 26ch; margin: 0 auto 18px; }
+  .legende-verre { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11.5px; color: #6B7480; }
+  .legende-verre span { display: inline-flex; align-items: center; gap: 6px; }
+  .legende-verre i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .caption-schema { text-align: right; font-size: 9.5px; letter-spacing: 1px; text-transform: uppercase; color: #AEB6BE; margin-top: 10px; }
+
+  .note-presbytie {
+    background: #FBEAE8; border: 1.5px solid #F1C9C4; border-radius: 14px; padding: 14px 16px;
+    font-size: 13px; color: #8A2A1E; line-height: 1.55; margin-top: 16px;
+  }
+  .note-presbytie strong { color: #C0392B; }
+
+  .grille-personas { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+  .persona { border-radius: 14px; padding: 16px; border: 1.5px solid var(--line); }
+  .persona.bon { background: var(--vert-wash); border-color: #BFE6D6; }
+  .persona.mauvais { background: var(--rouge-wash); border-color: #F1C9C4; }
+  .persona .tag { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; display: block; }
+  .persona.bon .tag { color: var(--vert); }
+  .persona.mauvais .tag { color: var(--rouge); }
+  .persona .nom { font-weight: 800; font-size: 14.5px; margin-bottom: 4px; }
+  .persona .desc { font-size: 13px; color: #3C4450; line-height: 1.5; margin-bottom: 8px; }
+  .persona .conclusion { font-size: 12.5px; font-weight: 700; }
+  .persona.bon .conclusion { color: var(--vert); }
+  .persona.mauvais .conclusion { color: var(--rouge); }
+
+  .infos-pratiques { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .info-item { background: var(--accent-wash); border-radius: 12px; padding: 14px; text-align: center; }
+  .info-item .valeur { font-weight: 800; font-size: 17px; color: var(--accent); }
+  .info-item .label { font-size: 11.5px; color: var(--ink-soft); margin-top: 3px; }
+
+  .offre-1-1 { background: var(--accent-wash); border-radius: 14px; padding: 16px 18px; margin-top: 14px; font-size: 13.5px; }
+  .offre-1-1 strong { color: var(--accent); }
+
+  /* ───────────────── Entraînement ───────────────── */
+  .progress-formats { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 14px; font-weight: 600; }
+
+  .grille-formats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .carte-format {
+    background: #fff; border-radius: 18px; padding: 20px; border: 1px solid var(--line);
+    box-shadow: 0 2px 6px rgba(17,21,27,0.03); cursor: pointer; text-align: left;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .carte-format:hover { border-color: var(--accent); }
+  .carte-format .ico { font-size: 22px; }
+  .carte-format .titre-format { font-weight: 800; font-size: 14.5px; }
+  .carte-format .desc-format { font-size: 12px; color: var(--ink-soft); line-height: 1.5; flex: 1; }
+  .carte-format .compteur-format { font-size: 11px; color: var(--accent); font-weight: 700; }
+  .badge-fait {
+    align-self: flex-start; background: var(--vert-wash); color: var(--vert);
+    font-size: 10.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px;
+  }
+
+  .carte-drill { background: #fff; border-radius: var(--radius); padding: 28px 24px; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(17,21,27,0.03); }
+  .entete-drill { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .lien-retour { background: none; border: none; color: var(--accent); font-weight: 700; font-size: 13.5px; cursor: pointer; padding: 0; }
+  .score-drill { font-size: 12.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .score-drill b.ok { color: var(--vert); }
+  .score-drill b.non { color: var(--rouge); }
+
+  .profil-client { font-size: 17px; font-weight: 600; line-height: 1.5; margin-bottom: 20px; color: #1C2430; }
+  .citation-client { font-size: 17px; font-weight: 600; line-height: 1.5; margin-bottom: 20px; font-style: italic; color: #1C2430; }
+  .citation-client::before { content: "“"; } .citation-client::after { content: "”"; }
+
+  .choix-binaire { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .btn-choix {
+    padding: 15px 10px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff;
+    font-weight: 700; font-size: 14.5px; cursor: pointer; color: var(--ink);
+  }
+  .btn-choix:hover { border-color: var(--accent); }
+
+  .liste-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .btn-option {
+    text-align: left; padding: 13px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff;
+    font-size: 14px; cursor: pointer; color: var(--ink); line-height: 1.45;
+  }
+  .btn-option:hover { border-color: var(--accent); }
+
+  .choix-fait .btn-choix, .choix-fait .btn-option, .choix-fait .btn-rep { pointer-events: none; opacity: .55; }
+  .choix-fait .selectionne { opacity: 1; }
+  .choix-fait .bonne-reponse { opacity: 1 !important; border-color: var(--vert); background: var(--vert-wash); }
+  .choix-fait .mauvaise-reponse { opacity: 1 !important; border-color: var(--rouge); background: var(--rouge-wash); }
+
+  .feedback { border-radius: 12px; padding: 14px 16px; font-size: 13.5px; line-height: 1.55; margin-bottom: 18px; display: none; }
+  .feedback.visible { display: block; }
+  .feedback.ok { background: var(--vert-wash); color: #0A5E47; }
+  .feedback.non { background: var(--rouge-wash); color: #8A2A1E; }
+
+  .pied-drill { display: flex; justify-content: flex-end; }
+  .btn-suivant {
+    background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 12px 22px;
+    font-weight: 700; font-size: 14px; cursor: pointer; display: none;
+  }
+  .btn-suivant.visible { display: inline-block; }
+
+  /* ───────────────── Test ───────────────── */
+  .regle { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; font-size: 14px; color: #3C4450; line-height: 1.5; }
+  .regle .puce { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-wash); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+
+  .btn-principal {
+    background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 14px 22px;
+    font-weight: 800; font-size: 15px; cursor: pointer; width: 100%; margin-top: 16px;
+  }
+  .btn-principal:hover { background: #6A2FD1; }
+  .btn-secondaire {
+    background: #fff; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 12px; padding: 13px 22px;
+    font-weight: 700; font-size: 14.5px; cursor: pointer; width: 100%; margin-top: 10px;
+  }
+
+  .alerte-manquant {
+    background: #FFF8E6; border: 1.5px dashed #E0B341; border-radius: 12px; padding: 13px 15px;
+    font-size: 13px; color: #7A5A0A; margin: 14px 0 0; line-height: 1.55;
+  }
+
+  .entete-quiz { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .compteur-quiz { font-size: 12.5px; color: var(--ink-soft); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .barre-quiz { display: flex; gap: 4px; margin-bottom: 22px; }
+  .seg-quiz { flex: 1; height: 4px; border-radius: 999px; background: var(--line); }
+  .seg-quiz.fait { background: var(--accent); }
+
+  .btn-rep {
+    padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff;
+    font-weight: 600; font-size: 14px; cursor: pointer; color: var(--ink); text-align: left; line-height: 1.45;
+  }
+  .btn-rep:hover { border-color: var(--accent); }
+  .choix-binaire .btn-rep { text-align: center; font-weight: 700; }
+
+  .score-rond {
+    width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 18px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; border: 6px solid var(--line);
+  }
+  .score-rond.reussi { border-color: var(--vert); background: var(--vert-wash); }
+  .score-rond.echec { border-color: var(--rouge); background: var(--rouge-wash); }
+  .score-rond .chiffre { font-size: 30px; font-weight: 800; line-height: 1; }
+  .score-rond .sur { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+
+  .titre-resultat { text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+  .sous-resultat { text-align: center; color: var(--ink-soft); font-size: 14px; margin-bottom: 24px; }
+
+  .detail-reponse { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .detail-reponse:last-child { border-bottom: none; }
+  .detail-reponse .icone { flex-shrink: 0; font-weight: 800; }
+  .detail-reponse.ok .icone { color: var(--vert); }
+  .detail-reponse.non .icone { color: var(--rouge); }
+  .detail-reponse .texte-q { color: #3C4450; line-height: 1.5; }
+
+  .badge-acquis {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--vert-wash); color: var(--vert);
+    font-weight: 800; font-size: 13px; padding: 8px 16px; border-radius: 999px; margin: 0 auto 18px; width: fit-content;
+  }
+
+  /* ───────────────── Bouton + modale "Prompt pour Paul" ───────────────── */
+  .btn-prompt-paul {
+    position: fixed; top: 16px; left: 16px; z-index: 50;
+    background: #fff; border: 1.5px solid var(--line); color: var(--ink-soft);
+    font-size: 11px; font-weight: 700; padding: 7px 12px; border-radius: 999px;
+    cursor: pointer; box-shadow: 0 2px 6px rgba(17,21,27,0.06);
+  }
+  .btn-prompt-paul:hover { border-color: var(--accent); color: var(--accent); }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(17,21,27,0.45); z-index: 100;
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-prompt {
+    background: #fff; border-radius: 18px; max-width: 720px; width: 100%; max-height: 85vh;
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(17,21,27,0.25);
+  }
+  .modal-entete {
+    display: flex; align-items: center; justify-content: space-between; padding: 16px 20px;
+    border-bottom: 1px solid var(--line); font-weight: 800; font-size: 14px; flex-shrink: 0;
+  }
+  .btn-fermer { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--ink-soft); line-height: 1; padding: 4px; }
+  .btn-fermer:hover { color: var(--ink); }
+  .texte-prompt {
+    margin: 0; padding: 20px; overflow-y: auto; white-space: pre-wrap; font-family: var(--font);
+    font-size: 12.5px; line-height: 1.6; color: #2A3342; flex: 1;
+  }
+  .modal-pied { padding: 14px 20px; border-top: 1px solid var(--line); flex-shrink: 0; }
+</style>
+<link rel="stylesheet" href="theme-app.css">
+
+<button class="btn-prompt-paul" id="btnPromptPaul">📋 Prompt pour Paul</button>
+
+<div class="modal-overlay" id="modalPrompt" style="display:none">
+  <div class="modal-prompt">
+    <div class="modal-entete">
+      <span>Prompt pour Paul — Module Verre de proximité</span>
+      <button class="btn-fermer" id="btnFermerModal">✕</button>
+    </div>
+    <pre class="texte-prompt" id="textePrompt"></pre>
+    <div class="modal-pied">
+      <button class="btn-principal" id="btnCopierPrompt" style="margin-top:0">Copier le prompt</button>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="etapes">
+    <div class="etape actif" data-etape="cours"><span class="num">Étape 1</span>Cours</div>
+    <div class="etape" data-etape="entrainement"><span class="num">Étape 2</span>Entraînement</div>
+    <div class="etape" data-etape="test"><span class="num">Étape 3</span>Test</div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 1 — COURS ═══════════════════ -->
+  <div id="vueCours" class="vue-etape">
+    <span class="eyebrow">Module Après-Formation · Verres spécifiques</span>
+    <h1>Le verre de Proximité</h1>
+    <p class="sous-titre">Comprendre ce verre, savoir à qui le proposer, et pourquoi ce n'est pas une paire comme les autres.</p>
+
+    <div class="carte">
+      <h2>1. C'est quoi ?</h2>
+      <p>Un verre conçu uniquement pour la vision de <strong>près et intermédiaire</strong> — <strong>pas la vision de loin</strong>. Contrairement au progressif, qui réserve une petite zone de près en bas du verre, le verre de proximité élargit largement les zones près/intermédiaire sur toute la surface utile.</p>
+    </div>
+
+    <div class="grille-schema">
+      <div class="carte-schema">
+        <div class="eyebrow-schema">01 / Toutes les distances</div>
+        <div class="cercle-wrap">
+          <svg class="cercle-svg" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <clipPath id="disque-prog"><circle cx="120" cy="120" r="100"/></clipPath>
+            </defs>
+            <g clip-path="url(#disque-prog)">
+              <rect x="20" y="20" width="200" height="88" fill="#C7D7EA"/>
+              <rect x="20" y="108" width="200" height="48" fill="#D7E6DC"/>
+              <rect x="20" y="156" width="200" height="64" fill="#E5D7CC"/>
+              <line x1="20" y1="108" x2="220" y2="108" stroke="#FFFFFF" stroke-width="3" stroke-dasharray="3 5"/>
+              <line x1="20" y1="156" x2="220" y2="156" stroke="#FFFFFF" stroke-width="3" stroke-dasharray="3 5"/>
+              <path d="M 86,86 Q 120,68 154,86 Q 120,104 86,86 Z" fill="none" stroke="#5B6472" stroke-width="2.5"/>
+              <circle cx="120" cy="86" r="9" fill="#AEB9C4" stroke="#5B6472" stroke-width="2"/>
+              <circle cx="120" cy="86" r="4" fill="#5B6472"/>
+            </g>
+            <circle cx="120" cy="120" r="100" fill="none" stroke="#AEB9C4" stroke-width="2"/>
+            <circle cx="120" cy="120" r="106" fill="none" stroke="#C5CDD5" stroke-width="1.5"/>
+            <text x="120" y="44" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="800" fill="#3A4252">VL</text>
+            <text x="120" y="137" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="800" fill="#3A4252">VI</text>
+            <text x="120" y="193" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="800" fill="#3A4252">VP</text>
+          </svg>
+        </div>
+        <div class="nom-verre serif">Verre progressif</div>
+        <div class="sous-verre">Une progression douce du loin vers le près.</div>
+        <div class="legende-verre">
+          <span><i style="background:#9DB6D4"></i>Vision de loin</span>
+          <span><i style="background:#9BC2AA"></i>Vision intermédiaire</span>
+          <span><i style="background:#CBA68E"></i>Vision de près</span>
+        </div>
+      </div>
+
+      <div class="carte-schema">
+        <div class="eyebrow-schema">02 / Intermédiaire et près</div>
+        <div class="cercle-wrap">
+          <svg class="cercle-svg" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <clipPath id="disque-prox"><circle cx="120" cy="120" r="100"/></clipPath>
+            </defs>
+            <g clip-path="url(#disque-prox)">
+              <rect x="20" y="20" width="200" height="200" fill="#FFFFFF"/>
+              <rect x="20" y="20" width="200" height="118" fill="#D7E6DC"/>
+              <rect x="20" y="138" width="200" height="82" fill="#E5D7CC"/>
+              <line x1="20" y1="138" x2="220" y2="138" stroke="#FFFFFF" stroke-width="2.5" stroke-dasharray="3 5"/>
+              <path d="M 86,76 Q 120,58 154,76 Q 120,94 86,76 Z" fill="none" stroke="#5B6472" stroke-width="2.5"/>
+              <circle cx="120" cy="76" r="9" fill="#AEB9C4" stroke="#5B6472" stroke-width="2"/>
+              <circle cx="120" cy="76" r="4" fill="#5B6472"/>
+            </g>
+            <circle cx="120" cy="120" r="100" fill="none" stroke="#AEB9C4" stroke-width="2"/>
+            <circle cx="120" cy="120" r="106" fill="none" stroke="#C5CDD5" stroke-width="1.5"/>
+            <text x="120" y="118" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="800" fill="#3A4252">VI</text>
+            <text x="120" y="184" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="800" fill="#3A4252">VP</text>
+          </svg>
+        </div>
+        <div class="nom-verre serif">Verre de proximité</div>
+        <div class="sous-verre">Un champ pensé pour les distances rapprochées.</div>
+        <div class="legende-verre">
+          <span><i style="background:#9BC2AA"></i>Vision intermédiaire</span>
+          <span><i style="background:#CBA68E"></i>Vision de près</span>
+        </div>
+      </div>
+    </div>
+    <div class="caption-schema">Schéma pédagogique · zones indicatives</div>
+
+    <div class="carte" style="margin-top:18px">
+      <div class="note-presbytie" style="margin-top:0">
+        ⚠️ <strong>Condition indispensable : la presbytie.</strong> Ce verre, tout comme le progressif, n'est possible QUE pour un client presbyte. Un client non presbyte ne peut avoir ni l'un, ni l'autre — ce n'est pas une question de préférence, c'est que sans presbytie il n'y a tout simplement pas de besoin de correction de près à graduer.
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>2. Comment le reconnaître sur une ordonnance</h2>
+      <p>L'ophtalmologiste n'écrit pas toujours "proximité" sur l'ordonnance — ce même type de verre peut apparaître sous plusieurs noms. Ce qui compte, c'est de reconnaître le principe (une addition pour le près ET l'intermédiaire, pas une correction de loin), peu importe le mot employé :</p>
+      <div class="infos-pratiques" style="grid-template-columns:repeat(2,1fr)">
+        <div class="info-item"><div class="valeur" style="font-size:14px">Verre Interview</div><div class="label">nom commercial très répandu</div></div>
+        <div class="info-item"><div class="valeur" style="font-size:14px">Verre mi-distance</div><div class="label">terme descriptif</div></div>
+        <div class="info-item"><div class="valeur" style="font-size:14px">Verre dégressif</div><div class="label">terme technique générique</div></div>
+        <div class="info-item"><div class="valeur" style="font-size:14px">Paire bureautique</div><div class="label">terme parfois noté</div></div>
+      </div>
+      <p style="margin-top:14px">Dans le doute face à un autre terme, le plus simple reste de demander au client ce que l'ophtalmologiste lui a expliqué, ou de vérifier avec un collègue.</p>
+
+      <p style="background:#FFF8E6;border-radius:10px;padding:12px 14px;font-size:13.5px;color:#7A5A0A;margin-top:14px;line-height:1.55">⚠️ <strong>Autre piège possible, à bien repérer</strong> : sur certaines ordonnances, au lieu d'une ligne "Addition" classique, tu verras Sphère / Cylindre / Axe + <strong>Dégression</strong>. Dans ce cas, l'ophtalmologiste a écrit directement la valeur de <strong>VP (près)</strong> comme sphère de base, et la dégression indique combien <strong>soustraire</strong> pour remonter à la <strong>VI (intermédiaire)</strong> — c'est l'inverse du sens habituel, où on part du loin et on additionne pour aller vers le près. Si tu vois "Dégression" plutôt qu'"Addition" sur une ordonnance, c'est très probablement un verre de proximité écrit dans ce sens-là.</p>
+    </div>
+
+    <div class="carte">
+      <h2>3. Comment on l'utilise</h2>
+      <p>Ce n'est <strong>pas un remplacement</strong> de la paire principale du client — c'est une <strong>deuxième paire</strong>, pour les moments où il <strong>alterne entre le près et l'intermédiaire, sans arrêt, sur la même tâche</strong> : typiquement la bureautique (écran = intermédiaire, clavier/documents = près), ou un musicien qui regarde sa partition (intermédiaire) tout en gardant les mains sur son instrument (près).</p>
+      <p>Le client garde sa paire habituelle pour conduire, se déplacer, voir de loin — et bascule sur sa paire de proximité une fois installé à son poste.</p>
+      <p style="background:#FFF8E6;border-radius:10px;padding:10px 14px;font-size:13.5px;color:#7A5A0A">⚠️ <strong>Attention à l'erreur courante</strong> : ce n'est pas le bon choix pour quelqu'un qui travaille uniquement de près, sans jamais regarder à une distance intermédiaire (ex : lecture fixe, couture très rapprochée). Dans ce cas, un simple <strong>verre unifocal de près</strong> suffit — la proximité n'apporte de valeur que si les deux distances (près ET intermédiaire) sont utilisées en alternance.</p>
+    </div>
+
+    <div class="carte">
+      <h2>4. Exemples concrets</h2>
+      <div class="grille-personas">
+        <div class="persona bon">
+          <span class="tag">✅ Bon candidat</span>
+          <div class="nom">Fatima, 54 ans, comptable</div>
+          <div class="desc">7h/jour au bureau, alterne sans cesse entre son écran (intermédiaire) et ses dossiers papier sur la table (près).</div>
+          <div class="conclusion">→ 2e paire proximité, confort bureau immédiat</div>
+        </div>
+        <div class="persona bon">
+          <span class="tag">✅ Bon candidat</span>
+          <div class="nom">Camille, 50 ans, pianiste</div>
+          <div class="desc">Regarde sa partition posée devant elle (intermédiaire) tout en gardant les yeux sur ses mains et le clavier (près), en alternance constante.</div>
+          <div class="conclusion">→ Exactement le cas d'usage de la proximité</div>
+        </div>
+        <div class="persona mauvais">
+          <span class="tag">❌ Mauvais candidat (seul)</span>
+          <div class="nom">Julien, 45 ans, commercial terrain</div>
+          <div class="desc">Conduit beaucoup, change de lieu toute la journée, cherche une seule paire polyvalente.</div>
+          <div class="conclusion">→ Le top pour lui, c'est le progressif : loin pour conduire, près pour lire ses bons de livraison, dans la même paire</div>
+        </div>
+        <div class="persona mauvais">
+          <span class="tag">❌ Mauvais candidat</span>
+          <div class="nom">Sophie, 62 ans, couturière</div>
+          <div class="desc">Travaille exclusivement à 15-20cm, ne regarde jamais à distance intermédiaire pendant son activité.</div>
+          <div class="conclusion">→ Un simple unifocal de près suffit</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>5. Infos pratiques</h2>
+      <div class="infos-pratiques">
+        <div class="info-item"><div class="valeur">Rodenstock</div><div class="label">fabricant</div></div>
+        <div class="info-item"><div class="valeur">Allemagne</div><div class="label">fabrication</div></div>
+        <div class="info-item"><div class="valeur">9 jours</div><div class="label">délai</div></div>
+      </div>
+      <div class="offre-1-1">
+        💡 Compris dans l'offre <strong>1=1</strong> : un client peut prendre une 1ère paire en progressif et la 2ᵉ offerte en proximité, ou une proximité + une vision de près en 2ᵉ paire, etc. — toute combinaison est possible dans le cadre du 1=1.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 2 — ENTRAÎNEMENT ═══════════════════ -->
+  <div id="vueEntrainement" class="vue-etape" style="display:none">
+    <span class="eyebrow">Module Après-Formation · Verre de Proximité</span>
+    <h1>Entraînement</h1>
+    <p class="sous-titre">Pas de pression : tu peux refaire ces exercices autant de fois que tu veux, dans l'ordre que tu veux.</p>
+
+    <div id="vueMenu">
+      <div class="progress-formats" id="progressFormats"></div>
+      <div class="grille-formats" id="grilleFormats"></div>
+    </div>
+
+    <div id="vueDrill" style="display:none">
+      <div class="carte-drill">
+        <div class="entete-drill">
+          <button class="lien-retour" id="btnRetourMenu">← Retour aux exercices</button>
+          <span class="score-drill" id="scoreDrill"></span>
+        </div>
+        <div id="corpsDrill"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="pied-drill">
+          <button class="btn-suivant" id="btnSuivant">Suivant →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 3 — TEST ═══════════════════ -->
+  <div id="vueTest" class="vue-etape" style="display:none">
+    <span class="eyebrow">Module Après-Formation · Verre de Proximité</span>
+    <h1>Test</h1>
+    <p class="sous-titre">Une seule fois pour verrouiller le module — mais tu peux retenter autant de fois que nécessaire si besoin.</p>
+
+    <div id="vueIntro">
+      <div class="carte">
+        <h2>Avant de commencer</h2>
+        <div class="regle"><span class="puce">1</span><span>12 questions, mélange de ce qu'on a vu dans le cours et à l'entraînement.</span></div>
+        <div class="regle"><span class="puce">2</span><span>Pas de correction affichée en cours de route — le score tombe à la fin.</span></div>
+        <div class="regle"><span class="puce">3</span><span>Il faut <strong>10/12</strong> pour valider le module.</span></div>
+        <div class="regle"><span class="puce">4</span><span>En dessous, pas de souci : retourne t'entraîner et retente quand tu veux.</span></div>
+
+        <div class="alerte-manquant" id="gateManquant" style="display:none">
+          ⚠️ Pas encore accessible : il faut avoir fait au moins une fois chaque format d'entraînement. Il reste : <strong id="texteManquant"></strong>.
+          <button class="btn-secondaire" id="btnAllerEntrainement">Aller à l'entraînement</button>
+        </div>
+
+        <button class="btn-principal" id="btnCommencer">Commencer le test</button>
+      </div>
+    </div>
+
+    <div id="vueDejaAcquis" style="display:none">
+      <div class="carte" style="text-align:center">
+        <div class="badge-acquis" style="margin:0 auto 14px">✓ Module déjà acquis</div>
+        <p>Tu as déjà validé ce module. Pas besoin de le repasser.</p>
+        <button class="btn-secondaire" id="btnRepasserQuandMeme">Le repasser quand même</button>
+      </div>
+    </div>
+
+    <div id="vueQuiz" style="display:none">
+      <div class="carte">
+        <div class="entete-quiz">
+          <span class="compteur-quiz" id="compteurQuiz"></span>
+        </div>
+        <div class="barre-quiz" id="barreQuiz"></div>
+        <div id="corpsQuestion"></div>
+      </div>
+    </div>
+
+    <div id="vueResultat" style="display:none">
+      <div class="carte">
+        <div class="score-rond" id="scoreRond">
+          <div class="chiffre" id="scoreChiffre"></div>
+          <div class="sur">sur 12</div>
+        </div>
+        <div class="titre-resultat" id="titreResultat"></div>
+        <div class="sous-resultat" id="sousResultat"></div>
+        <div id="detailResultat"></div>
+        <button class="btn-principal" id="btnRefaire" style="display:none">Retenter le test</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Utilitaires partagés ───────────────────────────────────────
+function $(sel) { return document.querySelector(sel) }
+
+function melanger(tableau) {
+  const copie = [...tableau]
+  for (let i = copie.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copie[i], copie[j]] = [copie[j], copie[i]]
+  }
+  return copie
+}
+
+// ── Navigation entre étapes ─────────────────────────────────────
+function irAEtape(cle) {
+  document.querySelectorAll('.etape').forEach(el => el.classList.toggle('actif', el.dataset.etape === cle))
+  $('#vueCours').style.display = cle === 'cours' ? 'block' : 'none'
+  $('#vueEntrainement').style.display = cle === 'entrainement' ? 'block' : 'none'
+  $('#vueTest').style.display = cle === 'test' ? 'block' : 'none'
+  if (cle === 'test') majGateTest()
+}
+document.querySelectorAll('.etape').forEach(el => el.addEventListener('click', () => irAEtape(el.dataset.etape)))
+
+// ═══════════════════ ENTRAÎNEMENT ═══════════════════
+const FORMAT_A = [
+  { profil: "Graphiste, bascule entre sa tablette (près) et son écran (intermédiaire) toute la journée.", bon: true, explication: "Alternance près/intermédiaire sur la même tâche : cas d'usage typique." },
+  { profil: "Secrétaire médicale, lit son écran et remplit des dossiers papier en alternance.", bon: true, explication: "Écran = intermédiaire, dossiers = près : exactement le besoin couvert." },
+  { profil: "Violoniste, regarde sa partition et alterne avec ses doigts sur les cordes.", bon: true, explication: "Partition = intermédiaire, mains = près : bon candidat musicien." },
+  { profil: "Chauffeur-livreur, conduit toute la journée, veut une seule paire pour tout.", bon: false, explication: "Pour lui, le top c'est le progressif : il conduit au loin avec la VL, et peut lire ses bons de livraison avec la VP — tout dans la même paire. La proximité ne corrige pas le loin, donc inutile ici en paire unique." },
+  { profil: "Jeune de 24 ans, aucune fatigue visuelle de près.", bon: false, explication: "Sans presbytie, pas de besoin de correction de près à graduer — condition indispensable manquante." },
+  { profil: "Retraité qui lit uniquement installé dans son fauteuil, ne regarde jamais plus loin.", bon: false, explication: "Pas de proximité ici : il n'y a pas d'intermédiaire à couvrir en plus du près. Elle peut très bien lire avec le bas de son verre progressif, ou avec un simple unifocal de près — le progressif reste tout à fait adapté pour elle, la 2e paire proximité n'apporterait juste rien de plus dans son cas." },
+  { profil: "Traducteur indépendant, installé à son poste toute la journée : il lit un document papier à traduire (près) tout en tapant sur son écran (intermédiaire), sans jamais avoir besoin de se déplacer pour son travail.", bon: true, explication: "Document papier = près, écran = intermédiaire, et le métier ne demande aucun déplacement dans la journée : bonne alternance, sans le piège du loin." },
+  { profil: "Standardiste, lit son écran et prend des notes toute la journée.", bon: true, explication: "Même logique que la secrétaire médicale : écran + notes en alternance." },
+  { profil: "Bijoutier qui travaille sous une loupe binoculaire toute la journée, toujours à la même distance très rapprochée.", bon: false, explication: "Que du près, à une distance fixe, aucun intermédiaire à couvrir. Un unifocal de près (ou le bas d'un progressif s'il en a déjà un) fait très bien l'affaire — la proximité n'ajoute rien pour cette activité précise." },
+  { profil: "Comptable, toute la journée entre son écran et ses factures posées sur le bureau.", bon: true, explication: "Écran = intermédiaire, factures papier = près, en alternance constante toute la journée : exactement le bon usage de la proximité." },
+];
+
+const FORMAT_B = [
+  { client: "Pourquoi j'aurais besoin d'une 2e paire, j'ai déjà mes progressifs ?",
+    options: [
+      { texte: "Avec vos progressifs, pour regarder votre écran vous devez un peu relever le menton pour trouver la bonne zone, non ? La proximité évite ça pour le bureau.", bon: true, explication: "On relie directement à un inconfort concret qu'il vit déjà." },
+      { texte: "Parce que c'est compris dans l'offre, autant en profiter.", bon: false, explication: "Ça parle de l'offre avant d'avoir montré le besoin — pas convaincant." },
+      { texte: "Le verre de proximité a deux zones au lieu de trois.", bon: false, explication: "Un fait technique, mais ça ne répond pas à sa question \"pourquoi\"." },
+    ] },
+  { client: "Je ne sais pas si je suis presbyte.",
+    options: [
+      { texte: "Si vous avez plus de 45 ans, vous l'êtes sûrement.", bon: false, explication: "Une généralité qui peut être fausse — on ne devine pas ça à l'âge." },
+      { texte: "C'est votre ordonnance qui nous le dit — ou on peut aussi le vérifier directement avec un examen de vue en magasin.", bon: true, explication: "On s'appuie sur la vraie source d'information (l'ordonnance), et si besoin on peut aussi le vérifier directement en magasin avec un examen de vue — jamais sur une estimation à l'œil." },
+      { texte: "Ce n'est pas grave, on peut essayer quand même.", bon: false, explication: "Dangereux : la presbytie est une condition indispensable, pas une option." },
+    ] },
+  { client: "Je pensais que mon progressif suffisait pour tout.",
+    options: [
+      { texte: "Non, en fait votre progressif n'est pas très adapté à l'écran.", bon: false, explication: "Ça dénigre le produit qu'il porte déjà et qu'il a payé — mauvaise posture." },
+      { texte: "Le progressif a aussi une zone de loin.", bon: false, explication: "Vrai, mais hors sujet par rapport à ce qu'il vient de dire." },
+      { texte: "Il fait très bien son travail au quotidien — la proximité est juste un complément pensé pour les longues sessions devant un écran, encore plus confortable sur cette activité précise.", bon: true, explication: "On valorise son équipement actuel tout en présentant un complément, pas un reproche." },
+    ] },
+  { client: "Je n'ai pas de travail de bureau, je joue juste du piano.",
+    options: [
+      { texte: "Justement : entre votre partition et votre clavier, vous alternez sans arrêt entre deux distances proches — c'est exactement le cas où ce verre aide.", bon: true, explication: "On relie son activité réelle au bon besoin, même si ce n'est pas du bureau au sens classique." },
+      { texte: "Ah, alors ce n'est pas pour vous.", bon: false, explication: "Faux, et ça referme la conversation trop vite." },
+      { texte: "Le piano n'a rien à voir avec l'optique.", bon: false, explication: "Non-sens, à éviter absolument." },
+    ] },
+  { client: "Et pour le prix ?",
+    options: [
+      { texte: "Ça dépend, il faudrait un devis séparé.", bon: false, explication: "Inexact par rapport à la vraie offre existante — à éviter." },
+      { texte: "C'est le verre le moins cher qu'on propose.", bon: false, explication: "Affirmation non vérifiée et hors sujet par rapport à l'utilité du verre." },
+      { texte: "C'est intégré dans notre offre 1=1 avec votre 1ère paire — on regarde ensemble comment la combiner.", bon: true, explication: "On redirige vers le mécanisme d'offre réel, sans détailler de chiffres." },
+    ] },
+];
+
+const FORMAT_C = [
+  { enonce: "Le verre de proximité corrige aussi la vision de loin.", vrai: false },
+  { enonce: "Il faut être presbyte pour en porter un.", vrai: true },
+  { enonce: "C'est fabriqué par Rodenstock, en Allemagne.", vrai: true },
+  { enonce: "Le délai de fabrication est de 9 jours.", vrai: true },
+  { enonce: "Un pianiste est un bon exemple de candidat.", vrai: true },
+  { enonce: "Quelqu'un qui ne fait que de la couture très rapprochée est le candidat idéal.", vrai: false },
+  { enonce: "C'est fait pour remplacer la paire principale du client.", vrai: false },
+  { enonce: "Le verre de proximité a deux zones de vision : intermédiaire et près.", vrai: true },
+  { enonce: "Un chauffeur-livreur qui veut une seule paire est un bon candidat.", vrai: false },
+  { enonce: "La proximité est compatible avec l'offre 1=1.", vrai: true },
+  { enonce: "Une personne de 24 ans sans fatigue visuelle a besoin d'un verre de proximité.", vrai: false },
+  { enonce: "Le progressif a trois zones : loin, intermédiaire, près.", vrai: true },
+  { enonce: "Le verre de proximité est une variante moins chère du progressif.", vrai: false },
+  { enonce: "Une secrétaire qui alterne écran et dossiers papier est un bon cas d'usage.", vrai: true },
+  { enonce: "On peut recommander ce verre même sans savoir si le client est presbyte.", vrai: false },
+];
+
+const FORMAT_D = [
+  { profil: "Client presbyte, travaille sur écran toute la journée.",
+    options: [
+      { texte: "Est-ce que vous êtes parfois gêné pour voir votre écran avec vos lunettes actuelles ?", bon: true, explication: "Bonne entrée en matière : on diagnostique le besoin avant de proposer quoi que ce soit — sa 2e paire est de toute façon offerte, la vraie question est juste de trouver le bon verre pour lui." },
+      { texte: "Vous devriez prendre une paire en plus, c'est compris dans l'offre.", bon: false, explication: "Trop commercial d'entrée, pas centré sur son besoin." },
+      { texte: "Le verre de proximité est fabriqué en Allemagne par Rodenstock.", bon: false, explication: "Hors sujet à ce stade de la conversation." },
+    ] },
+  { profil: "Client musicien (pianiste), presbyte.",
+    options: [
+      { texte: "Vous devriez clairement prendre une 2e paire, croyez-moi.", bon: false, explication: "Trop pressant, aucun diagnostic." },
+      { texte: "On a un super laboratoire à Paris, vous savez.", bon: false, explication: "Hors sujet par rapport à sa situation." },
+      { texte: "Quand vous jouez, est-ce que vous devez bouger la tête pour bien voir votre partition ET vos mains ?", bon: true, explication: "Question ouverte et pertinente pour son activité précise." },
+    ] },
+  { profil: "Client qui dit avoir déjà un progressif et s'en dire \"très content\".",
+    options: [
+      { texte: "Ah très bien, alors vous n'avez besoin de rien d'autre.", bon: false, explication: "Rate l'opportunité de creuser, referme la conversation." },
+      { texte: "Tant mieux ! Juste par curiosité, vous passez beaucoup de temps sur écran ou en activité de précision ?", bon: true, explication: "Ouvre la discussion sans forcer, reste à l'écoute." },
+      { texte: "Le progressif a trois zones de vision.", bon: false, explication: "Un fait, pas une question — ne fait pas avancer la conversation." },
+    ] },
+  { profil: "Client hésitant : \"je ne sais pas si j'en ai vraiment besoin\".",
+    options: [
+      { texte: "C'est compris dans l'offre, ça ne vous coûte rien de plus.", bon: false, explication: "Évite la vraie question du besoin réel." },
+      { texte: "Il est fabriqué par Rodenstock en Allemagne, en 9 jours.", bon: false, explication: "Trop technique à ce stade, ne répond pas à son hésitation." },
+      { texte: "Racontez-moi une journée type : à quoi ressemble votre travail au quotidien ?", bon: true, explication: "Fait émerger le besoin par la discussion, plutôt que d'argumenter dans le vide." },
+    ] },
+];
+
+let formatActuel = null;
+let poolActuelle = [];
+let indexActuel = null;
+let scoreOk = 0, scoreNon = 0;
+
+const FORMATS_INFO = {
+  a: { titre: "Proximité ou pas proximité", ico: "🧭", desc: "Un profil client, tu dis si le verre de proximité est pertinent ou non.", data: FORMAT_A },
+  b: { titre: "Mise en situation", ico: "💬", desc: "Le client objecte, tu choisis la meilleure réponse.", data: FORMAT_B },
+  c: { titre: "Vrai/Faux éclair", ico: "⚡", desc: "Rafale de questions rapides pour ancrer les bases.", data: FORMAT_C },
+  d: { titre: "Le bon mot", ico: "🗣️", desc: "Choisis la meilleure phrase d'accroche pour la situation.", data: FORMAT_D },
+};
+
+const CLE_FORMATS = 'proximite_entrainement_formats';
+
+function getFormatsFaits() {
+  try { return JSON.parse(localStorage.getItem(CLE_FORMATS)) || {} } catch (e) { return {} }
+}
+function marquerFormatFait(cle) {
+  const faits = getFormatsFaits()
+  if (!faits[cle]) {
+    faits[cle] = true
+    localStorage.setItem(CLE_FORMATS, JSON.stringify(faits))
+  }
+}
+
+function rendreMenu() {
+  const faits = getFormatsFaits()
+  const nbFaits = Object.keys(FORMATS_INFO).filter(c => faits[c]).length
+  $('#progressFormats').textContent = `${nbFaits}/4 formats terminés au moins une fois`
+
+  $('#grilleFormats').innerHTML = Object.entries(FORMATS_INFO).map(([cle, f]) => `
+    <div class="carte-format" data-format="${cle}">
+      ${faits[cle] ? '<div class="badge-fait">✓ Terminé</div>' : ''}
+      <div class="ico">${f.ico}</div>
+      <div class="titre-format">${f.titre}</div>
+      <div class="desc-format">${f.desc}</div>
+      <div class="compteur-format">${f.data.length} situations</div>
+    </div>
+  `).join('')
+  document.querySelectorAll('[data-format]').forEach(el => {
+    el.addEventListener('click', () => lancerFormat(el.dataset.format))
+  })
+  majGateTest()
+}
+
+function lancerFormat(cle) {
+  formatActuel = cle
+  poolActuelle = melanger(FORMATS_INFO[cle].data)
+  indexActuel = 0
+  scoreOk = 0; scoreNon = 0
+  $('#vueMenu').style.display = 'none'
+  $('#vueDrill').style.display = 'block'
+  rendreItemCourant()
+}
+
+function retourMenu() {
+  $('#vueDrill').style.display = 'none'
+  $('#vueMenu').style.display = 'block'
+  formatActuel = null
+  rendreMenu()
+}
+
+function majScore() {
+  $('#scoreDrill').innerHTML = `<b class="ok">${scoreOk} ✓</b> &nbsp; <b class="non">${scoreNon} ✗</b>`
+}
+
+function rendreItemCourant() {
+  majScore()
+  const corps = $('#corpsDrill')
+  const feedback = $('#feedback')
+  feedback.className = 'feedback'
+  feedback.textContent = ''
+  $('#btnSuivant').classList.remove('visible')
+  corps.classList.remove('choix-fait')
+
+  if (indexActuel >= poolActuelle.length) {
+    marquerFormatFait(formatActuel)
+    majGateTest()
+    corps.innerHTML = `<p style="text-align:center;color:var(--ink-soft);font-size:14px;padding:20px 0">Tu as fait le tour de ce pool — relance l'exercice pour un nouvel ordre, ou choisis un autre format.</p>`
+    return
+  }
+
+  const item = poolActuelle[indexActuel]
+
+  if (formatActuel === 'a') {
+    corps.innerHTML = `
+      <div class="profil-client">${item.profil}</div>
+      <div class="choix-binaire">
+        <button class="btn-choix" data-rep="true">Proximité</button>
+        <button class="btn-choix" data-rep="false">Pas proximité</button>
+      </div>`
+    corps.querySelectorAll('[data-rep]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const choisiBon = btn.dataset.rep === 'true'
+        const correct = choisiBon === item.bon
+        corps.classList.add('choix-fait')
+        corps.querySelectorAll('[data-rep]').forEach(b => {
+          const estBon = (b.dataset.rep === 'true') === item.bon
+          if (estBon) b.classList.add('bonne-reponse')
+          else if (b === btn) b.classList.add('mauvaise-reponse')
+          if (b === btn) b.classList.add('selectionne')
+        })
+        afficherFeedback(correct, item.explication)
+      })
+    })
+  }
+
+  if (formatActuel === 'b' || formatActuel === 'd') {
+    const label = formatActuel === 'b' ? item.client : item.profil
+    const classeTexte = formatActuel === 'b' ? 'citation-client' : 'profil-client'
+    corps.innerHTML = `
+      <div class="${classeTexte}">${label}</div>
+      <div class="liste-options">
+        ${item.options.map((o, i) => `<button class="btn-option" data-i="${i}">${o.texte}</button>`).join('')}
+      </div>`
+    corps.querySelectorAll('[data-i]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const opt = item.options[Number(btn.dataset.i)]
+        corps.classList.add('choix-fait')
+        corps.querySelectorAll('[data-i]').forEach((b, i) => {
+          if (item.options[i].bon) b.classList.add('bonne-reponse')
+          else if (b === btn) b.classList.add('mauvaise-reponse', 'selectionne')
+        })
+        afficherFeedback(opt.bon, opt.explication)
+      })
+    })
+  }
+
+  if (formatActuel === 'c') {
+    corps.innerHTML = `
+      <div class="profil-client">${item.enonce}</div>
+      <div class="choix-binaire">
+        <button class="btn-choix" data-rep="true">Vrai</button>
+        <button class="btn-choix" data-rep="false">Faux</button>
+      </div>`
+    corps.querySelectorAll('[data-rep]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const choisiVrai = btn.dataset.rep === 'true'
+        const correct = choisiVrai === item.vrai
+        corps.classList.add('choix-fait')
+        corps.querySelectorAll('[data-rep]').forEach(b => {
+          const estBon = (b.dataset.rep === 'true') === item.vrai
+          if (estBon) b.classList.add('bonne-reponse')
+          else if (b === btn) b.classList.add('mauvaise-reponse')
+          if (b === btn) b.classList.add('selectionne')
+        })
+        afficherFeedback(correct, correct ? "Exact." : "Pas tout à fait — relis le point correspondant dans le cours si besoin.")
+      })
+    })
+  }
+}
+
+function afficherFeedback(correct, texte) {
+  const feedback = $('#feedback')
+  feedback.textContent = (correct ? '✓ ' : '✗ ') + texte
+  feedback.classList.add('visible', correct ? 'ok' : 'non')
+  if (correct) scoreOk++; else scoreNon++
+  majScore()
+  $('#btnSuivant').classList.add('visible')
+}
+
+$('#btnRetourMenu').addEventListener('click', retourMenu)
+$('#btnSuivant').addEventListener('click', () => { indexActuel++; rendreItemCourant() })
+
+// ═══════════════════ TEST ═══════════════════
+const VRAI_FAUX_POOL = FORMAT_C;
+const CANDIDAT_POOL = FORMAT_A.map(({ profil, bon }) => ({ profil, bon }));
+const BONMOT_POOL = [
+  ...FORMAT_B.map(({ client, options }) => ({ client, options: options.map(({ texte, bon }) => ({ texte, bon })) })),
+  ...FORMAT_D.map(({ profil, options }) => ({ client: profil, options: options.map(({ texte, bon }) => ({ texte, bon })) })),
+];
+
+const SEUIL_REUSSITE = 10;
+const TOTAL_QUESTIONS = 12;
+const CLE_ACQUIS = 'proximite_test_acquis';
+
+let questionsQuiz = [];
+let indexQuestion = 0;
+let reponsesDonnees = [];
+
+function majGateTest() {
+  const faits = getFormatsFaits()
+  const manquants = Object.entries(FORMATS_INFO).filter(([cle]) => !faits[cle]).map(([, f]) => f.titre)
+  const btn = $('#btnCommencer')
+  const gate = $('#gateManquant')
+  if (!btn || !gate) return
+  if (manquants.length === 0) {
+    gate.style.display = 'none'
+    btn.style.display = 'block'
+  } else {
+    gate.style.display = 'block'
+    btn.style.display = 'none'
+    $('#texteManquant').textContent = manquants.join(', ')
+  }
+}
+
+function construireQuestions() {
+  const vf = melanger(VRAI_FAUX_POOL).slice(0, 5).map(q => ({ type: 'vf', ...q }))
+  const cand = melanger(CANDIDAT_POOL).slice(0, 5).map(q => ({ type: 'candidat', ...q }))
+  const bm = melanger(BONMOT_POOL).slice(0, 2).map(q => ({ type: 'bonmot', ...q, options: melanger(q.options) }))
+  return melanger([...vf, ...cand, ...bm])
+}
+
+function demarrerQuiz() {
+  if (!getFormatsFaitsTousOk()) { majGateTest(); return }
+  questionsQuiz = construireQuestions()
+  indexQuestion = 0
+  reponsesDonnees = []
+  $('#vueIntro').style.display = 'none'
+  $('#vueDejaAcquis').style.display = 'none'
+  $('#vueResultat').style.display = 'none'
+  $('#vueQuiz').style.display = 'block'
+  rendreQuestion()
+}
+
+function getFormatsFaitsTousOk() {
+  const faits = getFormatsFaits()
+  return Object.keys(FORMATS_INFO).every(cle => faits[cle])
+}
+
+function rendreBarre() {
+  $('#barreQuiz').innerHTML = Array.from({ length: TOTAL_QUESTIONS }, (_, i) =>
+    `<div class="seg-quiz ${i < indexQuestion ? 'fait' : ''}"></div>`).join('')
+}
+
+function rendreQuestion() {
+  $('#compteurQuiz').textContent = `Question ${indexQuestion + 1} / ${TOTAL_QUESTIONS}`
+  rendreBarre()
+  const q = questionsQuiz[indexQuestion]
+  const corps = $('#corpsQuestion')
+
+  if (q.type === 'vf') {
+    corps.innerHTML = `
+      <div class="profil-client">${q.enonce}</div>
+      <div class="choix-binaire">
+        <button class="btn-rep" data-rep="true">Vrai</button>
+        <button class="btn-rep" data-rep="false">Faux</button>
+      </div>`
+    corps.querySelectorAll('[data-rep]').forEach(btn => {
+      btn.addEventListener('click', () => valider(btn.dataset.rep === 'true', q.vrai, q.enonce))
+    })
+  }
+
+  if (q.type === 'candidat') {
+    corps.innerHTML = `
+      <div class="profil-client">${q.profil}</div>
+      <div class="choix-binaire">
+        <button class="btn-rep" data-rep="true">Proximité</button>
+        <button class="btn-rep" data-rep="false">Pas proximité</button>
+      </div>`
+    corps.querySelectorAll('[data-rep]').forEach(btn => {
+      btn.addEventListener('click', () => valider(btn.dataset.rep === 'true', q.bon, q.profil))
+    })
+  }
+
+  if (q.type === 'bonmot') {
+    corps.innerHTML = `
+      <div class="citation-client">${q.client}</div>
+      <div class="liste-options">
+        ${q.options.map((o, i) => `<button class="btn-rep" data-i="${i}">${o.texte}</button>`).join('')}
+      </div>`
+    corps.querySelectorAll('[data-i]').forEach(btn => {
+      btn.addEventListener('click', () => valider(true, true, q.client, q.options[Number(btn.dataset.i)].bon))
+    })
+  }
+}
+
+function valider(reponseDonnee, reponseAttendue, libelleQuestion, correctOverride) {
+  const correct = correctOverride !== undefined ? correctOverride : (reponseDonnee === reponseAttendue)
+  reponsesDonnees.push({ libelle: libelleQuestion, correct })
+  indexQuestion++
+  if (indexQuestion >= TOTAL_QUESTIONS) {
+    afficherResultat()
+  } else {
+    rendreQuestion()
+  }
+}
+
+function afficherResultat() {
+  $('#vueQuiz').style.display = 'none'
+  $('#vueResultat').style.display = 'block'
+
+  const score = reponsesDonnees.filter(r => r.correct).length
+  const reussi = score >= SEUIL_REUSSITE
+
+  $('#scoreChiffre').textContent = score
+  $('#scoreRond').className = 'score-rond ' + (reussi ? 'reussi' : 'echec')
+  $('#titreResultat').textContent = reussi ? '✅ Module acquis !' : 'Pas encore cette fois'
+  $('#sousResultat').textContent = reussi
+    ? 'Le module est verrouillé — bravo.'
+    : `Il fallait ${SEUIL_REUSSITE}/12 pour valider. Retourne t'entraîner et retente quand tu veux.`
+
+  $('#detailResultat').innerHTML = reponsesDonnees.map(r => `
+    <div class="detail-reponse ${r.correct ? 'ok' : 'non'}">
+      <span class="icone">${r.correct ? '✓' : '✗'}</span>
+      <span class="texte-q">${r.libelle}</span>
+    </div>
+  `).join('')
+
+  const btnRefaire = $('#btnRefaire')
+  btnRefaire.style.display = 'block'
+  btnRefaire.textContent = reussi ? 'Repasser le test quand même' : 'Retenter le test'
+
+  if (reussi) localStorage.setItem(CLE_ACQUIS, '1')
+}
+
+$('#btnCommencer').addEventListener('click', demarrerQuiz)
+$('#btnRefaire').addEventListener('click', demarrerQuiz)
+$('#btnRepasserQuandMeme').addEventListener('click', demarrerQuiz)
+$('#btnAllerEntrainement').addEventListener('click', () => irAEtape('entrainement'))
+
+if (localStorage.getItem(CLE_ACQUIS) === '1') {
+  $('#vueIntro').style.display = 'none'
+  $('#vueDejaAcquis').style.display = 'block'
+}
+
+// ── Initialisation ──────────────────────────────────────────────
+rendreMenu()
+majGateTest()
+
+// ═══════════════════ PROMPT POUR PAUL ═══════════════════
+const PROMPT_PAUL = `Je veux que tu ajoutes à l'application un nouveau système de modules post-formation, complètement séparé du système "Modules" (onboarding) et du système "Évaluations" (quiz par téléphone) qui existent déjà.
+
+CONTEXTE
+
+C'est un nouvel onglet (par exemple "Perfectionnement") que les collaborateurs utilisent seuls, sur leur téléphone, une fois arrivés en magasin en binôme, pour apprendre des sujets qu'on n'a pas eu le temps de voir pendant les 4 jours de formation initiale. Chaque sujet est un module, et chaque module suit toujours la même structure en 3 étapes : Cours (explique le sujet en détail), Entraînement (exercices répétables, sans enjeu, pour se rassurer en s'entraînant autant qu'on veut), Test (une évaluation qui verrouille la connaissance une bonne fois pour toute une fois réussie).
+
+Construis ce système comme un moteur réutilisable : la structure Cours/Entraînement/Test, la barre de navigation à 3 étapes en haut, le mécanisme de verrouillage du Test tant que l'entraînement n'est pas fait, et le verrouillage définitif du module une fois le Test réussi doivent être génériques, pour qu'on puisse ajouter d'autres modules plus tard sans tout reconstruire.
+
+RÈGLES GÉNÉRALES DU SYSTÈME
+
+- Barre de navigation à 3 étapes en haut de chaque module (Étape 1 Cours / Étape 2 Entraînement / Étape 3 Test), cliquable pour naviguer librement entre les étapes déjà accessibles.
+- Entraînement : un menu présente plusieurs "formats" d'exercices (voir plus bas pour ce premier module). Chaque format tire ses exercices d'un pool, dans un ordre mélangé à chaque lancement. Pour chaque exercice : le collaborateur répond, voit immédiatement si c'est bon ou faux avec une explication, puis clique sur "Suivant" pour continuer. Aucun enjeu, aucun score qui compte pour quoi que ce soit — il peut recommencer un format autant de fois qu'il veut.
+- On considère un format "fait" dès que le collaborateur est allé au bout du pool une fois (a répondu à tous les exercices de ce format au moins une fois). Garde cet état par collaborateur et par format.
+- Verrou du Test : le Test d'un module reste inaccessible tant que tous les formats d'Entraînement de ce module n'ont pas été faits au moins une fois. Si le collaborateur arrive sur le Test avant ça, affiche-lui clairement la liste des formats qu'il lui reste à faire, avec un lien direct vers l'Entraînement — pas de bouton "Commencer le test" tant que ce n'est pas le cas.
+- Test : questions tirées aléatoirement de plusieurs pools (détail plus bas pour ce module), dans un ordre mélangé, avec un seuil de réussite. Pas de correction affichée question par question pendant le test — uniquement le score final, avec le détail de chaque question (bonne/mauvaise) une fois le test terminé.
+- Si le score atteint le seuil : le module passe en "acquis" pour ce collaborateur, de façon définitive — c'est noté une bonne fois pour toute, pas besoin de repasser le test. Il peut quand même le repasser volontairement s'il le souhaite, mais ce n'est jamais obligatoire une fois acquis.
+- Si le score est en dessous du seuil : aucune pénalité, le collaborateur peut retourner s'entraîner et retenter le test autant de fois qu'il veut, sans limite.
+
+PREMIER MODULE : "LE VERRE DE PROXIMITÉ"
+
+Ce verre n'est pas abordé pendant les 4 jours de formation initiale — c'est un sujet que les collaborateurs découvrent via ce module, une fois sur le terrain.
+
+ÉTAPE 1 — COURS
+
+Titre : "Le verre de Proximité" (sous-titre : Comprendre ce verre, savoir à qui le proposer, et pourquoi ce n'est pas une paire comme les autres.). Voici le contenu exact à reproduire, section par section :
+
+1. C'est quoi ?
+Un verre conçu uniquement pour la vision de près et intermédiaire — pas la vision de loin. Contrairement au progressif, qui réserve une petite zone de près en bas du verre, le verre de proximité élargit largement les zones près/intermédiaire sur toute la surface utile.
+
+À côté de ce texte, deux schémas de verre côte à côte : reprends le visuel du verre progressif déjà utilisé dans ton module "Types de verres" (zones Loin/Intermédiaire/Près), et pour le verre de proximité, adapte le visuel du verre unifocal de ce même module en le coupant en deux zones horizontales : Intermédiaire en haut, Près en bas — en indiquant à côté de chaque zone à quelle distance elle correspond.
+
+Encart d'avertissement sous les schémas : "Condition indispensable : la presbytie. Ce verre, tout comme le progressif, n'est possible QUE pour un client presbyte. Un client non presbyte ne peut avoir ni l'un, ni l'autre — ce n'est pas une question de préférence, c'est que sans presbytie il n'y a tout simplement pas de besoin de correction de près à graduer."
+
+2. Comment le reconnaître sur une ordonnance
+L'ophtalmologiste n'écrit pas toujours "proximité" sur l'ordonnance — ce même type de verre peut apparaître sous plusieurs noms. Ce qui compte, c'est de reconnaître le principe (une addition pour le près ET l'intermédiaire, pas une correction de loin), peu importe le mot employé. Quatre appellations à afficher (par exemple sous forme de 4 pastilles) :
+- Verre Interview — nom commercial très répandu
+- Verre mi-distance — terme descriptif
+- Verre dégressif — terme technique générique
+- Paire bureautique — terme parfois noté
+
+Dans le doute face à un autre terme, le plus simple reste de demander au client ce que l'ophtalmologiste lui a expliqué, ou de vérifier avec un collègue.
+
+Encart d'avertissement : "Autre piège possible, à bien repérer : sur certaines ordonnances, au lieu d'une ligne Addition classique, tu verras Sphère / Cylindre / Axe + Dégression. Dans ce cas, l'ophtalmologiste a écrit directement la valeur de VP (près) comme sphère de base, et la dégression indique combien soustraire pour remonter à la VI (intermédiaire) — c'est l'inverse du sens habituel, où on part du loin et on additionne pour aller vers le près. Si tu vois Dégression plutôt qu'Addition sur une ordonnance, c'est très probablement un verre de proximité écrit dans ce sens-là."
+
+3. Comment on l'utilise
+Ce n'est pas un remplacement de la paire principale du client — c'est une deuxième paire, pour les moments où il alterne entre le près et l'intermédiaire, sans arrêt, sur la même tâche : typiquement la bureautique (écran = intermédiaire, clavier/documents = près), ou un musicien qui regarde sa partition (intermédiaire) tout en gardant les mains sur son instrument (près).
+
+Le client garde sa paire habituelle pour conduire, se déplacer, voir de loin — et bascule sur sa paire de proximité une fois installé à son poste.
+
+Encart d'avertissement : "Attention à l'erreur courante : ce n'est pas le bon choix pour quelqu'un qui travaille uniquement de près, sans jamais regarder à une distance intermédiaire (ex : lecture fixe, couture très rapprochée). Dans ce cas, un simple verre unifocal de près suffit — la proximité n'apporte de valeur que si les deux distances (près ET intermédiaire) sont utilisées en alternance."
+
+4. Exemples concrets (4 cartes, 2 bons candidats / 2 mauvais candidats)
+
+Bon candidat — Fatima, 54 ans, comptable : 7h/jour au bureau, alterne sans cesse entre son écran (intermédiaire) et ses dossiers papier sur la table (près). → 2e paire proximité, confort bureau immédiat
+
+Bon candidat — Camille, 50 ans, pianiste : Regarde sa partition posée devant elle (intermédiaire) tout en gardant les yeux sur ses mains et le clavier (près), en alternance constante. → Exactement le cas d'usage de la proximité
+
+Mauvais candidat (seul) — Julien, 45 ans, commercial terrain : Conduit beaucoup, change de lieu toute la journée, cherche une seule paire polyvalente. → Le top pour lui, c'est le progressif : loin pour conduire, près pour lire ses bons de livraison, dans la même paire
+
+Mauvais candidat — Sophie, 62 ans, couturière : Travaille exclusivement à 15-20cm, ne regarde jamais à distance intermédiaire pendant son activité. → Un simple unifocal de près suffit
+
+5. Infos pratiques
+Fabricant : Rodenstock — Fabrication : Allemagne — Délai : 9 jours.
+
+Encart offre : "Compris dans l'offre 1=1 : un client peut prendre une 1ère paire en progressif et la 2e offerte en proximité, ou une proximité + une vision de près en 2e paire, etc. — toute combinaison est possible dans le cadre du 1=1."
+
+ÉTAPE 2 — ENTRAÎNEMENT
+
+Titre : "Entraînement" (sous-titre : Pas de pression : tu peux refaire ces exercices autant de fois que tu veux, dans l'ordre que tu veux.). Un menu affiche les 4 formats ci-dessous, chacun avec une icône, un titre, une description courte, et le nombre de situations qu'il contient. Un badge "Terminé" apparaît sur un format déjà fait au moins une fois, avec un compteur global (par exemple "2/4 formats terminés au moins une fois") au-dessus du menu.
+
+Format A — "Proximité ou pas proximité" (10 situations). Le collaborateur voit un profil client et répond "Proximité" ou "Pas proximité" :
+1. Graphiste, bascule entre sa tablette (près) et son écran (intermédiaire) toute la journée. → Proximité. Alternance près/intermédiaire sur la même tâche : cas d'usage typique.
+2. Secrétaire médicale, lit son écran et remplit des dossiers papier en alternance. → Proximité. Écran = intermédiaire, dossiers = près : exactement le besoin couvert.
+3. Violoniste, regarde sa partition et alterne avec ses doigts sur les cordes. → Proximité. Partition = intermédiaire, mains = près : bon candidat musicien.
+4. Chauffeur-livreur, conduit toute la journée, veut une seule paire pour tout. → Pas proximité. Pour lui, le top c'est le progressif : il conduit au loin avec la VL, et peut lire ses bons de livraison avec la VP — tout dans la même paire. La proximité ne corrige pas le loin, donc inutile ici en paire unique.
+5. Jeune de 24 ans, aucune fatigue visuelle de près. → Pas proximité. Sans presbytie, pas de besoin de correction de près à graduer — condition indispensable manquante.
+6. Retraité qui lit uniquement installé dans son fauteuil, ne regarde jamais plus loin. → Pas proximité. Il n'y a pas d'intermédiaire à couvrir en plus du près. Il peut très bien lire avec le bas de son verre progressif, ou avec un simple unifocal de près — le progressif reste tout à fait adapté pour lui, la 2e paire proximité n'apporterait juste rien de plus dans son cas.
+7. Traducteur indépendant, installé à son poste toute la journée : il lit un document papier à traduire (près) tout en tapant sur son écran (intermédiaire), sans jamais avoir besoin de se déplacer pour son travail. → Proximité. Document papier = près, écran = intermédiaire, et le métier ne demande aucun déplacement dans la journée : bonne alternance, sans le piège du loin.
+8. Standardiste, lit son écran et prend des notes toute la journée. → Proximité. Même logique que la secrétaire médicale : écran + notes en alternance.
+9. Bijoutier qui travaille sous une loupe binoculaire toute la journée, toujours à la même distance très rapprochée. → Pas proximité. Que du près, à une distance fixe, aucun intermédiaire à couvrir. Un unifocal de près (ou le bas d'un progressif s'il en a déjà un) fait très bien l'affaire — la proximité n'ajoute rien pour cette activité précise.
+10. Comptable, toute la journée entre son écran et ses factures posées sur le bureau. → Proximité. Écran = intermédiaire, factures papier = près, en alternance constante toute la journée : exactement le bon usage de la proximité.
+
+Format B — "Mise en situation" (5 situations). Le client objecte, le collaborateur choisit la meilleure réponse parmi 3 (une seule bonne, l'ordre des 3 options doit varier d'une situation à l'autre, pas toujours la même position) :
+1. "Pourquoi j'aurais besoin d'une 2e paire, j'ai déjà mes progressifs ?" → Bonne réponse : "Avec vos progressifs, pour regarder votre écran vous devez un peu relever le menton pour trouver la bonne zone, non ? La proximité évite ça pour le bureau." (on relie à un inconfort concret qu'il vit déjà). Mauvaises : "Parce que c'est compris dans l'offre, autant en profiter." / "Le verre de proximité a deux zones au lieu de trois."
+2. "Je ne sais pas si je suis presbyte." → Bonne réponse : "C'est votre ordonnance qui nous le dit — ou on peut aussi le vérifier directement avec un examen de vue en magasin." Mauvaises : "Si vous avez plus de 45 ans, vous l'êtes sûrement." / "Ce n'est pas grave, on peut essayer quand même."
+3. "Je pensais que mon progressif suffisait pour tout." → Bonne réponse : "Il fait très bien son travail au quotidien — la proximité est juste un complément pensé pour les longues sessions devant un écran, encore plus confortable sur cette activité précise." Mauvaises : "Non, en fait votre progressif n'est pas très adapté à l'écran." / "Le progressif a aussi une zone de loin."
+4. "Je n'ai pas de travail de bureau, je joue juste du piano." → Bonne réponse : "Justement : entre votre partition et votre clavier, vous alternez sans arrêt entre deux distances proches — c'est exactement le cas où ce verre aide." Mauvaises : "Ah, alors ce n'est pas pour vous." / "Le piano n'a rien à voir avec l'optique."
+5. "Et pour le prix ?" → Bonne réponse : "C'est intégré dans notre offre 1=1 avec votre 1ère paire — on regarde ensemble comment la combiner." Mauvaises : "Ça dépend, il faudrait un devis séparé." / "C'est le verre le moins cher qu'on propose."
+
+Format C — "Vrai/Faux éclair" (15 énoncés) :
+1. Le verre de proximité corrige aussi la vision de loin. → Faux
+2. Il faut être presbyte pour en porter un. → Vrai
+3. C'est fabriqué par Rodenstock, en Allemagne. → Vrai
+4. Le délai de fabrication est de 9 jours. → Vrai
+5. Un pianiste est un bon exemple de candidat. → Vrai
+6. Quelqu'un qui ne fait que de la couture très rapprochée est le candidat idéal. → Faux
+7. C'est fait pour remplacer la paire principale du client. → Faux
+8. Le verre de proximité a deux zones de vision : intermédiaire et près. → Vrai
+9. Un chauffeur-livreur qui veut une seule paire est un bon candidat. → Faux
+10. La proximité est compatible avec l'offre 1=1. → Vrai
+11. Une personne de 24 ans sans fatigue visuelle a besoin d'un verre de proximité. → Faux
+12. Le progressif a trois zones : loin, intermédiaire, près. → Vrai
+13. Le verre de proximité est une variante moins chère du progressif. → Faux
+14. Une secrétaire qui alterne écran et dossiers papier est un bon cas d'usage. → Vrai
+15. On peut recommander ce verre même sans savoir si le client est presbyte. → Faux
+
+Format D — "Le bon mot" (4 situations, 3 options chacune, une seule bonne, ordre des options à varier) :
+1. Client presbyte, travaille sur écran toute la journée. → Bonne réponse : "Est-ce que vous êtes parfois gêné pour voir votre écran avec vos lunettes actuelles ?" (on diagnostique le besoin avant de proposer quoi que ce soit — sa 2e paire est de toute façon offerte, la vraie question est juste de trouver le bon verre pour lui). Mauvaises : "Vous devriez prendre une paire en plus, c'est compris dans l'offre." / "Le verre de proximité est fabriqué en Allemagne par Rodenstock."
+2. Client musicien (pianiste), presbyte. → Bonne réponse : "Quand vous jouez, est-ce que vous devez bouger la tête pour bien voir votre partition ET vos mains ?" Mauvaises : "Vous devriez clairement prendre une 2e paire, croyez-moi." / "On a un super laboratoire à Paris, vous savez."
+3. Client qui dit avoir déjà un progressif et s'en dire "très content". → Bonne réponse : "Tant mieux ! Juste par curiosité, vous passez beaucoup de temps sur écran ou en activité de précision ?" Mauvaises : "Ah très bien, alors vous n'avez besoin de rien d'autre." / "Le progressif a trois zones de vision."
+4. Client hésitant : "je ne sais pas si j'en ai vraiment besoin". → Bonne réponse : "Racontez-moi une journée type : à quoi ressemble votre travail au quotidien ?" Mauvaises : "C'est compris dans l'offre, ça ne vous coûte rien de plus." / "Il est fabriqué par Rodenstock en Allemagne, en 9 jours."
+
+ÉTAPE 3 — TEST
+
+Titre : "Test" (sous-titre : Une seule fois pour verrouiller le module — mais tu peux retenter autant de fois que nécessaire si besoin.). Écran "Avant de commencer" avec les règles : 12 questions mélangeant cours et entraînement ; pas de correction affichée en cours de route, le score tombe à la fin ; il faut 10/12 pour valider le module ; en dessous, pas de souci, retour à l'entraînement et nouvelle tentative possible quand il veut. Rappel du verrou : tant que les 4 formats d'entraînement ne sont pas tous faits, affiche la liste de ceux qui manquent à la place du bouton "Commencer le test", avec un lien vers l'Entraînement.
+
+À chaque tentative, tire 12 questions au hasard et mélange leur ordre :
+- 5 questions parmi les 15 énoncés Vrai/Faux du Format C ci-dessus (même contenu, sans l'explication).
+- 5 questions parmi les 10 profils "Proximité ou pas proximité" du Format A ci-dessus (même contenu, sans l'explication).
+- 2 questions parmi un pool de 9 "bon mot" (les 5 situations du Format B + les 4 du Format D fondues dans un seul pool, options mélangées, sans l'explication).
+
+Seuil de réussite : 10/12. Affiche le score final avec le détail question par question (bonne/mauvaise à côté du libellé de chaque question), jamais pendant le test.
+
+Si le score atteint 10/12 ou plus : le module passe en "acquis" de façon définitive pour ce collaborateur (verrouillé — bravo), avec possibilité de le repasser quand même s'il le souhaite mais ce n'est plus obligatoire. En dessous de 10/12 : aucune pénalité, retour à l'entraînement possible, nouvelle tentative possible à volonté.
+
+Ne te préoccupe pas du stockage ni de la façon dont tu notes "acquis"/"non acquis" par collaborateur — gère ça comme tu le souhaites de ton côté.`
+
+$('#textePrompt').textContent = PROMPT_PAUL
+$('#btnPromptPaul').addEventListener('click', () => { $('#modalPrompt').style.display = 'flex' })
+$('#btnFermerModal').addEventListener('click', () => { $('#modalPrompt').style.display = 'none' })
+$('#modalPrompt').addEventListener('click', (e) => { if (e.target.id === 'modalPrompt') $('#modalPrompt').style.display = 'none' })
+$('#btnCopierPrompt').addEventListener('click', () => {
+  navigator.clipboard.writeText(PROMPT_PAUL).then(() => {
+    const btn = $('#btnCopierPrompt')
+    const original = btn.textContent
+    btn.textContent = 'Copié !'
+    setTimeout(() => { btn.textContent = original }, 1500)
+  })
+})
+</script>
+
+<script src="bridge-apres.js"></script>
+</body></html>

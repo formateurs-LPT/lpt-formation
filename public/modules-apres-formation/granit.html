@@ -1,0 +1,1078 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<script src="bridge-avant.js"></script>
+<meta charset="utf-8">
+<title>Module — Faire un Granit</title>
+<style>
+  :root {
+    --bg: #F2F4F7; --bg-panel: #FFFFFF; --line: rgba(17,21,27,0.10);
+    --ink: #11151B; --ink-soft: #5B6472;
+    --accent: #7C3AED; --accent-wash: #F2ECFE;
+    --vert: #0C8F6B; --vert-wash: #E7F7F1;
+    --rouge: #C0392B; --rouge-wash: #FBEAE8;
+    --jaune: #7A5A0A; --jaune-wash: #FFF8E6;
+    --radius: 18px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink); font-family: var(--font);
+    background: #F3F6F4;
+    background-image: radial-gradient(900px 500px at 100% -10%, rgba(176, 207, 192, 0.35), transparent 60%);
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 28px 22px 60px; }
+
+  .vue-etape { animation: apparition .15s ease; }
+  @keyframes apparition { from { opacity: 0 } to { opacity: 1 } }
+  @media (prefers-reduced-motion: reduce) { .vue-etape { animation: none; } }
+
+  .etapes { display: flex; gap: 8px; margin-bottom: 24px; }
+  .etape {
+    flex: 1; text-align: center; padding: 10px 6px; border-radius: 12px; font-size: 12.5px; font-weight: 700;
+    border: 1.5px solid var(--line); color: var(--ink-soft); background: #fff; cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  .etape:hover { border-color: var(--accent); color: var(--accent); }
+  .etape.actif { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .etape.actif:hover { color: #fff; }
+  .etape .num { display: block; font-size: 10px; opacity: .8; margin-bottom: 2px; text-transform: uppercase; letter-spacing: .5px; }
+
+  .eyebrow { font-size: 11.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: 30px; font-weight: 800; margin: 6px 0 4px; letter-spacing: -0.4px; text-wrap: balance; }
+  .sous-titre { color: var(--ink-soft); margin: 0 0 26px; font-size: 15px; }
+
+  .carte { border: 1px solid var(--line); border-radius: var(--radius); }
+  .carte h2 { font-weight: 800; margin: 0 0 12px; }
+  .carte p { line-height: 1.6; color: #3C4450; margin: 0 0 10px; }
+  .carte ul.liste { margin: 0 0 10px; padding-left: 20px; color: #3C4450; line-height: 1.6; }
+  .carte ul.liste li { margin-bottom: 4px; }
+  #vueCours .carte { background: var(--bg-panel); padding: 24px; margin-bottom: 18px; }
+  #vueCours .carte h2 { font-size: 18px; }
+  #vueTest .carte { background: #fff; padding: 28px 24px; box-shadow: 0 2px 8px rgba(17,21,27,0.03); }
+  #vueTest .carte h2 { font-size: 17px; }
+
+  /* Correspondance des noms */
+  .noms-marche { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+  .nom-marche { background: var(--bg); border-radius: 12px; padding: 12px; text-align: center; }
+  .nom-marche .marque { font-weight: 800; font-size: 14.5px; }
+  .nom-maison { background: var(--accent-wash); border-radius: 12px; padding: 12px 16px; margin-top: 10px; font-size: 13.5px; color: #4A2E8F; text-align: center; }
+  .nom-maison strong { color: var(--accent); }
+
+  /* Schéma œil */
+  .schemas-oeil { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .schema { background: var(--bg); border-radius: 14px; padding: 14px; }
+  .schema svg { width: 100%; height: auto; display: block; }
+  .schema .titre-schema { font-size: 12.5px; font-weight: 800; margin-bottom: 6px; }
+  .schema .legende-schema { font-size: 12px; color: var(--ink-soft); line-height: 1.5; margin-top: 6px; }
+
+  .etapes-mecanisme { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .etape-meca { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; color: #3C4450; line-height: 1.55; }
+  .etape-meca .puce { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+
+  .astuce {
+    background: var(--accent-wash); border-radius: 14px; padding: 14px 16px;
+    font-size: 13px; color: #4A2E8F; line-height: 1.55; margin-top: 16px;
+  }
+  .astuce strong { color: var(--accent); }
+
+  .note-attention {
+    background: var(--rouge-wash); border: 1.5px solid #F1C9C4; border-radius: 14px; padding: 14px 16px;
+    font-size: 13px; color: #8A2A1E; line-height: 1.55; margin-top: 16px;
+  }
+  .note-attention strong { color: var(--rouge); }
+  .note-attention ul { margin: 8px 0 0; padding-left: 18px; }
+  .note-attention li { margin-bottom: 4px; }
+
+  .offre-1-1 { background: var(--accent-wash); border-radius: 14px; padding: 16px 18px; margin-top: 14px; font-size: 13.5px; line-height: 1.6; color: #3C4450; }
+  .offre-1-1 strong { color: var(--accent); }
+  .a-valider {
+    background: var(--jaune-wash); border: 1.5px dashed #E0B341; border-radius: 12px; padding: 13px 15px;
+    font-size: 13px; color: var(--jaune); margin-top: 14px; line-height: 1.55;
+  }
+
+  .grille-criteres { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px; }
+  .critere { border-radius: 14px; padding: 16px; }
+  .critere.oui { background: var(--vert-wash); }
+  .critere.non { background: var(--rouge-wash); }
+  .critere .tag { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; display: block; margin-bottom: 8px; }
+  .critere.oui .tag { color: var(--vert); }
+  .critere.non .tag { color: var(--rouge); }
+  .critere ul { margin: 0; padding-left: 18px; font-size: 13px; color: #3C4450; line-height: 1.55; }
+  .critere li { margin-bottom: 4px; }
+
+  .grille-personas { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+  .persona { border-radius: 14px; padding: 16px; border: 1.5px solid var(--line); }
+  .persona.bon { background: var(--vert-wash); border-color: #BFE6D6; }
+  .persona.mauvais { background: var(--rouge-wash); border-color: #F1C9C4; }
+  .persona .tag { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; display: block; }
+  .persona.bon .tag { color: var(--vert); }
+  .persona.mauvais .tag { color: var(--rouge); }
+  .persona .nom { font-weight: 800; font-size: 14.5px; margin-bottom: 4px; }
+  .persona .desc { font-size: 13px; color: #3C4450; line-height: 1.5; margin-bottom: 8px; }
+  .persona .conclusion { font-size: 12.5px; font-weight: 700; }
+  .persona.bon .conclusion { color: var(--vert); }
+  .persona.mauvais .conclusion { color: var(--rouge); }
+
+  .infos-pratiques { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .info-item { background: var(--accent-wash); border-radius: 12px; padding: 14px; text-align: center; }
+  .info-item .valeur { font-weight: 800; font-size: 17px; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .info-item .label { font-size: 11.5px; color: var(--ink-soft); margin-top: 3px; }
+
+  /* ───────────────── Entraînement ───────────────── */
+  .progress-formats { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 14px; font-weight: 600; }
+  .grille-formats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .carte-format {
+    background: #fff; border-radius: 18px; padding: 20px; border: 1px solid var(--line);
+    box-shadow: 0 2px 6px rgba(17,21,27,0.03); cursor: pointer; text-align: left;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .carte-format:hover { border-color: var(--accent); }
+  .carte-format .ico { font-size: 22px; }
+  .carte-format .titre-format { font-weight: 800; font-size: 14.5px; }
+  .carte-format .desc-format { font-size: 12px; color: var(--ink-soft); line-height: 1.5; flex: 1; }
+  .carte-format .compteur-format { font-size: 11px; color: var(--accent); font-weight: 700; }
+  .badge-fait { align-self: flex-start; background: var(--vert-wash); color: var(--vert); font-size: 10.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
+
+  .carte-drill { background: #fff; border-radius: var(--radius); padding: 28px 24px; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(17,21,27,0.03); }
+  .entete-drill { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .lien-retour { background: none; border: none; color: var(--accent); font-weight: 700; font-size: 13.5px; cursor: pointer; padding: 0; }
+  .score-drill { font-size: 12.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .score-drill b.ok { color: var(--vert); }
+  .score-drill b.non { color: var(--rouge); }
+
+  .profil-client { font-size: 17px; font-weight: 600; line-height: 1.5; margin-bottom: 20px; color: #1C2430; }
+  .citation-client { font-size: 17px; font-weight: 600; line-height: 1.5; margin-bottom: 20px; font-style: italic; color: #1C2430; }
+
+  .choix-binaire { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .btn-choix { padding: 15px 10px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-weight: 700; font-size: 14.5px; cursor: pointer; color: var(--ink); }
+  .btn-choix:hover { border-color: var(--accent); }
+  .liste-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .btn-option { text-align: left; padding: 13px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-size: 14px; cursor: pointer; color: var(--ink); line-height: 1.45; }
+  .btn-option:hover { border-color: var(--accent); }
+
+  .choix-fait .btn-choix, .choix-fait .btn-option, .choix-fait .btn-rep { pointer-events: none; opacity: .55; }
+  .choix-fait .selectionne { opacity: 1; }
+  .choix-fait .bonne-reponse { opacity: 1 !important; border-color: var(--vert); background: var(--vert-wash); }
+  .choix-fait .mauvaise-reponse { opacity: 1 !important; border-color: var(--rouge); background: var(--rouge-wash); }
+
+  .feedback { border-radius: 12px; padding: 14px 16px; font-size: 13.5px; line-height: 1.55; margin-bottom: 18px; display: none; }
+  .feedback.visible { display: block; }
+  .feedback.ok { background: var(--vert-wash); color: #0A5E47; }
+  .feedback.non { background: var(--rouge-wash); color: #8A2A1E; }
+  .pied-drill { display: flex; justify-content: flex-end; }
+  .btn-suivant { background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 12px 22px; font-weight: 700; font-size: 14px; cursor: pointer; display: none; }
+  .btn-suivant.visible { display: inline-block; }
+
+  /* ───────────────── Test ───────────────── */
+  .regle { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; font-size: 14px; color: #3C4450; line-height: 1.5; }
+  .regle .puce { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-wash); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+  .btn-principal { background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 14px 22px; font-weight: 800; font-size: 15px; cursor: pointer; width: 100%; margin-top: 16px; }
+  .btn-principal:hover { background: #6A2FD1; }
+  .btn-secondaire { background: #fff; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 12px; padding: 13px 22px; font-weight: 700; font-size: 14.5px; cursor: pointer; width: 100%; margin-top: 10px; }
+  .alerte-manquant { background: var(--jaune-wash); border: 1.5px dashed #E0B341; border-radius: 12px; padding: 13px 15px; font-size: 13px; color: var(--jaune); margin: 14px 0 0; line-height: 1.55; }
+
+  .entete-quiz { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .compteur-quiz { font-size: 12.5px; color: var(--ink-soft); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .barre-quiz { display: flex; gap: 4px; margin-bottom: 22px; }
+  .seg-quiz { flex: 1; height: 4px; border-radius: 999px; background: var(--line); }
+  .seg-quiz.fait { background: var(--accent); }
+  .btn-rep { padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-weight: 600; font-size: 14px; cursor: pointer; color: var(--ink); text-align: left; line-height: 1.45; }
+  .btn-rep:hover { border-color: var(--accent); }
+  .choix-binaire .btn-rep { text-align: center; font-weight: 700; }
+
+  .score-rond { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 6px solid var(--line); }
+  .score-rond.reussi { border-color: var(--vert); background: var(--vert-wash); }
+  .score-rond.echec { border-color: var(--rouge); background: var(--rouge-wash); }
+  .score-rond .chiffre { font-size: 30px; font-weight: 800; line-height: 1; }
+  .score-rond .sur { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .titre-resultat { text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+  .sous-resultat { text-align: center; color: var(--ink-soft); font-size: 14px; margin-bottom: 24px; }
+  .detail-reponse { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .detail-reponse:last-child { border-bottom: none; }
+  .detail-reponse .icone { flex-shrink: 0; font-weight: 800; }
+  .detail-reponse.ok .icone { color: var(--vert); }
+  .detail-reponse.non .icone { color: var(--rouge); }
+  .detail-reponse .texte-q { color: #3C4450; line-height: 1.5; }
+  .badge-acquis { display: inline-flex; align-items: center; gap: 6px; background: var(--vert-wash); color: var(--vert); font-weight: 800; font-size: 13px; padding: 8px 16px; border-radius: 999px; margin: 0 auto 18px; width: fit-content; }
+
+  /* ───────────────── Bouton + modale "Prompt pour Paul" ───────────────── */
+  .btn-prompt-paul { position: fixed; top: 16px; left: 16px; z-index: 50; background: #fff; border: 1.5px solid var(--line); color: var(--ink-soft); font-size: 11px; font-weight: 700; padding: 7px 12px; border-radius: 999px; cursor: pointer; box-shadow: 0 2px 6px rgba(17,21,27,0.06); }
+  .btn-prompt-paul:hover { border-color: var(--accent); color: var(--accent); }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(17,21,27,0.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .modal-prompt { background: #fff; border-radius: 18px; max-width: 720px; width: 100%; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(17,21,27,0.25); }
+  .modal-entete { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); font-weight: 800; font-size: 14px; flex-shrink: 0; }
+  .btn-fermer { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--ink-soft); line-height: 1; padding: 4px; }
+  .texte-prompt { margin: 0; padding: 20px; overflow-y: auto; white-space: pre-wrap; font-family: var(--font); font-size: 12.5px; line-height: 1.6; color: #2A3342; flex: 1; }
+  .modal-pied { padding: 14px 20px; border-top: 1px solid var(--line); flex-shrink: 0; }
+
+  @media (max-width: 560px) {
+    .noms-marche { grid-template-columns: 1fr 1fr; }
+    .infos-pratiques { grid-template-columns: 1fr; }
+    .schemas-oeil, .grille-criteres, .grille-personas, .grille-formats { grid-template-columns: 1fr; }
+    .page { padding-top: 60px; }
+  }
+
+  /* Les 3 réponses LPT Santé */
+  .reponses-lpt { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 6px; }
+  .reponse-lpt { border-radius: 14px; padding: 14px 16px; font-size: 13px; line-height: 1.55; color: #3C4450; }
+  .reponse-lpt .tag { display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
+  .reponse-lpt.verte { background: var(--vert-wash); } .reponse-lpt.verte .tag { color: var(--vert); }
+  .reponse-lpt.orange { background: #FEF3C7; } .reponse-lpt.orange .tag { color: #B45309; }
+  .reponse-lpt.violette { background: var(--accent-wash); } .reponse-lpt.violette .tag { color: var(--accent); }
+  .critere.orange { background: #FEF3C7; } .critere.orange .tag { color: #B45309; }
+
+  /* Exemple de message Slack */
+  .slack-mock { margin-top: 16px; border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: #fff; }
+  .slack-entete { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  .slack-avatar { width: 32px; height: 32px; border-radius: 8px; background: #E07A5F; color: #fff; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; align-self: center; }
+  .slack-nom { font-weight: 800; font-size: 15px; }
+  .slack-heure { font-size: 12px; color: var(--ink-soft); }
+  .slack-texte { font-size: 15px; line-height: 1.5; margin: 0 0 10px 42px; }
+  .slack-pj-titre { font-size: 13px; color: var(--ink-soft); margin: 0 0 8px 42px; }
+  .slack-pj { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-left: 42px; }
+  .slack-photo { background: var(--bg); border-radius: 10px; aspect-ratio: 4 / 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 22px; }
+  .slack-photo span { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); text-align: center; padding: 0 4px; }
+  .caption-schema { text-align: right; font-size: 9.5px; letter-spacing: 1px; text-transform: uppercase; color: #AEB6BE; margin-top: 8px; }
+
+  .slack-avatar.granit { background: #0C8F6B; }
+  .slack-appli { font-size: 10.5px; font-weight: 800; color: var(--ink-soft); background: var(--bg); padding: 1px 6px; border-radius: 4px; }
+  .slack-capture { margin-left: 42px; width: 180px; max-width: 60%; aspect-ratio: 4 / 3; background: var(--bg); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 22px; }
+  .slack-capture span { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); }
+  .checklist { background: var(--vert-wash); border-radius: 14px; padding: 14px 16px; margin-top: 14px; font-size: 13.5px; color: #0A5E47; line-height: 1.8; }
+  .titre-checklist { font-weight: 800; margin-bottom: 4px; }
+
+  @media (max-width: 560px) {
+    .reponses-lpt { grid-template-columns: 1fr; }
+    .slack-texte, .slack-pj-titre, .slack-pj, .slack-capture { margin-left: 0; }
+  }
+</style>
+<link rel="stylesheet" href="theme-app.css">
+
+<button class="btn-prompt-paul" id="btnPromptPaul">📋 Prompt pour Paul</button>
+
+<div class="modal-overlay" id="modalPrompt" style="display:none">
+  <div class="modal-prompt">
+    <div class="modal-entete">
+      <span>Prompt pour Paul — Module Faire un Granit</span>
+      <button class="btn-fermer" id="btnFermerModal">✕</button>
+    </div>
+    <pre class="texte-prompt" id="textePrompt"></pre>
+    <div class="modal-pied">
+      <button class="btn-principal" id="btnCopierPrompt" style="margin-top:0">Copier le prompt</button>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="etapes">
+    <div class="etape actif" data-etape="cours"><span class="num">Étape 1</span>Cours</div>
+    <div class="etape" data-etape="entrainement"><span class="num">Étape 2</span>Entraînement</div>
+    <div class="etape" data-etape="test"><span class="num">Étape 3</span>Test</div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 1 — COURS ═══════════════════ -->
+  <div id="vueCours" class="vue-etape">
+    <span class="eyebrow">Module Après-Formation · Tiers payant</span>
+    <h1>Faire un Granit</h1>
+    <p class="sous-titre">Savoir quand faire un Granit, envoyer une demande complète sur Slack, et gérer la réponse de la mutuelle.</p>
+
+    <div class="carte">
+      <h2>1. C'est quoi ?</h2>
+      <p>Granit est une <strong>intelligence artificielle</strong>. Elle saisit elle-même la demande de remboursement sur les plateformes des mutuelles, <strong>à notre place</strong>.</p>
+      <p>On l'utilise pour les mutuelles qui ne fonctionnent pas en direct avec LPT Santé : avec elles, LPT Santé ne peut pas nous donner de réponse. Granit va chercher cette réponse pour nous.</p>
+      <div class="astuce">💡 <strong>Ton rôle</strong> : tu ne saisis rien chez la mutuelle. Tu transmets un dossier <strong>complet et propre</strong>, Granit fait le reste.</div>
+    </div>
+
+    <div class="carte">
+      <h2>2. Quand faire un Granit ?</h2>
+      <p>Tout part du <strong>test Suprême sur LPT Santé</strong>. La mutuelle peut répondre de trois façons :</p>
+      <div class="reponses-lpt">
+        <div class="reponse-lpt verte">
+          <span class="tag">Acceptée</span>
+          <div class="action">→ On part en <strong>Suprême</strong>.</div>
+        </div>
+        <div class="reponse-lpt orange">
+          <span class="tag">Remboursement trop faible</span>
+          <div class="action">→ Le Suprême n'est pas pris en charge pour le forfait de ce client. On passe en <strong>1=1 100 % Santé</strong>. Pas de Granit.</div>
+        </div>
+        <div class="reponse-lpt violette">
+          <span class="tag">Non réalisable</span>
+          <div class="action">→ La mutuelle ne répond pas via LPT Santé. On fait un <strong>Granit</strong>.</div>
+        </div>
+      </div>
+      <div class="note-attention">
+        ⚠️ <strong>Attention aux confusions</strong> :
+        <ul>
+          <li>« Remboursement trop faible » est <strong>une vraie réponse</strong> de la mutuelle : inutile de faire un Granit, on passe directement en 1=1 100 % Santé.</li>
+          <li>« Non réalisable » n'est <strong>ni un refus, ni un échec</strong> : ça veut juste dire qu'il faut passer par Granit pour obtenir la réponse.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>3. Comment on fait la demande</h2>
+      <p>La demande se fait sur <strong>Slack</strong>, dans le canal <strong>« tiers payant »</strong>. Ton message contient :</p>
+      <div class="etapes-mecanisme">
+        <div class="etape-meca"><span class="puce">1</span><span><strong>Ton magasin</strong> : « Granit [ton magasin] svp ».</span></div>
+        <div class="etape-meca"><span class="puce">2</span><span><strong>La référence de la monture</strong> choisie par le client.</span></div>
+        <div class="etape-meca"><span class="puce">3</span><span><strong>Le type de délivrance</strong> : « RA » pour un renouvellement adapté, ou « première délivrance » si le client n'a pas fait de lunettes depuis plus de deux ans.</span></div>
+        <div class="etape-meca"><span class="puce">4</span><span><strong>Les 3 photos</strong>, nettes et à l'endroit : l'ordonnance, la carte de mutuelle et l'écran LPT Santé avec le message affiché.</span></div>
+      </div>
+
+      <div class="slack-mock" aria-label="Exemple de message Slack pour lancer un Granit">
+        <div class="slack-entete"><span class="slack-avatar">S</span><span class="slack-nom">Sacha - Reims</span><span class="slack-heure">17 h 01</span></div>
+        <div class="slack-texte">Granit Reims svp<br>Lpt442-eom<br>Ra</div>
+        <div class="slack-pj-titre">3 pièces jointes</div>
+        <div class="slack-pj">
+          <div class="slack-photo">🖥️<span>Écran LPT Santé</span></div>
+          <div class="slack-photo">📄<span>Ordonnance</span></div>
+          <div class="slack-photo">💳<span>Carte de mutuelle</span></div>
+        </div>
+      </div>
+      <div class="caption-schema">Exemple de demande · canal Slack « tiers payant »</div>
+
+      <p style="margin-top:14px">Un membre du <strong>service tiers payant</strong> vérifie d'abord que les documents sont conformes, puis il déclenche Granit. Si une photo est floue ou s'il manque une info, la demande prend du retard.</p>
+
+      <div class="checklist">
+        <div class="titre-checklist">✅ Avant d'envoyer, vérifie :</div>
+        <div>☐ Ton magasin est indiqué</div>
+        <div>☐ La référence de la monture est indiquée</div>
+        <div>☐ RA ou première délivrance est précisé</div>
+        <div>☐ Les 3 photos sont jointes, nettes et à l'endroit</div>
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>4. Après l'envoi : la réponse de Granit</h2>
+      <p>Granit peut répondre <strong>tout de suite</strong> (remboursement accepté ou refusé), ou mettre la demande <strong>« en instance »</strong> : la réponse arrive alors sous <strong>24 à 48 heures</strong>.</p>
+      <p>Granit répond <strong>directement dans la conversation</strong> de ta demande. Voici une réponse instantanée :</p>
+      <div class="slack-mock" aria-label="Exemple de réponse de Granit : prise en charge accordée">
+        <div class="slack-entete"><span class="slack-avatar granit">G</span><span class="slack-nom">Granit</span><span class="slack-appli">APPLI</span><span class="slack-heure">17 h 04</span></div>
+        <div class="slack-texte">⏳ Granit a démarré le traitement de ce thread.<br><br>✅ PEC accordée — Classe B — [Mutuelle] · [NOM PRÉNOM DU CLIENT] — N° [numéro de dossier] — Total 526,00 € · Remb. SS 0,09 € · Remb. mutuelle 374,91 € · Reste à charge 151,00 €</div>
+        <div class="slack-pj-titre">Capture résultat PEC</div>
+        <div class="slack-capture">🧾<span>Capture du site de la mutuelle</span></div>
+      </div>
+      <div class="caption-schema">Exemple de réponse de Granit · données anonymisées</div>
+      <div class="astuce">💡 <strong>« PEC accordée — Classe B »</strong> : le remboursement en Suprême est accepté. Tu pars <strong>en Suprême direct</strong>. Le message te donne aussi le total, le remboursement Sécu, le remboursement mutuelle et le reste à charge du client.</div>
+      <div class="note-attention">⚠️ <strong>Avant de valider la commande</strong> : mets dans le back-end la capture de la PEC acceptée, celle que Granit envoie avec son message de remboursement accepté.</div>
+      <p style="margin-top:16px">Granit peut aussi mettre la demande <strong>en instance</strong>. Dans ce cas, il lance tout seul une demande en <strong>classe A</strong> en parallèle, pas besoin de lui demander :</p>
+      <div class="slack-mock" aria-label="Exemple de réponse de Granit : prise en charge en instance">
+        <div class="slack-entete"><span class="slack-avatar granit">G</span><span class="slack-nom">Granit</span><span class="slack-appli">APPLI</span><span class="slack-heure">17 h 10</span></div>
+        <div class="slack-texte">⏳ Granit a démarré le traitement de ce thread.<br><br>🟠 PEC EN INSTANCE — Classe B — devis en cours — [Mutuelle] · [NOM PRÉNOM DU CLIENT] — N° [numéro de dossier] — Total 642,00 € · Remb. mutuelle 0,00 €<br>(Réponse définitive ✅/❌ postée ici sous 24–48 h.)<br>🔀 Une prise en charge <strong>Classe A</strong> est lancée à la suite de la première. Vous recevrez les 2 réponses ici, sous 24–48 h.</div>
+        <div class="slack-pj-titre">Capture résultat PEC</div>
+        <div class="slack-capture">🧾<span>Capture du site de la mutuelle</span></div>
+        <div class="slack-texte" style="margin-top:12px">🟠 PEC EN INSTANCE — Classe A — devis en cours — [Mutuelle] · [NOM PRÉNOM DU CLIENT] — N° [numéro de dossier] — Total 240,00 € · Remb. mutuelle 0,00 €<br>(Réponse définitive ✅/❌ postée ici sous 24–48 h.)</div>
+        <div class="slack-pj-titre">Capture résultat PEC</div>
+        <div class="slack-capture">🧾<span>Capture du site de la mutuelle</span></div>
+      </div>
+      <div class="caption-schema">Exemple de demande en instance · données anonymisées</div>
+      <p style="margin-top:16px">Quand la demande est en instance, tu ne restes pas bloqué :</p>
+      <div class="etapes-mecanisme">
+        <div class="etape-meca"><span class="puce">1</span><span><strong>Tu fais le devis complet avec le client</strong>, comme pour une commande normale. Tout ce que tu saisis est enregistré dans le back-end.</span></div>
+        <div class="etape-meca"><span class="puce">2</span><span><strong>Granit lance tout seul, en parallèle, une demande en classe A</strong> à la mutuelle. Pas besoin de lui demander : dans tous les cas, tu auras une solution.</span></div>
+        <div class="etape-meca"><span class="puce">3</span><span>Sous 24 à 48 heures, <strong>Granit répond à la suite de la conversation Slack</strong> avec la réponse de la mutuelle pour les 2 demandes : tu reçois une notification.</span></div>
+        <div class="etape-meca"><span class="puce">4</span><span><strong>Tu mets la capture de la PEC acceptée dans le back-end</strong>, puis <strong>tu valides la commande seul</strong>, sans le client, en mode dégradé grâce au devis déjà fait. Tu l'informes une fois que c'est fait.</span></div>
+      </div>
+
+      <div class="grille-criteres" style="margin-top:16px">
+        <div class="critere oui">
+          <span class="tag">✅ Accepté en Suprême</span>
+          <ul><li>Tu saisis la commande en <strong>Suprême</strong>.</li></ul>
+        </div>
+        <div class="critere orange">
+          <span class="tag">Refusé : trop faible</span>
+          <ul><li>Le remboursement en classe A est déjà accepté : tu fais le <strong>1=1 100 % Santé</strong>.</li></ul>
+        </div>
+      </div>
+      <div class="astuce">💡 <strong>À retenir</strong> : grâce au devis fait avec le client et à la demande en classe A lancée en parallèle, le client n'a pas besoin de revenir. Tu finalises toi-même et tu le préviens.</div>
+
+      <p style="margin-top:16px"><strong>Quand le Suprême (classe B) est refusé</strong>, que la réponse soit instantanée ou après une instance, Granit lance tout seul la demande en classe A et te donne directement la PEC accordée en classe A :</p>
+      <div class="slack-mock" aria-label="Exemple de réponse de Granit : classe B refusée, classe A accordée">
+        <div class="slack-entete"><span class="slack-avatar granit">G</span><span class="slack-nom">Granit</span><span class="slack-appli">APPLI</span><span class="slack-heure">17 h 14</span></div>
+        <div class="slack-texte">⏳ Granit a démarré le traitement de ce thread.<br><br>🅰️ PEC Classe B accordée mais Remb. accordé sous le tarif plancher → une prise en charge <strong>Classe A</strong> vient d'être lancée. Résultat à suivre ici.<br>[NOM PRÉNOM DU CLIENT] — N° [numéro de dossier] — Total 306,00 € · Remb. SS 0,09 € · Remb. mutuelle 99,91 € · Reste à charge 206,00 € — remboursement 100 € &lt; tarif plancher</div>
+        <div class="slack-pj-titre">Capture résultat PEC</div>
+        <div class="slack-capture">🧾<span>Capture du site de la mutuelle</span></div>
+        <div class="slack-texte" style="margin-top:12px">✅ PEC accordée — Classe A — [Mutuelle] · [NOM PRÉNOM DU CLIENT] — N° [numéro de dossier] : Accordé — Total 115,00 € · Remb. SS 20,70 € · Remb. mutuelle 94,30 € · Reste à charge 0,00 €</div>
+        <div class="slack-pj-titre">Capture résultat PEC</div>
+        <div class="slack-capture">🧾<span>Capture du site de la mutuelle</span></div>
+      </div>
+      <div class="caption-schema">Exemple de Suprême refusé, classe A accordée · données anonymisées</div>
+      <div class="astuce">💡 <strong>« Remb. accordé sous le tarif plancher »</strong> : le remboursement en classe B est trop faible, le Suprême n'est pas possible. Avec la <strong>PEC accordée en classe A</strong>, tu mets cette capture dans le back-end et tu fais le <strong>1=1 100 % Santé</strong>.</div>
+    </div>
+
+    <div class="carte">
+      <h2>5. Exemples concrets</h2>
+      <div class="grille-personas">
+        <div class="persona bon">
+          <span class="tag">✅ Granit</span>
+          <div class="nom">Test Suprême « non réalisable »</div>
+          <div class="desc">La mutuelle de la cliente ne répond pas via LPT Santé.</div>
+          <div class="conclusion">→ Demande Granit sur Slack, canal « tiers payant ».</div>
+        </div>
+        <div class="persona mauvais">
+          <span class="tag">❌ Pas de Granit</span>
+          <div class="nom">Remboursement trop faible</div>
+          <div class="desc">La mutuelle a répondu : le Suprême n'est pas pris en charge pour ce forfait.</div>
+          <div class="conclusion">→ On passe en 1=1 100 % Santé.</div>
+        </div>
+        <div class="persona mauvais">
+          <span class="tag">❌ Pas de Granit</span>
+          <div class="nom">Test Suprême accepté</div>
+          <div class="desc">La mutuelle accepte le remboursement directement sur LPT Santé.</div>
+          <div class="conclusion">→ On part en Suprême.</div>
+        </div>
+        <div class="persona bon">
+          <span class="tag">✅ Bien géré</span>
+          <div class="nom">Demande en instance</div>
+          <div class="desc">Le vendeur fait le devis complet avec le client pendant que Granit cherche la réponse.</div>
+          <div class="conclusion">→ Sous 24-48 h, il valide la commande seul et prévient le client.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>6. Infos pratiques</h2>
+      <div class="infos-pratiques">
+        <div class="info-item"><div class="valeur">Slack</div><div class="label">canal « tiers payant »</div></div>
+        <div class="info-item"><div class="valeur">3 photos</div><div class="label">ordonnance, carte de mutuelle, écran LPT Santé</div></div>
+        <div class="info-item"><div class="valeur">24-48 h</div><div class="label">pour la réponse d'une demande en instance</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 2 — ENTRAÎNEMENT ═══════════════════ -->
+  <div id="vueEntrainement" class="vue-etape" style="display:none">
+    <span class="eyebrow">Module Après-Formation · Faire un Granit</span>
+    <h1>Entraînement</h1>
+    <p class="sous-titre">Pas de pression : tu peux refaire ces exercices autant de fois que tu veux, dans l'ordre que tu veux.</p>
+
+    <div id="vueMenu">
+      <div class="progress-formats" id="progressFormats"></div>
+      <div class="grille-formats" id="grilleFormats"></div>
+    </div>
+
+    <div id="vueDrill" style="display:none">
+      <div class="carte-drill">
+        <div class="entete-drill">
+          <button class="lien-retour" id="btnRetourMenu">← Retour aux exercices</button>
+          <span class="score-drill" id="scoreDrill"></span>
+        </div>
+        <div id="corpsDrill"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="pied-drill">
+          <button class="btn-suivant" id="btnSuivant">Suivant →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 3 — TEST ═══════════════════ -->
+  <div id="vueTest" class="vue-etape" style="display:none">
+    <span class="eyebrow">Module Après-Formation · Faire un Granit</span>
+    <h1>Test</h1>
+    <p class="sous-titre">Une seule fois pour verrouiller le module — mais tu peux retenter autant de fois que nécessaire si besoin.</p>
+
+    <div id="vueIntro">
+      <div class="carte">
+        <h2>Avant de commencer</h2>
+        <div class="regle"><span class="puce">1</span><span>12 questions, mélange de ce qu'on a vu dans le cours et à l'entraînement.</span></div>
+        <div class="regle"><span class="puce">2</span><span>Pas de correction affichée en cours de route — le score tombe à la fin.</span></div>
+        <div class="regle"><span class="puce">3</span><span>Il faut <strong>10/12</strong> pour valider le module.</span></div>
+        <div class="regle"><span class="puce">4</span><span>En dessous, pas de souci : retourne t'entraîner et retente quand tu veux.</span></div>
+
+        <div class="alerte-manquant" id="gateManquant" style="display:none">
+          ⚠️ Pas encore accessible : il faut avoir fait au moins une fois chaque format d'entraînement. Il reste : <strong id="texteManquant"></strong>.
+          <button class="btn-secondaire" id="btnAllerEntrainement">Aller à l'entraînement</button>
+        </div>
+
+        <button class="btn-principal" id="btnCommencer">Commencer le test</button>
+      </div>
+    </div>
+
+    <div id="vueDejaAcquis" style="display:none">
+      <div class="carte" style="text-align:center">
+        <div class="badge-acquis" style="margin:0 auto 14px">✓ Module déjà acquis</div>
+        <p>Tu as déjà validé ce module. Pas besoin de le repasser.</p>
+        <button class="btn-secondaire" id="btnRepasserQuandMeme">Le repasser quand même</button>
+      </div>
+    </div>
+
+    <div id="vueQuiz" style="display:none">
+      <div class="carte">
+        <div class="entete-quiz"><span class="compteur-quiz" id="compteurQuiz"></span></div>
+        <div class="barre-quiz" id="barreQuiz"></div>
+        <div id="corpsQuestion"></div>
+      </div>
+    </div>
+
+    <div id="vueResultat" style="display:none">
+      <div class="carte">
+        <div class="score-rond" id="scoreRond">
+          <div class="chiffre" id="scoreChiffre"></div>
+          <div class="sur">sur 12</div>
+        </div>
+        <div class="titre-resultat" id="titreResultat"></div>
+        <div class="sous-resultat" id="sousResultat"></div>
+        <div id="detailResultat"></div>
+        <button class="btn-principal" id="btnRefaire" style="display:none">Retenter le test</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Utilitaires partagés ───────────────────────────────────────
+function $(sel) { return document.querySelector(sel) }
+
+function melanger(tableau) {
+  const copie = [...tableau]
+  for (let i = copie.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copie[i], copie[j]] = [copie[j], copie[i]]
+  }
+  return copie
+}
+
+function lireStockage(cle) { try { return localStorage.getItem(cle) } catch (e) { return null } }
+function ecrireStockage(cle, val) { try { localStorage.setItem(cle, val) } catch (e) {} }
+
+// ── Navigation entre étapes ─────────────────────────────────────
+function irAEtape(cle) {
+  document.querySelectorAll('.etape').forEach(el => el.classList.toggle('actif', el.dataset.etape === cle))
+  $('#vueCours').style.display = cle === 'cours' ? 'block' : 'none'
+  $('#vueEntrainement').style.display = cle === 'entrainement' ? 'block' : 'none'
+  $('#vueTest').style.display = cle === 'test' ? 'block' : 'none'
+  if (cle === 'test') majGateTest()
+}
+document.querySelectorAll('.etape').forEach(el => el.addEventListener('click', () => irAEtape(el.dataset.etape)))
+
+// ═══════════════════ ENTRAÎNEMENT ═══════════════════
+const FORMAT_A = [
+  { profil: "Test Suprême sur LPT Santé : la mutuelle renvoie « non réalisable ».", bon: true, explication: "« Non réalisable » veut dire que la mutuelle ne répond pas via LPT Santé : c'est exactement le cas Granit." },
+  { profil: "Test Suprême sur LPT Santé : « remboursement trop faible ».", bon: false, explication: "C'est une vraie réponse de la mutuelle : le Suprême n'est pas pris en charge pour ce forfait. On passe en 1=1 100 % Santé, pas de Granit." },
+  { profil: "Test Suprême sur LPT Santé : remboursement accepté.", bon: false, explication: "La mutuelle a répondu oui : on part directement en Suprême, pas besoin de Granit." },
+  { profil: "La mutuelle d'un client ne fonctionne pas en direct avec LPT Santé : impossible d'obtenir une réponse au test Suprême.", bon: true, explication: "Granit sert justement aux mutuelles avec lesquelles on ne peut pas obtenir de réponse via LPT Santé." },
+  { profil: "Une cliente veut savoir si sa mutuelle prend en charge le Suprême. LPT Santé affiche un message indiquant que le test n'est pas réalisable.", bon: true, explication: "Message « non réalisable » = on fait un Granit. Ce n'est ni un refus, ni un échec." },
+  { profil: "Un client a déjà eu « remboursement trop faible » sur LPT Santé et demande qu'on « essaie autrement ».", bon: false, explication: "La mutuelle a déjà répondu : le Suprême n'est pas pris en charge. Granit n'y changera rien, on lui propose le 1=1 100 % Santé." },
+  { profil: "Test Suprême : LPT Santé renvoie un message inhabituel qui indique que la demande n'a pas pu aboutir sur LPT Santé.", bon: true, explication: "Tout message qui indique que le test n'est pas réalisable sur LPT Santé mène à un Granit." },
+  { profil: "Le test Suprême d'un client est accepté, mais le vendeur hésite et veut « vérifier avec Granit ».", bon: false, explication: "La réponse est déjà là et elle est positive : on saisit en Suprême, Granit est inutile." },
+  { profil: "Sur LPT Santé, la mutuelle d'une cliente renvoie « remboursement trop faible » pour son forfait.", bon: false, explication: "Remboursement trop faible : on oublie le Suprême et on passe en 1=1 100 % Santé." },
+  { profil: "Un client avec une mutuelle qui ne passe pas par LPT Santé a choisi sa monture et veut des verres Suprême.", bon: true, explication: "Sans réponse possible via LPT Santé, c'est Granit qui ira chercher la réponse de la mutuelle." },
+];
+
+const FORMAT_B = [
+  { profil: "Quel message envoies-tu sur Slack, canal « tiers payant », pour un client de Reims en renouvellement adapté qui a choisi la monture Lpt442-eom ?",
+    options: [
+      { texte: "« Granit Reims svp / Lpt442-eom / Ra » + photos de l'ordonnance, de la carte de mutuelle et de l'écran LPT Santé.", bon: true, explication: "Parfait : magasin, référence de la monture, type de délivrance et les 3 photos." },
+      { texte: "« Granit svp » + photo de l'ordonnance.", bon: false, explication: "Il manque le magasin, la référence de la monture, le RA, et 2 photos sur 3 : la demande va prendre du retard." },
+      { texte: "« Granit Reims svp / Lpt442-eom » + photos de l'ordonnance, de la carte de mutuelle et de l'écran LPT Santé.", bon: false, explication: "Presque : il manque le type de délivrance (ici « Ra »)." },
+    ] },
+  { profil: "Ton client n'a pas fait de lunettes depuis plus de deux ans. Qu'indiques-tu dans ta demande ?",
+    options: [
+      { texte: "RA (renouvellement adapté).", bon: false, explication: "Non : plus de deux ans sans lunettes, c'est une première délivrance." },
+      { texte: "Première délivrance.", bon: true, explication: "Exactement : pas de lunettes depuis plus de deux ans = première délivrance." },
+      { texte: "Rien, le service tiers payant le devinera.", bon: false, explication: "Il faut toujours le préciser : RA ou première délivrance." },
+    ] },
+  { profil: "Quelles photos joins-tu à ta demande Granit ?",
+    options: [
+      { texte: "L'ordonnance et la monture choisie.", bon: false, explication: "La monture se donne par sa référence dans le message. Les photos à joindre sont l'ordonnance, la carte de mutuelle et l'écran LPT Santé." },
+      { texte: "La carte de mutuelle seulement.", bon: false, explication: "Il en faut 3 : l'ordonnance, la carte de mutuelle et l'écran LPT Santé." },
+      { texte: "L'ordonnance, la carte de mutuelle et l'écran LPT Santé avec le message affiché, nettes et à l'endroit.", bon: true, explication: "C'est ça : les 3 photos, propres et lisibles." },
+    ] },
+  { profil: "Ta demande Granit est « en instance ». Ton client est encore en magasin. Que fais-tu ?",
+    options: [
+      { texte: "Tu fais le devis complet avec lui maintenant : sous 24-48 h, tu pourras valider la commande seul et le prévenir.", bon: true, explication: "Exactement : le devis est enregistré dans le back-end, tu finaliseras sans lui en mode dégradé." },
+      { texte: "Tu lui demandes de revenir dans 48 heures pour faire le devis.", bon: false, explication: "Pas besoin de le faire revenir : on fait le devis tout de suite pour pouvoir valider seul ensuite." },
+      { texte: "Tu attends la réponse de Granit avant de faire quoi que ce soit.", bon: false, explication: "Le devis se fait tout de suite, pendant que Granit cherche la réponse." },
+    ] },
+  { profil: "Granit répond dans la conversation Slack : « ✅ PEC accordée — Classe B ». Que fais-tu ?",
+    options: [
+      { texte: "Tu mets la capture de la PEC acceptée dans le back-end, puis tu pars en Suprême direct.", bon: true, explication: "Exactement : PEC accordée en classe B, c'est le Suprême accepté. Et on n'oublie pas la capture dans le back-end avant de valider." },
+      { texte: "Tu attends encore 48 heures pour être sûr.", bon: false, explication: "Pas besoin : la réponse est là et elle est positive." },
+      { texte: "Tu passes en 1=1 100 % Santé.", bon: false, explication: "Non : le 1=1 100 % Santé, c'est quand le Suprême est refusé car trop faible. Ici, il est accepté." },
+    ] },
+  { profil: "Granit poste « PEC Classe B accordée mais Remb. accordé sous le tarif plancher », puis « ✅ PEC accordée — Classe A ». Que fais-tu ?",
+    options: [
+      { texte: "Tu pars en Suprême, puisque la classe B est « accordée ».", bon: false, explication: "Non : accordée sous le tarif plancher, c'est trop faible pour le Suprême." },
+      { texte: "Tu mets la capture de la PEC classe A dans le back-end et tu fais le 1=1 100 % Santé.", bon: true, explication: "Exactement : la classe A est accordée, c'est le 1=1 100 % Santé." },
+      { texte: "Tu relances un Granit pour retenter le Suprême.", bon: false, explication: "La mutuelle a répondu : on passe en 1=1 100 % Santé avec la classe A." },
+    ] },
+  { profil: "Granit répond dans la conversation Slack : remboursement refusé en Suprême, car trop faible. Que fais-tu ?",
+    options: [
+      { texte: "Tu rappelles le client pour tout recommencer.", bon: false, explication: "Pas besoin : la classe A est déjà acceptée et le devis est fait." },
+      { texte: "Tu fais le 1=1 100 % Santé : le remboursement en classe A, lancé en parallèle par Granit, est déjà accepté.", bon: true, explication: "C'est ça : tu valides la commande seul en mode dégradé, puis tu informes le client." },
+      { texte: "Tu relances un Granit pour avoir une autre réponse.", bon: false, explication: "La mutuelle a répondu : on passe en 1=1 100 % Santé." },
+    ] },
+];
+
+const FORMAT_C = [
+  { enonce: "Granit est une intelligence artificielle qui saisit la demande de remboursement sur les plateformes des mutuelles à notre place.", vrai: true },
+  { enonce: "Avec Granit, c'est au vendeur de saisir la demande sur le site de la mutuelle.", vrai: false },
+  { enonce: "Un message « non réalisable » sur LPT Santé veut dire que la mutuelle refuse le remboursement.", vrai: false },
+  { enonce: "Quand LPT Santé répond « remboursement trop faible », on fait un Granit.", vrai: false },
+  { enonce: "Quand LPT Santé répond « remboursement trop faible », on passe en 1=1 100 % Santé.", vrai: true },
+  { enonce: "La demande Granit se fait sur Slack, dans le canal « tiers payant ».", vrai: true },
+  { enonce: "Dans le message, on indique son magasin, la référence de la monture et RA ou première délivrance.", vrai: true },
+  { enonce: "« RA » veut dire renouvellement adapté.", vrai: true },
+  { enonce: "Un client qui n'a pas fait de lunettes depuis plus de deux ans est en première délivrance.", vrai: true },
+  { enonce: "Une photo de la carte de mutuelle suffit pour lancer un Granit.", vrai: false },
+  { enonce: "Le service tiers payant vérifie que les documents sont conformes avant de déclencher Granit.", vrai: true },
+  { enonce: "Une demande en instance reçoit sa réponse sous 24 à 48 heures.", vrai: true },
+  { enonce: "Pendant qu'une demande est en instance, il faut attendre la réponse avant de faire le devis.", vrai: false },
+  { enonce: "Quand la demande est en instance, Granit lance tout seul une demande en classe A en parallèle.", vrai: true },
+  { enonce: "Quand la demande est en instance, il faut demander à Granit de lancer aussi une demande en classe A.", vrai: false },
+  { enonce: "Avant de valider la commande, on met dans le back-end la capture de la PEC acceptée envoyée par Granit.", vrai: true },
+  { enonce: "Quand Granit répond « PEC accordée — Classe B », on part en Suprême direct.", vrai: true },
+  { enonce: "Si le Suprême (classe B) est refusé, Granit lance tout seul la classe A, même quand la réponse est instantanée.", vrai: true },
+  { enonce: "« Remb. accordé sous le tarif plancher » en classe B veut dire que le Suprême est accepté.", vrai: false },
+  { enonce: "Quand Granit répond, le client doit revenir en magasin pour valider sa commande.", vrai: false },
+];
+
+const FORMAT_D = [
+  { profil: "Un collègue voit « non réalisable » sur LPT Santé et dit au client : « Votre mutuelle refuse. »",
+    options: [
+      { texte: "Il a raison, il faut passer à autre chose.", bon: false, explication: "« Non réalisable » n'est pas un refus : la mutuelle ne répond simplement pas via LPT Santé." },
+      { texte: "Attends : « non réalisable » n'est pas un refus. Il faut faire un Granit pour obtenir la réponse de la mutuelle.", bon: true, explication: "Exactement : c'est le cas typique pour Granit." },
+      { texte: "Il faut refaire le test plusieurs fois.", bon: false, explication: "Le résultat sera le même : c'est Granit qui ira chercher la réponse." },
+    ] },
+  { profil: "Après un « remboursement trop faible » sur LPT Santé, un collègue s'apprête à lancer un Granit.",
+    options: [
+      { texte: "Inutile : la mutuelle a déjà répondu. Le Suprême n'est pas pris en charge pour ce forfait, on passe en 1=1 100 % Santé.", bon: true, explication: "Exactement : Granit sert aux mutuelles qui ne répondent pas via LPT Santé." },
+      { texte: "Bonne idée, Granit obtiendra peut-être mieux.", bon: false, explication: "Non : la réponse est déjà donnée, Granit n'y changera rien." },
+      { texte: "Il faut d'abord rappeler la mutuelle.", bon: false, explication: "Pas besoin : la réponse est claire, on passe en 1=1 100 % Santé." },
+    ] },
+  { profil: "Un collègue envoie sa demande Granit avec une photo de l'ordonnance floue et à l'envers : « Ils se débrouilleront. »",
+    options: [
+      { texte: "Ce n'est pas grave, Granit lit tout.", bon: false, explication: "Le service tiers payant vérifie d'abord les documents : une photo illisible retarde la demande." },
+      { texte: "Il vaut mieux envoyer sans l'ordonnance.", bon: false, explication: "Il faut les 3 photos : ordonnance, carte de mutuelle et écran LPT Santé." },
+      { texte: "Attends : le service tiers payant vérifie la conformité avant de lancer Granit. Reprends une photo nette et à l'endroit, sinon la demande va prendre du retard.", bon: true, explication: "Exactement : un dossier propre, c'est une réponse plus rapide." },
+    ] },
+  { profil: "Granit poste « PEC EN INSTANCE — Classe B ». Un collègue écrit à Granit pour lui demander de lancer aussi une demande en classe A.",
+    options: [
+      { texte: "Bonne idée, sinon il n'y aura pas de solution si le Suprême est refusé.", bon: false, explication: "Granit l'a déjà fait : la demande en classe A part toute seule en parallèle." },
+      { texte: "Pas besoin : Granit lance tout seul la demande en classe A en parallèle. Les 2 réponses arriveront dans la conversation sous 24 à 48 heures.", bon: true, explication: "Exactement : c'est indiqué dans le message de Granit, rien à demander." },
+      { texte: "Il faut plutôt relancer une nouvelle demande Granit.", bon: false, explication: "Non : la demande est en cours, il suffit d'attendre la réponse dans la conversation." },
+    ] },
+  { profil: "Demande en instance : un collègue dit au client de revenir dans deux jours pour faire son devis.",
+    options: [
+      { texte: "Attends : on fait le devis complet maintenant. Quand Granit répond, on valide la commande seul en mode dégradé et on prévient le client.", bon: true, explication: "Exactement : le client n'a pas besoin de revenir." },
+      { texte: "Il a raison, on ne peut rien faire sans la réponse.", bon: false, explication: "Le devis se fait tout de suite, la réponse arrive ensuite dans Slack." },
+      { texte: "Il faut annuler la demande et proposer autre chose.", bon: false, explication: "Non : Granit répondra sous 24-48 h, et la classe A est lancée en parallèle." },
+    ] },
+];
+
+let formatActuel = null;
+let poolActuelle = [];
+let indexActuel = null;
+let scoreOk = 0, scoreNon = 0;
+
+const FORMATS_INFO = {
+  a: { titre: "Granit ou pas ?", ico: "🧭", desc: "Une réponse de LPT Santé, tu dis s'il faut faire un Granit ou non.", data: FORMAT_A },
+  b: { titre: "Prépare ta demande", ico: "💬", desc: "Choisis la bonne façon de préparer et suivre ta demande Granit.", data: FORMAT_B },
+  c: { titre: "Vrai/Faux éclair", ico: "⚡", desc: "Rafale de questions rapides pour ancrer les bases.", data: FORMAT_C },
+  d: { titre: "Le bon raisonnement", ico: "🗣️", desc: "Un collègue se trompe (ou pas) — identifie le bon raisonnement.", data: FORMAT_D },
+};
+
+const CLE_FORMATS = 'granit_entrainement_formats';
+
+function getFormatsFaits() {
+  try { return JSON.parse(lireStockage(CLE_FORMATS)) || {} } catch (e) { return {} }
+}
+function marquerFormatFait(cle) {
+  const faits = getFormatsFaits()
+  if (!faits[cle]) {
+    faits[cle] = true
+    ecrireStockage(CLE_FORMATS, JSON.stringify(faits))
+  }
+}
+
+function rendreMenu() {
+  const faits = getFormatsFaits()
+  const nbFaits = Object.keys(FORMATS_INFO).filter(c => faits[c]).length
+  $('#progressFormats').textContent = `${nbFaits}/4 formats terminés au moins une fois`
+  $('#grilleFormats').innerHTML = Object.entries(FORMATS_INFO).map(([cle, f]) => `
+    <div class="carte-format" data-format="${cle}">
+      ${faits[cle] ? '<div class="badge-fait">✓ Terminé</div>' : ''}
+      <div class="ico">${f.ico}</div>
+      <div class="titre-format">${f.titre}</div>
+      <div class="desc-format">${f.desc}</div>
+      <div class="compteur-format">${f.data.length} situations</div>
+    </div>
+  `).join('')
+  document.querySelectorAll('[data-format]').forEach(el => {
+    el.addEventListener('click', () => lancerFormat(el.dataset.format))
+  })
+  majGateTest()
+}
+
+function lancerFormat(cle) {
+  formatActuel = cle
+  poolActuelle = melanger(FORMATS_INFO[cle].data)
+  indexActuel = 0
+  scoreOk = 0; scoreNon = 0
+  $('#vueMenu').style.display = 'none'
+  $('#vueDrill').style.display = 'block'
+  rendreItemCourant()
+}
+
+function retourMenu() {
+  $('#vueDrill').style.display = 'none'
+  $('#vueMenu').style.display = 'block'
+  formatActuel = null
+  rendreMenu()
+}
+
+function majScore() {
+  $('#scoreDrill').innerHTML = `<b class="ok">${scoreOk} ✓</b> &nbsp; <b class="non">${scoreNon} ✗</b>`
+}
+
+function rendreChoixBinaire(corps, texte, libVrai, libFaux, attendu, explicationOk, explicationNon) {
+  corps.innerHTML = `
+    <div class="profil-client">${texte}</div>
+    <div class="choix-binaire">
+      <button class="btn-choix" data-rep="true">${libVrai}</button>
+      <button class="btn-choix" data-rep="false">${libFaux}</button>
+    </div>`
+  corps.querySelectorAll('[data-rep]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const correct = (btn.dataset.rep === 'true') === attendu
+      corps.classList.add('choix-fait')
+      corps.querySelectorAll('[data-rep]').forEach(b => {
+        if ((b.dataset.rep === 'true') === attendu) b.classList.add('bonne-reponse')
+        else if (b === btn) b.classList.add('mauvaise-reponse')
+        if (b === btn) b.classList.add('selectionne')
+      })
+      afficherFeedback(correct, correct ? explicationOk : explicationNon)
+    })
+  })
+}
+
+function rendreChoixMultiple(corps, item) {
+  // Options mélangées à chaque affichage pour que la bonne réponse ne soit jamais à une place prévisible
+  const options = melanger(item.options)
+  corps.innerHTML = `
+    <div class="profil-client">${item.profil}</div>
+    <div class="liste-options">
+      ${options.map((o, i) => `<button class="btn-option" data-i="${i}">${o.texte}</button>`).join('')}
+    </div>`
+  corps.querySelectorAll('[data-i]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const opt = options[Number(btn.dataset.i)]
+      corps.classList.add('choix-fait')
+      corps.querySelectorAll('[data-i]').forEach((b, i) => {
+        if (options[i].bon) b.classList.add('bonne-reponse')
+        else if (b === btn) b.classList.add('mauvaise-reponse', 'selectionne')
+      })
+      afficherFeedback(opt.bon, opt.explication)
+    })
+  })
+}
+
+function rendreItemCourant() {
+  majScore()
+  const corps = $('#corpsDrill')
+  const feedback = $('#feedback')
+  feedback.className = 'feedback'
+  feedback.textContent = ''
+  $('#btnSuivant').classList.remove('visible')
+  corps.classList.remove('choix-fait')
+
+  if (indexActuel >= poolActuelle.length) {
+    marquerFormatFait(formatActuel)
+    majGateTest()
+    corps.innerHTML = `<p style="text-align:center;color:var(--ink-soft);font-size:14px;padding:20px 0">Tu as fait le tour de ce pool — relance l'exercice pour un nouvel ordre, ou choisis un autre format.</p>`
+    return
+  }
+
+  const item = poolActuelle[indexActuel]
+  if (formatActuel === 'a') rendreChoixBinaire(corps, item.profil, 'Granit', 'Pas de Granit', item.bon, item.explication, item.explication)
+  if (formatActuel === 'b' || formatActuel === 'd') rendreChoixMultiple(corps, item)
+  if (formatActuel === 'c') rendreChoixBinaire(corps, item.enonce, 'Vrai', 'Faux', item.vrai, 'Exact.', 'Pas tout à fait — relis le point correspondant dans le cours si besoin.')
+}
+
+function afficherFeedback(correct, texte) {
+  const feedback = $('#feedback')
+  feedback.textContent = (correct ? '✓ ' : '✗ ') + texte
+  feedback.classList.add('visible', correct ? 'ok' : 'non')
+  if (correct) scoreOk++; else scoreNon++
+  majScore()
+  $('#btnSuivant').classList.add('visible')
+}
+
+$('#btnRetourMenu').addEventListener('click', retourMenu)
+$('#btnSuivant').addEventListener('click', () => { indexActuel++; rendreItemCourant() })
+
+// ═══════════════════ TEST ═══════════════════
+const SEUIL_REUSSITE = 10;
+const TOTAL_QUESTIONS = 12;
+const CLE_ACQUIS = 'granit_test_acquis';
+
+let questionsQuiz = [];
+let indexQuestion = 0;
+let reponsesDonnees = [];
+
+function majGateTest() {
+  const faits = getFormatsFaits()
+  const manquants = Object.entries(FORMATS_INFO).filter(([cle]) => !faits[cle]).map(([, f]) => f.titre)
+  const btn = $('#btnCommencer')
+  const gate = $('#gateManquant')
+  if (!btn || !gate) return
+  if (manquants.length === 0) {
+    gate.style.display = 'none'
+    btn.style.display = 'block'
+  } else {
+    gate.style.display = 'block'
+    btn.style.display = 'none'
+    $('#texteManquant').textContent = manquants.join(', ')
+  }
+}
+
+function getFormatsFaitsTousOk() {
+  const faits = getFormatsFaits()
+  return Object.keys(FORMATS_INFO).every(cle => faits[cle])
+}
+
+function construireQuestions() {
+  const vf = melanger(FORMAT_C).slice(0, 5).map(q => ({ type: 'vf', ...q }))
+  const cand = melanger(FORMAT_A).slice(0, 5).map(q => ({ type: 'candidat', ...q }))
+  const choix = melanger([...FORMAT_B, ...FORMAT_D]).slice(0, 2).map(q => ({ type: 'choix', profil: q.profil, options: melanger(q.options) }))
+  return melanger([...vf, ...cand, ...choix])
+}
+
+function demarrerQuiz() {
+  if (!getFormatsFaitsTousOk()) { majGateTest(); return }
+  questionsQuiz = construireQuestions()
+  indexQuestion = 0
+  reponsesDonnees = []
+  $('#vueIntro').style.display = 'none'
+  $('#vueDejaAcquis').style.display = 'none'
+  $('#vueResultat').style.display = 'none'
+  $('#vueQuiz').style.display = 'block'
+  rendreQuestion()
+}
+
+function rendreQuestion() {
+  $('#compteurQuiz').textContent = `Question ${indexQuestion + 1} / ${TOTAL_QUESTIONS}`
+  $('#barreQuiz').innerHTML = Array.from({ length: TOTAL_QUESTIONS }, (_, i) =>
+    `<div class="seg-quiz ${i < indexQuestion ? 'fait' : ''}"></div>`).join('')
+  const q = questionsQuiz[indexQuestion]
+  const corps = $('#corpsQuestion')
+
+  if (q.type === 'vf' || q.type === 'candidat') {
+    const texte = q.type === 'vf' ? q.enonce : q.profil
+    const attendu = q.type === 'vf' ? q.vrai : q.bon
+    const [libVrai, libFaux] = q.type === 'vf' ? ['Vrai', 'Faux'] : ['Granit', 'Pas de Granit']
+    corps.innerHTML = `
+      <div class="profil-client">${texte}</div>
+      <div class="choix-binaire">
+        <button class="btn-rep" data-rep="true">${libVrai}</button>
+        <button class="btn-rep" data-rep="false">${libFaux}</button>
+      </div>`
+    corps.querySelectorAll('[data-rep]').forEach(btn => {
+      btn.addEventListener('click', () => valider(texte, (btn.dataset.rep === 'true') === attendu))
+    })
+  }
+
+  if (q.type === 'choix') {
+    corps.innerHTML = `
+      <div class="citation-client">${q.profil}</div>
+      <div class="liste-options">
+        ${q.options.map((o, i) => `<button class="btn-rep" data-i="${i}">${o.texte}</button>`).join('')}
+      </div>`
+    corps.querySelectorAll('[data-i]').forEach(btn => {
+      btn.addEventListener('click', () => valider(q.profil, q.options[Number(btn.dataset.i)].bon))
+    })
+  }
+}
+
+function valider(libelleQuestion, correct) {
+  reponsesDonnees.push({ libelle: libelleQuestion, correct })
+  indexQuestion++
+  if (indexQuestion >= TOTAL_QUESTIONS) afficherResultat()
+  else rendreQuestion()
+}
+
+function afficherResultat() {
+  $('#vueQuiz').style.display = 'none'
+  $('#vueResultat').style.display = 'block'
+  const score = reponsesDonnees.filter(r => r.correct).length
+  const reussi = score >= SEUIL_REUSSITE
+  $('#scoreChiffre').textContent = score
+  $('#scoreRond').className = 'score-rond ' + (reussi ? 'reussi' : 'echec')
+  $('#titreResultat').textContent = reussi ? '✅ Module acquis !' : 'Pas encore cette fois'
+  $('#sousResultat').textContent = reussi
+    ? 'Le module est verrouillé — bravo.'
+    : `Il fallait ${SEUIL_REUSSITE}/12 pour valider. Retourne t'entraîner et retente quand tu veux.`
+  $('#detailResultat').innerHTML = reponsesDonnees.map(r => `
+    <div class="detail-reponse ${r.correct ? 'ok' : 'non'}">
+      <span class="icone">${r.correct ? '✓' : '✗'}</span>
+      <span class="texte-q">${r.libelle}</span>
+    </div>
+  `).join('')
+  const btnRefaire = $('#btnRefaire')
+  btnRefaire.style.display = 'block'
+  btnRefaire.textContent = reussi ? 'Repasser le test quand même' : 'Retenter le test'
+  if (reussi) ecrireStockage(CLE_ACQUIS, '1')
+}
+
+$('#btnCommencer').addEventListener('click', demarrerQuiz)
+$('#btnRefaire').addEventListener('click', demarrerQuiz)
+$('#btnRepasserQuandMeme').addEventListener('click', demarrerQuiz)
+$('#btnAllerEntrainement').addEventListener('click', () => irAEtape('entrainement'))
+
+if (lireStockage(CLE_ACQUIS) === '1') {
+  $('#vueIntro').style.display = 'none'
+  $('#vueDejaAcquis').style.display = 'block'
+}
+
+rendreMenu()
+majGateTest()
+
+// ═══════════════════ PROMPT POUR PAUL ═══════════════════
+// Les sections Entraînement sont générées depuis les mêmes données que la page :
+// le prompt reste toujours aligné avec ce qui est affiché.
+function promptFormatChoix(liste) {
+  return liste.map((s, i) => `${i + 1}. Situation : "${s.profil}"\n` + s.options.map(o =>
+    `- ${o.bon ? '✅' : '❌'} "${o.texte}" → explication : "${o.explication}"`).join('\n')).join('\n\n')
+}
+
+const PROMPT_PAUL = `Je veux que tu ajoutes un nouveau module au système de modules post-formation ("Perfectionnement") dont je t'ai déjà donné les règles générales avec le module Verre de proximité (structure Cours/Entraînement/Test, barre de navigation à 3 étapes, verrou du Test tant que les 4 formats d'entraînement ne sont pas faits, verrouillage définitif du module une fois le Test réussi). Ce nouveau module utilise exactement le même moteur — inutile de le reconstruire, applique-le simplement à ce contenu. Tous les textes entre guillemets ci-dessous sont à reprendre mot pour mot.
+
+Petit rappel rapide des règles du moteur, au cas où : un module a 3 étapes (Cours, Entraînement, Test) ; l'Entraînement propose plusieurs formats d'exercices répétables à volonté, sans enjeu, chacun marqué "fait" dès que le collaborateur est allé au bout du pool une fois ; le Test reste verrouillé tant que tous les formats d'Entraînement n'ont pas été faits au moins une fois ; le Test tire des questions au hasard, mélange leur ordre, affiche le score uniquement à la fin ; une réussite verrouille le module en "acquis" de façon définitive (retentable volontairement) ; un échec ne pénalise pas et autorise un nombre illimité de nouvelles tentatives.
+
+MODULE : "FAIRE UN GRANIT"
+
+CONTEXTE
+
+Granit est une intelligence artificielle qui saisit à notre place les demandes de remboursement sur les plateformes des mutuelles qui ne fonctionnent pas en direct avec LPT Santé. Après un test Suprême sur LPT Santé, trois réponses sont possibles : acceptée (on part en Suprême), remboursement trop faible (on passe en 1=1 100 % Santé, pas de Granit), ou non réalisable (on fait un Granit). La demande se fait sur Slack, canal « tiers payant ». Ce module apprend aux collaborateurs à savoir quand faire un Granit, à envoyer une demande complète, et à gérer la réponse.
+
+BARRE DE NAVIGATION
+
+3 onglets cliquables : "Étape 1 — Cours", "Étape 2 — Entraînement", "Étape 3 — Test" (l'onglet actif est mis en avant).
+
+ÉTAPE 1 — COURS
+
+Surtitre : "Module Après-Formation · Tiers payant". Titre : "Faire un Granit". Sous-titre : "Savoir quand faire un Granit, envoyer une demande complète sur Slack, et gérer la réponse de la mutuelle." Une carte par section :
+
+1. C'est quoi ?
+Paragraphe 1 : "Granit est une intelligence artificielle. Elle saisit elle-même la demande de remboursement sur les plateformes des mutuelles, à notre place."
+Paragraphe 2 : "On l'utilise pour les mutuelles qui ne fonctionnent pas en direct avec LPT Santé : avec elles, LPT Santé ne peut pas nous donner de réponse. Granit va chercher cette réponse pour nous."
+Encart astuce (💡, violet clair) : "Ton rôle : tu ne saisis rien chez la mutuelle. Tu transmets un dossier complet et propre, Granit fait le reste."
+
+2. Quand faire un Granit ?
+Texte : "Tout part du test Suprême sur LPT Santé. La mutuelle peut répondre de trois façons :"
+Puis 3 encarts côte à côte (empilés sur mobile), chacun avec une étiquette et une action :
+- Vert, étiquette "Acceptée" : "→ On part en Suprême."
+- Orange, étiquette "Remboursement trop faible" : "→ Le Suprême n'est pas pris en charge pour le forfait de ce client. On passe en 1=1 100 % Santé. Pas de Granit."
+- Violet, étiquette "Non réalisable" : "→ La mutuelle ne répond pas via LPT Santé. On fait un Granit."
+Encart d'avertissement (⚠️, rouge) : "Attention aux confusions :" suivi de 2 puces : "« Remboursement trop faible » est une vraie réponse de la mutuelle : inutile de faire un Granit, on passe directement en 1=1 100 % Santé." / "« Non réalisable » n'est ni un refus, ni un échec : ça veut juste dire qu'il faut passer par Granit pour obtenir la réponse."
+
+3. Comment on fait la demande
+Texte : "La demande se fait sur Slack, dans le canal « tiers payant ». Ton message contient :"
+4 étapes numérotées :
+1. "Ton magasin : « Granit [ton magasin] svp »."
+2. "La référence de la monture choisie par le client."
+3. "Le type de délivrance : « RA » pour un renouvellement adapté, ou « première délivrance » si le client n'a pas fait de lunettes depuis plus de deux ans."
+4. "Les 3 photos, nettes et à l'endroit : l'ordonnance, la carte de mutuelle et l'écran LPT Santé avec le message affiché."
+Puis une reproduction d'un message Slack d'exemple (avatar rond, nom "Sacha - Reims", heure "17 h 01", texte sur 3 lignes "Granit Reims svp" / "Lpt442-eom" / "Ra", mention "3 pièces jointes", puis 3 vignettes grises côte à côte avec une icône et un libellé : "🖥️ Écran LPT Santé", "📄 Ordonnance", "💳 Carte de mutuelle"). N'utilise pas de vraie photo de client : ce sont des vignettes d'illustration. Légende en dessous, petite et grise : "Exemple de demande · canal Slack « tiers payant »".
+Texte : "Un membre du service tiers payant vérifie d'abord que les documents sont conformes, puis il déclenche Granit. Si une photo est floue ou s'il manque une info, la demande prend du retard."
+Encadré checklist (fond vert clair) : titre "✅ Avant d'envoyer, vérifie :" puis 4 lignes avec une case : "Ton magasin est indiqué" / "La référence de la monture est indiquée" / "RA ou première délivrance est précisé" / "Les 3 photos sont jointes, nettes et à l'endroit".
+
+4. Après l'envoi : la réponse de Granit
+Paragraphe 1 : "Granit peut répondre tout de suite (remboursement accepté ou refusé), ou mettre la demande « en instance » : la réponse arrive alors sous 24 à 48 heures."
+Texte : "Granit répond directement dans la conversation de ta demande. Voici une réponse instantanée :"
+Puis une reproduction d'un message Slack de Granit (même style que l'exemple de la section 3) : avatar rond vert "G", nom "Granit", petite étiquette grise "APPLI", heure "17 h 04". Texte : "⏳ Granit a démarré le traitement de ce thread." puis, après une ligne vide : "✅ PEC accordée — Classe B — [Mutuelle] · [NOM PRÉNOM DU CLIENT] — N° [numéro de dossier] — Total 526,00 € · Remb. SS 0,09 € · Remb. mutuelle 374,91 € · Reste à charge 151,00 €". En dessous, mention "Capture résultat PEC" et une vignette grise "🧾 Capture du site de la mutuelle" (pas de vraie capture : les données client restent anonymisées). Légende petite et grise : "Exemple de réponse de Granit · données anonymisées".
+Encart astuce (💡) : "« PEC accordée — Classe B » : le remboursement en Suprême est accepté. Tu pars en Suprême direct. Le message te donne aussi le total, le remboursement Sécu, le remboursement mutuelle et le reste à charge du client."
+Encart d'avertissement (⚠️, rouge) : "Avant de valider la commande : mets dans le back-end la capture de la PEC acceptée, celle que Granit envoie avec son message de remboursement accepté."
+Texte : "Granit peut aussi mettre la demande en instance. Dans ce cas, il lance tout seul une demande en classe A en parallèle, pas besoin de lui demander :"
+Puis une deuxième reproduction de message Slack de Granit (même style) : heure "17 h 10", texte "⏳ Granit a démarré le traitement de ce thread." puis, après une ligne vide : "🟠 PEC EN INSTANCE — Classe B — devis en cours — [Mutuelle] · [NOM PRÉNOM DU CLIENT] — N° [numéro de dossier] — Total 642,00 € · Remb. mutuelle 0,00 €" / "(Réponse définitive ✅/❌ postée ici sous 24–48 h.)" / "🔀 Une prise en charge Classe A est lancée à la suite de la première. Vous recevrez les 2 réponses ici, sous 24–48 h." (« Classe A » en gras). Puis "Capture résultat PEC" + vignette grise "🧾 Capture du site de la mutuelle". Puis un second bloc de texte : "🟠 PEC EN INSTANCE — Classe A — devis en cours — [Mutuelle] · [NOM PRÉNOM DU CLIENT] — N° [numéro de dossier] — Total 240,00 € · Remb. mutuelle 0,00 €" / "(Réponse définitive ✅/❌ postée ici sous 24–48 h.)", suivi de "Capture résultat PEC" + la même vignette grise. Légende petite et grise : "Exemple de demande en instance · données anonymisées".
+Texte : "Quand la demande est en instance, tu ne restes pas bloqué :"
+4 étapes numérotées :
+1. "Tu fais le devis complet avec le client, comme pour une commande normale. Tout ce que tu saisis est enregistré dans le back-end."
+2. "Granit lance tout seul, en parallèle, une demande en classe A à la mutuelle. Pas besoin de lui demander : dans tous les cas, tu auras une solution."
+3. "Sous 24 à 48 heures, Granit répond à la suite de la conversation Slack avec la réponse de la mutuelle pour les 2 demandes : tu reçois une notification."
+4. "Tu mets la capture de la PEC acceptée dans le back-end, puis tu valides la commande seul, sans le client, en mode dégradé grâce au devis déjà fait. Tu l'informes une fois que c'est fait."
+Puis 2 encarts côte à côte :
+- Vert "✅ Accepté en Suprême" : "Tu saisis la commande en Suprême."
+- Orange "Refusé : trop faible" : "Le remboursement en classe A est déjà accepté : tu fais le 1=1 100 % Santé."
+Encart astuce (💡) : "À retenir : grâce au devis fait avec le client et à la demande en classe A lancée en parallèle, le client n'a pas besoin de revenir. Tu finalises toi-même et tu le préviens."
+Texte : "Quand le Suprême (classe B) est refusé, que la réponse soit instantanée ou après une instance, Granit lance tout seul la demande en classe A et te donne directement la PEC accordée en classe A :" (« Quand le Suprême (classe B) est refusé » en gras)
+Puis une troisième reproduction de message Slack de Granit (même style) : heure "17 h 14", texte "⏳ Granit a démarré le traitement de ce thread." puis, après une ligne vide : "🅰️ PEC Classe B accordée mais Remb. accordé sous le tarif plancher → une prise en charge Classe A vient d'être lancée. Résultat à suivre ici." / "[NOM PRÉNOM DU CLIENT] — N° [numéro de dossier] — Total 306,00 € · Remb. SS 0,09 € · Remb. mutuelle 99,91 € · Reste à charge 206,00 € — remboursement 100 € < tarif plancher" (« Classe A » en gras). Puis "Capture résultat PEC" + vignette grise "🧾 Capture du site de la mutuelle". Puis un second bloc : "✅ PEC accordée — Classe A — [Mutuelle] · [NOM PRÉNOM DU CLIENT] — N° [numéro de dossier] : Accordé — Total 115,00 € · Remb. SS 20,70 € · Remb. mutuelle 94,30 € · Reste à charge 0,00 €", suivi de "Capture résultat PEC" + la même vignette grise. Légende petite et grise : "Exemple de Suprême refusé, classe A accordée · données anonymisées".
+Encart astuce (💡) : "« Remb. accordé sous le tarif plancher » : le remboursement en classe B est trop faible, le Suprême n'est pas possible. Avec la PEC accordée en classe A, tu mets cette capture dans le back-end et tu fais le 1=1 100 % Santé."
+
+5. Exemples concrets (grille de 4 cartes, vertes ou rouges). Chaque carte : étiquette, titre en gras, description, conclusion.
+- Vert "✅ Granit" — "Test Suprême « non réalisable »" — "La mutuelle de la cliente ne répond pas via LPT Santé." — "→ Demande Granit sur Slack, canal « tiers payant »."
+- Rouge "❌ Pas de Granit" — "Remboursement trop faible" — "La mutuelle a répondu : le Suprême n'est pas pris en charge pour ce forfait." — "→ On passe en 1=1 100 % Santé."
+- Rouge "❌ Pas de Granit" — "Test Suprême accepté" — "La mutuelle accepte le remboursement directement sur LPT Santé." — "→ On part en Suprême."
+- Vert "✅ Bien géré" — "Demande en instance" — "Le vendeur fait le devis complet avec le client pendant que Granit cherche la réponse." — "→ Sous 24-48 h, il valide la commande seul et prévient le client."
+
+6. Infos pratiques (3 tuiles côte à côte, valeur en gros + libellé en dessous)
+- "Slack" / "canal « tiers payant »"
+- "3 photos" / "ordonnance, carte de mutuelle, écran LPT Santé"
+- "24-48 h" / "pour la réponse d'une demande en instance"
+
+ÉTAPE 2 — ENTRAÎNEMENT
+
+Surtitre : "Module Après-Formation · Faire un Granit". Titre : "Entraînement". Sous-titre : "Pas de pression : tu peux refaire ces exercices autant de fois que tu veux, dans l'ordre que tu veux."
+
+Écran d'accueil : un compteur "X/4 formats terminés au moins une fois", puis une grille de 4 cartes cliquables (icône, titre, description, nombre de situations, et un badge "✓ Terminé" quand le format a été fait au moins une fois) :
+${Object.values(FORMATS_INFO).map(f => `- ${f.ico} "${f.titre}" — "${f.desc}" — ${f.data.length} situations`).join('\n')}
+
+Mécanique commune aux 4 formats : à chaque lancement, l'ordre des situations est mélangé aléatoirement. En haut de l'exercice : un lien "← Retour aux exercices" et un compteur de bonnes/mauvaises réponses de la session ("X ✓  Y ✗"). Après chaque réponse : la bonne réponse est surlignée en vert, la mauvaise choisie en rouge, un encadré d'explication apparaît (vert si juste, rouge si faux, précédé de "✓ " ou "✗ "), puis un bouton "Suivant →". Quand toutes les situations du pool sont passées, le format est marqué "fait" et on affiche : "Tu as fait le tour de ce pool — relance l'exercice pour un nouvel ordre, ou choisis un autre format."
+
+Format A — "${FORMATS_INFO.a.titre}" (${FORMAT_A.length} situations). Le collaborateur voit une situation et répond avec 2 boutons "Granit" / "Pas de Granit". Situation → bonne réponse → explication affichée (la même que la réponse soit juste ou fausse) :
+${FORMAT_A.map((s, i) => `${i + 1}. "${s.profil}" → ${s.bon ? 'Granit' : 'Pas de Granit'} → "${s.explication}"`).join('\n')}
+
+Format B — "${FORMATS_INFO.b.titre}" (${FORMAT_B.length} situations, 3 options chacune, une seule bonne). Important : l'ordre des 3 options doit être mélangé aléatoirement à chaque affichage, à l'entraînement comme au test, pour que la bonne réponse ne soit jamais toujours à la même place. Chaque option a sa propre explication, affichée quand le collaborateur la choisit (la bonne option est toujours surlignée en vert, celle choisie en rouge si elle est fausse) :
+
+${promptFormatChoix(FORMAT_B)}
+
+Format C — "${FORMATS_INFO.c.titre}" (${FORMAT_C.length} énoncés), 2 boutons "Vrai" / "Faux". Explication affichée : "Exact." si juste, "Pas tout à fait — relis le point correspondant dans le cours si besoin." si faux.
+${FORMAT_C.map((s, i) => `${i + 1}. ${s.enonce} → ${s.vrai ? 'Vrai' : 'Faux'}`).join('\n')}
+
+Format D — "${FORMATS_INFO.d.titre}" (${FORMAT_D.length} situations, 3 options chacune, une seule bonne). Même mécanique que le Format B, options mélangées aléatoirement à chaque affichage :
+
+${promptFormatChoix(FORMAT_D)}
+
+ÉTAPE 3 — TEST
+
+Surtitre : "Module Après-Formation · Faire un Granit". Titre : "Test". Sous-titre : "Une seule fois pour verrouiller le module — mais tu peux retenter autant de fois que nécessaire si besoin."
+
+Écran d'introduction, carte "Avant de commencer" avec 4 règles numérotées :
+1. "12 questions, mélange de ce qu'on a vu dans le cours et à l'entraînement."
+2. "Pas de correction affichée en cours de route — le score tombe à la fin."
+3. "Il faut 10/12 pour valider le module."
+4. "En dessous, pas de souci : retourne t'entraîner et retente quand tu veux."
+Puis le bouton "Commencer le test". Tant que les 4 formats d'entraînement n'ont pas tous été faits au moins une fois, ce bouton est remplacé par un encart jaune : "⚠️ Pas encore accessible : il faut avoir fait au moins une fois chaque format d'entraînement. Il reste : [liste des titres des formats manquants, séparés par des virgules]." avec un bouton "Aller à l'entraînement" qui bascule sur l'étape 2.
+
+Si le module est déjà acquis, l'écran d'introduction est remplacé par : badge "✓ Module déjà acquis", texte "Tu as déjà validé ce module. Pas besoin de le repasser." et bouton "Le repasser quand même" (qui lance un nouveau test).
+
+Composition du test : 12 questions tirées au hasard et mélangées à chaque tentative —
+- 5 parmi les ${FORMAT_C.length} énoncés Vrai/Faux du Format C (boutons "Vrai" / "Faux") ;
+- 5 parmi les ${FORMAT_A.length} situations du Format A (boutons "Granit" / "Pas de Granit") ;
+- 2 parmi un pool de ${FORMAT_B.length + FORMAT_D.length} fusionnant les ${FORMAT_B.length} situations du Format B et les ${FORMAT_D.length} du Format D : questions à choix parmi 3 réponses, options mélangées, la situation affichée en italique.
+
+Pendant le quiz : un compteur "Question X / 12" et une barre de progression en 12 segments. Aucune correction affichée — dès qu'une réponse est donnée, on passe directement à la question suivante.
+
+Écran de résultat : un rond avec le score "X sur 12" (vert si réussi, rouge sinon).
+- Si score ≥ 10 : titre "✅ Module acquis !", sous-titre "Le module est verrouillé — bravo.", bouton "Repasser le test quand même". Le module passe en "acquis" définitivement.
+- Si score < 10 : titre "Pas encore cette fois", sous-titre "Il fallait 10/12 pour valider. Retourne t'entraîner et retente quand tu veux.", bouton "Retenter le test".
+Sous le titre, le détail des 12 questions : une ligne par question avec ✓ (vert) ou ✗ (rouge) suivi de l'énoncé de la question (la situation ou l'énoncé Vrai/Faux).
+
+Ne te préoccupe pas du stockage ni de la façon dont tu notes "acquis"/"non acquis" et "format fait" par collaborateur — gère ça comme tu le souhaites de ton côté.`
+
+$('#textePrompt').textContent = PROMPT_PAUL
+$('#btnPromptPaul').addEventListener('click', () => { $('#modalPrompt').style.display = 'flex' })
+$('#btnFermerModal').addEventListener('click', () => { $('#modalPrompt').style.display = 'none' })
+$('#modalPrompt').addEventListener('click', (e) => { if (e.target.id === 'modalPrompt') $('#modalPrompt').style.display = 'none' })
+$('#btnCopierPrompt').addEventListener('click', () => {
+  navigator.clipboard.writeText(PROMPT_PAUL).then(() => {
+    const btn = $('#btnCopierPrompt')
+    const original = btn.textContent
+    btn.textContent = 'Copié !'
+    setTimeout(() => { btn.textContent = original }, 1500)
+  })
+})
+</script>
+
+<script src="bridge-apres.js"></script>
+</body></html>

@@ -1,0 +1,1200 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<script src="bridge-avant.js"></script>
+<meta charset="utf-8">
+<title>Module — Les traitements de verres</title>
+<style>
+  :root {
+    --bg: #F2F4F7; --bg-panel: #FFFFFF; --line: rgba(17,21,27,0.10);
+    --ink: #11151B; --ink-soft: #5B6472;
+    --accent: #7C3AED; --accent-wash: #F2ECFE;
+    --vert: #0C8F6B; --vert-wash: #E7F7F1;
+    --rouge: #C0392B; --rouge-wash: #FBEAE8;
+    --jaune: #7A5A0A; --jaune-wash: #FFF8E6;
+    --radius: 18px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink); font-family: var(--font);
+    background: #F3F6F4;
+    background-image: radial-gradient(900px 500px at 100% -10%, rgba(176, 207, 192, 0.35), transparent 60%);
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 28px 22px 60px; }
+
+  .vue-etape { animation: apparition .15s ease; }
+  @keyframes apparition { from { opacity: 0 } to { opacity: 1 } }
+  @media (prefers-reduced-motion: reduce) { .vue-etape { animation: none; } }
+
+  .etapes { display: flex; gap: 8px; margin-bottom: 24px; }
+  .etape {
+    flex: 1; text-align: center; padding: 10px 6px; border-radius: 12px; font-size: 12.5px; font-weight: 700;
+    border: 1.5px solid var(--line); color: var(--ink-soft); background: #fff; cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  .etape:hover { border-color: var(--accent); color: var(--accent); }
+  .etape.actif { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .etape.actif:hover { color: #fff; }
+  .etape .num { display: block; font-size: 10px; opacity: .8; margin-bottom: 2px; text-transform: uppercase; letter-spacing: .5px; }
+
+  .eyebrow { font-size: 11.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: 30px; font-weight: 800; margin: 6px 0 4px; letter-spacing: -0.4px; text-wrap: balance; }
+  .sous-titre { color: var(--ink-soft); margin: 0 0 26px; font-size: 15px; }
+
+  .carte { border: 1px solid var(--line); border-radius: var(--radius); }
+  .carte h2 { font-weight: 800; margin: 0 0 12px; }
+  .carte p { line-height: 1.6; color: #3C4450; margin: 0 0 10px; }
+  .carte ul.liste { margin: 0 0 10px; padding-left: 20px; color: #3C4450; line-height: 1.6; }
+  .carte ul.liste li { margin-bottom: 4px; }
+  #vueCours .carte { background: var(--bg-panel); padding: 24px; margin-bottom: 18px; }
+  #vueCours .carte h2 { font-size: 18px; }
+  #vueTest .carte { background: #fff; padding: 28px 24px; box-shadow: 0 2px 8px rgba(17,21,27,0.03); }
+  #vueTest .carte h2 { font-size: 17px; }
+
+  /* Correspondance des noms */
+  .noms-marche { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+  .nom-marche { background: var(--bg); border-radius: 12px; padding: 12px; text-align: center; }
+  .nom-marche .marque { font-weight: 800; font-size: 14.5px; }
+  .nom-maison { background: var(--accent-wash); border-radius: 12px; padding: 12px 16px; margin-top: 10px; font-size: 13.5px; color: #4A2E8F; text-align: center; }
+  .nom-maison strong { color: var(--accent); }
+
+  /* Schéma œil */
+  .schemas-oeil { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .schema { background: var(--bg); border-radius: 14px; padding: 14px; }
+  .schema svg { width: 100%; height: auto; display: block; }
+  .schema .titre-schema { font-size: 12.5px; font-weight: 800; margin-bottom: 6px; }
+  .schema .legende-schema { font-size: 12px; color: var(--ink-soft); line-height: 1.5; margin-top: 6px; }
+
+
+  /* Schémas verres — même style que le module Verre de proximité */
+  .grille-schema { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 8px; }
+  .carte-schema {
+    background: #FFFFFF; border-radius: 20px; padding: 34px 24px 26px; text-align: center;
+    box-shadow: 0 2px 8px rgba(17,21,27,0.03), 0 20px 40px rgba(17,21,27,0.05);
+  }
+  .eyebrow-schema { font-size: 10.5px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: #97A2AC; margin-bottom: 22px; }
+  .cercle-wrap { width: 180px; height: 180px; margin: 0 auto 20px; }
+  .cercle-svg { display: block; width: 100%; height: 100%; }
+  .nom-verre { font-size: 21px; font-weight: 600; color: #2A3342; margin-bottom: 6px; font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; }
+  .sous-verre { font-size: 12.5px; color: #97A2AC; line-height: 1.5; max-width: 26ch; margin: 0 auto 18px; }
+  .legende-verre { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11.5px; color: #6B7480; }
+  .legende-verre span { display: inline-flex; align-items: center; gap: 6px; }
+  .legende-verre i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .caption-schema { text-align: right; font-size: 9.5px; letter-spacing: 1px; text-transform: uppercase; color: #AEB6BE; margin: 10px 0 18px; }
+  .etapes-mecanisme { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .etape-meca { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; color: #3C4450; line-height: 1.55; }
+  .etape-meca .puce { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+
+  .astuce {
+    background: var(--accent-wash); border-radius: 14px; padding: 14px 16px;
+    font-size: 13px; color: #4A2E8F; line-height: 1.55; margin-top: 16px;
+  }
+  .astuce strong { color: var(--accent); }
+
+  .note-attention {
+    background: var(--rouge-wash); border: 1.5px solid #F1C9C4; border-radius: 14px; padding: 14px 16px;
+    font-size: 13px; color: #8A2A1E; line-height: 1.55; margin-top: 16px;
+  }
+  .note-attention strong { color: var(--rouge); }
+  .note-attention ul { margin: 8px 0 0; padding-left: 18px; }
+  .note-attention li { margin-bottom: 4px; }
+
+  .offre-1-1 { background: var(--accent-wash); border-radius: 14px; padding: 16px 18px; margin-top: 14px; font-size: 13.5px; line-height: 1.6; color: #3C4450; }
+  .offre-1-1 strong { color: var(--accent); }
+  .a-valider {
+    background: var(--jaune-wash); border: 1.5px dashed #E0B341; border-radius: 12px; padding: 13px 15px;
+    font-size: 13px; color: var(--jaune); margin-top: 14px; line-height: 1.55;
+  }
+
+  .grille-criteres { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px; }
+  .critere { border-radius: 14px; padding: 16px; }
+  .critere.oui { background: var(--vert-wash); }
+  .critere.non { background: var(--rouge-wash); }
+  .critere .tag { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; display: block; margin-bottom: 8px; }
+  .critere.oui .tag { color: var(--vert); }
+  .critere.non .tag { color: var(--rouge); }
+  .critere ul { margin: 0; padding-left: 18px; font-size: 13px; color: #3C4450; line-height: 1.55; }
+  .critere li { margin-bottom: 4px; }
+
+  .grille-personas { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+  .persona { border-radius: 14px; padding: 16px; border: 1.5px solid var(--line); }
+  .persona.bon { background: var(--vert-wash); border-color: #BFE6D6; }
+  .persona.mauvais { background: var(--rouge-wash); border-color: #F1C9C4; }
+  .persona .tag { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; display: block; }
+  .persona.bon .tag { color: var(--vert); }
+  .persona.mauvais .tag { color: var(--rouge); }
+  .persona .nom { font-weight: 800; font-size: 14.5px; margin-bottom: 4px; }
+  .persona .desc { font-size: 13px; color: #3C4450; line-height: 1.5; margin-bottom: 8px; }
+  .persona .conclusion { font-size: 12.5px; font-weight: 700; }
+  .persona.bon .conclusion { color: var(--vert); }
+  .persona.mauvais .conclusion { color: var(--rouge); }
+
+  .infos-pratiques { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .info-item { background: var(--accent-wash); border-radius: 12px; padding: 14px; text-align: center; }
+  .info-item .valeur { font-weight: 800; font-size: 17px; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .info-item .label { font-size: 11.5px; color: var(--ink-soft); margin-top: 3px; }
+
+  /* ───────────────── Entraînement ───────────────── */
+  .progress-formats { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 14px; font-weight: 600; }
+  .grille-formats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .carte-format {
+    background: #fff; border-radius: 18px; padding: 20px; border: 1px solid var(--line);
+    box-shadow: 0 2px 6px rgba(17,21,27,0.03); cursor: pointer; text-align: left;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .carte-format:hover { border-color: var(--accent); }
+  .carte-format .ico { font-size: 22px; }
+  .carte-format .titre-format { font-weight: 800; font-size: 14.5px; }
+  .carte-format .desc-format { font-size: 12px; color: var(--ink-soft); line-height: 1.5; flex: 1; }
+  .carte-format .compteur-format { font-size: 11px; color: var(--accent); font-weight: 700; }
+  .badge-fait { align-self: flex-start; background: var(--vert-wash); color: var(--vert); font-size: 10.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
+
+  .carte-drill { background: #fff; border-radius: var(--radius); padding: 28px 24px; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(17,21,27,0.03); }
+  .entete-drill { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .lien-retour { background: none; border: none; color: var(--accent); font-weight: 700; font-size: 13.5px; cursor: pointer; padding: 0; }
+  .score-drill { font-size: 12.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .score-drill b.ok { color: var(--vert); }
+  .score-drill b.non { color: var(--rouge); }
+
+  .profil-client { font-size: 17px; font-weight: 600; line-height: 1.5; margin-bottom: 20px; color: #1C2430; }
+  .citation-client { font-size: 17px; font-weight: 600; line-height: 1.5; margin-bottom: 20px; font-style: italic; color: #1C2430; }
+
+  .choix-binaire { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .btn-choix { padding: 15px 10px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-weight: 700; font-size: 14.5px; cursor: pointer; color: var(--ink); }
+  .btn-choix:hover { border-color: var(--accent); }
+  .liste-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .btn-option { text-align: left; padding: 13px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-size: 14px; cursor: pointer; color: var(--ink); line-height: 1.45; }
+  .btn-option:hover { border-color: var(--accent); }
+
+  .choix-fait .btn-choix, .choix-fait .btn-option, .choix-fait .btn-rep { pointer-events: none; opacity: .55; }
+  .choix-fait .selectionne { opacity: 1; }
+  .choix-fait .bonne-reponse { opacity: 1 !important; border-color: var(--vert); background: var(--vert-wash); }
+  .choix-fait .mauvaise-reponse { opacity: 1 !important; border-color: var(--rouge); background: var(--rouge-wash); }
+
+  .feedback { border-radius: 12px; padding: 14px 16px; font-size: 13.5px; line-height: 1.55; margin-bottom: 18px; display: none; }
+  .feedback.visible { display: block; }
+  .feedback.ok { background: var(--vert-wash); color: #0A5E47; }
+  .feedback.non { background: var(--rouge-wash); color: #8A2A1E; }
+  .pied-drill { display: flex; justify-content: flex-end; }
+  .btn-suivant { background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 12px 22px; font-weight: 700; font-size: 14px; cursor: pointer; display: none; }
+  .btn-suivant.visible { display: inline-block; }
+
+  /* ───────────────── Test ───────────────── */
+  .regle { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; font-size: 14px; color: #3C4450; line-height: 1.5; }
+  .regle .puce { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-wash); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+  .btn-principal { background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 14px 22px; font-weight: 800; font-size: 15px; cursor: pointer; width: 100%; margin-top: 16px; }
+  .btn-principal:hover { background: #6A2FD1; }
+  .btn-secondaire { background: #fff; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 12px; padding: 13px 22px; font-weight: 700; font-size: 14.5px; cursor: pointer; width: 100%; margin-top: 10px; }
+  .alerte-manquant { background: var(--jaune-wash); border: 1.5px dashed #E0B341; border-radius: 12px; padding: 13px 15px; font-size: 13px; color: var(--jaune); margin: 14px 0 0; line-height: 1.55; }
+
+  .entete-quiz { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .compteur-quiz { font-size: 12.5px; color: var(--ink-soft); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .barre-quiz { display: flex; gap: 4px; margin-bottom: 22px; }
+  .seg-quiz { flex: 1; height: 4px; border-radius: 999px; background: var(--line); }
+  .seg-quiz.fait { background: var(--accent); }
+  .btn-rep { padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-weight: 600; font-size: 14px; cursor: pointer; color: var(--ink); text-align: left; line-height: 1.45; }
+  .btn-rep:hover { border-color: var(--accent); }
+  .choix-binaire .btn-rep { text-align: center; font-weight: 700; }
+
+  .score-rond { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 6px solid var(--line); }
+  .score-rond.reussi { border-color: var(--vert); background: var(--vert-wash); }
+  .score-rond.echec { border-color: var(--rouge); background: var(--rouge-wash); }
+  .score-rond .chiffre { font-size: 30px; font-weight: 800; line-height: 1; }
+  .score-rond .sur { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .titre-resultat { text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+  .sous-resultat { text-align: center; color: var(--ink-soft); font-size: 14px; margin-bottom: 24px; }
+  .detail-reponse { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .detail-reponse:last-child { border-bottom: none; }
+  .detail-reponse .icone { flex-shrink: 0; font-weight: 800; }
+  .detail-reponse.ok .icone { color: var(--vert); }
+  .detail-reponse.non .icone { color: var(--rouge); }
+  .detail-reponse .texte-q { color: #3C4450; line-height: 1.5; }
+  .badge-acquis { display: inline-flex; align-items: center; gap: 6px; background: var(--vert-wash); color: var(--vert); font-weight: 800; font-size: 13px; padding: 8px 16px; border-radius: 999px; margin: 0 auto 18px; width: fit-content; }
+
+  /* ───────────────── Bouton + modale "Prompt pour Paul" ───────────────── */
+  .btn-prompt-paul { position: fixed; top: 16px; left: 16px; z-index: 50; background: #fff; border: 1.5px solid var(--line); color: var(--ink-soft); font-size: 11px; font-weight: 700; padding: 7px 12px; border-radius: 999px; cursor: pointer; box-shadow: 0 2px 6px rgba(17,21,27,0.06); }
+  .btn-prompt-paul:hover { border-color: var(--accent); color: var(--accent); }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(17,21,27,0.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .modal-prompt { background: #fff; border-radius: 18px; max-width: 720px; width: 100%; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(17,21,27,0.25); }
+  .modal-entete { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); font-weight: 800; font-size: 14px; flex-shrink: 0; }
+  .btn-fermer { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--ink-soft); line-height: 1; padding: 4px; }
+  .texte-prompt { margin: 0; padding: 20px; overflow-y: auto; white-space: pre-wrap; font-family: var(--font); font-size: 12.5px; line-height: 1.6; color: #2A3342; flex: 1; }
+  .modal-pied { padding: 14px 20px; border-top: 1px solid var(--line); flex-shrink: 0; }
+
+
+  /* Glossaire des traitements */
+  .liste-args { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+  .arg { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .arg .titre-arg { font-weight: 800; font-size: 14.5px; margin-bottom: 4px; }
+  .arg .gain { font-size: 13.5px; color: #3C4450; line-height: 1.55; margin-bottom: 8px; }
+  .arg .phrase { font-size: 13px; color: #4A2E8F; background: var(--accent-wash); border-radius: 10px; padding: 9px 12px; line-height: 1.5; font-style: italic; }
+
+  /* Tableau des verres blancs */
+  .tableau-wrap { overflow-x: auto; margin-top: 6px; }
+  .tableau { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 460px; }
+  .tableau th, .tableau td { padding: 10px 8px; text-align: center; border-bottom: 1px solid var(--line); }
+  .tableau th { font-size: 12px; font-weight: 800; color: var(--ink); vertical-align: bottom; }
+  .tableau th.star { color: var(--accent); }
+  .tableau td:first-child, .tableau th:first-child { text-align: left; color: #3C4450; font-weight: 600; }
+  .tableau td.oui { color: var(--vert); font-weight: 800; }
+  .tableau td.non { color: #C5CBD3; }
+  .tableau td.col-star { background: var(--accent-wash); }
+
+  /* Cartes de gamme */
+  .grille-gamme { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
+  .gamme { border-radius: 14px; padding: 16px; background: var(--bg); }
+  .gamme.star { background: var(--accent-wash); border: 1.5px solid #D6C4FA; }
+  .gamme .niveau { font-size: 10.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 4px; }
+  .gamme.star .niveau { color: var(--accent); }
+  .gamme .nom { font-weight: 800; font-size: 15px; margin-bottom: 6px; }
+  .gamme .contenu { font-size: 13px; color: #3C4450; line-height: 1.5; margin-bottom: 8px; }
+  .gamme .pour-qui { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+  .gamme .pour-qui strong { color: var(--ink); }
+
+  /* Conseil : situation → verre */
+  .liste-conseil { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+  .conseil { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 13.5px; color: #3C4450; line-height: 1.45; }
+  .conseil .verre { font-weight: 800; color: var(--accent); text-align: right; font-size: 13px; }
+
+  /* Délais */
+  .liste-delais { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+  .delai { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); padding: 8px 0; font-size: 13.5px; color: #3C4450; }
+  .delai:last-child { border-bottom: none; }
+  .delai .duree { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .delai .duree.rapide { color: var(--vert); }
+  .delai .duree.long { color: var(--jaune); }
+
+  @media (max-width: 560px) {
+    .noms-marche { grid-template-columns: 1fr 1fr; }
+    .infos-pratiques { grid-template-columns: 1fr; }
+    .grille-schema, .grille-criteres, .grille-personas, .grille-formats, .grille-gamme { grid-template-columns: 1fr; }
+    .conseil { grid-template-columns: 1fr; }
+    .conseil .verre { text-align: left; }
+    .page { padding-top: 60px; }
+  }
+</style>
+<link rel="stylesheet" href="theme-app.css">
+
+<button class="btn-prompt-paul" id="btnPromptPaul">📋 Prompt pour Paul</button>
+
+<div class="modal-overlay" id="modalPrompt" style="display:none">
+  <div class="modal-prompt">
+    <div class="modal-entete">
+      <span>Prompt pour Paul — Module Les traitements de verres</span>
+      <button class="btn-fermer" id="btnFermerModal">✕</button>
+    </div>
+    <pre class="texte-prompt" id="textePrompt"></pre>
+    <div class="modal-pied">
+      <button class="btn-principal" id="btnCopierPrompt" style="margin-top:0">Copier le prompt</button>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="etapes">
+    <div class="etape actif" data-etape="cours"><span class="num">Étape 1</span>Cours</div>
+    <div class="etape" data-etape="entrainement"><span class="num">Étape 2</span>Entraînement</div>
+    <div class="etape" data-etape="test"><span class="num">Étape 3</span>Test</div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 1 — COURS ═══════════════════ -->
+  <div id="vueCours" class="vue-etape">
+    <span class="eyebrow">Module Après-Formation · Verres</span>
+    <h1>Les traitements de verres</h1>
+    <p class="sous-titre">Connaître nos verres blancs et nos verres solaires, savoir ce que chaque traitement apporte au client et lui conseiller le bon verre.</p>
+
+    <div class="carte">
+      <h2>1. C'est quoi, un traitement ?</h2>
+      <p>Le verre corrige la vue. Les <strong>traitements</strong>, ce sont des couches ajoutées sur le verre pour le rendre <strong>plus résistant, plus confortable et plus facile à vivre</strong> au quotidien.</p>
+      <p>Voici les 5 traitements que tu vas retrouver dans nos verres, avec ce qu'ils changent pour le client :</p>
+      <div class="liste-args" id="listeGlossaire"></div>
+    </div>
+
+    <div class="carte">
+      <h2>2. Nos verres blancs</h2>
+      <p>Les verres blancs, ce sont les verres clairs, ceux qu'on porte tous les jours. On en a <strong>4</strong>, du plus simple au plus complet :</p>
+      <div class="grille-gamme" id="grilleGamme"></div>
+      <p style="margin-top:16px">Ce qu'il y a dans chaque verre, en un coup d'œil :</p>
+      <div class="tableau-wrap"><table class="tableau" id="tableauTraitements"></table></div>
+      <div class="astuce">💡 <strong>À retenir</strong> : le Premium, c'est le Basic avec tout le confort en plus. Le Digital Protect Pro, c'est le Premium avec l'anti-lumière bleue. Le photochromique, c'est le Premium qui se teinte au soleil.</div>
+    </div>
+
+    <div class="carte">
+      <h2>3. Le verre photochromique</h2>
+      <p>C'est un verre blanc qui <strong>a tout d'un Premium</strong>, et qui <strong>se teinte quand il est exposé aux UV</strong>. À l'intérieur, il est clair. Dehors au soleil, il fonce tout seul. Une seule paire, pas besoin de changer de lunettes en sortant.</p>
+      <p>Les clients l'appellent souvent autrement. Si tu entends l'un de ces noms, on parle de notre verre photochromique :</p>
+      <div class="noms-marche">
+        <div class="nom-marche"><div class="marque">Transitions</div></div>
+        <div class="nom-marche"><div class="marque">Photochromique</div></div>
+        <div class="nom-marche"><div class="marque">Verres qui foncent au soleil</div></div>
+        <div class="nom-marche"><div class="marque">Verres quatre saisons</div></div>
+      </div>
+      <div class="nom-maison">Chez nous, tous ces noms correspondent à <strong>notre verre photochromique</strong>. Sur le téléphone de vente, il s'appelle <strong>Transition</strong> ; dans le back-end, <strong>Solarisation</strong>. C'est le même verre.</div>
+    </div>
+
+    <div class="grille-schema">
+      <div class="carte-schema">
+        <div class="eyebrow-schema">01 / À l'intérieur</div>
+        <div class="cercle-wrap">
+          <svg class="cercle-svg" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs><clipPath id="disque-int"><circle cx="120" cy="120" r="100"/></clipPath></defs>
+            <g clip-path="url(#disque-int)">
+              <rect x="20" y="20" width="200" height="200" fill="#EEF3F8"/>
+              <path d="M 86,96 Q 120,78 154,96 Q 120,114 86,96 Z" fill="none" stroke="#5B6472" stroke-width="2.5"/>
+              <circle cx="120" cy="96" r="9" fill="#AEB9C4" stroke="#5B6472" stroke-width="2"/>
+              <circle cx="120" cy="96" r="4" fill="#5B6472"/>
+            </g>
+            <circle cx="120" cy="120" r="100" fill="none" stroke="#AEB9C4" stroke-width="2"/>
+            <circle cx="120" cy="120" r="106" fill="none" stroke="#C5CDD5" stroke-width="1.5"/>
+            <text x="120" y="160" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="800" fill="#3A4252">Clair</text>
+          </svg>
+        </div>
+        <div class="nom-verre">Verre clair</div>
+        <div class="sous-verre">À la maison, au bureau, en magasin : le verre reste clair, comme un verre Premium.</div>
+        <div class="legende-verre">
+          <span><i style="background:#C7D7EA"></i>Verre clair</span>
+        </div>
+      </div>
+
+      <div class="carte-schema">
+        <div class="eyebrow-schema">02 / Au soleil</div>
+        <div class="cercle-wrap">
+          <svg class="cercle-svg" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs><clipPath id="disque-sol"><circle cx="120" cy="120" r="100"/></clipPath></defs>
+            <g clip-path="url(#disque-sol)">
+              <rect x="20" y="20" width="200" height="200" fill="#7A746C"/>
+              <path d="M 86,96 Q 120,78 154,96 Q 120,114 86,96 Z" fill="none" stroke="#3A3631" stroke-width="2.5"/>
+              <circle cx="120" cy="96" r="9" fill="#5E5850" stroke="#3A3631" stroke-width="2"/>
+              <circle cx="120" cy="96" r="4" fill="#3A3631"/>
+            </g>
+            <circle cx="120" cy="120" r="100" fill="none" stroke="#AEB9C4" stroke-width="2"/>
+            <circle cx="120" cy="120" r="106" fill="none" stroke="#C5CDD5" stroke-width="1.5"/>
+            <text x="120" y="160" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="800" fill="#FFFFFF">Teinté</text>
+            <g stroke="#E9B949" stroke-width="3" stroke-linecap="round">
+              <line x1="196" y1="30" x2="196" y2="40"/><line x1="196" y1="64" x2="196" y2="74"/>
+              <line x1="174" y1="52" x2="184" y2="52"/><line x1="208" y1="52" x2="218" y2="52"/>
+            </g>
+            <circle cx="196" cy="52" r="8" fill="#E9B949"/>
+          </svg>
+        </div>
+        <div class="nom-verre">Verre teinté</div>
+        <div class="sous-verre">Dehors, les UV du soleil font foncer le verre tout seul : il devient un verre solaire.</div>
+        <div class="legende-verre">
+          <span><i style="background:#7A746C"></i>Verre teinté par les UV</span>
+        </div>
+      </div>
+    </div>
+    <div class="caption-schema">Schéma pédagogique · teinte indicative</div>
+
+    <div class="carte">
+      <h2>4. Nos verres solaires</h2>
+      <p>Pour le soleil, on a 2 verres, tous les deux en <strong>catégorie 3</strong> : une protection forte, faite pour le plein soleil.</p>
+      <div class="grille-gamme" id="grilleSolaires"></div>
+    </div>
+
+    <div class="carte">
+      <h2>5. Les verres amincis</h2>
+      <p>Plus la correction est forte, plus le verre est épais. Les <strong>verres amincis</strong> permettent d'avoir des verres plus fins et plus légers. On propose 4 indices : <strong>plus le chiffre est élevé, plus le verre est fin</strong>.</p>
+      <div class="noms-marche">
+        <div class="nom-marche"><div class="marque">1.5</div></div>
+        <div class="nom-marche"><div class="marque">1.6</div></div>
+        <div class="nom-marche"><div class="marque">1.67</div></div>
+        <div class="nom-marche"><div class="marque">1.74</div></div>
+      </div>
+      <p style="margin-top:14px">En magasin, on a tout en stock sauf le 1.74 : il concerne des corrections au-dessus de la limite des corrections en stock, que tu as déjà vue en formation.</p>
+      <div class="astuce">💡 <strong>Tu n'as rien à choisir</strong> : le logiciel sélectionne automatiquement l'aminci en fonction de la correction du client. Le client a toujours l'aminci optimal, sans que tu aies quoi que ce soit à faire.</div>
+    </div>
+
+    <div class="carte">
+      <h2>6. Les délais</h2>
+      <p>Presque tout est prêt <strong>en 10 minutes</strong>, avec ou sans correction. Une seule exception à connaître par cœur :</p>
+      <div class="liste-delais" id="listeDelais"></div>
+      <div class="astuce">💡 <strong>Le bon réflexe</strong> : un client veut des solaires à sa vue pour partir tout de suite ? L'UV Protect est prêt en 10 minutes. Le polarisé à la vue, c'est 9 jours.</div>
+    </div>
+
+    <div class="carte">
+      <h2>7. Conseiller le bon verre</h2>
+      <p>Pour trouver le bon verre, pars toujours du <strong>quotidien du client</strong> : une ou deux questions suffisent (écrans, voiture, extérieur, vacances).</p>
+      <div class="liste-conseil" id="listeConseil"></div>
+      <div class="astuce">💡 <strong>On part toujours sur le Digital Protect Pro</strong> : dans l'offre 1=1, tous les traitements sont compris, sans aucun supplément, sur la première paire comme sur la deuxième. Le client a donc notre meilleur verre blanc au même prix. Le Basic, c'est uniquement quand le client veut absolument la paire à 10 €, ou qu'il n'a pas le budget pour profiter de l'offre 1=1.</div>
+    </div>
+
+    <div class="carte">
+      <h2>8. Exemples concrets</h2>
+      <div class="grille-personas">
+        <div class="persona bon">
+          <span class="tag">✅ Bon conseil</span>
+          <div class="nom">Julie, 34 ans, comptable</div>
+          <div class="desc">Elle passe ses journées sur écran.</div>
+          <div class="conclusion">→ Digital Protect Pro : anti-reflets et anti-lumière bleue pour ses journées sur écran.</div>
+        </div>
+        <div class="persona bon">
+          <span class="tag">✅ Bon conseil</span>
+          <div class="nom">Marc, 45 ans, jardinier</div>
+          <div class="desc">Il est dehors toute la journée et en a assez de changer de lunettes.</div>
+          <div class="conclusion">→ Photochromique : clair à l'intérieur, teinté au soleil.</div>
+        </div>
+        <div class="persona mauvais">
+          <span class="tag">⚠️ Attention au piège</span>
+          <div class="nom">Paul, 40 ans, myope</div>
+          <div class="desc">Il veut des solaires polarisées à sa vue pour partir en vacances ce soir.</div>
+          <div class="conclusion">→ Le polarisé à la vue demande 9 jours : pour ce soir, on lui propose l'UV Protect, prêt en 10 minutes.</div>
+        </div>
+        <div class="persona mauvais">
+          <span class="tag">⚠️ Attention au piège</span>
+          <div class="nom">Lina, 30 ans, astigmate</div>
+          <div class="desc">Elle veut des solaires roses à sa vue.</div>
+          <div class="conclusion">→ À la vue, l'UV Protect existe en gris ou en brun. Les couleurs, c'est en plan (sans correction).</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>9. Infos pratiques</h2>
+      <div class="infos-pratiques">
+        <div class="info-item"><div class="valeur">10 min</div><div class="label">tous nos verres, avec ou sans correction</div></div>
+        <div class="info-item"><div class="valeur">9 jours</div><div class="label">seule exception : le polarisé avec correction</div></div>
+        <div class="info-item"><div class="valeur">Catégorie 3</div><div class="label">nos deux verres solaires</div></div>
+      </div>
+      <div class="offre-1-1">💡 <strong>Dans l'offre 1=1, tous les traitements sont compris.</strong><br>Aucun supplément : le client choisit ce qu'il veut, sur la première paire comme sur la deuxième, et le prix ne change pas.</div>
+      <div class="a-valider">🟡 <strong>À compléter avec les infos Lunettes Pour Tous</strong> : les couleurs disponibles en plan pour l'UV Protect ; les traitements dans le parcours Suprême et le « Suprême Digital Protect Pro » vu en formation montage.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 2 — ENTRAÎNEMENT ═══════════════════ -->
+  <div id="vueEntrainement" class="vue-etape" style="display:none">
+    <span class="eyebrow">Module Après-Formation · Les traitements de verres</span>
+    <h1>Entraînement</h1>
+    <p class="sous-titre">Pas de pression : tu peux refaire ces exercices autant de fois que tu veux, dans l'ordre que tu veux.</p>
+
+    <div id="vueMenu">
+      <div class="progress-formats" id="progressFormats"></div>
+      <div class="grille-formats" id="grilleFormats"></div>
+    </div>
+
+    <div id="vueDrill" style="display:none">
+      <div class="carte-drill">
+        <div class="entete-drill">
+          <button class="lien-retour" id="btnRetourMenu">← Retour aux exercices</button>
+          <span class="score-drill" id="scoreDrill"></span>
+        </div>
+        <div id="corpsDrill"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="pied-drill">
+          <button class="btn-suivant" id="btnSuivant">Suivant →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 3 — TEST ═══════════════════ -->
+  <div id="vueTest" class="vue-etape" style="display:none">
+    <span class="eyebrow">Module Après-Formation · Les traitements de verres</span>
+    <h1>Test</h1>
+    <p class="sous-titre">Une seule fois pour verrouiller le module — mais tu peux retenter autant de fois que nécessaire si besoin.</p>
+
+    <div id="vueIntro">
+      <div class="carte">
+        <h2>Avant de commencer</h2>
+        <div class="regle"><span class="puce">1</span><span>12 questions, mélange de ce qu'on a vu dans le cours et à l'entraînement.</span></div>
+        <div class="regle"><span class="puce">2</span><span>Pas de correction affichée en cours de route — le score tombe à la fin.</span></div>
+        <div class="regle"><span class="puce">3</span><span>Il faut <strong>10/12</strong> pour valider le module.</span></div>
+        <div class="regle"><span class="puce">4</span><span>En dessous, pas de souci : retourne t'entraîner et retente quand tu veux.</span></div>
+
+        <div class="alerte-manquant" id="gateManquant" style="display:none">
+          ⚠️ Pas encore accessible : il faut avoir fait au moins une fois chaque format d'entraînement. Il reste : <strong id="texteManquant"></strong>.
+          <button class="btn-secondaire" id="btnAllerEntrainement">Aller à l'entraînement</button>
+        </div>
+
+        <button class="btn-principal" id="btnCommencer">Commencer le test</button>
+      </div>
+    </div>
+
+    <div id="vueDejaAcquis" style="display:none">
+      <div class="carte" style="text-align:center">
+        <div class="badge-acquis" style="margin:0 auto 14px">✓ Module déjà acquis</div>
+        <p>Tu as déjà validé ce module. Pas besoin de le repasser.</p>
+        <button class="btn-secondaire" id="btnRepasserQuandMeme">Le repasser quand même</button>
+      </div>
+    </div>
+
+    <div id="vueQuiz" style="display:none">
+      <div class="carte">
+        <div class="entete-quiz"><span class="compteur-quiz" id="compteurQuiz"></span></div>
+        <div class="barre-quiz" id="barreQuiz"></div>
+        <div id="corpsQuestion"></div>
+      </div>
+    </div>
+
+    <div id="vueResultat" style="display:none">
+      <div class="carte">
+        <div class="score-rond" id="scoreRond">
+          <div class="chiffre" id="scoreChiffre"></div>
+          <div class="sur">sur 12</div>
+        </div>
+        <div class="titre-resultat" id="titreResultat"></div>
+        <div class="sous-resultat" id="sousResultat"></div>
+        <div id="detailResultat"></div>
+        <button class="btn-principal" id="btnRefaire" style="display:none">Retenter le test</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Utilitaires partagés ───────────────────────────────────────
+function $(sel) { return document.querySelector(sel) }
+
+function melanger(tableau) {
+  const copie = [...tableau]
+  for (let i = copie.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copie[i], copie[j]] = [copie[j], copie[i]]
+  }
+  return copie
+}
+
+function lireStockage(cle) { try { return localStorage.getItem(cle) } catch (e) { return null } }
+function ecrireStockage(cle, val) { try { localStorage.setItem(cle, val) } catch (e) {} }
+
+// ── Navigation entre étapes ─────────────────────────────────────
+function irAEtape(cle) {
+  document.querySelectorAll('.etape').forEach(el => el.classList.toggle('actif', el.dataset.etape === cle))
+  $('#vueCours').style.display = cle === 'cours' ? 'block' : 'none'
+  $('#vueEntrainement').style.display = cle === 'entrainement' ? 'block' : 'none'
+  $('#vueTest').style.display = cle === 'test' ? 'block' : 'none'
+  if (cle === 'test') majGateTest()
+  window.scrollTo(0, 0)
+}
+document.querySelectorAll('.etape').forEach(el => el.addEventListener('click', () => irAEtape(el.dataset.etape)))
+
+// ═══════════════════ COURS (contenus générés) ═══════════════════
+// Ces listes alimentent à la fois la page et le prompt pour Paul.
+const GLOSSAIRE = [
+  { ico: "🛡️", nom: "Anti-rayures (verre durci)", simple: "Le verre résiste mieux aux petites rayures du quotidien.", phrase: "« Vos verres résistent mieux aux rayures. »" },
+  { ico: "✨", nom: "Anti-reflets", simple: "Supprime les reflets gênants sur le verre : la vision est plus nette, surtout la nuit en voiture et devant un écran. Et on voit les yeux du client, pas ses verres.", phrase: "« Plus de reflets : vous voyez plus net, et on voit vos yeux, pas vos verres. »" },
+  { ico: "🧼", nom: "Anti-salissures", simple: "Les traces de doigts et la poussière accrochent moins : le verre se nettoie d'un coup de chiffon.", phrase: "« Vos verres restent propres plus longtemps et se nettoient très facilement. »" },
+  { ico: "💧", nom: "Hydrophobe", simple: "L'eau glisse sur le verre au lieu de s'étaler : sous la pluie, les gouttes gênent beaucoup moins.", phrase: "« Sous la pluie, l'eau glisse sur vos verres. »" },
+  { ico: "💻", nom: "Anti-lumière bleue", simple: "Filtre la lumière bleue des écrans (téléphone, télé, tablette, ordinateur) et des lumières artificielles : plus de confort au quotidien et moins de fatigue oculaire.", phrase: "« Vos verres filtrent la lumière bleue des écrans, télé, tablette, ordinateur, et des lumières artificielles : plus de confort au quotidien, et ça limite la fatigue oculaire. »" },
+];
+
+const GAMME_BLANCS = [
+  { niveau: "Entrée de gamme", nom: "Basic", contenu: "Anti-rayures, verre durci. Simple et solide.", pourQui: "Uniquement le client qui veut absolument la paire à 10 €, ou qui n'a pas le budget pour l'offre 1=1. La paire à 10 € existe uniquement en unifocal (loin ou près) : pour un client presbyte, elle peut faire une bonne troisième paire après un 1=1, par exemple une paire de lecture." },
+  { niveau: "Le confort", nom: "Premium", contenu: "Anti-rayures, anti-reflets, anti-salissures et hydrophobe.", pourQui: "Le client qui veut du confort au quotidien : plus de reflets, des verres faciles à vivre." },
+  { niveau: "⭐ Notre meilleur verre blanc", nom: "Digital Protect Pro", star: true, contenu: "Tout le Premium, plus l'anti-lumière bleue.", pourQui: "Le verre par lequel on commence toujours : compris dans l'offre 1=1, sans supplément." },
+  { niveau: "Clair dedans, teinté dehors", nom: "Photochromique", contenu: "Tout le Premium, et il se teinte quand il est exposé aux UV.", pourQui: "Le client souvent dehors qui ne veut pas changer de lunettes en sortant." },
+];
+
+// Colonnes du tableau : Basic, Premium, Digital Protect Pro, Photochromique
+const COLONNES_TABLEAU = ["Basic", "Premium", "Digital Protect Pro", "Photochromique"];
+const LIGNES_TABLEAU = [
+  { nom: "Anti-rayures", valeurs: [true, true, true, true] },
+  { nom: "Anti-reflets", valeurs: [false, true, true, true] },
+  { nom: "Anti-salissures", valeurs: [false, true, true, true] },
+  { nom: "Hydrophobe", valeurs: [false, true, true, true] },
+  { nom: "Anti-lumière bleue", valeurs: [false, false, true, false] },
+  { nom: "Se teinte au soleil", valeurs: [false, false, false, true] },
+];
+const COLONNE_STAR = 2;
+
+const SOLAIRES = [
+  { niveau: "Solaire catégorie 3", nom: "UV Protect", contenu: "Un verre solaire qui protège du plein soleil.", pourQui: "<strong>À la vue</strong> : gris ou brun. <strong>En plan</strong> : plein de couleurs au choix. Prêt en 10 minutes, avec ou sans correction." },
+  { niveau: "Solaire catégorie 3", nom: "Polarisé", contenu: "Un verre solaire qui supprime en plus les reflets éblouissants : sur l'eau, sur la route mouillée, sur la neige.", pourQui: "<strong>Gris ou brun</strong>, à la vue ou en plan. En plan : 10 minutes. À la vue : 9 jours." },
+];
+
+const DELAIS = [
+  { verre: "Basic, Premium, Digital Protect Pro, photochromique", duree: "10 min", rapide: true, precision: "avec ou sans correction" },
+  { verre: "UV Protect", duree: "10 min", rapide: true, precision: "avec ou sans correction" },
+  { verre: "Polarisé en plan", duree: "10 min", rapide: true, precision: "" },
+  { verre: "Polarisé à la vue", duree: "9 jours", rapide: false, precision: "" },
+];
+
+const CONSEILS = [
+  { situation: "Il passe du temps sur écran (travail, téléphone, tablette)", verre: "Digital Protect Pro" },
+  { situation: "Il conduit souvent la nuit et les reflets le gênent", verre: "Digital Protect Pro (anti-reflets)" },
+  { situation: "Il prend l'offre 1=1", verre: "Digital Protect Pro, sur les deux paires" },
+  { situation: "Il veut absolument la paire à 10 €, ou n'a pas le budget pour le 1=1", verre: "Basic" },
+  { situation: "Il est souvent dehors et ne veut pas changer de lunettes en sortant", verre: "Photochromique" },
+  { situation: "Il veut des solaires à sa vue, prêtes tout de suite", verre: "UV Protect (10 min)" },
+  { situation: "Il est ébloui par les reflets : bateau, pêche, ski, route", verre: "Polarisé" },
+];
+
+$('#listeGlossaire').innerHTML = GLOSSAIRE.map(g => `
+  <div class="arg">
+    <div class="titre-arg">${g.ico} ${g.nom}</div>
+    <div class="gain">${g.simple}</div>
+    <div class="phrase">${g.phrase}</div>
+  </div>`).join('')
+
+function rendreGamme(liste) {
+  return liste.map(g => `
+    <div class="gamme ${g.star ? 'star' : ''}">
+      <div class="niveau">${g.niveau}</div>
+      <div class="nom">${g.nom}</div>
+      <div class="contenu">${g.contenu}</div>
+      <div class="pour-qui">${g.pourQui}</div>
+    </div>`).join('')
+}
+$('#grilleGamme').innerHTML = rendreGamme(GAMME_BLANCS)
+$('#grilleSolaires').innerHTML = rendreGamme(SOLAIRES)
+
+$('#tableauTraitements').innerHTML = `
+  <thead><tr><th></th>${COLONNES_TABLEAU.map((c, i) => `<th class="${i === COLONNE_STAR ? 'star' : ''}">${c}</th>`).join('')}</tr></thead>
+  <tbody>${LIGNES_TABLEAU.map(l => `<tr><td>${l.nom}</td>${l.valeurs.map((v, i) =>
+    `<td class="${v ? 'oui' : 'non'} ${i === COLONNE_STAR ? 'col-star' : ''}">${v ? '✓' : '—'}</td>`).join('')}</tr>`).join('')}</tbody>`
+
+$('#listeDelais').innerHTML = DELAIS.map(d => `
+  <div class="delai"><span>${d.verre}${d.precision ? ` <span style="color:var(--ink-soft)">· ${d.precision}</span>` : ''}</span><span class="duree ${d.rapide ? 'rapide' : 'long'}">${d.duree}</span></div>`).join('')
+
+$('#listeConseil').innerHTML = CONSEILS.map(c => `
+  <div class="conseil"><span>${c.situation}</span><span class="verre">→ ${c.verre}</span></div>`).join('')
+
+// ═══════════════════ ENTRAÎNEMENT ═══════════════════
+const FORMAT_A = [
+  { profil: "Julie, 34 ans, comptable, passe ses journées sur écran. On lui propose un Digital Protect Pro.", bon: true, explication: "Anti-reflets et anti-lumière bleue : c'est le verre idéal pour ses journées sur écran." },
+  { profil: "Thomas, 28 ans, développeur, 8 heures par jour sur ordinateur. On lui propose un verre Basic.", bon: false, explication: "Le Basic n'a ni anti-reflets ni anti-lumière bleue. Pour ses journées sur écran, c'est le Digital Protect Pro." },
+  { profil: "Marc, 45 ans, jardinier, dehors toute la journée, en a assez de changer de lunettes. On lui propose un photochromique.", bon: true, explication: "Clair à l'intérieur, teinté au soleil : une seule paire pour toute sa journée." },
+  { profil: "Paul, 40 ans, myope, veut des solaires à sa vue pour partir en vacances ce soir. On lui propose un polarisé à la vue.", bon: false, explication: "Le polarisé à la vue demande 9 jours. Pour ce soir, c'est l'UV Protect, prêt en 10 minutes." },
+  { profil: "Nadia, 26 ans, myope, veut absolument la paire à 10 € et ne souhaite pas l'offre 1=1. On lui propose un verre Basic.", bon: true, explication: "C'est le seul cas où on part sur le Basic : le client veut la paire à 10 €, ou n'a pas le budget pour le 1=1." },
+  { profil: "Gérard, 62 ans, presbyte, vient de prendre deux paires de progressifs en 1=1. Il veut en plus une paire de lecture pour sa table de chevet. On lui propose la paire à 10 € en Basic, en vision de près.", bon: true, explication: "Bonne troisième paire : la paire à 10 € est en unifocal, ici en vision de près uniquement, parfait pour lire au lit." },
+  { profil: "Hugo, 35 ans, prend l'offre 1=1. Pour sa deuxième paire, on lui propose un verre Basic.", bon: false, explication: "Dans le 1=1, tous les traitements sont compris sur les deux paires, sans supplément : on part sur le Digital Protect Pro." },
+  { profil: "Éric, 55 ans, ne porte pas de lunettes de vue. Il part pêcher et il est ébloui par les reflets sur l'eau. On lui propose un polarisé en plan.", bon: true, explication: "Le polarisé supprime les reflets sur l'eau, et en plan il est prêt en 10 minutes." },
+  { profil: "Lina, 30 ans, astigmate, veut des solaires roses à sa vue. On lui commande un UV Protect rose avec sa correction.", bon: false, explication: "À la vue, l'UV Protect existe uniquement en gris ou en brun. Les couleurs, c'est en plan." },
+  { profil: "Bernard, 60 ans, prend l'offre 1=1. Il conduit souvent la nuit et se plaint des reflets des phares. On lui propose un Digital Protect Pro.", bon: true, explication: "L'anti-reflets règle sa gêne la nuit, et le Digital Protect Pro est compris dans le 1=1 sans supplément." },
+  { profil: "Léo, 16 ans, passe ses soirées sur son téléphone et sa console. On lui propose un Digital Protect Pro.", bon: true, explication: "Beaucoup d'écrans : l'anti-lumière bleue du Digital Protect Pro lui apporte plus de confort." },
+  { profil: "Claire, 38 ans, myope, veut des solaires grises à sa vue, prêtes aujourd'hui. On lui propose un UV Protect gris.", bon: true, explication: "UV Protect gris à la vue : catégorie 3, prêt en 10 minutes." },
+  { profil: "Sophie, 42 ans, veut un verre qui fonce tout seul au soleil. On lui propose un Digital Protect Pro.", bon: false, explication: "Le Digital Protect Pro reste clair. Le verre qui se teinte au soleil, c'est le photochromique." },
+];
+
+const FORMAT_B = [
+  { profil: "Le client demande : « C'est quoi la différence entre le Premium et le Digital Protect Pro ? »",
+    options: [
+      { texte: "Le Digital Protect Pro a tout le Premium, et en plus il filtre la lumière bleue des écrans et des lumières artificielles.", bon: true, explication: "Exactement : la seule différence, c'est l'anti-lumière bleue." },
+      { texte: "Le Digital Protect Pro est plus résistant aux rayures.", bon: false, explication: "Les deux ont l'anti-rayures : la différence, c'est l'anti-lumière bleue." },
+      { texte: "Aucune, c'est juste le nom qui change.", bon: false, explication: "Faux : le Digital Protect Pro a l'anti-lumière bleue en plus." },
+    ] },
+  { profil: "Le client demande : « Ça sert à quoi, l'anti-reflets ? »",
+    options: [
+      { texte: "Ça protège vos yeux du soleil.", bon: false, explication: "Non : pour le soleil, ce sont les verres solaires ou le photochromique." },
+      { texte: "Ça supprime les reflets sur vos verres : vous voyez plus net, surtout la nuit en voiture et devant un écran, et on voit vos yeux, pas vos verres.", bon: true, explication: "Exactement : on explique le bénéfice concret pour le client." },
+      { texte: "Ça rend le verre incassable.", bon: false, explication: "Faux : l'anti-reflets supprime les reflets, il ne rend pas le verre incassable." },
+    ] },
+  { profil: "Le client demande : « Je peux avoir mes solaires polarisées à ma vue aujourd'hui ? »",
+    options: [
+      { texte: "Oui, en 10 minutes comme tout le reste.", bon: false, explication: "Faux : le polarisé à la vue demande 9 jours." },
+      { texte: "Non, le polarisé n'existe pas avec correction.", bon: false, explication: "Faux : le polarisé existe à la vue, mais il demande 9 jours." },
+      { texte: "Avec correction, le polarisé demande 9 jours. Si vous les voulez aujourd'hui, l'UV Protect est prêt en 10 minutes, lui aussi en catégorie 3.", bon: true, explication: "Exactement : on donne le bon délai et on propose une solution pour aujourd'hui." },
+    ] },
+  { profil: "Le client demande : « Je voudrais des solaires vertes à ma vue. »",
+    options: [
+      { texte: "À votre vue, nos solaires existent en gris ou en brun. Les autres couleurs sont disponibles sans correction.", bon: true, explication: "Exactement : à la vue, c'est gris ou brun." },
+      { texte: "Pas de souci, toutes les couleurs existent à la vue.", bon: false, explication: "Faux : à la vue, c'est uniquement gris ou brun." },
+      { texte: "On ne fait pas de solaires à la vue.", bon: false, explication: "Faux : l'UV Protect et le polarisé existent à la vue, en gris ou en brun." },
+    ] },
+  { profil: "Le client demande : « Les verres qui foncent au soleil, vous en avez ? »",
+    options: [
+      { texte: "Non, il faut prendre une paire de solaires en plus.", bon: false, explication: "Si : c'est notre verre photochromique." },
+      { texte: "Oui, c'est le Digital Protect Pro.", bon: false, explication: "Non : le Digital Protect Pro reste clair. C'est le photochromique qui se teinte." },
+      { texte: "Oui, notre verre photochromique : il a tout d'un Premium, et il se teinte quand il est exposé aux UV.", bon: true, explication: "Exactement : on nomme le bon verre et ce qu'il apporte." },
+    ] },
+  { profil: "Le client demande : « Pourquoi je prendrais l'anti-lumière bleue ? »",
+    options: [
+      { texte: "Parce que c'est plus cher, donc c'est mieux.", bon: false, explication: "Le prix n'est pas un argument : on parle de ce que le client y gagne." },
+      { texte: "Vous passez du temps sur écran ? Vos verres filtrent la lumière bleue des écrans, télé, tablette, ordinateur, et des lumières artificielles : plus de confort au quotidien, et ça limite la fatigue oculaire.", bon: true, explication: "Exactement : on part de son quotidien, puis on donne le bénéfice." },
+      { texte: "Ça corrige la vue de près.", bon: false, explication: "Faux : l'anti-lumière bleue ne corrige rien, il filtre la lumière bleue des écrans et des lumières artificielles." },
+    ] },
+];
+
+const FORMAT_C = [
+  { enonce: "Le Digital Protect Pro est notre meilleur verre blanc.", vrai: true },
+  { enonce: "Le Premium a un anti-lumière bleue.", vrai: false },
+  { enonce: "Le Basic est anti-rayures, avec un verre durci.", vrai: true },
+  { enonce: "Le Basic a un anti-reflets.", vrai: false },
+  { enonce: "Le Digital Protect Pro a tout le Premium, plus l'anti-lumière bleue.", vrai: true },
+  { enonce: "Le photochromique a tout d'un verre Premium, et il se teinte aux UV.", vrai: true },
+  { enonce: "Hydrophobe veut dire que l'eau glisse sur le verre.", vrai: true },
+  { enonce: "Nos verres UV Protect et polarisés sont de catégorie 3.", vrai: true },
+  { enonce: "Le polarisé existe uniquement en gris ou en brun.", vrai: true },
+  { enonce: "À la vue, l'UV Protect existe dans plein de couleurs.", vrai: false },
+  { enonce: "Le polarisé à la vue est prêt en 10 minutes.", vrai: false },
+  { enonce: "Le polarisé en plan est prêt en 10 minutes.", vrai: true },
+  { enonce: "L'UV Protect à la vue est prêt en 10 minutes.", vrai: true },
+  { enonce: "Le photochromique avec correction demande 9 jours.", vrai: false },
+  { enonce: "Dans l'offre 1=1, tous les traitements sont compris, sans supplément.", vrai: true },
+  { enonce: "Dans l'offre 1=1, la deuxième paire n'a droit qu'au verre Basic.", vrai: false },
+  { enonce: "Dans l'offre 1=1, on part toujours sur le Digital Protect Pro.", vrai: true },
+  { enonce: "Le photochromique s'appelle Transition sur le téléphone de vente et Solarisation dans le back-end.", vrai: true },
+  { enonce: "Le vendeur doit choisir lui-même l'indice de l'aminci.", vrai: false },
+  { enonce: "Plus l'indice de l'aminci est élevé, plus le verre est fin.", vrai: true },
+  { enonce: "Le 1.74 est en stock en magasin.", vrai: false },
+  { enonce: "Le polarisé supprime les reflets éblouissants, par exemple sur l'eau.", vrai: true },
+  { enonce: "L'anti-salissures permet de nettoyer les verres plus facilement.", vrai: true },
+  { enonce: "L'anti-reflets protège les yeux du soleil.", vrai: false },
+];
+
+const FORMAT_D = [
+  { profil: "Un collègue propose un verre Basic à une cliente qui travaille toute la journée sur ordinateur, sans lui parler des autres verres.",
+    options: [
+      { texte: "Il a bien fait : le Basic corrige sa vue aussi bien.", bon: false, explication: "La correction est la même, mais elle passe à côté du confort sur écran." },
+      { texte: "Il aurait dû lui présenter le Digital Protect Pro : anti-reflets et anti-lumière bleue, parfait pour ses journées sur écran.", bon: true, explication: "Exactement : on part de son quotidien pour proposer le bon verre." },
+      { texte: "Il aurait dû lui proposer des solaires polarisées.", bon: false, explication: "Hors sujet : elle a besoin d'un verre blanc pour l'écran, pas d'un solaire." },
+    ] },
+  { profil: "Un client veut des solaires polarisées à sa vue pour partir en vacances demain. Un collègue lui dit qu'elles seront prêtes en 10 minutes.",
+    options: [
+      { texte: "C'est juste, tout est fait en 10 minutes.", bon: false, explication: "Faux : le polarisé à la vue demande 9 jours." },
+      { texte: "Erreur : à la vue, le polarisé demande 9 jours. Pour demain, il faut lui proposer l'UV Protect, prêt en 10 minutes.", bon: true, explication: "Exactement : bon délai, et une solution pour son départ." },
+      { texte: "Il faut lui dire que les solaires à la vue n'existent pas.", bon: false, explication: "Faux : elles existent, l'UV Protect est même prêt en 10 minutes." },
+    ] },
+  { profil: "Une cliente demande un verre qui fonce au soleil. Un collègue lui répond : « Prenez le Digital Protect Pro, il protège de tout. »",
+    options: [
+      { texte: "Non : le verre qui se teinte au soleil, c'est le photochromique. Le Digital Protect Pro reste clair.", bon: true, explication: "Exactement : il faut connaître ce que fait chaque verre." },
+      { texte: "Il a raison, le Digital Protect Pro est le meilleur.", bon: false, explication: "C'est notre meilleur verre blanc, mais il ne se teinte pas au soleil." },
+      { texte: "Il aurait dû lui dire que ça n'existe pas.", bon: false, explication: "Faux : c'est notre verre photochromique." },
+    ] },
+  { profil: "Un client demande la différence entre le Premium et le Digital Protect Pro. Un collègue répond : « Le Digital Protect Pro est plus résistant aux rayures. »",
+    options: [
+      { texte: "Il a raison, c'est la principale différence.", bon: false, explication: "Faux : les deux ont l'anti-rayures." },
+      { texte: "Il aurait dû dire qu'il n'y a aucune différence.", bon: false, explication: "Faux : le Digital Protect Pro a l'anti-lumière bleue en plus." },
+      { texte: "Faux : les deux sont anti-rayures. La vraie différence, c'est l'anti-lumière bleue du Digital Protect Pro.", bon: true, explication: "Exactement : on donne la vraie différence, simplement." },
+    ] },
+  { profil: "Un client prend l'offre 1=1. Un collègue lui propose un verre Premium « pour ne pas faire monter le prix ».",
+    options: [
+      { texte: "Il a bien fait, il faut toujours protéger le budget du client.", bon: false, explication: "Le prix ne change pas : dans le 1=1, tous les traitements sont compris." },
+      { texte: "Dans le 1=1, tous les traitements sont compris, sans supplément : on part sur le Digital Protect Pro, sur les deux paires.", bon: true, explication: "Exactement : le client a notre meilleur verre blanc au même prix." },
+      { texte: "Il aurait dû lui proposer le Basic, c'est encore moins cher.", bon: false, explication: "Non : le Basic, c'est uniquement pour la paire à 10 € ou si le client n'a pas le budget pour le 1=1." },
+    ] },
+  { profil: "Une cliente avec une forte correction demande des verres fins. Un collègue cherche quel aminci sélectionner dans le logiciel.",
+    options: [
+      { texte: "Il doit choisir le 1.74 pour être sûr.", bon: false, explication: "Ce n'est pas au vendeur de choisir : le logiciel sélectionne l'aminci optimal tout seul." },
+      { texte: "Il doit demander à la cliente quel indice elle veut.", bon: false, explication: "Non : le logiciel choisit automatiquement l'aminci en fonction de la correction." },
+      { texte: "Il n'a rien à faire : le logiciel choisit automatiquement l'aminci optimal en fonction de la correction.", bon: true, explication: "Exactement : la cliente aura l'aminci optimal sans que le vendeur ait à choisir." },
+    ] },
+  { profil: "Une cliente veut des solaires roses à sa vue. Un collègue les lui commande.",
+    options: [
+      { texte: "À la vue, les solaires existent en gris ou en brun. Les couleurs sont réservées aux verres sans correction.", bon: true, explication: "Exactement : il fallait lui proposer du gris ou du brun." },
+      { texte: "Il a bien fait, toutes les couleurs existent à la vue.", bon: false, explication: "Faux : à la vue, c'est uniquement gris ou brun." },
+      { texte: "Il aurait dû refuser de lui faire des solaires.", bon: false, explication: "Non : on peut lui faire des solaires à sa vue, en gris ou en brun." },
+    ] },
+];
+
+let formatActuel = null;
+let poolActuelle = [];
+let indexActuel = null;
+let scoreOk = 0, scoreNon = 0;
+
+const FORMATS_INFO = {
+  a: { titre: "Le bon verre ?", ico: "👓", desc: "Un client et le verre qu'on lui propose : bon choix ou pas ?", data: FORMAT_A },
+  b: { titre: "Le client demande", ico: "💬", desc: "Une question de client, choisis la bonne réponse à lui donner.", data: FORMAT_B },
+  c: { titre: "Vrai/Faux éclair", ico: "⚡", desc: "Rafale de questions rapides pour ancrer les bases.", data: FORMAT_C },
+  d: { titre: "Le bon raisonnement", ico: "🗣️", desc: "Un collègue se trompe (ou pas) — identifie le bon raisonnement.", data: FORMAT_D },
+};
+
+const CLE_FORMATS = 'traitements_entrainement_formats';
+
+function getFormatsFaits() {
+  try { return JSON.parse(lireStockage(CLE_FORMATS)) || {} } catch (e) { return {} }
+}
+function marquerFormatFait(cle) {
+  const faits = getFormatsFaits()
+  if (!faits[cle]) {
+    faits[cle] = true
+    ecrireStockage(CLE_FORMATS, JSON.stringify(faits))
+  }
+}
+
+function rendreMenu() {
+  const faits = getFormatsFaits()
+  const nbFaits = Object.keys(FORMATS_INFO).filter(c => faits[c]).length
+  $('#progressFormats').textContent = `${nbFaits}/4 formats terminés au moins une fois`
+  $('#grilleFormats').innerHTML = Object.entries(FORMATS_INFO).map(([cle, f]) => `
+    <div class="carte-format" data-format="${cle}">
+      ${faits[cle] ? '<div class="badge-fait">✓ Terminé</div>' : ''}
+      <div class="ico">${f.ico}</div>
+      <div class="titre-format">${f.titre}</div>
+      <div class="desc-format">${f.desc}</div>
+      <div class="compteur-format">${f.data.length} situations</div>
+    </div>
+  `).join('')
+  document.querySelectorAll('[data-format]').forEach(el => {
+    el.addEventListener('click', () => lancerFormat(el.dataset.format))
+  })
+  majGateTest()
+}
+
+function lancerFormat(cle) {
+  formatActuel = cle
+  poolActuelle = melanger(FORMATS_INFO[cle].data)
+  indexActuel = 0
+  scoreOk = 0; scoreNon = 0
+  $('#vueMenu').style.display = 'none'
+  $('#vueDrill').style.display = 'block'
+  rendreItemCourant()
+}
+
+function retourMenu() {
+  $('#vueDrill').style.display = 'none'
+  $('#vueMenu').style.display = 'block'
+  formatActuel = null
+  rendreMenu()
+}
+
+function majScore() {
+  $('#scoreDrill').innerHTML = `<b class="ok">${scoreOk} ✓</b> &nbsp; <b class="non">${scoreNon} ✗</b>`
+}
+
+function rendreChoixBinaire(corps, texte, libVrai, libFaux, attendu, explicationOk, explicationNon) {
+  corps.innerHTML = `
+    <div class="profil-client">${texte}</div>
+    <div class="choix-binaire">
+      <button class="btn-choix" data-rep="true">${libVrai}</button>
+      <button class="btn-choix" data-rep="false">${libFaux}</button>
+    </div>`
+  corps.querySelectorAll('[data-rep]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const correct = (btn.dataset.rep === 'true') === attendu
+      corps.classList.add('choix-fait')
+      corps.querySelectorAll('[data-rep]').forEach(b => {
+        if ((b.dataset.rep === 'true') === attendu) b.classList.add('bonne-reponse')
+        else if (b === btn) b.classList.add('mauvaise-reponse')
+        if (b === btn) b.classList.add('selectionne')
+      })
+      afficherFeedback(correct, correct ? explicationOk : explicationNon)
+    })
+  })
+}
+
+function rendreChoixMultiple(corps, item) {
+  // Options mélangées à chaque affichage pour que la bonne réponse ne soit jamais à une place prévisible
+  const options = melanger(item.options)
+  corps.innerHTML = `
+    <div class="profil-client">${item.profil}</div>
+    <div class="liste-options">
+      ${options.map((o, i) => `<button class="btn-option" data-i="${i}">${o.texte}</button>`).join('')}
+    </div>`
+  corps.querySelectorAll('[data-i]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const opt = options[Number(btn.dataset.i)]
+      corps.classList.add('choix-fait')
+      corps.querySelectorAll('[data-i]').forEach((b, i) => {
+        if (options[i].bon) b.classList.add('bonne-reponse')
+        else if (b === btn) b.classList.add('mauvaise-reponse', 'selectionne')
+      })
+      afficherFeedback(opt.bon, opt.explication)
+    })
+  })
+}
+
+function rendreItemCourant() {
+  majScore()
+  const corps = $('#corpsDrill')
+  const feedback = $('#feedback')
+  feedback.className = 'feedback'
+  feedback.textContent = ''
+  $('#btnSuivant').classList.remove('visible')
+  corps.classList.remove('choix-fait')
+
+  if (indexActuel >= poolActuelle.length) {
+    marquerFormatFait(formatActuel)
+    majGateTest()
+    corps.innerHTML = `<p style="text-align:center;color:var(--ink-soft);font-size:14px;padding:20px 0">Tu as fait le tour de ce pool — relance l'exercice pour un nouvel ordre, ou choisis un autre format.</p>`
+    return
+  }
+
+  const item = poolActuelle[indexActuel]
+  if (formatActuel === 'a') rendreChoixBinaire(corps, item.profil, 'Bon choix', 'Pas le bon verre', item.bon, item.explication, item.explication)
+  if (formatActuel === 'b' || formatActuel === 'd') rendreChoixMultiple(corps, item)
+  if (formatActuel === 'c') rendreChoixBinaire(corps, item.enonce, 'Vrai', 'Faux', item.vrai, 'Exact.', 'Pas tout à fait — relis le point correspondant dans le cours si besoin.')
+}
+
+function afficherFeedback(correct, texte) {
+  const feedback = $('#feedback')
+  feedback.textContent = (correct ? '✓ ' : '✗ ') + texte
+  feedback.classList.add('visible', correct ? 'ok' : 'non')
+  if (correct) scoreOk++; else scoreNon++
+  majScore()
+  $('#btnSuivant').classList.add('visible')
+}
+
+$('#btnRetourMenu').addEventListener('click', retourMenu)
+$('#btnSuivant').addEventListener('click', () => { indexActuel++; rendreItemCourant() })
+
+// ═══════════════════ TEST ═══════════════════
+const SEUIL_REUSSITE = 10;
+const TOTAL_QUESTIONS = 12;
+const CLE_ACQUIS = 'traitements_test_acquis';
+
+let questionsQuiz = [];
+let indexQuestion = 0;
+let reponsesDonnees = [];
+
+function majGateTest() {
+  const faits = getFormatsFaits()
+  const manquants = Object.entries(FORMATS_INFO).filter(([cle]) => !faits[cle]).map(([, f]) => f.titre)
+  const btn = $('#btnCommencer')
+  const gate = $('#gateManquant')
+  if (!btn || !gate) return
+  if (manquants.length === 0) {
+    gate.style.display = 'none'
+    btn.style.display = 'block'
+  } else {
+    gate.style.display = 'block'
+    btn.style.display = 'none'
+    $('#texteManquant').textContent = manquants.join(', ')
+  }
+}
+
+function getFormatsFaitsTousOk() {
+  const faits = getFormatsFaits()
+  return Object.keys(FORMATS_INFO).every(cle => faits[cle])
+}
+
+function construireQuestions() {
+  const vf = melanger(FORMAT_C).slice(0, 5).map(q => ({ type: 'vf', ...q }))
+  const cand = melanger(FORMAT_A).slice(0, 5).map(q => ({ type: 'candidat', ...q }))
+  const choix = melanger([...FORMAT_B, ...FORMAT_D]).slice(0, 2).map(q => ({ type: 'choix', profil: q.profil, options: melanger(q.options) }))
+  return melanger([...vf, ...cand, ...choix])
+}
+
+function demarrerQuiz() {
+  if (!getFormatsFaitsTousOk()) { majGateTest(); return }
+  questionsQuiz = construireQuestions()
+  indexQuestion = 0
+  reponsesDonnees = []
+  $('#vueIntro').style.display = 'none'
+  $('#vueDejaAcquis').style.display = 'none'
+  $('#vueResultat').style.display = 'none'
+  $('#vueQuiz').style.display = 'block'
+  rendreQuestion()
+}
+
+function rendreQuestion() {
+  $('#compteurQuiz').textContent = `Question ${indexQuestion + 1} / ${TOTAL_QUESTIONS}`
+  $('#barreQuiz').innerHTML = Array.from({ length: TOTAL_QUESTIONS }, (_, i) =>
+    `<div class="seg-quiz ${i < indexQuestion ? 'fait' : ''}"></div>`).join('')
+  const q = questionsQuiz[indexQuestion]
+  const corps = $('#corpsQuestion')
+
+  if (q.type === 'vf' || q.type === 'candidat') {
+    const texte = q.type === 'vf' ? q.enonce : q.profil
+    const attendu = q.type === 'vf' ? q.vrai : q.bon
+    const [libVrai, libFaux] = q.type === 'vf' ? ['Vrai', 'Faux'] : ['Bon choix', 'Pas le bon verre']
+    corps.innerHTML = `
+      <div class="profil-client">${texte}</div>
+      <div class="choix-binaire">
+        <button class="btn-rep" data-rep="true">${libVrai}</button>
+        <button class="btn-rep" data-rep="false">${libFaux}</button>
+      </div>`
+    corps.querySelectorAll('[data-rep]').forEach(btn => {
+      btn.addEventListener('click', () => valider(texte, (btn.dataset.rep === 'true') === attendu))
+    })
+  }
+
+  if (q.type === 'choix') {
+    corps.innerHTML = `
+      <div class="citation-client">${q.profil}</div>
+      <div class="liste-options">
+        ${q.options.map((o, i) => `<button class="btn-rep" data-i="${i}">${o.texte}</button>`).join('')}
+      </div>`
+    corps.querySelectorAll('[data-i]').forEach(btn => {
+      btn.addEventListener('click', () => valider(q.profil, q.options[Number(btn.dataset.i)].bon))
+    })
+  }
+}
+
+function valider(libelleQuestion, correct) {
+  reponsesDonnees.push({ libelle: libelleQuestion, correct })
+  indexQuestion++
+  if (indexQuestion >= TOTAL_QUESTIONS) afficherResultat()
+  else rendreQuestion()
+}
+
+function afficherResultat() {
+  $('#vueQuiz').style.display = 'none'
+  $('#vueResultat').style.display = 'block'
+  const score = reponsesDonnees.filter(r => r.correct).length
+  const reussi = score >= SEUIL_REUSSITE
+  $('#scoreChiffre').textContent = score
+  $('#scoreRond').className = 'score-rond ' + (reussi ? 'reussi' : 'echec')
+  $('#titreResultat').textContent = reussi ? '✅ Module acquis !' : 'Pas encore cette fois'
+  $('#sousResultat').textContent = reussi
+    ? 'Le module est verrouillé — bravo.'
+    : `Il fallait ${SEUIL_REUSSITE}/12 pour valider. Retourne t'entraîner et retente quand tu veux.`
+  $('#detailResultat').innerHTML = reponsesDonnees.map(r => `
+    <div class="detail-reponse ${r.correct ? 'ok' : 'non'}">
+      <span class="icone">${r.correct ? '✓' : '✗'}</span>
+      <span class="texte-q">${r.libelle}</span>
+    </div>
+  `).join('')
+  const btnRefaire = $('#btnRefaire')
+  btnRefaire.style.display = 'block'
+  btnRefaire.textContent = reussi ? 'Repasser le test quand même' : 'Retenter le test'
+  if (reussi) ecrireStockage(CLE_ACQUIS, '1')
+}
+
+$('#btnCommencer').addEventListener('click', demarrerQuiz)
+$('#btnRefaire').addEventListener('click', demarrerQuiz)
+$('#btnRepasserQuandMeme').addEventListener('click', demarrerQuiz)
+$('#btnAllerEntrainement').addEventListener('click', () => irAEtape('entrainement'))
+
+if (lireStockage(CLE_ACQUIS) === '1') {
+  $('#vueIntro').style.display = 'none'
+  $('#vueDejaAcquis').style.display = 'block'
+}
+
+rendreMenu()
+majGateTest()
+
+// ═══════════════════ PROMPT POUR PAUL ═══════════════════
+// Les sections générées (glossaire, gammes, tableau, délais, conseils, entraînement)
+// partent des mêmes données que la page : le prompt reste toujours aligné avec ce qui est affiché.
+function promptFormatChoix(liste) {
+  return liste.map((s, i) => `${i + 1}. Situation : "${s.profil}"\n` + s.options.map(o =>
+    `- ${o.bon ? '✅' : '❌'} "${o.texte}" → explication : "${o.explication}"`).join('\n')).join('\n\n')
+}
+function sansBalises(t) { return t.replace(/<[^>]+>/g, '') }
+function promptGamme(liste) {
+  return liste.map(g => `- Petit surtitre "${g.niveau}" — nom en gras "${g.nom}" — contenu "${g.contenu}" — pour qui "${sansBalises(g.pourQui)}"${g.star ? ' [carte mise en avant : fond violet clair, bordure violette]' : ''}`).join('\n')
+}
+
+const PROMPT_PAUL = `Je veux que tu ajoutes un nouveau module au système de modules post-formation ("Perfectionnement") dont je t'ai déjà donné les règles générales avec le module Verre de proximité (structure Cours/Entraînement/Test, barre de navigation à 3 étapes, verrou du Test tant que les 4 formats d'entraînement ne sont pas faits, verrouillage définitif du module une fois le Test réussi). Ce nouveau module utilise exactement le même moteur — inutile de le reconstruire, applique-le simplement à ce contenu. Tous les textes entre guillemets ci-dessous sont à reprendre mot pour mot.
+
+Petit rappel rapide des règles du moteur, au cas où : un module a 3 étapes (Cours, Entraînement, Test) ; l'Entraînement propose plusieurs formats d'exercices répétables à volonté, sans enjeu, chacun marqué "fait" dès que le collaborateur est allé au bout du pool une fois ; le Test reste verrouillé tant que tous les formats d'Entraînement n'ont pas été faits au moins une fois ; le Test tire des questions au hasard, mélange leur ordre, affiche le score uniquement à la fin ; une réussite verrouille le module en "acquis" de façon définitive (retentable volontairement) ; un échec ne pénalise pas et autorise un nombre illimité de nouvelles tentatives.
+
+MODULE : "LES TRAITEMENTS DE VERRES"
+
+CONTEXTE
+
+En formation initiale, les traitements ne sont cités que dans une liste. Ce module apprend aux collaborateurs à connaître toute notre gamme de verres : les verres blancs (Basic, Premium, Digital Protect Pro, photochromique) et les verres solaires (UV Protect, polarisé), à savoir ce que chaque traitement apporte au client, à connaître les délais et à conseiller le bon verre.
+
+BARRE DE NAVIGATION
+
+3 onglets cliquables : "Étape 1 — Cours", "Étape 2 — Entraînement", "Étape 3 — Test" (l'onglet actif est mis en avant).
+
+ÉTAPE 1 — COURS
+
+Surtitre : "Module Après-Formation · Verres". Titre : "Les traitements de verres". Sous-titre : "Connaître nos verres blancs et nos verres solaires, savoir ce que chaque traitement apporte au client et lui conseiller le bon verre." Une carte par section :
+
+1. C'est quoi, un traitement ?
+Paragraphe 1 : "Le verre corrige la vue. Les traitements, ce sont des couches ajoutées sur le verre pour le rendre plus résistant, plus confortable et plus facile à vivre au quotidien."
+Paragraphe 2 : "Voici les 5 traitements que tu vas retrouver dans nos verres, avec ce qu'ils changent pour le client :"
+Liste de ${GLOSSAIRE.length} cartes. Chaque carte : icône + nom en gras, l'explication simple, puis une phrase à dire au client, en italique sur fond violet clair :
+${GLOSSAIRE.map((g, i) => `${i + 1}. ${g.ico} "${g.nom}" — explication : "${g.simple}" — phrase : "${g.phrase}"`).join('\n')}
+
+2. Nos verres blancs
+Texte : "Les verres blancs, ce sont les verres clairs, ceux qu'on porte tous les jours. On en a 4, du plus simple au plus complet :"
+Grille de 4 cartes (2 par ligne, 1 sur mobile) :
+${promptGamme(GAMME_BLANCS)}
+Texte : "Ce qu'il y a dans chaque verre, en un coup d'œil :"
+Tableau (défilable horizontalement sur mobile) avec en colonnes ${COLONNES_TABLEAU.map(c => `"${c}"`).join(', ')} (la colonne "${COLONNES_TABLEAU[COLONNE_STAR]}" est mise en avant en violet clair), une coche verte ✓ quand le verre a le traitement et un tiret gris — sinon :
+${LIGNES_TABLEAU.map(l => `- "${l.nom}" : ${l.valeurs.map((v, i) => `${COLONNES_TABLEAU[i]} ${v ? '✓' : '—'}`).join(' / ')}`).join('\n')}
+Encart astuce (💡) : "À retenir : le Premium, c'est le Basic avec tout le confort en plus. Le Digital Protect Pro, c'est le Premium avec l'anti-lumière bleue. Le photochromique, c'est le Premium qui se teinte au soleil."
+
+3. Le verre photochromique
+Paragraphe 1 : "C'est un verre blanc qui a tout d'un Premium, et qui se teinte quand il est exposé aux UV. À l'intérieur, il est clair. Dehors au soleil, il fonce tout seul. Une seule paire, pas besoin de changer de lunettes en sortant."
+Paragraphe 2 : "Les clients l'appellent souvent autrement. Si tu entends l'un de ces noms, on parle de notre verre photochromique :"
+Puis 4 tuiles côte à côte (2 par ligne sur mobile), chacune avec un seul nom en gras : "Transitions" — "Photochromique" — "Verres qui foncent au soleil" — "Verres quatre saisons".
+Bandeau en dessous : "Chez nous, tous ces noms correspondent à notre verre photochromique. Sur le téléphone de vente, il s'appelle Transition ; dans le back-end, Solarisation. C'est le même verre." ("notre verre photochromique", "Transition" et "Solarisation" en gras)
+Puis, en dehors de la carte, deux schémas de verre côte à côte, dans le même style que les schémas du module Verre de proximité (verre rond, petit œil dessiné au centre, petit surtitre gris, nom du verre en police serif, sous-titre gris, légende à pastilles de couleur), avec en dessous la mention "Schéma pédagogique · teinte indicative" :
+- Surtitre "01 / À l'intérieur" — verre très clair (bleu très pâle) avec écrit "Clair" — nom "Verre clair" — sous-titre "À la maison, au bureau, en magasin : le verre reste clair, comme un verre Premium." — légende : pastille bleu clair "Verre clair".
+- Surtitre "02 / Au soleil" — même verre mais teinté gris-brun foncé, avec écrit "Teinté" en blanc et un petit soleil jaune dessiné en haut à droite — nom "Verre teinté" — sous-titre "Dehors, les UV du soleil font foncer le verre tout seul : il devient un verre solaire." — légende : pastille gris-brun "Verre teinté par les UV".
+
+4. Nos verres solaires
+Texte : "Pour le soleil, on a 2 verres, tous les deux en catégorie 3 : une protection forte, faite pour le plein soleil."
+Grille de 2 cartes, même style que les cartes de la section 2 :
+${promptGamme(SOLAIRES)}
+
+5. Les verres amincis
+Paragraphe 1 : "Plus la correction est forte, plus le verre est épais. Les verres amincis permettent d'avoir des verres plus fins et plus légers. On propose 4 indices : plus le chiffre est élevé, plus le verre est fin."
+Puis 4 tuiles côte à côte (2 par ligne sur mobile), même style que les noms du marché : "1.5" — "1.6" — "1.67" — "1.74".
+Paragraphe 2 : "En magasin, on a tout en stock sauf le 1.74 : il concerne des corrections au-dessus de la limite des corrections en stock, que tu as déjà vue en formation."
+Encart astuce (💡) : "Tu n'as rien à choisir : le logiciel sélectionne automatiquement l'aminci en fonction de la correction du client. Le client a toujours l'aminci optimal, sans que tu aies quoi que ce soit à faire."
+
+6. Les délais
+Texte : "Presque tout est prêt en 10 minutes, avec ou sans correction. Une seule exception à connaître par cœur :"
+Liste de lignes (verre à gauche, délai en gras à droite : vert pour 10 min, jaune foncé pour 9 jours) :
+${DELAIS.map(d => `- "${d.verre}"${d.precision ? ` · "${d.precision}"` : ''} → "${d.duree}"`).join('\n')}
+Encart astuce (💡) : "Le bon réflexe : un client veut des solaires à sa vue pour partir tout de suite ? L'UV Protect est prêt en 10 minutes. Le polarisé à la vue, c'est 9 jours."
+
+7. Conseiller le bon verre
+Texte : "Pour trouver le bon verre, pars toujours du quotidien du client : une ou deux questions suffisent (écrans, voiture, extérieur, vacances)."
+Liste de lignes sur fond gris clair, la situation à gauche et le verre conseillé en violet gras à droite, précédé de "→" :
+${CONSEILS.map(c => `- "${c.situation}" → "${c.verre}"`).join('\n')}
+Encart astuce (💡) : "On part toujours sur le Digital Protect Pro : dans l'offre 1=1, tous les traitements sont compris, sans aucun supplément, sur la première paire comme sur la deuxième. Le client a donc notre meilleur verre blanc au même prix. Le Basic, c'est uniquement quand le client veut absolument la paire à 10 €, ou qu'il n'a pas le budget pour profiter de l'offre 1=1."
+
+8. Exemples concrets (grille de 4 cartes : 2 vertes "✅ Bon conseil", 2 rouges "⚠️ Attention au piège"). Chaque carte : étiquette, nom en gras, description, conclusion.
+- ✅ Bon conseil — "Julie, 34 ans, comptable" — "Elle passe ses journées sur écran." — "→ Digital Protect Pro : anti-reflets et anti-lumière bleue pour ses journées sur écran."
+- ✅ Bon conseil — "Marc, 45 ans, jardinier" — "Il est dehors toute la journée et en a assez de changer de lunettes." — "→ Photochromique : clair à l'intérieur, teinté au soleil."
+- ⚠️ Attention au piège — "Paul, 40 ans, myope" — "Il veut des solaires polarisées à sa vue pour partir en vacances ce soir." — "→ Le polarisé à la vue demande 9 jours : pour ce soir, on lui propose l'UV Protect, prêt en 10 minutes."
+- ⚠️ Attention au piège — "Lina, 30 ans, astigmate" — "Elle veut des solaires roses à sa vue." — "→ À la vue, l'UV Protect existe en gris ou en brun. Les couleurs, c'est en plan (sans correction)."
+
+9. Infos pratiques (3 tuiles côte à côte, valeur en gros + libellé en dessous)
+- "10 min" / "tous nos verres, avec ou sans correction"
+- "9 jours" / "seule exception : le polarisé avec correction"
+- "Catégorie 3" / "nos deux verres solaires"
+Encart violet clair (💡) sous les tuiles : "Dans l'offre 1=1, tous les traitements sont compris." (en gras), puis à la ligne : "Aucun supplément : le client choisit ce qu'il veut, sur la première paire comme sur la deuxième, et le prix ne change pas."
+[NOTE POUR PAUL : cette section sera complétée plus tard (couleurs disponibles en plan, parcours Suprême). N'ajoute rien d'autre pour l'instant.]
+
+ÉTAPE 2 — ENTRAÎNEMENT
+
+Surtitre : "Module Après-Formation · Les traitements de verres". Titre : "Entraînement". Sous-titre : "Pas de pression : tu peux refaire ces exercices autant de fois que tu veux, dans l'ordre que tu veux."
+
+Écran d'accueil : un compteur "X/4 formats terminés au moins une fois", puis une grille de 4 cartes cliquables (icône, titre, description, nombre de situations, et un badge "✓ Terminé" quand le format a été fait au moins une fois) :
+${Object.values(FORMATS_INFO).map(f => `- ${f.ico} "${f.titre}" — "${f.desc}" — ${f.data.length} situations`).join('\n')}
+
+Mécanique commune aux 4 formats : à chaque lancement, l'ordre des situations est mélangé aléatoirement. En haut de l'exercice : un lien "← Retour aux exercices" et un compteur de bonnes/mauvaises réponses de la session ("X ✓  Y ✗"). Après chaque réponse : la bonne réponse est surlignée en vert, la mauvaise choisie en rouge, un encadré d'explication apparaît (vert si juste, rouge si faux, précédé de "✓ " ou "✗ "), puis un bouton "Suivant →". Quand toutes les situations du pool sont passées, le format est marqué "fait" et on affiche : "Tu as fait le tour de ce pool — relance l'exercice pour un nouvel ordre, ou choisis un autre format."
+
+Format A — "${FORMATS_INFO.a.titre}" (${FORMAT_A.length} situations). Le collaborateur voit un client et le verre qu'on lui propose, et répond avec 2 boutons "Bon choix" / "Pas le bon verre". Situation → bonne réponse → explication affichée (la même que la réponse soit juste ou fausse) :
+${FORMAT_A.map((s, i) => `${i + 1}. "${s.profil}" → ${s.bon ? 'Bon choix' : 'Pas le bon verre'} → "${s.explication}"`).join('\n')}
+
+Format B — "${FORMATS_INFO.b.titre}" (${FORMAT_B.length} situations, 3 options chacune, une seule bonne). Important : l'ordre des 3 options doit être mélangé aléatoirement à chaque affichage, à l'entraînement comme au test, pour que la bonne réponse ne soit jamais toujours à la même place. Chaque option a sa propre explication, affichée quand le collaborateur la choisit (la bonne option est toujours surlignée en vert, celle choisie en rouge si elle est fausse) :
+
+${promptFormatChoix(FORMAT_B)}
+
+Format C — "${FORMATS_INFO.c.titre}" (${FORMAT_C.length} énoncés), 2 boutons "Vrai" / "Faux". Explication affichée : "Exact." si juste, "Pas tout à fait — relis le point correspondant dans le cours si besoin." si faux.
+${FORMAT_C.map((s, i) => `${i + 1}. ${s.enonce} → ${s.vrai ? 'Vrai' : 'Faux'}`).join('\n')}
+
+Format D — "${FORMATS_INFO.d.titre}" (${FORMAT_D.length} situations, 3 options chacune, une seule bonne). Même mécanique que le Format B, options mélangées aléatoirement à chaque affichage :
+
+${promptFormatChoix(FORMAT_D)}
+
+ÉTAPE 3 — TEST
+
+Surtitre : "Module Après-Formation · Les traitements de verres". Titre : "Test". Sous-titre : "Une seule fois pour verrouiller le module — mais tu peux retenter autant de fois que nécessaire si besoin."
+
+Écran d'introduction, carte "Avant de commencer" avec 4 règles numérotées :
+1. "12 questions, mélange de ce qu'on a vu dans le cours et à l'entraînement."
+2. "Pas de correction affichée en cours de route — le score tombe à la fin."
+3. "Il faut 10/12 pour valider le module."
+4. "En dessous, pas de souci : retourne t'entraîner et retente quand tu veux."
+Puis le bouton "Commencer le test". Tant que les 4 formats d'entraînement n'ont pas tous été faits au moins une fois, ce bouton est remplacé par un encart jaune : "⚠️ Pas encore accessible : il faut avoir fait au moins une fois chaque format d'entraînement. Il reste : [liste des titres des formats manquants, séparés par des virgules]." avec un bouton "Aller à l'entraînement" qui bascule sur l'étape 2.
+
+Si le module est déjà acquis, l'écran d'introduction est remplacé par : badge "✓ Module déjà acquis", texte "Tu as déjà validé ce module. Pas besoin de le repasser." et bouton "Le repasser quand même" (qui lance un nouveau test).
+
+Composition du test : 12 questions tirées au hasard et mélangées à chaque tentative —
+- 5 parmi les ${FORMAT_C.length} énoncés Vrai/Faux du Format C (boutons "Vrai" / "Faux") ;
+- 5 parmi les ${FORMAT_A.length} situations du Format A (boutons "Bon choix" / "Pas le bon verre") ;
+- 2 parmi un pool de ${FORMAT_B.length + FORMAT_D.length} fusionnant les ${FORMAT_B.length} situations du Format B et les ${FORMAT_D.length} du Format D : questions à choix parmi 3 réponses, options mélangées, la situation affichée en italique.
+
+Pendant le quiz : un compteur "Question X / 12" et une barre de progression en 12 segments. Aucune correction affichée — dès qu'une réponse est donnée, on passe directement à la question suivante.
+
+Écran de résultat : un rond avec le score "X sur 12" (vert si réussi, rouge sinon).
+- Si score ≥ 10 : titre "✅ Module acquis !", sous-titre "Le module est verrouillé — bravo.", bouton "Repasser le test quand même". Le module passe en "acquis" définitivement.
+- Si score < 10 : titre "Pas encore cette fois", sous-titre "Il fallait 10/12 pour valider. Retourne t'entraîner et retente quand tu veux.", bouton "Retenter le test".
+Sous le titre, le détail des 12 questions : une ligne par question avec ✓ (vert) ou ✗ (rouge) suivi de l'énoncé de la question (la situation, l'énoncé Vrai/Faux ou la question du client).
+
+Ne te préoccupe pas du stockage ni de la façon dont tu notes "acquis"/"non acquis" et "format fait" par collaborateur — gère ça comme tu le souhaites de ton côté.`
+
+$('#textePrompt').textContent = PROMPT_PAUL
+$('#btnPromptPaul').addEventListener('click', () => { $('#modalPrompt').style.display = 'flex' })
+$('#btnFermerModal').addEventListener('click', () => { $('#modalPrompt').style.display = 'none' })
+$('#modalPrompt').addEventListener('click', (e) => { if (e.target.id === 'modalPrompt') $('#modalPrompt').style.display = 'none' })
+$('#btnCopierPrompt').addEventListener('click', () => {
+  navigator.clipboard.writeText(PROMPT_PAUL).then(() => {
+    const btn = $('#btnCopierPrompt')
+    const original = btn.textContent
+    btn.textContent = 'Copié !'
+    setTimeout(() => { btn.textContent = original }, 1500)
+  })
+})
+</script>
+<script src="bridge-apres.js"></script>
+</body></html>

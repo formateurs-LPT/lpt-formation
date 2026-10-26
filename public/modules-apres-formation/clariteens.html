@@ -1,0 +1,995 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<script src="bridge-avant.js"></script>
+<meta charset="utf-8">
+<title>Module — Les verres Clariteens</title>
+<style>
+  :root {
+    --bg: #F2F4F7; --bg-panel: #FFFFFF; --line: rgba(17,21,27,0.10);
+    --ink: #11151B; --ink-soft: #5B6472;
+    --accent: #7C3AED; --accent-wash: #F2ECFE;
+    --vert: #0C8F6B; --vert-wash: #E7F7F1;
+    --rouge: #C0392B; --rouge-wash: #FBEAE8;
+    --jaune: #7A5A0A; --jaune-wash: #FFF8E6;
+    --radius: 18px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink); font-family: var(--font);
+    background: #F3F6F4;
+    background-image: radial-gradient(900px 500px at 100% -10%, rgba(176, 207, 192, 0.35), transparent 60%);
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 28px 22px 60px; }
+
+  .vue-etape { animation: apparition .15s ease; }
+  @keyframes apparition { from { opacity: 0 } to { opacity: 1 } }
+  @media (prefers-reduced-motion: reduce) { .vue-etape { animation: none; } }
+
+  .etapes { display: flex; gap: 8px; margin-bottom: 24px; }
+  .etape {
+    flex: 1; text-align: center; padding: 10px 6px; border-radius: 12px; font-size: 12.5px; font-weight: 700;
+    border: 1.5px solid var(--line); color: var(--ink-soft); background: #fff; cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  .etape:hover { border-color: var(--accent); color: var(--accent); }
+  .etape.actif { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .etape.actif:hover { color: #fff; }
+  .etape .num { display: block; font-size: 10px; opacity: .8; margin-bottom: 2px; text-transform: uppercase; letter-spacing: .5px; }
+
+  .eyebrow { font-size: 11.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: 30px; font-weight: 800; margin: 6px 0 4px; letter-spacing: -0.4px; text-wrap: balance; }
+  .sous-titre { color: var(--ink-soft); margin: 0 0 26px; font-size: 15px; }
+
+  .carte { border: 1px solid var(--line); border-radius: var(--radius); }
+  .carte h2 { font-weight: 800; margin: 0 0 12px; }
+  .carte p { line-height: 1.6; color: #3C4450; margin: 0 0 10px; }
+  .carte ul.liste { margin: 0 0 10px; padding-left: 20px; color: #3C4450; line-height: 1.6; }
+  .carte ul.liste li { margin-bottom: 4px; }
+  #vueCours .carte { background: var(--bg-panel); padding: 24px; margin-bottom: 18px; }
+  #vueCours .carte h2 { font-size: 18px; }
+  #vueTest .carte { background: #fff; padding: 28px 24px; box-shadow: 0 2px 8px rgba(17,21,27,0.03); }
+  #vueTest .carte h2 { font-size: 17px; }
+
+  /* Correspondance des noms */
+  .noms-marche { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+  .nom-marche { background: var(--bg); border-radius: 12px; padding: 12px; text-align: center; }
+  .nom-marche .marque { font-weight: 800; font-size: 14.5px; }
+  .nom-maison { background: var(--accent-wash); border-radius: 12px; padding: 12px 16px; margin-top: 10px; font-size: 13.5px; color: #4A2E8F; text-align: center; }
+  .nom-maison strong { color: var(--accent); }
+
+  /* Schéma œil */
+  .schemas-oeil { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .schema { background: var(--bg); border-radius: 14px; padding: 14px; }
+  .schema svg { width: 100%; height: auto; display: block; }
+  .schema .titre-schema { font-size: 12.5px; font-weight: 800; margin-bottom: 6px; }
+  .schema .legende-schema { font-size: 12px; color: var(--ink-soft); line-height: 1.5; margin-top: 6px; }
+
+  .etapes-mecanisme { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .etape-meca { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; color: #3C4450; line-height: 1.55; }
+  .etape-meca .puce { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+
+  .astuce {
+    background: var(--accent-wash); border-radius: 14px; padding: 14px 16px;
+    font-size: 13px; color: #4A2E8F; line-height: 1.55; margin-top: 16px;
+  }
+  .astuce strong { color: var(--accent); }
+
+  .note-attention {
+    background: var(--rouge-wash); border: 1.5px solid #F1C9C4; border-radius: 14px; padding: 14px 16px;
+    font-size: 13px; color: #8A2A1E; line-height: 1.55; margin-top: 16px;
+  }
+  .note-attention strong { color: var(--rouge); }
+  .note-attention ul { margin: 8px 0 0; padding-left: 18px; }
+  .note-attention li { margin-bottom: 4px; }
+
+  .offre-1-1 { background: var(--accent-wash); border-radius: 14px; padding: 16px 18px; margin-top: 14px; font-size: 13.5px; line-height: 1.6; color: #3C4450; }
+  .offre-1-1 strong { color: var(--accent); }
+  .a-valider {
+    background: var(--jaune-wash); border: 1.5px dashed #E0B341; border-radius: 12px; padding: 13px 15px;
+    font-size: 13px; color: var(--jaune); margin-top: 14px; line-height: 1.55;
+  }
+
+  .grille-criteres { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px; }
+  .critere { border-radius: 14px; padding: 16px; }
+  .critere.oui { background: var(--vert-wash); }
+  .critere.non { background: var(--rouge-wash); }
+  .critere .tag { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; display: block; margin-bottom: 8px; }
+  .critere.oui .tag { color: var(--vert); }
+  .critere.non .tag { color: var(--rouge); }
+  .critere ul { margin: 0; padding-left: 18px; font-size: 13px; color: #3C4450; line-height: 1.55; }
+  .critere li { margin-bottom: 4px; }
+
+  .grille-personas { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+  .persona { border-radius: 14px; padding: 16px; border: 1.5px solid var(--line); }
+  .persona.bon { background: var(--vert-wash); border-color: #BFE6D6; }
+  .persona.mauvais { background: var(--rouge-wash); border-color: #F1C9C4; }
+  .persona .tag { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; display: block; }
+  .persona.bon .tag { color: var(--vert); }
+  .persona.mauvais .tag { color: var(--rouge); }
+  .persona .nom { font-weight: 800; font-size: 14.5px; margin-bottom: 4px; }
+  .persona .desc { font-size: 13px; color: #3C4450; line-height: 1.5; margin-bottom: 8px; }
+  .persona .conclusion { font-size: 12.5px; font-weight: 700; }
+  .persona.bon .conclusion { color: var(--vert); }
+  .persona.mauvais .conclusion { color: var(--rouge); }
+
+  .infos-pratiques { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .info-item { background: var(--accent-wash); border-radius: 12px; padding: 14px; text-align: center; }
+  .info-item .valeur { font-weight: 800; font-size: 17px; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .info-item .label { font-size: 11.5px; color: var(--ink-soft); margin-top: 3px; }
+
+  /* ───────────────── Entraînement ───────────────── */
+  .progress-formats { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 14px; font-weight: 600; }
+  .grille-formats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .carte-format {
+    background: #fff; border-radius: 18px; padding: 20px; border: 1px solid var(--line);
+    box-shadow: 0 2px 6px rgba(17,21,27,0.03); cursor: pointer; text-align: left;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .carte-format:hover { border-color: var(--accent); }
+  .carte-format .ico { font-size: 22px; }
+  .carte-format .titre-format { font-weight: 800; font-size: 14.5px; }
+  .carte-format .desc-format { font-size: 12px; color: var(--ink-soft); line-height: 1.5; flex: 1; }
+  .carte-format .compteur-format { font-size: 11px; color: var(--accent); font-weight: 700; }
+  .badge-fait { align-self: flex-start; background: var(--vert-wash); color: var(--vert); font-size: 10.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
+
+  .carte-drill { background: #fff; border-radius: var(--radius); padding: 28px 24px; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(17,21,27,0.03); }
+  .entete-drill { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .lien-retour { background: none; border: none; color: var(--accent); font-weight: 700; font-size: 13.5px; cursor: pointer; padding: 0; }
+  .score-drill { font-size: 12.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .score-drill b.ok { color: var(--vert); }
+  .score-drill b.non { color: var(--rouge); }
+
+  .profil-client { font-size: 17px; font-weight: 600; line-height: 1.5; margin-bottom: 20px; color: #1C2430; }
+  .citation-client { font-size: 17px; font-weight: 600; line-height: 1.5; margin-bottom: 20px; font-style: italic; color: #1C2430; }
+
+  .choix-binaire { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .btn-choix { padding: 15px 10px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-weight: 700; font-size: 14.5px; cursor: pointer; color: var(--ink); }
+  .btn-choix:hover { border-color: var(--accent); }
+  .liste-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .btn-option { text-align: left; padding: 13px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-size: 14px; cursor: pointer; color: var(--ink); line-height: 1.45; }
+  .btn-option:hover { border-color: var(--accent); }
+
+  .choix-fait .btn-choix, .choix-fait .btn-option, .choix-fait .btn-rep { pointer-events: none; opacity: .55; }
+  .choix-fait .selectionne { opacity: 1; }
+  .choix-fait .bonne-reponse { opacity: 1 !important; border-color: var(--vert); background: var(--vert-wash); }
+  .choix-fait .mauvaise-reponse { opacity: 1 !important; border-color: var(--rouge); background: var(--rouge-wash); }
+
+  .feedback { border-radius: 12px; padding: 14px 16px; font-size: 13.5px; line-height: 1.55; margin-bottom: 18px; display: none; }
+  .feedback.visible { display: block; }
+  .feedback.ok { background: var(--vert-wash); color: #0A5E47; }
+  .feedback.non { background: var(--rouge-wash); color: #8A2A1E; }
+  .pied-drill { display: flex; justify-content: flex-end; }
+  .btn-suivant { background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 12px 22px; font-weight: 700; font-size: 14px; cursor: pointer; display: none; }
+  .btn-suivant.visible { display: inline-block; }
+
+  /* ───────────────── Test ───────────────── */
+  .regle { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; font-size: 14px; color: #3C4450; line-height: 1.5; }
+  .regle .puce { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-wash); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+  .btn-principal { background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 14px 22px; font-weight: 800; font-size: 15px; cursor: pointer; width: 100%; margin-top: 16px; }
+  .btn-principal:hover { background: #6A2FD1; }
+  .btn-secondaire { background: #fff; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 12px; padding: 13px 22px; font-weight: 700; font-size: 14.5px; cursor: pointer; width: 100%; margin-top: 10px; }
+  .alerte-manquant { background: var(--jaune-wash); border: 1.5px dashed #E0B341; border-radius: 12px; padding: 13px 15px; font-size: 13px; color: var(--jaune); margin: 14px 0 0; line-height: 1.55; }
+
+  .entete-quiz { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .compteur-quiz { font-size: 12.5px; color: var(--ink-soft); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .barre-quiz { display: flex; gap: 4px; margin-bottom: 22px; }
+  .seg-quiz { flex: 1; height: 4px; border-radius: 999px; background: var(--line); }
+  .seg-quiz.fait { background: var(--accent); }
+  .btn-rep { padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-weight: 600; font-size: 14px; cursor: pointer; color: var(--ink); text-align: left; line-height: 1.45; }
+  .btn-rep:hover { border-color: var(--accent); }
+  .choix-binaire .btn-rep { text-align: center; font-weight: 700; }
+
+  .score-rond { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 6px solid var(--line); }
+  .score-rond.reussi { border-color: var(--vert); background: var(--vert-wash); }
+  .score-rond.echec { border-color: var(--rouge); background: var(--rouge-wash); }
+  .score-rond .chiffre { font-size: 30px; font-weight: 800; line-height: 1; }
+  .score-rond .sur { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .titre-resultat { text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+  .sous-resultat { text-align: center; color: var(--ink-soft); font-size: 14px; margin-bottom: 24px; }
+  .detail-reponse { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .detail-reponse:last-child { border-bottom: none; }
+  .detail-reponse .icone { flex-shrink: 0; font-weight: 800; }
+  .detail-reponse.ok .icone { color: var(--vert); }
+  .detail-reponse.non .icone { color: var(--rouge); }
+  .detail-reponse .texte-q { color: #3C4450; line-height: 1.5; }
+  .badge-acquis { display: inline-flex; align-items: center; gap: 6px; background: var(--vert-wash); color: var(--vert); font-weight: 800; font-size: 13px; padding: 8px 16px; border-radius: 999px; margin: 0 auto 18px; width: fit-content; }
+
+  /* ───────────────── Bouton + modale "Prompt pour Paul" ───────────────── */
+  .btn-prompt-paul { position: fixed; top: 16px; left: 16px; z-index: 50; background: #fff; border: 1.5px solid var(--line); color: var(--ink-soft); font-size: 11px; font-weight: 700; padding: 7px 12px; border-radius: 999px; cursor: pointer; box-shadow: 0 2px 6px rgba(17,21,27,0.06); }
+  .btn-prompt-paul:hover { border-color: var(--accent); color: var(--accent); }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(17,21,27,0.45); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .modal-prompt { background: #fff; border-radius: 18px; max-width: 720px; width: 100%; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(17,21,27,0.25); }
+  .modal-entete { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); font-weight: 800; font-size: 14px; flex-shrink: 0; }
+  .btn-fermer { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--ink-soft); line-height: 1; padding: 4px; }
+  .texte-prompt { margin: 0; padding: 20px; overflow-y: auto; white-space: pre-wrap; font-family: var(--font); font-size: 12.5px; line-height: 1.6; color: #2A3342; flex: 1; }
+  .modal-pied { padding: 14px 20px; border-top: 1px solid var(--line); flex-shrink: 0; }
+
+  @media (max-width: 560px) {
+    .noms-marche { grid-template-columns: 1fr 1fr; }
+    .infos-pratiques { grid-template-columns: 1fr; }
+    .schemas-oeil, .grille-criteres, .grille-personas, .grille-formats { grid-template-columns: 1fr; }
+    .page { padding-top: 60px; }
+  }
+</style>
+<link rel="stylesheet" href="theme-app.css">
+
+<button class="btn-prompt-paul" id="btnPromptPaul">📋 Prompt pour Paul</button>
+
+<div class="modal-overlay" id="modalPrompt" style="display:none">
+  <div class="modal-prompt">
+    <div class="modal-entete">
+      <span>Prompt pour Paul — Module Les verres Clariteens</span>
+      <button class="btn-fermer" id="btnFermerModal">✕</button>
+    </div>
+    <pre class="texte-prompt" id="textePrompt"></pre>
+    <div class="modal-pied">
+      <button class="btn-principal" id="btnCopierPrompt" style="margin-top:0">Copier le prompt</button>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="etapes">
+    <div class="etape actif" data-etape="cours"><span class="num">Étape 1</span>Cours</div>
+    <div class="etape" data-etape="entrainement"><span class="num">Étape 2</span>Entraînement</div>
+    <div class="etape" data-etape="test"><span class="num">Étape 3</span>Test</div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 1 — COURS ═══════════════════ -->
+  <div id="vueCours" class="vue-etape">
+    <span class="eyebrow">Module Après-Formation · Verres</span>
+    <h1>Les verres Clariteens</h1>
+    <p class="sous-titre">Comprendre les verres qui freinent la myopie des enfants, savoir à qui les proposer et comment bien les expliquer aux parents.</p>
+
+    <div class="carte">
+      <h2>1. C'est quoi ?</h2>
+      <p>Les verres Clariteens sont des verres pour <strong>enfants et adolescents myopes</strong>. Ils font deux choses à la fois : ils <strong>corrigent la myopie</strong> comme un verre classique, pour que l'enfant voie net de loin, et ils <strong>ralentissent l'évolution de cette myopie</strong> d'une année sur l'autre.</p>
+      <p>Clariteens, c'est le nom qu'on utilise chez Lunettes Pour Tous. Ailleurs, les parents et les ophtalmologistes utilisent d'autres noms pour la même famille de verres. Si tu entends l'un de ces noms, on parle de nos Clariteens :</p>
+      <div class="noms-marche">
+        <div class="nom-marche"><div class="marque">Verres freinateurs de myopie</div></div>
+        <div class="nom-marche"><div class="marque">Stellest</div></div>
+        <div class="nom-marche"><div class="marque">MiYOSMART</div></div>
+        <div class="nom-marche"><div class="marque">MyoCare</div></div>
+      </div>
+      <div class="nom-maison">Chez nous, tous ces noms correspondent à <strong>nos verres Clariteens</strong>.</div>
+    </div>
+
+    <div class="carte">
+      <h2>2. Comment ça marche</h2>
+      <p>Chez un enfant myope, l'œil est trop long : l'image des objets lointains se forme <strong>devant la rétine</strong> au lieu de se former dessus, d'où le flou de loin. Tant que l'enfant grandit, l'œil peut continuer à s'allonger, et la myopie augmente.</p>
+
+      <div class="schemas-oeil">
+        <div class="schema">
+          <div class="titre-schema">Verre classique</div>
+          <svg viewBox="0 0 200 110" role="img" aria-label="Verre classique : image nette au centre, image en arrière de la rétine en périphérie">
+            <ellipse cx="120" cy="55" rx="62" ry="44" fill="#fff" stroke="#5B6472" stroke-width="2"/>
+            <path d="M182 30 Q190 55 182 80" fill="none" stroke="#0C8F6B" stroke-width="3"/>
+            <line x1="10" y1="55" x2="182" y2="55" stroke="#0C8F6B" stroke-width="2"/>
+            <line x1="10" y1="25" x2="58" y2="40" stroke="#C0392B" stroke-width="1.5"/>
+            <line x1="58" y1="40" x2="196" y2="70" stroke="#C0392B" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <line x1="10" y1="85" x2="58" y2="70" stroke="#C0392B" stroke-width="1.5"/>
+            <line x1="58" y1="70" x2="196" y2="40" stroke="#C0392B" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <rect x="6" y="18" width="8" height="74" rx="3" fill="#7C3AED" opacity=".35"/>
+          </svg>
+          <div class="legende-schema">Au centre, l'image est nette sur la rétine. Sur les côtés, elle tombe <strong>derrière</strong> la rétine : c'est un signal qui pousse l'œil à continuer de s'allonger.</div>
+        </div>
+        <div class="schema">
+          <div class="titre-schema">Verre Clariteens</div>
+          <svg viewBox="0 0 200 110" role="img" aria-label="Verre freinateur : image nette au centre, image devant la rétine en périphérie">
+            <ellipse cx="120" cy="55" rx="62" ry="44" fill="#fff" stroke="#5B6472" stroke-width="2"/>
+            <path d="M182 30 Q190 55 182 80" fill="none" stroke="#0C8F6B" stroke-width="3"/>
+            <line x1="10" y1="55" x2="182" y2="55" stroke="#0C8F6B" stroke-width="2"/>
+            <line x1="10" y1="25" x2="58" y2="40" stroke="#0C8F6B" stroke-width="1.5"/>
+            <line x1="58" y1="40" x2="150" y2="62" stroke="#0C8F6B" stroke-width="1.5"/>
+            <line x1="10" y1="85" x2="58" y2="70" stroke="#0C8F6B" stroke-width="1.5"/>
+            <line x1="58" y1="70" x2="150" y2="48" stroke="#0C8F6B" stroke-width="1.5"/>
+            <rect x="6" y="18" width="8" height="74" rx="3" fill="#7C3AED" opacity=".35"/>
+            <circle cx="10" cy="26" r="2.2" fill="#7C3AED"/><circle cx="10" cy="34" r="2.2" fill="#7C3AED"/>
+            <circle cx="10" cy="76" r="2.2" fill="#7C3AED"/><circle cx="10" cy="84" r="2.2" fill="#7C3AED"/>
+          </svg>
+          <div class="legende-schema">Au centre, l'image est toujours nette. Sur les côtés, des microlentilles font tomber l'image <strong>devant</strong> la rétine : l'œil reçoit le signal de ralentir son allongement.</div>
+        </div>
+      </div>
+
+      <div class="etapes-mecanisme">
+        <div class="etape-meca"><span class="puce">1</span><span><strong>Une zone centrale</strong> corrige la myopie normalement. C'est par là que l'enfant regarde, il voit net.</span></div>
+        <div class="etape-meca"><span class="puce">2</span><span><strong>Autour de cette zone</strong>, le verre porte des microlentilles invisibles à l'œil nu.</span></div>
+        <div class="etape-meca"><span class="puce">3</span><span>Ces microlentilles <strong>envoient l'image périphérique devant la rétine</strong>. Ce « flou de myopie » en périphérie freine l'allongement de l'œil, donc la progression de la myopie.</span></div>
+      </div>
+
+      <div class="astuce">💡 <strong>À retenir pour l'expliquer simplement</strong> : « Au centre, c'est un verre normal qui fait voir net. Autour, des microlentilles envoient un signal à l'œil pour qu'il grandisse moins vite. »</div>
+    </div>
+
+    <div class="carte">
+      <h2>3. Pour qui ?</h2>
+      <div class="grille-criteres">
+        <div class="critere oui">
+          <span class="tag">✅ À proposer</span>
+          <ul>
+            <li>Enfant ou adolescent <strong>myope</strong></li>
+            <li>Dont la myopie <strong>augmente</strong> d'une année sur l'autre</li>
+            <li>Myopie apparue <strong>tôt</strong> (avant 10 ans), ou parents myopes</li>
+            <li>Un petit astigmatisme n'empêche pas</li>
+          </ul>
+        </div>
+        <div class="critere non">
+          <span class="tag">❌ Pas adapté</span>
+          <ul>
+            <li>Adulte : la croissance de l'œil est terminée, il n'y a plus rien à freiner</li>
+            <li>Enfant <strong>non myope</strong> (hypermétrope ou sans correction)</li>
+            <li>Enfant qui ne portera ses lunettes que de temps en temps</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin-top:14px">Plus on commence tôt, plus on gagne : la myopie évolue le plus vite chez les enfants de moins de 10 ans. Le choix de verres freinateurs se fait en lien avec l'ophtalmologiste, qui suit l'évolution de l'enfant.</p>
+    </div>
+
+    <div class="carte">
+      <h2>4. Pourquoi c'est important</h2>
+      <p>La myopie progresse fortement chez les enfants. D'ici 2050, environ <strong>une personne sur deux</strong> dans le monde pourrait être myope.</p>
+      <p>Freiner la myopie, c'est éviter que la correction de l'enfant monte trop vite d'une année sur l'autre.</p>
+      <p>Les études des fabricants montrent un ralentissement d'environ <strong>60 %</strong> de la myopie par rapport à un verre classique : en moyenne <strong>67 %</strong> pour Stellest (étude sur 2 ans, port d'au moins 12 h par jour), et autour de <strong>59 à 60 %</strong> pour MiYOSMART (étude sur 2 ans, résultats confirmés sur 6 ans).</p>
+      <div class="note-attention">
+        ⚠️ <strong>Attention à l'erreur courante</strong> : ne jamais dire à un parent que ces verres guérissent ou arrêtent la myopie. Ils la <strong>ralentissent</strong>. L'enfant restera myope, et sa correction pourra encore augmenter, mais moins vite.
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>5. Ce qu'on explique aux parents</h2>
+      <ul class="liste">
+        <li><strong>Les porter toute la journée</strong> : au moins 12 heures par jour, du lever au coucher, à l'école comme à la maison. Des lunettes laissées dans le cartable ne freinent rien.</li>
+      </ul>
+      <div class="note-attention">
+        ⚠️ <strong>Attention au montage</strong> : l'effet repose sur la zone centrale. Si la monture glisse sur le nez ou si le centrage est mal pris, l'enfant ne regarde plus par le centre et le verre perd en efficacité.
+        <ul>
+          <li>Choisir une monture à la bonne taille, qui tient bien et reste proche des yeux.</li>
+          <li>Prendre les mesures de centrage avec soin, l'enfant bien droit et regardant au loin.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>6. Exemples concrets</h2>
+      <div class="grille-personas">
+        <div class="persona bon">
+          <span class="tag">✅ Bon candidat</span>
+          <div class="nom">Léa, 9 ans, myope −1.50</div>
+          <div class="desc">Sa myopie a augmenté de 0.75 depuis l'an dernier.</div>
+          <div class="conclusion">→ Jeune, myopie qui progresse : exactement le profil pour des Clariteens.</div>
+        </div>
+        <div class="persona bon">
+          <span class="tag">✅ Bon candidat</span>
+          <div class="nom">Noah, 7 ans, myope −0.75</div>
+          <div class="desc">Première correction cette année, ses deux parents sont myopes.</div>
+          <div class="conclusion">→ Myopie précoce et parents myopes : plus on commence tôt, plus on gagne.</div>
+        </div>
+        <div class="persona mauvais">
+          <span class="tag">❌ Pas adapté</span>
+          <div class="nom">Thomas, 35 ans, myope −3.00</div>
+          <div class="desc">Sa correction n'a pas bougé depuis 5 ans.</div>
+          <div class="conclusion">→ Adulte, œil qui ne grandit plus : il n'y a rien à freiner.</div>
+        </div>
+        <div class="persona mauvais">
+          <span class="tag">❌ Pas adapté</span>
+          <div class="nom">Inès, 11 ans, hypermétrope +2.00</div>
+          <div class="desc">Ses parents ont entendu parler des verres « pour la myopie ».</div>
+          <div class="conclusion">→ Elle n'est pas myope : ces verres ne la concernent pas.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="carte">
+      <h2>7. Infos pratiques</h2>
+      <div class="infos-pratiques">
+        <div class="info-item"><div class="valeur">10 min</div><div class="label">verre de stock, fabriqué en magasin</div></div>
+        <div class="info-item"><div class="valeur">≈ 60 %</div><div class="label">de ralentissement moyen de la myopie</div></div>
+        <div class="info-item"><div class="valeur">Toute la journée</div><div class="label">plus on les porte, plus c'est efficace</div></div>
+        <div class="info-item"><div class="valeur">2 en 1</div><div class="label">corrige la myopie et la freine en même temps</div></div>
+      </div>
+      <div class="offre-1-1">💡 <strong>Les Clariteens sont compris dans le parcours Suprême.</strong><br>Aussi disponible dans l'offre <strong>1=1</strong>, avec un supplément : <strong>+90 €</strong> pour une paire en Clariteens, <strong>+150 €</strong> pour les deux paires en Clariteens.</div>
+      <div class="a-valider">🟡 <strong>À compléter avec les infos Lunettes Pour Tous</strong> : prise en charge Sécu / mutuelle, tranche d'âge et plage de correction acceptées, fabricant derrière nos Clariteens.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 2 — ENTRAÎNEMENT ═══════════════════ -->
+  <div id="vueEntrainement" class="vue-etape" style="display:none">
+    <span class="eyebrow">Module Après-Formation · Les verres Clariteens</span>
+    <h1>Entraînement</h1>
+    <p class="sous-titre">Pas de pression : tu peux refaire ces exercices autant de fois que tu veux, dans l'ordre que tu veux.</p>
+
+    <div id="vueMenu">
+      <div class="progress-formats" id="progressFormats"></div>
+      <div class="grille-formats" id="grilleFormats"></div>
+    </div>
+
+    <div id="vueDrill" style="display:none">
+      <div class="carte-drill">
+        <div class="entete-drill">
+          <button class="lien-retour" id="btnRetourMenu">← Retour aux exercices</button>
+          <span class="score-drill" id="scoreDrill"></span>
+        </div>
+        <div id="corpsDrill"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="pied-drill">
+          <button class="btn-suivant" id="btnSuivant">Suivant →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ÉTAPE 3 — TEST ═══════════════════ -->
+  <div id="vueTest" class="vue-etape" style="display:none">
+    <span class="eyebrow">Module Après-Formation · Les verres Clariteens</span>
+    <h1>Test</h1>
+    <p class="sous-titre">Une seule fois pour verrouiller le module — mais tu peux retenter autant de fois que nécessaire si besoin.</p>
+
+    <div id="vueIntro">
+      <div class="carte">
+        <h2>Avant de commencer</h2>
+        <div class="regle"><span class="puce">1</span><span>12 questions, mélange de ce qu'on a vu dans le cours et à l'entraînement.</span></div>
+        <div class="regle"><span class="puce">2</span><span>Pas de correction affichée en cours de route — le score tombe à la fin.</span></div>
+        <div class="regle"><span class="puce">3</span><span>Il faut <strong>10/12</strong> pour valider le module.</span></div>
+        <div class="regle"><span class="puce">4</span><span>En dessous, pas de souci : retourne t'entraîner et retente quand tu veux.</span></div>
+
+        <div class="alerte-manquant" id="gateManquant" style="display:none">
+          ⚠️ Pas encore accessible : il faut avoir fait au moins une fois chaque format d'entraînement. Il reste : <strong id="texteManquant"></strong>.
+          <button class="btn-secondaire" id="btnAllerEntrainement">Aller à l'entraînement</button>
+        </div>
+
+        <button class="btn-principal" id="btnCommencer">Commencer le test</button>
+      </div>
+    </div>
+
+    <div id="vueDejaAcquis" style="display:none">
+      <div class="carte" style="text-align:center">
+        <div class="badge-acquis" style="margin:0 auto 14px">✓ Module déjà acquis</div>
+        <p>Tu as déjà validé ce module. Pas besoin de le repasser.</p>
+        <button class="btn-secondaire" id="btnRepasserQuandMeme">Le repasser quand même</button>
+      </div>
+    </div>
+
+    <div id="vueQuiz" style="display:none">
+      <div class="carte">
+        <div class="entete-quiz"><span class="compteur-quiz" id="compteurQuiz"></span></div>
+        <div class="barre-quiz" id="barreQuiz"></div>
+        <div id="corpsQuestion"></div>
+      </div>
+    </div>
+
+    <div id="vueResultat" style="display:none">
+      <div class="carte">
+        <div class="score-rond" id="scoreRond">
+          <div class="chiffre" id="scoreChiffre"></div>
+          <div class="sur">sur 12</div>
+        </div>
+        <div class="titre-resultat" id="titreResultat"></div>
+        <div class="sous-resultat" id="sousResultat"></div>
+        <div id="detailResultat"></div>
+        <button class="btn-principal" id="btnRefaire" style="display:none">Retenter le test</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Utilitaires partagés ───────────────────────────────────────
+function $(sel) { return document.querySelector(sel) }
+
+function melanger(tableau) {
+  const copie = [...tableau]
+  for (let i = copie.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copie[i], copie[j]] = [copie[j], copie[i]]
+  }
+  return copie
+}
+
+function lireStockage(cle) { try { return localStorage.getItem(cle) } catch (e) { return null } }
+function ecrireStockage(cle, val) { try { localStorage.setItem(cle, val) } catch (e) {} }
+
+// ── Navigation entre étapes ─────────────────────────────────────
+function irAEtape(cle) {
+  document.querySelectorAll('.etape').forEach(el => el.classList.toggle('actif', el.dataset.etape === cle))
+  $('#vueCours').style.display = cle === 'cours' ? 'block' : 'none'
+  $('#vueEntrainement').style.display = cle === 'entrainement' ? 'block' : 'none'
+  $('#vueTest').style.display = cle === 'test' ? 'block' : 'none'
+  if (cle === 'test') majGateTest()
+}
+document.querySelectorAll('.etape').forEach(el => el.addEventListener('click', () => irAEtape(el.dataset.etape)))
+
+// ═══════════════════ ENTRAÎNEMENT ═══════════════════
+const FORMAT_A = [
+  { profil: "Léa, 9 ans, myope −1.50. Sa myopie a augmenté de 0.75 depuis l'an dernier.", bon: true, explication: "Enfant jeune dont la myopie progresse : c'est exactement le profil pour des Clariteens." },
+  { profil: "Thomas, 35 ans, myope −3.00, correction stable depuis 5 ans.", bon: false, explication: "Adulte : la croissance de l'œil est terminée, il n'y a plus de myopie à freiner. Un verre classique suffit." },
+  { profil: "Inès, 11 ans, hypermétrope +2.00.", bon: false, explication: "Inès n'est pas myope. Les verres Clariteens ne servent qu'à freiner une myopie." },
+  { profil: "Noah, 7 ans, myope −0.75 pour la première fois cette année. Ses deux parents sont myopes.", bon: true, explication: "Myopie qui apparaît tôt et parents myopes : risque élevé que ça monte vite. Plus on commence tôt, plus on gagne." },
+  { profil: "Sacha, 14 ans, myope −4.00. Sa myopie a augmenté de 1.00 en un an et demi.", bon: true, explication: "Adolescent dont la myopie progresse encore : les Clariteens ont tout leur intérêt pour limiter la suite." },
+  { profil: "Mme Durand, 55 ans, myope et presbyte, veut « freiner sa myopie ».", bon: false, explication: "À 55 ans, l'œil ne grandit plus : ces verres n'ont aucun effet. Ce sont des verres pour enfants et adolescents." },
+  { profil: "Jules, 10 ans, myope −2.00 qui progresse. Ses parents préviennent qu'il ne mettra ses lunettes que pour voir le tableau.", bon: false, explication: "En l'état, non : l'effet freinateur demande au moins 12 heures de port par jour. Il faut d'abord expliquer aux parents que les lunettes se portent toute la journée." },
+  { profil: "Emma, 12 ans, myope −2.25 avec un petit astigmatisme de 0.75. Sa myopie augmente chaque année.", bon: true, explication: "Un petit astigmatisme n'empêche pas les verres freinateurs. Myopie qui progresse : bon candidat." },
+  { profil: "Lucas, 8 ans, aucune correction. Ses parents, tous deux myopes, veulent « prévenir » sa myopie.", bon: false, explication: "Lucas n'est pas myope : les verres freinateurs ne le concernent pas." },
+  { profil: "Zoé, 6 ans, déjà myope −2.00.", bon: true, explication: "Myopie forte pour son âge : le risque qu'elle monte beaucoup est élevé. C'est un cas où les Clariteens sont particulièrement utiles." },
+];
+
+const FORMAT_B = [
+  { profil: "Un parent demande : « Est-ce que ces verres vont guérir sa myopie ? »",
+    options: [
+      { texte: "Non, ils ne la guérissent pas et ne l'arrêtent pas complètement. Ils la ralentissent, d'environ 60 % en moyenne, à condition de les porter toute la journée.", bon: true, explication: "Exactement : on promet un ralentissement, jamais une guérison." },
+      { texte: "Oui, après deux ou trois ans de port, la myopie disparaît.", bon: false, explication: "Faux et dangereux : la myopie ne disparaît pas. Promettre une guérison crée une déception et une perte de confiance." },
+      { texte: "Oui, ils bloquent complètement la myopie à son niveau actuel.", bon: false, explication: "Faux : la myopie peut encore augmenter, mais moins vite qu'avec un verre classique." },
+    ] },
+  { profil: "Un parent demande : « Il peut les mettre seulement pour l'école ? »",
+    options: [
+      { texte: "Oui, l'essentiel c'est de voir le tableau.", bon: false, explication: "Avec un port aussi court, l'effet freinateur est très réduit." },
+      { texte: "Il faut les porter au moins 12 heures par jour, du lever au coucher, à l'école comme à la maison. C'est le temps de port qui fait l'efficacité.", bon: true, explication: "Exactement : les études montrent la meilleure efficacité avec un port d'au moins 12 heures par jour." },
+      { texte: "Seulement quand il est sur un écran, c'est là que la myopie progresse.", bon: false, explication: "Non : il faut les porter toute la journée, pas seulement sur écran." },
+    ] },
+  { profil: "Un parent demande : « Pourquoi pas des verres normaux ? C'est moins cher. »",
+    options: [
+      { texte: "Les verres normaux font pareil, c'est juste une question de marque.", bon: false, explication: "Faux : un verre classique corrige mais ne freine pas la myopie." },
+      { texte: "Les verres normaux sont mauvais pour les yeux des enfants.", bon: false, explication: "Faux et alarmiste : un verre classique corrige très bien, il ne freine simplement pas la progression." },
+      { texte: "Un verre normal corrige la vue mais ne freine pas la myopie. Le Clariteens corrige aussi, et en plus il ralentit son évolution, pour que sa correction monte moins vite.", bon: true, explication: "Exactement : on explique ce que le verre apporte en plus, sans dénigrer le verre classique." },
+    ] },
+  { profil: "Un parent demande : « Est-ce qu'il va bien voir avec ? »",
+    options: [
+      { texte: "Il verra un peu moins bien qu'avec des verres normaux, c'est le prix à payer pour freiner la myopie.", bon: false, explication: "Faux : la zone centrale corrige la myopie comme un verre classique, l'enfant voit net de loin." },
+      { texte: "Oui : au centre, le verre corrige sa myopie comme un verre classique, il voit net de loin. Les microlentilles autour freinent la myopie sans l'empêcher de bien voir.", bon: true, explication: "Exactement : le verre fait les deux à la fois, il corrige et il freine." },
+      { texte: "Il verra net seulement de près.", bon: false, explication: "Faux : le verre corrige la myopie, donc la vision de loin." },
+    ] },
+];
+
+const FORMAT_C = [
+  { enonce: "Clariteens, Stellest, MiYOSMART et MyoCare désignent la même famille de verres : les verres freinateurs de myopie.", vrai: true },
+  { enonce: "Les verres Clariteens corrigent la myopie de l'enfant en plus de la freiner.", vrai: true },
+  { enonce: "Les verres Clariteens guérissent la myopie après quelques années de port.", vrai: false },
+  { enonce: "Pour être efficaces, les verres doivent être portés au moins 12 heures par jour.", vrai: true },
+  { enonce: "Les verres Clariteens sont adaptés aux adultes dont la myopie est stable.", vrai: false },
+  { enonce: "Chez un enfant myope, l'image des objets lointains se forme devant la rétine.", vrai: true },
+  { enonce: "Les microlentilles du verre sont placées au centre, là où l'enfant regarde.", vrai: false },
+  { enonce: "Les verres freinateurs ralentissent la myopie d'environ 60 % en moyenne par rapport à un verre classique.", vrai: true },
+  { enonce: "Un enfant hypermétrope peut porter des Clariteens pour éviter de devenir myope.", vrai: false },
+  { enonce: "Avec des verres Clariteens, l'enfant voit net de loin grâce à la zone centrale du verre.", vrai: true },
+  { enonce: "Une monture qui glisse sur le nez peut réduire l'efficacité des verres.", vrai: true },
+  { enonce: "Un petit astigmatisme empêche de porter des verres freinateurs.", vrai: false },
+  { enonce: "Plus on commence tôt, plus le gain sur la myopie est important.", vrai: true },
+  { enonce: "Les verres Clariteens sont des verres de stock : on les fabrique en 10 minutes en magasin.", vrai: true },
+  { enonce: "Les verres Clariteens sont compris dans le parcours Suprême.", vrai: true },
+  { enonce: "En offre 1=1, il faut un supplément de 150 € pour une seule paire en Clariteens.", vrai: false },
+  { enonce: "Les microlentilles du verre se voient facilement quand on regarde l'enfant.", vrai: false },
+  { enonce: "Des lunettes Clariteens laissées dans le cartable ne freinent pas la myopie.", vrai: true },
+];
+
+const FORMAT_D = [
+  { profil: "Un collègue dit à un parent : « Avec ces verres, sa myopie va s'arrêter. »",
+    options: [
+      { texte: "Il a raison, c'est un bon argument de vente.", bon: false, explication: "C'est une promesse fausse : la myopie peut encore augmenter. Le parent sera déçu au prochain contrôle." },
+      { texte: "Il faut corriger : les verres ralentissent la myopie, ils ne l'arrêtent pas. On parle d'environ 60 % de ralentissement en moyenne.", bon: true, explication: "Exactement : on reste honnête sur ce que le verre fait vraiment." },
+      { texte: "Il vaut mieux ne rien dire sur l'efficacité.", bon: false, explication: "Non : le parent a besoin de savoir ce qu'il peut attendre, avec des chiffres justes." },
+    ] },
+  { profil: "Un client de 40 ans, myope stable, a vu une pub et demande des Stellest. Un collègue s'apprête à les lui vendre.",
+    options: [
+      { texte: "Attends : à 40 ans l'œil ne grandit plus, il n'y a rien à freiner. Ces verres sont faits pour les enfants et ados dont la myopie évolue.", bon: true, explication: "Exactement : on ne vend pas un verre qui n'apportera rien au client." },
+      { texte: "Si le client le demande, on lui donne ce qu'il veut.", bon: false, explication: "Non : notre rôle est de conseiller. Ce verre ne lui apportera aucun bénéfice." },
+      { texte: "Il faut d'abord transposer son ordonnance pour savoir.", bon: false, explication: "La transposition n'a rien à voir ici : c'est l'âge et la stabilité de la myopie qui comptent." },
+    ] },
+  { profil: "Un parent dit : « Mon fils a des MiYOSMART prescrites par l'ophtalmo, vous faites ça ? » Un collègue répond qu'on ne les a pas.",
+    options: [
+      { texte: "Il a raison, on n'a pas cette marque, il faut aller ailleurs.", bon: false, explication: "On perd un client alors qu'on a l'équivalent : nos Clariteens sont des verres freinateurs de myopie." },
+      { texte: "Il faut d'abord demander à l'ophtalmo de refaire l'ordonnance avec notre nom de verre.", bon: false, explication: "Pas besoin : MiYOSMART et Clariteens sont la même famille de verres, on peut proposer nos Clariteens directement." },
+      { texte: "Attends : MiYOSMART, c'est un autre nom pour des verres freinateurs de myopie. Chez nous, ce sont nos Clariteens, la même famille de verres.", bon: true, explication: "Exactement : il faut savoir faire le lien entre les noms du marché et nos Clariteens." },
+    ] },
+  { profil: "En prenant les mesures d'un enfant pour des Clariteens, un collègue choisit une monture un peu grande « pour qu'elle dure plus longtemps ».",
+    options: [
+      { texte: "Bonne idée, l'enfant va grandir.", bon: false, explication: "Une monture trop grande glisse, l'enfant ne regarde plus par le centre du verre et l'effet freinateur diminue." },
+      { texte: "Attention : la monture doit être à la bonne taille et bien tenir. Si elle glisse, l'enfant ne regarde plus par la zone centrale et le verre perd en efficacité.", bon: true, explication: "Exactement : le bon ajustement fait partie de l'efficacité du verre." },
+      { texte: "La taille de la monture n'a pas d'importance avec ces verres.", bon: false, explication: "Faux : avec un verre freinateur, le centrage et le maintien de la monture sont encore plus importants." },
+    ] },
+];
+
+let formatActuel = null;
+let poolActuelle = [];
+let indexActuel = null;
+let scoreOk = 0, scoreNon = 0;
+
+const FORMATS_INFO = {
+  a: { titre: "Bon candidat ?", ico: "👦", desc: "Un profil client, tu dis si les Clariteens sont adaptés ou pas.", data: FORMAT_A },
+  b: { titre: "Le parent demande", ico: "💬", desc: "Une question de parent, choisis la bonne réponse à lui donner.", data: FORMAT_B },
+  c: { titre: "Vrai/Faux éclair", ico: "⚡", desc: "Rafale de questions rapides pour ancrer les bases.", data: FORMAT_C },
+  d: { titre: "Le bon raisonnement", ico: "🗣️", desc: "Un collègue se trompe (ou pas) — identifie le bon raisonnement.", data: FORMAT_D },
+};
+
+const CLE_FORMATS = 'clariteens_entrainement_formats';
+
+function getFormatsFaits() {
+  try { return JSON.parse(lireStockage(CLE_FORMATS)) || {} } catch (e) { return {} }
+}
+function marquerFormatFait(cle) {
+  const faits = getFormatsFaits()
+  if (!faits[cle]) {
+    faits[cle] = true
+    ecrireStockage(CLE_FORMATS, JSON.stringify(faits))
+  }
+}
+
+function rendreMenu() {
+  const faits = getFormatsFaits()
+  const nbFaits = Object.keys(FORMATS_INFO).filter(c => faits[c]).length
+  $('#progressFormats').textContent = `${nbFaits}/4 formats terminés au moins une fois`
+  $('#grilleFormats').innerHTML = Object.entries(FORMATS_INFO).map(([cle, f]) => `
+    <div class="carte-format" data-format="${cle}">
+      ${faits[cle] ? '<div class="badge-fait">✓ Terminé</div>' : ''}
+      <div class="ico">${f.ico}</div>
+      <div class="titre-format">${f.titre}</div>
+      <div class="desc-format">${f.desc}</div>
+      <div class="compteur-format">${f.data.length} situations</div>
+    </div>
+  `).join('')
+  document.querySelectorAll('[data-format]').forEach(el => {
+    el.addEventListener('click', () => lancerFormat(el.dataset.format))
+  })
+  majGateTest()
+}
+
+function lancerFormat(cle) {
+  formatActuel = cle
+  poolActuelle = melanger(FORMATS_INFO[cle].data)
+  indexActuel = 0
+  scoreOk = 0; scoreNon = 0
+  $('#vueMenu').style.display = 'none'
+  $('#vueDrill').style.display = 'block'
+  rendreItemCourant()
+}
+
+function retourMenu() {
+  $('#vueDrill').style.display = 'none'
+  $('#vueMenu').style.display = 'block'
+  formatActuel = null
+  rendreMenu()
+}
+
+function majScore() {
+  $('#scoreDrill').innerHTML = `<b class="ok">${scoreOk} ✓</b> &nbsp; <b class="non">${scoreNon} ✗</b>`
+}
+
+function rendreChoixBinaire(corps, texte, libVrai, libFaux, attendu, explicationOk, explicationNon) {
+  corps.innerHTML = `
+    <div class="profil-client">${texte}</div>
+    <div class="choix-binaire">
+      <button class="btn-choix" data-rep="true">${libVrai}</button>
+      <button class="btn-choix" data-rep="false">${libFaux}</button>
+    </div>`
+  corps.querySelectorAll('[data-rep]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const correct = (btn.dataset.rep === 'true') === attendu
+      corps.classList.add('choix-fait')
+      corps.querySelectorAll('[data-rep]').forEach(b => {
+        if ((b.dataset.rep === 'true') === attendu) b.classList.add('bonne-reponse')
+        else if (b === btn) b.classList.add('mauvaise-reponse')
+        if (b === btn) b.classList.add('selectionne')
+      })
+      afficherFeedback(correct, correct ? explicationOk : explicationNon)
+    })
+  })
+}
+
+function rendreChoixMultiple(corps, item) {
+  // Options mélangées à chaque affichage pour que la bonne réponse ne soit jamais à une place prévisible
+  const options = melanger(item.options)
+  corps.innerHTML = `
+    <div class="profil-client">${item.profil}</div>
+    <div class="liste-options">
+      ${options.map((o, i) => `<button class="btn-option" data-i="${i}">${o.texte}</button>`).join('')}
+    </div>`
+  corps.querySelectorAll('[data-i]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const opt = options[Number(btn.dataset.i)]
+      corps.classList.add('choix-fait')
+      corps.querySelectorAll('[data-i]').forEach((b, i) => {
+        if (options[i].bon) b.classList.add('bonne-reponse')
+        else if (b === btn) b.classList.add('mauvaise-reponse', 'selectionne')
+      })
+      afficherFeedback(opt.bon, opt.explication)
+    })
+  })
+}
+
+function rendreItemCourant() {
+  majScore()
+  const corps = $('#corpsDrill')
+  const feedback = $('#feedback')
+  feedback.className = 'feedback'
+  feedback.textContent = ''
+  $('#btnSuivant').classList.remove('visible')
+  corps.classList.remove('choix-fait')
+
+  if (indexActuel >= poolActuelle.length) {
+    marquerFormatFait(formatActuel)
+    majGateTest()
+    corps.innerHTML = `<p style="text-align:center;color:var(--ink-soft);font-size:14px;padding:20px 0">Tu as fait le tour de ce pool — relance l'exercice pour un nouvel ordre, ou choisis un autre format.</p>`
+    return
+  }
+
+  const item = poolActuelle[indexActuel]
+  if (formatActuel === 'a') rendreChoixBinaire(corps, item.profil, 'Bon candidat', 'Pas adapté', item.bon, item.explication, item.explication)
+  if (formatActuel === 'b' || formatActuel === 'd') rendreChoixMultiple(corps, item)
+  if (formatActuel === 'c') rendreChoixBinaire(corps, item.enonce, 'Vrai', 'Faux', item.vrai, 'Exact.', 'Pas tout à fait — relis le point correspondant dans le cours si besoin.')
+}
+
+function afficherFeedback(correct, texte) {
+  const feedback = $('#feedback')
+  feedback.textContent = (correct ? '✓ ' : '✗ ') + texte
+  feedback.classList.add('visible', correct ? 'ok' : 'non')
+  if (correct) scoreOk++; else scoreNon++
+  majScore()
+  $('#btnSuivant').classList.add('visible')
+}
+
+$('#btnRetourMenu').addEventListener('click', retourMenu)
+$('#btnSuivant').addEventListener('click', () => { indexActuel++; rendreItemCourant() })
+
+// ═══════════════════ TEST ═══════════════════
+const SEUIL_REUSSITE = 10;
+const TOTAL_QUESTIONS = 12;
+const CLE_ACQUIS = 'clariteens_test_acquis';
+
+let questionsQuiz = [];
+let indexQuestion = 0;
+let reponsesDonnees = [];
+
+function majGateTest() {
+  const faits = getFormatsFaits()
+  const manquants = Object.entries(FORMATS_INFO).filter(([cle]) => !faits[cle]).map(([, f]) => f.titre)
+  const btn = $('#btnCommencer')
+  const gate = $('#gateManquant')
+  if (!btn || !gate) return
+  if (manquants.length === 0) {
+    gate.style.display = 'none'
+    btn.style.display = 'block'
+  } else {
+    gate.style.display = 'block'
+    btn.style.display = 'none'
+    $('#texteManquant').textContent = manquants.join(', ')
+  }
+}
+
+function getFormatsFaitsTousOk() {
+  const faits = getFormatsFaits()
+  return Object.keys(FORMATS_INFO).every(cle => faits[cle])
+}
+
+function construireQuestions() {
+  const vf = melanger(FORMAT_C).slice(0, 5).map(q => ({ type: 'vf', ...q }))
+  const cand = melanger(FORMAT_A).slice(0, 5).map(q => ({ type: 'candidat', ...q }))
+  const choix = melanger([...FORMAT_B, ...FORMAT_D]).slice(0, 2).map(q => ({ type: 'choix', profil: q.profil, options: melanger(q.options) }))
+  return melanger([...vf, ...cand, ...choix])
+}
+
+function demarrerQuiz() {
+  if (!getFormatsFaitsTousOk()) { majGateTest(); return }
+  questionsQuiz = construireQuestions()
+  indexQuestion = 0
+  reponsesDonnees = []
+  $('#vueIntro').style.display = 'none'
+  $('#vueDejaAcquis').style.display = 'none'
+  $('#vueResultat').style.display = 'none'
+  $('#vueQuiz').style.display = 'block'
+  rendreQuestion()
+}
+
+function rendreQuestion() {
+  $('#compteurQuiz').textContent = `Question ${indexQuestion + 1} / ${TOTAL_QUESTIONS}`
+  $('#barreQuiz').innerHTML = Array.from({ length: TOTAL_QUESTIONS }, (_, i) =>
+    `<div class="seg-quiz ${i < indexQuestion ? 'fait' : ''}"></div>`).join('')
+  const q = questionsQuiz[indexQuestion]
+  const corps = $('#corpsQuestion')
+
+  if (q.type === 'vf' || q.type === 'candidat') {
+    const texte = q.type === 'vf' ? q.enonce : q.profil
+    const attendu = q.type === 'vf' ? q.vrai : q.bon
+    const [libVrai, libFaux] = q.type === 'vf' ? ['Vrai', 'Faux'] : ['Bon candidat', 'Pas adapté']
+    corps.innerHTML = `
+      <div class="profil-client">${texte}</div>
+      <div class="choix-binaire">
+        <button class="btn-rep" data-rep="true">${libVrai}</button>
+        <button class="btn-rep" data-rep="false">${libFaux}</button>
+      </div>`
+    corps.querySelectorAll('[data-rep]').forEach(btn => {
+      btn.addEventListener('click', () => valider(texte, (btn.dataset.rep === 'true') === attendu))
+    })
+  }
+
+  if (q.type === 'choix') {
+    corps.innerHTML = `
+      <div class="citation-client">${q.profil}</div>
+      <div class="liste-options">
+        ${q.options.map((o, i) => `<button class="btn-rep" data-i="${i}">${o.texte}</button>`).join('')}
+      </div>`
+    corps.querySelectorAll('[data-i]').forEach(btn => {
+      btn.addEventListener('click', () => valider(q.profil, q.options[Number(btn.dataset.i)].bon))
+    })
+  }
+}
+
+function valider(libelleQuestion, correct) {
+  reponsesDonnees.push({ libelle: libelleQuestion, correct })
+  indexQuestion++
+  if (indexQuestion >= TOTAL_QUESTIONS) afficherResultat()
+  else rendreQuestion()
+}
+
+function afficherResultat() {
+  $('#vueQuiz').style.display = 'none'
+  $('#vueResultat').style.display = 'block'
+  const score = reponsesDonnees.filter(r => r.correct).length
+  const reussi = score >= SEUIL_REUSSITE
+  $('#scoreChiffre').textContent = score
+  $('#scoreRond').className = 'score-rond ' + (reussi ? 'reussi' : 'echec')
+  $('#titreResultat').textContent = reussi ? '✅ Module acquis !' : 'Pas encore cette fois'
+  $('#sousResultat').textContent = reussi
+    ? 'Le module est verrouillé — bravo.'
+    : `Il fallait ${SEUIL_REUSSITE}/12 pour valider. Retourne t'entraîner et retente quand tu veux.`
+  $('#detailResultat').innerHTML = reponsesDonnees.map(r => `
+    <div class="detail-reponse ${r.correct ? 'ok' : 'non'}">
+      <span class="icone">${r.correct ? '✓' : '✗'}</span>
+      <span class="texte-q">${r.libelle}</span>
+    </div>
+  `).join('')
+  const btnRefaire = $('#btnRefaire')
+  btnRefaire.style.display = 'block'
+  btnRefaire.textContent = reussi ? 'Repasser le test quand même' : 'Retenter le test'
+  if (reussi) ecrireStockage(CLE_ACQUIS, '1')
+}
+
+$('#btnCommencer').addEventListener('click', demarrerQuiz)
+$('#btnRefaire').addEventListener('click', demarrerQuiz)
+$('#btnRepasserQuandMeme').addEventListener('click', demarrerQuiz)
+$('#btnAllerEntrainement').addEventListener('click', () => irAEtape('entrainement'))
+
+if (lireStockage(CLE_ACQUIS) === '1') {
+  $('#vueIntro').style.display = 'none'
+  $('#vueDejaAcquis').style.display = 'block'
+}
+
+rendreMenu()
+majGateTest()
+
+// ═══════════════════ PROMPT POUR PAUL ═══════════════════
+// Les sections Entraînement sont générées depuis les mêmes données que la page :
+// le prompt reste toujours aligné avec ce qui est affiché.
+function promptFormatChoix(liste) {
+  return liste.map((s, i) => `${i + 1}. Situation : "${s.profil}"\n` + s.options.map(o =>
+    `- ${o.bon ? '✅' : '❌'} "${o.texte}" → explication : "${o.explication}"`).join('\n')).join('\n\n')
+}
+
+const PROMPT_PAUL = `Je veux que tu ajoutes un nouveau module au système de modules post-formation ("Perfectionnement") dont je t'ai déjà donné les règles générales avec le module Verre de proximité (structure Cours/Entraînement/Test, barre de navigation à 3 étapes, verrou du Test tant que les 4 formats d'entraînement ne sont pas faits, verrouillage définitif du module une fois le Test réussi). Ce nouveau module utilise exactement le même moteur — inutile de le reconstruire, applique-le simplement à ce contenu. Tous les textes entre guillemets ci-dessous sont à reprendre mot pour mot.
+
+Petit rappel rapide des règles du moteur, au cas où : un module a 3 étapes (Cours, Entraînement, Test) ; l'Entraînement propose plusieurs formats d'exercices répétables à volonté, sans enjeu, chacun marqué "fait" dès que le collaborateur est allé au bout du pool une fois ; le Test reste verrouillé tant que tous les formats d'Entraînement n'ont pas été faits au moins une fois ; le Test tire des questions au hasard, mélange leur ordre, affiche le score uniquement à la fin ; une réussite verrouille le module en "acquis" de façon définitive (retentable volontairement) ; un échec ne pénalise pas et autorise un nombre illimité de nouvelles tentatives.
+
+MODULE : "LES VERRES CLARITEENS"
+
+CONTEXTE
+
+Chez Lunettes Pour Tous, on appelle "Clariteens" les verres freinateurs de myopie pour enfants et adolescents. Ailleurs, la même famille de verres existe sous d'autres noms : verres freinateurs de myopie, Stellest, MiYOSMART, MyoCare. Ces verres corrigent la myopie et ralentissent son évolution grâce à des microlentilles placées autour d'une zone centrale. Ce module apprend aux collaborateurs à comprendre ces verres, à savoir à qui les proposer, et à bien les expliquer aux parents.
+
+BARRE DE NAVIGATION
+
+3 onglets cliquables : "Étape 1 — Cours", "Étape 2 — Entraînement", "Étape 3 — Test" (l'onglet actif est mis en avant).
+
+ÉTAPE 1 — COURS
+
+Surtitre : "Module Après-Formation · Verres". Titre : "Les verres Clariteens". Sous-titre : "Comprendre les verres qui freinent la myopie des enfants, savoir à qui les proposer et comment bien les expliquer aux parents." Une carte par section :
+
+1. C'est quoi ?
+Paragraphe 1 : "Les verres Clariteens sont des verres pour enfants et adolescents myopes. Ils font deux choses à la fois : ils corrigent la myopie comme un verre classique, pour que l'enfant voie net de loin, et ils ralentissent l'évolution de cette myopie d'une année sur l'autre."
+Paragraphe 2 : "Clariteens, c'est le nom qu'on utilise chez Lunettes Pour Tous. Ailleurs, les parents et les ophtalmologistes utilisent d'autres noms pour la même famille de verres. Si tu entends l'un de ces noms, on parle de nos Clariteens :"
+Puis 4 tuiles côte à côte (2 par ligne sur mobile), chacune avec un seul nom en gras : "Verres freinateurs de myopie" — "Stellest" — "MiYOSMART" — "MyoCare".
+Bandeau en dessous : "Chez nous, tous ces noms correspondent à nos verres Clariteens."
+
+2. Comment ça marche
+Texte : "Chez un enfant myope, l'œil est trop long : l'image des objets lointains se forme devant la rétine au lieu de se former dessus, d'où le flou de loin. Tant que l'enfant grandit, l'œil peut continuer à s'allonger, et la myopie augmente."
+Deux petits schémas d'œil côte à côte (un verre à gauche, l'œil vu de profil, rayons lumineux) :
+- "Verre classique" : rayon central qui arrive net sur la rétine, rayons périphériques qui se croisent derrière la rétine. Légende : "Au centre, l'image est nette sur la rétine. Sur les côtés, elle tombe derrière la rétine : c'est un signal qui pousse l'œil à continuer de s'allonger."
+- "Verre Clariteens" : même rayon central net, des points sur les bords du verre (les microlentilles), rayons périphériques qui se croisent devant la rétine. Légende : "Au centre, l'image est toujours nette. Sur les côtés, des microlentilles font tomber l'image devant la rétine : l'œil reçoit le signal de ralentir son allongement."
+Puis 3 étapes numérotées :
+1. "Une zone centrale corrige la myopie normalement. C'est par là que l'enfant regarde, il voit net."
+2. "Autour de cette zone, le verre porte des microlentilles invisibles à l'œil nu."
+3. "Ces microlentilles envoient l'image périphérique devant la rétine. Ce « flou de myopie » en périphérie freine l'allongement de l'œil, donc la progression de la myopie."
+Encart astuce (💡) : "À retenir pour l'expliquer simplement : « Au centre, c'est un verre normal qui fait voir net. Autour, des microlentilles envoient un signal à l'œil pour qu'il grandisse moins vite. »"
+
+3. Pour qui ?
+Deux encarts côte à côte :
+- Vert "✅ À proposer" : "Enfant ou adolescent myope" / "Dont la myopie augmente d'une année sur l'autre" / "Myopie apparue tôt (avant 10 ans), ou parents myopes" / "Un petit astigmatisme n'empêche pas".
+- Rouge "❌ Pas adapté" : "Adulte : la croissance de l'œil est terminée, il n'y a plus rien à freiner" / "Enfant non myope (hypermétrope ou sans correction)" / "Enfant qui ne portera ses lunettes que de temps en temps".
+Texte en dessous : "Plus on commence tôt, plus on gagne : la myopie évolue le plus vite chez les enfants de moins de 10 ans. Le choix de verres freinateurs se fait en lien avec l'ophtalmologiste, qui suit l'évolution de l'enfant."
+
+4. Pourquoi c'est important
+Paragraphe 1 : "La myopie progresse fortement chez les enfants. D'ici 2050, environ une personne sur deux dans le monde pourrait être myope."
+Paragraphe 2 : "Freiner la myopie, c'est éviter que la correction de l'enfant monte trop vite d'une année sur l'autre."
+Paragraphe 3 : "Les études des fabricants montrent un ralentissement d'environ 60 % de la myopie par rapport à un verre classique : en moyenne 67 % pour Stellest (étude sur 2 ans, port d'au moins 12 h par jour), et autour de 59 à 60 % pour MiYOSMART (étude sur 2 ans, résultats confirmés sur 6 ans)."
+Encart d'avertissement (⚠️, rouge) : "Attention à l'erreur courante : ne jamais dire à un parent que ces verres guérissent ou arrêtent la myopie. Ils la ralentissent. L'enfant restera myope, et sa correction pourra encore augmenter, mais moins vite."
+
+5. Ce qu'on explique aux parents
+Liste à puces :
+- "Les porter toute la journée : au moins 12 heures par jour, du lever au coucher, à l'école comme à la maison. Des lunettes laissées dans le cartable ne freinent rien."
+Encart d'avertissement (⚠️, rouge) : "Attention au montage : l'effet repose sur la zone centrale. Si la monture glisse sur le nez ou si le centrage est mal pris, l'enfant ne regarde plus par le centre et le verre perd en efficacité." suivi de 2 puces : "Choisir une monture à la bonne taille, qui tient bien et reste proche des yeux." / "Prendre les mesures de centrage avec soin, l'enfant bien droit et regardant au loin."
+
+6. Exemples concrets (grille de 4 cartes : 2 vertes "✅ Bon candidat", 2 rouges "❌ Pas adapté"). Chaque carte : étiquette, nom en gras, description, conclusion.
+- ✅ Bon candidat — "Léa, 9 ans, myope −1.50" — "Sa myopie a augmenté de 0.75 depuis l'an dernier." — "→ Jeune, myopie qui progresse : exactement le profil pour des Clariteens."
+- ✅ Bon candidat — "Noah, 7 ans, myope −0.75" — "Première correction cette année, ses deux parents sont myopes." — "→ Myopie précoce et parents myopes : plus on commence tôt, plus on gagne."
+- ❌ Pas adapté — "Thomas, 35 ans, myope −3.00" — "Sa correction n'a pas bougé depuis 5 ans." — "→ Adulte, œil qui ne grandit plus : il n'y a rien à freiner."
+- ❌ Pas adapté — "Inès, 11 ans, hypermétrope +2.00" — "Ses parents ont entendu parler des verres « pour la myopie »." — "→ Elle n'est pas myope : ces verres ne la concernent pas."
+
+7. Infos pratiques (4 tuiles, 2 par ligne, valeur en gros + libellé en dessous)
+- "10 min" / "verre de stock, fabriqué en magasin"
+- "≈ 60 %" / "de ralentissement moyen de la myopie"
+- "Toute la journée" / "plus on les porte, plus c'est efficace"
+- "2 en 1" / "corrige la myopie et la freine en même temps"
+Encart violet clair (💡) sous les tuiles : "Les Clariteens sont compris dans le parcours Suprême." (en gras), puis à la ligne : "Aussi disponible dans l'offre 1=1, avec un supplément : +90 € pour une paire en Clariteens, +150 € pour les deux paires en Clariteens." (1=1, +90 € et +150 € en gras).
+[NOTE POUR PAUL : cette section sera complétée plus tard avec les infos propres à Lunettes Pour Tous (prise en charge, tranche d'âge et plage de correction acceptées). N'ajoute rien d'autre pour l'instant.]
+
+ÉTAPE 2 — ENTRAÎNEMENT
+
+Surtitre : "Module Après-Formation · Les verres Clariteens". Titre : "Entraînement". Sous-titre : "Pas de pression : tu peux refaire ces exercices autant de fois que tu veux, dans l'ordre que tu veux."
+
+Écran d'accueil : un compteur "X/4 formats terminés au moins une fois", puis une grille de 4 cartes cliquables (icône, titre, description, nombre de situations, et un badge "✓ Terminé" quand le format a été fait au moins une fois) :
+${Object.values(FORMATS_INFO).map(f => `- ${f.ico} "${f.titre}" — "${f.desc}" — ${f.data.length} situations`).join('\n')}
+
+Mécanique commune aux 4 formats : à chaque lancement, l'ordre des situations est mélangé aléatoirement. En haut de l'exercice : un lien "← Retour aux exercices" et un compteur de bonnes/mauvaises réponses de la session ("X ✓  Y ✗"). Après chaque réponse : la bonne réponse est surlignée en vert, la mauvaise choisie en rouge, un encadré d'explication apparaît (vert si juste, rouge si faux, précédé de "✓ " ou "✗ "), puis un bouton "Suivant →". Quand toutes les situations du pool sont passées, le format est marqué "fait" et on affiche : "Tu as fait le tour de ce pool — relance l'exercice pour un nouvel ordre, ou choisis un autre format."
+
+Format A — "${FORMATS_INFO.a.titre}" (${FORMAT_A.length} situations). Le collaborateur voit un profil client et répond avec 2 boutons "Bon candidat" / "Pas adapté". Profil → bonne réponse → explication affichée (la même que la réponse soit juste ou fausse) :
+${FORMAT_A.map((s, i) => `${i + 1}. "${s.profil}" → ${s.bon ? 'Bon candidat' : 'Pas adapté'} → "${s.explication}"`).join('\n')}
+
+Format B — "${FORMATS_INFO.b.titre}" (${FORMAT_B.length} situations, 3 options chacune, une seule bonne). Important : l'ordre des 3 options doit être mélangé aléatoirement à chaque affichage, à l'entraînement comme au test, pour que la bonne réponse ne soit jamais toujours à la même place. Chaque option a sa propre explication, affichée quand le collaborateur la choisit (la bonne option est toujours surlignée en vert, celle choisie en rouge si elle est fausse) :
+
+${promptFormatChoix(FORMAT_B)}
+
+Format C — "${FORMATS_INFO.c.titre}" (${FORMAT_C.length} énoncés), 2 boutons "Vrai" / "Faux". Explication affichée : "Exact." si juste, "Pas tout à fait — relis le point correspondant dans le cours si besoin." si faux.
+${FORMAT_C.map((s, i) => `${i + 1}. ${s.enonce} → ${s.vrai ? 'Vrai' : 'Faux'}`).join('\n')}
+
+Format D — "${FORMATS_INFO.d.titre}" (${FORMAT_D.length} situations, 3 options chacune, une seule bonne). Même mécanique que le Format B, options mélangées aléatoirement à chaque affichage :
+
+${promptFormatChoix(FORMAT_D)}
+
+ÉTAPE 3 — TEST
+
+Surtitre : "Module Après-Formation · Les verres Clariteens". Titre : "Test". Sous-titre : "Une seule fois pour verrouiller le module — mais tu peux retenter autant de fois que nécessaire si besoin."
+
+Écran d'introduction, carte "Avant de commencer" avec 4 règles numérotées :
+1. "12 questions, mélange de ce qu'on a vu dans le cours et à l'entraînement."
+2. "Pas de correction affichée en cours de route — le score tombe à la fin."
+3. "Il faut 10/12 pour valider le module."
+4. "En dessous, pas de souci : retourne t'entraîner et retente quand tu veux."
+Puis le bouton "Commencer le test". Tant que les 4 formats d'entraînement n'ont pas tous été faits au moins une fois, ce bouton est remplacé par un encart jaune : "⚠️ Pas encore accessible : il faut avoir fait au moins une fois chaque format d'entraînement. Il reste : [liste des titres des formats manquants, séparés par des virgules]." avec un bouton "Aller à l'entraînement" qui bascule sur l'étape 2.
+
+Si le module est déjà acquis, l'écran d'introduction est remplacé par : badge "✓ Module déjà acquis", texte "Tu as déjà validé ce module. Pas besoin de le repasser." et bouton "Le repasser quand même" (qui lance un nouveau test).
+
+Composition du test : 12 questions tirées au hasard et mélangées à chaque tentative —
+- 5 parmi les ${FORMAT_C.length} énoncés Vrai/Faux du Format C (boutons "Vrai" / "Faux") ;
+- 5 parmi les ${FORMAT_A.length} profils du Format A (boutons "Bon candidat" / "Pas adapté") ;
+- 2 parmi un pool de ${FORMAT_B.length + FORMAT_D.length} fusionnant les ${FORMAT_B.length} situations du Format B et les ${FORMAT_D.length} du Format D : questions à choix parmi 3 réponses, options mélangées, la situation affichée en italique.
+
+Pendant le quiz : un compteur "Question X / 12" et une barre de progression en 12 segments. Aucune correction affichée — dès qu'une réponse est donnée, on passe directement à la question suivante.
+
+Écran de résultat : un rond avec le score "X sur 12" (vert si réussi, rouge sinon).
+- Si score ≥ 10 : titre "✅ Module acquis !", sous-titre "Le module est verrouillé — bravo.", bouton "Repasser le test quand même". Le module passe en "acquis" définitivement.
+- Si score < 10 : titre "Pas encore cette fois", sous-titre "Il fallait 10/12 pour valider. Retourne t'entraîner et retente quand tu veux.", bouton "Retenter le test".
+Sous le titre, le détail des 12 questions : une ligne par question avec ✓ (vert) ou ✗ (rouge) suivi de l'énoncé de la question (le profil, l'énoncé Vrai/Faux ou la situation).
+
+Ne te préoccupe pas du stockage ni de la façon dont tu notes "acquis"/"non acquis" et "format fait" par collaborateur — gère ça comme tu le souhaites de ton côté.`
+
+$('#textePrompt').textContent = PROMPT_PAUL
+$('#btnPromptPaul').addEventListener('click', () => { $('#modalPrompt').style.display = 'flex' })
+$('#btnFermerModal').addEventListener('click', () => { $('#modalPrompt').style.display = 'none' })
+$('#modalPrompt').addEventListener('click', (e) => { if (e.target.id === 'modalPrompt') $('#modalPrompt').style.display = 'none' })
+$('#btnCopierPrompt').addEventListener('click', () => {
+  navigator.clipboard.writeText(PROMPT_PAUL).then(() => {
+    const btn = $('#btnCopierPrompt')
+    const original = btn.textContent
+    btn.textContent = 'Copié !'
+    setTimeout(() => { btn.textContent = original }, 1500)
+  })
+})
+</script>
+
+<script src="bridge-apres.js"></script>
+</body></html>

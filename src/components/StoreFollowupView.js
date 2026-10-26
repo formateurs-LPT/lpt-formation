@@ -187,6 +187,7 @@ export default function StoreFollowupView({ pName, onBack }) {
           onBack={() => setCollaborateurId(null)}
           pName={pName}
           role="formateur"
+          showModulesApresFormation
         />
       </div>
     )
