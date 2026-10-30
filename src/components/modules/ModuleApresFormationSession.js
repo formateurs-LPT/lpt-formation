@@ -20,14 +20,14 @@ function aujourdhui() {
 /** Garde le meilleur score du jour (un formé peut repasser le test). Le
  * code de salle sert à l'écran du formateur ; le score, lui, compte dans la
  * formation du formé quelle que soit la salle (voir scoring.js). */
-async function enregistrerTest(pName, module, score, sessionCode) {
+async function enregistrerTest(pName, module, score, sessionCode, details) {
   const nom = (pName || '').trim()
   if (!nom || !Number.isInteger(score) || score < 0 || score > TOTAL_TEST) return false
   const moduleId = PREFIXE_SESSION + module.id
   const jour = aujourdhui()
   const existants = await sbSelect('module_results', `collaborateur=eq.${encodeURIComponent(nom)}&module_id=eq.${moduleId}&week_date=eq.${jour}&select=score`)
   if ((existants?.[0]?.score ?? -1) >= score) return true
-  return sbUpsert('module_results', {
+  const ligne = {
     collaborateur: nom,
     pin: generatePin(nom),
     week_date: jour,
@@ -37,7 +37,14 @@ async function enregistrerTest(pName, module, score, sessionCode) {
     xp: score * 10,
     completed_at: new Date().toISOString(),
     session_code: sessionCode || null,
-  }, 'collaborateur,module_id,week_date')
+  }
+  // details = réponses du test (pour le récap du formateur) ; colonne
+  // ajoutée par supabase/add-module-results-details.sql — sans elle, on
+  // enregistre quand même le score.
+  const avecDetails = Array.isArray(details) && details.length
+    ? await sbUpsert('module_results', { ...ligne, details }, 'collaborateur,module_id,week_date')
+    : null
+  return avecDetails || sbUpsert('module_results', ligne, 'collaborateur,module_id,week_date')
 }
 
 /** Résultats du jour pour ce module dans la salle, relus régulièrement. */
@@ -47,7 +54,7 @@ function useResultatsDuJour(module, sessionCode, intervalleMs = 5000) {
     let annule = false
     const charger = async () => {
       const salle = sessionCode ? `&session_code=eq.${encodeURIComponent(sessionCode)}` : ''
-      const rows = await sbSelect('module_results', `module_id=eq.${PREFIXE_SESSION}${module.id}&week_date=eq.${aujourdhui()}${salle}&select=collaborateur,score,completed_at&order=score.desc`)
+      const rows = await sbSelect('module_results', `module_id=eq.${PREFIXE_SESSION}${module.id}&week_date=eq.${aujourdhui()}${salle}&order=score.desc`)
       if (!annule) setResultats(rows || [])
     }
     charger()
@@ -69,7 +76,10 @@ export function ModuleApresFormationParticipant({ module, pName, sessionCode }) 
   const surMessage = useCallback(async data => {
     if (data.type !== 'test') return
     const score = Number(data.score)
-    const ok = await enregistrerTest(pName, module, score, sessionCode)
+    const details = Array.isArray(data.details)
+      ? data.details.slice(0, TOTAL_TEST).map(d => ({ libelle: String(d?.libelle || '').slice(0, 500), correct: !!d?.correct }))
+      : null
+    const ok = await enregistrerTest(pName, module, score, sessionCode, details)
     setAlerte(!ok
       ? 'Ton résultat n\'a pas pu être enregistré. Repasse le test dans un instant.'
       : score >= 10 ? `✅ Test réussi : ${score}/${TOTAL_TEST}, c'est enregistré !` : `Test enregistré : ${score}/${TOTAL_TEST}. Tu peux le retenter.`)
@@ -109,10 +119,20 @@ export default function ModuleApresFormationFormateur({ moduleId, onBack }) {
   return <EcranFormateur module={module} onBack={onBack} />
 }
 
+function erreursDe(r) {
+  return Array.isArray(r.details) ? r.details.filter(d => !d.correct) : null
+}
+
 function EcranFormateur({ module, onBack }) {
   const [sessionCode] = useState(() => getActiveSessionCode())
   const resultats = useResultatsDuJour(module, sessionCode)
   const reussis = resultats.filter(r => r.score >= 10).length
+  // Questions ratées par le groupe, de la plus ratée à la moins ratée.
+  const parQuestion = {}
+  for (const r of resultats) {
+    for (const d of erreursDe(r) || []) (parQuestion[d.libelle] ||= []).push(r.collaborateur)
+  }
+  const plusRatees = Object.entries(parQuestion).sort((a, b) => b[1].length - a[1].length)
 
   return (
     <div style={{ minHeight: '100vh', background: '#03112a', color: '#fff', fontFamily: 'inherit', padding: '84px 24px 24px', boxSizing: 'border-box' }}>
@@ -147,15 +167,50 @@ function EcranFormateur({ module, onBack }) {
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginTop: 12 }}>Personne n&apos;a encore passé le test. Les résultats s&apos;affichent ici en direct.</div>
           ) : (
             <div style={{ marginTop: 8 }}>
-              {resultats.map(r => (
-                <div key={r.collaborateur} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                  <span style={{ flex: 1, fontSize: 15, fontWeight: 600 }}>{r.collaborateur}</span>
-                  <span style={{ fontSize: 15, fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: r.score >= 10 ? '#4ade80' : '#fbbf24' }}>{r.score}/{TOTAL_TEST}</span>
-                </div>
-              ))}
+              {resultats.map(r => {
+                const erreurs = erreursDe(r)
+                return (
+                  <div key={r.collaborateur} style={{ padding: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ flex: 1, fontSize: 15, fontWeight: 600 }}>{r.collaborateur}</span>
+                      <span style={{ fontSize: 15, fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: r.score >= 10 ? '#4ade80' : '#fbbf24' }}>{r.score}/{TOTAL_TEST}</span>
+                    </div>
+                    {erreurs && erreurs.length === 0 && (
+                      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>Sans faute</div>
+                    )}
+                    {erreurs && erreurs.length > 0 && (
+                      <ul style={{ margin: '6px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {erreurs.map((d, i) => (
+                          <li key={i} style={{ display: 'flex', gap: 8, fontSize: 13.5, lineHeight: 1.45, color: 'rgba(255,255,255,0.8)' }}>
+                            <span style={{ color: '#f87171', fontWeight: 800, flexShrink: 0 }}>✗</span>
+                            <span>{d.libelle}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
+
+        {plusRatees.length > 0 && (
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '16px 18px' }}>
+            <div style={{ fontSize: 15, fontWeight: 800 }}>Questions les plus ratées</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>À reprendre avec le groupe pour le débrief.</div>
+            <div style={{ marginTop: 8 }}>
+              {plusRatees.map(([libelle, noms]) => (
+                <div key={libelle} style={{ padding: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ fontSize: 14.5, lineHeight: 1.45 }}>{libelle}</div>
+                  <div style={{ fontSize: 12.5, color: '#fbbf24', fontWeight: 700, marginTop: 3 }}>
+                    Ratée par {noms.length} formé{noms.length > 1 ? 's' : ''} : {noms.join(', ')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
