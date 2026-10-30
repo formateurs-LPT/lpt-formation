@@ -74,8 +74,11 @@ h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.022em; line-height: 1
 
 /* ── Contrôle segmenté (Cours / Entraînement / Test) ──────────── */
 .etapes {
-  background: var(--ios-remplissage); border: none; border-radius: 9px;
-  padding: 2px; gap: 2px; margin-bottom: 20px; box-shadow: none;
+  background: #e4e4e9; border: none; border-radius: 9px;
+  padding: 2px; gap: 2px; margin-bottom: 20px;
+  /* Toujours accessible en haut de l'écran pendant la lecture. */
+  position: sticky; top: 8px; z-index: 30;
+  box-shadow: 0 0 0 8px #f2f2f7;
 }
 .etape {
   border: none; background: transparent; color: var(--ios-label);
