@@ -20,6 +20,8 @@ import { canParticipantJoinSession, getCategoryJoinDeniedMessage, mapPosteLabel 
 import { themeForAnswer, DIRECT_THEME_MODULES } from '@/lib/quizThemeMap'
 import { resolveParticipantSessionCode, participantJoinBlockedMessage } from '@/lib/participantSession'
 import { QuestionsGameParticipantView } from '@/components/QuestionsGamePanel'
+import { ModuleApresFormationParticipant } from '@/components/modules/ModuleApresFormationSession'
+import { moduleDeSession } from '@/lib/modulesApresFormation'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -6151,6 +6153,10 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
 
   // ── LPTSale simulator — participants travaillent en autonomie ──
   if (activeModule === 'atelier-pec') return <LPTSaleApp pName={pName} />
+
+  // ── Module complémentaire (après-formation) — en autonomie sur le téléphone ──
+  const moduleComplementaire = moduleDeSession(activeModule)
+  if (moduleComplementaire) return <ModuleApresFormationParticipant module={moduleComplementaire} pName={pName} sessionCode={sessionCode} />
 
   // Mini-jeu "Questions" (module Mini Jeux) — piloté par sharedState.minijeu_game,
   // pas par activeModule (Mini Jeux n'est pas un module MODULE_DATA classique,

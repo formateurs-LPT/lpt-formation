@@ -10,6 +10,7 @@ import {
 import { getLegacySessionCode, isDynamicRoomCode } from '@/lib/sessionCode'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import ConfirmModal from '@/components/ConfirmModal'
+import { MODULE_GROUPES, PREFIXE_SESSION } from '@/lib/modulesApresFormation'
 
 const JOURNEES = (onLaunchModule, onLaunchPeerQuiz) => [
   {
@@ -99,6 +100,7 @@ const JOURNEES = (onLaunchModule, onLaunchPeerQuiz) => [
     numero: 3,
     titre: 'Journée 3',
     sub: 'La prise de mesures',
+    complementaires: true,
     modules: [
       {
         visual: 'image', src: '/assets/LPT003-EFO-001.avif',
@@ -220,9 +222,50 @@ function GroupSelect({ onSelect, onBack }) {
 }
 
 // ── Step 3a : Modules d'une journée ──────────────────────────────
-function JourneeModules({ journee, onBack, onLaunchModule }) {
+// Formateurs en test des modules complémentaires (après-formation) en session.
+const COMPLEMENTAIRES_LOGINS = ['kevin', 'quentin']
+
+// Liste des modules complémentaires : chacun se lance comme un module de la
+// journée, mais les formés le font en autonomie sur leur téléphone.
+function ModulesComplementaires({ onBack, onLaunchModule }) {
+  return (
+    <div className="dash-wrap">
+      <button className="detail-back" onClick={onBack}>← Retour à la journée</button>
+      <div className="dash-hero" style={{ marginBottom: 24 }}>
+        <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+          <div className="dash-hero-label">Formation · Lunettes Pour Tous</div>
+          <h2 className="dash-hero-title">Modules complémentaires</h2>
+          <p className="dash-hero-date">Lance un module : chaque formé connecté le fait sur son téléphone, à son rythme. Le score du test compte dans son score de formation.</p>
+        </div>
+        <div style={{ width: 56, height: 56, background: 'rgba(255,255,255,.08)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, position: 'relative', zIndex: 1 }}>📱</div>
+      </div>
+      {MODULE_GROUPES.map(groupe => (
+        <div key={groupe.titre} style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-m)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>{groupe.titre}</div>
+          <div className="dash-tiles" style={{ gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {groupe.modules.map(m => (
+              <div key={m.id} className="dash-tile" onClick={() => onLaunchModule(PREFIXE_SESSION + m.id)} style={{ cursor: 'pointer' }}>
+                <div className="dash-tile-label">{m.nom}</div>
+                <div className="dash-tile-sub">Cours · entraînement · test sur 12</div>
+                <div style={{ fontSize: 11, color: '#00abe9', marginTop: 8, fontWeight: 600 }}>Lancer →</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function JourneeModules({ journee, onBack, onLaunchModule, avecComplementaires = false }) {
+  const [complementairesOuverts, setComplementairesOuverts] = useState(false)
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
   const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  const complementaires = avecComplementaires && journee.complementaires
+
+  if (complementaires && complementairesOuverts) {
+    return <ModulesComplementaires onBack={() => setComplementairesOuverts(false)} onLaunchModule={onLaunchModule} />
+  }
 
   return (
     <div className="dash-wrap">
@@ -275,6 +318,16 @@ function JourneeModules({ journee, onBack, onLaunchModule }) {
             )}
           </div>
         ))}
+        {complementaires && (
+          <div className="dash-tile" onClick={() => setComplementairesOuverts(true)} style={{ cursor: 'pointer' }}>
+            <div className="dash-tile-top">
+              <div className="dash-tile-icon">📱</div>
+            </div>
+            <div className="dash-tile-label" style={{ marginTop: 12 }}>Modules complémentaires</div>
+            <div className="dash-tile-sub">8 modules à faire en autonomie sur téléphone</div>
+            <div style={{ fontSize: 11, color: '#00abe9', marginTop: 8, fontWeight: 600 }}>Voir les modules →</div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -441,7 +494,12 @@ function SessionModules({ pName, onBack, onLaunchModule, onEndRoom, onLaunchPeer
 
   if (selectedJournee) {
     const journee = journees.find(j => j.id === selectedJournee)
-    return <JourneeModules journee={journee} onBack={() => setSelectedJournee(null)} onLaunchModule={onLaunchModule} />
+    return (
+      <JourneeModules
+        journee={journee} onBack={() => setSelectedJournee(null)} onLaunchModule={onLaunchModule}
+        avecComplementaires={COMPLEMENTAIRES_LOGINS.includes(trainerLoginFromDisplayName(pName))}
+      />
+    )
   }
 
   return (

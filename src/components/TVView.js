@@ -1,5 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import { ModuleApresFormationTV } from '@/components/modules/ModuleApresFormationSession'
+import { moduleDeSession } from '@/lib/modulesApresFormation'
 import Image from 'next/image'
 import { useModuleSync } from '@/lib/useModuleSync'
 import { MODULE_DATA, ORD_COLS, ORD_EXAMPLE, SAISIE_EXERCISES, SAISIE_ROUNDS, TRAME_ACCUEIL_POINTS, MUTUELLES_BELGIQUE, MONTAGE_TRAITEMENTS, LPT_CARE_OFFERS, LPT_CARE_INTRO, LPT_CARE_COMMON, LPT_CARE_COFIDIS_NOTE } from '@/lib/modulesData'
@@ -9384,6 +9386,19 @@ export default function TVView() {
     } else if (!isResults && !isLobby) {
       page = moduleData.pages[modulePage] ?? null
     }
+  }
+
+  // Module complémentaire (après-formation) : fait en autonomie sur le
+  // téléphone, la TV affiche son nom et l'avancement — pas de rechargement.
+  const moduleComplementaire = moduleDeSession(activeModule)
+  if (!loading && moduleComplementaire) {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <FullscreenButton />
+        <ModuleApresFormationTV module={moduleComplementaire} sessionCode={sessionCode} />
+      </>
+    )
   }
 
   // Atelier prise en charge (LPTSaleApp) : simulateur en autonomie sur le téléphone,

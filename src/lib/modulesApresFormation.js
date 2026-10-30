@@ -215,3 +215,21 @@ export function fusionnerProgressionModules(progress, acquisParSlug, scoreToStat
   }
   return fusion
 }
+
+// ── Modules lancés en session par le formateur (visio ou salle) ──────────
+// active_module = 'apf-<id>' : chaque formé connecté à la session fait le
+// module en autonomie sur son téléphone. Le test est enregistré dans
+// module_results (score sur 12), comme les exercices notés : il compte donc
+// dans son score de formation.
+export const PREFIXE_SESSION = 'apf-'
+
+export function moduleDeSession(activeModule) {
+  if (typeof activeModule !== 'string' || !activeModule.startsWith(PREFIXE_SESSION)) return null
+  return MODULES.find(m => m.id === activeModule.slice(PREFIXE_SESSION.length)) || null
+}
+
+/** URL du module HTML (Vercel sert les .html sans extension en production). */
+export function urlModule(module, params = {}) {
+  const chemin = process.env.NODE_ENV === 'development' ? module.fichier : `${module.id}/`
+  return `/modules-apres-formation/${chemin}?${new URLSearchParams({ m: module.id, ...params })}`
+}

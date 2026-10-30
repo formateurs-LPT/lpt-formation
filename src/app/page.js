@@ -33,6 +33,7 @@ import ModuleRemboursementFrance from '@/components/modules/ModuleRemboursementF
 import ModuleParcoursRembourses from '@/components/modules/ModuleParcoursRembourses'
 import ModuleLptSante from '@/components/modules/ModuleLptSante'
 import ModuleAtelierPEC from '@/components/modules/ModuleAtelierPEC'
+import ModuleApresFormationFormateur from '@/components/modules/ModuleApresFormationSession'
 import ModuleRetraits from '@/components/modules/ModuleRetraits'
 import ModuleAjustages from '@/components/modules/ModuleAjustages'
 import ModuleRAZ from '@/components/modules/ModuleRAZ'
@@ -603,6 +604,9 @@ export default function Page() {
           pName={pName}
           onBack={handleBackToDashboard}
         />
+      )}
+      {view.startsWith('module-apf-') && (
+        <ModuleApresFormationFormateur moduleId={view.slice(7)} onBack={() => resumeDashboardOnboarding('journee3')} />
       )}
       {view.startsWith('module-') && (
         <IdeesButton moduleId={view.slice(7)} pName={pName} />
