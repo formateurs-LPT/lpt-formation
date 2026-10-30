@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import qrcode from 'qrcode-generator'
 import { getCollaborateurDbId } from '@/lib/notesCollaborateurApi'
-import { getCollaborateurById } from '@/lib/collaborateursApi'
+import { getCollaborateurById, getMagasinIdBySlug, getOrCreateCollaborateurForEntree } from '@/lib/collaborateursApi'
 import {
   MODULE_GROUPES, MODULES, NB_FORMATS, niveauPour, etatModules, statutModule,
   getResultatsModules, creerAccesModules, modulesOuverts, changerOuvertureModule,
@@ -29,7 +29,7 @@ const STATUTS = {
 // il peut contenir le code provisoire). Le collaborateur le scanne avec
 // l'appareil photo et arrive sur /mes-modules, identifiant prérempli — et
 // connecté directement si le code provisoire est inclus.
-function QrConnexion({ login, code, prenom, onFermer }) {
+export function QrConnexion({ login, code, prenom, onFermer }) {
   const svg = useMemo(() => {
     const params = new URLSearchParams({ identifiant: login })
     if (code) params.set('code', code)
@@ -184,8 +184,9 @@ function LigneModuleFormateur({ module, etat, estOuvert, enCours, onChangerOuver
   )
 }
 
-export default function ModulesApresFormationSection({ store, collaborateur }) {
+export default function ModulesApresFormationSection({ store, collaborateur, creerFicheSiAbsente = false }) {
   const [collab, setCollab] = useState(undefined)
+  const [creationFiche, setCreationFiche] = useState(false)
   const [resultats, setResultats] = useState([])
   const [moduleEnCours, setModuleEnCours] = useState(null)
   const [erreurOuverture, setErreurOuverture] = useState(null)
@@ -210,6 +211,31 @@ export default function ModulesApresFormationSection({ store, collaborateur }) {
     charger()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store.id, collaborateur.id])
+
+  // Nouvel entrant pas encore en base (roster fusionné depuis les entrées) :
+  // côté manager, on propose de créer sa fiche, comme sur la tuile
+  // « Nouveaux collaborateurs ».
+  const creerFiche = async () => {
+    setCreationFiche(true)
+    const magasinId = await getMagasinIdBySlug(store.id)
+    const fiche = magasinId && await getOrCreateCollaborateurForEntree(magasinId, collaborateur.prenom, collaborateur.nom)
+    setCreationFiche(false)
+    if (fiche) charger()
+  }
+
+  if (collab === null && creerFicheSiAbsente) {
+    return (
+      <div style={{ marginTop: 32 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', margin: '0 0 14px' }}>🎓 Modules après-formation</h3>
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 13.5, color: 'var(--text)' }}>{collaborateur.prenom} n&apos;a pas encore d&apos;espace modules.</div>
+          <button onClick={creerFiche} disabled={creationFiche} className="btn2" style={{ padding: '6px 12px', fontSize: 12 }}>
+            {creationFiche ? 'Préparation…' : 'Préparer son espace modules'}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (!collab) return null
 

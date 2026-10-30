@@ -583,7 +583,7 @@ export function MasteryRing({ pct, size = 74, stroke = 7, color = '#0089ba' }) {
 // compétences réelles (mêmes données que la checklist, juste présentées en
 // barres) et parcours de formation basé sur les inscriptions
 // `training_registrations` réellement terminées — aucune donnée inventée.
-export function CollaborateurProfilePage({ store, sectionId, collaborateur, progress, session, onBack, role = 'manager' }) {
+export function CollaborateurProfilePage({ store, sectionId, collaborateur, progress, session, onBack, role = 'manager', showModulesApresFormation = false }) {
   const [trainingRows, setTrainingRows] = useState(null)
   const [formModalOpen, setFormModalOpen] = useState(false)
 
@@ -625,7 +625,9 @@ export function CollaborateurProfilePage({ store, sectionId, collaborateur, prog
             <div style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>Magasin de {store.label}</div>
           </div>
         </div>
-        <button onClick={() => setFormModalOpen(true)} style={{
+        <button onClick={() => (showModulesApresFormation
+          ? document.getElementById('modules-apres-formation')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          : setFormModalOpen(true))} style={{
           background: '#0089ba', color: '#fff', border: 'none', borderRadius: 20, padding: '11px 20px',
           fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
         }}>Former ce collaborateur →</button>
@@ -670,7 +672,8 @@ export function CollaborateurProfilePage({ store, sectionId, collaborateur, prog
             <div style={{ fontSize: 11, fontWeight: 700, color: '#9aa1ac', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>{category}</div>
             <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '4px 20px', boxShadow: '0 1px 2px rgba(16,24,40,0.03)' }}>
               {catItems.map((item, i) => {
-                const score = progress[`${collaborateur.id}:${item.id}`]?.score || 0
+                const entree = progress[`${collaborateur.id}:${item.id}`]
+                const score = entree?.score || 0
                 const pct = Math.round((score / 5) * 100)
                 const color = scoreColor(pct)
                 return (
@@ -679,7 +682,10 @@ export function CollaborateurProfilePage({ store, sectionId, collaborateur, prog
                     borderTop: i > 0 ? '1px solid #f0f1f3' : 'none',
                   }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                    <div className="skill-row-label" style={{ fontSize: 13.5, fontWeight: 600, color: '#14161a', width: 200, flexShrink: 0 }}>{item.label}</div>
+                    <div className="skill-row-label" style={{ fontSize: 13.5, fontWeight: 600, color: '#14161a', width: 200, flexShrink: 0 }}>
+                      {item.label}
+                      {entree?.viaModules && <div style={{ fontSize: 11.5, fontWeight: 600, color: '#0089ba', marginTop: 1 }}>🎓 grâce aux modules</div>}
+                    </div>
                     <div style={{ flex: 1, height: 6, background: '#eef0f2', borderRadius: 3, overflow: 'hidden', minWidth: 60 }}>
                       <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 3 }} />
                     </div>
@@ -722,6 +728,12 @@ export function CollaborateurProfilePage({ store, sectionId, collaborateur, prog
       </div>
 
       <CollaborateurNotesSection store={store} collaborateur={collaborateur} pName={session?.displayName} role={role} />
+
+      {showModulesApresFormation && (
+        <div id="modules-apres-formation" style={{ scrollMarginTop: 16 }}>
+          <ModulesApresFormationSection store={store} collaborateur={collaborateur} creerFicheSiAbsente />
+        </div>
+      )}
 
       {formModalOpen && (
         <RegistrationModal

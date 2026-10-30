@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Image from 'next/image'
-import { IconHome, IconUsers, IconSend, IconBarChart, IconHelpCircle, IconChevronRight, IconUserPlus, IconBell, IconMessageCircle, IconTarget } from './ManagerIcons'
+import { IconHome, IconUsers, IconSend, IconBarChart, IconHelpCircle, IconChevronRight, IconUserPlus, IconBell, IconMessageCircle, IconTarget, IconStar } from './ManagerIcons'
 import { TRAINER_CONTACTS } from '@/lib/trainerContacts'
 
 const NAV_ITEMS = [
@@ -13,6 +13,23 @@ const NAV_ITEMS = [
   { id: 'recrutement', label: 'Recrutement', shortLabel: 'Recrut.', Icon: IconUserPlus },
   { id: 'reporting', label: 'Reporting', Icon: IconBarChart },
 ]
+
+// Managers en test des modules après-formation : menu réduit à l'essentiel,
+// « Former mes collaborateurs » juste après « Mon équipe ».
+function IconQr({ size = 18, ...props }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" />
+      <path d="M14 14h3v3M21 14v.01M14 21h.01M17.5 17.5V21H21v-3.5" />
+    </svg>
+  )
+}
+
+const NAV_ITEMS_MODULES = NAV_ITEMS
+  .filter(it => ['accueil', 'equipe'].includes(it.id))
+  .flatMap(it => (it.id === 'equipe'
+    ? [it, { id: 'former', label: 'Former mes collaborateurs', shortLabel: 'Former', Icon: IconStar }]
+    : [it]))
 
 // Centre de notifications générique (table `notifications`, réutilisée telle
 // quelle) — jusqu'ici le manager n'avait que des badges spécifiques
@@ -121,8 +138,9 @@ export function NotificationBell({ notifications, onSelect }) {
 //   de largeur d'écran au montage).
 export default function ManagerSidebar({
   active, onNavigate, demandesCount, recrutementCount, chatCount, notifications, onSelectNotification,
-  firstName, storeLabel, onLogout,
+  firstName, storeLabel, onLogout, modulesMode = false, onShowQr,
 }) {
+  const navItems = modulesMode ? NAV_ITEMS_MODULES : NAV_ITEMS
   const [helpOpen, setHelpOpen] = useState(false)
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
   return (
@@ -144,7 +162,7 @@ export default function ManagerSidebar({
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-          {NAV_ITEMS.map(({ id, label, Icon }) => {
+          {navItems.map(({ id, label, Icon }) => {
             const isActive = active === id
             return (
               <button
@@ -186,6 +204,16 @@ export default function ManagerSidebar({
         </nav>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {onShowQr && (
+            <button onClick={onShowQr} style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', width: '100%', borderRadius: 12,
+              border: 'none', background: '#0089ba', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+              fontSize: 13.5, fontWeight: 700,
+            }}>
+              <IconQr size={18} style={{ flexShrink: 0 }} />
+              QR code de connexion
+            </button>
+          )}
           <button
             onClick={() => setHelpOpen(true)}
             style={{
@@ -259,7 +287,7 @@ export default function ManagerSidebar({
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}>
         <div style={{ display: 'flex' }}>
-          {NAV_ITEMS.map(({ id, label, shortLabel, Icon }) => {
+          {navItems.map(({ id, label, shortLabel, Icon }) => {
             const isActive = active === id
             return (
               <button
@@ -299,6 +327,18 @@ export default function ManagerSidebar({
               </button>
             )
           })}
+          {onShowQr && (
+            <button
+              onClick={onShowQr}
+              style={{
+                flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                padding: '9px 3px 8px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit', color: '#0089ba',
+              }}
+            >
+              <IconQr size={20} />
+              <span style={{ fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>QR code</span>
+            </button>
+          )}
         </div>
       </nav>
 

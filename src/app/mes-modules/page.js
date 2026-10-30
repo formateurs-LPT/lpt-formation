@@ -216,7 +216,7 @@ function Connexion({ onLogin, depuisQr }) {
         </div>
         {erreur
           ? <div role="alert" className="mm-erreur">{erreur}</div>
-          : <div className="mm-pied-formulaire">Ton formateur t&apos;a donné ton identifiant et ton code provisoire.</div>}
+          : <div className="mm-pied-formulaire">Ton manager ou ton formateur t&apos;a donné ton identifiant et ton code provisoire.</div>}
         <button type="submit" disabled={chargement || !login.trim() || !code.trim()} className="mm-bouton" style={{ marginTop: 24 }}>
           {chargement ? 'Connexion…' : 'Se connecter'}
         </button>

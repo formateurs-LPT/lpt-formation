@@ -1,9 +1,9 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import Image from 'next/image'
 import { getManagerFromDB, getWeeklySharedState, sbSelect, pgInList } from '@/lib/supabase'
-import { STORES, collaborateurFullName, tenureLabel, isBelgiqueStore } from '@/lib/storeFollowupData'
-import { mergeEntreesIntoRoster } from '@/lib/storeRosterMerge'
+import { STORES, collaborateurFullName, tenureLabel, isBelgiqueStore, scoreToStatus } from '@/lib/storeFollowupData'
+import { mergeEntreesIntoRoster, entreeEstDuMagasin } from '@/lib/storeRosterMerge'
 import { matchMagasinKey } from '@/lib/managersData'
 import { classifyMagasin } from '@/lib/formationCategories'
 import { useStoreFollowupProgress } from '@/lib/useStoreFollowupProgress'
@@ -24,7 +24,9 @@ import { isMagasinBelgique, BELGIQUE_ONLY_LOGINS, getNotificationsNonLues, marqu
 import { poleMeta } from '@/lib/poles'
 import ManagerSidebar from '@/components/ManagerSidebar'
 import ModuleMiniJeuxManager from '@/components/modules/ModuleMiniJeuxManager'
-import { IconVideo, IconMapPin, IconChevronRight, IconClipboard } from '@/components/ManagerIcons'
+import FormerCollaborateursPage, { QrEquipeModal } from '@/components/FormerCollaborateursPage'
+import { getModulesAcquisParSlug, fusionnerProgressionModules } from '@/lib/modulesApresFormation'
+import { IconVideo, IconMapPin, IconChevronRight, IconClipboard, IconStar } from '@/components/ManagerIcons'
 import {
   apiGetEntretiensByMagasin, apiGetCandidatsByIds, apiAccepterEntretien,
   apiContreProposerEntretien, apiSupprimerEntretien, apiDeciderEntretien, apiNotifier,
@@ -35,6 +37,10 @@ import Toast, { useToast } from '@/components/Toast'
 // Page autonome (comme /rapport, /bilan-formation) — aucune dépendance à
 // page.js/Dashboard.js, donc aucun risque pour le flux formateur/participant/TV.
 const SESSION_KEY = 'manager_session' // { login, magasin, displayName }
+
+// Managers qui peuvent ouvrir les modules après-formation à leurs collaborateurs
+// (même section que le formateur dans la fiche). Test en cours avec Toulon Avenue 83.
+const MODULES_MANAGER_LOGINS = ['mhenucastillo']
 
 const inputStyle = {
   width: '100%', boxSizing: 'border-box', padding: '12px 14px', marginBottom: 12,
@@ -123,7 +129,7 @@ function useNewHiresWithReport(store, entreesData, magasinId) {
   const [reports, setReports] = useState(null) // null = chargement
   const [matches, setMatches] = useState({}) // fullName -> collaborateur (schéma relationnel) | null
 
-  const candidates = store ? (entreesData || []).filter(e => matchMagasinKey(e.magasin) === store.id) : []
+  const candidates = store ? (entreesData || []).filter(e => entreeEstDuMagasin(e, store)) : []
   const fullNames = candidates.map(e => e.fullName || `${e.nom} ${e.prenom}`).filter(Boolean)
   const namesKey = fullNames.join('|')
 
@@ -628,6 +634,33 @@ function InterventionCTA({ magasinId, magasinNom, session, onCreated }) {
   )
 }
 
+// Remplace la tuile d'inscription en formation pour les managers en test des
+// modules après-formation : mène à l'onglet « Former mes collaborateurs ».
+function FormerCTA({ onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      flex: '1 1 260px', minWidth: 240, textAlign: 'left', fontFamily: 'inherit', cursor: 'pointer',
+      background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '18px 20px',
+      boxShadow: '0 1px 2px rgba(16,24,40,0.03)', display: 'flex', flexDirection: 'column', gap: 14,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: '#eaf3fd', color: '#0089ba', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <IconStar size={19} />
+        </div>
+        <IconChevronRight size={16} style={{ color: '#c7cbd1' }} />
+      </div>
+      <div>
+        <div style={{ fontSize: 14.5, fontWeight: 700, color: '#14161a', marginBottom: 3 }}>Former mes collaborateurs</div>
+        <div style={{ fontSize: 12.5, color: '#9aa1ac', lineHeight: 1.4 }}>Envoyer des modules à ton équipe et suivre leurs résultats.</div>
+      </div>
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
+        background: '#0089ba', color: '#fff', fontSize: 12.5, fontWeight: 700, padding: '8px 16px', borderRadius: 20,
+      }}>Envoyer des modules <span>→</span></div>
+    </button>
+  )
+}
+
 // ── Écran d'accueil — reprend l'essentiel de l'ancienne page unique
 // (stats, à faire, actions rapides, aperçu équipe) mais recomposé selon la
 // maquette validée par Kevin : photo en vignette à côté de la salutation
@@ -635,7 +668,7 @@ function InterventionCTA({ magasinId, magasinNom, session, onCreated }) {
 // d'action côte à côte, aperçu de l'équipe avec barre de progression.
 function AccueilPage({
   store, session, progress, firstName, nouveauxEntrants, newHireRows, onDeclencher,
-  magasinId, demandesCount, onRefreshDemandes, onNavigate, onOpenFiche, reportings, onToggleReportingAction,
+  magasinId, demandesCount, onRefreshDemandes, onNavigate, onOpenFiche, reportings, onToggleReportingAction, modulesMode = false,
 }) {
   const [trainingRefreshKey, setTrainingRefreshKey] = useState(0)
 
@@ -709,14 +742,18 @@ function AccueilPage({
 
       <AFaireCard reportingActions={reportingActions} onToggleReportingAction={onToggleReportingAction} />
 
-      <UpcomingRegistrationsPanel store={store} refreshKey={trainingRefreshKey} />
+      {!modulesMode && <UpcomingRegistrationsPanel store={store} refreshKey={trainingRefreshKey} />}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginBottom: 28 }}>
-        <TrainingRegistrationTile
-          store={store} session={session} variant="card"
-          onRegistered={() => setTrainingRefreshKey(k => k + 1)}
-        />
-        <InterventionCTA magasinId={magasinId} magasinNom={store.label} session={session} onCreated={onRefreshDemandes} />
+        {modulesMode ? (
+          <FormerCTA onClick={() => onNavigate('former')} />
+        ) : (
+          <TrainingRegistrationTile
+            store={store} session={session} variant="card"
+            onRegistered={() => setTrainingRefreshKey(k => k + 1)}
+          />
+        )}
+        {!modulesMode && <InterventionCTA magasinId={magasinId} magasinNom={store.label} session={session} onCreated={onRefreshDemandes} />}
       </div>
 
       <div>
@@ -1515,7 +1552,23 @@ function ManagerDashboard({ session, onLogout }) {
     await updateReportingStructure(reporting.id, nextStructure)
   }
 
-  const { progress, saveError } = useStoreFollowupProgress(session.magasin, session.displayName)
+  const { progress: progressAudit, saveError } = useStoreFollowupProgress(session.magasin, session.displayName)
+  const modulesMode = MODULES_MANAGER_LOGINS.includes(session?.login)
+
+  // Compétences gagnées par les modules acquis, relues à chaque changement
+  // d'onglet pour refléter les tests passés entre-temps.
+  const [modulesAcquis, setModulesAcquis] = useState(null)
+  const [qrOuvert, setQrOuvert] = useState(false)
+  useEffect(() => {
+    if (!modulesMode || !magasinId) return
+    let cancelled = false
+    getModulesAcquisParSlug(magasinId).then(a => { if (!cancelled) setModulesAcquis(a) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [modulesMode, magasinId, activeNav, collaborateurId])
+  const progress = useMemo(
+    () => (modulesMode ? fusionnerProgressionModules(progressAudit, modulesAcquis, scoreToStatus) : progressAudit),
+    [modulesMode, progressAudit, modulesAcquis],
+  )
 
   // Calculés avant tout retour anticipé : useNewHiresWithReport est un hook,
   // il doit s'exécuter à chaque rendu dans le même ordre (store peut être
@@ -1567,7 +1620,10 @@ function ManagerDashboard({ session, onLogout }) {
           firstName={firstName}
           storeLabel={store.label}
           onLogout={onLogout}
+          modulesMode={modulesMode}
+          onShowQr={modulesMode ? () => setQrOuvert(true) : undefined}
         />
+        {qrOuvert && <QrEquipeModal store={store} magasinId={magasinId} onFermer={() => setQrOuvert(false)} />}
 
         <div className="manager-content-wrap">
         <div className="manager-content">
@@ -1589,6 +1645,7 @@ function ManagerDashboard({ session, onLogout }) {
               progress={progress}
               session={session}
               onBack={() => setCollaborateurId(null)}
+              showModulesApresFormation={modulesMode}
             />
           ) : activeNav === 'equipe' ? (
             <EquipePage
@@ -1604,6 +1661,12 @@ function ManagerDashboard({ session, onLogout }) {
             <ReportingPage reportings={reportings} magasinNom={store.label} session={session} />
           ) : activeNav === 'chat' ? (
             <ChatMagasinPage magasinId={magasinId} magasinNom={store.label} session={session} storeManagerId={storeManagerId} />
+          ) : activeNav === 'former' && modulesMode ? (
+            <FormerCollaborateursPage
+              store={store}
+              magasinId={magasinId}
+              onOpenFiche={(secId, collabId) => { setActiveNav('equipe'); setSectionId(secId); setCollaborateurId(collabId) }}
+            />
           ) : activeNav === 'entrainement' ? (
             <EntrainementPage onOpenMiniJeux={() => setMiniJeuxOpen(true)} />
           ) : (
@@ -1622,6 +1685,7 @@ function ManagerDashboard({ session, onLogout }) {
               onOpenFiche={setFicheCollaborateurId}
               reportings={reportings}
               onToggleReportingAction={handleToggleReportingAction}
+              modulesMode={modulesMode}
             />
           )}
         </div>

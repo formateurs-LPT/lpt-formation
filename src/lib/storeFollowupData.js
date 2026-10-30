@@ -70,7 +70,6 @@ export const STORES = [
           { id: 'hortense-de-lambert',  prenom: 'Hortense',  nom: 'De Lambert',    contrat: '35h' },
           { id: 'thaiss-windenberger',  prenom: 'Thaïss',    nom: 'Windenberger',  contrat: '28h' },
           { id: 'juliette-pheulpin',    prenom: 'Juliette',  nom: 'Pheulpin',      contrat: '28h' },
-          { id: 'thomas-benhallal',     prenom: 'Thomas',    nom: 'Benhallal',     contrat: '24h' },
           { id: 'melina-lecoq',         prenom: 'Melina',    nom: 'Lecoq',         contrat: '24h' },
         ],
       },

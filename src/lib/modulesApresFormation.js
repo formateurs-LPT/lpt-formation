@@ -159,3 +159,59 @@ export async function creerAccesModules(collaborateur) {
   const ok = await sbUpdate('collaborateurs', { login, code, doit_changer_code: true }, `id=eq.${collaborateur.id}`)
   return ok ? { login, code } : null
 }
+
+// ── Compétences du suivi magasin gagnées grâce aux modules ───────────────
+// Un module acquis (test réussi) fait monter les compétences qui lui sont
+// liées, jusqu'à 4/5 (« acquis ») : le 5e point reste celui de l'audit en
+// magasin. Quand plusieurs modules alimentent la même compétence, chacun en
+// apporte une part. Rien n'est écrit dans store_followup_progress : le score
+// affiché est le plus haut entre l'audit et les modules.
+export const MODULE_COMPETENCES = {
+  proximite: ['types-verres'],
+  clariteens: ['types-verres'],
+  zenprotect: ['types-verres'],
+  traitements: ['traitements'],
+  progressif: ['verres-progressifs'],
+  'troisieme-paire': ['offres'],
+  transposition: ['lecture-ordonnance'],
+  granit: ['granit'],
+}
+const SCORE_MAX_MODULES = 4
+
+/** Slugs des collaborateurs du magasin -> modules acquis. */
+export async function getModulesAcquisParSlug(magasinId) {
+  if (!magasinId) return {}
+  const fiches = await sbSelect('collaborateurs', `magasin_id=eq.${magasinId}&select=id,slug`) || []
+  if (!fiches.length) return {}
+  const reussis = await sbSelect('module_resultats', `collaborateur_id=in.(${fiches.map(f => f.id).join(',')})&type=eq.test&reussi=eq.true&select=collaborateur_id,module_id`) || []
+  const slugParId = Object.fromEntries(fiches.map(f => [f.id, f.slug]))
+  const acquis = {}
+  for (const r of reussis) {
+    const slug = slugParId[r.collaborateur_id]
+    if (slug) (acquis[slug] ||= new Set()).add(r.module_id)
+  }
+  return acquis
+}
+
+/** Progression d'audit enrichie des compétences gagnées par les modules
+ * (même forme : `${slug}:${itemId}` -> { status, score, … }, plus viaModules). */
+export function fusionnerProgressionModules(progress, acquisParSlug, scoreToStatus) {
+  if (!acquisParSlug || !Object.keys(acquisParSlug).length) return progress
+  const modulesParItem = {}
+  for (const [moduleId, items] of Object.entries(MODULE_COMPETENCES)) {
+    for (const it of items) (modulesParItem[it] ||= []).push(moduleId)
+  }
+  const fusion = { ...progress }
+  for (const [slug, acquis] of Object.entries(acquisParSlug)) {
+    for (const [itemId, modules] of Object.entries(modulesParItem)) {
+      const nb = modules.filter(m => acquis.has(m)).length
+      if (!nb) continue
+      const score = Math.round(SCORE_MAX_MODULES * nb / modules.length)
+      const key = `${slug}:${itemId}`
+      if (score > (progress[key]?.score || 0)) {
+        fusion[key] = { ...(progress[key] || { note: '' }), score, status: scoreToStatus(score), viaModules: true }
+      }
+    }
+  }
+  return fusion
+}

@@ -36,6 +36,15 @@ function slugify(prenom, nom) {
     .replace(/^-+|-+$/g, '')
 }
 
+// La clé MANAGERS d'une entrée ne correspond pas toujours à l'id de STORES
+// (« LPT AVENUE 83 » → « avenue 83 », magasin « toulon-avenue-83 ») : on
+// accepte aussi la clé du libellé et un id qui se termine par la clé.
+export function entreeEstDuMagasin(entree, store) {
+  const key = matchMagasinKey(entree?.magasin)
+  if (!key) return false
+  return key === store.id || key === matchMagasinKey(store.label) || store.id.endsWith(`-${slugify(key, '')}`)
+}
+
 /**
  * Fusionne les entrées d'entrees_data correspondant à ce magasin dans son
  * roster — sans muter `store` ni `entreesData`, appelable à chaque render.
@@ -49,7 +58,7 @@ export function mergeEntreesIntoRoster(store, entreesData) {
   const additions = {}
 
   for (const e of entreesData || []) {
-    if (matchMagasinKey(e.magasin) !== store.id) continue
+    if (!entreeEstDuMagasin(e, store)) continue
     const sectionId = classifyPoste(e.poste)
     if (!sectionId) continue
     const key = normalizeNameKey(e.fullName || `${e.nom} ${e.prenom}`)
