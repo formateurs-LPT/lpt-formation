@@ -89,7 +89,7 @@ export function ModuleApresFormationParticipant({ module, pName, sessionCode }) 
   }, [module.id, surMessage])
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 1100, display: 'flex', flexDirection: 'column', background: '#f2f2f7', paddingTop: 'env(safe-area-inset-top, 0px)', boxSizing: 'border-box' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1100, display: 'flex', flexDirection: 'column', background: '#f2f2f7', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 56px)', boxSizing: 'border-box' }}>
       <iframe ref={iframeRef} src={src} title={module.nom} style={{ flex: 1, width: '100%', border: 0, display: 'block' }} />
       {alerte && (
         <div role="status" style={{
