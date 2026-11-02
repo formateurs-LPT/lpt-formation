@@ -6,7 +6,10 @@ import { apiGetCollaborateurByLogin, apiChangerCode, getCollaborateurById } from
 import {
   MODULE_GROUPES, MODULES, NB_FORMATS, niveauPour, prochainNiveau,
   etatModules, statutModule, getResultatsModules, enregistrerResultatModule, modulesOuverts,
+  changerOuvertureModule, TEST_POSITIONNEMENT_ID,
 } from '@/lib/modulesApresFormation'
+import { TEST_NOM, TOTAL_QUESTIONS } from '@/lib/testPositionnement'
+import TestPositionnementPasse from '@/components/TestPositionnementPasse'
 
 // Page autonome (comme /espace-collaborateur) — modules après-formation pour
 // les collaborateurs déjà en magasin. Aucune dépendance à la formation
@@ -338,6 +341,23 @@ function CarteNiveau({ nbAcquis, nbOuverts }) {
   )
 }
 
+// Test de positionnement ouvert par le formateur : mis en avant tout en haut.
+function CarteTest({ onOuvrir }) {
+  return (
+    <div className="mm-groupe" style={{ marginBottom: 28 }}>
+      <button onClick={onOuvrir} className="mm-rangee" style={{ minHeight: 72 }}>
+        <span className="mm-icone" aria-hidden="true" style={{ background: 'linear-gradient(180deg, #ffd60a, #ff9f0a)' }}>📝</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 17, color: '#000', letterSpacing: '-0.01em', lineHeight: 1.25, fontWeight: 600 }}>{TEST_NOM}</div>
+          <div style={{ fontSize: 13, color: '#8e8e93', marginTop: 2 }}>{TOTAL_QUESTIONS} questions · à faire maintenant</div>
+        </div>
+        <span style={{ fontSize: 15, color: '#0089ba', flexShrink: 0 }}>Commencer</span>
+        <svg width="8" height="13" viewBox="0 0 8 13" aria-hidden="true" style={{ flexShrink: 0 }}><path d="M1.5 1.5l5 5-5 5" fill="none" stroke="#c4c4c7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      </button>
+    </div>
+  )
+}
+
 function LigneModule({ module, etat, onOuvrir }) {
   const statut = STATUTS[statutModule(etat)]
   return (
@@ -483,6 +503,8 @@ function Dashboard({ session, onLogout }) {
   const [resultats, setResultats] = useState(null)
   const [ouverts, setOuverts] = useState([])
   const [moduleOuvert, setModuleOuvert] = useState(null)
+  const [testOuvert, setTestOuvert] = useState(false)
+  const [testEnCours, setTestEnCours] = useState(false)
   const [feuilleVisible, setFeuilleVisible] = useState(false)
   const [alerte, setAlerte] = useState(null)
   const [alerteVisible, setAlerteVisible] = useState(false)
@@ -503,6 +525,7 @@ function Dashboard({ session, onLogout }) {
   const charger = useCallback(async () => {
     const [fiche, res] = await Promise.all([getCollaborateurById(session.id), getResultatsModules(session.id)])
     setOuverts(modulesOuverts(fiche))
+    setTestOuvert(Array.isArray(fiche?.modules_ouverts) && fiche.modules_ouverts.includes(TEST_POSITIONNEMENT_ID))
     setResultats(res)
   }, [session.id])
 
@@ -512,12 +535,18 @@ function Dashboard({ session, onLogout }) {
   // collaborateur a la page ouverte : on rafraîchit régulièrement la liste
   // (hors module en cours, pour ne jamais recharger un exercice).
   useEffect(() => {
-    if (moduleOuvert) return
+    if (moduleOuvert || testEnCours) return
     const rafraichir = () => { if (document.visibilityState === 'visible') charger() }
     const t = setInterval(rafraichir, 20000)
     document.addEventListener('visibilitychange', rafraichir)
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', rafraichir) }
-  }, [moduleOuvert, charger])
+  }, [moduleOuvert, testEnCours, charger])
+
+  // Test terminé : il disparaît de son espace (le formateur peut le rouvrir).
+  const surTestTermine = useCallback(async () => {
+    await changerOuvertureModule(session.id, TEST_POSITIONNEMENT_ID, false)
+    charger()
+  }, [session.id, charger])
 
   const surMessage = useCallback(async message => {
     const ok = await enregistrerResultatModule(session.id, message)
@@ -575,6 +604,8 @@ function Dashboard({ session, onLogout }) {
             </div>
           </div>
 
+          {resultats !== null && testOuvert && <CarteTest onOuvrir={() => setTestEnCours(true)} />}
+
           {resultats === null ? (
             <div role="status" aria-label="Chargement" style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}><div className="mm-roue" /></div>
           ) : ouverts.length === 0 ? (
@@ -618,6 +649,15 @@ function Dashboard({ session, onLogout }) {
           onFerme={surFermetureModule}
           onMessage={surMessage}
           onVisibilite={setFeuilleVisible}
+        />
+      )}
+
+      {testEnCours && (
+        <TestPositionnementPasse
+          collaborateurId={session.id}
+          prenom={session.prenom}
+          onTermine={surTestTermine}
+          onFermer={() => { setTestEnCours(false); charger() }}
         />
       )}
 

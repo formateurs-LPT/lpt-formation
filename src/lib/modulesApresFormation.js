@@ -25,6 +25,9 @@ export const MODULE_GROUPES = [
 ]
 
 export const MODULES = MODULE_GROUPES.flatMap(g => g.modules)
+// Test de positionnement (src/lib/testPositionnement.js) : s'ouvre comme un
+// module, dans la même colonne modules_ouverts.
+export const TEST_POSITIONNEMENT_ID = 'positionnement'
 export const NB_FORMATS = 4
 
 // Niveau selon le nombre de modules acquis (test réussi au moins une fois).
@@ -112,7 +115,7 @@ export function modulesOuverts(collaborateur) {
 /** Relit la fiche juste avant d'écrire, pour ne pas écraser une ouverture
  * faite entre-temps depuis un autre écran. Renvoie la nouvelle liste ou null. */
 export async function changerOuvertureModule(collaborateurId, moduleId, ouvrir) {
-  if (!MODULES.some(m => m.id === moduleId)) return null
+  if (!MODULES.some(m => m.id === moduleId) && moduleId !== TEST_POSITIONNEMENT_ID) return null
   const rows = await sbSelect('collaborateurs', `id=eq.${collaborateurId}&select=modules_ouverts`)
   if (!rows?.length) return null
   const actuels = Array.isArray(rows[0].modules_ouverts) ? rows[0].modules_ouverts : []

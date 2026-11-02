@@ -5,8 +5,9 @@ import { getCollaborateurDbId } from '@/lib/notesCollaborateurApi'
 import { getCollaborateurById, getMagasinIdBySlug, getOrCreateCollaborateurForEntree } from '@/lib/collaborateursApi'
 import {
   MODULE_GROUPES, MODULES, NB_FORMATS, niveauPour, etatModules, statutModule,
-  getResultatsModules, creerAccesModules, modulesOuverts, changerOuvertureModule,
+  getResultatsModules, creerAccesModules, modulesOuverts, changerOuvertureModule, TEST_POSITIONNEMENT_ID,
 } from '@/lib/modulesApresFormation'
+import { TEST_NOM, TOTAL_QUESTIONS, dernierTest, bilanParTheme } from '@/lib/testPositionnement'
 
 // Fiche collaborateur du suivi magasin (formateur uniquement) : accès à
 // /mes-modules, ouverture des modules un par un et résultats. Lecture seule
@@ -184,6 +185,116 @@ function LigneModuleFormateur({ module, etat, estOuvert, enCours, onChangerOuver
   )
 }
 
+const NIVEAUX_THEME = {
+  'non-maitrise': { label: 'Non maîtrisé', color: '#dc2626', bg: 'rgba(220,38,38,0.10)' },
+  'a-revoir': { label: 'À revoir', color: '#ea580c', bg: 'rgba(234,88,12,0.12)' },
+}
+
+// Test de positionnement : ouverture, puis bilan par thème et ouverture en
+// un clic des modules qui travaillent les thèmes ratés.
+function BlocTest({ collab, resultats, ouverts, enCours, onChangerOuverture }) {
+  const [voirErreurs, setVoirErreurs] = useState(false)
+  const testOuvert = (collab.modules_ouverts || []).includes(TEST_POSITIONNEMENT_ID)
+  const test = dernierTest(resultats)
+  const bilan = test ? bilanParTheme(test) : []
+  const aRetravailler = bilan.filter(t => t.niveau !== 'maitrise').sort((a, b) => (a.niveau === b.niveau ? 0 : a.niveau === 'non-maitrise' ? -1 : 1))
+  const maitrises = bilan.filter(t => t.niveau === 'maitrise')
+  const conseilles = [...new Set(aRetravailler.flatMap(t => t.modulesApp.map(m => m.id)))].filter(id => !ouverts.includes(id))
+  const erreurs = (test?.details || []).filter(d => !d.correct)
+
+  const bouton = { padding: '6px 12px', fontSize: 12 }
+  return (
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-m)', textTransform: 'uppercase', letterSpacing: 0.6 }}>📝 {TEST_NOM}</div>
+        <button
+          onClick={() => onChangerOuverture(TEST_POSITIONNEMENT_ID, !testOuvert)} disabled={enCours === TEST_POSITIONNEMENT_ID}
+          className="btn2" style={bouton}
+        >{testOuvert ? 'Fermer le test' : test ? 'Lui rouvrir le test' : 'Lui ouvrir le test'}</button>
+      </div>
+
+      {!test && (
+        <div style={{ fontSize: 13.5, color: 'var(--text)', marginTop: 8, lineHeight: 1.5 }}>
+          {testOuvert
+            ? `Ouvert : il apparaît en haut de son espace « Mes modules ». ${TOTAL_QUESTIONS} questions sur tous les thèmes.`
+            : `État des lieux de ses connaissances : ${TOTAL_QUESTIONS} questions sur tous les thèmes de la formation initiale et des modules complémentaires. Le résultat s'affiche ici, avec les modules à lui ouvrir.`}
+        </div>
+      )}
+
+      {test && (
+        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontSize: 13.5, color: 'var(--text)' }}>
+            Passé le {fmtDate(test.created_at)} · <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{test.score}/{test.total}</strong> ({Math.round((test.score / test.total) * 100)} %)
+            {testOuvert && <span style={{ color: 'var(--text-m)' }}> · test rouvert, en attente</span>}
+          </div>
+
+          {aRetravailler.length > 0 ? (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>À retravailler ({aRetravailler.length} thème{aRetravailler.length > 1 ? 's' : ''})</div>
+                {conseilles.length > 0 && (
+                  <button onClick={async () => { for (const id of conseilles) await onChangerOuverture(id, true) }} disabled={!!enCours} className="btn2" style={bouton}>
+                    Ouvrir les {conseilles.length} module{conseilles.length > 1 ? 's' : ''} conseillé{conseilles.length > 1 ? 's' : ''}
+                  </button>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {aRetravailler.map(t => {
+                  const n = NIVEAUX_THEME[t.niveau]
+                  return (
+                    <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '8px 10px', borderRadius: 10, background: 'var(--dh-badge-bg)' }}>
+                      <div style={{ flex: 1, minWidth: 160 }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }}>{t.nom}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-m)', fontVariantNumeric: 'tabular-nums' }}>
+                          {t.justes}/{t.total} bonne{t.justes > 1 ? 's' : ''} réponse{t.justes > 1 ? 's' : ''} · {t.formation === 'initiale' ? 'formation initiale' : 'module complémentaire'}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, color: n.color, background: n.bg }}>{n.label}</span>
+                      {t.modulesApp.length === 0 ? (
+                        <span style={{ fontSize: 12, color: 'var(--text-m)' }}>À reprendre en formation</span>
+                      ) : t.modulesApp.map(m => (
+                        ouverts.includes(m.id)
+                          ? <span key={m.id} style={{ fontSize: 12, fontWeight: 700, color: '#0089ba' }}>✓ {m.nom} ouvert</span>
+                          : <button key={m.id} onClick={() => onChangerOuverture(m.id, true)} disabled={enCours === m.id} className="btn2" style={bouton}>Ouvrir « {m.nom} »</button>
+                      ))}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: '#16a34a' }}>Sans faute : tous les thèmes sont maîtrisés.</div>
+          )}
+
+          {maitrises.length > 0 && aRetravailler.length > 0 && (
+            <div style={{ fontSize: 12.5, color: 'var(--text-m)', lineHeight: 1.5 }}>
+              <strong style={{ color: '#16a34a' }}>Maîtrisés :</strong> {maitrises.map(t => t.nom).join(' · ')}
+            </div>
+          )}
+
+          {erreurs.length > 0 && (
+            <div>
+              <button onClick={() => setVoirErreurs(v => !v)} style={{ background: 'none', border: 'none', padding: 0, fontSize: 12.5, fontWeight: 700, color: '#0089ba', cursor: 'pointer', fontFamily: 'inherit' }}>
+                {voirErreurs ? 'Masquer ses erreurs' : `Voir ses ${erreurs.length} erreur${erreurs.length > 1 ? 's' : ''}`}
+              </button>
+              {voirErreurs && (
+                <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {erreurs.map((d, i) => (
+                    <div key={i} style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text)' }}>
+                      <div style={{ fontWeight: 700 }}><span style={{ color: '#ef4444' }}>✗</span> {d.libelle}</div>
+                      <div style={{ color: 'var(--text-m)' }}>Sa réponse : {d.choisie || '—'}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ModulesApresFormationSection({ store, collaborateur, creerFicheSiAbsente = false }) {
   const [collab, setCollab] = useState(undefined)
   const [creationFiche, setCreationFiche] = useState(false)
@@ -211,6 +322,15 @@ export default function ModulesApresFormationSection({ store, collaborateur, cre
     charger()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store.id, collaborateur.id])
+
+  // Test de positionnement en cours : le résultat apparaît dès qu'il est fini.
+  const testEnAttente = !!collab?.modules_ouverts?.includes(TEST_POSITIONNEMENT_ID)
+  useEffect(() => {
+    if (!testEnAttente) return
+    const t = setInterval(charger, 15000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testEnAttente])
 
   // Nouvel entrant pas encore en base (roster fusionné depuis les entrées) :
   // côté manager, on propose de créer sa fiche, comme sur la tuile
@@ -253,6 +373,7 @@ export default function ModulesApresFormationSection({ store, collaborateur, cre
         </div>
       </div>
       <BlocAcces collab={collab} onCree={charger} />
+      <BlocTest collab={collab} resultats={resultats} ouverts={ouverts} enCours={moduleEnCours} onChangerOuverture={changerOuverture} />
       <p style={{ fontSize: 12.5, color: 'var(--text-m)', margin: '0 0 14px', lineHeight: 1.5 }}>
         Le collaborateur ne voit que les modules que tu ouvres pour lui. Ouvre-les au fur et à mesure de ton accompagnement.
       </p>
