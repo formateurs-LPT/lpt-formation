@@ -1,0 +1,715 @@
+'use client'
+import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
+import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers, clearQuizStarts } from '@/lib/supabase'
+import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { saveModuleQuizAnswer } from '@/lib/formationSave'
+import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
+import { countVotesPerOption } from '@/lib/quizVotes'
+import { QUIZ_FINAL_QUESTIONS_BELGIQUE } from '@/lib/quizFinalBelgiqueData'
+
+// quiz_final_phase values (same mechanism as ModuleOptique):
+// null → TV shows TVGroupResults
+// 'podium' → TV shows TVQuizFinalPodium
+// 'rate'   → TV shows TVQuizRateReveal
+
+const MODULE_ID = 'quiz-final-belgique'
+import { QUIZ_OPTION_COLORS as OPTION_COLORS } from '@/lib/constants'
+
+const STYLES = `
+  @keyframes finalFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+`
+
+// ── Contrôleur questions texte libre ─────────────────────────────
+function OrdoPreview({ q }) {
+  const ord = q.ordonnance
+  if (!ord) return null
+  return (
+    <div style={{ alignSelf: 'center', textAlign: 'center', marginBottom: 16 }}>
+      {q.ordoLabel && (
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#4ade80', marginBottom: 6 }}>{q.ordoLabel}</div>
+      )}
+      <div style={{
+        background: 'rgba(201,162,39,0.06)', border: '1px solid rgba(201,162,39,0.25)',
+        borderRadius: 12, padding: '12px 28px', display: 'inline-block',
+      }}>
+        {['od', 'og'].map(eye => {
+          const d = ord[eye]
+          let right = d.sph || '—'
+          if (d.cyl) {
+            if (q.cylInParens) right += ` (${d.cyl})  ${d.axe}°`
+            else right += `  ${d.cyl}  ${d.axe}°`
+          }
+          if (d.add) right += `  Add ${d.add}`
+          return (
+            <div key={eye} style={{ fontSize: 18, color: '#fff', fontFamily: 'monospace', marginBottom: eye === 'od' ? 6 : 0 }}>
+              <span style={{ color: '#c9a227', fontWeight: 800, marginRight: 16 }}>{eye.toUpperCase()}</span>
+              {right}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
+  const q = QUIZ_FINAL_QUESTIONS_BELGIQUE[quizQ]
+  const [answers, setAnswers] = useState([])
+  const [validations, setValidations] = useState({})
+  const autoValidatedRef = useRef(new Set())
+
+  useEffect(() => {
+    setValidations({})
+    autoValidatedRef.current = new Set()
+    const code = getActiveSessionCode()
+    const poll = async () => {
+      const rows = await fetchOpenAnswers(code, `${MODULE_ID}:${quizQ}`)
+      setAnswers(rows || [])
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [quizQ])
+
+  // Auto-correction : seule la question text-open-multi à mots-clés
+  // (autoCorrectEach) en bénéficie — les autres questions libres de ce quiz
+  // restent volontairement à valider à la main (cf. commentaire plus bas).
+  useEffect(() => {
+    const kwsEach = q?.autoCorrectEach
+    if (!kwsEach?.length) return
+    answers.forEach(row => {
+      const name = row.participant_name
+      if (autoValidatedRef.current.has(name) || name in validations) return
+      const parts = (row.answer || '').split('||').map(p => p.trim().toLowerCase()).filter(Boolean)
+      const isCorrect = kwsEach.every(group => group.some(kw => parts.some(p => p.includes(kw.toLowerCase()))))
+      if (!isCorrect) return
+      autoValidatedRef.current.add(name)
+      handleValidate(name, true)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answers, q])
+
+  const handleValidate = async (name, isCorrect) => {
+    try {
+      await saveModuleQuizAnswer({
+        sessionCode: getActiveSessionCode(),
+        moduleId: MODULE_ID,
+        questionIdx: quizQ,
+        collaborateur: name,
+        answerIdx: 0,
+        isCorrect,
+      })
+      setValidations(v => ({ ...v, [name]: isCorrect }))
+    } catch { /* best-effort */ }
+  }
+
+  const validatedCount = Object.keys(validations).length
+  const correctCount = Object.values(validations).filter(Boolean).length
+
+  // Auto-passage à la correction dès que tous les formés connectés ont
+  // répondu — le bouton reste bloqué tant que ce n'est pas le cas, avec un
+  // lien "Forcer" en secours si le décompte est erroné.
+  const { connectedCount, notAnswered } = useAutoRevealCorrection({
+    answeredNames: answers.map(row => row.participant_name),
+    resetKey: quizQ,
+    onReveal: () => setSharedState({ quiz_show_correction: true }).catch(() => {}),
+  })
+  const allAnswered = connectedCount > 0 && notAnswered.length === 0
+
+  // Ce quiz n'a pas d'auto-correction : chaque réponse doit être validée à la main.
+  // Une réponse non validée n'est jamais comptée (ni juste ni fausse) si on avance
+  // sans y toucher — le formé perd le point en silence. On avertit et on bloque.
+  const pendingCount = answers.filter(row => !(row.participant_name in validations)).length
+  const confirmSkipPending = () => {
+    if (pendingCount === 0) return true
+    return window.confirm(
+      `${pendingCount} réponse${pendingCount > 1 ? 's' : ''} pas encore validée${pendingCount > 1 ? 's' : ''} ✓/✗.\n\n` +
+      `Si vous continuez maintenant, ${pendingCount > 1 ? 'elles compteront' : 'elle comptera'} comme fausse` +
+      `${pendingCount > 1 ? 's' : ''} — même si la réponse était juste.\n\nContinuer quand même ?`
+    )
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '24px 40px',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz final — Réponse libre</span>
+        </div>
+        <div style={{
+          background: 'rgba(201,162,39,0.2)', border: '1px solid rgba(201,162,39,0.4)',
+          borderRadius: 16, padding: '5px 18px', fontSize: 12, fontWeight: 700, color: '#c9a227',
+        }}>Q{quizQ + 1} / {QUIZ_FINAL_QUESTIONS_BELGIQUE.length}</div>
+      </div>
+
+      {/* Question */}
+      <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 10, lineHeight: 1.3 }}>{q.question}</div>
+
+      {/* Hint formateur */}
+      <div style={{
+        background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.3)',
+        borderRadius: 12, padding: '10px 16px', marginBottom: 20,
+        fontSize: 13, color: '#c9a227', fontStyle: 'italic',
+      }}>
+        💡 Réponse attendue : {q.hint}
+      </div>
+
+      {/* Compteur */}
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 14 }}>
+        <span style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginRight: 4 }}>{answers.length}</span>
+        réponse{answers.length > 1 ? 's' : ''} reçue{answers.length > 1 ? 's' : ''} &nbsp;·&nbsp;
+        <span style={{ color: '#4ade80', fontWeight: 700 }}>{correctCount} ✓</span>&nbsp;&nbsp;
+        <span style={{ color: '#ef4444', fontWeight: 700 }}>{validatedCount - correctCount} ✗</span>
+      </div>
+
+      {/* Liste des réponses */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto', marginBottom: 20 }}>
+        {answers.length === 0 && (
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 14, padding: '40px 0' }}>
+            En attente des réponses…
+          </div>
+        )}
+        {answers.map(row => {
+          const v = validations[row.participant_name]
+          return (
+            <div key={row.participant_name} style={{
+              background: v === true ? 'rgba(34,197,94,0.08)' : v === false ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${v === true ? 'rgba(34,197,94,0.3)' : v === false ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)'}`,
+              borderRadius: 14, padding: '12px 16px',
+              display: 'flex', alignItems: 'center', gap: 12,
+              animation: 'finalFadeIn .3s ease',
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 2 }}>{row.participant_name}</div>
+                <div style={{ fontSize: 15, color: '#fff', fontWeight: 600 }}>
+                  {q?.type === 'text-open-multi'
+                    ? (row.answer || '').split('||').map((v, vi) => (
+                        <span key={vi} style={{ marginRight: 14 }}>{v.trim() || '—'}</span>
+                      ))
+                    : row.answer}
+                </div>
+              </div>
+              <button onClick={() => handleValidate(row.participant_name, true)} style={{
+                width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                background: v === true ? '#16a34a' : 'rgba(34,197,94,0.15)',
+                fontSize: 18, fontFamily: 'inherit', transition: 'background .2s',
+              }}>✓</button>
+              <button onClick={() => handleValidate(row.participant_name, false)} style={{
+                width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                background: v === false ? '#dc2626' : 'rgba(239,68,68,0.15)',
+                fontSize: 18, fontFamily: 'inherit', transition: 'background .2s',
+              }}>✗</button>
+            </div>
+          )
+        })}
+      </div>
+
+      <NotAnsweredList notAnswered={notAnswered} />
+
+      {/* Footer */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, marginTop: 12 }}>
+        {pendingCount > 0 && (
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24', marginRight: 'auto' }}>
+            ⚠️ {pendingCount} réponse{pendingCount > 1 ? 's' : ''} pas encore validée{pendingCount > 1 ? 's' : ''}
+          </div>
+        )}
+        {!allAnswered && answers.length > 0 && (
+          <button
+            onClick={() => { if (window.confirm('Forcer l\'affichage de la correction maintenant ? Les formés qui n\'ont pas encore répondu verront les réponses des autres.')) setSharedState({ quiz_show_correction: true }).catch(() => {}) }}
+            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+          >
+            ⚠️ Forcer la correction
+          </button>
+        )}
+        {answers.length > 0 && (
+          <button
+            onClick={() => { if (allAnswered) setSharedState({ quiz_show_correction: true }).catch(() => {}) }}
+            disabled={!allAnswered}
+            title={!allAnswered ? 'En attente de toutes les réponses — révéler maintenant permettrait à ceux qui n\'ont pas répondu de voir les réponses des autres' : undefined}
+            style={{
+              background: allAnswered ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${allAnswered ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.12)'}`,
+              color: allAnswered ? '#fbbf24' : 'rgba(255,255,255,0.3)',
+              padding: '14px 28px', borderRadius: 14,
+              fontSize: 15, fontWeight: 700, cursor: allAnswered ? 'pointer' : 'default', fontFamily: 'inherit',
+            }}
+          >
+            {allAnswered ? '🎯 Voir la correction' : `⏳ En attente (${answers.length}/${connectedCount || '?'})`}
+          </button>
+        )}
+        {isLast ? (
+          <button onClick={() => { if (confirmSkipPending()) onEnd() }} style={{
+            background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none',
+            color: '#fff', padding: '14px 36px', borderRadius: 14,
+            fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 6px 24px rgba(34,197,94,0.4)',
+          }}>✓ Terminer le quiz</button>
+        ) : (
+          <button onClick={async () => { if (!confirmSkipPending()) return; await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{
+            background: 'linear-gradient(135deg, #c9a227, #e0b830)', border: 'none',
+            color: '#fff', padding: '14px 36px', borderRadius: 14,
+            fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 6px 24px rgba(201,162,39,0.45)',
+          }}>Question suivante →</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Quiz Controller (vue formateur) ───────────────────────────────
+function QuizController({ quizQ, onNext, onEnd, onBack }) {
+  const [liveAnswers, setLiveAnswers] = useState([])
+  const [ordoShown, setOrdoShown] = useState(false)
+  const q = QUIZ_FINAL_QUESTIONS_BELGIQUE[quizQ]
+  const isLast = quizQ >= QUIZ_FINAL_QUESTIONS_BELGIQUE.length - 1
+
+  useEffect(() => { setOrdoShown(false) }, [quizQ])
+
+  useEffect(() => {
+    const poll = async () => {
+      const rows = await fetchTrainerQuizAnswers(
+        `session_code=eq.${getActiveSessionCode()}&module_id=eq.${MODULE_ID}&question_idx=eq.${quizQ}`
+      )
+      setLiveAnswers(rows || [])
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [quizQ])
+
+  const handleToggleOrdo = async () => {
+    const next = !ordoShown
+    setOrdoShown(next)
+    await setSharedState({ quiz_ordo_show: next }).catch(() => {})
+  }
+
+  const total = liveAnswers.length
+  const counts = countVotesPerOption(liveAnswers, q.options.length, q.type === 'qcm-multi')
+
+  const { notAnswered } = useAutoRevealCorrection({
+    answeredNames: liveAnswers.map(r => r.collaborateur),
+    resetKey: quizQ,
+    onReveal: () => setSharedState({ quiz_show_correction: true }).catch(() => {}),
+  })
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '24px 40px',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz final — Vue formateur</span>
+        </div>
+        <button onClick={onBack} style={{
+          background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)',
+          color: '#ff6b6b', padding: '7px 16px', borderRadius: 10,
+          fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+        }}>✕ Terminer</button>
+      </div>
+
+      {/* Badge question */}
+      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <div style={{
+          display: 'inline-block',
+          background: 'rgba(201,162,39,0.2)', border: '1px solid rgba(201,162,39,0.4)',
+          borderRadius: 20, padding: '6px 24px',
+          fontSize: 12, fontWeight: 700, color: '#c9a227', letterSpacing: 1.5, textTransform: 'uppercase',
+        }}>Question {quizQ + 1} / {QUIZ_FINAL_QUESTIONS_BELGIQUE.length}</div>
+      </div>
+
+      {/* Question */}
+      <div style={{
+        fontSize: 24, fontWeight: 800, color: '#fff', textAlign: 'center',
+        marginBottom: 36, lineHeight: 1.3, maxWidth: 800, alignSelf: 'center',
+      }}>{q.question}</div>
+
+      <OrdoPreview q={q} />
+
+      {/* Barres réponses en direct */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, maxWidth: 720, alignSelf: 'center', width: '100%' }}>
+        {q.options.map((opt, i) => {
+          const count = counts[i]
+          const isCorrect = Array.isArray(q.correct) ? q.correct.includes(i) : i === q.correct
+          const pct = total > 0 ? (count / total) * 100 : 0
+          return (
+            <div key={i} style={{
+              background: isCorrect ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${isCorrect ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.1)'}`,
+              borderRadius: 16, padding: '14px 18px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                    background: OPTION_COLORS[i],
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 14, fontWeight: 800, color: '#fff',
+                  }}>{'ABCD'[i]}</div>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{opt}</span>
+                  {isCorrect && (
+                    <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, background: 'rgba(34,197,94,0.15)', padding: '2px 10px', borderRadius: 20 }}>
+                      ✓ Bonne réponse
+                    </span>
+                  )}
+                </div>
+                <span style={{ fontSize: 22, fontWeight: 800, color: isCorrect ? '#4ade80' : '#fff' }}>
+                  {count}<span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500, marginLeft: 4 }}>vote{count > 1 ? 's' : ''}</span>
+                </span>
+              </div>
+              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 4,
+                  width: `${pct}%`,
+                  background: isCorrect ? '#4ade80' : OPTION_COLORS[i],
+                  transition: 'width .5s ease',
+                }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <NotAnsweredList notAnswered={notAnswered} />
+
+      {/* Footer */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28 }}>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
+          <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginRight: 6 }}>{total}</span>
+          participant{total !== 1 ? 's' : ''} {total !== 1 ? 'ont' : 'a'} répondu
+        </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          {q.ordonnance && (
+            <button onClick={handleToggleOrdo} style={{
+              background: ordoShown ? 'rgba(201,162,39,0.25)' : 'rgba(201,162,39,0.1)',
+              border: '1px solid rgba(201,162,39,0.4)', color: '#c9a227', padding: '10px 18px', borderRadius: 12,
+              fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}>{ordoShown ? '📋 Ordonnance affichée sur TV' : '📋 Réafficher l\'ordonnance sur TV'}</button>
+          )}
+          {total > 0 && (
+            <button onClick={() => setSharedState({ quiz_show_correction: true }).catch(() => {})} style={{
+              background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)',
+              color: '#fbbf24', padding: '12px 24px', borderRadius: 12,
+              fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}>Révéler les réponses →</button>
+          )}
+          {isLast ? (
+            <button onClick={onEnd} style={{
+              background: 'linear-gradient(135deg, #16a34a, #22c55e)',
+              border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
+              fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 6px 24px rgba(34,197,94,0.4)',
+            }}>✓ Terminer le quiz</button>
+          ) : (
+            <button onClick={async () => { await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false }).catch(() => {}); onNext() }} style={{
+              background: 'linear-gradient(135deg, #c9a227, #e0b830)',
+              border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14,
+              fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 6px 24px rgba(201,162,39,0.45)',
+            }}>Question suivante →</button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Group Results View ─────────────────────────────────────────────
+function GroupResultsView({ onTerminate }) {
+  const [answers, setAnswers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [phase, setPhase] = useState('podium') // 'podium' | 'rate' | 'recap'
+
+  const showRate = async () => {
+    await setSharedState({ quiz_final_phase: 'rate' })
+    setPhase('rate')
+  }
+
+  const hideRate = async () => {
+    await setSharedState({ quiz_final_phase: null })
+    setPhase('recap')
+  }
+
+  useEffect(() => {
+    const fetchAnswers = async () => {
+      const rows = await fetchTrainerQuizAnswers(
+        `session_code=eq.${getActiveSessionCode()}&module_id=eq.${MODULE_ID}`
+      )
+      setAnswers(rows || [])
+      setLoading(false)
+    }
+    fetchAnswers()
+  }, [])
+
+  const participantCount = [...new Set((answers || []).map(r => r.collaborateur))].length
+
+  const questionStats = QUIZ_FINAL_QUESTIONS_BELGIQUE.map((q, idx) => {
+    const qAnswers = answers.filter(r => r.question_idx === idx)
+    const wrongCount = qAnswers.filter(r => !r.is_correct).length
+    const total = qAnswers.length
+    const pctWrong = total > 0 ? Math.round((wrongCount / total) * 100) : 0
+    return { idx, question: q.question, pctWrong, total }
+  }).sort((a, b) => b.pctWrong - a.pctWrong)
+
+  const getPriority = (pct) => {
+    if (pct >= 50) return { icon: '🔴', label: 'À retravailler en priorité', color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)' }
+    if (pct >= 25) return { icon: '🟡', label: 'À consolider', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)' }
+    return { icon: '🟢', label: 'Bien maîtrisé', color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)' }
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', flexDirection: 'column', padding: '24px 40px',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Bilan du quiz final</span>
+        </div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginRight: 6 }}>{participantCount}</span>
+          participant{participantCount !== 1 ? 's' : ''}
+        </div>
+      </div>
+
+      {/* Title */}
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{
+          display: 'inline-block',
+          background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.35)',
+          borderRadius: 20, padding: '6px 24px',
+          fontSize: 12, fontWeight: 700, color: '#c9a227', letterSpacing: 1.5, textTransform: 'uppercase',
+          marginBottom: 12,
+        }}>Résultats du groupe</div>
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Points à retravailler</h1>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>Trié par taux d&apos;erreur décroissant</p>
+      </div>
+
+      {/* Question cards */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 760, alignSelf: 'center', width: '100%', overflowY: 'auto' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 15, padding: 40 }}>Chargement…</div>
+        ) : questionStats.map((stat) => {
+          const priority = getPriority(stat.pctWrong)
+          return (
+            <div key={stat.idx} style={{
+              background: priority.bg,
+              border: `1px solid ${priority.border}`,
+              borderRadius: 18, padding: '18px 22px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                <div style={{ flex: 1, marginRight: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 16 }}>{priority.icon}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: priority.color, textTransform: 'uppercase', letterSpacing: 1 }}>{priority.label}</span>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>
+                    Q{stat.idx + 1} — {stat.question}
+                  </div>
+                </div>
+                <div style={{ fontSize: 40, fontWeight: 800, color: priority.color, lineHeight: 1, flexShrink: 0 }}>
+                  {stat.pctWrong}%
+                  <div style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.4)', textAlign: 'right' }}>d&apos;erreurs</div>
+                </div>
+              </div>
+              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 4,
+                  width: `${stat.pctWrong}%`,
+                  background: priority.color,
+                  transition: 'width .8s ease',
+                }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 32 }}>
+        {phase === 'podium' && (
+          <button onClick={showRate} style={{
+            background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.4)',
+            color: '#c9a227', padding: '14px 28px', borderRadius: 14,
+            fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            🎯 Révéler le taux de réussite
+          </button>
+        )}
+        {phase === 'rate' && (
+          <button onClick={hideRate} style={{
+            background: 'rgba(201,162,39,0.2)', border: '1px solid #c9a227',
+            color: '#c9a227', padding: '14px 28px', borderRadius: 14,
+            fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            📊 Afficher les résultats du groupe
+          </button>
+        )}
+        {phase === 'recap' && <div />}
+        <button onClick={onTerminate} style={{
+          background: 'linear-gradient(135deg, #dc2626, #ef4444)',
+          border: 'none', color: '#fff', padding: '14px 42px', borderRadius: 14,
+          fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          boxShadow: '0 6px 24px rgba(220,38,38,0.4)',
+        }}>✓ Terminer le module</button>
+      </div>
+    </div>
+  )
+}
+
+// ── Lobby ──────────────────────────────────────────────────────────
+function Lobby({ onStart, onBack }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
+    }}>
+      <button onClick={onBack} style={{
+        position: 'absolute', top: 24, left: 24,
+        background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+        color: 'rgba(255,255,255,0.6)', padding: '8px 16px', borderRadius: 10,
+        fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+      }}>← Retour</button>
+
+      <div style={{ textAlign: 'center', maxWidth: 520, padding: '0 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={180} height={68} style={{ objectFit: 'contain' }} />
+        </div>
+        <div style={{ fontSize: 72, marginBottom: 20 }}>🏆</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#c9a227', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>
+          Quiz de fin de formation
+        </div>
+        <h1 style={{ fontSize: 34, fontWeight: 800, color: '#fff', marginBottom: 10 }}>
+          Le grand quiz final
+        </h1>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 36, lineHeight: 1.6 }}>
+          Trame d&apos;accueil · Troubles visuels · Ordonnances<br />
+          Offres · Verre progressif · Remboursements
+        </p>
+        <button onClick={onStart} style={{
+          background: 'linear-gradient(135deg, #c9a227, #e0b830)',
+          border: 'none', color: '#fff', padding: '16px 48px',
+          borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer',
+          boxShadow: '0 8px 32px rgba(201,162,39,0.45)', fontFamily: 'inherit',
+        }}>▶ Lancer le quiz</button>
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 16 }}>{QUIZ_FINAL_QUESTIONS_BELGIQUE.length} questions · ~20 minutes</p>
+      </div>
+    </div>
+  )
+}
+
+// ── Composant principal ────────────────────────────────────────────
+export default function ModuleQuizFinalBelgique({ pName, onBack }) {
+  const [started, setStarted] = useState(false)
+  const [quizQ, setQuizQ] = useState(0)
+  const [showGroupResults, setShowGroupResults] = useState(false)
+
+  useEffect(() => {
+    const init = async () => {
+      await setSharedState({ quiz_final_phase: null, quiz_show_correction: false }).catch(() => {})
+      await sbUpdate('sessions', { active_module: MODULE_ID, module_page: -1 }, `code=eq.${getActiveSessionCode()}`)
+    }
+    init()
+  }, [])
+
+  const handleBack = async () => {
+    try {
+      await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+      // Sans ça, quiz_show_correction peut rester bloqué à true si on quitte
+      // pendant qu'une correction est affichée — le prochain quiz lancé dans
+      // cette salle en hériterait (formés jetés direct sur la correction).
+      await setSharedState({ quiz_show_correction: false }).catch(() => {})
+    } catch { /* best-effort */ }
+    onBack()
+  }
+
+  const handleStart = async () => {
+    await setSharedState({ quiz_show_correction: false, quiz_interstitial_q: null, quiz_final_phase: null })
+    await clearQuizStarts(getActiveSessionCode(), MODULE_ID).catch(() => {})
+    await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
+    setQuizQ(0)
+    setStarted(true)
+  }
+
+  // Podium interstitiel toutes les 5 questions supprimé (faisait planter
+  // l'appli) — on enchaîne directement, seul le podium final reste (cf.
+  // handleEndQuiz). Le classement en temps réel, désormais privé, s'affiche
+  // sur le téléphone de chaque formé après chaque correction.
+  const handleNextQuestion = async () => {
+    const next = quizQ + 1
+    await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false, quiz_interstitial_q: null }).catch(() => {})
+    await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 100 + next }, `code=eq.${getActiveSessionCode()}`)
+    setQuizQ(next)
+  }
+
+  const handleEndQuiz = async () => {
+    try {
+      await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 200 }, `code=eq.${getActiveSessionCode()}`)
+      await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: 'podium' }).catch(() => {})
+    } catch { /* best-effort */ }
+    setShowGroupResults(true)
+  }
+
+  const handleTerminateModule = async () => {
+    try {
+      await setSharedState({ quiz_final_phase: 'ended', quiz_show_correction: false }).catch(() => {})
+      await sbUpdate('sessions', { active_module: null, module_page: 0 }, `code=eq.${getActiveSessionCode()}`)
+    } catch { /* best-effort */ }
+    onBack()
+  }
+
+  if (!started) return (
+    <>
+      <style>{STYLES}</style>
+      <Lobby onStart={handleStart} onBack={handleBack} />
+    </>
+  )
+
+  if (showGroupResults) return (
+    <>
+      <style>{STYLES}</style>
+      <GroupResultsView onTerminate={handleTerminateModule} />
+    </>
+  )
+
+  const isLast = quizQ >= QUIZ_FINAL_QUESTIONS_BELGIQUE.length - 1
+  const isTextOpen = QUIZ_FINAL_QUESTIONS_BELGIQUE[quizQ]?.type === 'text-open' || QUIZ_FINAL_QUESTIONS_BELGIQUE[quizQ]?.type === 'text-open-multi'
+
+  return (
+    <>
+      <style>{STYLES}</style>
+      {isTextOpen ? (
+        <TextOpenController quizQ={quizQ} isLast={isLast} onNext={handleNextQuestion} onEnd={handleEndQuiz} />
+      ) : (
+        <QuizController
+          quizQ={quizQ}
+          onNext={handleNextQuestion}
+          onEnd={handleEndQuiz}
+          onBack={handleEndQuiz}
+        />
+      )}
+    </>
+  )
+}

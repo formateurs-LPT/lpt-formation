@@ -368,7 +368,7 @@ function SessionModulesBelgique({ pName, onBack, onLaunchModule, onEndRoom, onLa
           <div style={{ fontSize: 11, color: '#8b5cf6', marginTop: 8, fontWeight: 600 }}>Lancer le jeu →</div>
         </div>
 
-        <div className="dash-tile" onClick={() => onLaunchModule('quiz-final')} style={{ cursor: 'pointer', borderColor: 'rgba(201,162,39,0.35)' }}>
+        <div className="dash-tile" onClick={() => onLaunchModule('quiz-final-belgique')} style={{ cursor: 'pointer', borderColor: 'rgba(201,162,39,0.35)' }}>
           <div className="dash-tile-top">
             <div style={{
               width: 38, height: 38, borderRadius: 10, flexShrink: 0,

@@ -1,5 +1,7 @@
 import { QUIZ_FINAL_QUESTIONS } from '@/lib/quizFinalData'
 export { QUIZ_FINAL_QUESTIONS }
+import { QUIZ_FINAL_QUESTIONS_BELGIQUE } from '@/lib/quizFinalBelgiqueData'
+export { QUIZ_FINAL_QUESTIONS_BELGIQUE }
 import { QUIZ_J1 } from '@/lib/quizJ1Data'
 export { QUIZ_J1 }
 import { QUIZ_J2 } from '@/lib/quizJ2Data'
@@ -1292,6 +1294,90 @@ export const MONTURES_QUIZ = [
   { type: 'text-open', question: 'Quel type de client ciblez-vous avec une monture en plastique injecté ? Pourquoi ?', hint: 'Budget serré, enfants, clients qui cassent régulièrement — meilleur rapport qualité/prix de la gamme' },
 ]
 
+export const MUTUELLES_INAMI_QUIZ = [
+  {
+    type: 'text-open',
+    question: "Qu'est-ce que l'INAMI ?",
+    hint: "Institut National d'Assurance Maladie Invalidité",
+  },
+  {
+    question: "Quelle est la fréquence de remboursement de l'assurance obligatoire pour les moins de 18 ans ?",
+    options: ["2 ans", "5 ans", "1 an", "3 ans"],
+    correct: 0,
+  },
+  {
+    type: 'qcm-multi',
+    question: "Pour l'assurance obligatoire, quel document le client doit-il avoir pour une intervention ?",
+    instruction: "⚠ Sélectionne 2 bonnes réponses",
+    options: ["Test de vue de l'opticien", "Facture", "Ordonnance ophtalmologue", "ANNEXE 15"],
+    correct: [2, 3],
+  },
+  {
+    question: "J'ai 18 ans, voici mon ordonnance : OD : -7,50 (-1,00) 10° OG : -6,75. Mon ordonnance a 1 mois, et ma correction a changé de 0,75 depuis mon dernier remboursement qui date d'il y a 1 an. Ai-je le droit à un nouveau remboursement ?",
+    options: ["Oui", "Non"],
+    correct: 0,
+  },
+  {
+    question: "L'assurance obligatoire liée à l'INAMI est-elle la même chose que l'assurance complémentaire de la mutuelle ?",
+    options: ["Oui", "Non"],
+    correct: 1,
+  },
+  {
+    type: 'qcm-multi',
+    question: "Sélectionne les assurances qui ont une assurance complémentaire optique",
+    instruction: "⚠ Sélectionne 3 bonnes réponses",
+    options: ["Solidaris", "Chrétienne", "Partenamut", "Neutre", "Libre", "CAAMI"],
+    correct: [1, 2, 3],
+  },
+  {
+    question: "Le fait qu'un client soit affilié à une mutuelle signifie-t-il automatiquement qu'il aura droit à un remboursement INAMI pour ses lunettes ?",
+    options: ["Oui", "Non"],
+    correct: 1,
+  },
+  {
+    type: 'text-open',
+    question: "Jusqu'à combien de remboursement le client de la mutualité Chrétienne a-t-il droit ?",
+    hint: "120 €",
+  },
+  {
+    question: "L'assurance complémentaire est-elle identique dans toutes les mutualités ?",
+    options: ["Oui", "Non"],
+    correct: 1,
+  },
+  {
+    type: 'qcm-multi',
+    question: "Pour quelles mutuelles ne faut-il pas obligatoirement une ordonnance ophtalmologue ?",
+    instruction: "⚠ Sélectionne 2 bonnes réponses",
+    options: ["Chrétienne", "Partenamut", "Neutre", "Solidaris"],
+    correct: [0, 1],
+  },
+  {
+    type: 'text-open',
+    question: "Quelle offre partenaire avons-nous avec Partenamut ?",
+    hint: "Une paire de lunettes unifocale à 50 € et une paire de lunettes progressive à 100 €",
+  },
+  {
+    question: "Je suis à la mutualité Chrétienne avec les corrections OD : -1,75 (-0,50) 25° OG : -3,00 (-1,50) 165°. Mon dernier remboursement date d'il y a 18 mois, mes corrections ont changé de -0,75. J'ai le droit à un nouveau remboursement uniquement si je vais chez l'ophtalmologue.",
+    options: ["Vrai", "Faux"],
+    correct: 1,
+  },
+  {
+    type: 'text-open',
+    question: "Quelles sont les conditions de remboursement de l'assurance obligatoire pour les plus de 65 ans en progressif ?",
+    hint: "4,25 dioptries minimum, tous les 5 ans, avec une prescription ophtalmologue valable datée de moins de 6 mois",
+  },
+  {
+    question: "Un client achète une paire de lunettes simplement parce qu'il souhaite changer de monture. L'INAMI rembourse-t-il une partie de son achat ?",
+    options: ["Oui, la monture uniquement", "Oui, tout l'équipement", "Oui, juste les verres selon les corrections", "Non"],
+    correct: 3,
+  },
+  {
+    question: "Une assurance complémentaire peut proposer un avantage optique supplémentaire à l'assurance obligatoire.",
+    options: ["Vrai", "Faux"],
+    correct: 0,
+  },
+]
+
 export const MODULE_DATA = {
   'types-verres':     { pages: TYPES_VERRES_PAGES,      quiz: TYPES_VERRES_QUIZ,  label: 'Types de verres',               sub: 'Le verre unifocal' },
   'pdm':              { pages: PDM_PAGES,                quiz: PDM_QUIZ,           label: 'Prises de mesures',             sub: 'Écart pupillaire · Hauteur · LPTVISION' },
@@ -1305,6 +1391,7 @@ export const MODULE_DATA = {
   'ajustages':        { pages: AJUSTAGES_PAGES,  quiz: AJUSTAGES_QUIZ,  label: 'Les Ajustages',     sub: 'Confort · Acétate · Métal · Règles d\'or' },
   'raz':              { pages: RAZ_PAGES,        quiz: RAZ_QUIZ,        label: 'Les RAZ',            sub: 'Recommandes · Process · Dernier recours' },
   'quiz-final':       { pages: [], quiz: QUIZ_FINAL_QUESTIONS, label: 'Quiz de fin de formation', sub: 'Trame · Optique · Offres · Remboursement' },
+  'quiz-final-belgique': { pages: [], quiz: QUIZ_FINAL_QUESTIONS_BELGIQUE, label: 'Quiz de fin de formation', sub: 'Trame · Optique · Offres · Remboursement Belgique' },
   'quiz-j1':          { pages: [], quiz: QUIZ_J1, label: 'Quiz Jour 1', sub: 'Entreprise · Optique · Ordonnances · Montures' },
   'quiz-j2':          { pages: [], quiz: QUIZ_J2, label: 'Quiz Jour 2', sub: "Offres · 1=1 · Pack Plan · Ordonnances" },
   'mutuelles-inami':  { pages: [
@@ -1312,7 +1399,7 @@ export const MODULE_DATA = {
     { id: 'inami-info', type: 'inami-info', titre: 'INAMI' },
     { id: 'mutuelles-reveal', type: 'mutuelles-reveal', titre: 'Les organismes assureurs en Belgique' },
     { id: 'partena-offre', type: 'partena-offre', titre: 'PARTENA' },
-  ], quiz: [], label: 'Mutuelles et INAMI', sub: 'Remboursements · INAMI · Mutuelles belges' },
+  ], quiz: MUTUELLES_INAMI_QUIZ, label: 'Mutuelles et INAMI', sub: 'Remboursements · INAMI · Mutuelles belges' },
   'remboursement-france': { pages: [
     { id: 'rembfr-q1', type: 'pause', icon: '🇫🇷', titre: 'Quelles sont les conditions pour avoir droit au remboursement optique en France ?', sousTitre: 'Partagez ce que vous savez déjà' },
     { id: 'rembfr-conditions', type: 'rembfr-conditions', titre: 'Les conditions de remboursement' },

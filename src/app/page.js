@@ -26,6 +26,7 @@ import ModuleReveilAcquis from '@/components/modules/ModuleReveilAcquis'
 import ModuleMontures from '@/components/modules/ModuleMontures'
 import ModuleMiniJeux from '@/components/modules/ModuleMiniJeux'
 import ModuleQuizFinal from '@/components/modules/ModuleQuizFinal'
+import ModuleQuizFinalBelgique from '@/components/modules/ModuleQuizFinalBelgique'
 import ModuleQuizJ1 from '@/components/modules/ModuleQuizJ1'
 import ModuleQuizJ2 from '@/components/modules/ModuleQuizJ2'
 import ModuleMutuelles from '@/components/modules/ModuleMutuelles'
@@ -518,6 +519,12 @@ export default function Page() {
       )}
       {view === 'module-quiz-final' && (
         <ModuleQuizFinal
+          pName={pName}
+          onBack={handleBackToModules}
+        />
+      )}
+      {view === 'module-quiz-final-belgique' && (
+        <ModuleQuizFinalBelgique
           pName={pName}
           onBack={handleBackToModules}
         />

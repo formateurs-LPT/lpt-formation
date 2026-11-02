@@ -1,9 +1,14 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState } from '@/lib/supabase'
-import { MODULE_DATA, MUTUELLES_BELGIQUE } from '@/lib/modulesData'
+import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers, clearQuizStarts } from '@/lib/supabase'
+import { MODULE_DATA, MUTUELLES_BELGIQUE, MUTUELLES_INAMI_QUIZ } from '@/lib/modulesData'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
+import { saveModuleQuizAnswer } from '@/lib/formationSave'
+import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
+import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
+import { countVotesPerOption } from '@/lib/quizVotes'
+import { QUIZ_OPTION_COLORS as OPTION_COLORS } from '@/lib/constants'
 
 const MODULE_ID = 'mutuelles-inami'
 const PAGES = MODULE_DATA[MODULE_ID]?.pages || []
@@ -15,9 +20,368 @@ const PAGE_TYPE_LABELS = {
   'partena-offre':   { icon: '⭐', label: 'Partenaire' },
 }
 
+// ── Quiz texte libre ────────────────────────────────────────────────
+function MutuellesTextOpenController({ quizQ, onNext, onEnd, onBack }) {
+  const [openAnswers, setOpenAnswers] = useState([])
+  const [validating, setValidating] = useState({})
+  const [validated, setValidated] = useState({})
+  const autoValidatedRef = useRef(new Set())
+
+  const q = MUTUELLES_INAMI_QUIZ[quizQ]
+  const isLast = quizQ >= MUTUELLES_INAMI_QUIZ.length - 1
+  const pageId = `${MODULE_ID}:${quizQ}`
+
+  useEffect(() => {
+    setOpenAnswers([]); setValidating({}); setValidated({})
+    autoValidatedRef.current = new Set()
+
+    const autoValidate = (rows) => {
+      const kws = q?.autoCorrect
+      if (!kws?.length) return
+      for (const row of rows) {
+        const name = row.participant_name
+        if (autoValidatedRef.current.has(name)) continue
+        const text = (row.answer || '').trim().toLowerCase()
+        if (kws.some(kw => text.includes(kw.toLowerCase()))) {
+          autoValidatedRef.current.add(name)
+          setValidating(v => ({ ...v, [name]: true }))
+          saveModuleQuizAnswer({ sessionCode: getActiveSessionCode(), moduleId: MODULE_ID, questionIdx: quizQ, collaborateur: name, answerIdx: 0, isCorrect: true })
+            .then(() => { setValidated(v => ({ ...v, [name]: 'correct' })); setValidating(v => ({ ...v, [name]: false })) })
+            .catch(() => { autoValidatedRef.current.delete(name); setValidating(v => ({ ...v, [name]: false })) })
+        }
+      }
+    }
+
+    const poll = async () => {
+      const rows = await fetchOpenAnswers(getActiveSessionCode(), pageId)
+      const latest = {}
+      for (const row of rows || []) latest[row.participant_name] = row
+      const deduped = Object.values(latest)
+      setOpenAnswers(deduped)
+      autoValidate(deduped)
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [quizQ, pageId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleValidate = async (row, isCorrect) => {
+    if (validating[row.participant_name]) return
+    setValidating(v => ({ ...v, [row.participant_name]: true }))
+    try {
+      await saveModuleQuizAnswer({ sessionCode: getActiveSessionCode(), moduleId: MODULE_ID, questionIdx: quizQ, collaborateur: row.participant_name, answerIdx: 0, isCorrect })
+      setValidated(v => ({ ...v, [row.participant_name]: isCorrect ? 'correct' : 'wrong' }))
+    } catch { /* best-effort */ } finally {
+      setValidating(v => ({ ...v, [row.participant_name]: false }))
+    }
+  }
+
+  const pendingCount = openAnswers.filter(row => !validated[row.participant_name]).length
+  const confirmSkipPending = () => {
+    if (pendingCount === 0) return true
+    return window.confirm(
+      `${pendingCount} réponse${pendingCount > 1 ? 's' : ''} pas encore validée${pendingCount > 1 ? 's' : ''} ✓/✗.\n\n` +
+      `Si vous continuez maintenant, ${pendingCount > 1 ? 'elles compteront' : 'elle comptera'} comme fausse` +
+      `${pendingCount > 1 ? 's' : ''} — même si la réponse était juste.\n\nContinuer quand même ?`
+    )
+  }
+
+  const { connectedCount, notAnswered } = useAutoRevealCorrection({
+    answeredNames: openAnswers.map(row => row.participant_name),
+    resetKey: quizQ,
+    onReveal: () => setSharedState({ quiz_show_correction: true }).catch(() => {}),
+  })
+  const allAnswered = connectedCount > 0 && notAnswered.length === 0
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)', padding: '24px 40px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz · Mutuelles et INAMI</span>
+        </div>
+        <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Terminer</button>
+      </div>
+
+      <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'inline-block', background: 'rgba(201,162,39,0.2)', border: '1px solid rgba(201,162,39,0.4)', borderRadius: 20, padding: '6px 24px', fontSize: 12, fontWeight: 700, color: '#c9a227', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+          Question {quizQ + 1} / {MUTUELLES_INAMI_QUIZ.length}
+        </div>
+      </div>
+
+      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: 1.3, maxWidth: 800, margin: '0 auto 12px' }}>{q.question}</div>
+
+      {q.hint && (
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ display: 'inline-block', background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)', borderRadius: 12, padding: '8px 22px', fontSize: 12, color: 'rgba(201,162,39,0.8)', fontStyle: 'italic' }}>
+            Réponse attendue : {q.hint}
+          </div>
+        </div>
+      )}
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 820, width: '100%', margin: '0 auto', maxHeight: '40vh', overflowY: 'auto' }}>
+        {openAnswers.length === 0 ? (
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, fontStyle: 'italic', padding: '20px', textAlign: 'center' }}>En attente des réponses…</div>
+        ) : openAnswers.map((row, i) => {
+          const status = validated[row.participant_name]
+          return (
+            <div key={row.participant_name} style={{
+              background: status === 'correct' ? 'rgba(34,197,94,0.08)' : status === 'wrong' ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${status === 'correct' ? 'rgba(34,197,94,0.3)' : status === 'wrong' ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
+            }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: OPTION_COLORS[i % OPTION_COLORS.length], minWidth: 80, flexShrink: 0 }}>{row.participant_name}</span>
+              <span style={{ flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>{row.answer}</span>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button onClick={() => handleValidate(row, true)} title="Marquer correct" style={{ background: status === 'correct' ? 'rgba(34,197,94,0.4)' : 'rgba(34,197,94,0.15)', border: `1.5px solid ${status === 'correct' ? '#4ade80' : 'rgba(34,197,94,0.35)'}`, color: '#4ade80', padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✓</button>
+                <button onClick={() => handleValidate(row, false)} title="Marquer faux" style={{ background: status === 'wrong' ? 'rgba(239,68,68,0.4)' : 'rgba(239,68,68,0.12)', border: `1.5px solid ${status === 'wrong' ? '#f87171' : 'rgba(239,68,68,0.35)'}`, color: '#f87171', padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>✗</button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <NotAnsweredList notAnswered={notAnswered} />
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, marginTop: 24 }}>
+        {pendingCount > 0 && (
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24', marginRight: 'auto' }}>
+            ⚠️ {pendingCount} réponse{pendingCount > 1 ? 's' : ''} pas encore validée{pendingCount > 1 ? 's' : ''}
+          </div>
+        )}
+        {!allAnswered && openAnswers.length > 0 && (
+          <button
+            onClick={() => { if (window.confirm('Forcer l\'affichage de la correction maintenant ? Les formés qui n\'ont pas encore répondu verront les réponses des autres.')) setSharedState({ quiz_show_correction: true }).catch(() => {}) }}
+            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+          >
+            ⚠️ Forcer la correction
+          </button>
+        )}
+        {openAnswers.length > 0 && (
+          <button
+            onClick={() => { if (allAnswered) setSharedState({ quiz_show_correction: true }).catch(() => {}) }}
+            disabled={!allAnswered}
+            title={!allAnswered ? 'En attente de toutes les réponses — révéler maintenant permettrait à ceux qui n\'ont pas répondu de voir les réponses des autres' : undefined}
+            style={{
+              background: allAnswered ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${allAnswered ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.12)'}`,
+              color: allAnswered ? '#fbbf24' : 'rgba(255,255,255,0.3)',
+              padding: '14px 28px', borderRadius: 14, fontSize: 15, fontWeight: 700,
+              cursor: allAnswered ? 'pointer' : 'default', fontFamily: 'inherit',
+            }}
+          >
+            {allAnswered ? '🎯 Voir la correction' : `⏳ En attente (${openAnswers.length}/${connectedCount || '?'})`}
+          </button>
+        )}
+        {isLast ? (
+          <button onClick={() => { if (confirmSkipPending()) onEnd() }} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Terminer le quiz</button>
+        ) : (
+          <button onClick={async () => { if (!confirmSkipPending()) return; await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{ background: 'linear-gradient(135deg, #a07818, #c9a227)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(201,162,39,0.4)' }}>Question suivante →</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Quiz QCM (simple et multi-sélection) ───────────────────────────
+function MutuellesMCQController({ quizQ, onNext, onEnd, onBack }) {
+  const [liveAnswers, setLiveAnswers] = useState([])
+  const q = MUTUELLES_INAMI_QUIZ[quizQ]
+  const isLast = quizQ >= MUTUELLES_INAMI_QUIZ.length - 1
+
+  useEffect(() => {
+    const poll = async () => {
+      const rows = await fetchTrainerQuizAnswers(
+        `session_code=eq.${getActiveSessionCode()}&module_id=eq.${MODULE_ID}&question_idx=eq.${quizQ}`
+      )
+      setLiveAnswers(rows || [])
+    }
+    poll()
+    const t = setInterval(poll, 1500)
+    return () => clearInterval(t)
+  }, [quizQ])
+
+  const total = liveAnswers.length
+  const counts = countVotesPerOption(liveAnswers, q.options.length, q.type === 'qcm-multi')
+
+  const { notAnswered } = useAutoRevealCorrection({
+    answeredNames: liveAnswers.map(r => r.collaborateur),
+    resetKey: quizQ,
+    onReveal: () => setSharedState({ quiz_show_correction: true }).catch(() => {}),
+  })
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #001a3d 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Quiz · Mutuelles et INAMI</span>
+        </div>
+        <button onClick={onBack} style={{ background: 'rgba(255,80,80,0.12)', border: '1px solid rgba(255,80,80,0.3)', color: '#ff6b6b', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕ Terminer</button>
+      </div>
+      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'inline-block', background: 'rgba(201,162,39,0.2)', border: '1px solid rgba(201,162,39,0.4)', borderRadius: 20, padding: '6px 24px', fontSize: 12, fontWeight: 700, color: '#c9a227', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+          Question {quizQ + 1} / {MUTUELLES_INAMI_QUIZ.length}
+        </div>
+      </div>
+      {q.instruction && (
+        <div style={{ textAlign: 'center', marginBottom: 8, fontSize: 13, fontWeight: 700, color: '#fbbf24' }}>{q.instruction}</div>
+      )}
+      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', textAlign: 'center', marginBottom: 36, lineHeight: 1.3, maxWidth: 800, alignSelf: 'center' }}>{q.question}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1, maxWidth: 720, alignSelf: 'center', width: '100%' }}>
+        {q.options.map((opt, i) => {
+          const count = counts[i]
+          const isCorrect = Array.isArray(q.correct) ? q.correct.includes(i) : i === q.correct
+          const pct = total > 0 ? (count / total) * 100 : 0
+          return (
+            <div key={i} style={{ background: isCorrect ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)', border: `1px solid ${isCorrect ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 16, padding: '14px 18px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: OPTION_COLORS[i % OPTION_COLORS.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff' }}>{'ABCDEF'[i]}</div>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{opt}</span>
+                  {isCorrect && <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, background: 'rgba(34,197,94,0.15)', padding: '2px 10px', borderRadius: 20 }}>✓ Bonne réponse</span>}
+                </div>
+                <span style={{ fontSize: 22, fontWeight: 800, color: isCorrect ? '#4ade80' : '#fff' }}>
+                  {count}<span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500, marginLeft: 4 }}>vote{count !== 1 ? 's' : ''}</span>
+                </span>
+              </div>
+              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{ height: '100%', borderRadius: 4, width: `${pct}%`, background: isCorrect ? '#4ade80' : OPTION_COLORS[i % OPTION_COLORS.length], transition: 'width .5s ease' }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <NotAnsweredList notAnswered={notAnswered} />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 28 }}>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
+          <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginRight: 6 }}>{total}</span>
+          participant{total !== 1 ? 's' : ''} {total !== 1 ? 'ont' : 'a'} répondu
+        </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          {total > 0 && (
+            <button onClick={() => setSharedState({ quiz_show_correction: true }).catch(() => {})} style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.5)', color: '#fbbf24', padding: '12px 24px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Révéler les réponses →</button>
+          )}
+          {isLast ? (
+            <button onClick={onEnd} style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(34,197,94,0.4)' }}>✓ Terminer le quiz</button>
+          ) : (
+            <button onClick={async () => { await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }} style={{ background: 'linear-gradient(135deg, #a07818, #c9a227)', border: 'none', color: '#fff', padding: '14px 36px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(201,162,39,0.4)' }}>Question suivante →</button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Bilan du groupe (vue formateur après quiz) ─────────────────────
+function MutuellesGroupResultsView({ onTerminate }) {
+  const [answers, setAnswers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchAnswers = async () => {
+      const rows = await fetchTrainerQuizAnswers(
+        `session_code=eq.${getActiveSessionCode()}&module_id=eq.${MODULE_ID}`
+      )
+      setAnswers(rows || [])
+      setLoading(false)
+    }
+    fetchAnswers()
+  }, [])
+
+  const participantNames = [...new Set((answers || []).map(r => r.collaborateur))]
+  const participantCount = participantNames.length
+
+  const questionStats = MUTUELLES_INAMI_QUIZ.map((q, idx) => {
+    const qAnswers = answers.filter(r => r.question_idx === idx)
+    const wrongCount = qAnswers.filter(r => !r.is_correct).length
+    const total = qAnswers.length
+    const pctWrong = total > 0 ? Math.round((wrongCount / total) * 100) : 0
+    return { idx, question: q.question, pctWrong, total }
+  }).sort((a, b) => b.pctWrong - a.pctWrong)
+
+  const getPriority = (pct) => {
+    if (pct >= 50) return { icon: '🔴', label: 'À retravailler en priorité', color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)' }
+    if (pct >= 25) return { icon: '🟡', label: 'À consolider', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)' }
+    return { icon: '🟢', label: 'Bien maîtrisé', color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)' }
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)', display: 'flex', flexDirection: 'column', padding: '24px 40px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={30} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Bilan du quiz · Mutuelles et INAMI</span>
+        </div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginRight: 6 }}>{participantCount}</span>
+          participant{participantCount !== 1 ? 's' : ''}
+        </div>
+      </div>
+
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{
+          display: 'inline-block',
+          background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.35)',
+          borderRadius: 20, padding: '6px 24px',
+          fontSize: 12, fontWeight: 700, color: '#f59e0b', letterSpacing: 1.5, textTransform: 'uppercase',
+          marginBottom: 12,
+        }}>Résultats du groupe</div>
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Points à retravailler</h1>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>Trié par taux d&apos;erreur décroissant</p>
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 760, alignSelf: 'center', width: '100%' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 15, padding: 40 }}>Chargement…</div>
+        ) : questionStats.map((stat) => {
+          const priority = getPriority(stat.pctWrong)
+          return (
+            <div key={stat.idx} style={{ background: priority.bg, border: `1px solid ${priority.border}`, borderRadius: 18, padding: '18px 22px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                <div style={{ flex: 1, marginRight: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 16 }}>{priority.icon}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: priority.color, textTransform: 'uppercase', letterSpacing: 1 }}>{priority.label}</span>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>
+                    Q{stat.idx + 1} — {stat.question}
+                  </div>
+                </div>
+                <div style={{ fontSize: 40, fontWeight: 800, color: priority.color, lineHeight: 1, flexShrink: 0 }}>
+                  {stat.pctWrong}%
+                  <div style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.4)', textAlign: 'right' }}>d&apos;erreurs</div>
+                </div>
+              </div>
+              <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{ height: '100%', borderRadius: 4, width: `${stat.pctWrong}%`, background: priority.color, transition: 'width .8s ease' }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 32, gap: 16 }}>
+        <button onClick={onTerminate} style={{
+          background: 'linear-gradient(135deg, #dc2626, #ef4444)',
+          border: 'none', color: '#fff', padding: '14px 42px', borderRadius: 14,
+          fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          boxShadow: '0 6px 24px rgba(220,38,38,0.4)',
+        }}>✓ Terminer le module</button>
+      </div>
+    </div>
+  )
+}
+
 export default function ModuleMutuelles({ pName, onBack }) {
   const [started, setStarted] = useState(false)
+  const [showGroupResults, setShowGroupResults] = useState(false)
   const [pageIndex, setPageIndex] = useState(0)
+  const [quizQ, setQuizQ] = useState(null)
   const syncedRef = useRef(false)
   const [revealedIds, setRevealedIds] = useState([])
   const [revealing, setRevealing] = useState(false)
@@ -89,9 +453,49 @@ export default function ModuleMutuelles({ pName, onBack }) {
     onBack()
   }
 
+  // quiz_final_phase inclus : sinon une valeur 'ended' laissée par un quiz
+  // précédent dans cette salle ferait sauter le bilan de ce quiz-ci côté TV.
+  const resetShared = () => setSharedState({ mutuelles_revealed: [], inami_revealed: false, partena_revealed: false, quiz_show_correction: false, quiz_final_phase: null })
+
   const handleTerminate = async () => {
-    try { await Promise.all([sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()), setSharedState({ mutuelles_revealed: [], inami_revealed: false, partena_revealed: false })]) } catch { /* best-effort */ }
+    try { await Promise.all([sbUpdate('sessions', { active_module: null, module_page: 0 }, 'code=eq.' + getActiveSessionCode()), resetShared()]) } catch { /* best-effort */ }
     onBack()
+  }
+
+  const handleStartQuiz = async () => {
+    await setSharedState({ quiz_show_correction: false }).catch(() => {})
+    await clearQuizStarts(getActiveSessionCode(), MODULE_ID).catch(() => {})
+    setQuizQ(0)
+    await syncAndWrite({ module_page: 100 })
+  }
+
+  const handleNextQ = async () => {
+    const next = quizQ + 1
+    await setSharedState({ quiz_show_correction: false }).catch(() => {})
+    setQuizQ(next)
+    await syncAndWrite({ module_page: 100 + next })
+  }
+
+  const handleEndQuiz = async () => {
+    await setSharedState({ quiz_show_correction: false, quiz_final_phase: null }).catch(() => {})
+    await syncAndWrite({ module_page: 200 })
+    setShowGroupResults(true)
+  }
+
+  const handleTerminateModule = async () => {
+    await handleTerminate()
+  }
+
+  if (showGroupResults) {
+    return <MutuellesGroupResultsView onTerminate={handleTerminateModule} />
+  }
+
+  if (started && quizQ !== null) {
+    const q = MUTUELLES_INAMI_QUIZ[quizQ]
+    if (q?.type === 'text-open') {
+      return <MutuellesTextOpenController quizQ={quizQ} onNext={handleNextQ} onEnd={handleEndQuiz} onBack={handleEndQuiz} />
+    }
+    return <MutuellesMCQController quizQ={quizQ} onNext={handleNextQ} onEnd={handleEndQuiz} onBack={handleEndQuiz} />
   }
 
   if (!started) {
@@ -457,13 +861,13 @@ export default function ModuleMutuelles({ pName, onBack }) {
           >← Précédent</button>
 
           {isLast ? (
-            <button onClick={handleTerminate} style={{
-              background: 'linear-gradient(135deg, #a07818, #c9a227)',
+            <button onClick={handleStartQuiz} style={{
+              background: 'linear-gradient(135deg, #7c3aed, #9f67f5)',
               border: 'none', color: '#fff',
               padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
-              cursor: 'pointer', boxShadow: '0 6px 24px rgba(201,162,39,0.4)',
+              cursor: 'pointer', boxShadow: '0 6px 24px rgba(124,58,237,0.4)',
               fontFamily: 'inherit',
-            }}>Terminer le module →</button>
+            }}>▶ Démarrer le quiz</button>
           ) : (
             <button onClick={() => setPageIndex(i => i + 1)} style={{
               background: 'linear-gradient(135deg, #a07818, #c9a227)',

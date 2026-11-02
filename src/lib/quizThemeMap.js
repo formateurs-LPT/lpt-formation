@@ -115,10 +115,31 @@ const QUIZ_J2_THEMES = [
   'optique',               // 18 — calcul vision de près
 ]
 
+// Index = question_idx (0-based) dans src/lib/quizFinalBelgiqueData.js
+// (QUIZ_FINAL_QUESTIONS_BELGIQUE) — copie de QUIZ_FINAL_THEMES où seules les
+// 7 questions remplacées par du contenu belge (remboursement INAMI/mutuelles)
+// changent de thème ; le reste est identique à la version France.
+const QUIZ_FINAL_THEMES_BELGIQUE = [
+  'trame-accueil', 'trame-accueil', 'entreprise', 'entreprise', 'entreprise', 'entreprise',
+  'optique', 'optique', 'optique', 'optique', 'optique', 'optique', 'optique',
+  'offres', 'offres', 'offres',
+  'remboursement-belgique',  // 16 — remboursement assurance obligatoire : ordonnance < 6 mois
+  'verre-progressif', 'verre-progressif', 'verre-progressif',
+  'remboursement-belgique',  // 20 — conditions remboursement optique (mutuelle valable)
+  'remboursement-belgique',  // 21 — tranche d'âge renouvellement 2 ans
+  'remboursement-belgique',  // 22 — mutuelle qui rembourse jusqu'à 75€
+  'remboursement-belgique',  // 23 — offre Partenamut progressif tiers payant
+  'remboursement-belgique',  // 24 — remboursement anticipé
+  'mutuelles-inami',         // 25 — qu'est-ce que l'INAMI
+  'remboursement-france',    // 26 — CSS remplace quel élément (question non modifiée)
+  'entreprise', 'verre-progressif', 'optique', 'verre-progressif', 'trame-accueil',
+]
+
 const TRANSVERSAL_THEME_MAPS = {
   'quiz-j1': QUIZ_J1_THEMES,
   'quiz-j2': QUIZ_J2_THEMES,
   'quiz-final': QUIZ_FINAL_THEMES,
+  'quiz-final-belgique': QUIZ_FINAL_THEMES_BELGIQUE,
 }
 
 export const TRANSVERSAL_MODULE_IDS = new Set(Object.keys(TRANSVERSAL_THEME_MAPS))
