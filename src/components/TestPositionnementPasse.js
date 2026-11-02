@@ -51,7 +51,7 @@ export default function TestPositionnementPasse({ collaborateurId, prenom, onTer
           <div style={{ width: 72, height: 72, borderRadius: 20, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34, background: 'linear-gradient(180deg, #ffd60a, #ff9f0a)' }} aria-hidden="true">📝</div>
           <h1 className="mm-titre" style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>{TEST_NOM}</h1>
           <p style={{ fontSize: 17, color: '#3c3c43', lineHeight: 1.45, margin: 0 }}>
-            {prenom ? `${prenom}, ce` : 'Ce'} test fait le point sur tout ce que tu as vu : l&apos;optique, les offres, le remboursement, l&apos;atelier et les verres.
+            {prenom ? `${prenom}, ce` : 'Ce'} test fait le point sur tout ce que tu as vu : l&apos;optique, l&apos;accueil, les offres, le remboursement et les verres.
           </p>
           <p style={{ fontSize: 15, color: '#6e6e73', lineHeight: 1.45, margin: 0 }}>
             {TOTAL_QUESTIONS} questions, une réponse à chaque fois. Réponds sans chercher : ce n&apos;est pas un examen, ça sert à choisir avec ton formateur les modules qui t&apos;aideront le plus.

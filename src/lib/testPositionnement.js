@@ -1,6 +1,6 @@
 // Test de positionnement : état des lieux des connaissances d'un collaborateur
-// déjà en magasin, sur tous les thèmes de la formation initiale et des
-// modules complémentaires. Le formateur l'ouvre depuis la fiche (comme un
+// déjà en magasin, sur tous les thèmes de la formation initiale (hors SAV :
+// retraits, ajustages, RAZ, montage, outlet) et des modules complémentaires. Le formateur l'ouvre depuis la fiche (comme un
 // module), le collaborateur le passe sur /mes-modules, et le résultat donne
 // les thèmes à retravailler avec les modules à lui ouvrir.
 //
@@ -25,11 +25,6 @@ export const THEMES = [
   { id: 'prise-mesures', nom: 'La prise de mesures', formation: 'initiale', modules: [] },
   { id: 'remboursement', nom: 'Le remboursement', formation: 'initiale', modules: ['granit'] },
   { id: 'tiers-payant', nom: 'Le tiers payant et LPT Santé', formation: 'initiale', modules: ['granit'] },
-  { id: 'retraits', nom: 'Les retraits', formation: 'initiale', modules: [] },
-  { id: 'ajustages', nom: 'Les ajustages', formation: 'initiale', modules: [] },
-  { id: 'raz', nom: 'Les RAZ', formation: 'initiale', modules: [] },
-  { id: 'montage', nom: 'Le montage en 10 minutes', formation: 'initiale', modules: [] },
-  { id: 'outlet', nom: 'Les montures outlet', formation: 'initiale', modules: [] },
   { id: 'proximite', nom: 'Le verre de proximité', formation: 'complementaire', modules: ['proximite'] },
   { id: 'clariteens', nom: 'Les verres Clariteens', formation: 'complementaire', modules: ['clariteens'] },
   { id: 'zenprotect', nom: 'Le verre Zen Protect', formation: 'complementaire', modules: ['zenprotect'] },
@@ -59,11 +54,6 @@ export const QUESTIONS = [
   { id: 'r1', theme: 'remboursement', q: 'Pour un client de 50 ans, combien de temps une ordonnance est-elle valable ?', options: ['3 ans', '5 ans', '1 an'] },
   { id: 'r2', theme: 'remboursement', q: 'Pour un adulte, quand peut-on renouveler des lunettes remboursées ?', options: ['Tous les 2 ans, ou dès 1 an et 1 jour si la correction a changé d\'au moins 0,50', 'Chaque année, sans condition', 'Tous les 5 ans'] },
   { id: 'tp1', theme: 'tiers-payant', q: 'Dans LPT Santé, que désigne l\'AMC ?', options: ['La mutuelle', 'La Sécurité sociale', 'La carte Vitale'] },
-  { id: 're1', theme: 'retraits', q: 'Un client vient chercher ses 2 paires. Combien de retraits signe-t-il ?', options: ['2 : un retrait signé par paire', '1 seul pour les deux paires', 'Aucun, la signature n\'est pas nécessaire'] },
-  { id: 'aj1', theme: 'ajustages', q: 'Comment ajuste-t-on une monture en acétate ?', options: ['À chaud, avec une chaleur sèche', 'À froid, en pliant doucement', 'En la trempant dans l\'eau chaude'] },
-  { id: 'rz1', theme: 'raz', q: 'Un client a une gêne avec ses nouvelles lunettes. Avant de lancer une RAZ…', options: ['On fait toutes les vérifications : saisie, mesures, ajustement, ordonnance', 'On refait les verres tout de suite', 'On lui conseille d\'attendre que ça passe'] },
-  { id: 'mo1', theme: 'montage', q: 'Le verre commandé n\'est pas en stock avec ce traitement, mais le niveau supérieur l\'est. Que fait le monteur ?', options: ['Il monte le niveau supérieur, offert, en 10 minutes', 'Il commande le verre et fait revenir le client', 'Il monte un niveau inférieur'] },
-  { id: 'ou1', theme: 'outlet', q: 'Une commande apparaît dans l\'onglet « Montures Outlet ». Que fait-on ?', options: ['On déstocke la monture et on la range dans le bac outlet avec le bon de fabrication', 'On attend l\'arrivée des verres pour chercher la monture', 'On laisse la monture en rayon tant qu\'il en reste plusieurs'] },
   // ── Modules complémentaires ──
   { id: 'px1', theme: 'proximite', q: 'Le verre de proximité corrige…', options: ['L\'intermédiaire et le près', 'Le loin, l\'intermédiaire et le près', 'Uniquement le loin'] },
   { id: 'px2', theme: 'proximite', q: 'Qui est le meilleur candidat pour un verre de proximité ?', options: ['Une secrétaire presbyte qui alterne écran et dossiers papier', 'Un chauffeur-livreur qui veut une seule paire pour tout', 'Un jeune de 24 ans sans presbytie'] },
