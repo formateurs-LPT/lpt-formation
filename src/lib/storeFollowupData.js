@@ -25,7 +25,7 @@ export const STORES = [
           { id: 'dorian-mouffet-pinson',  prenom: 'Dorian',     nom: 'Mouffet-Pinson',     contrat: '24h', entree: '2026-08-11' },
           { id: 'leonie-dubois',          prenom: 'Léonie',     nom: 'Dubois',             contrat: '35h', entree: '2026-07-15' },
           { id: 'lola-sallaberry',        prenom: 'Lola',       nom: 'Sallaberry',         contrat: '35h', entree: '2025-09-02', alternant: true },
-          { id: 'nizar-el-sabbagh',       prenom: 'Nizar',      nom: 'El Sabbagh',         contrat: '35h', entree: '2026-09-08', alternant: true },
+          { id: 'nizar-el-sabbagh',       prenom: 'Nizar',      nom: 'El Sabbagh',         contrat: '35h', entree: '2026-09-08' },
           { id: 'bastian-sandri-garin',   prenom: 'Bastian',    nom: 'Sandri Garin',       contrat: '35h' },
           { id: 'charlotte-deny',         prenom: 'Charlotte',  nom: 'Deny',               contrat: '35h' },
         ],
