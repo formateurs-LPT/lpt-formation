@@ -44,7 +44,7 @@ export const QUESTIONS = [
   { id: 'o1', theme: 'ordonnance', q: 'Sur une ordonnance, que signifie « Add » ?', options: ['L\'addition : le client est presbyte', 'L\'axe du cylindre', 'L\'astigmatisme'] },
   { id: 'o2', theme: 'ordonnance', q: 'Sphère −3,00 et Add +1,50 : quelle est la vision de près ?', options: ['−1,50', '−4,50', '+1,50'] },
   { id: 'u1', theme: 'unifocal-progressif', q: 'Un client de 30 ans, myope, lit sans difficulté. Quel verre lui proposer ?', options: ['Un verre unifocal', 'Un verre progressif', 'Un verre de proximité'] },
-  { id: 'm1', theme: 'montures', q: 'Un enfant casse souvent ses lunettes et ses parents ont un petit budget. Quelle matière conseiller ?', options: ['L\'injecté', 'L\'acétate', 'Le métal très fin'] },
+  { id: 'm1', theme: 'montures', q: 'Un enfant casse souvent ses lunettes et ses parents ont un petit budget. Quelle matière conseiller ?', options: ['L\'acétate', 'L\'injecté', 'Le métal très fin'] },
   { id: 'm2', theme: 'montures', q: 'Une cliente est allergique au nickel. Quelle matière évite-t-on ?', options: ['Le métal', 'L\'acétate', 'L\'injecté'] },
   { id: 'a1', theme: 'trame-accueil', q: 'Un client entre dans le magasin. Que fait-on en premier ?', options: ['On l\'accueille : « Bonjour et bienvenue chez Lunettes Pour Tous »', 'On lui demande son ordonnance', 'On le laisse regarder les montures'] },
   { id: 'of1', theme: 'offres', q: 'Dans l\'offre 1=1, la deuxième paire est…', options: ['Offerte, de même qualité, tous traitements compris', 'À −50 %', 'Forcément une paire solaire'] },

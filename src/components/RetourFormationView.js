@@ -2463,7 +2463,7 @@ const HIST_APPR_META = {
   'complique':      { label: '⚠️ Compliqué',          color: '#f87171' },
 }
 
-function AutoEvalReadOnly({ snap }) {
+export function AutoEvalReadOnly({ snap }) {
   const ae     = snap?.auto_eval || {}
   const themes = ae.themes_list || []
   const asmts  = ae.theme_self_assessments || {}

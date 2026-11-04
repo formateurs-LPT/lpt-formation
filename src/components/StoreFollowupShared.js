@@ -10,6 +10,7 @@ import { TRAINING_THEMES } from '@/lib/trainingSlots'
 import OrdonnanceExercise from './OrdonnanceExercise'
 import CollaborateurNotesSection from './CollaborateurNotesSection'
 import ModulesApresFormationSection from './ModulesApresFormationSection'
+import RetourFormationSection from './RetourFormationSection'
 import { RegistrationModal } from './TrainingRegistrationTile'
 
 function trainingThemeLabel(id) {
@@ -727,6 +728,8 @@ export function CollaborateurProfilePage({ store, sectionId, collaborateur, prog
         )}
       </div>
 
+      <RetourFormationSection store={store} collaborateur={collaborateur} />
+
       <CollaborateurNotesSection store={store} collaborateur={collaborateur} pName={session?.displayName} role={role} />
 
       {showModulesApresFormation && (
@@ -1410,6 +1413,8 @@ export function CollaborateurFiche({ store, sectionId, collaborateur, progress, 
           ))}
         </div>
       ))}
+
+      <RetourFormationSection store={store} collaborateur={collaborateur} />
 
       {showModulesApresFormation && <ModulesApresFormationSection store={store} collaborateur={collaborateur} />}
 
