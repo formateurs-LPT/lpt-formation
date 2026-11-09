@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import FicheShareModal from '@/components/FicheShareModal'
 import { PUBLIC_ORIGIN } from '@/lib/sessionCode'
+import { MUTUELLES_BELGIQUE, LPT_CARE_OFFERS, LPT_CARE_INTRO, LPT_CARE_COMMON, LPT_CARE_COFIDIS_NOTE } from '@/lib/modulesData'
 
 const BLUE      = '#0089ba'
 const BLUE_L    = '#00abe9'
@@ -526,6 +527,46 @@ export default function FicheBelgique() {
                 <Row label="Montures" value="Au choix" accent={BLUE_L} last />
               </Card>
             </div>
+
+            {/* LPT Care — abonnement 100 % Belgique (données partagées avec le module Offres) */}
+            <div style={{ marginTop: 22 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 3, height: 22, background: GREEN, borderRadius: 2, flexShrink: 0 }} />
+                <div style={{ fontSize: 14, fontWeight: 800, color: TEXT, flex: 1 }}>LPT Care — Les 3 offres d'abonnement</div>
+                <Tag color={GREEN}>🇧🇪 {LPT_CARE_INTRO.title}</Tag>
+              </div>
+              <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.6, marginBottom: 14, padding: '10px 14px', background: `${GREEN}08`, border: `1px solid ${GREEN}25`, borderRadius: 8 }}>
+                {LPT_CARE_INTRO.text}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 12 }}>
+                {LPT_CARE_OFFERS.map(o => (
+                  <Card key={o.key} accent={o.color}>
+                    <Label color={o.color}>LPT Care {o.label}</Label>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: o.color, lineHeight: 1.2, marginBottom: 4 }}>{o.price}</div>
+                    <div style={{ fontSize: 11, color: TEXT_SUB, marginBottom: 2 }}>{o.total}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: TEXT, marginBottom: 10 }}>{o.formule}</div>
+                    <div style={{ fontSize: 12, fontStyle: 'italic', color: TEXT, marginBottom: 10 }}>{o.tagline}</div>
+                    {o.bulletsIntro && <div style={{ fontSize: 11, fontWeight: 700, color: o.color, marginBottom: 6 }}>{o.bulletsIntro}</div>}
+                    <Bullet items={o.bullets} color={o.color} />
+                    {o.exclusions && <div style={{ fontSize: 11, color: RED_BE, fontStyle: 'italic', marginTop: 8 }}>⚠ {o.exclusions}</div>}
+                    <div style={{ fontSize: 11, color: TEXT_SUB, marginTop: 10, paddingTop: 8, borderTop: `1px solid ${BORDER}` }}>
+                      <strong style={{ color: TEXT }}>Pour qui ?</strong> {o.pourQui}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 10 }}>
+                {LPT_CARE_COMMON.map(c => (
+                  <div key={c.label} className="print-card" style={{ background: CARD, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${GREEN}`, borderRadius: 10, padding: '10px 14px' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 2 }}>{c.label}</div>
+                    <div style={{ fontSize: 11, color: TEXT_SUB, lineHeight: 1.45 }}>{c.text}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 11, color: GOLD, fontWeight: 600 }}>💡 {LPT_CARE_COFIDIS_NOTE}</div>
+            </div>
           </div>
 
           {/* ─── Bande J3 ─────────────────────────────────────────── */}
@@ -575,7 +616,7 @@ export default function FicheBelgique() {
                 <div style={{ fontSize: 14, fontWeight: 800, color: TEXT }}>INAMI — Institut National d'Assurance Maladie-Invalidité</div>
               </div>
               <div style={{ fontSize: 12, color: TEXT_SUB, lineHeight: 1.6, marginBottom: 14, padding: '10px 14px', background: `${GOLD}08`, border: `1px solid ${GOLD}25`, borderRadius: 8, fontStyle: 'italic' }}>
-                🏛️ Organisme public qui fixe les règles de remboursement optique en Belgique (équivalent de la Sécurité Sociale en France).
+                🏛️ C'est l'organisme public qui gère l'assurance obligatoire soins de santé en Belgique, c'est donc lui qui fixe les règles.
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
@@ -621,25 +662,52 @@ export default function FicheBelgique() {
                   ))}
                 </div>
                 {/* Lignes */}
+                {/* Mêmes données que le module Mutuelles et INAMI */}
+                {MUTUELLES_BELGIQUE.map((m, i, arr) => {
+                  const highlight = m.id === 'partena'
+                  const montant = m.montant || '—'
+                  const freq = !m.frequence || m.frequence === '/' ? '—' : m.frequence
+                  const note = !m.particularites || m.particularites === '/'
+                    ? (m.complementaire ? '—' : `${m.type === 'Organisme public' ? 'Organisme public, sans' : 'Sans'} assurance complémentaire optique.`)
+                    : m.particularites
+                  return (
+                    <div key={m.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 2fr', padding: '10px 16px', gap: 8, background: highlight ? `${GOLD}08` : i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent', borderBottom: i < arr.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: highlight ? GOLD : TEXT }}>{m.nom}{highlight && <span style={{ fontSize: 9, marginLeft: 6, color: GREEN, fontWeight: 800, background: `${GREEN}15`, padding: '1px 6px', borderRadius: 10 }}>Partenaire</span>}</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: montant === '0 €' || montant === 'Aucun' || montant === '—' ? TEXT_SUB : GREEN }}>{montant}</div>
+                      <div style={{ fontSize: 12, color: TEXT_SUB }}>{freq}</div>
+                      <div style={{ fontSize: 11, color: TEXT_SUB, lineHeight: 1.4 }}>{note}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Offre partenaire Partena */}
+            <div className="print-card" style={{ marginTop: 18, background: `linear-gradient(135deg, ${GOLD}20 0%, ${GOLD}08 100%)`, border: `2px solid ${GOLD}`, borderRadius: 16, padding: '20px 22px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 20 }}>⭐</span>
+                <div style={{ fontSize: 15, fontWeight: 900, color: TEXT, flex: 1 }}>Offre partenaire Partena × Lunettes Pour Tous</div>
+                <Tag color={GREEN}>Partenaire LPT</Tag>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 14 }}>
                 {[
-                  { nom: 'Mutualité Chrétienne (MC)', montant: "Jusqu'à 120 €", freq: "3 ans *", note: "Sans prescription, tout âge, toute dioptrie. Facture suffit." },
-                  { nom: 'Partena', montant: "Jusqu'à 75 €", freq: "2 ans", note: "Partenaire LPT ✓ — pas de prescription si dioptrie sur facture.", highlight: true },
-                  { nom: 'Mutualité Neutre', montant: "24 à 120 € selon âge", freq: "3 ans", note: "Sous prescription ophtalmo obligatoire." },
-                  { nom: 'Solidaris', montant: "0 €", freq: "—", note: "Uniquement dans les magasins partenaires." },
-                  { nom: 'Mutualité Libérale', montant: "—", freq: "—", note: "Pas de remboursement optique standard." },
-                  { nom: 'CAAMI', montant: "Aucun", freq: "—", note: "Organisme public, pas de couverture optique complémentaire." },
-                ].map(({ nom, montant, freq, note, highlight }, i, arr) => (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 2fr', padding: '10px 16px', gap: 8, background: highlight ? `${GOLD}08` : i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent', borderBottom: i < arr.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: highlight ? GOLD : TEXT }}>{nom}{highlight && <span style={{ fontSize: 9, marginLeft: 6, color: GREEN, fontWeight: 800, background: `${GREEN}15`, padding: '1px 6px', borderRadius: 10 }}>Partenaire</span>}</div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: montant === '0 €' || montant === 'Aucun' || montant === '—' ? TEXT_SUB : GREEN }}>{montant}</div>
-                    <div style={{ fontSize: 12, color: TEXT_SUB }}>{freq}</div>
-                    <div style={{ fontSize: 11, color: TEXT_SUB, lineHeight: 1.4 }}>{note}</div>
+                  { montant: '50 €', label: 'Verres unifocaux', icon: '👓' },
+                  { montant: '100 €', label: 'Verres progressifs', icon: '🔭' },
+                ].map(o => (
+                  <div key={o.label} style={{ background: 'rgba(0,0,0,0.2)', border: `1px solid ${GOLD}40`, borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <span style={{ fontSize: 24 }}>{o.icon}</span>
+                    <div>
+                      <div style={{ fontSize: 26, fontWeight: 900, color: GOLD, lineHeight: 1 }}>{o.montant}</div>
+                      <div style={{ fontSize: 11, color: TEXT_SUB, marginTop: 4 }}>pour une paire à {o.label.toLowerCase()}</div>
+                    </div>
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
-                * MC : ou 1 fois/an si variation de dioptrie ≥ 0,5
-              </div>
+              <Bullet items={[
+                'Avantage disponible une fois tous les 2 ans',
+                "Non cumulable avec l'Avantage Partenamut classique (75 € tous les 2 ans sur montures, verres correcteurs ou lentilles, chez l'opticien de son choix)",
+                'Pas besoin de prescription ophtalmologique',
+              ]} color={GOLD} />
             </div>
           </div>
 
