@@ -2329,7 +2329,6 @@ export const STORES = [
           { id: 'ambre-felix', prenom: 'Ambre', nom: 'Felix', contrat: '35h' },
           { id: 'suzanne-le-boucher', prenom: 'Suzanne', nom: 'Le Boucher', contrat: '24h' },
           { id: 'marine-vauchey', prenom: 'Marine', nom: 'Vauchey', contrat: '24h' },
-          { id: 'gilda-tauotaha', prenom: 'Gilda', nom: 'Tauotaha', contrat: '24h' },
         ],
       },
       {
