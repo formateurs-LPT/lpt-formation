@@ -2359,6 +2359,7 @@ export const STORES = [
           { id: 'celia-lachkar', prenom: 'Célia', nom: 'Lachkar', contrat: '35h30' },
           { id: 'sarah-cherni', prenom: 'Sarah', nom: 'Cherni', contrat: '35h' },
           { id: 'lea-julien-portier', prenom: 'Léa', nom: 'Julien-Portier', contrat: '35h' },
+          { id: 'sabri-abdelkani', prenom: 'Sabri', nom: 'Abdelkani', contrat: '35h' },
         ],
       },
       {
