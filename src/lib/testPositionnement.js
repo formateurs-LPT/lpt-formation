@@ -74,17 +74,19 @@ export const QUESTIONS = [
 export const TOTAL_QUESTIONS = QUESTIONS.length
 
 /** Questions dans un ordre mélangé, options mélangées (index de la bonne réponse suivi). */
-export function preparerTest() {
+export function preparerQuestions(questions) {
   const melanger = a => {
     const t = a.slice()
     for (let i = t.length - 1; i > 0; i -= 1) { const j = Math.floor(Math.random() * (i + 1)); [t[i], t[j]] = [t[j], t[i]] }
     return t
   }
-  return melanger(QUESTIONS).map(q => {
+  return melanger(questions).map(q => {
     const ordre = melanger(q.options.map((_, i) => i))
     return { ...q, affichees: ordre.map(i => q.options[i]), bonneAffichee: ordre.indexOf(0) }
   })
 }
+
+export const preparerTest = () => preparerQuestions(QUESTIONS)
 
 /** Enregistre le test terminé. reponses : [{ id, theme, correct, choisie }]. */
 export async function enregistrerTestPositionnement(collaborateurId, reponses) {
@@ -121,4 +123,17 @@ export function bilanParTheme(test) {
     const niveau = r.justes === r.total ? 'maitrise' : r.justes === 0 ? 'non-maitrise' : 'a-revoir'
     return { ...t, ...r, niveau, modulesApp: t.modules.map(id => MODULES.find(m => m.id === id)).filter(Boolean) }
   })
+}
+
+export const QUIZ_POSITIONNEMENT = {
+  id: TEST_ID,
+  nom: TEST_NOM,
+  icone: '📝',
+  degrade: 'linear-gradient(180deg, #ffd60a, #ff9f0a)',
+  total: TOTAL_QUESTIONS,
+  preparer: preparerTest,
+  enregistrer: enregistrerTestPositionnement,
+  intro: prenom => `${prenom ? `${prenom}, ce` : 'Ce'} test fait le point sur tout ce que tu as vu : l'optique, l'accueil, les offres, le remboursement et les verres.`,
+  consigne: total => `${total} questions, une réponse à chaque fois. Réponds sans chercher : ce n'est pas un examen, ça sert à choisir avec ton formateur les modules qui t'aideront le plus.`,
+  corrige: false,
 }

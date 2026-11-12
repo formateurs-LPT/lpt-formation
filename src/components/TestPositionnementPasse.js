@@ -1,12 +1,15 @@
 'use client'
 import { useState } from 'react'
-import { preparerTest, enregistrerTestPositionnement, TEST_NOM, TOTAL_QUESTIONS } from '@/lib/testPositionnement'
+import { QUIZ_POSITIONNEMENT } from '@/lib/testPositionnement'
+import { explicationLegende } from '@/lib/quizLegende'
 
-// Écran plein du test de positionnement côté collaborateur (/mes-modules) :
-// une question à la fois, pas de correction pendant le test (c'est un état
-// des lieux), le formateur voit le détail par thème dans la fiche.
-export default function TestPositionnementPasse({ collaborateurId, prenom, onTermine, onFermer }) {
-  const [questions] = useState(() => preparerTest())
+// Écran plein d'un quiz côté collaborateur (/mes-modules) : test de
+// positionnement ou Quiz Légende. Une question à la fois, pas de correction
+// pendant le quiz ; le Quiz Légende (quiz.corrige) affiche la correction
+// complète à la fin, le formateur voit le détail dans la fiche.
+export default function TestPositionnementPasse({ quiz = QUIZ_POSITIONNEMENT, collaborateurId, prenom, onTermine, onFermer }) {
+  const TEST_NOM = quiz.nom
+  const [questions] = useState(() => quiz.preparer())
   const [etape, setEtape] = useState('intro') // intro | question | envoi | fin | erreur
   const [index, setIndex] = useState(0)
   const [choix, setChoix] = useState(null)
@@ -17,7 +20,7 @@ export default function TestPositionnementPasse({ collaborateurId, prenom, onTer
 
   const envoyer = async (toutes) => {
     setEtape('envoi')
-    const s = await enregistrerTestPositionnement(collaborateurId, toutes)
+    const s = await quiz.enregistrer(collaborateurId, toutes)
     if (s === null) { setEtape('erreur'); return }
     setScore(s)
     setEtape('fin')
@@ -26,7 +29,7 @@ export default function TestPositionnementPasse({ collaborateurId, prenom, onTer
 
   const valider = () => {
     if (choix === null) return
-    const toutes = [...reponses, { id: q.id, theme: q.theme, correct: choix === q.bonneAffichee, choisie: q.affichees[choix] }]
+    const toutes = [...reponses, { id: q.id, theme: q.theme, correct: choix === q.bonneAffichee, choisie: q.affichees[choix], libelle: q.q, bonne: q.options[0] }]
     setReponses(toutes)
     setChoix(null)
     if (index + 1 < questions.length) setIndex(index + 1)
@@ -48,13 +51,13 @@ export default function TestPositionnementPasse({ collaborateurId, prenom, onTer
           <button onClick={onFermer} className="mm-lien">Plus tard</button>
         </div>
         <div style={{ ...zone, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14, textAlign: 'center' }}>
-          <div style={{ width: 72, height: 72, borderRadius: 20, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34, background: 'linear-gradient(180deg, #ffd60a, #ff9f0a)' }} aria-hidden="true">📝</div>
+          <div style={{ width: 72, height: 72, borderRadius: 20, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34, background: quiz.degrade }} aria-hidden="true">{quiz.icone}</div>
           <h1 className="mm-titre" style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>{TEST_NOM}</h1>
           <p style={{ fontSize: 17, color: '#3c3c43', lineHeight: 1.45, margin: 0 }}>
-            {prenom ? `${prenom}, ce` : 'Ce'} test fait le point sur tout ce que tu as vu : l&apos;optique, l&apos;accueil, les offres, le remboursement et les verres.
+            {quiz.intro(prenom)}
           </p>
           <p style={{ fontSize: 15, color: '#6e6e73', lineHeight: 1.45, margin: 0 }}>
-            {TOTAL_QUESTIONS} questions, une réponse à chaque fois. Réponds sans chercher : ce n&apos;est pas un examen, ça sert à choisir avec ton formateur les modules qui t&apos;aideront le plus.
+            {quiz.consigne(quiz.total)}
           </p>
         </div>
         <div style={zone}>
@@ -103,9 +106,10 @@ export default function TestPositionnementPasse({ collaborateurId, prenom, onTer
     )
   }
 
+  const correctionVisible = etape === 'fin' && quiz.corrige
   return (
     <div style={conteneur} role="dialog" aria-modal="true" aria-label={TEST_NOM}>
-      <div style={{ ...zone, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14, textAlign: 'center' }}>
+      <div style={{ ...zone, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: correctionVisible ? 'flex-start' : 'center', gap: 14, textAlign: 'center', overflowY: 'auto', paddingTop: correctionVisible ? 24 : 0, paddingBottom: 8 }}>
         {etape === 'envoi' && (
           <div role="status" aria-label="Enregistrement" style={{ display: 'flex', justifyContent: 'center' }}><div className="mm-roue" /></div>
         )}
@@ -123,13 +127,39 @@ export default function TestPositionnementPasse({ collaborateurId, prenom, onTer
             <div style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
               {score}<span style={{ color: '#8e8e93', fontSize: 24 }}> / {questions.length}</span>
             </div>
-            <p style={{ fontSize: 16, color: '#3c3c43', lineHeight: 1.45, margin: 0 }}>
-              Merci ! Ton formateur va regarder tes résultats avec toi et t&apos;ouvrir les modules qui te seront le plus utiles.
-            </p>
+            {quiz.corrige ? (
+              <Correction reponses={reponses} />
+            ) : (
+              <p style={{ fontSize: 16, color: '#3c3c43', lineHeight: 1.45, margin: 0 }}>
+                Merci ! Ton formateur va regarder tes résultats avec toi et t&apos;ouvrir les modules qui te seront le plus utiles.
+              </p>
+            )}
             <button onClick={onFermer} className="mm-bouton" style={{ marginTop: 8 }}>Revenir à mes modules</button>
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+// Correction de fin (Quiz Légende) : les erreurs d'abord, chacune avec la
+// bonne réponse et l'explication, puis les bonnes réponses.
+function Correction({ reponses }) {
+  const triees = [...reponses.filter(r => !r.correct), ...reponses.filter(r => r.correct)]
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, textAlign: 'left', marginTop: 6 }}>
+      <div className="mm-section-titre" style={{ margin: '4px 4px 0' }}>Correction</div>
+      {triees.map(r => (
+        <div key={r.id} style={{ background: '#fff', borderRadius: 12, padding: '12px 14px' }}>
+          <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.35, color: '#000' }}>
+            <span style={{ color: r.correct ? '#34c759' : '#ff3b30', marginRight: 6 }} aria-label={r.correct ? 'Juste' : 'Faux'}>{r.correct ? '✓' : '✗'}</span>
+            {r.libelle}
+          </div>
+          {!r.correct && <div style={{ fontSize: 14, color: '#ff3b30', marginTop: 6 }}>Ta réponse : {r.choisie}</div>}
+          <div style={{ fontSize: 14, color: '#1d7a33', marginTop: r.correct ? 6 : 2, fontWeight: 600 }}>Bonne réponse : {r.bonne}</div>
+          <div style={{ fontSize: 14, color: '#3c3c43', marginTop: 6, lineHeight: 1.45 }}>{explicationLegende(r.id)}</div>
+        </div>
+      ))}
     </div>
   )
 }
