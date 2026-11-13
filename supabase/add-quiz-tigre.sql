@@ -1,4 +1,4 @@
--- Quiz « T'es un tigre ? » (/mes-modules) : 40 questions, ouvert depuis la
+-- Quiz « Tyé un tigre ? » (/mes-modules) : 40 questions, ouvert depuis la
 -- fiche comme le Quiz Légende, résultat dans module_resultats (type 'tigre').
 -- Supabase -> SQL Editor -> Run. Relançable.
 

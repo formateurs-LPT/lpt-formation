@@ -31,7 +31,7 @@ export const MODULES = MODULE_GROUPES.flatMap(g => g.modules)
 export const TEST_POSITIONNEMENT_ID = 'positionnement'
 // Quiz Légende (src/lib/quizLegende.js) : même circuit, niveau expert.
 export const QUIZ_LEGENDE_ID = 'legende'
-// T'es un tigre ? (src/lib/quizTigre.js) : le quiz le plus dur, 39 questions.
+// Tyé un tigre ? (src/lib/quizTigre.js) : le quiz le plus dur, 39 questions.
 export const QUIZ_TIGRE_ID = 'tigre'
 export const NB_FORMATS = 4
 

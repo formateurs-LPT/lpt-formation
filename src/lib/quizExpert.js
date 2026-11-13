@@ -1,4 +1,4 @@
-// Quiz « expert » (Quiz Légende, T'es un tigre ?) : même circuit que le test
+// Quiz « expert » (Quiz Légende, Tyé un tigre ?) : même circuit que le test
 // de positionnement. Le formateur l'ouvre depuis la fiche, le collaborateur le
 // passe sur /mes-modules, sans correction pendant le quiz ; la correction
 // expliquée arrive à la fin et reste consultable dans « Mes résultats ».

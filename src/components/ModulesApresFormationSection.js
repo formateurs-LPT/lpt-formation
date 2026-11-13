@@ -297,7 +297,7 @@ function BlocTest({ collab, resultats, ouverts, enCours, onChangerOuverture }) {
   )
 }
 
-// Quiz expert (Quiz Légende, T'es un tigre ?) : ouvert à la demande, score et
+// Quiz expert (Quiz Légende, Tyé un tigre ?) : ouvert à la demande, score et
 // erreurs corrigées avec l'explication.
 const QUIZ_EXPERTS = [QUIZ_LEGENDE, QUIZ_TIGRE]
 

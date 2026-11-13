@@ -1,4 +1,4 @@
-// « T'es un tigre ? » : le quiz le plus exigeant, 39 questions sur tous les
+// « Tyé un tigre ? » : le quiz le plus exigeant, 39 questions sur tous les
 // thèmes (ordonnance, transposition, remboursement, offres, LPT Santé, Granit,
 // mesures, montures, verres, vente). Un 39/39 = un collaborateur qui maîtrise
 // tout. Même circuit que le Quiz Légende (src/lib/quizExpert.js) ; la bonne
@@ -136,7 +136,7 @@ export const QUESTIONS_TIGRE = [
 
 export const QUIZ_TIGRE = creerQuizExpert({
   id: QUIZ_TIGRE_ID,
-  nom: "T'es un tigre ?",
+  nom: "Tyé un tigre ?",
   icone: '🐯',
   degrade: 'linear-gradient(180deg, #ff9f0a, #ff453a)',
   description: "Le quiz le plus dur : 39 questions sur tous les thèmes (ordonnance, transposition, remboursement, offres, LPT Santé, Granit, mesures, montures, verres, vente). 39/39 = il maîtrise tout.",
