@@ -88,6 +88,22 @@ export async function getOrCreateCollaborateurForEntree(magasinId, prenom, nom, 
   return rows?.[0] || null
 }
 
+/** Fiche d'un collaborateur du suivi magasin (roster storeFollowupData) pas
+ * encore en base : créée avec l'id du roster comme slug, pour que la fiche
+ * du suivi la retrouve (getCollaborateurDbId), même quand l'id du roster
+ * ne suit pas exactement prénom-nom. */
+export async function getOrCreateCollaborateurSuivi(magasinId, collaborateur) {
+  if (!magasinId || !collaborateur?.id) return null
+  const lire = () => sbSelect('collaborateurs', `magasin_id=eq.${magasinId}&slug=eq.${encodeURIComponent(collaborateur.id)}`)
+  const existants = await lire()
+  if (existants?.[0]) return existants[0]
+  const ok = await sbInsert('collaborateurs', {
+    magasin_id: magasinId, slug: collaborateur.id, prenom: collaborateur.prenom, nom: collaborateur.nom, statut: 'actif',
+  })
+  if (!ok) return null
+  return (await lire())?.[0] || null
+}
+
 // ── Compte espace collaborateur (login + code, même modèle en clair que
 // store_managers/rh_accounts/trainers/store_directors — pas un nouveau
 // paradigme d'auth) ──────────────────────────────────────────────────────

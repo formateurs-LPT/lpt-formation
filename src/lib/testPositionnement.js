@@ -20,7 +20,7 @@ export const THEMES = [
   { id: 'ordonnance', nom: 'Lire une ordonnance', formation: 'initiale', modules: ['transposition'] },
   { id: 'unifocal-progressif', nom: 'Unifocal ou progressif', formation: 'initiale', modules: ['progressif'] },
   { id: 'montures', nom: 'Les matières de montures', formation: 'initiale', modules: [] },
-  { id: 'trame-accueil', nom: 'La trame d\'accueil', formation: 'initiale', modules: [] },
+  { id: 'trame-accueil', nom: 'La trame d\'accueil', formation: 'initiale', modules: ['decouverte'] },
   { id: 'offres', nom: 'Les offres LPT', formation: 'initiale', modules: ['troisieme-paire'] },
   { id: 'prise-mesures', nom: 'La prise de mesures', formation: 'initiale', modules: [] },
   { id: 'remboursement', nom: 'Le remboursement', formation: 'initiale', modules: ['granit'] },

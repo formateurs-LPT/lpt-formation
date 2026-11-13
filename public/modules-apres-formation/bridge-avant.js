@@ -13,6 +13,7 @@
     'troisieme-paire': ['troisieme_paire_entrainement_formats', 'troisieme_paire_test_acquis'],
     'transposition': ['transposition_entrainement_formats', 'transposition_test_acquis'],
     'granit': ['granit_entrainement_formats', 'granit_test_acquis'],
+    'decouverte': ['decouverte_entrainement_formats', 'decouverte_test_acquis'],
   }
   var params = new URLSearchParams(location.search)
   var cles = CLES[params.get('m')]

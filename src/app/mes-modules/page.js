@@ -292,6 +292,7 @@ const ICONES = {
   'troisieme-paire': ['🛍️', '#ff9f0a', '#ffb840'],
   'transposition': ['🔁', '#ff375f', '#ff6482'],
   'granit': ['🧾', '#ff453a', '#ff6f66'],
+  'decouverte': ['💬', '#0e7490', '#2a9bb5'],
 }
 
 function IconeModule({ id }) {

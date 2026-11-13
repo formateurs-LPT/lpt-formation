@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import qrcode from 'qrcode-generator'
 import { getCollaborateurDbId } from '@/lib/notesCollaborateurApi'
-import { getCollaborateurById, getMagasinIdBySlug, getOrCreateCollaborateurForEntree } from '@/lib/collaborateursApi'
+import { getCollaborateurById, getMagasinIdBySlug, getOrCreateCollaborateurSuivi } from '@/lib/collaborateursApi'
 import {
   MODULE_GROUPES, MODULES, NB_FORMATS, niveauPour, etatModules, statutModule,
   getResultatsModules, creerAccesModules, modulesOuverts, changerOuvertureModule, TEST_POSITIONNEMENT_ID, QUIZ_LEGENDE_ID,
@@ -392,13 +392,13 @@ export default function ModulesApresFormationSection({ store, collaborateur, cre
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testEnAttente])
 
-  // Nouvel entrant pas encore en base (roster fusionné depuis les entrées) :
-  // côté manager, on propose de créer sa fiche, comme sur la tuile
-  // « Nouveaux collaborateurs ».
+  // Collaborateur du suivi pas encore en base (roster codé en dur ou
+  // fusionné depuis les entrées) : on propose de créer sa fiche, pour pouvoir
+  // lui ouvrir modules, test de positionnement et Quiz Légende.
   const creerFiche = async () => {
     setCreationFiche(true)
     const magasinId = await getMagasinIdBySlug(store.id)
-    const fiche = magasinId && await getOrCreateCollaborateurForEntree(magasinId, collaborateur.prenom, collaborateur.nom)
+    const fiche = magasinId && await getOrCreateCollaborateurSuivi(magasinId, collaborateur)
     setCreationFiche(false)
     if (fiche) charger()
   }

@@ -15,6 +15,7 @@ export const MODULE_GROUPES = [
     { id: 'traitements', nom: 'Les traitements de verres', fichier: 'traitements.html' },
   ] },
   { titre: 'Vente', modules: [
+    { id: 'decouverte', nom: 'La découverte du besoin', fichier: 'decouverte.html' },
     { id: 'progressif', nom: 'Convaincre avec le progressif', fichier: 'progressif.html' },
     { id: 'troisieme-paire', nom: 'La troisième paire', fichier: 'troisieme-paire.html' },
   ] },
@@ -172,6 +173,7 @@ export async function creerAccesModules(collaborateur) {
 // apporte une part. Rien n'est écrit dans store_followup_progress : le score
 // affiché est le plus haut entre l'audit et les modules.
 export const MODULE_COMPETENCES = {
+  decouverte: ['trame-accueil'],
   proximite: ['types-verres'],
   clariteens: ['types-verres'],
   zenprotect: ['types-verres'],

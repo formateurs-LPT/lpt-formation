@@ -1416,7 +1416,7 @@ export function CollaborateurFiche({ store, sectionId, collaborateur, progress, 
 
       <RetourFormationSection store={store} collaborateur={collaborateur} />
 
-      {showModulesApresFormation && <ModulesApresFormationSection store={store} collaborateur={collaborateur} />}
+      {showModulesApresFormation && <ModulesApresFormationSection store={store} collaborateur={collaborateur} creerFicheSiAbsente />}
 
       <CollaborateurNotesSection store={store} collaborateur={collaborateur} pName={pName} role={role} />
     </div>
