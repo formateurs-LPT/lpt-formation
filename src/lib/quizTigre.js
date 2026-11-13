@@ -1,6 +1,6 @@
-// « T'es un tigre ? » : le quiz le plus exigeant, 40 questions sur tous les
+// « T'es un tigre ? » : le quiz le plus exigeant, 39 questions sur tous les
 // thèmes (ordonnance, transposition, remboursement, offres, LPT Santé, Granit,
-// mesures, montures, verres, vente). Un 40/40 = un collaborateur qui maîtrise
+// mesures, montures, verres, vente). Un 39/39 = un collaborateur qui maîtrise
 // tout. Même circuit que le Quiz Légende (src/lib/quizExpert.js) ; la bonne
 // réponse est la première de `options`.
 import { QUIZ_TIGRE_ID } from '@/lib/modulesApresFormation'
@@ -34,11 +34,11 @@ export const QUESTIONS_TIGRE = [
     options: ["−2,50 (+0,50) 180°", "−1,50 (+0,50) 180°", "−2,50 (+0,50) 90°", "−2,00 (+0,50) 0°"],
     explication: "Sphère : −2,00 + (−0,50) = −2,50. Axe inférieur ou égal à 90° : 90 + 90 = 180°." },
   { id: 't9', theme: 'ordonnance', q: "OD +2,00 (+3,25) 45°. Que dit-on au client ?",
-    options: ["Le verre est commandé hors stock : environ 24 à 48 h", "On transpose d'abord, puis c'est fabricable en 10 minutes", "C'est fabricable : le cylindre est déjà positif", "Il faut refaire un examen de vue"],
-    explication: "Le cylindre maximum en 10 minutes est 3,00, et sa valeur ne change pas en transposant. Au-delà, le verre est commandé hors stock." },
+    options: ["Le verre est commandé hors stock : 9 jours", "On transpose d'abord, puis c'est fabricable en 10 minutes", "C'est fabricable : le cylindre est déjà positif", "Il faut refaire un examen de vue"],
+    explication: "Le cylindre maximum en 10 minutes est 3,00, et sa valeur ne change pas en transposant. Au-delà, le verre est commandé hors stock : 9 jours." },
   { id: 't10', theme: 'ordonnance', q: "Unifocal −9,00, sans cylindre. Quel est le délai ?",
-    options: ["Environ 24 à 48 h", "10 minutes", "9 jours", "Ce n'est pas fabricable chez nous"],
-    explication: "Hors de la plage de stock (−8,00 à +7,25), le verre est commandé hors stock : environ 24 à 48 h." },
+    options: ["9 jours", "10 minutes", "Environ 24 à 48 h", "Ce n'est pas fabricable chez nous"],
+    explication: "Hors de la plage de stock (−8,00 à +7,25), le verre est commandé hors stock : 9 jours." },
   { id: 't11', theme: 'unifocal-progressif', q: "OD −1,00 · OG −1,25 · Add +2,00, dans la plage de stock. Le client veut des progressifs pour ce soir.",
     options: ["Impossible : au plus vite, c'est 24 à 48 h avec l'option Express", "Possible : les sphères sont dans la plage", "Possible en 1=1", "Possible avec une monture injectée"],
     explication: "Un progressif n'est jamais fait en 10 minutes : 9 jours en Pulsar Next, 24 à 48 h avec l'option Express." },
@@ -79,17 +79,14 @@ export const QUESTIONS_TIGRE = [
     explication: "La paire à 10 € : monture injectée et verres Basic, en unifocal uniquement, dans le parcours classique." },
   // ── LPT Santé et Granit ──
   { id: 't23', theme: 'tiers-payant', q: "Dans quel ordre fait-on le test Suprême sur LPT Santé ?",
-    options: ["AMO → AMC → ordonnance → devis → envoyer", "AMC → AMO → devis → ordonnance → envoyer", "Ordonnance → devis → AMO → AMC → envoyer", "Numéro de commande → AMO → envoyer"],
-    explication: "Charger l'AMO (Sécurité sociale), l'AMC (mutuelle), ajouter l'ordonnance, générer le devis, envoyer : réponse immédiate." },
+    options: ["AMO → AMC → ordonnance → envoyer", "AMC → AMO → ordonnance → envoyer", "Ordonnance → AMO → AMC → envoyer", "Numéro de commande → AMO → envoyer"],
+    explication: "On charge l'AMO (Sécurité sociale), puis l'AMC (mutuelle), on ajoute l'ordonnance et on envoie : le logiciel calcule tout seul la prise en charge, la réponse est immédiate." },
   { id: 't24', theme: 'tiers-payant', q: "En tiers payant partiel, que charge-t-on dans LPT Santé ?",
     options: ["L'AMO seule", "L'AMO et l'AMC", "L'AMC seule", "Rien : on passe en Granit"],
     explication: "Tiers payant partiel : AMO seule, LPT Santé envoie à la Sécurité sociale et le client avance la part mutuelle." },
-  { id: 't25', theme: 'granit', q: "Un client n'a pas eu de lunettes depuis 3 ans. LPT Santé répond « non réalisable ». Que contient le message Granit ?",
-    options: ["Magasin, référence de la monture, « première délivrance » et 3 photos", "Magasin, référence de la monture, « RA » et 3 photos", "La photo de la carte de mutuelle seulement", "Le nom du client et son numéro de sécurité sociale"],
+  { id: 't25', theme: 'granit', q: "Ton client n'a pas eu de lunettes depuis 3 ans. LPT Santé répond « non réalisable ». Que doit contenir ton message pour faire un Granit ?",
+    options: ["Ton magasin, la référence de la monture, « première délivrance », et 3 photos : ordonnance, carte de mutuelle, écran LPT Santé", "Ton magasin, la référence de la monture, « RA », et 3 photos : ordonnance, carte de mutuelle, écran LPT Santé", "La photo de la carte de mutuelle seulement", "Le nom du client et son numéro de sécurité sociale"],
     explication: "Plus de deux ans sans lunettes : première délivrance. Les 3 photos : ordonnance, carte de mutuelle et écran LPT Santé." },
-  { id: 't26', theme: 'granit', q: "Granit répond « PEC accordée — Classe B ». Que fait-on avant de valider la commande ?",
-    options: ["On met la capture de la PEC dans le back-end", "On refait un test Suprême", "On rappelle la mutuelle", "On fait revenir le client"],
-    explication: "Classe B accordée = Suprême accepté. La capture de la PEC dans le back-end est la preuve de la prise en charge." },
   // ── Mesures et montures ──
   { id: 't27', theme: 'prise-mesures', q: "Quelle prise de mesures est correcte ?",
     options: ["Monture ajustée, client debout bien droit, toi à environ 1 m face à ses yeux, avec LPTVISION", "Client assis, monture ajustée après la mesure", "Mesure à la règle, plus rapide", "On reprend les mesures de sa paire précédente"],
@@ -98,9 +95,9 @@ export const QUESTIONS_TIGRE = [
     options: ["Non", "Oui : l'écart pupillaire ne change pas", "Oui, si c'est la même forme", "Oui, en unifocal"],
     explication: "La hauteur dépend de la monture : on mesure toujours avec la monture choisie, portée par le client." },
   { id: 't29', theme: 'montures', q: "Une cliente forte myope (−7,00), à la peau sensible, hésite sur la matière de sa monture. Que lui conseille-t-on ?",
-    options: ["L'acétate", "Un métal fin", "L'injecté", "Un métal avec plaquettes réglables"],
+    options: ["Une monture en acétate", "Une monture en métal fin", "Une monture injectée", "Une monture en métal avec plaquettes réglables"],
     explication: "L'acétate cache l'épaisseur du verre grâce à sa monture plus épaisse, et il est hypoallergénique." },
-  { id: 't30', theme: 'montures', q: "Le pont d'une monture en acétate est trop large pour le client. Que fait-on ?",
+  { id: 't30', theme: 'montures', q: "Pendant la vente, au moment du choix de la monture, le client essaie une monture en acétate dont le pont est trop large pour lui. Que fais-tu ?",
     options: ["On propose une autre monture", "On le chauffe et on le resserre", "On le resserre à froid", "On règle les plaquettes"],
     explication: "Le pont d'une monture en acétate est d'une seule pièce : il ne s'ajuste pas en largeur." },
   // ── Verres, traitements et délais ──
@@ -113,9 +110,9 @@ export const QUESTIONS_TIGRE = [
   { id: 't33', theme: 'clariteens', q: "Lequel de ces verres est fabriqué en 10 minutes en magasin ?",
     options: ["Les Clariteens", "Le Zen Protect", "Le verre de proximité", "Le Pulsar Next"],
     explication: "Les Clariteens sont en stock. Le Zen Protect, la proximité et le Pulsar Next sont fabriqués chez Rodenstock, en 9 jours." },
-  { id: 't34', theme: 'unifocal-progressif', q: "Un client presbyte veut une paire uniquement pour conduire. Que lui propose-t-on ?",
-    options: ["Un unifocal de loin", "Un progressif : c'est obligatoire pour un presbyte", "Un verre de proximité", "Un Zen Protect"],
-    explication: "Un presbyte peut choisir un unifocal pour une seule distance. La proximité ne corrige pas le loin, et le Zen Protect ne s'adresse pas aux presbytes." },
+  { id: 't34', theme: 'unifocal-progressif', q: "Un client presbyte veut une paire uniquement pour conduire. Quelle est la meilleure option pour lui ?",
+    options: ["Un progressif", "Un unifocal de loin", "Un verre de proximité", "Un Zen Protect"],
+    explication: "Un unifocal de loin peut faire l'affaire, mais le progressif reste le top : la route au loin, le tableau de bord et le GPS, et le téléphone de près, avec une seule paire. La proximité ne corrige pas le loin, et le Zen Protect ne s'adresse pas aux presbytes." },
   { id: 't35', theme: 'progressif', q: "Quelle phrase ne dit-on jamais pour présenter le progressif ?",
     options: ["« Il faut compter quelques semaines d'adaptation. »", "« Vous avez la garantie adaptation 100 jours. »", "« Une vision extra-large à 180°. »", "« Une seule paire du matin au soir. »"],
     explication: "On ne parle jamais du temps d'adaptation : on met en avant les zones larges, la vision à 180° et la garantie 100 jours." },
@@ -142,7 +139,7 @@ export const QUIZ_TIGRE = creerQuizExpert({
   nom: "T'es un tigre ?",
   icone: '🐯',
   degrade: 'linear-gradient(180deg, #ff9f0a, #ff453a)',
-  description: "Le quiz le plus dur : 40 questions sur tous les thèmes (ordonnance, transposition, remboursement, offres, LPT Santé, Granit, mesures, montures, verres, vente). 40/40 = il maîtrise tout.",
+  description: "Le quiz le plus dur : 39 questions sur tous les thèmes (ordonnance, transposition, remboursement, offres, LPT Santé, Granit, mesures, montures, verres, vente). 39/39 = il maîtrise tout.",
   questions: QUESTIONS_TIGRE,
-  intro: prenom => `${prenom ? `${prenom}, ` : ''}40 questions sur absolument tout : ordonnance, remboursement, offres, verres, vente… Seuls les vrais tigres font 40/40.`,
+  intro: prenom => `${prenom ? `${prenom}, ` : ''}39 questions sur absolument tout : ordonnance, remboursement, offres, verres, vente… Seuls les vrais tigres font un sans-faute.`,
 })
