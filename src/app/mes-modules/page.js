@@ -10,6 +10,7 @@ import {
 } from '@/lib/modulesApresFormation'
 import { QUIZ_POSITIONNEMENT } from '@/lib/testPositionnement'
 import { QUIZ_LEGENDE } from '@/lib/quizLegende'
+import { QUIZ_TIGRE } from '@/lib/quizTigre'
 import TestPositionnementPasse, { ResultatQuiz } from '@/components/TestPositionnementPasse'
 
 // Page autonome (comme /espace-collaborateur) — modules après-formation pour
@@ -345,7 +346,7 @@ function CarteNiveau({ nbAcquis, nbOuverts }) {
 
 // Quiz que le formateur ouvre comme un module (test de positionnement, Quiz
 // Légende) : mis en avant tout en haut tant qu'il n'est pas fait.
-const QUIZ = [QUIZ_POSITIONNEMENT, QUIZ_LEGENDE]
+const QUIZ = [QUIZ_POSITIONNEMENT, QUIZ_LEGENDE, QUIZ_TIGRE]
 
 function CarteTest({ quiz, onOuvrir }) {
   return (

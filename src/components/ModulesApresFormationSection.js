@@ -5,10 +5,11 @@ import { getCollaborateurDbId } from '@/lib/notesCollaborateurApi'
 import { getCollaborateurById, getMagasinIdBySlug, getOrCreateCollaborateurSuivi } from '@/lib/collaborateursApi'
 import {
   MODULE_GROUPES, MODULES, NB_FORMATS, niveauPour, etatModules, statutModule,
-  getResultatsModules, creerAccesModules, modulesOuverts, changerOuvertureModule, TEST_POSITIONNEMENT_ID, QUIZ_LEGENDE_ID,
+  getResultatsModules, creerAccesModules, modulesOuverts, changerOuvertureModule, TEST_POSITIONNEMENT_ID,
 } from '@/lib/modulesApresFormation'
 import { TEST_NOM, TOTAL_QUESTIONS, dernierTest, bilanParTheme } from '@/lib/testPositionnement'
-import { QUIZ_NOM, QUESTIONS_LEGENDE, dernierQuizLegende, explicationLegende } from '@/lib/quizLegende'
+import { QUIZ_LEGENDE } from '@/lib/quizLegende'
+import { QUIZ_TIGRE } from '@/lib/quizTigre'
 
 // Fiche collaborateur du suivi magasin (formateur uniquement) : accès à
 // /mes-modules, ouverture des modules un par un et résultats. Lecture seule
@@ -296,20 +297,22 @@ function BlocTest({ collab, resultats, ouverts, enCours, onChangerOuverture }) {
   )
 }
 
-// Quiz Légende : quiz expert, ouvert à la demande (souvent par le manager
-// qui trouve les modules trop simples). Score et erreurs corrigées.
-function BlocLegende({ collab, resultats, enCours, onChangerOuverture }) {
+// Quiz expert (Quiz Légende, T'es un tigre ?) : ouvert à la demande, score et
+// erreurs corrigées avec l'explication.
+const QUIZ_EXPERTS = [QUIZ_LEGENDE, QUIZ_TIGRE]
+
+function BlocQuizExpert({ quizExpert, collab, resultats, enCours, onChangerOuverture }) {
   const [voirErreurs, setVoirErreurs] = useState(false)
-  const ouvert = (collab.modules_ouverts || []).includes(QUIZ_LEGENDE_ID)
-  const quiz = dernierQuizLegende(resultats)
+  const ouvert = (collab.modules_ouverts || []).includes(quizExpert.id)
+  const quiz = quizExpert.dernier(resultats)
   const erreurs = (quiz?.details || []).filter(d => !d.correct)
   const bouton = { padding: '6px 12px', fontSize: 12 }
   return (
     <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-m)', textTransform: 'uppercase', letterSpacing: 0.6 }}>🏆 {QUIZ_NOM}</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-m)', textTransform: 'uppercase', letterSpacing: 0.6 }}>{quizExpert.icone} {quizExpert.nom}</div>
         <button
-          onClick={() => onChangerOuverture(QUIZ_LEGENDE_ID, !ouvert)} disabled={enCours === QUIZ_LEGENDE_ID}
+          onClick={() => onChangerOuverture(quizExpert.id, !ouvert)} disabled={enCours === quizExpert.id}
           className="btn2" style={bouton}
         >{ouvert ? 'Fermer le quiz' : quiz ? 'Lui rouvrir le quiz' : 'Lui ouvrir le quiz'}</button>
       </div>
@@ -317,8 +320,8 @@ function BlocLegende({ collab, resultats, enCours, onChangerOuverture }) {
       {!quiz && (
         <div style={{ fontSize: 13.5, color: 'var(--text)', marginTop: 8, lineHeight: 1.5 }}>
           {ouvert
-            ? `Ouvert : il apparaît en haut de son espace « Mes modules ». ${QUESTIONS_LEGENDE.length} questions niveau expert.`
-            : `Quiz niveau expert : ${QUESTIONS_LEGENDE.length} questions pièges (transposition, délais, cas croisés, troisième paire, remboursement), avec la correction complète à la fin.`}
+            ? `Ouvert : il apparaît en haut de son espace « Mes modules ». ${quizExpert.total} questions.`
+            : quizExpert.description}
         </div>
       )}
 
@@ -329,7 +332,7 @@ function BlocLegende({ collab, resultats, enCours, onChangerOuverture }) {
             {ouvert && <span style={{ color: 'var(--text-m)' }}> · quiz rouvert, en attente</span>}
           </div>
           {erreurs.length === 0 ? (
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: '#16a34a' }}>Sans faute : niveau légende atteint.</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: '#16a34a' }}>Sans faute.</div>
           ) : (
             <div>
               <button onClick={() => setVoirErreurs(v => !v)} style={{ background: 'none', border: 'none', padding: 0, fontSize: 12.5, fontWeight: 700, color: '#0089ba', cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -342,7 +345,7 @@ function BlocLegende({ collab, resultats, enCours, onChangerOuverture }) {
                       <div style={{ fontWeight: 700 }}><span style={{ color: '#ef4444' }}>✗</span> {d.libelle}</div>
                       <div style={{ color: 'var(--text-m)' }}>Sa réponse : {d.choisie || '—'}</div>
                       <div style={{ color: '#16a34a', fontWeight: 600 }}>Bonne réponse : {d.bonne}</div>
-                      <div style={{ color: 'var(--text-m)' }}>{explicationLegende(d.id)}</div>
+                      <div style={{ color: 'var(--text-m)' }}>{quizExpert.explication(d.id)}</div>
                     </div>
                   ))}
                 </div>
@@ -384,7 +387,7 @@ export default function ModulesApresFormationSection({ store, collaborateur, cre
   }, [store.id, collaborateur.id])
 
   // Test de positionnement en cours : le résultat apparaît dès qu'il est fini.
-  const testEnAttente = !!collab?.modules_ouverts?.some(id => id === TEST_POSITIONNEMENT_ID || id === QUIZ_LEGENDE_ID)
+  const testEnAttente = !!collab?.modules_ouverts?.some(id => id === TEST_POSITIONNEMENT_ID || QUIZ_EXPERTS.some(q => q.id === id))
   useEffect(() => {
     if (!testEnAttente) return
     const t = setInterval(charger, 15000)
@@ -434,7 +437,9 @@ export default function ModulesApresFormationSection({ store, collaborateur, cre
       </div>
       <BlocAcces collab={collab} onCree={charger} />
       <BlocTest collab={collab} resultats={resultats} ouverts={ouverts} enCours={moduleEnCours} onChangerOuverture={changerOuverture} />
-      <BlocLegende collab={collab} resultats={resultats} enCours={moduleEnCours} onChangerOuverture={changerOuverture} />
+      {QUIZ_EXPERTS.map(q => (
+        <BlocQuizExpert key={q.id} quizExpert={q} collab={collab} resultats={resultats} enCours={moduleEnCours} onChangerOuverture={changerOuverture} />
+      ))}
       <p style={{ fontSize: 12.5, color: 'var(--text-m)', margin: '0 0 14px', lineHeight: 1.5 }}>
         Le collaborateur ne voit que les modules que tu ouvres pour lui. Ouvre-les au fur et à mesure de ton accompagnement.
       </p>
