@@ -10,7 +10,7 @@ import {
 } from '@/lib/modulesApresFormation'
 import { QUIZ_POSITIONNEMENT } from '@/lib/testPositionnement'
 import { QUIZ_LEGENDE } from '@/lib/quizLegende'
-import TestPositionnementPasse from '@/components/TestPositionnementPasse'
+import TestPositionnementPasse, { ResultatQuiz } from '@/components/TestPositionnementPasse'
 
 // Page autonome (comme /espace-collaborateur) — modules après-formation pour
 // les collaborateurs déjà en magasin. Aucune dépendance à la formation
@@ -363,6 +363,32 @@ function CarteTest({ quiz, onOuvrir }) {
   )
 }
 
+// Quiz déjà passés : le collaborateur retrouve son score et sa correction.
+function MesResultats({ resultats, onOuvrir }) {
+  const passes = QUIZ.map(q => ({ quiz: q, resultat: q.dernier(resultats) })).filter(x => x.resultat)
+  if (!passes.length) return null
+  return (
+    <section style={{ marginBottom: 28 }}>
+      <div className="mm-section-titre">Mes résultats</div>
+      <div className="mm-groupe">
+        {passes.map(({ quiz, resultat }) => (
+          <button key={quiz.id} onClick={() => onOuvrir({ quiz, resultat })} className="mm-rangee">
+            <span className="mm-icone" aria-hidden="true" style={{ background: quiz.degrade }}>{quiz.icone}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 17, color: '#000', letterSpacing: '-0.01em', lineHeight: 1.25 }}>{quiz.nom}</div>
+              <div style={{ fontSize: 13, color: '#8e8e93', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
+                {resultat.score}/{resultat.total} · {new Date(resultat.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+              </div>
+            </div>
+            <span style={{ fontSize: 15, color: '#0089ba', flexShrink: 0 }}>Voir</span>
+            <svg width="8" height="13" viewBox="0 0 8 13" aria-hidden="true" style={{ flexShrink: 0 }}><path d="M1.5 1.5l5 5-5 5" fill="none" stroke="#c4c4c7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function LigneModule({ module, etat, onOuvrir }) {
   const statut = STATUTS[statutModule(etat)]
   return (
@@ -510,6 +536,7 @@ function Dashboard({ session, onLogout }) {
   const [moduleOuvert, setModuleOuvert] = useState(null)
   const [quizOuverts, setQuizOuverts] = useState([])
   const [quizEnCours, setQuizEnCours] = useState(null)
+  const [resultatVu, setResultatVu] = useState(null)
   const [feuilleVisible, setFeuilleVisible] = useState(false)
   const [alerte, setAlerte] = useState(null)
   const [alerteVisible, setAlerteVisible] = useState(false)
@@ -611,6 +638,7 @@ function Dashboard({ session, onLogout }) {
           </div>
 
           {resultats !== null && quizOuverts.map(q => <CarteTest key={q.id} quiz={q} onOuvrir={() => setQuizEnCours(q)} />)}
+          {resultats !== null && <MesResultats resultats={resultats} onOuvrir={setResultatVu} />}
 
           {resultats === null ? (
             <div role="status" aria-label="Chargement" style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}><div className="mm-roue" /></div>
@@ -656,6 +684,10 @@ function Dashboard({ session, onLogout }) {
           onMessage={surMessage}
           onVisibilite={setFeuilleVisible}
         />
+      )}
+
+      {resultatVu && (
+        <ResultatQuiz quiz={resultatVu.quiz} resultat={resultatVu.resultat} onFermer={() => setResultatVu(null)} />
       )}
 
       {quizEnCours && (

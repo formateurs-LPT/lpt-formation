@@ -136,4 +136,7 @@ export const QUIZ_POSITIONNEMENT = {
   intro: prenom => `${prenom ? `${prenom}, ce` : 'Ce'} test fait le point sur tout ce que tu as vu : l'optique, l'accueil, les offres, le remboursement et les verres.`,
   consigne: total => `${total} questions, une réponse à chaque fois. Réponds sans chercher : ce n'est pas un examen, ça sert à choisir avec ton formateur les modules qui t'aideront le plus.`,
   corrige: false,
+  dernier: dernierTest,
+  bilan: bilanParTheme,
+  bonne: id => QUESTIONS.find(q => q.id === id)?.options[0] || '',
 }

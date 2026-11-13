@@ -1,12 +1,19 @@
 'use client'
 import { useState } from 'react'
 import { QUIZ_POSITIONNEMENT } from '@/lib/testPositionnement'
-import { explicationLegende } from '@/lib/quizLegende'
 
 // Écran plein d'un quiz côté collaborateur (/mes-modules) : test de
 // positionnement ou Quiz Légende. Une question à la fois, pas de correction
 // pendant le quiz ; le Quiz Légende (quiz.corrige) affiche la correction
 // complète à la fin, le formateur voit le détail dans la fiche.
+const conteneur = {
+  position: 'fixed', inset: 0, zIndex: 50, background: '#f2f2f7', display: 'flex', flexDirection: 'column',
+  fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'DM Sans', sans-serif",
+  WebkitFontSmoothing: 'antialiased', color: '#000',
+  paddingTop: 'max(12px, env(safe-area-inset-top))', paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+}
+const zone = { width: '100%', maxWidth: 640, margin: '0 auto', padding: '0 16px', boxSizing: 'border-box' }
+
 export default function TestPositionnementPasse({ quiz = QUIZ_POSITIONNEMENT, collaborateurId, prenom, onTermine, onFermer }) {
   const TEST_NOM = quiz.nom
   const [questions] = useState(() => quiz.preparer())
@@ -35,14 +42,6 @@ export default function TestPositionnementPasse({ quiz = QUIZ_POSITIONNEMENT, co
     if (index + 1 < questions.length) setIndex(index + 1)
     else envoyer(toutes)
   }
-
-  const conteneur = {
-    position: 'fixed', inset: 0, zIndex: 50, background: '#f2f2f7', display: 'flex', flexDirection: 'column',
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'DM Sans', sans-serif",
-    WebkitFontSmoothing: 'antialiased', color: '#000',
-    paddingTop: 'max(12px, env(safe-area-inset-top))', paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
-  }
-  const zone = { width: '100%', maxWidth: 640, margin: '0 auto', padding: '0 16px', boxSizing: 'border-box' }
 
   if (etape === 'intro') {
     return (
@@ -128,7 +127,7 @@ export default function TestPositionnementPasse({ quiz = QUIZ_POSITIONNEMENT, co
               {score}<span style={{ color: '#8e8e93', fontSize: 24 }}> / {questions.length}</span>
             </div>
             {quiz.corrige ? (
-              <Correction reponses={reponses} />
+              <Correction reponses={reponses} explication={quiz.explication} />
             ) : (
               <p style={{ fontSize: 16, color: '#3c3c43', lineHeight: 1.45, margin: 0 }}>
                 Merci ! Ton formateur va regarder tes résultats avec toi et t&apos;ouvrir les modules qui te seront le plus utiles.
@@ -142,9 +141,9 @@ export default function TestPositionnementPasse({ quiz = QUIZ_POSITIONNEMENT, co
   )
 }
 
-// Correction de fin (Quiz Légende) : les erreurs d'abord, chacune avec la
-// bonne réponse et l'explication, puis les bonnes réponses.
-function Correction({ reponses }) {
+// Correction : les erreurs d'abord, chacune avec la bonne réponse et
+// l'explication quand le quiz en a une, puis les bonnes réponses.
+function Correction({ reponses, explication }) {
   const triees = [...reponses.filter(r => !r.correct), ...reponses.filter(r => r.correct)]
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, textAlign: 'left', marginTop: 6 }}>
@@ -156,10 +155,58 @@ function Correction({ reponses }) {
             {r.libelle}
           </div>
           {!r.correct && <div style={{ fontSize: 14, color: '#ff3b30', marginTop: 6 }}>Ta réponse : {r.choisie}</div>}
-          <div style={{ fontSize: 14, color: '#1d7a33', marginTop: r.correct ? 6 : 2, fontWeight: 600 }}>Bonne réponse : {r.bonne}</div>
-          <div style={{ fontSize: 14, color: '#3c3c43', marginTop: 6, lineHeight: 1.45 }}>{explicationLegende(r.id)}</div>
+          {r.bonne && <div style={{ fontSize: 14, color: '#1d7a33', marginTop: r.correct ? 6 : 2, fontWeight: 600 }}>Bonne réponse : {r.bonne}</div>}
+          {explication?.(r.id) && <div style={{ fontSize: 14, color: '#3c3c43', marginTop: 6, lineHeight: 1.45 }}>{explication(r.id)}</div>}
         </div>
       ))}
+    </div>
+  )
+}
+
+function fmtDate(iso) {
+  try { return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) }
+  catch { return '' }
+}
+
+// Résultat d'un quiz déjà passé, consultable par le collaborateur depuis
+// « Mes résultats » : score, thèmes (test de positionnement) et correction.
+export function ResultatQuiz({ quiz, resultat, onFermer }) {
+  const reponses = (resultat.details || []).map(d => ({ ...d, bonne: d.bonne || quiz.bonne?.(d.id) || '' }))
+  const themes = quiz.bilan ? quiz.bilan(resultat) : []
+  const aRevoir = themes.filter(t => t.niveau !== 'maitrise')
+  const maitrises = themes.filter(t => t.niveau === 'maitrise')
+  return (
+    <div style={conteneur} role="dialog" aria-modal="true" aria-label={`Résultat — ${quiz.nom}`}>
+      <div style={{ ...zone, display: 'flex', justifyContent: 'flex-start' }}>
+        <button onClick={onFermer} className="mm-lien">‹ Mes modules</button>
+      </div>
+      <div style={{ ...zone, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 16, paddingBottom: 8 }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 64, height: 64, borderRadius: 18, margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, background: quiz.degrade }} aria-hidden="true">{quiz.icone}</div>
+          <h1 className="mm-titre" style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{quiz.nom}</h1>
+          <div style={{ fontSize: 15, color: '#6e6e73', marginTop: 4 }}>Passé le {fmtDate(resultat.created_at)}</div>
+          <div style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', marginTop: 8 }}>
+            {resultat.score}<span style={{ color: '#8e8e93', fontSize: 24 }}> / {resultat.total}</span>
+          </div>
+        </div>
+        {themes.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {aRevoir.length > 0 && (
+              <div style={{ background: '#fff', borderRadius: 12, padding: '12px 14px' }}>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>À retravailler</div>
+                <div style={{ fontSize: 14, color: '#3c3c43', marginTop: 4, lineHeight: 1.5 }}>{aRevoir.map(t => t.nom).join(' · ')}</div>
+              </div>
+            )}
+            {maitrises.length > 0 && (
+              <div style={{ background: '#fff', borderRadius: 12, padding: '12px 14px' }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: '#1d7a33' }}>Maîtrisés</div>
+                <div style={{ fontSize: 14, color: '#3c3c43', marginTop: 4, lineHeight: 1.5 }}>{maitrises.map(t => t.nom).join(' · ')}</div>
+              </div>
+            )}
+          </div>
+        )}
+        <Correction reponses={reponses} explication={quiz.explication} />
+      </div>
     </div>
   )
 }

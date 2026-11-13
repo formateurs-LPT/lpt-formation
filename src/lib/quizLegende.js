@@ -18,8 +18,8 @@ export const QUESTIONS_LEGENDE = [
     explication: 'Oui. Transposée : +9,00 + (−2,00) = +7,00, cylindre +2,00, axe 135°. La sphère rentre sous +7,25 et le cylindre reste sous 3,00.' },
   { id: 'l3', q: 'OD : −2,00 (−3,25) 10°. Le verre est-il fabricable en 10 minutes ?', options: ['Non', 'Oui', 'Oui, une fois transposée'],
     explication: 'Non. Le cylindre (3,25) dépasse déjà 3,00, et sa valeur ne change pas en transposant : inutile de faire le calcul.' },
-  { id: 'l4', q: 'Axe d\'origine : 90°. Après transposition, l\'axe devient…', options: ['180°', '0°', '90°', '270°'],
-    explication: '180°. Axe inférieur ou égal à 90° : on ajoute 90°. On n\'enlève 90° qu\'au-dessus de 90°.' },
+  { id: 'l4', q: 'Axe d\'origine : 90°. Après transposition, l\'axe devient…', options: ['180° (ou 0°, c\'est le même axe)', '90°', '45°', '135°'],
+    explication: '180°, qu\'on peut aussi écrire 0° : c\'est le même axe. Axe inférieur ou égal à 90° : on ajoute 90°. On n\'enlève 90° qu\'au-dessus de 90°.' },
   { id: 'l5', q: 'Transpose : +1,25 (−1,25) 15°.', options: ['0,00 (+1,25) 105°', '+1,25 (+1,25) 105°', '0,00 (−1,25) 105°', '+2,50 (+1,25) 15°'],
     explication: 'Sphère : +1,25 + (−1,25) = 0,00. Cylindre : le − devient + → +1,25. Axe : 15 + 90 = 105°.' },
   { id: 'l6', q: 'Ordonnance : +1,00 (−0,50) 90°, Add +2,00. Quelle est la vision de près ?', options: ['+3,00 (−0,50) 90°', '+3,00 (+1,50) 90°', '+1,00 (+1,50) 90°', '+2,00 (−0,50) 90°'],
@@ -97,4 +97,6 @@ export const QUIZ_LEGENDE = {
   intro: prenom => `${prenom ? `${prenom}, ce` : 'Ce'} quiz est réservé aux experts : calculs, cas pièges et exceptions sur tout ce que tu connais.`,
   consigne: total => `${total} questions, une seule bonne réponse à chaque fois. Prends le temps de réfléchir : la correction complète t'attend à la fin.`,
   corrige: true,
+  dernier: dernierQuizLegende,
+  explication: explicationLegende,
 }
