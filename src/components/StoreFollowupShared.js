@@ -164,6 +164,18 @@ export function pctFor(progress, collabId, sectionId, isBelgique = false) {
   return Math.round((total / (items.length * 5)) * 100)
 }
 
+// Taux de maîtrise moyen du magasin : seulement sur les collaborateurs dont
+// le poste a une grille de compétences (CVO, MO/SAV…). Manager, opticiens,
+// alternants… n'en ont pas encore : ils seraient toujours à 0 % et
+// tireraient la moyenne vers le bas.
+export function tauxMagasin(store, progress) {
+  const isBelgique = isBelgiqueStore(store.id)
+  const valeurs = store.sections
+    .filter(s => getSkillItems(s.id, isBelgique).length)
+    .flatMap(s => s.collaborateurs.map(c => pctFor(progress, c.id, s.id, isBelgique)))
+  return valeurs.length ? Math.round(valeurs.reduce((a, b) => a + b, 0) / valeurs.length) : 0
+}
+
 function initials(c) {
   const a = (c.prenom || '').trim().charAt(0)
   const b = (c.nom || '').trim().charAt(0)
@@ -182,9 +194,7 @@ export function StoreHeader({ store, progress, subtitle, right, hero = false }) 
   const allCollaborateurs = store.sections.flatMap(s => s.collaborateurs)
   const totalHeadcount = allCollaborateurs.length
 
-  const isBelgique = isBelgiqueStore(store.id)
-  const pctValues = store.sections.flatMap(s => s.collaborateurs.map(c => pctFor(progress, c.id, s.id, isBelgique)))
-  const avgPct = pctValues.length ? Math.round(pctValues.reduce((a, b) => a + b, 0) / pctValues.length) : 0
+  const avgPct = tauxMagasin(store, progress)
 
   const age = teamAge(allCollaborateurs)
 

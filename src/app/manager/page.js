@@ -7,7 +7,7 @@ import { mergeEntreesIntoRoster, entreeEstDuMagasin } from '@/lib/storeRosterMer
 import { matchMagasinKey } from '@/lib/managersData'
 import { classifyMagasin } from '@/lib/formationCategories'
 import { useStoreFollowupProgress } from '@/lib/useStoreFollowupProgress'
-import { CollaborateurProfilePage, computeTeamGroups, pctFor, SECTION_COLORS_LIGHT } from '@/components/StoreFollowupShared'
+import { CollaborateurProfilePage, computeTeamGroups, pctFor, tauxMagasin, SECTION_COLORS_LIGHT } from '@/components/StoreFollowupShared'
 import TrainingRegistrationTile, { UpcomingRegistrationsPanel } from '@/components/TrainingRegistrationTile'
 import {
   getMagasinIdBySlug, getNouveauxCollaborateurs, getCollaborateursEnAttenteValidation,
@@ -677,8 +677,7 @@ function AccueilPage({
   const breakdown = groups.map(g => `${g.collaborateurs.length} ${g.label}`).join(' · ')
 
   const isBelgique = isBelgiqueStore(store.id)
-  const pctValues = store.sections.flatMap(s => s.collaborateurs.map(c => pctFor(progress, c.id, s.id, isBelgique)))
-  const avgPct = pctValues.length ? Math.round(pctValues.reduce((a, b) => a + b, 0) / pctValues.length) : 0
+  const avgPct = tauxMagasin(store, progress)
 
   const extraRows = computeExtraRows(nouveauxEntrants, newHireRows)
   const reportingActions = getPendingReportingActions(reportings)

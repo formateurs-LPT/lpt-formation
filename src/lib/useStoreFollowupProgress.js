@@ -1,7 +1,8 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { sbSelect, sbUpsert, sbDelete } from '@/lib/supabase'
 import { scoreToStatus, todayISO } from '@/lib/storeFollowupData'
+import { getApportsConnaissances, fusionnerConnaissances } from '@/lib/connaissancesMagasin'
 
 // Couche données du suivi magasin — partagée par la vue formateur
 // (StoreFollowupView) et la vue manager (/manager), pour qu'aucune des deux
@@ -37,6 +38,19 @@ export function useStoreFollowupProgress(storeId, actorName) {
     }).catch(() => {})
     return () => { cancelled = true }
   }, [storeId])
+
+  // Ce que les collaborateurs font dans /mes-modules (modules acquis, test de
+  // positionnement, Quiz Légende) remonte dans le taux de connaissance,
+  // en affichage seulement : `progress` renvoyé = audit + ces apports.
+  const [apports, setApports] = useState(null)
+  useEffect(() => {
+    if (!storeId) return
+    let cancelled = false
+    setApports(null)
+    getApportsConnaissances(storeId).then(a => { if (!cancelled) setApports(a) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [storeId])
+  const progressAffiche = useMemo(() => fusionnerConnaissances(progress, apports, scoreToStatus), [progress, apports])
 
   const persist = async (collabId, itemId, patch) => {
     const key = `${collabId}:${itemId}`
@@ -87,5 +101,5 @@ export function useStoreFollowupProgress(storeId, actorName) {
     setSaveError(!ok)
   }
 
-  return { progress, history, saveError, setScore, saveNote, reset }
+  return { progress: progressAffiche, history, saveError, setScore, saveNote, reset }
 }
