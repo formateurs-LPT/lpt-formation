@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState, clearQuizStarts } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState } from '@/lib/supabase'
 import { useIsMobile } from '@/lib/useIsMobile'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
@@ -279,13 +279,13 @@ function CoursPackPlan({ onNext, onPrev, onBack }) {
       </div>
 
       <div style={{ flexShrink: 0 }}>
-        <NextPagePreview nextPage={{ type: 'zone-interactif', label: 'Quiz offres', color: '#7c3aed' }} />
+        <NextPagePreview nextPage={{ type: 'zone-interactif', label: 'Fin du module', color: '#7c3aed' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
           <button onClick={onPrev} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '13px 28px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← Classique</button>
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={hide} disabled={step === 0} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: step === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', padding: '13px 22px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: step === 0 ? 'default' : 'pointer', fontFamily: 'inherit' }}>← Masquer</button>
             {allRevealed ? (
-              <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #7c3aed, #9f67fa)', border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(124,58,237,0.45)' }}>Lancer le quiz →</button>
+              <button onClick={onNext} style={{ background: 'linear-gradient(135deg, #7c3aed, #9f67fa)', border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(124,58,237,0.45)' }}>✓ Terminer le module</button>
             ) : (
               <button onClick={reveal} style={{ background: `linear-gradient(135deg, ${COLOR}, #0090c5)`, border: 'none', color: '#fff', padding: '13px 36px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: `0 6px 24px ${COLOR}45` }}>Révéler →</button>
             )}
@@ -1228,14 +1228,6 @@ export default function ModuleOffres({ pName, onBack, isBelgique }) {
     setPhase('pack-plan')
   }
 
-  const startQuiz = async () => {
-    await setSharedState({ quiz_show_correction: false }).catch(() => {})
-    await clearQuizStarts(getActiveSessionCode(), 'offres').catch(() => {})
-    await sbUpdate('sessions', { active_module: 'offres', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
-    setQuizQ(0)
-    setPhase('quiz')
-  }
-
   const handleNextQuestion = async () => {
     const next = quizQ + 1
     await setSharedState({ quiz_show_correction: false }).catch(() => {})
@@ -1267,7 +1259,9 @@ export default function ModuleOffres({ pName, onBack, isBelgique }) {
   if (phase === 'progressif-11') return <CoursProgressif11 onPrev={goUnifocal11} onNext={isBelgique ? goLptCare : goClassique} onBack={handleBack} isBelgique={isBelgique} />
   if (phase === 'lpt-care')      return <CoursLptCare onPrev={goProgressif11} onNext={goClassique} onBack={handleBack} />
   if (phase === 'classique')     return <CoursClassique onNext={goPackPlan} onPrev={isBelgique ? goLptCare : goProgressif11} onBack={handleBack} />
-  if (phase === 'pack-plan')     return <CoursPackPlan onNext={startQuiz} onPrev={goClassique} onBack={handleBack} />
+  // Quiz de fin de module retiré (16/11) : ses 3 questions sont déjà dans le
+  // Quiz Jour 2. La dernière page (Pack Plan) termine le module.
+  if (phase === 'pack-plan')     return <CoursPackPlan onNext={handleTerminateModule} onPrev={goClassique} onBack={handleBack} />
   if (phase === 'results')   return <GroupResultsView onTerminate={handleTerminateModule} />
 
   return (

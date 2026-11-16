@@ -760,6 +760,25 @@ function TVEpOrdonnance({ q, debut }) {
   )
 }
 
+// Trame d'accueil à compléter (Quiz Jour 2) : les phrases connues, et la
+// case que les formés écrivent sur leur téléphone
+function TVEpTrame({ q, debut }) {
+  if (!q.tramePoints) return null
+  return (
+    <div style={{ marginTop: '3.5vh' }}>
+      <div style={{ height: 1, background: EP_OR, transformOrigin: 'left', transform: 'scaleX(0)', animation: `tvEpTrait .7s cubic-bezier(.2,.8,.2,1) ${debut}s forwards` }} />
+      {q.tramePoints.map((pt, i) => (
+        <div key={pt.num} style={{ display: 'grid', gridTemplateColumns: 'min(40px, 3.6vh) 1fr', gap: '1vw', alignItems: 'baseline', padding: '1.3vh 0', borderBottom: '1px solid rgba(255,255,255,0.08)', ...epAnim('tvEpGlisse', debut + 0.2 + i * 0.15) }}>
+          <span style={{ fontSize: epTaille(18, 1.8), color: 'rgba(255,255,255,0.45)' }}>{pt.num}.</span>
+          {pt.text
+            ? <span style={{ fontSize: epTaille(24, 2.3), color: 'rgba(255,255,255,0.85)', lineHeight: 1.35 }}>{pt.text}</span>
+            : <span style={{ fontSize: epTaille(24, 2.3), color: EP_OR, fontStyle: 'italic', borderBottom: `2px dashed ${EP_OR}`, paddingBottom: 4 }}>… à compléter sur votre téléphone</span>}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // Nombre de réponses reçues (questions libres et ordonnances à recopier)
 function useTVEpReponses({ type, sessionCode, moduleId, qIdx }) {
   const [reponses, setReponses] = useState([])
@@ -876,8 +895,9 @@ export function TVQuestionEpuree({ question: q, qIdx, total, moduleLabel, sessio
         {blocReponses}
         <div style={{ borderRight: `2px solid ${EP_OR}`, paddingRight: '3vw', minWidth: 0 }}>
           <div style={{ fontSize: epTaille(14, 1.4), letterSpacing: 5, textTransform: 'uppercase', color: EP_OR, ...epAnim('tvEpMonte', 0.15) }}>{famille}</div>
-          <div style={{ fontWeight: 700, fontSize: q.question.length > 90 ? epTaille(46, 4.4) : epTaille(56, 5.4), lineHeight: 1.15, letterSpacing: -1, marginTop: '2.4vh', ...epAnim('tvEpMonte', 0.3) }}>{q.question}</div>
+          <div style={{ fontWeight: 700, fontSize: q.question.length > 90 || q.tramePoints ? epTaille(46, 4.4) : epTaille(56, 5.4), lineHeight: 1.15, letterSpacing: -1, marginTop: '2.4vh', ...epAnim('tvEpMonte', 0.3) }}>{q.question}</div>
           {q.ordonnance && <TVEpOrdonnance q={q} debut={0.9} />}
+          <TVEpTrame q={q} debut={0.9} />
         </div>
       </div>
     </div>
@@ -982,6 +1002,7 @@ export function TVCorrectionEpuree({ question: q, qIdx, total, moduleLabel, sess
           <div style={{ fontSize: epTaille(14, 1.4), letterSpacing: 5, textTransform: 'uppercase', color: EP_OR }}>{famille}</div>
           <div style={{ fontWeight: 700, fontSize: q.question.length > 90 ? epTaille(40, 3.9) : epTaille(48, 4.6), lineHeight: 1.15, letterSpacing: -1, marginTop: '2.4vh', color: 'rgba(255,255,255,0.9)' }}>{q.question}</div>
           {montrerOrdo && <TVEpOrdonnance q={q} debut={0.1} />}
+          <TVEpTrame q={q} debut={0.1} />
         </div>
       </div>
     </div>
@@ -992,7 +1013,7 @@ function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode, modul
   const type = question.type || 'qcm'
   // Nouveau style épuré (16/11) — sauf la trame d'accueil à compléter
   const EPURE = ['qcm', 'qcm-multi', 'qcm-ordonnance', 'ordonnance-fill', 'power-selector', 'text-open', 'text-open-multi', 'text-open-pairs']
-  if (EPURE.includes(type) && !question.tramePoints) {
+  if (EPURE.includes(type)) {
     return <TVQuestionEpuree key={`${moduleId}-${qIdx}`} question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} moduleId={moduleId} />
   }
   const timer = <TVQuizTimerOverlay key={`quiz-timer-${moduleId}-${qIdx}`} moduleId={moduleId} qIdx={qIdx} sessionCode={sessionCode} seconds={question.timeLimitSec || QUIZ_TIME_LIMIT_SEC} />
@@ -9932,13 +9953,13 @@ export default function TVView() {
                 ? <TVQuizRateReveal sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
                 : famillesPhase
                 ? <TVQuizFamilyRates sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
-                : activeModule === 'quiz-j1'
+                : activeModule === 'quiz-j1' || activeModule === 'quiz-j2'
                 ? <TVQuizFamilyRates sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
                 : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} sessionCode={sessionCode} />
         ) : isQuiz && quizQuestion ? (
           quizInterstitialPhase
             ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} skipSignal={sharedState?.quiz_podium_skip} moduleId={activeModule} />
-            : sharedState?.quiz_show_correction && ['qcm', 'qcm-multi', 'qcm-ordonnance', 'ordonnance-fill', 'power-selector', 'text-open', 'text-open-multi', 'text-open-pairs'].includes(quizQuestion?.type || 'qcm') && !quizQuestion?.tramePoints
+            : sharedState?.quiz_show_correction && ['qcm', 'qcm-multi', 'qcm-ordonnance', 'ordonnance-fill', 'power-selector', 'text-open', 'text-open-multi', 'text-open-pairs'].includes(quizQuestion?.type || 'qcm')
               ? <TVCorrectionEpuree
                   key={`corr-${activeModule}-${modulePage}`}
                   question={quizQuestion}

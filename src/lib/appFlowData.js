@@ -33,7 +33,7 @@ export const APP_FLOW_NODES = [
   { id: 'peer-quiz',     label: 'Jeu de questions (révision)', kind: 'tool',    journee: 'J2', x: 8 * COL,  y: 2 * ROW },
   { id: 'merch-montures', label: 'Merch montures',             kind: 'planned', journee: 'J2', x: 9 * COL,  y: 2 * ROW },
   { id: 'trame-accueil', label: "Trame d'accueil",             kind: 'module',  journee: 'J2', hasQuiz: false, x: 10 * COL, y: 2 * ROW },
-  { id: 'offres',        label: 'Les offres',                  kind: 'module',  journee: 'J2', hasQuiz: true,  x: 11 * COL, y: 2 * ROW, note: 'Contenu additionnel "LPT Care" en session Belgique' },
+  { id: 'offres',        label: 'Les offres',                  kind: 'module',  journee: 'J2', hasQuiz: false,  x: 11 * COL, y: 2 * ROW, note: 'Contenu additionnel "LPT Care" en session Belgique' },
   { id: 'quiz-j2',       label: 'Quiz Jour 2',                 kind: 'quiz',    journee: 'J2',                 x: 12 * COL, y: 2 * ROW },
 
   // ── J3 — commence commun (PDM), puis diverge ────────────────────

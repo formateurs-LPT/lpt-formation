@@ -19,6 +19,7 @@
 // par question, dans l'ordre du tableau de questions) et l'ajouter à
 // TRANSVERSAL_THEME_MAPS ci-dessous.
 import { quizJ1OrdrePour } from './quizJ1Data'
+import { quizJ2OrdrePour } from './quizJ2Data'
 
 export const DIRECT_THEME_MODULES = new Set([
   'entreprise', 'types-verres', 'pdm', 'optique', 'offres',
@@ -140,6 +141,11 @@ const QUIZ_FINAL_THEMES = [
 // Réaligné le 17/08 : la question "2nde paire offerte pack 95€" a été supprimée,
 // ce qui décalait tous les thèmes après sa position — toujours vérifier ce
 // nombre contre QUIZ_J2.length après une suppression/ajout.
+// Mise en ligne du Quiz Jour 2 mélangé chaque semaine — À METTRE À JOUR le
+// jour du déploiement. Les réponses antérieures suivent l'ordre fixe.
+const QUIZ_J2_MELANGE_DEPUIS = '2026-11-16T16:45:00Z'
+
+// Index = position dans QUIZ_J2_BASE de src/lib/quizJ2Data.js (ordre NON mélangé).
 const QUIZ_J2_THEMES = [
   'trame-accueil',         // 0  — case manquante de la trame d'accueil
   'offres',                // 1  — matériaux monture offre 1=1
@@ -206,6 +212,12 @@ export function themeForAnswer(moduleId, questionIdx, createdAt) {
     if (createdAt && date < new Date(QUIZ_J1_FUSION_DEPUIS)) return QUIZ_J1_THEMES_AVANT_FUSION[qi] || null
     return QUIZ_J1_THEMES[quizJ1OrdrePour(date)[qi]] || null
   }
+  if (moduleId === 'quiz-j2') {
+    // Mêmes questions qu'avant, seul l'ordre est mélangé depuis QUIZ_J2_MELANGE_DEPUIS
+    const date = createdAt ? new Date(createdAt) : new Date()
+    if (createdAt && date < new Date(QUIZ_J2_MELANGE_DEPUIS)) return QUIZ_J2_THEMES[qi] || null
+    return QUIZ_J2_THEMES[quizJ2OrdrePour(date)[qi]] || null
+  }
   const transversal = TRANSVERSAL_THEME_MAPS[moduleId]
   if (transversal) return transversal[qi] || null
   if (DIRECT_THEME_MODULES.has(moduleId)) return moduleId
@@ -219,6 +231,8 @@ export function themeForAnswer(moduleId, questionIdx, createdAt) {
 export const FAMILLE_LABELS = {
   'entreprise': "L'entreprise", 'optique': "Les bases de l'optique",
   'types-verres': 'Les types de verres', 'montures': 'Les montures',
+  'trame-accueil': "La trame d'accueil", 'offres': 'Les offres',
+  'verre-progressif': 'Le verre progressif',
 }
 
 export function tauxParFamille(rows, quiz, moduleId) {

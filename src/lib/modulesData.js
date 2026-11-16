@@ -1393,7 +1393,7 @@ export const MODULE_DATA = {
   'quiz-final':       { pages: [], quiz: QUIZ_FINAL_QUESTIONS, label: 'Quiz de fin de formation', sub: 'Trame · Optique · Offres · Remboursement' },
   'quiz-final-belgique': { pages: [], quiz: QUIZ_FINAL_QUESTIONS_BELGIQUE, label: 'Quiz de fin de formation', sub: 'Trame · Optique · Offres · Remboursement Belgique' },
   'quiz-j1':          { pages: [], quiz: QUIZ_J1, label: 'Quiz Jour 1', sub: 'Entreprise · Optique · Ordonnances · Types de verres · Montures' },
-  'quiz-j2':          { pages: [], quiz: QUIZ_J2, label: 'Quiz Jour 2', sub: "Offres · 1=1 · Pack Plan · Ordonnances" },
+  'quiz-j2':          { pages: [], quiz: QUIZ_J2, label: 'Quiz Jour 2', sub: "Trame d'accueil · Offres · 1=1 · Pack Plan · Ordonnances" },
   'mutuelles-inami':  { pages: [
     { id: 'mutuelles-q1', type: 'pause', icon: '🛡️', titre: 'Que savez-vous des mutuelles ?', sousTitre: 'Partagez ce que vous savez déjà' },
     { id: 'inami-info', type: 'inami-info', titre: 'INAMI' },

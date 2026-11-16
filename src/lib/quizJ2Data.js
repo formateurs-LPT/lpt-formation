@@ -1,3 +1,4 @@
+import { ordrePourSemaine } from './quizOrdreSemaine'
 // Types de questions : voir src/lib/quizJ1Data.js pour la légende complète
 // (qcm, qcm-ordonnance, text-open, text-open-multi, autoCorrect…)
 //
@@ -6,7 +7,7 @@
 //   Un point avec text: null est affiché comme case vierge à compléter par le formé.
 // - numeric (text-open) : affiche un pavé numérique sur le téléphone au lieu du clavier texte.
 // - ordonnance sur un text-open : affiche la correction (OD/OG) côté TV, réponse libre côté formé.
-export const QUIZ_J2 = [
+export const QUIZ_J2_BASE = [
   // Q1 — trame d'accueil, case 3 à compléter
   {
     type: 'text-open',
@@ -158,3 +159,14 @@ export const QUIZ_J2 = [
     },
   },
 ]
+
+// ── Comme le Quiz Jour 1 (16/11) : chrono 2 minutes, ordre mélangé chaque semaine
+export const QUIZ_J2_CHRONO_SEC = 120
+// (une question qui avait déjà plus de temps le garde)
+for (const q of QUIZ_J2_BASE) q.timeLimitSec = Math.max(q.timeLimitSec || 0, QUIZ_J2_CHRONO_SEC)
+
+export function quizJ2OrdrePour(date = new Date()) {
+  return ordrePourSemaine(QUIZ_J2_BASE.length, date, 7)
+}
+
+export const QUIZ_J2 = quizJ2OrdrePour().map(i => QUIZ_J2_BASE[i])

@@ -1,3 +1,4 @@
+import { ordrePourSemaine } from './quizOrdreSemaine'
 // Types de questions :
 // qcm           : options[], correct (index)
 // qcm-multi     : options[], correct (array d'indices), instruction
@@ -397,41 +398,9 @@ export const QUIZ_J1_BASE = [
 export const QUIZ_J1_CHRONO_SEC = 120
 for (const q of QUIZ_J1_BASE) q.timeLimitSec = QUIZ_J1_CHRONO_SEC
 
-// ── Ordre mélangé, renouvelé chaque semaine ─────────────────────────────
-// Toutes les questions sortent dans un ordre différent chaque semaine
-// (lundi → dimanche). L'ordre est calculé à partir de la date, sans rien
-// stocker : formateur, TV et téléphones obtiennent donc le même ordre, et le
-// bilan par thème retrouve la question d'origine grâce à la date de la
-// réponse (cf. themeForAnswer dans quizThemeMap.js).
-function semaineIso(date) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
-  const jour = d.getUTCDay() || 7
-  d.setUTCDate(d.getUTCDate() + 4 - jour)
-  const debutAnnee = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
-  return d.getUTCFullYear() * 100 + Math.ceil(((d - debutAnnee) / 86400000 + 1) / 7)
-}
-
-// Générateur pseudo-aléatoire déterministe (mulberry32) : même graine → même suite.
-function aleatoire(graine) {
-  let a = graine >>> 0
-  return () => {
-    a = (a + 0x6D2B79F5) >>> 0
-    let t = a
-    t = Math.imul(t ^ (t >>> 15), t | 1)
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
-
-// ordre[position] = index de la question dans QUIZ_J1_BASE
+// ── Ordre mélangé, renouvelé chaque semaine (cf. quizOrdreSemaine.js) ──
 export function quizJ1OrdrePour(date = new Date()) {
-  const rand = aleatoire(semaineIso(new Date(date)))
-  const ordre = QUIZ_J1_BASE.map((_, i) => i)
-  for (let i = ordre.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1))
-    ;[ordre[i], ordre[j]] = [ordre[j], ordre[i]]
-  }
-  return ordre
+  return ordrePourSemaine(QUIZ_J1_BASE.length, date, 0)
 }
 
 export const QUIZ_J1 = quizJ1OrdrePour().map(i => QUIZ_J1_BASE[i])
