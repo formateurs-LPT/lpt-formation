@@ -1635,6 +1635,8 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
         moduleId, questionIdx: qIdx,
         collaborateur: pName.trim(),
         answerIdx: 0, isCorrect: perfect,
+        // Valeurs saisies, pour que le formateur voie où le formé s'est trompé
+        answer: JSON.stringify({ od: vals.od, og: vals.og, champs: visibleFields }),
       })
       setIsCorrect(perfect)
       setAnswered(true)
@@ -1790,6 +1792,8 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
         moduleId, questionIdx: qIdx,
         collaborateur: pName.trim(),
         answerIdx: 0, isCorrect: ok,
+        // Valeurs choisies sur les roulettes, pour l'écran formateur
+        answer: JSON.stringify({ pos: SPH_POS_MAX_VALS[posIdx].val, neg: SPH_NEG_MAX_VALS[negIdx].val }),
       })
       setIsCorrect(ok)
       setAnswered(true)

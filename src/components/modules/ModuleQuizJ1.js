@@ -132,10 +132,10 @@ function FOrdonnance({ q }) {
   }
   return (
     <div style={{ marginTop: '3vh', borderTop: `1px solid ${F_OR}`, paddingTop: '1.2vh' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.6vh' }}>
-        <span style={{ fontSize: 11, letterSpacing: 4, color: F_OR, textTransform: 'uppercase' }}>Ordonnance</span>
-        {q.ordoLabel && <span style={{ fontSize: 14, fontStyle: 'italic', color: 'rgba(255,255,255,0.7)' }}>{q.ordoLabel}</span>}
-      </div>
+      <div style={{ fontSize: 11, letterSpacing: 4, color: F_OR, textTransform: 'uppercase', marginBottom: '0.6vh' }}>Ordonnance</div>
+      {q.ordoLabel && (
+        <div style={{ margin: '0.6vh 0 1vh', padding: '8px 12px', borderLeft: `3px solid ${F_OR}`, background: 'rgba(201,162,39,0.12)', fontSize: 18, fontWeight: 700 }}>👓 {q.ordoLabel}</div>
+      )}
       {['od', 'og'].map(o => (
         <div key={o} style={{ display: 'flex', gap: 18, padding: '1vh 0', borderBottom: '1px solid rgba(255,255,255,0.08)', fontSize: fT(24, 2.6), fontWeight: 300, whiteSpace: 'pre', fontVariantNumeric: 'tabular-nums' }}>
           <span style={{ fontSize: 12, letterSpacing: 3, color: 'rgba(255,255,255,0.45)', alignSelf: 'center' }}>{o.toUpperCase()}</span>{ligne(ord[o])}
@@ -198,6 +198,112 @@ function FCadre({ entete, gauche, droite, actionsGauche, actionsDroite }) {
       </div>
     </div>
   )
+}
+
+// ── Détail d'une réponse, case par case (formateur) ─────────────────────
+// Pour voir OÙ un formé s'est trompé : chaque case / paire / valeur saisie
+// est comparée à l'attendu (mêmes mots-clés que la correction automatique).
+const fSansAccents = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+const fContient = (texte, groupe) => (groupe || []).some(kw => fSansAccents(texte).includes(fSansAccents(kw)))
+const fNombre = (v) => { const n = parseFloat(String(v ?? '').replace(',', '.')); return Number.isNaN(n) ? 0 : n }
+const fDioptrie = (v) => { const n = fNombre(v); return (n > 0 ? '+' : '') + n.toFixed(2).replace('.', ',') }
+const fIcone = (ok) => ok == null ? null : <span style={{ color: ok ? F_VERT : F_ROUGE, fontWeight: 800, fontSize: 16 }}>{ok ? '✓' : '✗'}</span>
+
+function FLigneDetail({ libelle, valeur, ok, attendu }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr auto', gap: 12, alignItems: 'baseline', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <span style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>{libelle}</span>
+      <span style={{ fontSize: 16, color: ok === false ? F_ROUGE : '#fff', overflowWrap: 'anywhere' }}>
+        {valeur || <i style={{ color: 'rgba(255,255,255,0.35)' }}>vide</i>}
+        {ok === false && attendu && <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginLeft: 10 }}>attendu : {attendu}</span>}
+      </span>
+      {fIcone(ok)}
+    </div>
+  )
+}
+
+function FDetailReponse({ q, brut }) {
+  const type = q.type || 'qcm'
+  if (type === 'text-open-multi') {
+    const cases = String(brut || '').split('||').map(x => x.trim())
+    const groupes = q.autoCorrectEach || []
+    return <>
+      {cases.map((c, i) => {
+        const ok = !groupes.length ? null : q.autoCorrectOrdered ? fContient(c, groupes[i]) : groupes.some(g => fContient(c, g))
+        return <FLigneDetail key={i} libelle={q.fieldLabels?.[i] || `Case ${i + 1}`} valeur={c} ok={ok} attendu={q.autoCorrectOrdered ? groupes[i]?.[0] : null} />
+      })}
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 8 }}>Attendu : {q.hint}</div>
+    </>
+  }
+  if (type === 'text-open-pairs') {
+    const morceaux = String(brut || '').split('||').map(x => x.trim())
+    const paires = []
+    for (let i = 0; i < morceaux.length; i += 2) paires.push([morceaux[i] || '', morceaux[i + 1] || ''])
+    const [gauche, droite] = q.pairLabels || ['Élément', 'Détail']
+    return <>
+      {paires.map(([g, d], i) => {
+        const ok = q.answerPairs?.length ? q.answerPairs.some(c => fContient(g, c.keys) && fContient(d, c.defKeys)) : null
+        return <FLigneDetail key={i} libelle={`${gauche} ${i + 1}`} valeur={`${g || '—'}  →  ${d || '—'}`} ok={ok} />
+      })}
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 8 }}>Attendu ({droite.toLowerCase()}) : {q.hint}</div>
+    </>
+  }
+  if (type === 'ordonnance-fill') {
+    let saisie = null
+    try { saisie = JSON.parse(brut) } catch { /* ancienne réponse sans détail */ }
+    if (!saisie) return <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', fontStyle: 'italic' }}>Détail non disponible pour cette réponse.</div>
+    const champs = saisie.champs || ['sph', 'cyl', 'axe', 'add']
+    const noms = { sph: 'Sphère', cyl: 'Cylindre', axe: 'Axe', add: 'Addition' }
+    const affiche = (champ, v) => champ === 'axe' ? `${Math.round(fNombre(v))}°` : fDioptrie(v)
+    return <>{['od', 'og'].flatMap(o => champs.map(c => {
+      const attendu = q.ordonnance[o]?.[c]
+      const ok = c === 'axe' ? Math.round(fNombre(saisie[o]?.[c])) === Math.round(fNombre(attendu)) : Math.abs(fNombre(saisie[o]?.[c]) - fNombre(attendu)) < 0.001
+      return <FLigneDetail key={o + c} libelle={`${o.toUpperCase()} · ${noms[c]}`} valeur={affiche(c, saisie[o]?.[c])} ok={ok} attendu={affiche(c, attendu)} />
+    }))}</>
+  }
+  if (type === 'power-selector') {
+    let saisie = null
+    try { saisie = JSON.parse(brut) } catch { /* ancienne réponse sans détail */ }
+    if (!saisie) return <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', fontStyle: 'italic' }}>Détail non disponible pour cette réponse.</div>
+    return <>
+      <FLigneDetail libelle="Positif max" valeur={fDioptrie(saisie.pos)} ok={Math.abs(fNombre(saisie.pos) - q.correctPosVal) < 0.001} attendu={fDioptrie(q.correctPosVal)} />
+      <FLigneDetail libelle="Négatif max" valeur={fDioptrie(saisie.neg)} ok={Math.abs(fNombre(saisie.neg) - q.correctNegVal) < 0.001} attendu={fDioptrie(q.correctNegVal)} />
+    </>
+  }
+  return <div style={{ fontSize: 17, color: '#fff' }}>{brut}</div>
+}
+
+// Ligne repliable « un formé » : bonne réponse repliée, fausse ou à valider
+// dépliée d'office ; un clic ouvre / ferme le détail.
+export function FLigneFormé({ nom, statut, auto, resume, q, brut, actions }) {
+  const [ouvert, setOuvert] = useState(statut !== true)
+  useEffect(() => { if (statut === false) setOuvert(true) }, [statut])
+  const couleur = statut === true ? F_VERT : statut === false ? F_ROUGE : F_AMBRE
+  const etiquette = statut === true ? (auto ? 'Juste · validé auto' : 'Juste') : statut === false ? 'Faux' : 'À valider'
+  return (
+    <div style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', borderLeft: `3px solid ${couleur}`, animation: 'j1FadeIn .3s ease' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 12, padding: '1.2vh 0 1.2vh 14px' }}>
+        <button onClick={() => setOuvert(o => !o)} style={{ all: 'unset', cursor: 'pointer', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{nom}</span>
+            <span style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: couleur }}>{etiquette}</span>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{ouvert ? '▴ masquer' : '▾ voir le détail'}</span>
+          </div>
+          {!ouvert && <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{resume}</div>}
+        </button>
+        {actions}
+      </div>
+      {ouvert && <div style={{ padding: '0 0 1.4vh 14px' }}><FDetailReponse q={q} brut={brut} /></div>}
+    </div>
+  )
+}
+
+export function fResume(q, brut) {
+  const type = q.type || 'qcm'
+  if (type === 'ordonnance-fill' || type === 'power-selector') {
+    try { const v = JSON.parse(brut); return type === 'power-selector' ? `${fDioptrie(v.pos)} / ${fDioptrie(v.neg)}` : `OD ${fDioptrie(v.od?.sph)} · OG ${fDioptrie(v.og?.sph)}` } catch { return '' }
+  }
+  return String(brut || '').split('||').map(x => x.trim()).filter(Boolean).join(' · ')
 }
 
 // ── Contrôleur questions texte libre ────────────────────────────────
@@ -372,22 +478,28 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
           ) : answers.map(row => {
             const statut = validations[row.participant_name]
             const auto = statut === true && autoValidatedRef.current.has(row.participant_name)
-            return (
-              <div key={row.participant_name} style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 14, padding: '1.5vh 0 1.5vh 14px', borderBottom: '1px solid rgba(255,255,255,0.08)', borderLeft: `3px solid ${statut === true ? F_VERT : statut === false ? F_ROUGE : F_AMBRE}`, animation: 'j1FadeIn .3s ease' }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>
-                    {row.participant_name}{auto && <span style={{ color: F_VERT, marginLeft: 8, letterSpacing: 1 }}>· validé auto</span>}
-                  </div>
-                  <div style={{ fontSize: fT(19, 2.1), marginTop: 4, color: '#fff', overflowWrap: 'anywhere' }}>{formatAnswer(row.answer)}</div>
-                </div>
-                {/* Boutons toujours actifs — modifiables même après une validation automatique */}
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {[[true, '✓', F_VERT, 'Marquer correct'], [false, '✗', F_ROUGE, 'Marquer faux']].map(([v, l, c, titre]) => (
-                    <button key={l} onClick={() => handleValidate(row.participant_name, v)} title={titre} style={{ width: 40, height: 40, borderRadius: 8, fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${statut === v ? c : 'rgba(255,255,255,0.18)'}`, background: statut === v ? `${c}26` : 'transparent', color: statut === v ? c : 'rgba(255,255,255,0.5)' }}>{l}</button>
-                  ))}
-                </div>
+            // Boutons toujours actifs — modifiables même après une validation automatique
+            const boutons = (
+              <div style={{ display: 'flex', gap: 6 }}>
+                {[[true, '✓', F_VERT, 'Marquer correct'], [false, '✗', F_ROUGE, 'Marquer faux']].map(([v, l, c, titre]) => (
+                  <button key={l} onClick={() => handleValidate(row.participant_name, v)} title={titre} style={{ width: 40, height: 40, borderRadius: 8, fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${statut === v ? c : 'rgba(255,255,255,0.18)'}`, background: statut === v ? `${c}26` : 'transparent', color: statut === v ? c : 'rgba(255,255,255,0.5)' }}>{l}</button>
+                ))}
               </div>
             )
+            if (q.type === 'text-open') {
+              return (
+                <div key={row.participant_name} style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 14, padding: '1.5vh 0 1.5vh 14px', borderBottom: '1px solid rgba(255,255,255,0.08)', borderLeft: `3px solid ${statut === true ? F_VERT : statut === false ? F_ROUGE : F_AMBRE}`, animation: 'j1FadeIn .3s ease' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>
+                      {row.participant_name}{auto && <span style={{ color: F_VERT, marginLeft: 8, letterSpacing: 1 }}>· validé auto</span>}
+                    </div>
+                    <div style={{ fontSize: fT(19, 2.1), marginTop: 4, color: '#fff', overflowWrap: 'anywhere' }}>{formatAnswer(row.answer)}</div>
+                  </div>
+                  {boutons}
+                </div>
+              )
+            }
+            return <FLigneFormé key={row.participant_name} nom={row.participant_name} statut={statut ?? null} auto={auto} q={q} brut={row.answer} resume={fResume(q, row.answer)} actions={boutons} />
           })}
         </div>
         <FPasRepondu noms={notAnswered} />
@@ -521,6 +633,16 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
             <div><div style={{ fontSize: fT(48, 5.2), fontWeight: 300, color: F_VERT, lineHeight: 1 }}>{correctCount}</div><div style={{ ...fPetitTitre, marginTop: 6 }}>Correct{correctCount > 1 ? 's' : ''}</div></div>
             <div><div style={{ fontSize: fT(48, 5.2), fontWeight: 300, color: F_ROUGE, lineHeight: 1 }}>{total - correctCount}</div><div style={{ ...fPetitTitre, marginTop: 6 }}>Incorrect{total - correctCount > 1 ? 's' : ''}</div></div>
           </div>
+        )}
+        {!hasOptions && liveAnswers.length > 0 && (
+          <>
+            <div style={{ ...fPetitTitre, marginTop: '3vh', paddingBottom: '1.2vh', borderBottom: '1px solid rgba(255,255,255,0.15)' }}>Réponses par formé · cliquez pour voir ce qu&apos;il a saisi</div>
+            <div style={{ maxHeight: '38vh', overflowY: 'auto' }}>
+              {[...liveAnswers].sort((x, y) => Number(x.is_correct) - Number(y.is_correct)).map(r => (
+                <FLigneFormé key={r.collaborateur} nom={r.collaborateur} statut={!!r.is_correct} q={q} brut={r.answer} resume={fResume(q, r.answer)} />
+              ))}
+            </div>
+          </>
         )}
         {!enCorrection && <FPasRepondu noms={notAnswered} />}
       </>}

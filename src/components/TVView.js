@@ -739,10 +739,16 @@ function TVEpOrdonnance({ q, debut }) {
   return (
     <div style={{ marginTop: '4vh' }}>
       <div style={{ height: 1, background: EP_OR, transformOrigin: 'left', transform: 'scaleX(0)', animation: `tvEpTrait .7s cubic-bezier(.2,.8,.2,1) ${debut}s forwards` }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '1.4vh', ...epAnim('tvEpMonte', debut + 0.2) }}>
+      <div style={{ marginTop: '1.4vh', ...epAnim('tvEpMonte', debut + 0.2) }}>
         <span style={{ fontSize: epTaille(12, 1.2), letterSpacing: 4, textTransform: 'uppercase', color: EP_OR }}>Ordonnance</span>
-        {q.ordoLabel && <span style={{ fontSize: epTaille(16, 1.6), color: 'rgba(255,255,255,0.75)', fontStyle: 'italic' }}>{q.ordoLabel}</span>}
       </div>
+      {/* Mention type « 1 paire de lunettes vision de près » : indispensable pour
+          répondre (presbytie et non hypermétropie) — donc très visible (16/11). */}
+      {q.ordoLabel && (
+        <div style={{ marginTop: '1.4vh', padding: '1.2vh 1.4vw', borderLeft: `4px solid ${EP_OR}`, background: 'rgba(201,162,39,0.12)', fontSize: epTaille(30, 2.9), fontWeight: 700, lineHeight: 1.25, ...epAnim('tvEpMonte', debut + 0.3) }}>
+          👓 {q.ordoLabel}
+        </div>
+      )}
       {!sansEntetes && !q.hideNonAddHeaders && (
         <div style={{ display: 'grid', gridTemplateColumns: grille, columnGap: '0.8em', marginTop: '1vh', fontSize: tailleChiffres, color: 'rgba(255,255,255,0.35)', ...epAnim('tvEpMonte', debut + 0.3) }}>
           <span />{colonnes.map(c => <span key={c.cle} style={{ fontSize: epTaille(11, 1.1), letterSpacing: 2, textTransform: 'uppercase' }}>{c.titre}</span>)}
@@ -759,7 +765,7 @@ function useTVEpReponses({ type, sessionCode, moduleId, qIdx }) {
   const [reponses, setReponses] = useState([])
   const [participants, setParticipants] = useState(0)
   const libre = type === 'text-open' || type === 'text-open-multi' || type === 'text-open-pairs'
-  const actif = libre || type === 'ordonnance-fill'
+  const actif = libre || type === 'ordonnance-fill' || type === 'power-selector'
   useEffect(() => {
     if (!actif || !sessionCode) return
     const poll = async () => {
@@ -827,12 +833,12 @@ export function TVQuestionEpuree({ question: q, qIdx, total, moduleLabel, sessio
         )}
       </div>
     )
-  } else if (type === 'ordonnance-fill') {
+  } else if (type === 'ordonnance-fill' || type === 'power-selector') {
     blocReponses = (
       <div style={{ minWidth: 0 }}>
         {titreBloc('Sur votre téléphone')}
         <div style={{ fontSize: epTaille(30, 2.9), fontWeight: 300, lineHeight: 1.4, marginTop: '4vh', color: 'rgba(255,255,255,0.85)', ...epAnim('tvEpMonte', debutReponses) }}>
-          Recopiez les valeurs<br />de cette ordonnance
+          {type === 'power-selector' ? <>Choisissez les puissances<br />avec les roulettes</> : <>Recopiez les valeurs<br />de cette ordonnance</>}
         </div>
         {compteur}
       </div>
@@ -914,13 +920,13 @@ export function TVCorrectionEpuree({ question: q, qIdx, total, moduleLabel, sess
   )
 
   let gauche
-  if (libre || type === 'ordonnance-fill') {
+  if (libre || type === 'ordonnance-fill' || type === 'power-selector') {
     gauche = (
       <div style={{ minWidth: 0 }}>
         {score}
         <div style={{ marginTop: '5vh', paddingBottom: '1.4vh', borderBottom: '1px solid rgba(255,255,255,0.15)', fontSize: epTaille(12, 1.2), letterSpacing: 2, textTransform: 'uppercase', color: EP_VERT, ...epAnim('tvEpMonte', 0.3) }}>✓ Bonne réponse</div>
         <div style={{ marginTop: '3vh', fontSize: epTaille(34, 3.2), fontWeight: 500, lineHeight: 1.35, ...epAnim('tvEpMonte', 0.45) }}>
-          {libre ? q.hint : 'Les valeurs de l’ordonnance, à l’identique'}
+          {libre || type === 'power-selector' ? q.hint : 'Les valeurs de l’ordonnance, à l’identique'}
         </div>
         {nb > 0 && bonnes === nb && (
           <div style={{ marginTop: '4vh', fontSize: epTaille(20, 2), color: EP_VERT, ...epAnim('tvEpMonte', 0.6) }}>Tout le monde a bon !</div>
@@ -985,7 +991,7 @@ export function TVCorrectionEpuree({ question: q, qIdx, total, moduleLabel, sess
 function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode, moduleId }) {
   const type = question.type || 'qcm'
   // Nouveau style épuré (16/11) — sauf la trame d'accueil à compléter
-  const EPURE = ['qcm', 'qcm-multi', 'qcm-ordonnance', 'ordonnance-fill', 'text-open', 'text-open-multi', 'text-open-pairs']
+  const EPURE = ['qcm', 'qcm-multi', 'qcm-ordonnance', 'ordonnance-fill', 'power-selector', 'text-open', 'text-open-multi', 'text-open-pairs']
   if (EPURE.includes(type) && !question.tramePoints) {
     return <TVQuestionEpuree key={`${moduleId}-${qIdx}`} question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} moduleId={moduleId} />
   }
@@ -7432,7 +7438,7 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
       {/* Contenu principal : oeil · verre · scenarios */}
       <div style={{
         flex: '1 1 auto', minHeight: 0, display: 'flex', alignItems: 'center',
-        padding: '4px 40px', gap: GAP,
+        padding: '4px 40px', gap: GAP, position: 'relative', zIndex: 1,
         opacity: entered ? 1 : 0, transition: 'opacity .8s ease .2s',
       }}>
 
@@ -9932,7 +9938,7 @@ export default function TVView() {
         ) : isQuiz && quizQuestion ? (
           quizInterstitialPhase
             ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} skipSignal={sharedState?.quiz_podium_skip} moduleId={activeModule} />
-            : sharedState?.quiz_show_correction && ['qcm', 'qcm-multi', 'qcm-ordonnance', 'ordonnance-fill', 'text-open', 'text-open-multi', 'text-open-pairs'].includes(quizQuestion?.type || 'qcm') && !quizQuestion?.tramePoints
+            : sharedState?.quiz_show_correction && ['qcm', 'qcm-multi', 'qcm-ordonnance', 'ordonnance-fill', 'power-selector', 'text-open', 'text-open-multi', 'text-open-pairs'].includes(quizQuestion?.type || 'qcm') && !quizQuestion?.tramePoints
               ? <TVCorrectionEpuree
                   key={`corr-${activeModule}-${modulePage}`}
                   question={quizQuestion}

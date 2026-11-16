@@ -59,6 +59,7 @@ export async function saveModuleQuizAnswer({
   collaborateur,
   answerIdx,
   isCorrect,
+  answer, // facultatif : valeurs saisies (simulateurs), pour que le formateur voie où le formé s'est trompé
 }) {
   const code = sessionCode || getRuntimeSessionCode()
   const name = (collaborateur || '').trim()
@@ -75,6 +76,7 @@ export async function saveModuleQuizAnswer({
     collaborateur: name,
     answer_idx: answerIdx,
     is_correct: !!isCorrect,
+    ...(answer != null ? { answer } : {}),
   }
   return upsertNoDuplicate(
     'quiz_answers',
