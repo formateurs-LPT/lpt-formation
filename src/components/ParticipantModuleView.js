@@ -22,6 +22,7 @@ import { resolveParticipantSessionCode, participantJoinBlockedMessage } from '@/
 import { QuestionsGameParticipantView } from '@/components/QuestionsGamePanel'
 import { ModuleApresFormationParticipant } from '@/components/modules/ModuleApresFormationSession'
 import { moduleDeSession } from '@/lib/modulesApresFormation'
+import { chargerChronoQuiz, classerQuiz } from '@/lib/quizClassement'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -163,7 +164,7 @@ function computeBadges({ quizRows, quizHistory }) {
 
   const themeStats = {}
   for (const r of rows) {
-    const theme = DIRECT_THEME_MODULES.has(r.module_id) ? r.module_id : themeForAnswer(r.module_id, r.question_idx)
+    const theme = DIRECT_THEME_MODULES.has(r.module_id) ? r.module_id : themeForAnswer(r.module_id, r.question_idx, r.created_at)
     if (!theme) continue
     if (!themeStats[theme]) themeStats[theme] = { correct: 0, total: 0 }
     themeStats[theme].total++
@@ -567,20 +568,18 @@ function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
   const [myRank, setMyRank] = useState(null)
 
   const refresh = async () => {
-    let rows
+    let rows, chrono
     try {
-      rows = await sbSelect('quiz_answers', `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${moduleId}`)
+      const code = getParticipantSessionCode()
+      ;[rows, chrono] = await Promise.all([
+        sbSelect('quiz_answers', `session_code=eq.${code}&module_id=eq.${moduleId}`),
+        chargerChronoQuiz(code, moduleId),
+      ])
     } catch { return }
     if (!rows) return
-    // Score = nombre de bonnes réponses jusqu'à la question actuelle incluse
-    const scores = {}
-    rows.filter(r => r.question_idx <= qIdx).forEach(r => {
-      if (!scores[r.collaborateur]) scores[r.collaborateur] = 0
-      if (r.is_correct) scores[r.collaborateur]++
-    })
-    const sorted = Object.entries(scores)
-      .map(([name, score]) => ({ name, score }))
-      .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+    // Score = bonnes réponses jusqu'à la question actuelle incluse, puis
+    // rapidité moyenne à score égal (cf. quizClassement.js)
+    const sorted = classerQuiz(rows.filter(r => r.question_idx <= qIdx), { moduleId, chrono })
     setRanking(sorted)
     const idx = sorted.findIndex(p => p.name === pName)
     if (idx !== -1) {
@@ -881,35 +880,44 @@ function QuizResultScreen({ isCorrect, pName, moduleId, timedOut }) {
     const load = async () => {
       try {
         const code = getParticipantSessionCode()
-        const rows = await sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${encodeURIComponent(moduleId)}`)
-        // Dédoublonne par formé+question (garde la ligne la plus récente)
-        const latest = {}
-        for (const r of rows || []) {
-          if (!r.collaborateur) continue
-          const key = `${r.collaborateur}__${r.question_idx}`
-          if (!latest[key] || (r.id ?? 0) > (latest[key].id ?? 0)) latest[key] = r
-        }
-        const scoreByName = {}
-        for (const r of Object.values(latest)) {
-          if (!(r.collaborateur in scoreByName)) scoreByName[r.collaborateur] = 0
-          if (r.is_correct) scoreByName[r.collaborateur]++
-        }
-        const sorted = Object.entries(scoreByName)
-          .map(([name, score]) => ({ name, score }))
-          .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+        const [rows, chrono] = await Promise.all([
+          sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${encodeURIComponent(moduleId)}`),
+          chargerChronoQuiz(code, moduleId),
+        ])
+        // Score, puis rapidité moyenne à score égal (cf. quizClassement.js) —
+        // même rang seulement si score ET temps moyen sont identiques.
+        const sorted = classerQuiz(rows || [], { moduleId, chrono })
         let rk = 1
         for (let i = 0; i < sorted.length; i++) {
-          if (i > 0 && sorted[i].score !== sorted[i - 1].score) rk = i + 1
+          const prev = sorted[i - 1]
+          if (i > 0 && (sorted[i].score !== prev.score || sorted[i].tempsMoyen !== prev.tempsMoyen)) rk = i + 1
           sorted[i].rank = rk
         }
-        const me = sorted.find(r => normalizeNameKey(r.name) === normalizeNameKey(pName || ''))
-        if (!cancelled) setRankInfo(me ? { rank: me.rank, total: sorted.length } : null)
+        const moi = sorted.findIndex(r => normalizeNameKey(r.name) === normalizeNameKey(pName || ''))
+        const me = sorted[moi]
+        // Clin d'œil quand la rapidité fait la différence : même score que le
+        // voisin de classement, mais un temps moyen différent.
+        const prenom = (n) => String(n || '').trim().split(' ').pop()
+        const memeScorePlusRapide = (a, b) => a && b && a.score === b.score && a.tempsMoyen != null && b.tempsMoyen != null && a.tempsMoyen < b.tempsMoyen
+        const devant = sorted[moi - 1], derriere = sorted[moi + 1]
+        const rapidite = memeScorePlusRapide(devant, me)
+          ? { texte: `${prenom(devant.name)} a été plus rapide que toi !`, emoji: '🏃‍♂️💨', gagne: false }
+          : memeScorePlusRapide(me, derriere)
+            ? { texte: `Tu as devancé ${prenom(derriere.name)} grâce à ta rapidité !`, emoji: '⚡', gagne: true }
+            : null
+        if (!cancelled) setRankInfo(me ? { rank: me.rank, total: sorted.length, rapidite } : null)
       } catch { /* ignore */ }
     }
     load()
     return () => { cancelled = true }
   }, [isCorrect, pName, moduleId])
 
+  return <EcranResultatQuizVue isCorrect={isCorrect} timedOut={timedOut} rankInfo={rankInfo} />
+}
+
+// Affichage de l'écran résultat (sans accès aux données) — séparé pour pouvoir
+// le prévisualiser avec des données de test.
+export function EcranResultatQuizVue({ isCorrect, timedOut, rankInfo }) {
   return (
     <div style={{
       minHeight: '100dvh',
@@ -937,6 +945,17 @@ function QuizResultScreen({ isCorrect, pName, moduleId, timedOut }) {
           <div style={{ fontSize: 26, fontWeight: 900, color: '#00abe9' }}>
             {rankInfo.rank}<span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>{rankInfo.rank === 1 ? 'er' : 'e'} / {rankInfo.total}</span>
           </div>
+        </div>
+      )}
+      {rankInfo?.rapidite && (
+        <div style={{
+          marginBottom: 14, maxWidth: 320, padding: '10px 18px', borderRadius: 14,
+          background: rankInfo.rapidite.gagne ? 'rgba(250,204,21,0.12)' : 'rgba(168,85,247,0.14)',
+          border: `1px solid ${rankInfo.rapidite.gagne ? 'rgba(250,204,21,0.4)' : 'rgba(168,85,247,0.45)'}`,
+          fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.4,
+          animation: 'quizScreenIn .4s ease',
+        }}>
+          <span style={{ marginRight: 6 }}>{rankInfo.rapidite.emoji}</span>{rankInfo.rapidite.texte}
         </div>
       )}
       <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>En attente de la prochaine question…</div>
@@ -1209,8 +1228,13 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
         textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
       }}>Question {qIdx + 1}</div>
       <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 24, textAlign: 'center' }}>
-        Regardez la question sur l&apos;écran<br />et remplissez les {fieldsCount} cases
+        {q.schemaVerre
+          ? <>Regardez la question sur l&apos;écran<br />puis touchez chaque zone du verre pour écrire son nom</>
+          : <>Regardez la question sur l&apos;écran<br />et remplissez les {fieldsCount} cases</>}
       </div>
+      {q.schemaVerre ? (
+        <SchemaVerreProgressif values={values} onChange={setField} labels={q.fieldLabels} />
+      ) : (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 400, marginBottom: 24 }}>
         {values.map((val, i) => (
           <div key={i}>
@@ -1231,6 +1255,7 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
           </div>
         ))}
       </div>
+      )}
       <button onClick={() => handleSubmit()} disabled={!allFilled || saving} style={{
         background: allFilled ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
         border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
@@ -1239,6 +1264,68 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
       }}>
         {saving ? 'Envoi…' : '✓ Envoyer'}
       </button>
+    </div>
+  )
+}
+
+// ── Schéma de verre progressif vide (question « zones du progressif ») ──
+// Le formé touche une zone (haut / milieu / bas) et écrit son nom. Les
+// réponses gardent l'ordre haut → milieu → bas (values[0..2]), ce qui permet
+// une correction qui tient compte de l'emplacement (autoCorrectOrdered).
+const ZONES_VERRE = [
+  { style: { top: 0, left: 0, width: '100%', height: '46%' } },
+  { style: { top: '46%', left: '36%', width: '28%', height: '22%' } },
+  { style: { top: '68%', left: '24%', width: '52%', height: '32%' } },
+]
+
+export function SchemaVerreProgressif({ values, onChange, labels }) {
+  const [active, setActive] = useState(null)
+  return (
+    <div style={{ width: '100%', maxWidth: 400, marginBottom: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+      <div style={{
+        position: 'relative', width: 300, maxWidth: '100%', aspectRatio: '300 / 230',
+        borderRadius: '50% / 46%', overflow: 'hidden',
+        border: '3px solid rgba(255,255,255,0.35)',
+        background: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 6px, rgba(255,255,255,0.1) 6px 12px)',
+      }}>
+        {ZONES_VERRE.map((z, i) => {
+          const isActive = active === i
+          const filled = values[i]?.trim()
+          return (
+            <button key={i} type="button" onClick={() => setActive(i)} style={{
+              position: 'absolute', ...z.style, boxSizing: 'border-box',
+              border: `2px ${isActive ? 'solid' : 'dashed'} ${isActive ? '#a855f7' : 'rgba(255,255,255,0.35)'}`,
+              borderRadius: i === 0 ? '0 0 40% 40% / 0 0 30% 30%' : i === 1 ? 10 : '40% 40% 0 0 / 30% 30% 0 0',
+              background: isActive ? 'rgba(168,85,247,0.35)' : filled ? 'rgba(34,197,94,0.22)' : 'rgba(0,171,233,0.18)',
+              color: '#fff', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, textAlign: 'center',
+              WebkitTapHighlightColor: 'transparent',
+            }}>
+              {filled || <span style={{ fontSize: 22, opacity: 0.8 }}>?</span>}
+            </button>
+          )
+        })}
+      </div>
+      {active !== null ? (
+        <div style={{ width: '100%' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#c4b5fd', marginBottom: 6 }}>{labels?.[active] || `Zone ${active + 1}`}</div>
+          <input
+            key={active}
+            autoFocus
+            value={values[active]}
+            onChange={e => onChange(active, e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') setActive(values.findIndex((v, i) => i !== active && !v.trim()) >= 0 ? values.findIndex((v, i) => i !== active && !v.trim()) : null) }}
+            placeholder="Nom de cette zone"
+            style={{
+              width: '100%', padding: '14px 16px', borderRadius: 14,
+              border: '1px solid rgba(168,85,247,0.6)', background: 'rgba(255,255,255,0.07)',
+              color: '#fff', fontSize: 16, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+            }}
+          />
+        </div>
+      ) : (
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Touchez une zone pour la nommer</div>
+      )}
     </div>
   )
 }

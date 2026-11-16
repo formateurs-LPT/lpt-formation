@@ -2,7 +2,7 @@
 // fix: getActiveSessionCode pour sync TV
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, sbDelete, sbSelect, getActiveSessionCode, setSharedState, getRoomSharedState, fetchOpenAnswers, clearQuizStarts } from '@/lib/supabase'
+import { sbUpdate, sbDelete, sbSelect, getActiveSessionCode, setSharedState, getRoomSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { fetchOnlineParticipantCount } from '@/lib/participantPresence'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
@@ -84,7 +84,7 @@ function TrainerNav({ onBack, onPrev, onNext, isFirst, isLast, pageIndex, total,
             border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer',
             boxShadow: '0 6px 24px rgba(124,58,237,0.5)', fontFamily: 'inherit',
             flex: isMobile ? 2 : undefined, textAlign: 'center', ...btnNext,
-          }}>🧠 Lancer le quiz →</button>
+          }}>✓ Terminer le module</button>
         )
       ) : (
         <button onClick={onNext} style={{
@@ -1832,17 +1832,9 @@ export default function ModuleOptique({ pName, onBack, onTerminate }) {
     onBack()
   }
 
-  const handleLaunchQuiz = async () => {
-    try {
-      await sbUpdate('sessions', { active_module: 'optique', module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
-      await setSharedState({ quiz_interstitial_q: null, quiz_final_phase: null, quiz_show_correction: false, quiz_ordo_show: false })
-      await clearQuizStarts(getActiveSessionCode(), 'optique').catch(() => {})
-    } catch { /* best-effort */ }
-    setQuizQ(0)
-    setQuizLaunched(true)
-    setQuizFinalPhase(null)
-  }
-
+  // Quiz de fin de module retiré (16/11) : ses questions sont regroupées dans
+  // le Quiz Jour 1 de fin de journée. Le dernier bouton termine le module.
+  const handleLaunchQuiz = async () => handleTerminateModule()
   // Podium interstitiel toutes les 5 questions supprimé (faisait planter
   // l'appli) — on enchaîne directement les questions, seul le podium final
   // reste (cf. handleEndQuiz). Le classement en temps réel, désormais privé,

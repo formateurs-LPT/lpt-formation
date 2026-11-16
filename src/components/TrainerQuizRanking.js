@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { sbSelect, getActiveSessionCode } from '@/lib/supabase'
 import { isTrainerAccount } from '@/lib/participantNames'
+import { chargerChronoQuiz, classerQuiz } from '@/lib/quizClassement'
 
 /**
  * Classement complet (nombre de bonnes réponses, pas les points) pour le
@@ -18,17 +19,15 @@ export function useTrainerQuizRanking(moduleId, qIdx) {
     const load = async () => {
       try {
         const code = getActiveSessionCode()
-        const rows = await sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${encodeURIComponent(moduleId)}`)
-        const grouped = {}
-        ;(rows || [])
-          .filter(r => r.question_idx <= qIdx && !isTrainerAccount(r.collaborateur))
-          .forEach(r => {
-            if (!(r.collaborateur in grouped)) grouped[r.collaborateur] = 0
-            if (r.is_correct) grouped[r.collaborateur]++
-          })
-        const sorted = Object.entries(grouped)
-          .map(([name, score]) => ({ name, score }))
-          .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+        const [rows, chrono] = await Promise.all([
+          sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${encodeURIComponent(moduleId)}`),
+          chargerChronoQuiz(code, moduleId),
+        ])
+        // Score, puis rapidité moyenne à score égal (cf. quizClassement.js)
+        const sorted = classerQuiz(
+          (rows || []).filter(r => r.question_idx <= qIdx && !isTrainerAccount(r.collaborateur)),
+          { moduleId, chrono }
+        )
         if (!cancelled) setRanking(sorted)
       } catch { /* best-effort */ }
     }

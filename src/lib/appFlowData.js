@@ -22,9 +22,9 @@ export const APP_FLOW_NODES = [
   { id: 'outils-formateur',    label: 'Outils formateur',       kind: 'branch', x: COL,     y: 9 * ROW },
 
   // ── J1 — commun ──────────────────────────────────────────────────
-  { id: 'entreprise',   label: "Présentation de l'entreprise", kind: 'module',  journee: 'J1', hasQuiz: true,  x: 2 * COL, y: 2 * ROW },
-  { id: 'optique',      label: "Les bases de l'optique",       kind: 'module',  journee: 'J1', hasQuiz: true,  x: 3 * COL, y: 2 * ROW },
-  { id: 'types-verres', label: 'Les types de verres',          kind: 'module',  journee: 'J1', hasQuiz: true,  x: 4 * COL, y: 2 * ROW },
+  { id: 'entreprise',   label: "Présentation de l'entreprise", kind: 'module',  journee: 'J1', hasQuiz: false,  x: 2 * COL, y: 2 * ROW },
+  { id: 'optique',      label: "Les bases de l'optique",       kind: 'module',  journee: 'J1', hasQuiz: false,  x: 3 * COL, y: 2 * ROW },
+  { id: 'types-verres', label: 'Les types de verres',          kind: 'module',  journee: 'J1', hasQuiz: false,  x: 4 * COL, y: 2 * ROW },
   { id: 'montures',     label: 'Connaissances Montures',       kind: 'module',  journee: 'J1', hasQuiz: false, x: 5 * COL, y: 2 * ROW },
   { id: 'montures-decouverte', label: 'Découverte des montures', kind: 'planned', journee: 'J1', x: 6 * COL, y: 2 * ROW },
   { id: 'quiz-j1',      label: 'Quiz Jour 1',                  kind: 'quiz',    journee: 'J1',                 x: 7 * COL, y: 2 * ROW },

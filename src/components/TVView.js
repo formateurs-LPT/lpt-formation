@@ -16,6 +16,8 @@ import { TVPeerQuizScreen } from '@/components/PeerQuizGame'
 import { TVFreeQuizScreen } from '@/components/FreeQuizGame'
 import { useQuizCountdown, QUIZ_TIME_LIMIT_SEC } from '@/components/ParticipantModuleView'
 import { countVotesPerOption } from '@/lib/quizVotes'
+import { tauxParFamille, statutFamille, themeForAnswer, FAMILLE_LABELS } from '@/lib/quizThemeMap'
+import { chargerChronoQuiz, classerQuiz } from '@/lib/quizClassement'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -165,7 +167,10 @@ function TVQuestionOverlay({ sessionCode, singleId }) {
 }
 
 // ── Keyframes ─────────────────────────────────────────────────────
-const STYLES = `
+export const STYLES = `
+  @keyframes tvEpMonte { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: none } }
+  @keyframes tvEpGlisse { from { opacity: 0; transform: translateX(-18px) } to { opacity: 1; transform: none } }
+  @keyframes tvEpTrait { from { transform: scaleX(0) } to { transform: scaleX(1) } }
   html, body { overflow: hidden !important; height: 100% !important; margin: 0; }
 
   @keyframes trameSlideIn {
@@ -683,8 +688,307 @@ function TVQuizTimerOverlay({ moduleId, qIdx, sessionCode, seconds }) {
 }
 
 // ── TV Quiz Question ──────────────────────────────────────────────
+// ══ Écran « question » épuré (style choisi par Kevin le 16/11) ══════════
+// Même direction artistique que le classement final : fond uni, question en
+// grand à DROITE avec un filet doré, réponses en lignes à GAUCHE, chrono
+// intégré en haut (fine barre + temps). Utilisé pour les QCM, QCM multiples,
+// QCM sur ordonnance, ordonnances à recopier et réponses libres de TOUS les
+// quiz. Les autres écrans (roulettes, trame…) gardent leur style.
+const EP_OR = '#c9a227'
+const epTaille = (px, vh) => `min(${px}px, ${vh}vh)`
+const epAnim = (nom, delai, duree = 0.7) => ({ opacity: 0, animation: `${nom} ${duree}s cubic-bezier(.2,.8,.2,1) ${delai}s forwards` })
+
+function TVEpChrono({ moduleId, qIdx, sessionCode, seconds }) {
+  const restant = useQuizCountdown({ enabled: true, moduleId, qIdx, sessionCode, seconds })
+  const urgent = restant <= 15
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{ width: 'min(160px, 12vw)', height: 2, background: 'rgba(255,255,255,0.12)', position: 'relative' }}>
+        <div style={{ position: 'absolute', inset: 0, width: `${Math.max(0, Math.min(1, restant / seconds)) * 100}%`, background: urgent ? '#ef4444' : '#fff', transition: 'width .25s linear' }} />
+      </div>
+      <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: epTaille(22, 2.2), fontWeight: 600, color: urgent ? '#f87171' : '#fff' }}>
+        {Math.floor(restant / 60)}:{String(restant % 60).padStart(2, '0')}
+      </span>
+    </div>
+  )
+}
+
+// Ordonnance : n'affiche que les colonnes présentes (cylindre, addition) et
+// respecte les réglages de la question (en-têtes masqués, cylindre entre
+// parenthèses, mention type « 1 paire de lunettes vision de près »). Largeurs
+// fixes en em : les lignes OD et OG restent alignées au pixel près.
+function TVEpOrdonnance({ q, debut }) {
+  const { od, og } = q.ordonnance
+  const aCyl = !!(od.cyl || og.cyl), aAdd = !!(od.add || og.add)
+  const sansEntetes = q.hideOrdoLabels || q.hideLabels
+  const colonnes = [
+    { cle: 'sph', titre: 'Sphère', largeur: '4em', val: d => d.sph || '—' },
+    ...(aCyl ? (q.cylInParens
+      ? [{ cle: 'cyl', titre: 'Cylindre · Axe', largeur: '6.4em', val: d => d.cyl ? `(${d.cyl}) ${d.axe}°` : '' }]
+      : [{ cle: 'cyl', titre: 'Cylindre', largeur: '4em', val: d => d.cyl || '' }, { cle: 'axe', titre: 'Axe', largeur: '3em', val: d => d.axe ? `${d.axe}°` : '' }]) : []),
+    ...(aAdd ? [{ cle: 'add', titre: 'Addition', largeur: sansEntetes || q.hideNonAddHeaders ? '5.2em' : '4em', val: d => d.add ? (sansEntetes || q.hideNonAddHeaders ? `Add ${d.add}` : d.add) : '' }] : []),
+  ]
+  const grille = `1.8em ${colonnes.map(c => c.largeur).join(' ')}`
+  const tailleChiffres = epTaille(36, 3.4)
+  const ligne = (oeil, d, delai) => (
+    <div style={{ display: 'grid', gridTemplateColumns: grille, columnGap: '0.8em', fontSize: tailleChiffres, alignItems: 'baseline', padding: '1.5vh 0', borderBottom: '1px solid rgba(255,255,255,0.08)', ...epAnim('tvEpGlisse', delai) }}>
+      <span style={{ fontSize: epTaille(14, 1.3), letterSpacing: 3, color: 'rgba(255,255,255,0.45)' }}>{oeil}</span>
+      {colonnes.map(c => <span key={c.cle} style={{ fontWeight: 300, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{c.val(d)}</span>)}
+    </div>
+  )
+  return (
+    <div style={{ marginTop: '4vh' }}>
+      <div style={{ height: 1, background: EP_OR, transformOrigin: 'left', transform: 'scaleX(0)', animation: `tvEpTrait .7s cubic-bezier(.2,.8,.2,1) ${debut}s forwards` }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '1.4vh', ...epAnim('tvEpMonte', debut + 0.2) }}>
+        <span style={{ fontSize: epTaille(12, 1.2), letterSpacing: 4, textTransform: 'uppercase', color: EP_OR }}>Ordonnance</span>
+        {q.ordoLabel && <span style={{ fontSize: epTaille(16, 1.6), color: 'rgba(255,255,255,0.75)', fontStyle: 'italic' }}>{q.ordoLabel}</span>}
+      </div>
+      {!sansEntetes && !q.hideNonAddHeaders && (
+        <div style={{ display: 'grid', gridTemplateColumns: grille, columnGap: '0.8em', marginTop: '1vh', fontSize: tailleChiffres, color: 'rgba(255,255,255,0.35)', ...epAnim('tvEpMonte', debut + 0.3) }}>
+          <span />{colonnes.map(c => <span key={c.cle} style={{ fontSize: epTaille(11, 1.1), letterSpacing: 2, textTransform: 'uppercase' }}>{c.titre}</span>)}
+        </div>
+      )}
+      {ligne('OD', od, debut + 0.45)}
+      {ligne('OG', og, debut + 0.7)}
+    </div>
+  )
+}
+
+// Nombre de réponses reçues (questions libres et ordonnances à recopier)
+function useTVEpReponses({ type, sessionCode, moduleId, qIdx }) {
+  const [reponses, setReponses] = useState([])
+  const [participants, setParticipants] = useState(0)
+  const libre = type === 'text-open' || type === 'text-open-multi' || type === 'text-open-pairs'
+  const actif = libre || type === 'ordonnance-fill'
+  useEffect(() => {
+    if (!actif || !sessionCode) return
+    const poll = async () => {
+      try {
+        const [lignes, pRows] = await Promise.all([
+          libre
+            ? fetchOpenAnswers(sessionCode, `${moduleId}:${qIdx}`)
+            : sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(sessionCode)}&module_id=eq.${encodeURIComponent(moduleId)}&question_idx=eq.${qIdx}`),
+          sbSelect('participants', `session_code=eq.${encodeURIComponent(sessionCode)}`),
+        ])
+        setReponses(lignes || [])
+        setParticipants((pRows || []).length)
+      } catch { /* réseau : réessai au prochain tick */ }
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    return () => clearInterval(t)
+  }, [actif, libre, sessionCode, moduleId, qIdx])
+  return { reponses, participants }
+}
+
+// apercuRestant : uniquement pour les pages d'aperçu locales — affiche un
+// chrono figé au lieu du vrai (qui enregistre l'heure de départ en base).
+export function TVQuestionEpuree({ question: q, qIdx, total, moduleLabel, sessionCode, moduleId, apercuRestant }) {
+  const type = q.type || 'qcm'
+  const famille = FAMILLE_LABELS[themeForAnswer(moduleId, qIdx)] || moduleLabel
+  const { reponses, participants } = useTVEpReponses({ type, sessionCode, moduleId, qIdx })
+  const libre = type === 'text-open' || type === 'text-open-multi' || type === 'text-open-pairs'
+  const tousOntRepondu = participants > 0 && reponses.length >= participants
+  const debutReponses = q.ordonnance ? 1.9 : 0.8
+  const titreBloc = (t, sous) => (
+    <div style={{ paddingBottom: '1.4vh', borderBottom: '1px solid rgba(255,255,255,0.15)', ...epAnim('tvEpMonte', debutReponses - 0.2) }}>
+      <span style={{ fontSize: epTaille(12, 1.2), letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>{t}</span>
+      {sous && <span style={{ fontSize: epTaille(14, 1.4), color: EP_OR, marginLeft: 14 }}>{sous}</span>}
+    </div>
+  )
+  const compteur = (
+    <div style={{ marginTop: '5vh', display: 'flex', alignItems: 'baseline', gap: 12, ...epAnim('tvEpMonte', debutReponses + 0.2) }}>
+      <span style={{ fontSize: epTaille(64, 6.2), fontWeight: 300, lineHeight: 1 }}>{reponses.length}</span>
+      <span style={{ fontSize: epTaille(22, 2.1), color: 'rgba(255,255,255,0.4)' }}>/ {participants || '?'} ont répondu</span>
+    </div>
+  )
+
+  let blocReponses
+  if (libre) {
+    blocReponses = (
+      <div style={{ minWidth: 0 }}>
+        {titreBloc('Réponse libre')}
+        {tousOntRepondu ? (
+          // Anonyme : seul le formateur voit qui a répondu quoi
+          <div style={{ marginTop: '2vh' }}>
+            {reponses.slice(0, 8).map((a, i) => (
+              <div key={a.participant_name || i} style={{ padding: '1.4vh 0', borderBottom: '1px solid rgba(255,255,255,0.08)', fontSize: epTaille(22, 2.1), color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...epAnim('tvEpMonte', i * 0.06) }}>
+                {type === 'text-open' ? a.answer : (a.answer || '').split('||').map(x => x.trim()).filter(Boolean).join(' · ')}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div style={{ fontSize: epTaille(30, 2.9), fontWeight: 300, lineHeight: 1.4, marginTop: '4vh', color: 'rgba(255,255,255,0.85)', ...epAnim('tvEpMonte', debutReponses) }}>
+              Écrivez votre réponse<br />sur votre téléphone
+            </div>
+            {compteur}
+          </>
+        )}
+      </div>
+    )
+  } else if (type === 'ordonnance-fill') {
+    blocReponses = (
+      <div style={{ minWidth: 0 }}>
+        {titreBloc('Sur votre téléphone')}
+        <div style={{ fontSize: epTaille(30, 2.9), fontWeight: 300, lineHeight: 1.4, marginTop: '4vh', color: 'rgba(255,255,255,0.85)', ...epAnim('tvEpMonte', debutReponses) }}>
+          Recopiez les valeurs<br />de cette ordonnance
+        </div>
+        {compteur}
+      </div>
+    )
+  } else {
+    const options = q.options || []
+    blocReponses = (
+      <div style={{ minWidth: 0 }}>
+        {titreBloc('Réponses', type === 'qcm-multi' ? (q.instruction || 'Plusieurs réponses possibles') : null)}
+        {options.map((o, i) => {
+          const couleur = OPTION_COLORS[i] || '#94a3b8'
+          return (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: 'min(56px, 5vh) 1fr', alignItems: 'center', gap: '1.6vw', padding: options.length > 4 ? '1.8vh 0' : '2.6vh 0', borderBottom: '1px solid rgba(255,255,255,0.08)', ...epAnim('tvEpMonte', debutReponses + i * 0.12) }}>
+              <span style={{ width: 'min(44px, 4.2vh)', height: 'min(44px, 4.2vh)', borderRadius: type === 'qcm-multi' ? 6 : 8, border: `2px solid ${couleur}`, color: couleur, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: epTaille(20, 2) }}>{'ABCDEFGH'[i]}</span>
+              <span style={{ fontSize: epTaille(32, 3.1), fontWeight: 500, lineHeight: 1.2 }}>{o}</span>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  return (
+    <div key={`${moduleId}-${qIdx}`} style={{ minHeight: '100vh', background: '#03112a', color: '#fff', display: 'flex', flexDirection: 'column', padding: '4vh 5vw', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} priority style={{ objectFit: 'contain', height: epTaille(30, 3), width: 'auto' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '3vw' }}>
+          <span style={{ fontSize: epTaille(13, 1.3), letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>{moduleLabel} · Question {qIdx + 1} / {total}</span>
+          {apercuRestant != null
+            ? <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: epTaille(22, 2.2), fontWeight: 600 }}>{Math.floor(apercuRestant / 60)}:{String(apercuRestant % 60).padStart(2, '0')}</span>
+            : <TVEpChrono moduleId={moduleId} qIdx={qIdx} sessionCode={sessionCode} seconds={q.timeLimitSec || QUIZ_TIME_LIMIT_SEC} />}
+        </div>
+      </div>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1.15fr', gap: '5vw', alignItems: 'start', alignContent: 'center', marginTop: '3vh', minHeight: 0 }}>
+        {blocReponses}
+        <div style={{ borderRight: `2px solid ${EP_OR}`, paddingRight: '3vw', minWidth: 0 }}>
+          <div style={{ fontSize: epTaille(14, 1.4), letterSpacing: 5, textTransform: 'uppercase', color: EP_OR, ...epAnim('tvEpMonte', 0.15) }}>{famille}</div>
+          <div style={{ fontWeight: 700, fontSize: q.question.length > 90 ? epTaille(46, 4.4) : epTaille(56, 5.4), lineHeight: 1.15, letterSpacing: -1, marginTop: '2.4vh', ...epAnim('tvEpMonte', 0.3) }}>{q.question}</div>
+          {q.ordonnance && <TVEpOrdonnance q={q} debut={0.9} />}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ══ Écran « correction » épuré (même style que l'écran question, 16/11) ══
+// Gauche : le score du groupe puis les réponses avec leurs votes, la bonne en
+// vert avec ✓ (jamais la couleur seule). Droite : famille, question et
+// ordonnance, au même endroit que sur l'écran question. Réponses libres : la
+// bonne réponse attendue, jamais le détail des mauvaises (anonymat).
+// apercuReponses : uniquement pour les pages d'aperçu locales (pas de lecture en base).
+const EP_VERT = '#4ade80'
+
+export function TVCorrectionEpuree({ question: q, qIdx, total, moduleLabel, sessionCode, moduleId, showOrdo, apercuReponses }) {
+  const [reponses, setReponses] = useState(apercuReponses || [])
+  useEffect(() => {
+    if (apercuReponses) return
+    const filtre = `session_code=eq.${sessionCode || SESSION_CODE}&question_idx=eq.${qIdx}${moduleId ? `&module_id=eq.${moduleId}` : ''}`
+    const charger = () => sbSelect('quiz_answers', filtre).then(rows => setReponses(dedupeLatestByCollaborateur(rows || []))).catch(() => {})
+    charger()
+    const t = setInterval(charger, 2000)
+    return () => clearInterval(t)
+  }, [qIdx, sessionCode, moduleId, apercuReponses])
+
+  const type = q.type || 'qcm'
+  const libre = type === 'text-open' || type === 'text-open-multi' || type === 'text-open-pairs'
+  const famille = FAMILLE_LABELS[themeForAnswer(moduleId, qIdx)] || moduleLabel
+  const nb = reponses.length
+  const bonnes = reponses.filter(r => r.is_correct).length
+  const votes = q.options ? countVotesPerOption(reponses, q.options.length, type === 'qcm-multi') : []
+  const estBonne = (i) => Array.isArray(q.correct) ? q.correct.includes(i) : i === q.correct
+  const montrerOrdo = q.ordonnance && (showOrdo || type === 'ordonnance-fill' || type === 'qcm-ordonnance')
+
+  const score = (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, ...epAnim('tvEpMonte', 0.1) }}>
+      <span style={{ fontSize: epTaille(64, 6.2), fontWeight: 300, lineHeight: 1, color: EP_VERT }}>{bonnes}</span>
+      <span style={{ fontSize: epTaille(22, 2.1), color: 'rgba(255,255,255,0.45)' }}>/ {nb} bonne{bonnes > 1 ? 's' : ''} réponse{bonnes > 1 ? 's' : ''}</span>
+    </div>
+  )
+
+  let gauche
+  if (libre || type === 'ordonnance-fill') {
+    gauche = (
+      <div style={{ minWidth: 0 }}>
+        {score}
+        <div style={{ marginTop: '5vh', paddingBottom: '1.4vh', borderBottom: '1px solid rgba(255,255,255,0.15)', fontSize: epTaille(12, 1.2), letterSpacing: 2, textTransform: 'uppercase', color: EP_VERT, ...epAnim('tvEpMonte', 0.3) }}>✓ Bonne réponse</div>
+        <div style={{ marginTop: '3vh', fontSize: epTaille(34, 3.2), fontWeight: 500, lineHeight: 1.35, ...epAnim('tvEpMonte', 0.45) }}>
+          {libre ? q.hint : 'Les valeurs de l’ordonnance, à l’identique'}
+        </div>
+        {nb > 0 && bonnes === nb && (
+          <div style={{ marginTop: '4vh', fontSize: epTaille(20, 2), color: EP_VERT, ...epAnim('tvEpMonte', 0.6) }}>Tout le monde a bon !</div>
+        )}
+      </div>
+    )
+  } else {
+    gauche = (
+      <div style={{ minWidth: 0 }}>
+        {score}
+        <div style={{ marginTop: '4vh', paddingBottom: '1.4vh', borderBottom: '1px solid rgba(255,255,255,0.15)', fontSize: epTaille(12, 1.2), letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', ...epAnim('tvEpMonte', 0.2) }}>Correction</div>
+        {(q.options || []).map((o, i) => {
+          const bonne = estBonne(i)
+          const n = votes[i] || 0
+          const pct = nb > 0 ? (n / nb) * 100 : 0
+          const couleur = OPTION_COLORS[i] || '#94a3b8'
+          return (
+            <div key={i} style={{ padding: (q.options.length > 4 ? '1.4vh' : '2vh') + ' 0', borderBottom: '1px solid rgba(255,255,255,0.08)', ...epAnim('tvEpMonte', 0.3 + i * 0.1) }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'min(56px, 5vh) 1fr auto', alignItems: 'center', gap: '1.6vw' }}>
+                <span style={{
+                  width: 'min(44px, 4.2vh)', height: 'min(44px, 4.2vh)', borderRadius: 8,
+                  border: `2px solid ${bonne ? EP_VERT : couleur}`, background: bonne ? EP_VERT : 'transparent',
+                  color: bonne ? '#03112a' : couleur, opacity: bonne ? 1 : 0.55,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: epTaille(20, 2),
+                }}>{bonne ? '✓' : 'ABCDEFGH'[i]}</span>
+                <span style={{ fontSize: epTaille(30, 2.9), fontWeight: bonne ? 700 : 400, lineHeight: 1.2, color: bonne ? '#fff' : 'rgba(255,255,255,0.45)' }}>{o}</span>
+                <span style={{ fontSize: epTaille(26, 2.5), fontWeight: 300, fontVariantNumeric: 'tabular-nums', color: bonne ? EP_VERT : 'rgba(255,255,255,0.5)' }}>
+                  {n}<span style={{ fontSize: '0.55em', marginLeft: 6, color: 'rgba(255,255,255,0.35)' }}>vote{n > 1 ? 's' : ''}</span>
+                </span>
+              </div>
+              <div style={{ marginLeft: 'calc(min(56px, 5vh) + 1.6vw)', marginTop: '1vh', height: 2, background: 'rgba(255,255,255,0.08)' }}>
+                <div style={{ height: '100%', width: `${pct}%`, background: bonne ? EP_VERT : 'rgba(255,255,255,0.35)', transformOrigin: 'left', animation: `tvEpTrait .9s cubic-bezier(.2,.8,.2,1) ${0.5 + i * 0.1}s both` }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  return (
+    <div key={`corr-${moduleId}-${qIdx}`} style={{ minHeight: '100vh', background: '#03112a', color: '#fff', display: 'flex', flexDirection: 'column', padding: '4vh 5vw', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} priority style={{ objectFit: 'contain', height: epTaille(30, 3), width: 'auto' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '3vw' }}>
+          <span style={{ fontSize: epTaille(13, 1.3), letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>{moduleLabel} · Question {qIdx + 1} / {total}</span>
+          <span style={{ fontSize: epTaille(13, 1.3), letterSpacing: 4, textTransform: 'uppercase', color: EP_VERT, fontWeight: 700 }}>✓ Correction</span>
+        </div>
+      </div>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1.15fr', gap: '5vw', alignItems: 'start', alignContent: 'center', marginTop: '3vh', minHeight: 0 }}>
+        {gauche}
+        <div style={{ borderRight: `2px solid ${EP_OR}`, paddingRight: '3vw', minWidth: 0 }}>
+          <div style={{ fontSize: epTaille(14, 1.4), letterSpacing: 5, textTransform: 'uppercase', color: EP_OR }}>{famille}</div>
+          <div style={{ fontWeight: 700, fontSize: q.question.length > 90 ? epTaille(40, 3.9) : epTaille(48, 4.6), lineHeight: 1.15, letterSpacing: -1, marginTop: '2.4vh', color: 'rgba(255,255,255,0.9)' }}>{q.question}</div>
+          {montrerOrdo && <TVEpOrdonnance q={q} debut={0.1} />}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode, moduleId }) {
   const type = question.type || 'qcm'
+  // Nouveau style épuré (16/11) — sauf la trame d'accueil à compléter
+  const EPURE = ['qcm', 'qcm-multi', 'qcm-ordonnance', 'ordonnance-fill', 'text-open', 'text-open-multi', 'text-open-pairs']
+  if (EPURE.includes(type) && !question.tramePoints) {
+    return <TVQuestionEpuree key={`${moduleId}-${qIdx}`} question={question} qIdx={qIdx} total={total} moduleLabel={moduleLabel} sessionCode={sessionCode} moduleId={moduleId} />
+  }
   const timer = <TVQuizTimerOverlay key={`quiz-timer-${moduleId}-${qIdx}`} moduleId={moduleId} qIdx={qIdx} sessionCode={sessionCode} seconds={question.timeLimitSec || QUIZ_TIME_LIMIT_SEC} />
 
   if (type === 'text-open' && question.tramePoints) {
@@ -8349,17 +8653,13 @@ function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal, moduleId }) {
   const phraseRef = useRef(null)
 
   useEffect(() => {
-    sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}${moduleId ? `&module_id=eq.${moduleId}` : ''}`).then(rows => {
-      const grouped = {}
-      const deduped = dedupeLatestByCollaborateurAndQuestion((rows || []).filter(r => r.question_idx < qIdx))
-      deduped.forEach(r => {
-        if (!grouped[r.collaborateur]) grouped[r.collaborateur] = 0
-        if (r.is_correct) grouped[r.collaborateur]++
-      })
-      const sorted = Object.entries(grouped)
-        .map(([name, score]) => ({ name, score }))
-        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
-        .slice(0, 3)
+    const code = sessionCode || SESSION_CODE
+    Promise.all([
+      sbSelect('quiz_answers', `session_code=eq.${code}${moduleId ? `&module_id=eq.${moduleId}` : ''}`),
+      chargerChronoQuiz(code, moduleId),
+    ]).then(([rows, chrono]) => {
+      // Score, puis rapidité moyenne à score égal (cf. quizClassement.js)
+      const sorted = classerQuiz((rows || []).filter(r => r.question_idx < qIdx), { moduleId, chrono }).slice(0, 3)
       setTop3(sorted)
       if (sorted[0]) {
         const firstName = sorted[0].name.split(' ').pop()
@@ -8489,165 +8789,175 @@ function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal, moduleId }) {
 
 // ── TV Quiz Final Podium ──────────────────────────────────────────
 function TVQuizFinalPodium({ quiz, sessionCode, moduleId = 'quiz-final' }) {
-  const [top3, setTop3] = useState([])
+  const [classement, setClassement] = useState([])
   const [ready, setReady] = useState(false)
-  const phraseRef = useRef(null)
 
   useEffect(() => {
-    sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&module_id=eq.${moduleId}`).then(rows => {
-      const grouped = {}
-      const deduped = dedupeLatestByCollaborateurAndQuestion(rows || [])
-      deduped.forEach(r => {
-        if (!grouped[r.collaborateur]) grouped[r.collaborateur] = 0
-        if (r.is_correct) grouped[r.collaborateur]++
-      })
-      const sorted = Object.entries(grouped)
-        .map(([name, score]) => ({ name, score }))
-        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
-        .slice(0, 3)
-      setTop3(sorted)
-      if (sorted[0]) {
-        const firstName = sorted[0].name.split(' ').pop()
-        phraseRef.current = pickPhrase(PHRASES_P1, firstName)
-      }
-      setTimeout(() => setReady(true), 400)
-    }).catch(() => { setTimeout(() => setReady(true), 400) })
+    const code = sessionCode || SESSION_CODE
+    Promise.all([
+      sbSelect('quiz_answers', `session_code=eq.${code}&module_id=eq.${moduleId}`),
+      chargerChronoQuiz(code, moduleId),
+    ]).then(([rows, chrono]) => {
+      // Score, puis rapidité moyenne à score égal (cf. quizClassement.js)
+      setClassement(classerQuiz((rows || []).filter(r => (r.question_idx ?? 0) < 100), { moduleId, chrono }))
+      setReady(true)
+    }).catch(() => setReady(true))
   }, [sessionCode, moduleId])
 
-  const slots = [top3[1], top3[0], top3[2]]
-  const stepH = [220, 300, 170]
-  const medals = ['🥈', '🥇', '🥉']
-  const ranks = [2, 1, 3]
-  const cols = [
-    { fill: 'rgba(148,163,184,0.18)', border: '#94a3b8', score: '#cbd5e1', bg: 'rgba(148,163,184,0.07)' },
-    { fill: 'rgba(251,191,36,0.18)',  border: '#fbbf24', score: '#fde68a', bg: 'rgba(251,191,36,0.07)'  },
-    { fill: 'rgba(180,83,9,0.18)',    border: '#d97706', score: '#fcd34d', bg: 'rgba(180,83,9,0.07)'    },
-  ]
+  return <TVPodiumFinalVue classement={classement} total={quiz.length} ready={ready} />
+}
+
+// Affichage du classement final (sans accès aux données) — séparé pour pouvoir
+// le prévisualiser avec des données de test.
+// Style « Tableau des résultats » (choisi par Kevin le 16/11) : sobre, esprit
+// chronométrage sportif. Le vainqueur en grand à gauche, le classement complet
+// à droite — tout le monde voit sa place, pas seulement le top 3.
+const PODIUM_OR = '#c9a227'
+const PODIUM_MAX_LIGNES = 12
+
+export function TVPodiumFinalVue({ classement = [], total, ready = true }) {
+  const prenom = (n) => String(n || '').trim().split(' ').pop()
+  const nom = (n) => String(n || '').trim().split(' ').slice(0, -1).join(' ')
+  const temps = (t) => t == null ? '—' : `${t.toFixed(1).replace('.', ',')} s`
+  const avecTemps = classement.some(p => p.tempsMoyen != null)
+  // À égalité de score avec la ligne du dessus, départagé par la rapidité
+  const egaliteAvec = (i) => {
+    const moi = classement[i], devant = classement[i - 1]
+    return i > 0 && moi.score === devant.score && moi.tempsMoyen != null && devant.tempsMoyen != null && devant.tempsMoyen < moi.tempsMoyen ? devant : null
+  }
+  const visibles = classement.slice(0, PODIUM_MAX_LIGNES)
+  const autres = classement.length - visibles.length
+  // Lignes plus serrées quand le groupe est nombreux, pour tout faire tenir
+  const serre = visibles.length > 9 ? 2 : visibles.length > 6 ? 1 : 0
+  const padLigne = ['1.9vh', '1.2vh', '0.75vh'][serre]
+  const taille = (px, vh) => `min(${px}px, ${vh}vh)`
+  const colonnes = avecTemps ? '60px 1fr 110px 110px' : '60px 1fr 110px'
+  const apparait = (delai) => ({ opacity: 0, animation: `podiumFadeIn .7s cubic-bezier(.2,.8,.2,1) ${delai}s forwards` })
+  const p1 = classement[0]
 
   return (
     <div style={{
-      minHeight: '100vh',
-      background: 'radial-gradient(ellipse at 50% 25%, #0e2547 0%, #020d1f 70%)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: '28px 60px', position: 'relative', overflow: 'hidden',
+      minHeight: '100vh', background: '#03112a', color: '#fff',
+      display: 'flex', flexDirection: 'column', padding: '4vh 5vw', overflow: 'hidden',
     }}>
-      {/* Rayons dorés */}
-      {[0, 40, 80, 120, 160, 200, 240, 280, 320].map((deg, i) => (
-        <div key={i} style={{
-          position: 'absolute', top: '22%', left: '50%',
-          width: 1.5, height: '85%',
-          background: 'linear-gradient(180deg, rgba(251,191,36,0.12) 0%, transparent 100%)',
-          transform: `rotate(${deg}deg)`, transformOrigin: 'top center',
-        }} />
-      ))}
-      {/* Particules */}
-      {[...Array(18)].map((_, i) => (
-        <div key={i} style={{
-          position: 'absolute',
-          width: 3 + (i % 4), height: 3 + (i % 4), borderRadius: '50%',
-          background: ['#fbbf24','#00abe9','#a78bfa','#34d399'][i % 4],
-          left: `${3 + i * 5.5}%`, top: `${5 + (i * 13) % 80}%`, opacity: 0.3,
-          animation: `starPulse ${1.5 + (i % 5) * 0.35}s ease-in-out infinite`,
-          animationDelay: `${i * 0.12}s`,
-        }} />
-      ))}
-
-      <div style={{ position: 'absolute', top: 28, left: 40 }}>
-        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...apparait(0) }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} priority style={{ objectFit: 'contain', height: taille(30, 3), width: 'auto' }} />
+        <div style={{ fontSize: taille(13, 1.3), letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>Classement final</div>
       </div>
 
-      {/* Trophée */}
-      <div style={{
-        animation: 'trophyFloat 3s ease-in-out infinite',
-        filter: 'drop-shadow(0 0 40px rgba(251,191,36,0.6))',
-        marginBottom: 4,
-      }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/assets/troph%C3%A9-quiz.png" alt="Trophée champion" width={150} height={150} style={{ objectFit: 'contain', display: 'block' }} />
-      </div>
+      {ready && !p1 && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', fontSize: taille(20, 2) }}>
+          Aucune réponse enregistrée pour ce quiz
+        </div>
+      )}
 
-      <h1 style={{
-        fontSize: 64, fontWeight: 900, color: '#fff', marginBottom: 6, textAlign: 'center',
-        animation: 'podiumFadeIn 0.7s ease 0.2s forwards', opacity: 0,
-        textShadow: '0 0 40px rgba(251,191,36,0.45)',
-      }}>Podium final !</h1>
-      <p style={{
-        fontSize: 19, color: 'rgba(255,255,255,0.45)', marginBottom: 36, fontWeight: 500,
-        animation: 'podiumFadeIn 0.7s ease 0.35s forwards', opacity: 0,
-      }}>🎉 Bravo à tous les participants !</p>
-
-      {/* Podium */}
-      {ready && (
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 16 }}>
-          {slots.map((player, i) => {
-            if (!player) return <div key={i} style={{ width: 240, height: stepH[i] }} />
-            const c = cols[i]
-            return (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{
-                  background: c.bg, border: `1px solid ${c.border}50`,
-                  borderRadius: 20, padding: '16px 20px', marginBottom: 14,
-                  textAlign: 'center', width: 240,
-                  animation: `podiumFadeIn 0.6s ease forwards`,
-                  animationDelay: `${i * 0.2 + 0.4}s`, opacity: 0,
-                  boxShadow: `0 0 32px ${c.border}20`,
-                }}>
-                  <div style={{ fontSize: 40, marginBottom: 8 }}>{medals[i]}</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', lineHeight: 1.2, wordBreak: 'break-word' }}>
-                    {player.name}
-                  </div>
-                  <div style={{ fontSize: 58, fontWeight: 900, color: c.score, lineHeight: 1, marginTop: 8 }}>
-                    {player.score}
-                  </div>
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
-                    /{quiz.length} bonne{player.score > 1 ? 's' : ''} réponse{player.score > 1 ? 's' : ''}
-                  </div>
-                </div>
-                <div style={{
-                  width: 240, height: stepH[i],
-                  background: c.fill, border: `2px solid ${c.border}`,
-                  borderBottom: 'none', borderRadius: '16px 16px 0 0',
-                  display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 24,
-                  boxShadow: `0 0 55px ${c.border}22`,
-                  animation: `podiumRise 0.9s ease forwards`,
-                  animationDelay: `${i * 0.2}s`,
-                }}>
-                  <div style={{ fontSize: 62, fontWeight: 900, color: c.border, opacity: 0.45 }}>
-                    #{ranks[i]}
-                  </div>
-                </div>
+      {ready && p1 && (
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1.15fr', gap: '5vw', alignItems: 'center', marginTop: '3vh', minHeight: 0 }}>
+          {/* Le vainqueur */}
+          <div style={{ borderLeft: `2px solid ${PODIUM_OR}`, paddingLeft: '3vw', minWidth: 0, ...apparait(1.2) }}>
+            <div style={{ fontSize: taille(14, 1.4), letterSpacing: 5, textTransform: 'uppercase', color: PODIUM_OR }}>Vainqueur</div>
+            <div style={{ fontWeight: 800, fontSize: taille(110, 10.5), lineHeight: 0.95, letterSpacing: -3, marginTop: '2vh', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prenom(p1.name)}</div>
+            <div style={{ fontSize: taille(16, 1.6), letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginTop: '1.6vh', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nom(p1.name)}</div>
+            <div style={{ display: 'flex', gap: '3vw', marginTop: '5vh' }}>
+              <div>
+                <div style={{ fontWeight: 300, fontSize: taille(56, 5.4), lineHeight: 1 }}>{p1.score}<span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.5em' }}> / {total}</span></div>
+                <div style={{ fontSize: taille(13, 1.25), color: 'rgba(255,255,255,0.45)', marginTop: '0.8vh', letterSpacing: 1 }}>bonnes réponses</div>
               </div>
-            )
-          })}
+              {avecTemps && (
+                <div>
+                  <div style={{ fontWeight: 300, fontSize: taille(56, 5.4), lineHeight: 1 }}>{temps(p1.tempsMoyen)}</div>
+                  <div style={{ fontSize: taille(13, 1.25), color: 'rgba(255,255,255,0.45)', marginTop: '0.8vh', letterSpacing: 1 }}>temps moyen</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Classement complet */}
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: colonnes, padding: '0 0 1.4vh', borderBottom: '1px solid rgba(255,255,255,0.15)', fontSize: taille(12, 1.2), letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', ...apparait(0.3) }}>
+              <span>Rang</span><span>Formé</span><span style={{ textAlign: 'right' }}>Score</span>{avecTemps && <span style={{ textAlign: 'right' }}>Temps</span>}
+            </div>
+            {visibles.map((p, i) => {
+              const devant = egaliteAvec(i)
+              const top = i < 3
+              // Révélation : 3e, 2e puis 1er, ensuite le reste du groupe
+              const delai = i < 3 ? 0.9 - i * 0.3 + 0.3 : 1.4 + (i - 3) * 0.06
+              return (
+                <div key={p.name} style={{ display: 'grid', gridTemplateColumns: colonnes, alignItems: 'center', padding: `${padLigne} 0`, borderBottom: '1px solid rgba(255,255,255,0.08)', ...apparait(delai) }}>
+                  <span style={{ fontWeight: 700, fontSize: taille(22, 2.1), color: i === 0 ? PODIUM_OR : top ? '#fff' : 'rgba(255,255,255,0.4)' }}>{i + 1}</span>
+                  <span style={{ minWidth: 0, overflow: 'hidden' }}>
+                    <span style={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <span style={{ fontWeight: top ? 700 : 500, fontSize: taille(24, 2.3), color: top ? '#fff' : 'rgba(255,255,255,0.65)' }}>{prenom(p.name)}</span>
+                      <span style={{ fontSize: taille(13, 1.25), letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginLeft: 12 }}>{nom(p.name)}</span>
+                    </span>
+                    {devant && <span style={{ display: 'block', fontSize: taille(14, 1.3), color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>À égalité avec {prenom(devant.name)}… mais moins rapide</span>}
+                  </span>
+                  <span style={{ textAlign: 'right', fontSize: taille(22, 2.1), fontWeight: 600, color: top ? '#fff' : 'rgba(255,255,255,0.6)' }}>{p.score}<span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>/{total}</span></span>
+                  {avecTemps && <span style={{ textAlign: 'right', fontSize: taille(18, 1.8), color: 'rgba(255,255,255,0.5)' }}>{temps(p.tempsMoyen)}</span>}
+                </div>
+              )
+            })}
+            {autres > 0 && (
+              <div style={{ paddingTop: '1.4vh', fontSize: taille(14, 1.4), color: 'rgba(255,255,255,0.4)', ...apparait(2) }}>
+                + {autres} autre{autres > 1 ? 's' : ''} participant{autres > 1 ? 's' : ''}
+              </div>
+            )}
+          </div>
         </div>
       )}
-
-      {phraseRef.current && (
-        <div style={{
-          maxWidth: 720, textAlign: 'center', marginTop: 28, marginBottom: 4,
-          fontSize: 22, fontWeight: 600, color: 'rgba(255,255,255,0.8)',
-          fontStyle: 'italic', lineHeight: 1.5,
-          animation: 'podiumFadeIn 0.8s ease 0.8s forwards', opacity: 0,
-        }}>
-          💬 {phraseRef.current}
-        </div>
-      )}
-
-      <div style={{
-        width: 760, height: 10,
-        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
-        marginTop: 28, marginBottom: 8,
-      }} />
-
-      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', fontWeight: 500, marginTop: 8 }}>
-        En attente du formateur…
-      </div>
     </div>
   )
 }
 
 // ── TV Quiz Rate Reveal ───────────────────────────────────────────
+// ── Taux de réussite par famille (quiz transversal, ex. Quiz Jour 1) ──
+function TVQuizFamilyRates({ sessionCode, moduleId, moduleLabel, quiz }) {
+  const [familles, setFamilles] = useState(null)
+  const [anime, setAnime] = useState(false)
+
+  useEffect(() => {
+    sbSelect('quiz_answers', `session_code=eq.${sessionCode || SESSION_CODE}&module_id=eq.${moduleId}`)
+      .then(rows => {
+        setFamilles(tauxParFamille(rows, quiz, moduleId))
+        setTimeout(() => setAnime(true), 300)
+      }).catch(() => setFamilles([]))
+  }, [sessionCode, moduleId, quiz])
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: 'radial-gradient(ellipse at 50% 35%, #021a3a 0%, #010d1f 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 64px',
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#00abe9', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 12 }}>
+        Taux de réussite par famille — {moduleLabel}
+      </div>
+      <h1 style={{ fontSize: 40, fontWeight: 900, color: '#fff', margin: '0 0 48px', textAlign: 'center' }}>Où en est le groupe ?</h1>
+      <div style={{ width: '100%', maxWidth: 1100, display: 'flex', flexDirection: 'column', gap: 30 }}>
+        {familles === null ? (
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: 18 }}>Calcul en cours…</div>
+        ) : familles.map((f, i) => {
+          const st = statutFamille(f.pct)
+          return (
+            <div key={f.id} style={{ display: 'grid', gridTemplateColumns: '300px 1fr 120px', alignItems: 'center', gap: 24 }}>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{f.label}</div>
+                <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>{st.icon} {st.label} · {f.questions} question{f.questions > 1 ? 's' : ''}</div>
+              </div>
+              <div style={{ height: 36, background: 'rgba(255,255,255,0.06)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', width: anime ? `${f.pct}%` : 0, background: '#00abe9',
+                  borderRadius: '0 4px 4px 0', transition: `width 1.2s cubic-bezier(.2,.8,.2,1) ${i * 0.15}s`,
+                }} />
+              </div>
+              <div style={{ fontSize: 40, fontWeight: 900, color: '#fff', textAlign: 'right' }}>{f.pct}%</div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function TVQuizRateReveal({ sessionCode, moduleId, moduleLabel, quiz }) {
   const [rate, setRate]       = useState(null)
   const [display, setDisplay] = useState(0)
@@ -9286,6 +9596,7 @@ export default function TVView() {
   const [quizInterstitialPhase, setQuizInterstitialPhase] = useState(false)
   const [finalPodiumPhase, setFinalPodiumPhase]           = useState(false)
   const [rateRevealPhase,  setRateRevealPhase]            = useState(false)
+  const [famillesPhase,    setFamillesPhase]              = useState(false)
   const [finalEndedPhase,  setFinalEndedPhase]            = useState(false)
 
   // ── Hydratation depuis sharedState (fourni par useModuleSync — 1 seul appel Supabase) ──
@@ -9374,6 +9685,7 @@ export default function TVView() {
     const phase = sharedState?.quiz_final_phase
     setFinalPodiumPhase(phase === 'podium')
     setRateRevealPhase(phase === 'rate')
+    setFamillesPhase(phase === 'familles')
     setFinalEndedPhase(phase === 'ended')
   }, [sharedState?.quiz_final_phase])
 
@@ -9612,10 +9924,25 @@ export default function TVView() {
               ? <TVQuizFinalPodium quiz={moduleData?.quiz || []} sessionCode={sessionCode} moduleId={activeModule} />
               : rateRevealPhase
                 ? <TVQuizRateReveal sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
+                : famillesPhase
+                ? <TVQuizFamilyRates sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
+                : activeModule === 'quiz-j1'
+                ? <TVQuizFamilyRates sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
                 : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} sessionCode={sessionCode} />
         ) : isQuiz && quizQuestion ? (
           quizInterstitialPhase
             ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} skipSignal={sharedState?.quiz_podium_skip} moduleId={activeModule} />
+            : sharedState?.quiz_show_correction && ['qcm', 'qcm-multi', 'qcm-ordonnance', 'ordonnance-fill', 'text-open', 'text-open-multi', 'text-open-pairs'].includes(quizQuestion?.type || 'qcm') && !quizQuestion?.tramePoints
+              ? <TVCorrectionEpuree
+                  key={`corr-${activeModule}-${modulePage}`}
+                  question={quizQuestion}
+                  qIdx={modulePage - 100}
+                  total={moduleData.quiz.length}
+                  moduleLabel={moduleData?.label || ''}
+                  sessionCode={sessionCode}
+                  moduleId={activeModule}
+                  showOrdo={!!sharedState?.quiz_ordo_show}
+                />
             : sharedState?.quiz_show_correction && (quizQuestion?.type === 'text-open' || quizQuestion?.type === 'text-open-multi' || quizQuestion?.type === 'text-open-pairs')
               ? <TVOpenCorrection
                   question={quizQuestion}

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers, clearQuizStarts } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
@@ -277,7 +277,7 @@ function ContentPageProgressif({ page, pName, onPrev, onNext, onBack, isFirst, i
                 padding: isMobile ? '16px 0' : '12px 32px', borderRadius: 12, fontSize: isMobile ? 16 : 15, fontWeight: 700,
                 cursor: 'pointer', boxShadow: '0 6px 24px rgba(124,58,237,0.5)',
                 fontFamily: 'inherit', flex: isMobile ? 2 : undefined, textAlign: 'center',
-              }}>Lancer le quiz</button>
+              }}>✓ Terminer le module</button>
             )
           ) : (
             <button onClick={onNext} style={{
@@ -449,7 +449,7 @@ function ContentPage({ page, pName, onPrev, onNext, onBack, isFirst, isLast, pag
               cursor: 'pointer', transition: 'all .2s',
               boxShadow: '0 6px 24px rgba(124,58,237,0.5)',
               fontFamily: 'inherit', flex: isMobile ? 2 : undefined, textAlign: 'center',
-            }}>🧠 Lancer le quiz →</button>
+            }}>✓ Terminer le module</button>
           )
         ) : (
           <button onClick={onNext} style={{
@@ -1039,14 +1039,9 @@ export default function ModuleTypesVerres({ pName, onBack, onTerminate }) {
   const [quizQ, setQuizQ] = useState(0)
   const [showGroupResults, setShowGroupResults] = useState(false)
 
-  const handleLaunchQuiz = async () => {
-    await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false })
-    await clearQuizStarts(getActiveSessionCode(), 'types-verres').catch(() => {})
-    await sbUpdate('sessions', { module_page: 100 }, 'code=eq.' + getActiveSessionCode())
-    setQuizQ(0)
-    setQuizLaunched(true)
-  }
-
+  // Quiz de fin de module retiré (16/11) : ses questions sont regroupées dans
+  // le Quiz Jour 1 de fin de journée. Le dernier bouton termine le module.
+  const handleLaunchQuiz = async () => handleTerminateModule()
   const handleNextQuestion = async () => {
     const next = quizQ + 1
     await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false }).catch(() => {})

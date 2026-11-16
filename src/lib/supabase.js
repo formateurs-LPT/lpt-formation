@@ -612,6 +612,29 @@ export async function clearQuizStarts(roomCode, moduleId) {
   })
 }
 
+/**
+ * Réponses laissées dans cette salle par un passage PRÉCÉDENT du quiz (test,
+ * répétition, quiz relancé...). Relancer un quiz ne les efface pas : un formé
+ * qui garde le même nom tombe alors directement sur l'écran résultat, et la
+ * correction s'affiche toute seule (« tout le monde a répondu ») — incident
+ * du 16/11. Le formateur choisit au lancement de les effacer ou non (jamais
+ * d'effacement automatique : un quiz relancé après une coupure ne doit pas
+ * perdre les réponses déjà données).
+ */
+export async function compterReponsesPrecedentes(roomCode, moduleId) {
+  const code = encodeURIComponent(roomCode)
+  const lignes = await sbSelect('quiz_answers', `session_code=eq.${code}&module_id=eq.${encodeURIComponent(moduleId)}&question_idx=lt.100&select=collaborateur`)
+  return { reponses: (lignes || []).length, formes: new Set((lignes || []).map(r => r.collaborateur)).size }
+}
+
+export async function effacerReponsesPrecedentes(roomCode, moduleId) {
+  const code = encodeURIComponent(roomCode)
+  await Promise.all([
+    sbDelete('quiz_answers', `session_code=eq.${code}&module_id=eq.${encodeURIComponent(moduleId)}&question_idx=lt.100`),
+    sbDelete('open_answers', `session_code=eq.${code}&page_id=like.${encodeURIComponent(`${moduleId}:`)}*`),
+  ])
+}
+
 // ── Réponses libres aux questions ouvertes ────────────────────────
 export async function insertOpenAnswer({
   sessionCode,

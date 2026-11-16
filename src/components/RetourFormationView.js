@@ -522,19 +522,19 @@ function FicheCollab({ entree, categoryKey, trainerName, weekDate, rank, rankOf,
         transversalByQuestion[`${r.module_id}:${r.question_idx}`] = r
       }
       for (const r of Object.values(transversalByQuestion)) {
-        addToTheme(themeForAnswer(r.module_id, r.question_idx), r.is_correct ? 1 : 0, 1)
+        addToTheme(themeForAnswer(r.module_id, r.question_idx, r.created_at), r.is_correct ? 1 : 0, 1)
       }
       setThemeQuizStats(themeStats)
 
       // Tendance jour par jour : une seule réponse par question (created_at posé
       // à la 1ère soumission, cf. commentaire schema), donc chaque ligne de
       // quiz_answers date bien le jour où CETTE question a été traitée.
-      const themeOf = (mid, qi) => DIRECT_THEME_MODULES.has(mid) ? mid : themeForAnswer(mid, qi)
+      const themeOf = (mid, qi, date) => DIRECT_THEME_MODULES.has(mid) ? mid : themeForAnswer(mid, qi, date)
       const byDay = {}
       for (const r of answerRows || []) {
         const qi = r.question_idx ?? 0
         if (qi >= 100 || !r.created_at) continue
-        const theme = themeOf(r.module_id, qi)
+        const theme = themeOf(r.module_id, qi, r.created_at)
         if (!theme) continue
         const day = r.created_at.slice(0, 10)
         if (!byDay[theme]) byDay[theme] = {}
@@ -1896,7 +1896,7 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
           transversalByQuestion[`${r.module_id}:${r.question_idx}`] = r
         }
         for (const r of Object.values(transversalByQuestion)) {
-          addGroupTheme(themeForAnswer(r.module_id, r.question_idx), r.is_correct ? 1 : 0, 1)
+          addGroupTheme(themeForAnswer(r.module_id, r.question_idx, r.created_at), r.is_correct ? 1 : 0, 1)
         }
       })
       setGroupThemeStats(groupThemeTotals)

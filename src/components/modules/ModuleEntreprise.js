@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState, fetchOpenAnswers, clearQuizStarts } from '@/lib/supabase'
+import { sbUpdate, getActiveSessionCode, setSharedState, getRoomSharedState, fetchOpenAnswers } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { useAutoRevealCorrection, NotAnsweredList } from '@/lib/useAutoRevealCorrection'
@@ -103,7 +103,7 @@ function TrainerNav({ onBack, pageIndex, total, onPrev, onNext, isFirst, isLast,
             padding: '9px 22px', borderRadius: 10, fontSize: 13, fontWeight: 700,
             cursor: 'pointer', fontFamily: 'inherit',
             boxShadow: '0 4px 16px rgba(124,58,237,0.45)',
-          }}>▶ Démarrer le quiz</button>
+          }}>✓ Terminer le module</button>
         ) : (
           <button onClick={onNext} style={{
             background: 'linear-gradient(135deg, #0089ba, #00abe9)',
@@ -756,7 +756,7 @@ function QuizTransitionPage({ navProps }) {
         onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(124,58,237,0.65)' }}
         onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(124,58,237,0.5)' }}
       >
-        ▶ Démarrer le quiz
+        ✓ Terminer le module
       </button>
       <TrainerNav {...navProps} />
     </div>
@@ -1735,9 +1735,9 @@ export default function ModuleEntreprise({ pName, onBack, onTerminate }) {
         quiz_show_correction: false,
       })
     } catch { /* best-effort */ }
-    await clearQuizStarts(getActiveSessionCode(), 'entreprise').catch(() => {})
-    setQuizMode('quiz')
-    setQuizQ(0)
+    // Quiz de fin de module retiré (16/11) : ses questions sont regroupées
+    // dans le Quiz Jour 1 de fin de journée. La fin des slides termine le module.
+    await handleEndModule()
   }
 
   const handleEndModule = async () => {
