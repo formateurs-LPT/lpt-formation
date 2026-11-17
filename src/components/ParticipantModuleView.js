@@ -1041,7 +1041,12 @@ function QuizSubmittedWaiting({ moduleId, qIdx, pName, timedOut }) {
       {total > 0 ? (
         <div style={{ marginTop: 28 }}>
           <ScoreRing correct={correct} total={total} />
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Ton score</div>
+          {/* Score sur tout le quiz (questions déjà corrigées), pas sur la question
+              en cours — « 3/4 » se lisait « 3 zones sur 4 » (test du 17/11). */}
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 10, lineHeight: 1.5 }}>
+            Ton score sur le quiz : <b style={{ color: '#fff' }}>{correct} bonne{correct > 1 ? 's' : ''} réponse{correct > 1 ? 's' : ''}</b> sur {total} question{total > 1 ? 's' : ''}
+          </div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>Cette question comptera après la validation du formateur</div>
         </div>
       ) : (
         <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />

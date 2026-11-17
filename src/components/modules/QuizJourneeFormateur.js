@@ -650,6 +650,20 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
                   <div style={{ marginLeft: 54, marginTop: 8, height: 2, background: 'rgba(255,255,255,0.08)' }}>
                     <div style={{ width: `${pct}%`, height: '100%', background: bonne ? F_VERT : 'rgba(255,255,255,0.35)', transition: 'width .5s ease' }} />
                   </div>
+                  {/* Qui a choisi cette réponse : vert = juste, rouge = s'est trompé (retour du test du 17/11) */}
+                  {(() => {
+                    const choisi = liveAnswers.filter(r => type === 'qcm-multi' ? ((r.answer_idx ?? 0) & (1 << i)) !== 0 : r.answer_idx === i)
+                    if (!choisi.length) return null
+                    return (
+                      <div style={{ marginLeft: 54, marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {choisi.map(r => (
+                          <span key={r.collaborateur} style={{ fontSize: 12, fontWeight: 700, padding: '3px 9px', borderRadius: 999, border: `1px solid ${r.is_correct ? 'rgba(74,222,128,0.5)' : 'rgba(248,113,113,0.5)'}`, color: r.is_correct ? F_VERT : F_ROUGE, background: r.is_correct ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)' }}>
+                            {r.is_correct ? '✓' : '✗'} {r.collaborateur}
+                          </span>
+                        ))}
+                      </div>
+                    )
+                  })()}
                 </div>
               )
             })}

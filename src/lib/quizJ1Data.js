@@ -39,7 +39,7 @@ export const QUIZ_J1_BASE = [
   // Entreprise — la promesse des 10 minutes
   {
     type: 'text-open',
-    question: 'En combien de temps Lunettes Pour Tous fabrique-t-il vos lunettes en magasin, avec ou sans ordonnance ?',
+    question: 'En combien de temps Lunettes Pour Tous fabrique-t-il vos lunettes en magasin ?',
     hint: '10 minutes',
     autoCorrect: ['10 min', '10min', 'dix min'],
   },
@@ -49,7 +49,7 @@ export const QUIZ_J1_BASE = [
     fields: 5,
     question: 'Quels sont les 5 points clés qui permettent de remplir la promesse Lunettes Pour Tous ?',
     hint: 'Nos stocks · Nos machines · Le volume · Notre propre marque · 0 intermédiaire',
-    timeLimitSec: 150,
+    timeLimitSec: 180, // 3 minutes (retour du test du 17/11)
     autoCorrectEach: [
       ['stock'],
       ['machine'],
@@ -69,10 +69,14 @@ export const QUIZ_J1_BASE = [
   },
   // Q3 — Module Entreprise Q6
   {
-    type: 'text-open',
-    question: 'Quel est le délai de fabrication pour un verre complexe (progressif) d\'un client parisien, grâce à notre laboratoire progressif ?',
-    hint: 'Dans la journée — (Rappel : pour les unifocaux, le délai est de 10 min à Paris comme partout en France)',
-    autoCorrect: ['journée', 'journee', 'jour même', 'jour meme'],
+    type: 'text-open-multi',
+    fields: 2,
+    fieldLabels: ['Client parisien', 'Client en province'],
+    question: 'Quels sont les délais de fabrication des verres complexes (progressifs) pour un client parisien et pour un client en province ?',
+    // Délais du laboratoire progressif, validés par Kevin (17/11)
+    hint: 'Client parisien : dans la journée · Client en province : 24/48 h',
+    autoCorrectOrdered: true,
+    autoCorrectEach: [['journée', 'journee', 'jour même', 'jour meme'], ['24', '48']],
   },
 
   // ══ Les bases de l'optique : les troubles visuels ══
@@ -396,7 +400,8 @@ export const QUIZ_J1_BASE = [
 // ── Chrono : 2 minutes pour toutes les questions du Quiz Jour 1 ─────────
 // (lu par le téléphone et la TV via q.timeLimitSec — sinon 90 s par défaut)
 export const QUIZ_J1_CHRONO_SEC = 120
-for (const q of QUIZ_J1_BASE) q.timeLimitSec = QUIZ_J1_CHRONO_SEC
+// (une question qui a plus de temps le garde : 3 min pour les 5 points clés)
+for (const q of QUIZ_J1_BASE) q.timeLimitSec = Math.max(q.timeLimitSec || 0, QUIZ_J1_CHRONO_SEC)
 
 // ── Ordre mélangé, renouvelé chaque semaine (cf. quizOrdreSemaine.js) ──
 export function quizJ1OrdrePour(date = new Date()) {
