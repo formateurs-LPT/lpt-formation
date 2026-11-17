@@ -312,7 +312,39 @@ const ITEMS_UNIFOCAL_11 = [
   { text: '⚡ Fabrication en 10 minutes', sub: null },
 ]
 
-function CoursUnifocal11({ onPrev, onNext, onBack }) {
+// Bouton rapide « Traitements de verres » (pages 1=1) : affiche sur la TV les
+// traitements des verres blancs et solaires, souvent abordés à l'oral pendant
+// la présentation du 1=1. Un second clic revient à la page. (17/11)
+// apercu : page d'aperçu locale — le bouton s'allume sans rien envoyer à la TV.
+function BoutonTraitements({ apercu }) {
+  const [actif, setActif] = useState(false)
+  // Chaque page 1=1 démarre avec la page affichée sur la TV, et on éteint les
+  // traitements en quittant la page (page suivante, retour, quitter) : la TV
+  // ne peut pas rester bloquée dessus.
+  useEffect(() => {
+    if (apercu) return
+    setSharedState({ offres_traitements: false }).catch(() => {})
+    return () => { setSharedState({ offres_traitements: false }).catch(() => {}) }
+  }, [apercu])
+  const basculer = async () => {
+    const suivant = !actif
+    setActif(suivant)
+    if (!apercu) await setSharedState({ offres_traitements: suivant }).catch(() => {})
+  }
+  return (
+    <button onClick={basculer} title="Afficher les traitements de verres sur la TV" style={{
+      display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 10,
+      fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+      background: actif ? '#c9a227' : 'rgba(201,162,39,0.15)', color: actif ? '#03112a' : '#c9a227',
+      border: '1px solid #c9a227',
+    }}>
+      <span style={{ fontSize: 15 }}>👓</span>
+      {actif ? 'Traitements sur la TV · revenir' : 'Traitements de verres'}
+    </button>
+  )
+}
+
+export function CoursUnifocal11({ onPrev, onNext, onBack, apercu }) {
   const COLOR = '#c9a227'
   const isMobile = useIsMobile()
   return (
@@ -325,11 +357,14 @@ function CoursUnifocal11({ onPrev, onNext, onBack }) {
             <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · 2 / 4</span>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <BoutonTraitements apercu={apercu} />
           <button onClick={onBack}
             style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
           >✕ Quitter</button>
+          </div>
         </div>
         <div style={{ flex: 1, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 20 : 40, alignItems: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -390,7 +425,7 @@ function VerreProgAnime({ color, size = 360 }) {
   )
 }
 
-function CoursProgressif11({ onPrev, onNext, onBack, isBelgique }) {
+export function CoursProgressif11({ onPrev, onNext, onBack, isBelgique, apercu }) {
   const COLOR = '#c9a227'
   const isMobile = useIsMobile()
   const [revealed, setRevealed] = useState(false)
@@ -400,7 +435,7 @@ function CoursProgressif11({ onPrev, onNext, onBack, isBelgique }) {
   const toggleReveal = async () => {
     const next = !revealed
     setRevealed(next)
-    await setSharedState({ offres_prog11_revealed: next })
+    if (!apercu) await setSharedState({ offres_prog11_revealed: next })
   }
 
   return (
@@ -413,11 +448,14 @@ function CoursProgressif11({ onPrev, onNext, onBack, isBelgique }) {
             <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · 3 / 4</span>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <BoutonTraitements apercu={apercu} />
           <button onClick={onBack}
             style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
           >✕ Quitter</button>
+          </div>
         </div>
         <div style={{ flex: 1, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 20 : 40, alignItems: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -647,7 +685,7 @@ function CoursLptCare({ onPrev, onNext, onBack }) {
   )
 }
 
-function Cours11({ onPrev, onNext, onBack }) {
+export function Cours11({ onPrev, onNext, onBack, apercu }) {
   const COLOR = '#c9a227'
   const isMobile = useIsMobile()
   const [step, setStep] = useState(0)
@@ -656,14 +694,14 @@ function Cours11({ onPrev, onNext, onBack }) {
     if (step >= ITEMS_11.length) return
     const next = step + 1
     setStep(next)
-    await setSharedState({ offres_11_step: next })
+    if (!apercu) await setSharedState({ offres_11_step: next })
   }
 
   const hide = async () => {
     if (step <= 0) return
     const prev = step - 1
     setStep(prev)
-    await setSharedState({ offres_11_step: prev })
+    if (!apercu) await setSharedState({ offres_11_step: prev })
   }
 
   const allRevealed = step >= ITEMS_11.length
@@ -677,11 +715,14 @@ function Cours11({ onPrev, onNext, onBack }) {
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Les offres · 1 / 4</span>
         </div>
-        <button onClick={onBack}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <BoutonTraitements apercu={apercu} />
+          <button onClick={onBack}
           style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.55)', padding: '7px 16px', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all .2s', letterSpacing: .3 }}
           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,80,80,0.18)'; e.currentTarget.style.color = '#ff6b6b' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
         >✕ Quitter</button>
+          </div>
       </div>
 
       {/* Contenu */}

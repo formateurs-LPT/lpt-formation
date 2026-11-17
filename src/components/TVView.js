@@ -1009,6 +1009,68 @@ export function TVCorrectionEpuree({ question: q, qIdx, total, moduleLabel, sess
   )
 }
 
+// ══ Traitements de verres (bouton rapide des pages 1=1, module Offres) ══
+// Deux univers bien distincts : verres blancs (clair, net) et verres solaires
+// (chaud, sombre). Titres seulement : les explications se font à l'oral. (17/11)
+const TRAITEMENTS_BLANCS = [
+  { nom: 'Basic', liste: ['Anti-rayures'] },
+  { nom: 'Premium', liste: ['Anti-rayures', 'Anti-reflets', 'Anti-salissures', 'Hydrophobe'] },
+  { nom: 'Digital Protect Pro', liste: ['Anti-rayures', 'Anti-reflets', 'Anti-salissures', 'Hydrophobe', 'Anti-lumière bleue'], plus: 'Anti-lumière bleue' },
+]
+const TRAITEMENTS_SOLAIRES = ['UV Protect cat. 3', 'Transition', 'Polarisé']
+const TEINTES_SOLAIRES = [{ nom: 'Brun', fond: 'linear-gradient(135deg, #7a4a24, #3b2210)' }, { nom: 'Gris', fond: 'linear-gradient(135deg, #5b6068, #24272c)' }]
+
+export function TVTraitementsVerres() {
+  const NAVY = '#03112a'
+  return (
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: NAVY, color: '#fff', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3vh 5vw' }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain', height: epTaille(30, 3), width: 'auto' }} />
+        <span style={{ fontSize: epTaille(13, 1.3), letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>Les offres · Offre 1=1 · <span style={{ color: EP_OR }}>Traitements de verres</span></span>
+      </div>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: 0 }}>
+        {/* Verres blancs : univers clair */}
+        <div style={{ background: 'linear-gradient(160deg, #f7fbff 0%, #e6f0f8 100%)', color: NAVY, padding: '5vh 3.5vw', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <div style={{ fontSize: epTaille(13, 1.3), letterSpacing: 5, textTransform: 'uppercase', color: '#0089ba', fontWeight: 700, ...epAnim('tvEpMonte', 0.1) }}>Verres blancs</div>
+          <div style={{ fontWeight: 800, fontSize: epTaille(44, 4.4), letterSpacing: -1, marginTop: '1.4vh', ...epAnim('tvEpMonte', 0.2) }}>3 traitements</div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2.2vh', marginTop: '3vh' }}>
+            {TRAITEMENTS_BLANCS.map((g, i) => (
+              <div key={g.nom} style={{ background: '#fff', border: '1px solid rgba(3,17,42,0.08)', borderLeft: `4px solid ${['#9fb3c8', '#0089ba', '#3b5bdb'][i]}`, borderRadius: 10, padding: '2vh 1.6vw', boxShadow: '0 6px 24px rgba(3,17,42,0.06)', ...epAnim('tvEpMonte', 0.4 + i * 0.2) }}>
+                <div style={{ fontWeight: 800, fontSize: epTaille(28, 2.8) }}>{g.nom}</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: '1.2vh' }}>
+                  {g.liste.map(t => (
+                    <span key={t} style={{ fontSize: epTaille(16, 1.6), padding: '0.5vh 0.9vw', borderRadius: 999, background: t === g.plus ? '#3b5bdb' : 'rgba(0,137,186,0.1)', color: t === g.plus ? '#fff' : NAVY, fontWeight: t === g.plus ? 700 : 500 }}>{t}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Verres solaires : univers chaud et sombre */}
+        <div style={{ background: 'radial-gradient(ellipse 90% 70% at 70% 20%, #4a2c12 0%, #1a0f06 70%)', padding: '5vh 3.5vw', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <div style={{ fontSize: epTaille(13, 1.3), letterSpacing: 5, textTransform: 'uppercase', color: '#f5b041', fontWeight: 700, ...epAnim('tvEpMonte', 0.3) }}>Verres solaires</div>
+          <div style={{ fontWeight: 800, fontSize: epTaille(44, 4.4), letterSpacing: -1, marginTop: '1.4vh', ...epAnim('tvEpMonte', 0.4) }}>Gamme UV Protect</div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2.2vh', marginTop: '3vh' }}>
+            {TRAITEMENTS_SOLAIRES.map((nom, i) => (
+              <div key={nom} style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: '1.4vw', padding: '2.4vh 0', borderBottom: '1px solid rgba(245,176,65,0.2)', ...epAnim('tvEpMonte', 0.7 + i * 0.2) }}>
+                <div style={{ fontWeight: 800, fontSize: epTaille(30, 3) }}>{nom}</div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  {TEINTES_SOLAIRES.map(t => (
+                    <div key={t.nom} style={{ textAlign: 'center' }}>
+                      <div style={{ width: epTaille(56, 5.2), height: epTaille(36, 3.4), borderRadius: '50% 50% 45% 45% / 60% 60% 40% 40%', background: t.fond, border: '1px solid rgba(255,255,255,0.25)' }} />
+                      <div style={{ fontSize: epTaille(13, 1.3), color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>{t.nom}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function TVQuizQuestion({ question, qIdx, total, moduleLabel, sessionCode, moduleId }) {
   const type = question.type || 'qcm'
   // Nouveau style épuré (16/11) — sauf la trame d'accueil à compléter
@@ -9942,6 +10004,8 @@ export default function TVView() {
       <div style={{ height: '100dvh', overflow: 'hidden', position: 'relative', background: '#020d1f' }}>
         {loading ? (
           <WelcomeScreen />
+        ) : activeModule === 'offres' && sharedState?.offres_traitements ? (
+          <TVTraitementsVerres />
         ) : isLobby ? (
           <TVModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
         ) : isResults ? (
