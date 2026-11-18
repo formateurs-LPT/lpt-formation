@@ -158,6 +158,12 @@ export const QUIZ_J2_BASE = [
       og: { sph: '+2,50' },
     },
   },
+  // Q20 — teintes des verres solaires UV Protect (traitements présentés pendant le 1=1, ajoutée le 18/11)
+  {
+    question: 'Dans la gamme solaire UV Protect (UV Protect cat. 3, Transition, Polarisé), quelles teintes peut-on proposer au client ?',
+    options: ['Brun ou gris', 'Gris uniquement', 'Bleu ou vert', 'Brun, gris ou rose'],
+    correct: 0,
+  },
 ]
 
 // ── Comme le Quiz Jour 1 (16/11) : chrono 2 minutes, ordre mélangé chaque semaine

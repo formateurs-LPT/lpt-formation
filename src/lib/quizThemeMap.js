@@ -20,6 +20,7 @@
 // TRANSVERSAL_THEME_MAPS ci-dessous.
 import { quizJ1OrdrePour } from './quizJ1Data'
 import { quizJ2OrdrePour } from './quizJ2Data'
+import { ordrePourSemaine } from './quizOrdreSemaine'
 
 export const DIRECT_THEME_MODULES = new Set([
   'entreprise', 'types-verres', 'pdm', 'optique', 'offres',
@@ -143,6 +144,8 @@ const QUIZ_FINAL_THEMES = [
 // nombre contre QUIZ_J2.length après une suppression/ajout.
 // Mise en ligne du Quiz Jour 2 mélangé chaque semaine — À METTRE À JOUR le
 // jour du déploiement. Les réponses antérieures suivent l'ordre fixe.
+// Mise en ligne de la 20e question (teintes solaires) : à déployer après 18h le 18/11.
+const QUIZ_J2_AJOUT_Q20 = '2026-11-18T17:00:00Z' // 18h (Paris) : mise en ligne après les formations
 const QUIZ_J2_MELANGE_DEPUIS = '2026-11-16T16:45:00Z'
 
 // Index = position dans QUIZ_J2_BASE de src/lib/quizJ2Data.js (ordre NON mélangé).
@@ -166,6 +169,7 @@ const QUIZ_J2_THEMES = [
   'entreprise',            // 16 — coût de l'examen de vue
   'verre-progressif',      // 17 — conseil verre 2nde paire (couture)
   'optique',               // 18 — calcul vision de près
+  'types-verres',          // 19 — teintes des verres solaires UV Protect (ajoutée le 18/11)
 ]
 
 // Index = question_idx (0-based) dans src/lib/quizFinalBelgiqueData.js
@@ -216,6 +220,8 @@ export function themeForAnswer(moduleId, questionIdx, createdAt) {
     // Mêmes questions qu'avant, seul l'ordre est mélangé depuis QUIZ_J2_MELANGE_DEPUIS
     const date = createdAt ? new Date(createdAt) : new Date()
     if (createdAt && date < new Date(QUIZ_J2_MELANGE_DEPUIS)) return QUIZ_J2_THEMES[qi] || null
+    // Avant l'ajout de la 20e question, l'ordre était mélangé sur 19 questions
+    if (createdAt && date < new Date(QUIZ_J2_AJOUT_Q20)) return QUIZ_J2_THEMES[ordrePourSemaine(19, date, 7)[qi]] || null
     return QUIZ_J2_THEMES[quizJ2OrdrePour(date)[qi]] || null
   }
   const transversal = TRANSVERSAL_THEME_MAPS[moduleId]
