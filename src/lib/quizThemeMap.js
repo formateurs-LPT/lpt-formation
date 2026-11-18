@@ -144,8 +144,8 @@ const QUIZ_FINAL_THEMES = [
 // nombre contre QUIZ_J2.length après une suppression/ajout.
 // Mise en ligne du Quiz Jour 2 mélangé chaque semaine — À METTRE À JOUR le
 // jour du déploiement. Les réponses antérieures suivent l'ordre fixe.
-// Mise en ligne de la 20e question (traitements des verres blancs) : à déployer après 18h le 18/11.
-const QUIZ_J2_AJOUT_Q20 = '2026-11-18T17:00:00Z' // 18h (Paris) : mise en ligne après les formations
+// Mise en ligne de la 20e question (traitements des verres blancs).
+const QUIZ_J2_AJOUT_Q20 = '2026-11-18T10:43:00Z' // déployée le 18/11 avant le Quiz Jour 2 de 17h
 const QUIZ_J2_MELANGE_DEPUIS = '2026-11-16T16:45:00Z'
 
 // Index = position dans QUIZ_J2_BASE de src/lib/quizJ2Data.js (ordre NON mélangé).
