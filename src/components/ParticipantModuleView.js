@@ -17,12 +17,13 @@ import { resolveParticipantName, normalizeNameKey, loadEntreesList, entreeDispla
 import { mergeRoomSharedField } from '@/lib/roomSharedState'
 import { getLevelInfo, getRankMessage, fetchParticipantRanking, fetchWeeklyGlobalRanking } from '@/lib/scoring'
 import { canParticipantJoinSession, getCategoryJoinDeniedMessage, mapPosteLabel } from '@/lib/formationCategories'
-import { themeForAnswer, DIRECT_THEME_MODULES } from '@/lib/quizThemeMap'
+import { themeForAnswer, DIRECT_THEME_MODULES, FAMILLE_LABELS } from '@/lib/quizThemeMap'
+import { useThemeTel, basculerThemeTel, THEMES_TEL } from '@/lib/themeTelephone'
 import { resolveParticipantSessionCode, participantJoinBlockedMessage } from '@/lib/participantSession'
 import { QuestionsGameParticipantView } from '@/components/QuestionsGamePanel'
 import { ModuleApresFormationParticipant } from '@/components/modules/ModuleApresFormationSession'
 import { moduleDeSession } from '@/lib/modulesApresFormation'
-import { chargerChronoQuiz, classerQuiz } from '@/lib/quizClassement'
+import { chargerChronoQuiz, classerQuiz, calculerSeries, bonusSerie } from '@/lib/quizClassement'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -751,6 +752,110 @@ function QuizCountdownBadge({ remaining, compact = false }) {
   )
 }
 
+// ══ Écrans quiz du téléphone — style épuré (18/11) ══════════════════════
+// Même univers que la TV : mode sombre (comme la TV) ou mode clair (lisible
+// en pleine lumière), au choix du formé via ☀️/🌙 (cf. lib/themeTelephone.js).
+// La question est aussi écrite sur le téléphone (pratique en visio).
+function BoutonThemeTel({ t }) {
+  return (
+    <button type="button" onClick={basculerThemeTel} aria-label={t.mode === 'clair' ? 'Passer en mode sombre' : 'Passer en mode clair'} style={{
+      width: 34, height: 34, borderRadius: 999, border: `1px solid ${t.trait}`, background: t.champ,
+      fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      WebkitTapHighlightColor: 'transparent',
+    }}>{t.mode === 'clair' ? '🌙' : '☀️'}</button>
+  )
+}
+
+function familleQuestion(moduleId, qIdx) {
+  return FAMILLE_LABELS[themeForAnswer(moduleId, qIdx)] || MODULE_DATA[moduleId]?.label || ''
+}
+
+// Cadre commun : en-tête (numéro, chrono, ☀️/🌙), question, corps, pied (bouton)
+function CadreQuizTel({ t, q, qIdx, total, moduleId, remaining, consigne, pied, children }) {
+  return (
+    <div style={{ minHeight: '100dvh', background: t.fond, color: t.texte, display: 'flex', flexDirection: 'column', animation: 'quizScreenIn .3s ease' }}>
+      <CadreEnteteTel t={t} q={q} qIdx={qIdx} total={total} moduleId={moduleId} remaining={remaining} />
+      <div style={{ flex: 1, padding: '20px 22px 0', display: 'flex', flexDirection: 'column' }}>
+        {consigne && <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: t.doux, paddingBottom: 8, borderBottom: t.mode === 'sombre' ? `1px solid ${t.trait}` : 'none', marginBottom: t.mode === 'sombre' ? 0 : 6 }}>{consigne}</div>}
+        {children}
+      </div>
+      {pied && <div style={{ padding: '16px 22px max(22px, env(safe-area-inset-bottom))' }}>{pied}</div>}
+    </div>
+  )
+}
+
+function CadreEnteteTel({ t, q, qIdx, total, moduleId, remaining }) {
+  const secondes = q?.timeLimitSec || QUIZ_TIME_LIMIT_SEC
+  const urgent = remaining != null && remaining <= 15
+  const famille = familleQuestion(moduleId, qIdx)
+  return (
+    <>
+      <div style={{ padding: 'max(16px, env(safe-area-inset-top)) 22px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ flex: 1, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: t.doux }}>Question {qIdx + 1}{total ? ` / ${total}` : ''}</span>
+          {remaining != null && (
+            <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 15, fontWeight: 700, color: urgent ? t.rouge : t.texte, animation: urgent ? 'quizTimerPulse 1s ease-in-out infinite' : 'none' }}>
+              {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}
+            </span>
+          )}
+          <BoutonThemeTel t={t} />
+        </div>
+        {remaining != null && (
+          <div style={{ height: 2, background: t.trait, marginTop: 10 }}>
+            <div style={{ width: `${Math.max(0, Math.min(1, remaining / secondes)) * 100}%`, height: '100%', background: urgent ? t.rouge : t.texte, transition: 'width .25s linear' }} />
+          </div>
+        )}
+        <style>{`@keyframes quizTimerPulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }`}</style>
+      </div>
+      {q?.question && (
+        <div style={{ margin: '20px 22px 0', borderLeft: `2px solid ${t.accent}`, paddingLeft: 14 }}>
+          {famille && <div style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: t.accent, fontWeight: 700 }}>{famille}</div>}
+          <div style={{ fontSize: q.question.length > 90 ? 18 : 20, fontWeight: t.titreSerif ? 600 : 700, fontFamily: t.titreSerif ? 'Georgia, serif' : 'inherit', lineHeight: 1.25, marginTop: 6 }}>{q.question}</div>
+        </div>
+      )}
+    </>
+  )
+}
+
+function BoutonTel({ t, actif = true, onClick, children }) {
+  return (
+    <button onClick={onClick} disabled={!actif} style={{
+      width: '100%', padding: 16, borderRadius: t.mode === 'clair' ? 12 : 10, border: 'none',
+      background: actif ? t.bouton : t.boutonOff, color: actif ? t.boutonTexte : t.boutonOffTexte,
+      fontSize: 16, fontWeight: 800, fontFamily: 'inherit', cursor: actif ? 'pointer' : 'default',
+    }}>{children}</button>
+  )
+}
+
+const champTel = (t, extra = {}) => ({
+  width: '100%', padding: '14px 16px', borderRadius: 12, border: `1px solid ${t.champBord}`,
+  background: t.champ, color: t.texte, fontSize: 16, fontFamily: 'inherit', outline: 'none',
+  boxSizing: 'border-box', boxShadow: t.ombre, ...extra,
+})
+
+// Ligne de réponse (QCM) : lettre colorée + texte. Sombre : lignes ; clair : cartes.
+function ReponseTel({ t, i, texte, choisie, carre, onClick }) {
+  const c = OPTION_COLORS[i] || '#94a3b8'
+  const clair = t.mode === 'clair'
+  return (
+    <button onClick={onClick} style={{
+      display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left', fontFamily: 'inherit', cursor: 'pointer',
+      color: t.texte, WebkitTapHighlightColor: 'transparent',
+      ...(clair
+        ? { background: t.carte, border: `1.5px solid ${choisie ? t.texte : 'transparent'}`, borderRadius: 12, padding: '14px 16px', marginTop: 10, boxShadow: t.ombre }
+        : { background: choisie ? `${c}22` : 'transparent', border: 'none', borderBottom: `1px solid ${t.trait}`, padding: '15px 4px' }),
+    }}>
+      <span style={{
+        width: 34, height: 34, borderRadius: carre ? 7 : clair ? '50%' : 7, flexShrink: 0,
+        border: `2px solid ${choisie && clair ? t.texte : c}`, background: choisie ? (clair ? t.texte : c) : 'transparent',
+        color: choisie ? (clair ? t.fond : '#fff') : c, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 15,
+      }}>{choisie ? '✓' : 'ABCDEFGH'[i]}</span>
+      <span style={{ fontSize: 17, fontWeight: choisie ? 700 : 500 }}>{texte}</span>
+    </button>
+  )
+}
+
+
 /**
  * Brouillon de réponse texte survivant à un rafraîchissement accidentel de
  * la page — sessionStorage (par onglet, effacé à la fermeture) plutôt que
@@ -803,12 +908,13 @@ function useDraftArray(key, initial) {
 // (voire changer sa réponse) après avoir déjà vu le résultat. On revérifie
 // donc toujours en base avant d'afficher la question.
 function QuizChecking() {
+  const t = useThemeTel()
   return (
     <div style={{
-      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
+      minHeight: '100dvh', background: t.fond,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      <div style={{ width: 32, height: 32, border: '3px solid rgba(255,255,255,0.15)', borderTop: '3px solid #00abe9', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
+      <div style={{ width: 32, height: 32, border: `3px solid ${t.trait}`, borderTop: `3px solid ${t.accent}`, borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
       <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
@@ -874,6 +980,7 @@ function useExistingOpenAnswer({ moduleId, qIdx, pName }) {
 // de module, cf. TVQuizFinalPodium).
 function QuizResultScreen({ isCorrect, pName, moduleId, timedOut }) {
   const [rankInfo, setRankInfo] = useState(null) // { rank, total }
+  const [serie, setSerie] = useState(null) // { longueur, bonus, cassee, xpSemaine }
 
   useEffect(() => {
     let cancelled = false
@@ -906,59 +1013,88 @@ function QuizResultScreen({ isCorrect, pName, moduleId, timedOut }) {
             ? { texte: `Tu as devancé ${prenom(derriere.name)} grâce à ta rapidité !`, emoji: '⚡', gagne: true }
             : null
         if (!cancelled) setRankInfo(me ? { rank: me.rank, total: sorted.length, rapidite } : null)
+        // Bonus de série (bonnes réponses d'affilée dans ce quiz) + XP de la semaine
+        const moiNom = me?.name || pName.trim()
+        const s = calculerSeries((rows || []).filter(r => normalizeNameKey(r.collaborateur) === normalizeNameKey(moiNom)))
+        const quizMoi = Object.values(s)[0]?.parQuiz?.[moduleId]
+        let xpSemaine = null
+        try {
+          const classement = await fetchParticipantRanking(code)
+          xpSemaine = (classement || []).find(r => normalizeNameKey(r.name) === normalizeNameKey(moiNom))?.points ?? null
+        } catch { /* best-effort */ }
+        if (!cancelled && quizMoi) setSerie({ longueur: quizMoi.serie, bonus: bonusSerie(quizMoi.serie), cassee: isCorrect ? 0 : quizMoi.avant, xpSemaine })
       } catch { /* ignore */ }
     }
     load()
     return () => { cancelled = true }
   }, [isCorrect, pName, moduleId])
 
-  return <EcranResultatQuizVue isCorrect={isCorrect} timedOut={timedOut} rankInfo={rankInfo} />
+  return <EcranResultatQuizVue isCorrect={isCorrect} timedOut={timedOut} rankInfo={rankInfo} serie={serie} />
 }
 
 // Affichage de l'écran résultat (sans accès aux données) — séparé pour pouvoir
 // le prévisualiser avec des données de test.
-export function EcranResultatQuizVue({ isCorrect, timedOut, rankInfo }) {
+export function EcranResultatQuizVue({ isCorrect, timedOut, rankInfo, serie }) {
+  const t = useThemeTel()
+  const clair = t.mode === 'clair'
+  const couleur = timedOut ? t.orange : isCorrect ? t.vert : t.rouge
+  const titre = timedOut ? 'Temps écoulé' : isCorrect ? 'Bonne réponse' : 'Mauvaise réponse'
+  const enSerie = serie && isCorrect && serie.longueur >= 3
+  const chiffres = [
+    rankInfo && { libelle: 'classement', valeur: <>{rankInfo.rank}<span style={{ fontSize: '0.42em', color: t.doux }}>{rankInfo.rank === 1 ? 'er' : 'e'} / {rankInfo.total}</span></> },
+    serie?.xpSemaine != null && { libelle: 'XP de la semaine', valeur: serie.xpSemaine },
+  ].filter(Boolean)
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: isCorrect
-        ? 'linear-gradient(160deg, #03112a 0%, #052a14 100%)'
-        : 'linear-gradient(160deg, #03112a 0%, #2a0505 100%)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: '40px 24px', textAlign: 'center',
-    }}>
-      <div style={{ fontSize: 64, marginBottom: 20 }}>{timedOut ? '⏱' : isCorrect ? '✅' : '❌'}</div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
-        {timedOut ? 'Temps écoulé !' : isCorrect ? 'Bonne réponse !' : 'Mauvaise réponse'}
+    <div style={{ minHeight: '100dvh', background: t.fond, color: t.texte, display: 'flex', flexDirection: 'column', animation: 'quizScreenIn .3s ease' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: 'max(16px, env(safe-area-inset-top)) 22px 0' }}><BoutonThemeTel t={t} /></div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 26px' }}>
+        {clair
+          ? <div style={{ width: 54, height: 54, borderRadius: '50%', background: couleur, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800 }}>{timedOut ? '⏱' : isCorrect ? '✓' : '✗'}</div>
+          : <div style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: couleur, fontWeight: 700 }}>{timedOut ? '⏱' : isCorrect ? '✓' : '✗'} {titre}</div>}
+        <div style={{ fontSize: clair ? 32 : 34, fontWeight: clair ? 600 : 800, fontFamily: clair ? 'Georgia, serif' : 'inherit', lineHeight: 1.1, marginTop: clair ? 16 : 10 }}>
+          {clair ? titre : timedOut ? 'Pas de réponse à temps' : isCorrect ? 'Bien joué !' : 'Pas cette fois'}
+        </div>
+
+        {chiffres.length > 0 && (clair ? (
+          <div style={{ marginTop: 24, background: t.carte, borderRadius: 14, boxShadow: t.ombre }}>
+            {chiffres.map((c, i) => (
+              <div key={c.libelle} style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 16px', borderTop: i ? `1px solid ${t.trait}` : 'none', fontSize: 15 }}>
+                <span style={{ color: t.doux }}>{c.libelle.charAt(0).toUpperCase() + c.libelle.slice(1)}</span><b>{c.valeur}</b>
+              </div>
+            ))}
+            {enSerie && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 16px', borderTop: `1px solid ${t.trait}`, fontSize: 15 }}>
+                <span style={{ color: t.doux }}>🔥 Série de {serie.longueur}</span><b style={{ color: t.orange }}>+{serie.bonus} XP bonus</b>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <div style={{ height: 1, background: t.trait, margin: '26px 0' }} />
+            <div style={{ display: 'flex', gap: 30 }}>
+              {chiffres.map(c => (
+                <div key={c.libelle}><div style={{ fontSize: 44, fontWeight: 300, lineHeight: 1 }}>{c.valeur}</div><div style={{ fontSize: 11, color: t.doux, marginTop: 6, letterSpacing: 1 }}>{c.libelle}</div></div>
+              ))}
+            </div>
+            {enSerie && (
+              <div style={{ marginTop: 26, borderLeft: `2px solid ${t.orange}`, paddingLeft: 14 }}>
+                <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: t.orange }}>{'🔥'.repeat(Math.min(serie.longueur, 6))} Série de {serie.longueur}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, marginTop: 4 }}>+{serie.bonus} XP bonus</div>
+              </div>
+            )}
+          </>
+        ))}
+
+        {serie && !isCorrect && serie.cassee >= 3 && (
+          <div style={{ marginTop: 18, fontSize: 15, color: t.doux }}>Ta série de {serie.cassee} s&apos;arrête là… on repart ! 💪</div>
+        )}
+        {rankInfo?.rapidite && (
+          <div style={{ marginTop: 16, fontSize: 15, fontWeight: 600, color: rankInfo.rapidite.gagne ? t.accent : (clair ? '#7c3aed' : '#c4b5fd'), fontStyle: clair ? 'normal' : 'italic' }}>
+            {rankInfo.rapidite.emoji} {rankInfo.rapidite.texte}
+          </div>
+        )}
       </div>
-      {rankInfo && (
-        <div style={{
-          marginTop: 8, marginBottom: 12,
-          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: 16, padding: '12px 28px',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-        }}>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-            Ton classement
-          </div>
-          <div style={{ fontSize: 26, fontWeight: 900, color: '#00abe9' }}>
-            {rankInfo.rank}<span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>{rankInfo.rank === 1 ? 'er' : 'e'} / {rankInfo.total}</span>
-          </div>
-        </div>
-      )}
-      {rankInfo?.rapidite && (
-        <div style={{
-          marginBottom: 14, maxWidth: 320, padding: '10px 18px', borderRadius: 14,
-          background: rankInfo.rapidite.gagne ? 'rgba(250,204,21,0.12)' : 'rgba(168,85,247,0.14)',
-          border: `1px solid ${rankInfo.rapidite.gagne ? 'rgba(250,204,21,0.4)' : 'rgba(168,85,247,0.45)'}`,
-          fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.4,
-          animation: 'quizScreenIn .4s ease',
-        }}>
-          <span style={{ marginRight: 6 }}>{rankInfo.rapidite.emoji}</span>{rankInfo.rapidite.texte}
-        </div>
-      )}
-      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)' }}>En attente de la prochaine question…</div>
+      <div style={{ padding: '22px 22px max(26px, env(safe-area-inset-bottom))', textAlign: 'center', fontSize: 13, color: t.doux }}>En attente de la prochaine question…</div>
     </div>
   )
 }
@@ -1026,38 +1162,35 @@ function ScoreRing({ correct, total }) {
 // Écran "réponse envoyée" partagé par les 3 types de question texte libre —
 // affiche en plus le score personnel du formé, strictement individuel.
 function QuizSubmittedWaiting({ moduleId, qIdx, pName, timedOut }) {
+  const t = useThemeTel()
   const { correct, total } = useOwnScoreProgress({ moduleId, pName })
   return (
-    <div style={{
-      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '40px 24px', textAlign: 'center',
-    }}>
-      <div style={{ fontSize: 48, marginBottom: 16 }}>{timedOut ? '⏱' : '✍️'}</div>
-      <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 10 }}>
-        {timedOut ? 'Temps écoulé !' : 'Réponse envoyée !'}
-      </div>
-      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>En attente de la validation du formateur…</div>
-      {total > 0 ? (
-        <div style={{ marginTop: 28 }}>
-          <ScoreRing correct={correct} total={total} />
-          {/* Score sur tout le quiz (questions déjà corrigées), pas sur la question
-              en cours — « 3/4 » se lisait « 3 zones sur 4 » (test du 17/11). */}
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 10, lineHeight: 1.5 }}>
-            Ton score sur le quiz : <b style={{ color: '#fff' }}>{correct} bonne{correct > 1 ? 's' : ''} réponse{correct > 1 ? 's' : ''}</b> sur {total} question{total > 1 ? 's' : ''}
+    <div style={{ minHeight: '100dvh', background: t.fond, color: t.texte, display: 'flex', flexDirection: 'column', animation: 'quizScreenIn .3s ease' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: 'max(16px, env(safe-area-inset-top)) 22px 0' }}><BoutonThemeTel t={t} /></div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 26px' }}>
+        <div style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: t.accent, fontWeight: 700 }}>{timedOut ? '⏱ Temps écoulé' : '✍️ Réponse envoyée'}</div>
+        <div style={{ fontSize: 28, fontWeight: t.titreSerif ? 600 : 800, fontFamily: t.titreSerif ? 'Georgia, serif' : 'inherit', lineHeight: 1.15, marginTop: 10 }}>En attente de la validation du formateur…</div>
+        {total > 0 ? (
+          <div style={{ marginTop: 28, borderTop: `1px solid ${t.trait}`, paddingTop: 22 }}>
+            {/* Score sur tout le quiz (questions déjà corrigées), pas sur la question
+                en cours — « 3/4 » se lisait « 3 zones sur 4 » (test du 17/11). */}
+            <div style={{ fontSize: 44, fontWeight: 300, lineHeight: 1 }}>{correct}<span style={{ fontSize: 18, color: t.doux }}> / {total}</span></div>
+            <div style={{ fontSize: 14, color: t.doux, marginTop: 8, lineHeight: 1.5 }}>
+              Ton score sur le quiz : <b style={{ color: t.texte }}>{correct} bonne{correct > 1 ? 's' : ''} réponse{correct > 1 ? 's' : ''}</b> sur {total} question{total > 1 ? 's' : ''}
+            </div>
+            <div style={{ fontSize: 12, color: t.tresDoux, marginTop: 4 }}>Cette question comptera après la validation du formateur</div>
           </div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>Cette question comptera après la validation du formateur</div>
-        </div>
-      ) : (
-        <div style={{ marginTop: 24, width: 32, height: 32, border: '3px solid rgba(255,255,255,0.2)', borderTop: '3px solid #a78bfa', borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
-      )}
+        ) : (
+          <div style={{ marginTop: 26, width: 32, height: 32, border: `3px solid ${t.trait}`, borderTop: `3px solid ${t.accent}`, borderRadius: '50%', animation: 'quizSpin 1s linear infinite' }} />
+        )}
+      </div>
       <style>{`@keyframes quizSpin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }
 
 // ── Quiz texte libre ──────────────────────────────────────────────
-function QuizTextOpen({ pName, q, qIdx, moduleId }) {
+function QuizTextOpen({ pName, q, qIdx, moduleId, total }) {
   const { checking, validated: existingValidated, wasSubmitted } = useExistingOpenAnswer({ moduleId, qIdx, pName })
   const [text, setText, clearDraft] = useDraftText(`quiz_draft_${moduleId}_${qIdx}`)
   const [submitted, setSubmitted] = useState(false)
@@ -1100,6 +1233,7 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
   }
 
   const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && effectiveValidated === null && !effectiveSubmitted, moduleId, qIdx, seconds: q.timeLimitSec || QUIZ_TIME_LIMIT_SEC })
+  const t = useThemeTel()
 
   if (checking) return <QuizChecking />
   if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} timedOut={timedOut} />
@@ -1109,63 +1243,23 @@ function QuizTextOpen({ pName, q, qIdx, moduleId }) {
   }
 
   return (
-    <div style={{
-      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-      animation: 'quizScreenIn .3s ease',
-    }}>
-      <QuizCountdownBadge remaining={remaining} />
-      <div style={{
-        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
-        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
-        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
-      }}>Question {qIdx + 1}</div>
-      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 32, textAlign: 'center' }}>
-        Regardez la question sur l&apos;écran<br />et tapez votre réponse
-      </div>
+    <CadreQuizTel t={t} q={q} qIdx={qIdx} total={total} moduleId={moduleId} remaining={remaining} consigne="Ta réponse"
+      pied={<BoutonTel t={t} actif={!!text.trim() && !saving} onClick={() => handleSubmit()}>{saving ? 'Envoi…' : 'Envoyer'}</BoutonTel>}>
       {q.numeric ? (
-        <input
-          type="tel"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={text}
+        <input type="tel" inputMode="numeric" pattern="[0-9]*" value={text}
           onChange={e => setText(e.target.value.replace(/[^0-9]/g, ''))}
           placeholder="Votre réponse…"
-          style={{
-            width: '100%', maxWidth: 400, padding: '16px', borderRadius: 16,
-            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-            color: '#fff', fontSize: 24, fontWeight: 700, fontFamily: 'inherit',
-            textAlign: 'center', outline: 'none', marginBottom: 20,
-          }}
-        />
+          style={champTel(t, { marginTop: 12, fontSize: 26, fontWeight: 700, textAlign: 'center' })} />
       ) : (
-        <textarea
-          value={text}
-          onChange={e => setText(e.target.value)}
-          placeholder="Votre réponse…"
-          rows={4}
-          style={{
-            width: '100%', maxWidth: 400, padding: '16px', borderRadius: 16,
-            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-            color: '#fff', fontSize: 16, fontFamily: 'inherit', resize: 'none',
-            outline: 'none', marginBottom: 20,
-          }}
-        />
+        <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Votre réponse…" rows={4}
+          style={champTel(t, { marginTop: 12, resize: 'none' })} />
       )}
-      <button onClick={() => handleSubmit()} disabled={!text.trim() || saving} style={{
-        background: text.trim() ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
-        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
-        fontSize: 16, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default',
-        fontFamily: 'inherit', width: '100%', maxWidth: 400,
-      }}>
-        {saving ? 'Envoi…' : '✓ Envoyer'}
-      </button>
-    </div>
+    </CadreQuizTel>
   )
 }
 
 // ── Quiz texte libre à plusieurs cases (ex: "citez les 5 éléments") ──
-function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
+function QuizTextOpenMulti({ pName, q, qIdx, moduleId, total }) {
   const fieldsCount = q.fields || 5
   const { checking, validated: existingValidated, wasSubmitted } = useExistingOpenAnswer({ moduleId, qIdx, pName })
   const [values, setValues, clearDraft] = useDraftArray(`quiz_draft_${moduleId}_${qIdx}`, Array(fieldsCount).fill(''))
@@ -1212,6 +1306,7 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
   }
 
   const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && effectiveValidated === null && !effectiveSubmitted, moduleId, qIdx, seconds: q.timeLimitSec || QUIZ_TIME_LIMIT_SEC })
+  const t = useThemeTel()
 
   if (checking) return <QuizChecking />
   if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} timedOut={timedOut} />
@@ -1221,55 +1316,25 @@ function QuizTextOpenMulti({ pName, q, qIdx, moduleId }) {
   }
 
   return (
-    <div style={{
-      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-      animation: 'quizScreenIn .3s ease',
-    }}>
-      <QuizCountdownBadge remaining={remaining} />
-      <div style={{
-        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
-        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
-        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
-      }}>Question {qIdx + 1}</div>
-      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 24, textAlign: 'center' }}>
-        {q.schemaVerre
-          ? <>Regardez la question sur l&apos;écran<br />puis touchez chaque zone du verre pour écrire son nom</>
-          : <>Regardez la question sur l&apos;écran<br />et remplissez les {fieldsCount} cases</>}
-      </div>
+    <CadreQuizTel t={t} q={q} qIdx={qIdx} total={total} moduleId={moduleId} remaining={remaining}
+      consigne={q.schemaVerre ? 'Touche chaque zone du verre pour écrire son nom' : `Remplis les ${fieldsCount} cases`}
+      pied={<BoutonTel t={t} actif={allFilled && !saving} onClick={() => handleSubmit()}>{saving ? 'Envoi…' : 'Envoyer'}</BoutonTel>}>
       {q.schemaVerre ? (
-        <SchemaVerreProgressif values={values} onChange={setField} labels={q.fieldLabels} />
+        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
+          <SchemaVerreProgressif values={values} onChange={setField} labels={q.fieldLabels} t={t} />
+        </div>
       ) : (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 400, marginBottom: 24 }}>
-        {values.map((val, i) => (
-          <div key={i}>
-            {q.fieldLabels?.[i] && (
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>{q.fieldLabels[i]}</div>
-            )}
-            <input
-              value={val}
-              onChange={e => setField(i, e.target.value)}
-              placeholder={q.fieldLabels?.[i] || `Élément ${i + 1}`}
-              style={{
-                width: '100%', padding: '14px 16px', borderRadius: 14,
-                border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)',
-                color: '#fff', fontSize: 15, fontFamily: 'inherit', outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-        ))}
-      </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+          {values.map((val, i) => (
+            <div key={i}>
+              {q.fieldLabels?.[i] && <div style={{ fontSize: 12, fontWeight: 600, color: t.doux, marginBottom: 6 }}>{q.fieldLabels[i]}</div>}
+              <input value={val} onChange={e => setField(i, e.target.value)}
+                placeholder={q.fieldLabels?.[i] || `Élément ${i + 1}`} style={champTel(t)} />
+            </div>
+          ))}
+        </div>
       )}
-      <button onClick={() => handleSubmit()} disabled={!allFilled || saving} style={{
-        background: allFilled ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
-        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
-        fontSize: 16, fontWeight: 700, cursor: allFilled ? 'pointer' : 'default',
-        fontFamily: 'inherit', width: '100%', maxWidth: 400,
-      }}>
-        {saving ? 'Envoi…' : '✓ Envoyer'}
-      </button>
-    </div>
+    </CadreQuizTel>
   )
 }
 
@@ -1283,15 +1348,16 @@ const ZONES_VERRE = [
   { style: { top: '68%', left: '24%', width: '52%', height: '32%' } },
 ]
 
-export function SchemaVerreProgressif({ values, onChange, labels }) {
+export function SchemaVerreProgressif({ values, onChange, labels, t = THEMES_TEL.sombre }) {
   const [active, setActive] = useState(null)
+  const clair = t.mode === 'clair'
   return (
     <div style={{ width: '100%', maxWidth: 400, marginBottom: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
       <div style={{
         position: 'relative', width: 300, maxWidth: '100%', aspectRatio: '300 / 230',
         borderRadius: '50% / 46%', overflow: 'hidden',
-        border: '3px solid rgba(255,255,255,0.35)',
-        background: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 6px, rgba(255,255,255,0.1) 6px 12px)',
+        border: `3px solid ${clair ? 'rgba(3,17,42,0.35)' : 'rgba(255,255,255,0.35)'}`,
+        background: clair ? 'repeating-linear-gradient(135deg, #fff 0 6px, rgba(3,17,42,0.04) 6px 12px)' : 'repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 6px, rgba(255,255,255,0.1) 6px 12px)',
       }}>
         {ZONES_VERRE.map((z, i) => {
           const isActive = active === i
@@ -1299,10 +1365,10 @@ export function SchemaVerreProgressif({ values, onChange, labels }) {
           return (
             <button key={i} type="button" onClick={() => setActive(i)} style={{
               position: 'absolute', ...z.style, boxSizing: 'border-box',
-              border: `2px ${isActive ? 'solid' : 'dashed'} ${isActive ? '#a855f7' : 'rgba(255,255,255,0.35)'}`,
+              border: `2px ${isActive ? 'solid' : 'dashed'} ${isActive ? t.accent : (clair ? 'rgba(3,17,42,0.3)' : 'rgba(255,255,255,0.35)')}`,
               borderRadius: i === 0 ? '0 0 40% 40% / 0 0 30% 30%' : i === 1 ? 10 : '40% 40% 0 0 / 30% 30% 0 0',
-              background: isActive ? 'rgba(168,85,247,0.35)' : filled ? 'rgba(34,197,94,0.22)' : 'rgba(0,171,233,0.18)',
-              color: '#fff', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              background: isActive ? `${t.accent}55` : filled ? 'rgba(34,197,94,0.22)' : 'rgba(0,171,233,0.18)',
+              color: t.texte, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, textAlign: 'center',
               WebkitTapHighlightColor: 'transparent',
             }}>
@@ -1313,7 +1379,7 @@ export function SchemaVerreProgressif({ values, onChange, labels }) {
       </div>
       {active !== null ? (
         <div style={{ width: '100%' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#c4b5fd', marginBottom: 6 }}>{labels?.[active] || `Zone ${active + 1}`}</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: t.accent, marginBottom: 6 }}>{labels?.[active] || `Zone ${active + 1}`}</div>
           <input
             key={active}
             autoFocus
@@ -1323,20 +1389,20 @@ export function SchemaVerreProgressif({ values, onChange, labels }) {
             placeholder="Nom de cette zone"
             style={{
               width: '100%', padding: '14px 16px', borderRadius: 14,
-              border: '1px solid rgba(168,85,247,0.6)', background: 'rgba(255,255,255,0.07)',
-              color: '#fff', fontSize: 16, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+              border: `1px solid ${t.accent}`, background: t.champ,
+              color: t.texte, fontSize: 16, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
             }}
           />
         </div>
       ) : (
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Touchez une zone pour la nommer</div>
+        <div style={{ fontSize: 13, color: t.doux }}>Touchez une zone pour la nommer</div>
       )}
     </div>
   )
 }
 
 // ── Quiz texte libre — paires (problème / définition) ─────────────
-function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
+function QuizTextOpenPairs({ pName, q, qIdx, moduleId, total }) {
   const pairsCount = q.pairs || 4
   const [labelLeft, labelRight] = q.pairLabels || ['Élément', 'Détail']
   const { checking, validated: existingValidated, wasSubmitted } = useExistingOpenAnswer({ moduleId, qIdx, pName })
@@ -1384,6 +1450,7 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
   }
 
   const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && effectiveValidated === null && !effectiveSubmitted, moduleId, qIdx, seconds: q.timeLimitSec || QUIZ_TIME_LIMIT_SEC })
+  const t = useThemeTel()
 
   if (checking) return <QuizChecking />
   if (effectiveValidated !== null) return <QuizResultScreen isCorrect={effectiveValidated} pName={pName} moduleId={moduleId} timedOut={timedOut} />
@@ -1393,64 +1460,28 @@ function QuizTextOpenPairs({ pName, q, qIdx, moduleId }) {
   }
 
   return (
-    <div style={{
-      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-      animation: 'quizScreenIn .3s ease',
-    }}>
-      <QuizCountdownBadge remaining={remaining} />
-      <div style={{
-        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
-        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
-        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16,
-      }}>Question {qIdx + 1}</div>
-      <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 20, textAlign: 'center' }}>
-        Regardez la question sur l&apos;écran<br />et remplissez les {pairsCount} lignes
+    <CadreQuizTel t={t} q={q} qIdx={qIdx} total={total} moduleId={moduleId} remaining={remaining} consigne={`Remplis les ${pairsCount} lignes`}
+      pied={<BoutonTel t={t} actif={allFilled && !saving} onClick={() => handleSubmit()}>{saving ? 'Envoi…' : 'Envoyer'}</BoutonTel>}>
+      <div style={{ display: 'flex', gap: 8, marginTop: 12, marginBottom: 6 }}>
+        <div style={{ flex: 1, fontSize: 11, fontWeight: 700, color: t.doux, textTransform: 'uppercase', letterSpacing: 0.5 }}>{labelLeft}</div>
+        <div style={{ flex: 1, fontSize: 11, fontWeight: 700, color: t.doux, textTransform: 'uppercase', letterSpacing: 0.5 }}>{labelRight}</div>
       </div>
-      <div style={{ display: 'flex', gap: 8, width: '100%', maxWidth: 420, marginBottom: 6 }}>
-        <div style={{ flex: 1, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{labelLeft}</div>
-        <div style={{ flex: 1, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{labelRight}</div>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 420, marginBottom: 24 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {rows.map((r, i) => (
           <div key={i} style={{ display: 'flex', gap: 8 }}>
-            <input
-              value={r[0]}
-              onChange={e => setCell(i, 0, e.target.value)}
-              placeholder={`${labelLeft} ${i + 1}`}
-              style={{
-                flex: 1, padding: '13px 14px', borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)',
-                color: '#fff', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', minWidth: 0,
-              }}
-            />
-            <input
-              value={r[1]}
-              onChange={e => setCell(i, 1, e.target.value)}
-              placeholder={`${labelRight} ${i + 1}`}
-              style={{
-                flex: 1, padding: '13px 14px', borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)',
-                color: '#fff', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', minWidth: 0,
-              }}
-            />
+            <input value={r[0]} onChange={e => setCell(i, 0, e.target.value)} placeholder={`${labelLeft} ${i + 1}`}
+              style={champTel(t, { flex: 1, minWidth: 0, fontSize: 14, padding: '13px 14px' })} />
+            <input value={r[1]} onChange={e => setCell(i, 1, e.target.value)} placeholder={`${labelRight} ${i + 1}`}
+              style={champTel(t, { flex: 1, minWidth: 0, fontSize: 14, padding: '13px 14px' })} />
           </div>
         ))}
       </div>
-      <button onClick={() => handleSubmit()} disabled={!allFilled || saving} style={{
-        background: allFilled ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
-        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
-        fontSize: 16, fontWeight: 700, cursor: allFilled ? 'pointer' : 'default',
-        fontFamily: 'inherit', width: '100%', maxWidth: 400,
-      }}>
-        {saving ? 'Envoi…' : '✓ Envoyer'}
-      </button>
-    </div>
+    </CadreQuizTel>
   )
 }
 
 // ── Quiz multi-sélection ──────────────────────────────────────────
-function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
+function QuizMultiSelect({ pName, q, qIdx, moduleId, total }) {
   const { checking, existing } = useExistingQuizAnswer({ moduleId, qIdx, pName })
   const [selected, setSelected] = useState([])
   const [answered, setAnswered] = useState(false)
@@ -1495,63 +1526,22 @@ function QuizMultiSelect({ pName, q, qIdx, moduleId }) {
   }
 
   const remaining = useQuizCountdown({ onExpire: () => handleSubmit(true), enabled: !checking && !existing && !answered, moduleId, qIdx, seconds: q.timeLimitSec || QUIZ_TIME_LIMIT_SEC })
+  const t = useThemeTel()
 
   if (checking) return <QuizChecking />
   if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
   if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   return (
-    <div style={{
-      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-      animation: 'quizScreenIn .3s ease',
-    }}>
-      <QuizCountdownBadge remaining={remaining} />
-      <div style={{
-        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
-        borderRadius: 20, padding: '6px 20px', fontSize: 11, fontWeight: 700, color: '#a78bfa',
-        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16,
-      }}>Question {qIdx + 1}</div>
-      {q.instruction && (
-        <div style={{ fontSize: 13, color: '#f59e0b', fontWeight: 600, marginBottom: 24, textAlign: 'center' }}>{q.instruction}</div>
-      )}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 400, marginBottom: 24 }}>
-        {(q?.options || []).map((opt, i) => {
-          const sel = selected.includes(i)
-          return (
-            <button key={i} onClick={() => toggle(i)} style={{
-              background: sel ? `${OPTION_COLORS[i]}cc` : 'rgba(255,255,255,0.06)',
-              border: `2px solid ${sel ? OPTION_COLORS[i] : 'rgba(255,255,255,0.12)'}`,
-              borderRadius: 16, padding: '18px 20px',
-              display: 'flex', alignItems: 'center', gap: 14,
-              cursor: 'pointer', fontFamily: 'inherit', width: '100%',
-              transition: 'all .15s',
-            }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: 7, flexShrink: 0,
-                background: sel ? 'rgba(0,0,0,0.25)' : OPTION_COLORS[i],
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 13, fontWeight: 800, color: '#fff',
-              }}>{sel ? '✓' : 'ABCD'[i]}</div>
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', textAlign: 'left' }}>{opt}</span>
-            </button>
-          )
-        })}
-      </div>
-      {!readyToSubmit && (
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 10, textAlign: 'center' }}>
-          Sélectionnez {requiredCount} réponse{requiredCount > 1 ? 's' : ''} ({selected.length} / {requiredCount})
-        </div>
-      )}
-      <button onClick={() => handleSubmit()} disabled={!readyToSubmit || saving} style={{
-        background: readyToSubmit ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'rgba(255,255,255,0.08)',
-        border: 'none', color: '#fff', padding: '16px 40px', borderRadius: 16,
-        fontSize: 16, fontWeight: 700, cursor: readyToSubmit ? 'pointer' : 'default',
-        fontFamily: 'inherit', width: '100%', maxWidth: 400,
-      }}>
-        {saving ? 'Envoi…' : '✓ Valider ma sélection'}
-      </button>
-    </div>
+    <CadreQuizTel t={t} q={q} qIdx={qIdx} total={total} moduleId={moduleId} remaining={remaining} consigne={q.instruction || `Choisis ${requiredCount} réponses`}
+      pied={<>
+        {!readyToSubmit && <div style={{ fontSize: 13, color: t.doux, marginBottom: 10, textAlign: 'center' }}>{selected.length} / {requiredCount} sélectionnée{selected.length > 1 ? 's' : ''}</div>}
+        <BoutonTel t={t} actif={readyToSubmit && !saving} onClick={() => handleSubmit()}>{saving ? 'Envoi…' : 'Valider ma sélection'}</BoutonTel>
+      </>}>
+      {(q?.options || []).map((opt, i) => (
+        <ReponseTel key={i} t={t} i={i} texte={opt} carre choisie={selected.includes(i)} onClick={() => toggle(i)} />
+      ))}
+    </CadreQuizTel>
   )
 }
 
@@ -1564,7 +1554,7 @@ function parseOrdoVal(str) {
 // Même design/système de saisie que la saisie interactive (Bases de l'optique) :
 // pavé numérique tap-to-type au lieu de la molette (ValueBox/ValueNumpad,
 // définis plus bas dans ce fichier, avant le composant SaisieInteractiveMobile).
-function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
+function QuizOrdonnanceFill({ pName, q, qIdx, moduleId, total }) {
   const { checking, existing } = useExistingQuizAnswer({ moduleId, qIdx, pName })
   if (!q?.ordonnance?.od || !q?.ordonnance?.og) return null
 
@@ -1651,6 +1641,7 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
   }
 
   const remaining = useQuizCountdown({ onExpire: () => verify(true), enabled: !checking && !existing && !answered, moduleId, qIdx, seconds: q.timeLimitSec || QUIZ_TIME_LIMIT_SEC })
+  const t = useThemeTel()
 
   if (checking) return <QuizChecking />
   if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
@@ -1694,31 +1685,27 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
   ].filter(r => visibleFields.includes(r.key))
 
   return (
-    <div style={{ height: '100dvh', overflow: 'hidden', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit', animation: 'quizScreenIn .3s ease' }}>
-      {/* Header doré */}
-      <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={52} height={18} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
-        <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' }}>Saisir l&apos;ordonnance</span>
-        <QuizCountdownBadge remaining={remaining} compact />
-        <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#fff' }}>Q{qIdx + 1}</div>
+    <div style={{ height: '100dvh', overflow: 'hidden', background: t.fond, color: t.texte, display: 'flex', flexDirection: 'column', fontFamily: 'inherit', animation: 'quizScreenIn .3s ease' }}>
+      <div style={{ flexShrink: 0, paddingBottom: 12 }}>
+        <CadreEnteteTel t={t} q={q} qIdx={qIdx} total={total} moduleId={moduleId} remaining={remaining} />
       </div>
 
       {/* Corps scrollable */}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 16px 8px' }}>
-        <div style={{ fontSize: 12, color: '#666', fontWeight: 600, textAlign: 'center', marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: t.doux, fontWeight: 600, textAlign: 'center', marginBottom: 16 }}>
           Regardez l&apos;ordonnance sur l&apos;écran et saisissez les valeurs
         </div>
 
         {/* En-têtes colonnes */}
         <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 10, marginBottom: 8 }}>
           <div />
-          <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 600, color: '#666', fontStyle: 'italic' }}>Œil droit</div>
-          <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 600, color: '#666', fontStyle: 'italic' }}>Œil gauche</div>
+          <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 600, color: t.doux, fontStyle: 'italic' }}>Œil droit</div>
+          <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 600, color: t.doux, fontStyle: 'italic' }}>Œil gauche</div>
         </div>
 
         {rows.map(row => (
           <div key={row.key} style={{ display: 'grid', gridTemplateColumns: '72px 1fr 1fr', gap: 10, marginBottom: 14, alignItems: 'center' }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: '#555' }}>{row.label}</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: t.doux }}>{row.label}</div>
             <ValueBox value={vals.od[row.key]} mode={row.mode} locked={showResult} isCorrect={results?.od?.[row.key]} showResult={showResult} correctLabel={corrLabel.od[row.key]} onClick={() => openNumpad('od', row.key)} />
             <ValueBox value={vals.og[row.key]} mode={row.mode} locked={showResult} isCorrect={results?.og?.[row.key]} showResult={showResult} correctLabel={corrLabel.og[row.key]} onClick={() => openNumpad('og', row.key)} />
           </div>
@@ -1727,14 +1714,14 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId }) {
 
       {/* Footer — bouton bien séparé de la grille et du pavé numérique (au-dessus,
           en position fixe) pour qu'un tap sur "✓" du pavé ne valide pas par erreur */}
-      <div style={{ padding: '40px 14px 36px', background: APP_BG, flexShrink: 0, borderTop: `1px solid ${APP_GOLD}33` }}>
+      <div style={{ padding: '40px 14px 36px', background: t.fond, flexShrink: 0, borderTop: `1px solid ${t.trait}` }}>
         <button
           onClick={() => verify()}
           disabled={saving}
           style={{
             width: '100%', padding: '16px', borderRadius: 14,
-            background: saving ? '#ccc' : APP_GOLD,
-            border: 'none', color: '#fff',
+            background: saving ? t.boutonOff : t.bouton,
+            border: 'none', color: saving ? t.boutonOffTexte : t.boutonTexte,
             fontSize: 16, fontWeight: 800, cursor: saving ? 'default' : 'pointer',
             fontFamily: 'inherit', letterSpacing: 0.5,
           }}
@@ -1776,7 +1763,7 @@ const SPH_NEG_MAX_VALS = Array.from({ length: WHEEL_LEN }, (_, i) => {
   return { val: v, label: v < -0.001 ? `−${Math.abs(v).toFixed(2).replace('.', ',')}` : '0,00' }
 })
 
-function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
+function QuizPowerSelector({ pName, q, qIdx, moduleId, total }) {
   const { checking, existing } = useExistingQuizAnswer({ moduleId, qIdx, pName })
   const [posIdx, setPosIdx] = useState(WHEEL_ZERO_IDX)
   const [negIdx, setNegIdx] = useState(WHEEL_ZERO_IDX)
@@ -1808,23 +1795,20 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
   }
 
   const remaining = useQuizCountdown({ onExpire: () => { setTimedOut(true); handleSubmit() }, enabled: !checking && !existing && !answered, moduleId, qIdx, seconds: q.timeLimitSec || QUIZ_TIME_LIMIT_SEC })
+  const t = useThemeTel()
 
   if (checking) return <QuizChecking />
   if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
   if (answered && isCorrect !== null) return <QuizResultScreen isCorrect={isCorrect} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   return (
-    <div style={{ height: '100dvh', overflow: 'hidden', background: APP_BG, display: 'flex', flexDirection: 'column', fontFamily: 'inherit', animation: 'quizScreenIn .3s ease' }}>
-      {/* Header doré */}
-      <div style={{ background: APP_GOLD, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={52} height={18} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
-        <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' }}>Puissances maximales</span>
-        <QuizCountdownBadge remaining={remaining} compact />
-        <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#fff' }}>Q{qIdx + 1}</div>
+    <div style={{ height: '100dvh', overflow: 'hidden', background: t.fond, color: t.texte, display: 'flex', flexDirection: 'column', fontFamily: 'inherit', animation: 'quizScreenIn .3s ease' }}>
+      <div style={{ flexShrink: 0, paddingBottom: 12 }}>
+        <CadreEnteteTel t={t} q={q} qIdx={qIdx} total={total} moduleId={moduleId} remaining={remaining} />
       </div>
 
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '28px 20px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ fontSize: 12, color: '#666', fontWeight: 600, textAlign: 'center', marginBottom: 28 }}>
+        <div style={{ fontSize: 12, color: t.doux, fontWeight: 600, textAlign: 'center', marginBottom: 28 }}>
           Regardez la question sur l&apos;écran<br />et faites défiler les roulettes
         </div>
 
@@ -1845,14 +1829,14 @@ function QuizPowerSelector({ pName, q, qIdx, moduleId }) {
       </div>
 
       {/* Footer */}
-      <div style={{ padding: '12px 14px 36px', background: APP_BG, flexShrink: 0, borderTop: `1px solid ${APP_GOLD}33` }}>
+      <div style={{ padding: '12px 14px 36px', background: t.fond, flexShrink: 0, borderTop: `1px solid ${t.trait}` }}>
         <button
           onClick={handleSubmit}
           disabled={saving}
           style={{
             width: '100%', padding: '16px', borderRadius: 14,
-            background: saving ? '#ccc' : APP_GOLD,
-            border: 'none', color: '#fff',
+            background: saving ? t.boutonOff : t.bouton,
+            border: 'none', color: saving ? t.boutonOffTexte : t.boutonTexte,
             fontSize: 16, fontWeight: 800, cursor: saving ? 'default' : 'pointer',
             fontFamily: 'inherit', letterSpacing: 0.5,
           }}
@@ -1899,67 +1883,36 @@ function QuizQCMAnswer({ pName, q, qIdx, quiz, moduleId }) {
   }
 
   const remaining = useQuizCountdown({ onExpire: () => handleAnswer(-1), enabled: !checking && !existing && !answered, moduleId, qIdx, seconds: q.timeLimitSec || QUIZ_TIME_LIMIT_SEC })
+  const t = useThemeTel()
 
   if (checking) return <QuizChecking />
   if (existing) return <QuizResultScreen isCorrect={existing.is_correct} pName={pName} moduleId={moduleId} />
   if (answered) return <QuizResultScreen isCorrect={lastIsCorrect} pName={pName} moduleId={moduleId} timedOut={timedOut} />
 
   return (
-    <div style={{
-      minHeight: '100dvh', background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      padding: '48px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-      animation: 'quizScreenIn .3s ease',
-    }}>
-      <QuizCountdownBadge remaining={remaining} />
-      <div style={{
-        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
-        borderRadius: 20, padding: '6px 20px',
-        fontSize: 11, fontWeight: 700, color: '#a78bfa',
-        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 24,
-      }}>Question {qIdx + 1} / {quiz.length}</div>
-      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 40, textAlign: 'center' }}>
-        Regardez la question sur l&apos;écran<br />et choisissez votre réponse
-      </div>
+    <CadreQuizTel t={t} q={q} qIdx={qIdx} total={quiz.length} moduleId={moduleId} remaining={remaining} consigne="Touche ta réponse">
       {saveError && (
-        <div style={{
-          background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
-          borderRadius: 12, padding: '12px 16px', marginBottom: 20, maxWidth: 400,
-          fontSize: 14, color: '#fca5a5', textAlign: 'center',
-        }}>
+        <div style={{ border: `1px solid ${t.rouge}`, borderRadius: 12, padding: '12px 16px', margin: '12px 0', fontSize: 14, color: t.rouge, textAlign: 'center' }}>
           Enregistrement impossible. Rechargez la page ou prévenez le formateur.
         </div>
       )}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 400 }}>
-        {(q?.options || []).map((opt, i) => (
-          <button key={i} onClick={() => handleAnswer(i)} style={{
-            background: OPTION_COLORS[i], border: 'none', borderRadius: 18,
-            padding: '22px 24px', display: 'flex', alignItems: 'center', gap: 16,
-            cursor: 'pointer', fontFamily: 'inherit', width: '100%',
-            boxShadow: `0 6px 24px ${OPTION_COLORS[i]}55`,
-          }}>
-            <div style={{
-              width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
-              background: 'rgba(0,0,0,0.2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, fontWeight: 800, color: '#fff',
-            }}>{'ABCD'[i]}</div>
-            <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', textAlign: 'left' }}>{opt}</span>
-          </button>
-        ))}
-      </div>
-    </div>
+      {(q?.options || []).map((opt, i) => (
+        <ReponseTel key={i} t={t} i={i} texte={opt} choisie={saving && chosenIdx === i} onClick={() => { setChosenIdx(i); handleAnswer(i) }} />
+      ))}
+      <div style={{ height: 24 }} />
+    </CadreQuizTel>
   )
 }
 
 function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
   const q = quiz[qIdx]
   const type = q?.type || 'qcm'
-  if (type === 'text-open') return <QuizTextOpen pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
-  if (type === 'text-open-multi') return <QuizTextOpenMulti pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
-  if (type === 'text-open-pairs') return <QuizTextOpenPairs pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
-  if (type === 'qcm-multi') return <QuizMultiSelect pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
-  if (type === 'ordonnance-fill') return <QuizOrdonnanceFill pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
-  if (type === 'power-selector') return <QuizPowerSelector pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} />
+  if (type === 'text-open') return <QuizTextOpen pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} total={quiz.length} />
+  if (type === 'text-open-multi') return <QuizTextOpenMulti pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} total={quiz.length} />
+  if (type === 'text-open-pairs') return <QuizTextOpenPairs pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} total={quiz.length} />
+  if (type === 'qcm-multi') return <QuizMultiSelect pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} total={quiz.length} />
+  if (type === 'ordonnance-fill') return <QuizOrdonnanceFill pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} total={quiz.length} />
+  if (type === 'power-selector') return <QuizPowerSelector pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} total={quiz.length} />
   return <QuizQCMAnswer pName={pName} q={q} qIdx={qIdx} quiz={quiz} moduleId={moduleId} />
 }
 

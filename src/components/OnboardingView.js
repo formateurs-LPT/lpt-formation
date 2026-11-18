@@ -11,6 +11,7 @@ import { getLegacySessionCode, isDynamicRoomCode } from '@/lib/sessionCode'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import ConfirmModal from '@/components/ConfirmModal'
 import { MODULE_GROUPES, PREFIXE_SESSION } from '@/lib/modulesApresFormation'
+import { calculerSeries } from '@/lib/quizClassement'
 
 const JOURNEES = (onLaunchModule, onLaunchPeerQuiz) => [
   {
@@ -341,14 +342,18 @@ function SessionRanking({ sessionCode }) {
     if (!sessionCode) return
     let cancelled = false
     const load = async () => {
-      const rows = await sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(sessionCode)}&is_correct=eq.true`)
+      const rows = await sbSelect('quiz_answers', `session_code=eq.${encodeURIComponent(sessionCode)}`)
       if (cancelled) return
       const counts = {}
       for (const r of (rows || [])) {
-        counts[r.collaborateur] = (counts[r.collaborateur] || 0) + 1
+        if (!(r.collaborateur in counts)) counts[r.collaborateur] = 0
+        if (r.is_correct) counts[r.collaborateur] += 1
       }
+      // + bonus de série (bonnes réponses d'affilée dans un même quiz)
+      const series = calculerSeries(rows || [])
       const sorted = Object.entries(counts)
-        .map(([name, cnt]) => ({ name, points: cnt * 10 }))
+        .filter(([, cnt]) => cnt > 0) // comme avant : seuls ceux qui ont au moins une bonne réponse
+        .map(([name, cnt]) => ({ name, points: cnt * 10 + (series[name]?.bonus || 0) }))
         .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
       let rk = 1
       const withRanks = sorted.map((entry, i) => {

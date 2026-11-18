@@ -17,7 +17,7 @@ import { TVFreeQuizScreen } from '@/components/FreeQuizGame'
 import { useQuizCountdown, QUIZ_TIME_LIMIT_SEC } from '@/components/ParticipantModuleView'
 import { countVotesPerOption } from '@/lib/quizVotes'
 import { tauxParFamille, statutFamille, themeForAnswer, FAMILLE_LABELS } from '@/lib/quizThemeMap'
-import { chargerChronoQuiz, classerQuiz } from '@/lib/quizClassement'
+import { chargerChronoQuiz, classerQuiz, meilleureSerieDuQuiz } from '@/lib/quizClassement'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -8893,7 +8893,7 @@ function TVQuizFinalPodium({ quiz, sessionCode, moduleId = 'quiz-final' }) {
     }).catch(() => setReady(true))
   }, [sessionCode, moduleId])
 
-  return <TVPodiumFinalVue classement={classement} total={quiz.length} ready={ready} />
+  return <TVPodiumFinalVue classement={classement} total={quiz.length} ready={ready} meilleureSerie={meilleureSerie} />
 }
 
 // Affichage du classement final (sans accès aux données) — séparé pour pouvoir
@@ -8904,7 +8904,7 @@ function TVQuizFinalPodium({ quiz, sessionCode, moduleId = 'quiz-final' }) {
 const PODIUM_OR = '#c9a227'
 const PODIUM_MAX_LIGNES = 12
 
-export function TVPodiumFinalVue({ classement = [], total, ready = true }) {
+export function TVPodiumFinalVue({ classement = [], total, ready = true, meilleureSerie }) {
   const prenom = (n) => String(n || '').trim().split(' ').pop()
   const nom = (n) => String(n || '').trim().split(' ').slice(0, -1).join(' ')
   const temps = (t) => t == null ? '—' : `${t.toFixed(1).replace('.', ',')} s`
@@ -8929,6 +8929,7 @@ export function TVPodiumFinalVue({ classement = [], total, ready = true }) {
       minHeight: '100vh', background: '#03112a', color: '#fff',
       display: 'flex', flexDirection: 'column', padding: '4vh 5vw', overflow: 'hidden',
     }}>
+  const [meilleureSerie, setMeilleureSerie] = useState(null)
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...apparait(0) }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} priority style={{ objectFit: 'contain', height: taille(30, 3), width: 'auto' }} />
         <div style={{ fontSize: taille(13, 1.3), letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>Classement final</div>
@@ -8939,6 +8940,7 @@ export function TVPodiumFinalVue({ classement = [], total, ready = true }) {
           Aucune réponse enregistrée pour ce quiz
         </div>
       )}
+      setMeilleureSerie(meilleureSerieDuQuiz(rows || [], moduleId))
 
       {ready && p1 && (
         <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1.15fr', gap: '5vw', alignItems: 'center', marginTop: '3vh', minHeight: 0 }}>
@@ -9009,6 +9011,15 @@ function TVQuizFamilyRates({ sessionCode, moduleId, moduleLabel, quiz }) {
       .then(rows => {
         setFamilles(tauxParFamille(rows, quiz, moduleId))
         setTimeout(() => setAnime(true), 300)
+            {/* Meilleure série du groupe (maquette 18/11) */}
+            {meilleureSerie?.longueur >= 3 && (
+              <div style={{ marginTop: '5vh', paddingTop: '2vh', borderTop: '1px solid rgba(249,115,22,0.35)', ...apparait(1.6) }}>
+                <div style={{ fontSize: taille(13, 1.3), letterSpacing: 4, textTransform: 'uppercase', color: '#fb923c' }}>🔥 Meilleure série du groupe</div>
+                <div style={{ fontSize: taille(28, 2.8), fontWeight: 700, marginTop: '1vh' }}>
+                  {String(meilleureSerie.name).trim().split(' ').pop()} <span style={{ fontWeight: 300, color: 'rgba(255,255,255,0.7)' }}>· {meilleureSerie.longueur} bonnes réponses d&apos;affilée</span>
+                </div>
+              </div>
+            )}
       }).catch(() => setFamilles([]))
   }, [sessionCode, moduleId, quiz])
 

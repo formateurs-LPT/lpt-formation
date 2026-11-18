@@ -11,6 +11,7 @@ import { DIRECTEURS } from '@/lib/directeursData'
 import { PUBLIC_ORIGIN } from '@/lib/sessionCode'
 import { themeForAnswer, DIRECT_THEME_MODULES, TRANSVERSAL_MODULE_IDS } from '@/lib/quizThemeMap'
 import { extractPrenom } from '@/lib/participantNames'
+import { calculerSeries } from '@/lib/quizClassement'
 
 // ── Constantes ────────────────────────────────────────────────────
 
@@ -1901,11 +1902,13 @@ function CollabListView({ entrees, categoryKey, trainerName, onBack }) {
       })
       setGroupThemeStats(groupThemeTotals)
 
-      const rateScores = scores.map(({ name, byModule: bm }) => {
+      const rateScores = scores.map(({ name, byModule: bm }, i) => {
         const vals = Object.values(bm)
         const correct = vals.reduce((s, m) => s + (m.score || 0), 0)
         const total = vals.reduce((s, m) => s + (m.total || 0), 0)
-        return { name, points: correct * 10, total, rate: total ? correct / total : 0 }
+        // + bonus de série (bonnes réponses d'affilée dans un même quiz)
+        const bonus = Object.values(calculerSeries(answerArrays[i] || [])).reduce((s, x) => s + x.bonus, 0)
+        return { name, points: correct * 10 + bonus, total, rate: total ? correct / total : 0 }
       })
       const sortedByRate = [...rateScores].sort((a, b) => b.rate - a.rate || b.total - a.total)
       const ptsRankMap = {}

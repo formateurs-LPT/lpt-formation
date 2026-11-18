@@ -86,3 +86,54 @@ export function formaterTempsMoyen(sec) {
   if (sec == null) return ''
   return `${sec.toFixed(1).replace('.', ',')} s`
 }
+
+// ── Bonus de série (18/11) ───────────────────────────────────────────────
+// Bonnes réponses d'affilée DANS UN MÊME QUIZ : +5 XP pour la 3e et la 4e,
+// +10 XP à partir de la 5e. Une erreur — ou une question sautée — remet la
+// série à zéro. Seuls les XP sont concernés : le classement d'un quiz reste
+// « bonnes réponses, puis rapidité ».
+export function bonusSerie(longueur) {
+  return longueur >= 5 ? 10 : longueur >= 3 ? 5 : 0
+}
+
+// rows : lignes quiz_answers (un ou plusieurs formés, un ou plusieurs quiz).
+// Retourne { [nom]: { bonus, meilleure, parQuiz: { [moduleId]: { serie, derniere, avant } } } }
+//   serie   : série en cours après la dernière question répondue
+//   derniere: index de cette dernière question
+//   avant   : série juste avant cette dernière question (pour « ta série s'arrête »)
+export function calculerSeries(rows) {
+  const parCle = {}
+  for (const r of rows || []) {
+    const qi = r.question_idx ?? 0
+    if (!r.collaborateur || !r.module_id || qi >= 100) continue
+    const cle = `${r.collaborateur}|${r.module_id}`
+    const lignes = parCle[cle] || (parCle[cle] = {})
+    if (!lignes[qi] || (r.id ?? 0) > (lignes[qi].id ?? 0)) lignes[qi] = r
+  }
+  const res = {}
+  for (const [cle, lignes] of Object.entries(parCle)) {
+    const sep = cle.lastIndexOf('|')
+    const nom = cle.slice(0, sep), moduleId = cle.slice(sep + 1)
+    const p = res[nom] || (res[nom] = { bonus: 0, meilleure: 0, parQuiz: {} })
+    let serie = 0, avant = 0, precedente = null, derniere = null
+    for (const qi of Object.keys(lignes).map(Number).sort((a, b) => a - b)) {
+      if (precedente !== null && qi !== precedente + 1) serie = 0 // question sautée
+      avant = serie
+      if (lignes[qi].is_correct) { serie += 1; p.bonus += bonusSerie(serie) } else serie = 0
+      p.meilleure = Math.max(p.meilleure, serie)
+      precedente = qi; derniere = qi
+    }
+    p.parQuiz[moduleId] = { serie, derniere, avant }
+  }
+  return res
+}
+
+// Meilleure série d'un quiz (podium TV) : { name, longueur } ou null
+export function meilleureSerieDuQuiz(rows, moduleId) {
+  const series = calculerSeries((rows || []).filter(r => r.module_id === moduleId))
+  let top = null
+  for (const [name, s] of Object.entries(series)) {
+    if (!top || s.meilleure > top.longueur) top = { name, longueur: s.meilleure }
+  }
+  return top && top.longueur >= 3 ? top : null
+}

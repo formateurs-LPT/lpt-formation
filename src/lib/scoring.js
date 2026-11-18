@@ -1,5 +1,6 @@
 import { sbSelect } from './supabase'
 import { MODULE_DATA } from './modulesData'
+import { calculerSeries } from './quizClassement'
 
 // Règle unique de scoring : 10 points par bonne réponse, que ce soit dans un quiz de
 // module (quiz_answers), une question ouverte notée par le formateur — jeu des
@@ -102,12 +103,14 @@ export function buildParticipantRanking({ quizAnswers = [], openAnswers = [], mo
     statsByName[n].total += total
   }
 
+  // Bonus de série (bonnes réponses d'affilée dans un même quiz, cf. quizClassement.js)
+  const series = calculerSeries(quizAnswers)
   const rows = Object.entries(statsByName)
     .map(([name, s]) => ({
       name,
       correct: s.correct,
       total: s.total,
-      points: s.correct * POINTS_PER_CORRECT,
+      points: s.correct * POINTS_PER_CORRECT + (series[name]?.bonus || 0),
       rate: s.total ? s.correct / s.total : 0,
     }))
     // Classé par taux de réussite d'abord, nombre de réponses en départage
