@@ -107,24 +107,11 @@ export const QUIZ_J1_BASE = [
     options: ['Myope & Presbyte', 'Hypermétrope', 'Astigmate & Presbyte', 'Myope'],
     correct: 1,
   },
-  // Q7 — Ancien Quiz Jour 1 Q7
-  {
-    question: 'Un client voit mal de près et a du mal à lire les petits caractères. Quel est son problème de vue ?',
-    options: ['Presbytie', 'Myopie', 'Hypermétropie', 'Astigmatisme'],
-    correct: 0,
-  },
-  // Q8 — Module Optique Q3
+  // Q7 — Module Optique Q3
   {
     question: "Astigmate c'est :",
     options: ['Vision floue de loin', 'Vision floue de près', 'Vision déformée', 'Vision floue de loin & de près'],
     correct: 2,
-  },
-  // Q9 — Module Optique Q4
-  {
-    type: 'text-open',
-    question: 'La presbytie apparaît en moyenne à :',
-    hint: '45 ans',
-    autoCorrect: ['45'],
   },
 
   // ══ Les bases de l'optique : lire une ordonnance ══
@@ -139,34 +126,26 @@ export const QUIZ_J1_BASE = [
     ],
     correct: 1,
   },
-  // Q10 — Ancien Quiz Jour 1 Q6
-  {
-    type: 'qcm-multi',
-    question: 'Dans la Sphère, quels problèmes de vue peut-on trouver ?',
-    options: ['Astigmatisme', 'Hypermétropie', 'Presbytie', 'Myopie'],
-    correct: [1, 3],
-    instruction: 'Sélectionnez les 2 bonnes réponses',
-  },
-  // Q11 — Module Optique Q5
+  // Q8 — Module Optique Q5
   {
     type: 'text-open',
     question: 'Les corrections évoluent de combien en combien ?',
     hint: 'de 0,25 en 0,25',
     autoCorrect: ['0,25', '0.25'],
   },
-  // Q12 — Module Optique Q7
+  // Q9 — Module Optique Q7
   {
     question: 'A quoi correspond le cylindre ?',
     options: ['Hypermétropie', 'Myopie', 'Presbytie', 'Astigmatisme'],
     correct: 3,
   },
-  // Q13 — Module Optique Q8
+  // Q10 — Module Optique Q8
   {
     question: 'A quoi correspond l\'indication « Add » ?',
     options: ['La presbytie', "L'astigmatisme", 'La myopie', "L'hypermétropie"],
     correct: 0,
   },
-  // Q14 — Module Optique Q20
+  // Q11 — Module Optique Q20
   {
     question: "De quoi est toujours accompagné l'axe ?",
     options: ['La sphère', "L'addition", 'Le cylindre'],
@@ -174,7 +153,7 @@ export const QUIZ_J1_BASE = [
   },
 
   // ══ Les bases de l'optique : saisir une ordonnance ══
-  // Q15 — Ancien Quiz Jour 1 Q8
+  // Q12 — Ancien Quiz Jour 1 Q8
   {
     type: 'ordonnance-fill',
     question: 'Saisissez les valeurs de cette ordonnance.',
@@ -185,18 +164,7 @@ export const QUIZ_J1_BASE = [
     hideOrdoLabels: true,
     cylInParens: true,
   },
-  // Q16 — Ancien Quiz Jour 1 Q9
-  {
-    type: 'ordonnance-fill',
-    question: 'Saisissez les valeurs de cette ordonnance.',
-    ordonnance: {
-      od: { sph: '-1,50', cyl: '+0,75', axe: '170', add: null },
-      og: { sph: '-2,00', cyl: '+0,50', axe: '165', add: null },
-    },
-    hideOrdoLabels: true,
-    cylInParens: true,
-  },
-  // Q17 — Ancien Quiz Jour 1 Q10
+  // Q13 — Ancien Quiz Jour 1 Q10
   {
     type: 'ordonnance-fill',
     question: 'Saisissez les valeurs de cette ordonnance.',
@@ -206,33 +174,7 @@ export const QUIZ_J1_BASE = [
     },
     hideNonAddHeaders: true,
   },
-
-  // ══ Les bases de l'optique : diagnostiquer sur ordonnance ══
-  // Q18 — Ancien Quiz Jour 1 Q11
-  {
-    type: 'qcm-ordonnance',
-    question: 'Quel est le problème de vue de ce client ?',
-    ordonnance: {
-      od: { sph: '-3,00', cyl: null, axe: null, add: null },
-      og: { sph: '-2,75', cyl: null, axe: null, add: null },
-    },
-    options: ['Myopie', 'Hypermétropie', 'Presbytie', 'Astigmatisme'],
-    correct: 0,
-    hideOrdoLabels: true,
-  },
-  // Q19 — Ancien Quiz Jour 1 Q12
-  {
-    type: 'qcm-ordonnance',
-    question: 'Quel est le problème de vue de ce client ?',
-    ordonnance: {
-      od: { sph: '+2,50', cyl: null, axe: null, add: null },
-      og: { sph: '+2,00', cyl: null, axe: null, add: null },
-    },
-    options: ['Myopie', 'Hypermétropie', 'Presbytie', 'Astigmatisme'],
-    correct: 1,
-    hideOrdoLabels: true,
-  },
-  // Q20 — Ancien Quiz Jour 1 Q13
+  // Q14 — Ancien Quiz Jour 1 Q13
   {
     type: 'qcm-ordonnance',
     question: 'Quel est le problème de vue de ce client ?',
@@ -245,7 +187,7 @@ export const QUIZ_J1_BASE = [
     correct: 2,
     hideOrdoLabels: true,
   },
-  // Q21 — Module Optique Q9
+  // Q15 — Module Optique Q9
   {
     question: 'Quels sont les problèmes de vue de ce client ?',
     type: 'qcm-ordonnance',
@@ -258,20 +200,7 @@ export const QUIZ_J1_BASE = [
     correct: 3,
     cylInParens: true,
   },
-  // Q22 — Module Optique Q11
-  {
-    question: 'Quels sont les problèmes de vue de ce client ?',
-    type: 'qcm-ordonnance',
-    hideOrdoLabels: true,
-    ordonnance: {
-      od: { sph: '+2,00', cyl: '-1,00', axe: '145' },
-      og: { sph: '+1,75', cyl: '-0,75', axe: '150' },
-    },
-    options: ['Myope & Astigmate', 'Myope & Presbyte', 'Hypermétrope & Astigmate', 'Hypermétrope & Myope'],
-    correct: 2,
-    cylInParens: true,
-  },
-  // Q23 — Module Optique Q14
+  // Q16 — Module Optique Q14
   {
     question: 'Quels sont les problèmes de vue de ce client ?',
     type: 'qcm-ordonnance',
@@ -284,7 +213,7 @@ export const QUIZ_J1_BASE = [
     correct: 2,
     cylInParens: true,
   },
-  // Q24 — Module Optique Q19
+  // Q17 — Module Optique Q19
   {
     question: 'Quels sont les problèmes de vue de ce client ?',
     type: 'qcm-ordonnance',
@@ -297,35 +226,9 @@ export const QUIZ_J1_BASE = [
     correct: 1,
     cylInParens: true,
   },
-  // Q25 — Ancien Quiz Jour 1 Q16
-  {
-    type: 'qcm-ordonnance',
-    question: 'Quels sont les problèmes de vue de ce client ?',
-    ordonnance: {
-      od: { sph: '-1,00', cyl: '-1,50', axe: '45',  add: null },
-      og: { sph: '-0,75', cyl: '-1,25', axe: '135', add: null },
-    },
-    options: ['Myopie + Astigmatisme', 'Hypermétropie + Presbytie', 'Myopie seule', 'Presbytie seule'],
-    correct: 0,
-    hideOrdoLabels: true,
-    cylInParens: true,
-  },
-  // Q26 — Ancien Quiz Jour 1 Q17
-  {
-    type: 'qcm-ordonnance',
-    question: 'Quels sont les problèmes de vue de ce client ?',
-    ordonnance: {
-      od: { sph: '+1,25', cyl: '-0,75', axe: '90', add: '+2,00' },
-      og: { sph: '+1,00', cyl: '-0,50', axe: '85', add: '+2,00' },
-    },
-    options: ['Myopie + Astigmatisme', 'Hypermétropie + Astigmatisme + Presbytie', 'Presbytie seule', 'Astigmatisme seul'],
-    correct: 1,
-    hideOrdoLabels: true,
-    cylInParens: true,
-  },
 
   // ══ Fabrication en magasin ══
-  // Q27 — Ancien Quiz Jour 1 Q14
+  // Q18 — Ancien Quiz Jour 1 Q14
   {
     type: 'power-selector',
     question: 'Quelle est la puissance maximale de sphère fabriquée en 10 minutes chez Lunettes Pour Tous ? (positif et négatif)',
@@ -363,13 +266,13 @@ export const QUIZ_J1_BASE = [
     autoCorrectOrdered: true,
     autoCorrectEach: [['loin'], ['intermédiaire', 'intermediaire', 'inter'], ['près', 'pres']],
   },
-  // Q29 — Module Types de verres Q7
+  // Q19 — Module Types de verres Q7
   {
     question: 'Un client myope et astigmate de 28 ans peut avoir des verres progressifs.',
     options: ['Vrai', 'Faux'],
     correct: 1,
   },
-  // Q30 — Ancien Quiz Jour 1 Q18
+  // Q20 — Ancien Quiz Jour 1 Q18
   {
     type: 'qcm-ordonnance',
     question: 'Quel est le délai de fabrication pour ces lunettes ?',
@@ -382,19 +285,40 @@ export const QUIZ_J1_BASE = [
     hideOrdoLabels: true,
   },
 
-  // ══ Connaissances montures ══
-  // Montures — les 3 matériaux
+  // ══ Connaissances montures (questions de Kevin, 18/11) ══
+  // Montures — les 3 matériaux (3 cases de haut en bas, ordre libre)
   {
     type: 'text-open-multi',
     fields: 3,
-    question: 'Quels sont les 3 matériaux de monture disponibles chez Lunettes Pour Tous ?',
-    hint: 'Acétate · Métal · Injecté',
+    question: 'Citez les 3 matériaux de nos montures.',
+    hint: 'Injecté · Acétate de cellulose · Métal',
     autoCorrectEach: [
+      ['inject'],
       ['acétate', 'acetate'],
       ['métal', 'metal', 'métallique', 'metallique'],
-      ['inject'],
     ],
   },
+  // Montures — fourchette de prix
+  {
+    type: 'text-open',
+    question: 'Les prix de nos montures sont compris entre :',
+    hint: '5 € et 90 €',
+    autoCorrectAll: ['5', '90'],
+  },
+  // Montures — matériau de 5 à 15 €
+  {
+    type: 'text-open',
+    question: 'Quel matériau de monture est compris entre 5 € et 15 € ?',
+    hint: 'Le plastique injecté',
+    autoCorrect: ['inject'],
+  },
+  // Montures — adaptables en solaire
+  {
+    question: 'Quelles sont nos montures adaptables en solaire ?',
+    options: ['Acétate', 'Métal', 'Injecté', 'Toutes nos montures'],
+    correct: 3,
+  },
+
 ]
 
 // ── Chrono : 2 minutes pour toutes les questions du Quiz Jour 1 ─────────

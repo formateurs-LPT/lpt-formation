@@ -60,7 +60,9 @@ const QUIZ_J1_FUSION_DEPUIS = '2026-11-16T15:47:00Z'
 // Refondu le 16/11 : le Quiz Jour 1 regroupe désormais les quiz des modules
 // Entreprise, Optique et Types de verres + l'ancien Quiz Jour 1 — toujours
 // vérifier ce nombre contre QUIZ_J1.length après une suppression/ajout.
-const QUIZ_J1_THEMES = [
+// Quiz Jour 1 à 36 questions (16/11 → 18/11) — sert à classer les réponses
+// données avant le passage à 30 questions (cf. QUIZ_J1_V30_DEPUIS).
+const QUIZ_J1_THEMES_V36 = [
   'entreprise',          // 0 — En quelle année a ouvert le premier magasin Lunettes Pour Tous ? (Ancien Quiz Jour 1 Q1)
   'entreprise',          // 1 — Quel élément (en dehors du prix) fait que l'offre de lunettes pour tou (Ancien Quiz Jour 1 Q3)
   'entreprise',          // 2 — Quels sont les 5 points clés qui permettent de remplir la promesse Lun (Ancien Quiz Jour 1 Q4)
@@ -97,6 +99,43 @@ const QUIZ_J1_THEMES = [
   'types-verres',        // 33 — Un client myope et astigmate de 28 ans peut avoir des verres progressi (Module Types de verres Q7)
   'entreprise',          // 34 — Quel est le délai de fabrication pour ces lunettes ? (Ancien Quiz Jour 1 Q18)
   'montures',            // 35 — Selon leur matière de fabrication, quelles sont les trois catégories d (Ancien Quiz Jour 1 Q15)
+]
+
+// Passage du Quiz Jour 1 à 30 questions (moins d'ordonnances, plus de montures)
+// — date de mise en ligne, à régler au déploiement.
+const QUIZ_J1_V30_DEPUIS = '2026-11-18T11:17:00Z'
+
+const QUIZ_J1_THEMES = [
+  'entreprise',          // 0 — En quelle année a ouvert le premier magasin Lunettes Pour Tous ? (Ancien Quiz Jour 1 Q1)
+  'entreprise',          // 1 — Quel élément (en dehors du prix) fait que l'offre de lunettes pour tou (Ancien Quiz Jour 1 Q3)
+  'entreprise',          // 2 — Quels sont les 5 points clés qui permettent de remplir la promesse Lun (Ancien Quiz Jour 1 Q4)
+  'entreprise',          // 3 — Où se trouve le laboratoire progressif unique au monde de Lunettes Pou (Module Entreprise Q5)
+  'entreprise',          // 4 — Quel est le délai de fabrication pour un verre complexe (progressif) d (Module Entreprise Q6)
+  'optique',             // 5 — Citez les 4 problèmes de vue et leur définition. (Ancien Quiz Jour 1 Q5)
+  'optique',             // 6 — Un client voit flou de loin. Quel est son trouble ? (Module Optique Q1)
+  'optique',             // 7 — Un client force constamment sur ses yeux pour voir net, quand il relâc (Module Optique Q10)
+  'optique',             // 8 — Astigmate c'est : (Module Optique Q3)
+  'optique',             // 9 — Comment reconnaît-on une hypermétropie sur une ordonnance ? (Module Optique Q2)
+  'optique',             // 10 — Les corrections évoluent de combien en combien ? (Module Optique Q5)
+  'optique',             // 11 — A quoi correspond le cylindre ? (Module Optique Q7)
+  'optique',             // 12 — A quoi correspond l'indication « Add » ? (Module Optique Q8)
+  'optique',             // 13 — De quoi est toujours accompagné l'axe ? (Module Optique Q20)
+  'optique',             // 14 — Saisissez les valeurs de cette ordonnance. (Ancien Quiz Jour 1 Q8)
+  'optique',             // 15 — Saisissez les valeurs de cette ordonnance. (Ancien Quiz Jour 1 Q10)
+  'optique',             // 16 — Quel est le problème de vue de ce client ? (Ancien Quiz Jour 1 Q13)
+  'optique',             // 17 — Quels sont les problèmes de vue de ce client ? (Module Optique Q9)
+  'optique',             // 18 — Quels sont les problèmes de vue de ce client ? (Module Optique Q14)
+  'optique',             // 19 — Quels sont les problèmes de vue de ce client ? (Module Optique Q19)
+  'entreprise',          // 20 — Quelle est la puissance maximale de sphère fabriquée en 10 minutes che (Ancien Quiz Jour 1 Q14)
+  'types-verres',        // 21 — Comment s'appelle le verre progressif de Lunettes Pour Tous ? (Module Types de verres Q2)
+  'types-verres',        // 22 — À quel client allons-nous recommander le verre progressif ? (Module Types de verres Q4)
+  'types-verres',        // 23 — Combien de zones de vision a un verre progressif ? Citez-les. (Module Types de verres Q6)
+  'types-verres',        // 24 — Un client myope et astigmate de 28 ans peut avoir des verres progressi (Module Types de verres Q7)
+  'entreprise',          // 25 — Quel est le délai de fabrication pour ces lunettes ? (Ancien Quiz Jour 1 Q18)
+  'montures',              // Citez les 3 matériaux de nos montures
+  'montures',              // fourchette de prix des montures (5 € à 90 €)
+  'montures',              // matériau de 5 € à 15 € (injecté)
+  'montures',              // montures adaptables en solaire (toutes)
 ]
 
 // Index = question_idx (0-based) dans src/lib/quizFinalData.js (QUIZ_FINAL_QUESTIONS, 32 questions).
@@ -214,6 +253,7 @@ export function themeForAnswer(moduleId, questionIdx, createdAt) {
   if (moduleId === 'quiz-j1') {
     const date = createdAt ? new Date(createdAt) : new Date()
     if (createdAt && date < new Date(QUIZ_J1_FUSION_DEPUIS)) return QUIZ_J1_THEMES_AVANT_FUSION[qi] || null
+    if (createdAt && date < new Date(QUIZ_J1_V30_DEPUIS)) return QUIZ_J1_THEMES_V36[ordrePourSemaine(36, date, 0)[qi]] || null
     return QUIZ_J1_THEMES[quizJ1OrdrePour(date)[qi]] || null
   }
   if (moduleId === 'quiz-j2') {
