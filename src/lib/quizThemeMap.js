@@ -206,7 +206,7 @@ const QUIZ_J2_THEMES = [
   'verre-progressif',      // 14 — 3 zones de vision du progressif
   'entreprise',            // 15 — âge examen de vue en magasin
   'entreprise',            // 16 — coût de l'examen de vue
-  'verre-progressif',      // 17 — conseil verre 2nde paire (couture)
+  'verre-progressif',      // 17 — conseil verre 2nde paire (lecture le soir)
   'optique',               // 18 — calcul vision de près
   'types-verres',          // 19 — les 3 traitements de verres blancs (ajoutée le 18/11)
 ]

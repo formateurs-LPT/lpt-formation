@@ -127,10 +127,10 @@ export const QUIZ_J2_BASE = [
     question: "Combien coûte l'examen de vue ?",
     hint: 'Gratuit (0€)',
   },
-  // Q19 — correction + conseil verre 2nde paire (couture)
+  // Q19 — correction + conseil verre 2nde paire (lecture le soir)
   {
     type: 'text-open',
-    question: "Une cliente rentre avec cette correction. Elle vient d'acheter des verres progressifs en 1=1. Elle fait de la couture : quel type de verre allez-vous lui conseiller en seconde paire ?",
+    question: "Une cliente rentre avec cette correction. Elle vient d'acheter des verres progressifs en 1=1. Elle lit beaucoup le soir : quel type de verre allez-vous lui conseiller en seconde paire ?",
     ordonnance: {
       od: { sph: '+0,25', cyl: '+1,00', axe: '15', add: '+1,50' },
       og: { sph: '+1,00', cyl: '+0,25', axe: '180', add: '+1,50' },

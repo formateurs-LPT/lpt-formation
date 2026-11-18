@@ -811,9 +811,32 @@ function CadreEnteteTel({ t, q, qIdx, total, moduleId, remaining }) {
         <div style={{ margin: '20px 22px 0', borderLeft: `2px solid ${t.accent}`, paddingLeft: 14 }}>
           {famille && <div style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: t.accent, fontWeight: 700 }}>{famille}</div>}
           <div style={{ fontSize: q.question.length > 90 ? 18 : 20, fontWeight: t.titreSerif ? 600 : 700, fontFamily: t.titreSerif ? 'Georgia, serif' : 'inherit', lineHeight: 1.25, marginTop: 6 }}>{q.question}</div>
+          {q.ordonnance && q.type !== 'ordonnance-fill' && <OrdonnanceTel t={t} q={q} />}
         </div>
       )}
     </>
+  )
+}
+
+// Ordonnance de la question, en petit sous l'énoncé (même présentation que la TV)
+function OrdonnanceTel({ t, q }) {
+  const { od, og } = q.ordonnance
+  const aCyl = !!(od.cyl || og.cyl), aAdd = !!(od.add || og.add)
+  const cellules = (d) => [
+    d.sph || '—',
+    ...(aCyl ? (q.cylInParens ? [d.cyl ? `(${d.cyl}) ${d.axe}°` : ''] : [d.cyl || '', d.axe ? `${d.axe}°` : '']) : []),
+    ...(aAdd ? [d.add ? `Add ${d.add}` : ''] : []),
+  ]
+  return (
+    <div style={{ marginTop: 12 }}>
+      {q.ordoLabel && <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>👓 {q.ordoLabel}</div>}
+      {[['OD', od], ['OG', og]].map(([oeil, d]) => (
+        <div key={oeil} style={{ display: 'flex', gap: 14, alignItems: 'baseline', padding: '6px 0', borderBottom: `1px solid ${t.trait}`, fontVariantNumeric: 'tabular-nums' }}>
+          <span style={{ fontSize: 10, letterSpacing: 2, color: t.doux, width: 22 }}>{oeil}</span>
+          {cellules(d).map((v, i) => <span key={i} style={{ fontSize: 16, whiteSpace: 'nowrap' }}>{v}</span>)}
+        </div>
+      ))}
+    </div>
   )
 }
 

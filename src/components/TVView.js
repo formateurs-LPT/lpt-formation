@@ -930,7 +930,9 @@ export function TVCorrectionEpuree({ question: q, qIdx, total, moduleLabel, sess
   const bonnes = reponses.filter(r => r.is_correct).length
   const votes = q.options ? countVotesPerOption(reponses, q.options.length, type === 'qcm-multi') : []
   const estBonne = (i) => Array.isArray(q.correct) ? q.correct.includes(i) : i === q.correct
-  const montrerOrdo = q.ordonnance && (showOrdo || type === 'ordonnance-fill' || type === 'qcm-ordonnance')
+  // Toujours affichée quand la question en a une (18/11) : au J2 Q19, elle
+  // disparaissait à la correction et seul le formateur la voyait encore.
+  const montrerOrdo = !!q.ordonnance
 
   const score = (
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, ...epAnim('tvEpMonte', 0.1) }}>

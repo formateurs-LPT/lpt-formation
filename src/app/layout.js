@@ -1,5 +1,6 @@
 import './globals.css'
 import FullscreenHint from '@/components/FullscreenHint'
+import RechargementApresMiseEnLigne from '@/components/RechargementApresMiseEnLigne'
 
 export const metadata = {
   title: 'LPT Formation',
@@ -30,6 +31,7 @@ export default function RootLayout({ children }) {
       <body>
         {children}
         <FullscreenHint />
+        <RechargementApresMiseEnLigne />
       </body>
     </html>
   )
