@@ -158,11 +158,13 @@ export const QUIZ_J2_BASE = [
       og: { sph: '+2,50' },
     },
   },
-  // Q20 — teintes des verres solaires UV Protect (traitements présentés pendant le 1=1, ajoutée le 18/11)
+  // Q20 — les 3 traitements de verres blancs (présentés pendant le 1=1, ajoutée le 18/11)
   {
-    question: 'Dans la gamme solaire UV Protect (UV Protect cat. 3, Transition, Polarisé), quelles teintes peut-on proposer au client ?',
-    options: ['Brun ou gris', 'Gris uniquement', 'Bleu ou vert', 'Brun, gris ou rose'],
-    correct: 0,
+    type: 'text-open-multi',
+    fields: 3,
+    question: 'Citez les 3 traitements de verres blancs proposés chez Lunettes Pour Tous.',
+    hint: 'Basic · Premium · Digital Protect Pro',
+    autoCorrectEach: [['basic'], ['premium'], ['digital', 'protect', 'dpp']],
   },
 ]
 

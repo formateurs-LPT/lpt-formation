@@ -144,7 +144,7 @@ const QUIZ_FINAL_THEMES = [
 // nombre contre QUIZ_J2.length après une suppression/ajout.
 // Mise en ligne du Quiz Jour 2 mélangé chaque semaine — À METTRE À JOUR le
 // jour du déploiement. Les réponses antérieures suivent l'ordre fixe.
-// Mise en ligne de la 20e question (teintes solaires) : à déployer après 18h le 18/11.
+// Mise en ligne de la 20e question (traitements des verres blancs) : à déployer après 18h le 18/11.
 const QUIZ_J2_AJOUT_Q20 = '2026-11-18T17:00:00Z' // 18h (Paris) : mise en ligne après les formations
 const QUIZ_J2_MELANGE_DEPUIS = '2026-11-16T16:45:00Z'
 
@@ -169,7 +169,7 @@ const QUIZ_J2_THEMES = [
   'entreprise',            // 16 — coût de l'examen de vue
   'verre-progressif',      // 17 — conseil verre 2nde paire (couture)
   'optique',               // 18 — calcul vision de près
-  'types-verres',          // 19 — teintes des verres solaires UV Protect (ajoutée le 18/11)
+  'types-verres',          // 19 — les 3 traitements de verres blancs (ajoutée le 18/11)
 ]
 
 // Index = question_idx (0-based) dans src/lib/quizFinalBelgiqueData.js
