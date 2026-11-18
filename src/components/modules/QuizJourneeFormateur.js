@@ -396,7 +396,7 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
     }
 
     const poll = async () => {
-      const rows = await fetchOpenAnswers(code, `quiz-j1:${quizQ}`)
+      const rows = await fetchOpenAnswers(code, `${MODULE_ID}:${quizQ}`)
       const latest = {}
       for (const row of rows || []) latest[row.participant_name] = row
       const deduped = Object.values(latest)
@@ -432,7 +432,7 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
     if (!window.confirm('Effacer toutes les réponses de cette question et repartir à zéro ?')) return
     const code = getActiveSessionCode()
     await Promise.all([
-      sbDelete('open_answers', `session_code=eq.${encodeURIComponent(code)}&page_id=eq.${encodeURIComponent(`quiz-j1:${quizQ}`)}`),
+      sbDelete('open_answers', `session_code=eq.${encodeURIComponent(code)}&page_id=eq.${encodeURIComponent(`${MODULE_ID}:${quizQ}`)}`),
       sbDelete('quiz_answers', `session_code=eq.${encodeURIComponent(code)}&module_id=eq.${MODULE_ID}&question_idx=eq.${quizQ}`),
       // Si CE bouton est utilisé parce qu'un formé "tombe direct sur la
       // correction", c'est souvent que quiz_show_correction est resté

@@ -284,18 +284,26 @@ export const FAMILLE_LABELS = {
 export function tauxParFamille(rows, quiz, moduleId) {
   const data = (rows || []).filter(r => (r.question_idx ?? 0) < 100)
   const participants = new Set(data.map(r => r.collaborateur)).size
+  // Famille de chaque question : d'après la date de SES réponses (version du
+  // quiz et ordre de la semaine où elle a été posée), sinon d'après
+  // aujourd'hui. Sans ça, une session d'une autre version/semaine mélangeait
+  // les familles (ex. 137 % sur la session du 17/11, quiz alors à 36 questions).
+  const dateParQuestion = {}
+  for (const r of data) if (!dateParQuestion[r.question_idx]) dateParQuestion[r.question_idx] = r.created_at
+  const nbQuestions = Math.max(quiz?.length || 0, ...data.map(r => (r.question_idx ?? 0) + 1))
+  const familleDe = (i) => themeForAnswer(moduleId, i, dateParQuestion[i])
   const familles = {}
-  ;(quiz || []).forEach((_, i) => {
-    const f = themeForAnswer(moduleId, i)
-    if (!f) return
+  for (let i = 0; i < nbQuestions; i++) {
+    const f = familleDe(i)
+    if (!f) continue
     familles[f] = familles[f] || { questions: 0, bonnes: 0 }
     familles[f].questions += 1
-  })
+  }
   // Une seule réponse par (formé, question) : la dernière
   const derniere = {}
   for (const r of data) derniere[`${r.collaborateur}__${r.question_idx}`] = r
   for (const r of Object.values(derniere)) {
-    const f = themeForAnswer(moduleId, r.question_idx, r.created_at)
+    const f = familleDe(r.question_idx)
     if (f && familles[f] && r.is_correct) familles[f].bonnes += 1
   }
   return Object.entries(familles).map(([id, v]) => ({

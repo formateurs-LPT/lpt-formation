@@ -1041,7 +1041,7 @@ export function EcranResultatQuizVue({ isCorrect, timedOut, rankInfo, serie }) {
   const titre = timedOut ? 'Temps écoulé' : isCorrect ? 'Bonne réponse' : 'Mauvaise réponse'
   const enSerie = serie && isCorrect && serie.longueur >= 3
   const chiffres = [
-    rankInfo && { libelle: 'classement', valeur: <>{rankInfo.rank}<span style={{ fontSize: '0.42em', color: t.doux }}>{rankInfo.rank === 1 ? 'er' : 'e'} / {rankInfo.total}</span></> },
+    rankInfo && { libelle: 'classement', valeur: <>{rankInfo.rank}<span style={{ fontSize: clair ? '0.8em' : '0.42em', color: t.doux }}>{rankInfo.rank === 1 ? 'er' : 'e'} / {rankInfo.total}</span></> },
     serie?.xpSemaine != null && { libelle: 'XP de la semaine', valeur: serie.xpSemaine },
   ].filter(Boolean)
   return (
