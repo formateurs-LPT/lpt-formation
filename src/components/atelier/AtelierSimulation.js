@@ -6,9 +6,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Lipto from '@/components/lipto/Lipto'
 import { THEMES_TEL } from '@/lib/themeTelephone'
-import { LIPTO_POSES } from '@/lib/lipto'
+import { liptoSrc } from '@/lib/lipto'
 import {
-  TYPES_CASE, TYPES_AJOUTABLES, LARGEUR_CASE, HAUT_ENTETE, HAUT_SORTIE,
+  TYPES_CASE, TYPES_QUESTION, TYPES_AJOUTABLES, LARGEUR_CASE, HAUT_ENTETE, HAUT_SORTIE,
   nouvelleCase, nouveauProjet, problemesCase, estApresChoix, bilanProjet, miseEnPage, hauteurCase, ySortie,
   projetSimulationActuelle, nouvelId,
 } from '@/lib/atelierSimulation'
@@ -184,7 +184,9 @@ export default function AtelierSimulation({ moi, onQuitter }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', background: FOND, color: NAVY, overflow: 'hidden' }}>
+    // lang + spellCheck : le correcteur d'orthographe du navigateur souligne les
+    // fautes dans tous les champs de l'atelier (clic droit pour les suggestions)
+    <div lang="fr" spellCheck style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', background: FOND, color: NAVY, overflow: 'hidden' }}>
       <style>{CSS}</style>
       <BarreLaterale
         moi={moi} projets={projets} projetId={projetId}
@@ -233,6 +235,8 @@ export default function AtelierSimulation({ moi, onQuitter }) {
           </>
         ) : !charge ? (
           <div style={{ flex: 1, display: 'grid', placeItems: 'center', color: DOUX }}>Chargement des simulations…</div>
+        ) : projets.length ? (
+          <div style={{ flex: 1, display: 'grid', placeItems: 'center', color: DOUX, fontSize: 15 }}>Choisis une simulation dans la liste à gauche, ou crée-en une nouvelle.</div>
         ) : (
           <Accueil onNouveau={() => creerProjet(nouveauProjet(moi))} onImporter={() => creerProjet({ ...projetSimulationActuelle(moi), id: nouvelId() })} />
         )}
@@ -496,7 +500,7 @@ function CarteCase({ c, p, cases, choisie, cible, onClic, onPlus, onDelier }) {
       <div style={{ height: HAUT_ENTETE - 4, padding: '9px 12px 0', display: 'flex', gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 800, color: T.couleur, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span>{T.emoji}</span>{c.type === 'question' ? (c.mode === 'texte' ? 'Texte à compléter' : 'QCM') : T.nom}
+            <span>{T.emoji}</span>{c.type === 'question' ? (TYPES_QUESTION[c.mode]?.nom || 'Question') : T.nom}
             {c.document && <span title="Document affiché">{c.document.genre === 'ticket' ? '🧾' : '📄'}</span>}
             {problemes.length > 0 && <span title={problemes.join(' · ')} style={{ marginLeft: 'auto', color: '#dc2626' }}>⚠</span>}
           </div>
@@ -508,7 +512,7 @@ function CarteCase({ c, p, cases, choisie, cible, onClic, onPlus, onDelier }) {
           <div style={{ width: 52, height: 52, flexShrink: 0, borderRadius: 10, backgroundImage: `url(${fond})`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative', overflow: 'hidden' }}>
             {c.type !== 'examen' && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={LIPTO_POSES[c.pose]?.src} alt="" style={{ position: 'absolute', bottom: -2, left: '50%', transform: 'translateX(-50%)', height: 44 }} />
+              <img src={liptoSrc(c.pose)} alt="" style={{ position: 'absolute', bottom: -2, left: '50%', transform: 'translateX(-50%)', height: 44 }} />
             )}
           </div>
         )}

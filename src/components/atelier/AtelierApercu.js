@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react'
 import Lipto from '@/components/lipto/Lipto'
 import { THEMES_TEL } from '@/lib/themeTelephone'
-import { TYPES_CASE } from '@/lib/atelierSimulation'
+import { TYPES_CASE, reglage, nombreFr } from '@/lib/atelierSimulation'
 
 const NAVY = '#03112a', OR = '#c9a227', VERT = '#4ade80'
 const LETTRES = 'ABCDEF'
@@ -106,7 +106,7 @@ export default function AtelierApercu({ projet, depart, onFermer, onEditer }) {
   } else {
     // On répond soi-même pendant le test (comme un collaborateur sur son téléphone)
     const reponse = etat.reponse || null
-    const repondu = reponse && (reponse.choix != null || reponse.texte?.trim())
+    const repondu = aRepondu(c, reponse)
     const cAffichee = etat.replique && !c.bulle?.trim() ? { ...c, bulle: etat.replique.texte } : c
     contenu = <Scene c={cAffichee} correction={correction} reponse={reponse} onReponse={rep => setEtat(e => ({ ...e, reponse: rep }))} key={etat.id + etat.etape} />
     actions = c.type === 'question' && !correction
@@ -149,10 +149,44 @@ const Centre = ({ children }) => <div style={{ position: 'absolute', inset: 0, d
 
 // Juste / faux / à valider par le formateur (texte sans mots obligatoires)
 const sansAccents = t => (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '')
+const variantes = a => a.split('/').map(sansAccents).filter(Boolean)
+// Éléments attendus retrouvés dans les cases remplies
+function elementsTrouves(c, cases) {
+  const remplies = (cases || []).filter(x => x?.trim()).map(sansAccents)
+  return reglage(c, 'attendus').filter(a => a.trim()).map(a => ({ texte: a, trouve: variantes(a).some(v => remplies.some(f => f.includes(v))) }))
+}
+const caseJuste = (c, texte) => reglage(c, 'attendus').some(a => a.trim() && variantes(a).some(v => sansAccents(texte).includes(v)))
+// Ordre mélangé, toujours le même pour une case donnée (et jamais déjà dans le bon ordre)
+function melange(c) {
+  const n = reglage(c, 'etapes').length
+  let graine = [...(c.id || 'x')].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7)
+  const ordre = [...Array(n).keys()]
+  for (let i = n - 1; i > 0; i--) { graine = (graine * 1103515245 + 12345) >>> 0; const j = graine % (i + 1); [ordre[i], ordre[j]] = [ordre[j], ordre[i]] }
+  if (n > 1 && ordre.every((x, i) => x === i)) ordre.reverse()
+  return ordre
+}
+function aRepondu(c, rep) {
+  if (!rep) return false
+  if (c.mode === 'qcm' || c.mode === 'vraifaux') return rep.choix != null
+  if (c.mode === 'cases') return (rep.cases || []).some(x => x?.trim())
+  if (c.mode === 'ordre') return (rep.ordre || []).length === reglage(c, 'etapes').length
+  if (c.mode === 'nombre') return !Number.isNaN(nombreFr(rep.nombre))
+  return !!rep.texte?.trim()
+}
 function verdict(c, reponse) {
-  if (!reponse) return null
-  if (c.mode === 'qcm') return reponse.choix == null ? null : (c.options[reponse.choix]?.juste ? 'juste' : 'faux')
-  if (!reponse.texte?.trim()) return null
+  if (!aRepondu(c, reponse)) return null
+  if (c.mode === 'qcm') return c.options[reponse.choix]?.juste ? 'juste' : 'faux'
+  if (c.mode === 'vraifaux') return (reponse.choix === 'vrai') === reglage(c, 'vraiFaux') ? 'juste' : 'faux'
+  if (c.mode === 'cases') {
+    const t = elementsTrouves(c, reponse.cases)
+    if (!t.length) return 'a-valider'
+    return t.filter(x => x.trouve).length >= reglage(c, 'minimum') ? 'juste' : 'a-valider'
+  }
+  if (c.mode === 'ordre') return reponse.ordre.every((x, i) => x === i) ? 'juste' : 'faux'
+  if (c.mode === 'nombre') {
+    const v = nombreFr(reglage(c, 'valeur')), tol = nombreFr(reglage(c, 'tolerance'))
+    return Math.abs(nombreFr(reponse.nombre) - v) <= (Number.isNaN(tol) ? 0 : tol) ? 'juste' : 'faux'
+  }
   const mots = (c.motsAttendus || '').split(',').map(sansAccents).filter(Boolean)
   if (!mots.length) return 'a-valider'
   return mots.every(m => sansAccents(reponse.texte).includes(m)) ? 'juste' : 'a-valider'
@@ -193,51 +227,160 @@ function Scene({ c, correction, reponse, onReponse }) {
         )}
       </div>
       {question && (
-        <div style={{ position: 'absolute', right: '3cqw', top: '7cqw', bottom: '3cqw', width: '31cqw', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '0.9cqw' }}>
+        <div className="aa-panneau" style={{ position: 'absolute', right: '3cqw', top: '6cqw', bottom: '3cqw', width: '31cqw', display: 'flex', flexDirection: 'column', gap: '0.9cqw', overflowY: 'auto' }}>
+          <div style={{ flex: '1 0 0' }} />
           {v && (
             <div style={{ fontSize: '1.5cqw', fontWeight: 800, padding: '0.7cqw 1.1cqw', borderRadius: '0.9cqw', background: VERDICTS[v].fond, border: `1.5px solid ${VERDICTS[v].bord}`, animation: 'aaBulle .35s cubic-bezier(.2,.9,.3,1.3) both' }}>{VERDICTS[v].texte}</div>
           )}
           <div style={{ fontSize: '1.9cqw', fontWeight: 800, lineHeight: 1.25, marginBottom: '0.6cqw' }}>{fr(c.question) || 'Question à écrire'}</div>
-          {c.mode === 'qcm' ? c.options.map((o, i) => {
-            const choisie = reponse?.choix === i
-            const bon = correction && o.juste, rate = correction && choisie && !o.juste, eteint = correction && !o.juste && !choisie
-            const bord = bon ? VERT : rate ? '#f87171' : choisie ? OR : 'rgba(255,255,255,0.18)'
-            return (
-              <button key={i} type="button" disabled={correction} onClick={() => onReponse({ choix: i })} className={correction ? '' : 'aa-option'}
-                style={{ display: 'flex', alignItems: 'center', gap: '1cqw', padding: '0.9cqw 1.1cqw', borderRadius: '1cqw', background: bon ? 'rgba(74,222,128,0.22)' : rate ? 'rgba(248,113,113,0.2)' : choisie ? 'rgba(201,162,39,0.22)' : 'rgba(255,255,255,0.1)', border: `1.5px solid ${bord}`, opacity: eteint ? 0.4 : 1, animation: `aaOption .4s ease ${correction ? 0 : 0.3 + i * 0.08}s both`, transition: 'opacity .3s, background .15s', color: '#fff', fontFamily: 'inherit', textAlign: 'left', cursor: correction ? 'default' : 'pointer', width: '100%' }}>
-                <span style={{ width: '2.4cqw', height: '2.4cqw', borderRadius: '0.7cqw', background: bon ? VERT : rate ? '#f87171' : choisie ? OR : 'rgba(255,255,255,0.16)', color: bon || choisie ? NAVY : '#fff', display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: '1.3cqw', flexShrink: 0 }}>{bon ? '✓' : rate ? '✗' : LETTRES[i]}</span>
-                <span style={{ fontSize: '1.45cqw', fontWeight: 600, lineHeight: 1.3, flex: 1 }}>{fr(o.texte) || '…'}</span>
-                {correction && choisie && <span style={{ fontSize: '1cqw', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', opacity: 0.85 }}>Ton choix</span>}
-              </button>
-            )
-          }) : (
-            <>
-              {!correction && (
-                <textarea value={reponse?.texte || ''} onChange={e => onReponse({ texte: e.target.value })} placeholder="Écris ta réponse ici…" rows={3} className="aa-texte" />
-              )}
-              {correction && reponse?.texte?.trim() && (
-                <div style={{ padding: '1cqw 1.4cqw', borderRadius: '1cqw', background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.18)' }}>
-                  <div style={{ fontSize: '1cqw', letterSpacing: 2, textTransform: 'uppercase', color: OR, fontWeight: 800 }}>Ta réponse</div>
-                  <div style={{ fontSize: '1.5cqw', fontWeight: 600, marginTop: 4, lineHeight: 1.3, whiteSpace: 'pre-line' }}>{reponse.texte}</div>
-                </div>
-              )}
-              {correction && (
-                <div style={{ padding: '1.4cqw', borderRadius: '1cqw', background: 'rgba(74,222,128,0.18)', border: `1.5px solid ${VERT}` }}>
-                  <div style={{ fontSize: '1cqw', letterSpacing: 2, textTransform: 'uppercase', color: VERT, fontWeight: 800 }}>Réponse attendue</div>
-                  <div style={{ fontSize: '1.7cqw', fontWeight: 700, marginTop: 4, lineHeight: 1.3 }}>{fr(c.reponseAttendue) || '…'}</div>
-                </div>
-              )}
-            </>
-          )}
+          <Reponses c={c} reponse={reponse} onReponse={onReponse} correction={correction} />
           {correction && c.explication && (
             <div style={{ fontSize: '1.1cqw', lineHeight: 1.45, opacity: 0.85, whiteSpace: 'pre-line', marginTop: '0.4cqw', background: 'rgba(3,17,42,0.5)', borderRadius: '0.8cqw', padding: '0.8cqw 1cqw' }}>
               <b style={{ color: OR }}>Écran formateur · </b>{c.explication}
             </div>
           )}
           {!correction && <div style={{ fontSize: '1.1cqw', opacity: 0.6, marginTop: '0.4cqw' }}>⏱ {c.temps < 60 ? `${c.temps} s` : `${Math.floor(c.temps / 60)} min${c.temps % 60 ? ' 30' : ''}`} pour répondre</div>}
+          <div style={{ flex: '1 0 0' }} />
         </div>
       )}
     </Ecran>
+  )
+}
+
+// ── Réponses, selon le type de question ──
+const carte = { padding: '1cqw 1.3cqw', borderRadius: '1cqw', background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.18)' }
+const surtitre = couleur => ({ fontSize: '1cqw', letterSpacing: 2, textTransform: 'uppercase', color: couleur, fontWeight: 800 })
+
+function Option({ i, lettre, texte, choisie, juste, correction, onClick }) {
+  const bon = correction && juste, rate = correction && choisie && !juste, eteint = correction && !juste && !choisie
+  const bord = bon ? VERT : rate ? '#f87171' : choisie ? OR : 'rgba(255,255,255,0.18)'
+  return (
+    <button type="button" disabled={correction} onClick={onClick} className={correction ? '' : 'aa-option'}
+      style={{ display: 'flex', alignItems: 'center', gap: '1cqw', padding: '0.9cqw 1.1cqw', borderRadius: '1cqw', background: bon ? 'rgba(74,222,128,0.22)' : rate ? 'rgba(248,113,113,0.2)' : choisie ? 'rgba(201,162,39,0.22)' : 'rgba(255,255,255,0.1)', border: `1.5px solid ${bord}`, opacity: eteint ? 0.4 : 1, animation: `aaOption .4s ease ${correction ? 0 : 0.3 + i * 0.08}s both`, transition: 'opacity .3s, background .15s', color: '#fff', fontFamily: 'inherit', textAlign: 'left', cursor: correction ? 'default' : 'pointer', width: '100%' }}>
+      <span style={{ width: '2.4cqw', height: '2.4cqw', borderRadius: '0.7cqw', background: bon ? VERT : rate ? '#f87171' : choisie ? OR : 'rgba(255,255,255,0.16)', color: bon || choisie ? NAVY : '#fff', display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: '1.3cqw', flexShrink: 0 }}>{bon ? '✓' : rate ? '✗' : lettre}</span>
+      <span style={{ fontSize: '1.45cqw', fontWeight: 600, lineHeight: 1.3, flex: 1 }}>{fr(texte) || '…'}</span>
+      {correction && choisie && <span style={{ fontSize: '1cqw', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', opacity: 0.85 }}>Ton choix</span>}
+    </button>
+  )
+}
+
+function Reponses({ c, reponse, onReponse, correction }) {
+  if (c.mode === 'qcm') {
+    return c.options.map((o, i) => <Option key={i} i={i} lettre={LETTRES[i]} texte={o.texte} choisie={reponse?.choix === i} juste={o.juste} correction={correction} onClick={() => onReponse({ choix: i })} />)
+  }
+  if (c.mode === 'vraifaux') {
+    const bonne = reglage(c, 'vraiFaux') ? 'vrai' : 'faux'
+    return [['vrai', 'Vrai'], ['faux', 'Faux']].map(([v, l], i) => <Option key={v} i={i} lettre={v === 'vrai' ? '✓' : '✗'} texte={l} choisie={reponse?.choix === v} juste={bonne === v} correction={correction} onClick={() => onReponse({ choix: v })} />)
+  }
+  if (c.mode === 'cases') return <ReponsesCases c={c} reponse={reponse} onReponse={onReponse} correction={correction} />
+  if (c.mode === 'ordre') return <ReponsesOrdre c={c} reponse={reponse} onReponse={onReponse} correction={correction} />
+  if (c.mode === 'nombre') {
+    const unite = reglage(c, 'unite'), tol = nombreFr(reglage(c, 'tolerance'))
+    return (
+      <>
+        {!correction ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1cqw' }}>
+            <input className="aa-texte" inputMode="decimal" value={reponse?.nombre ?? ''} onChange={e => onReponse({ nombre: e.target.value })} placeholder="Ta réponse" style={{ fontSize: '2.2cqw', fontWeight: 800, width: '18cqw' }} />
+            {unite && <span style={{ fontSize: '2.2cqw', fontWeight: 800 }}>{unite}</span>}
+          </div>
+        ) : (
+          <>
+            {reponse?.nombre && <div style={carte}><div style={surtitre(OR)}>Ta réponse</div><div style={{ fontSize: '2cqw', fontWeight: 800, marginTop: 4 }}>{reponse.nombre} {unite}</div></div>}
+            <div style={{ ...carte, background: 'rgba(74,222,128,0.18)', borderColor: VERT }}>
+              <div style={surtitre(VERT)}>Réponse attendue</div>
+              <div style={{ fontSize: '2cqw', fontWeight: 800, marginTop: 4 }}>{reglage(c, 'valeur') || '…'} {unite}{tol > 0 ? <span style={{ fontSize: '1.3cqw', opacity: 0.8 }}> (± {reglage(c, 'tolerance')} {unite})</span> : ''}</div>
+            </div>
+          </>
+        )}
+      </>
+    )
+  }
+  // Réponse libre
+  return (
+    <>
+      {!correction && <textarea value={reponse?.texte || ''} onChange={e => onReponse({ texte: e.target.value })} placeholder="Écris ta réponse ici…" rows={3} className="aa-texte" />}
+      {correction && reponse?.texte?.trim() && (
+        <div style={carte}><div style={surtitre(OR)}>Ta réponse</div><div style={{ fontSize: '1.5cqw', fontWeight: 600, marginTop: 4, lineHeight: 1.3, whiteSpace: 'pre-line' }}>{reponse.texte}</div></div>
+      )}
+      {correction && (
+        <div style={{ ...carte, padding: '1.4cqw', background: 'rgba(74,222,128,0.18)', borderColor: VERT }}>
+          <div style={surtitre(VERT)}>Réponse attendue</div>
+          <div style={{ fontSize: '1.7cqw', fontWeight: 700, marginTop: 4, lineHeight: 1.3 }}>{fr(c.reponseAttendue) || '…'}</div>
+        </div>
+      )}
+    </>
+  )
+}
+
+function ReponsesCases({ c, reponse, onReponse, correction }) {
+  const nb = reglage(c, 'nbCases'), libelles = reglage(c, 'libelles')
+  const cases = reponse?.cases || []
+  const maj = (i, v) => { const x = [...cases]; x[i] = v; onReponse({ cases: x }) }
+  const trouves = elementsTrouves(c, cases)
+  return (
+    <>
+      <div style={{ display: 'grid', gridTemplateColumns: nb > 3 ? '1fr 1fr' : '1fr', gap: '0.7cqw' }}>
+        {Array.from({ length: nb }).map((_, i) => {
+          const texte = cases[i] || ''
+          const ok = correction && texte.trim() && caseJuste(c, texte)
+          return (
+            <label key={i} style={{ display: 'flex', flexDirection: 'column', gap: '0.3cqw' }}>
+              <span style={{ fontSize: '0.95cqw', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', opacity: 0.75 }}>{libelles[i] || `Réponse ${i + 1}`}</span>
+              {correction
+                ? <span style={{ ...carte, padding: '0.5cqw 0.8cqw', fontSize: '1.15cqw', fontWeight: 600, minHeight: '2.3cqw', borderColor: ok ? VERT : 'rgba(255,255,255,0.18)', background: ok ? 'rgba(74,222,128,0.18)' : 'rgba(255,255,255,0.08)' }}>{ok ? '✓ ' : ''}{texte || '—'}</span>
+                : <input className="aa-texte" value={texte} onChange={e => maj(i, e.target.value)} style={{ fontSize: '1.25cqw', padding: '0.6cqw 0.9cqw' }} />}
+            </label>
+          )
+        })}
+      </div>
+      {correction && trouves.length > 0 && (
+        <div style={{ ...carte, background: 'rgba(74,222,128,0.12)', borderColor: VERT }}>
+          <div style={surtitre(VERT)}>Éléments attendus · {trouves.filter(t => t.trouve).length} / {trouves.length} trouvés ({reglage(c, 'minimum')} suffisent)</div>
+          <div style={{ display: 'grid', gridTemplateColumns: trouves.length > 3 ? '1fr 1fr' : '1fr', columnGap: '1cqw' }}>
+            {trouves.map((t, i) => <div key={i} style={{ fontSize: '1.15cqw', fontWeight: 600, marginTop: '0.4cqw', opacity: t.trouve ? 1 : 0.65 }}>{t.trouve ? '✓' : '○'} {t.texte.split('/')[0].trim()}</div>)}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+function ReponsesOrdre({ c, reponse, onReponse, correction }) {
+  const etapes = reglage(c, 'etapes')
+  const ordre = reponse?.ordre || []
+  if (correction) {
+    return (
+      <div style={{ ...carte, background: 'rgba(74,222,128,0.12)', borderColor: VERT }}>
+        <div style={surtitre(VERT)}>Le bon ordre</div>
+        {etapes.map((e, i) => {
+          const ok = ordre[i] === i, moi = ordre.indexOf(i)
+          return (
+            <div key={i} style={{ display: 'flex', gap: '0.8cqw', alignItems: 'center', marginTop: '0.6cqw', fontSize: '1.3cqw', fontWeight: 600 }}>
+              <span style={{ width: '2.2cqw', height: '2.2cqw', borderRadius: '50%', background: ok ? VERT : '#f87171', color: NAVY, display: 'grid', placeItems: 'center', fontWeight: 800, flexShrink: 0 }}>{i + 1}</span>
+              <span style={{ flex: 1 }}>{fr(e)}</span>
+              {!ok && moi >= 0 && <span style={{ fontSize: '1cqw', opacity: 0.75 }}>toi : n°{moi + 1}</span>}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+  const cliquer = idx => onReponse({ ordre: ordre.includes(idx) ? ordre.filter(x => x !== idx) : [...ordre, idx] })
+  return (
+    <>
+      <div style={{ fontSize: '1.1cqw', opacity: 0.75 }}>Clique sur les étapes dans le bon ordre : 1, 2, 3…</div>
+      {melange(c).map((idx, k) => {
+        const n = ordre.indexOf(idx)
+        return (
+          <button key={idx} type="button" onClick={() => cliquer(idx)} className="aa-option"
+            style={{ display: 'flex', alignItems: 'center', gap: '1cqw', padding: '0.8cqw 1.1cqw', borderRadius: '1cqw', background: n >= 0 ? 'rgba(201,162,39,0.22)' : 'rgba(255,255,255,0.1)', border: `1.5px solid ${n >= 0 ? OR : 'rgba(255,255,255,0.18)'}`, color: '#fff', fontFamily: 'inherit', textAlign: 'left', cursor: 'pointer', width: '100%', animation: `aaOption .4s ease ${0.3 + k * 0.08}s both` }}>
+            <span style={{ width: '2.4cqw', height: '2.4cqw', borderRadius: '50%', border: `2px ${n >= 0 ? 'solid' : 'dashed'} ${n >= 0 ? OR : 'rgba(255,255,255,0.5)'}`, background: n >= 0 ? OR : 'transparent', color: NAVY, display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: '1.3cqw', flexShrink: 0 }}>{n >= 0 ? n + 1 : ''}</span>
+            <span style={{ fontSize: '1.4cqw', fontWeight: 600, lineHeight: 1.3 }}>{fr(etapes[idx]) || '…'}</span>
+          </button>
+        )
+      })}
+      {ordre.length > 0 && <button type="button" onClick={() => onReponse({ ordre: [] })} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#fff', opacity: 0.7, textDecoration: 'underline', cursor: 'pointer', fontSize: '1.1cqw', fontFamily: 'inherit' }}>Recommencer la numérotation</button>}
+    </>
   )
 }
 

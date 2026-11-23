@@ -28,7 +28,11 @@ export const FONDS = [
   { src: '/assets/magasins/salle-examen.webp', nom: 'Salle d’examen' },
 ]
 export const POSES = ['bienvenue', 'reflexion', 'pouce', 'bravo', 'surpris', 'encouragement', 'neutre', 'trophee']
-export const NOMS_POSES = { bienvenue: 'Bonjour', reflexion: 'Réfléchit', pouce: 'Pouce', bravo: 'Bravo', surpris: 'Surpris', encouragement: 'Encourage', neutre: 'Attend', trophee: 'Trophée' }
+export const HUMEURS = ['heureux', 'inquiet', 'fache', 'timide', 'ferme', 'saoule', 'presse']
+export const NOMS_POSES = {
+  bienvenue: 'Bonjour', reflexion: 'Réfléchit', pouce: 'Pouce', bravo: 'Bravo', surpris: 'Surpris', encouragement: 'Encourage', neutre: 'Attend', trophee: 'Trophée',
+  heureux: 'Heureux', inquiet: 'Inquiet', fache: 'Fâché', timide: 'Timide', ferme: 'Ferme', saoule: 'Soûlé', presse: 'Pressé',
+}
 
 export const nouvelId = () => 'c' + Math.random().toString(36).slice(2, 9)
 
@@ -51,6 +55,24 @@ export const TESTS_DE_VUE = [
 ]
 export const documentVide = genre => JSON.parse(JSON.stringify(genre === 'ticket' ? VIDE_TICKET : VIDE_ORDO))
 
+// Types de question (23/11). Réglages propres à chaque type, avec leurs valeurs
+// par défaut (aussi utilisées pour les cases créées avant l'ajout d'un type).
+export const TYPES_QUESTION = {
+  qcm: { nom: 'Choix multiple', icone: '🔘', aide: 'Des propositions, une ou plusieurs bonnes réponses.' },
+  vraifaux: { nom: 'Vrai ou faux', icone: '⚖️', aide: 'Une affirmation : vraie ou fausse ?' },
+  texte: { nom: 'Réponse libre', icone: '✍️', aide: 'Une zone de texte pour répondre avec ses mots.' },
+  cases: { nom: 'Cases à remplir', icone: '🔢', aide: 'Plusieurs cases vides (ex. : les 5 arguments du progressif).' },
+  ordre: { nom: 'Remettre dans l’ordre', icone: '↕️', aide: 'Des étapes mélangées, à numéroter dans le bon ordre.' },
+  nombre: { nom: 'Réponse chiffrée', icone: '💶', aide: 'Un nombre (prix, pourcentage…) avec une marge acceptée.' },
+}
+export const REGLAGES_TYPES = {
+  vraiFaux: true, // bonne réponse : vrai
+  nbCases: 3, libelles: [], attendus: [''], minimum: 1,
+  etapes: ['', '', ''],
+  valeur: '', tolerance: '', unite: '',
+}
+export const reglage = (c, cle) => (c[cle] ?? REGLAGES_TYPES[cle])
+
 export function nouvelleCase(type) {
   const base = { id: nouvelId(), type, suites: [] }
   if (type === 'depart') return { ...base, nom: 'Nouveau scénario', suites: [null] }
@@ -59,6 +81,7 @@ export function nouvelleCase(type) {
     ...base, mode: 'qcm', bulle: '', pose: 'reflexion', fond: FONDS[1].src, document: null,
     question: '', options: [{ texte: '', juste: false }, { texte: '', juste: false }, { texte: '', juste: false }],
     reponseAttendue: '', motsAttendus: '', temps: 60,
+    ...REGLAGES_TYPES,
     repliqueCorrection: '', poseCorrection: 'pouce', fondCorrection: '', explication: '', suites: [null],
   }
   if (type === 'choix') return { ...base, repliques: [{ texte: '' }, { texte: '' }], suites: [null, null] }
@@ -86,11 +109,26 @@ export function problemesCase(c, apresChoix = false) {
     if (c.mode === 'qcm') {
       if (c.options.some(o => !o.texte.trim())) p.push('Réponse vide')
       if (!c.options.some(o => o.juste)) p.push('Aucune bonne réponse')
-    } else if (!c.reponseAttendue?.trim()) p.push('Réponse attendue vide')
+    } else if (c.mode === 'texte') {
+      if (!c.reponseAttendue?.trim()) p.push('Réponse attendue vide')
+    } else if (c.mode === 'cases') {
+      if (!reglage(c, 'attendus').some(a => a.trim())) p.push('Aucun élément attendu')
+    } else if (c.mode === 'ordre') {
+      const e = reglage(c, 'etapes')
+      if (e.length < 2 || e.some(x => !x.trim())) p.push('Étape vide')
+    } else if (c.mode === 'nombre') {
+      if (Number.isNaN(nombreFr(reglage(c, 'valeur')))) p.push('Valeur attendue manquante')
+    }
   }
   if (c.type === 'choix' && c.repliques.some(r => !r.texte.trim())) p.push('Réplique vide')
   return p
 }
+// « 260 », « 260,50 », « 20 % » → nombre (NaN si vide)
+export const nombreFr = t => {
+  const v = String(t ?? '').replace(/\s/g, '').replace(',', '.').replace(/[^0-9.+-]/g, '')
+  return v === '' ? NaN : Number(v)
+}
+
 export function bilanProjet(projet) {
   const cases = Object.values(projet.cases)
   const suitesManquantes = cases.reduce((n, c) => n + c.suites.filter(s => !s || !projet.cases[s]).length, 0)

@@ -9,6 +9,7 @@
 // integre : affichée dans la page du dashboard (marges du dashboard).
 import { useEffect, useState } from 'react'
 import { LIPTO_POSES } from '@/lib/lipto'
+import LiptoAFK from './LiptoAFK'
 
 const NAVY = '#03112a', OR = '#c9a227', BLEU = '#00abe9', DOUX = '#5b6577', TRAIT = '#e3e6ee'
 
@@ -72,7 +73,9 @@ export default function ApprendreAvecLipto({ onLancer, integre = false }) {
       {!pays
         ? <ChoixPays onChoix={setPays} />
         : <MenuPays pays={pays} onChangerPays={() => setPays(null)} onFiche={setFiche} />}
-      {fiche && <FicheJeu s={fiche} pays={pays} onFermer={() => setFiche(null)} onLancer={mode => onLancer?.(fiche, mode, pays)} />}
+      {/* Simulation pas encore prête : Lipto joue à GTA VI (clin d'œil) */}
+      {fiche && fiche.statut !== 'disponible' && <LiptoAFK titre={fiche.titre} onFermer={() => setFiche(null)} />}
+      {fiche && fiche.statut === 'disponible' && <FicheJeu s={fiche} pays={pays} onFermer={() => setFiche(null)} onLancer={mode => onLancer?.(fiche, mode, pays)} />}
     </div>
   )
 }

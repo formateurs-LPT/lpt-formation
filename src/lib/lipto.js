@@ -6,7 +6,7 @@
 // Interrupteur général : false = Lipto disparaît partout, rien d'autre ne change.
 export const LIPTO_ACTIF = true
 
-const V = '?v=3' // à incrémenter quand on remplace une image (cache navigateur)
+const V = '?v=4' // à incrémenter quand on remplace une image (cache navigateur)
 export const LIPTO_POSES = {
   reflexion: { src: `/assets/lipto/reflexion.webp${V}`, alt: 'Lipto réfléchit, main sous le menton' },
   neutre: { src: `/assets/lipto/attente-correction.webp${V}`, alt: 'Lipto attend la correction' },
@@ -21,6 +21,21 @@ export const LIPTO_POSES = {
   attention: { src: `/assets/lipto/mauvaise-reponse.webp${V}`, alt: 'Lipto prévient' },
   conseil: { src: `/assets/lipto/conseil.webp${V}`, alt: 'Lipto donne un conseil' }, // provisoire
 }
+
+// Humeurs de client (23/11) : composées à partir d'une pose existante + des
+// détails dessinés par-dessus (sourcils, goutte, joues…, cf. Lipto.js).
+// En attendant de vraies poses dessinées pour chaque humeur.
+export const LIPTO_HUMEURS = {
+  heureux: { nom: 'Heureux', base: 'bienvenue' },
+  inquiet: { nom: 'Inquiet', base: 'surpris' },
+  fache: { nom: 'Fâché', base: 'surpris' },
+  timide: { nom: 'Timide', base: 'reflexion' },
+  ferme: { nom: 'Ferme', base: 'encouragement' },
+  saoule: { nom: 'Soûlé', base: 'surpris' },
+  presse: { nom: 'Pressé', base: 'bienvenue' },
+}
+// Image d'une pose ou d'une humeur (une humeur utilise l'image de sa pose de base)
+export const liptoSrc = pose => (LIPTO_POSES[LIPTO_HUMEURS[pose]?.base || pose] || LIPTO_POSES.reflexion).src
 
 // Réaction de fin de quiz. Ces seuils ne servent QU'À Lipto : ils ne
 // changent pas les seuils officiels de réussite.

@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react'
 import Lipto from '@/components/lipto/Lipto'
 import { THEMES_TEL } from '@/lib/themeTelephone'
-import { LIPTO_POSES } from '@/lib/lipto'
-import { TYPES_CASE, FONDS, POSES, NOMS_POSES, problemesCase, documentVide, TESTS_DE_VUE } from '@/lib/atelierSimulation'
+import { TYPES_CASE, TYPES_QUESTION, reglage, FONDS, POSES, HUMEURS, NOMS_POSES, problemesCase, documentVide, TESTS_DE_VUE } from '@/lib/atelierSimulation'
 
 const NAVY = '#03112a', BLEU = '#00abe9', TRAIT = '#e3e6ee', DOUX = '#64748b'
 const LETTRES = 'ABCDEF'
@@ -91,14 +90,19 @@ function Question({ c, onMaj }) {
     <>
       <div style={{ height: 1, background: TRAIT }} />
       <Champ titre="Type de question">
-        <div style={{ display: 'flex', gap: 6 }}>
-          {[['qcm', 'Choix multiple'], ['texte', 'Texte à compléter']].map(([v, l]) => <button key={v} className={'ap-puce' + (c.mode === v ? ' ap-actif' : '')} onClick={() => onMaj({ mode: v })}>{l}</button>)}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+          {Object.entries(TYPES_QUESTION).map(([v, t]) => (
+            <button key={v} className={'ap-type' + (c.mode === v ? ' ap-actif' : '')} onClick={() => onMaj({ mode: v })} title={t.aide}>
+              <span style={{ fontSize: 17 }}>{t.icone}</span><span>{t.nom}</span>
+            </button>
+          ))}
         </div>
+        <div style={{ fontSize: 12, color: DOUX, marginTop: 6 }}>{TYPES_QUESTION[c.mode]?.aide}</div>
       </Champ>
-      <Champ titre="Question posée aux collaborateurs">
-        <textarea className="ap-champ" rows={2} value={c.question} placeholder="Que lui répondez-vous ?" onChange={e => onMaj({ question: e.target.value })} />
+      <Champ titre={c.mode === 'vraifaux' ? 'Affirmation à juger' : 'Question posée aux collaborateurs'}>
+        <textarea className="ap-champ" rows={2} value={c.question} placeholder={c.mode === 'vraifaux' ? 'Le verre progressif corrige la vision de loin et de près.' : 'Que lui répondez-vous ?'} onChange={e => onMaj({ question: e.target.value })} />
       </Champ>
-      {c.mode === 'qcm' ? (
+      {c.mode === 'qcm' && (
         <Champ titre="Réponses" aide="Coche la ou les bonnes réponses.">
           {c.options.map((o, i) => (
             <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
@@ -112,7 +116,15 @@ function Question({ c, onMaj }) {
           ))}
           {c.options.length < 6 && <button className="ap-ajout" onClick={() => onMaj({ options: [...c.options, { texte: '', juste: false }] })}>+ Ajouter une réponse</button>}
         </Champ>
-      ) : (
+      )}
+      {c.mode === 'vraifaux' && (
+        <Champ titre="Bonne réponse">
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[[true, '✓ Vrai'], [false, '✗ Faux']].map(([v, l]) => <button key={l} className={'ap-puce' + (reglage(c, 'vraiFaux') === v ? ' ap-actif' : '')} onClick={() => onMaj({ vraiFaux: v })}>{l}</button>)}
+          </div>
+        </Champ>
+      )}
+      {c.mode === 'texte' && (
         <>
           <Champ titre="Réponse attendue" aide="Affichée à la correction.">
             <textarea className="ap-champ" rows={2} value={c.reponseAttendue} onChange={e => onMaj({ reponseAttendue: e.target.value })} />
@@ -122,9 +134,20 @@ function Question({ c, onMaj }) {
           </Champ>
         </>
       )}
+      {c.mode === 'cases' && <ReglagesCases c={c} onMaj={onMaj} />}
+      {c.mode === 'ordre' && <ReglagesOrdre c={c} onMaj={onMaj} />}
+      {c.mode === 'nombre' && (
+        <Champ titre="Réponse attendue" aide="La marge accepte les réponses proches (ex. : 260 ± 10 €).">
+          <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
+            <label style={{ fontSize: 12, color: DOUX, flex: 1 }}>Valeur<input className="ap-champ" inputMode="decimal" value={reglage(c, 'valeur')} placeholder="260" onChange={e => onMaj({ valeur: e.target.value })} /></label>
+            <label style={{ fontSize: 12, color: DOUX, width: 90 }}>Marge ±<input className="ap-champ" inputMode="decimal" value={reglage(c, 'tolerance')} placeholder="0" onChange={e => onMaj({ tolerance: e.target.value })} /></label>
+            <label style={{ fontSize: 12, color: DOUX, width: 80 }}>Unité<input className="ap-champ" value={reglage(c, 'unite')} placeholder="€" onChange={e => onMaj({ unite: e.target.value })} /></label>
+          </div>
+        </Champ>
+      )}
       <Champ titre="Temps pour répondre">
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {[30, 45, 60, 90, 120].map(s => <button key={s} className={'ap-puce' + (c.temps === s ? ' ap-actif' : '')} onClick={() => onMaj({ temps: s })}>{{ 30: '30 s', 45: '45 s', 60: '1 min', 90: '1 min 30', 120: '2 min' }[s]}</button>)}
+          {[30, 45, 60, 90, 120, 180, 240].map(s => <button key={s} className={'ap-puce' + (c.temps === s ? ' ap-actif' : '')} onClick={() => onMaj({ temps: s })}>{{ 30: '30 s', 45: '45 s', 60: '1 min', 90: '1 min 30', 120: '2 min', 180: '3 min', 240: '4 min' }[s]}</button>)}
         </div>
       </Champ>
       <div style={{ height: 1, background: TRAIT }} />
@@ -140,6 +163,65 @@ function Question({ c, onMaj }) {
         <textarea className="ap-champ" rows={4} value={c.explication} onChange={e => onMaj({ explication: e.target.value })} />
       </Champ>
     </>
+  )
+}
+
+// Cases à remplir : nombre de cases, titre de chaque case, éléments attendus
+function ReglagesCases({ c, onMaj }) {
+  const nb = reglage(c, 'nbCases'), libelles = reglage(c, 'libelles'), attendus = reglage(c, 'attendus'), minimum = reglage(c, 'minimum')
+  const nbAttendus = attendus.filter(a => a.trim()).length
+  return (
+    <>
+      <Champ titre="Nombre de cases">
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {[1, 2, 3, 4, 5, 6, 8].map(n => <button key={n} className={'ap-puce' + (nb === n ? ' ap-actif' : '')} onClick={() => onMaj({ nbCases: n })}>{n}</button>)}
+        </div>
+      </Champ>
+      <Champ titre="Titre de chaque case" aide="Facultatif : laissé vide, la case s’appelle « Réponse 1 », « Réponse 2 »…">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+          {Array.from({ length: nb }).map((_, i) => (
+            <input key={i} className="ap-champ ap-mini" value={libelles[i] || ''} placeholder={`Réponse ${i + 1}`}
+              onChange={e => { const l = [...libelles]; l[i] = e.target.value; onMaj({ libelles: l }) }} />
+          ))}
+        </div>
+      </Champ>
+      <Champ titre="Éléments attendus" aide="Un élément par ligne. Plusieurs façons de le dire ? Sépare-les par « / » (ex. : 180° / vision large). Chaque élément trouvé dans une case compte.">
+        {attendus.map((a, i) => (
+          <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+            <input className="ap-champ" value={a} placeholder={`Élément ${i + 1}`} onChange={e => onMaj({ attendus: attendus.map((x, j) => j === i ? e.target.value : x) })} />
+            {attendus.length > 1 && <button className="ap-x" title="Retirer" onClick={() => onMaj({ attendus: attendus.filter((_, j) => j !== i), minimum: Math.min(minimum, attendus.length - 1) })}>×</button>}
+          </div>
+        ))}
+        {attendus.length < 10 && <button className="ap-ajout" onClick={() => onMaj({ attendus: [...attendus, ''] })}>+ Ajouter un élément attendu</button>}
+      </Champ>
+      {nbAttendus > 0 && (
+        <Champ titre="Réponse validée à partir de" aide="Nombre d’éléments attendus à trouver pour que la réponse soit juste.">
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {Array.from({ length: nbAttendus }).map((_, i) => <button key={i} className={'ap-puce' + (minimum === i + 1 ? ' ap-actif' : '')} onClick={() => onMaj({ minimum: i + 1 })}>{i + 1} / {nbAttendus}</button>)}
+          </div>
+        </Champ>
+      )}
+    </>
+  )
+}
+
+// Remettre dans l'ordre : les étapes dans le bon ordre (elles seront mélangées)
+function ReglagesOrdre({ c, onMaj }) {
+  const etapes = reglage(c, 'etapes')
+  const bouger = (i, d) => { const e = [...etapes]; [e[i], e[i + d]] = [e[i + d], e[i]]; onMaj({ etapes: e }) }
+  return (
+    <Champ titre="Étapes, dans le bon ordre" aide="Elles s’afficheront mélangées : les collaborateurs les numérotent.">
+      {etapes.map((x, i) => (
+        <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 6 }}>
+          <span style={{ width: 24, fontWeight: 800, color: '#7c5cff', textAlign: 'center', flexShrink: 0 }}>{i + 1}</span>
+          <input className="ap-champ" value={x} placeholder={`Étape ${i + 1}`} onChange={e => onMaj({ etapes: etapes.map((y, j) => j === i ? e.target.value : y) })} />
+          <button className="ap-x" title="Monter" disabled={i === 0} onClick={() => bouger(i, -1)} style={{ opacity: i === 0 ? 0.3 : 1 }}>↑</button>
+          <button className="ap-x" title="Descendre" disabled={i === etapes.length - 1} onClick={() => bouger(i, 1)} style={{ opacity: i === etapes.length - 1 ? 0.3 : 1 }}>↓</button>
+          {etapes.length > 2 && <button className="ap-x" title="Retirer" onClick={() => onMaj({ etapes: etapes.filter((_, j) => j !== i) })}>×</button>}
+        </div>
+      ))}
+      {etapes.length < 8 && <button className="ap-ajout" onClick={() => onMaj({ etapes: [...etapes, ''] })}>+ Ajouter une étape</button>}
+    </Champ>
   )
 }
 
@@ -190,17 +272,20 @@ function Document({ doc, onMaj }) {
   )
 }
 
+// Poses de Lipto, puis humeurs de client (pose + détails dessinés)
 function ChoixPose({ valeur, onChoix }) {
+  const tuile = p => (
+    <button key={p} onClick={() => onChoix(p)} className={'ap-tuile' + (valeur === p ? ' ap-actif' : '')} title={NOMS_POSES[p]}>
+      <span style={{ height: 50, display: 'flex', alignItems: 'flex-end', pointerEvents: 'none' }}><Lipto pose={p} anim="aucune" taille={50} t={THEMES_TEL.clair} /></span>
+      <span style={{ fontSize: 10, color: DOUX }}>{NOMS_POSES[p]}</span>
+    </button>
+  )
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-      {POSES.map(p => (
-        <button key={p} onClick={() => onChoix(p)} className={'ap-tuile' + (valeur === p ? ' ap-actif' : '')} title={NOMS_POSES[p]}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={LIPTO_POSES[p].src} alt="" style={{ height: 46, objectFit: 'contain' }} />
-          <span style={{ fontSize: 10, color: DOUX }}>{NOMS_POSES[p]}</span>
-        </button>
-      ))}
-    </div>
+    <>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>{POSES.map(tuile)}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: DOUX, margin: '10px 0 6px' }}>Humeurs du client</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>{HUMEURS.map(tuile)}</div>
+    </>
   )
 }
 
@@ -279,6 +364,9 @@ const CSS = `
 .ap-mini { padding: 5px 7px; font-size: 13px; margin-top: 2px; font-variant-numeric: tabular-nums; }
 .ap-fleche { width: 30px; height: 30px; flex-shrink: 0; border: 1px solid ${TRAIT}; background: #fff; border-radius: 8px; font-size: 20px; line-height: 1; color: ${DOUX}; cursor: pointer; font-family: inherit; display: grid; place-items: center; padding-bottom: 2px; }
 .ap-fleche:hover { background: #f1f3f8; color: ${NAVY}; }
+.ap-type { display: flex; align-items: center; gap: 8px; border: 1.5px solid ${TRAIT}; background: #fff; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 700; color: ${NAVY}; cursor: pointer; font-family: inherit; text-align: left; }
+.ap-type:hover { border-color: ${BLEU}; }
+.ap-type.ap-actif { border-color: #7c5cff; background: #f4f1ff; box-shadow: 0 0 0 3px rgba(124,92,255,0.15); }
 .ap-test { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; border: 1px solid ${TRAIT}; background: #fff; border-radius: 10px; padding: 7px 11px; font-size: 13px; font-weight: 700; color: ${NAVY}; cursor: pointer; font-family: inherit; }
 .ap-test:hover { border-color: ${BLEU}; background: #f0fbfe; }
 .ap-x { width: 30px; height: 30px; flex-shrink: 0; border: none; background: transparent; border-radius: 8px; font-size: 18px; color: #94a3b8; cursor: pointer; }
