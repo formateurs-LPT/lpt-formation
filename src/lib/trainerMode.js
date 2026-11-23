@@ -6,12 +6,12 @@ const KEY = 'trainer_current_mode'
 export function readTrainerMode() {
   if (typeof window === 'undefined') return null
   const v = localStorage.getItem(KEY)
-  return (v === 'paris' || v === 'province' || v === 'belgique') ? v : null
+  return (v === 'paris' || v === 'province' || v === 'belgique' || v === 'test') ? v : null
 }
 
 export function setTrainerMode(slug) {
   if (typeof window === 'undefined') return
-  if (slug === 'paris' || slug === 'province' || slug === 'belgique') {
+  if (slug === 'paris' || slug === 'province' || slug === 'belgique' || slug === 'test') {
     localStorage.setItem(KEY, slug)
   } else {
     localStorage.removeItem(KEY)
@@ -22,4 +22,6 @@ export const TRAINER_MODE_META = {
   paris:    { emoji: '🏢', label: 'Présentiel' },
   province: { emoji: '💻', label: 'Visio' },
   belgique: { emoji: '🇧🇪', label: 'Belgique' },
+  // Salle de simulation avec les faux candidats — Kevin et Quentin seulement
+  test:     { emoji: '🧪', label: 'Salle test', reserve: true },
 }

@@ -18,6 +18,8 @@ import { useQuizCountdown, QUIZ_TIME_LIMIT_SEC } from '@/components/ParticipantM
 import { countVotesPerOption } from '@/lib/quizVotes'
 import { tauxParFamille, statutFamille, themeForAnswer, FAMILLE_LABELS } from '@/lib/quizThemeMap'
 import { chargerChronoQuiz, classerQuiz, meilleureSerieDuQuiz } from '@/lib/quizClassement'
+import { estCalculOrdonnance, reponseOrdonnanceFill } from '@/lib/quizReponseAttendue'
+import { TVSimulationScene, TVSimulationLobby } from '@/components/TVSimulation'
 
 const OPTION_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#22c55e']
 
@@ -857,7 +859,7 @@ export function TVQuestionEpuree({ question: q, qIdx, total, moduleLabel, sessio
       <div style={{ minWidth: 0 }}>
         {titreBloc('Sur votre téléphone')}
         <div style={{ fontSize: epTaille(30, 2.9), fontWeight: 300, lineHeight: 1.4, marginTop: '4vh', color: 'rgba(255,255,255,0.85)', ...epAnim('tvEpMonte', debutReponses) }}>
-          {type === 'power-selector' ? <>Choisissez les puissances<br />avec les roulettes</> : <>Recopiez les valeurs<br />de cette ordonnance</>}
+          {type === 'power-selector' ? <>Choisissez les puissances<br />avec les roulettes</> : estCalculOrdonnance(q) ? <>Calculez et saisissez<br />votre réponse</> : <>Recopiez les valeurs<br />de cette ordonnance</>}
         </div>
         {compteur}
       </div>
@@ -948,7 +950,18 @@ export function TVCorrectionEpuree({ question: q, qIdx, total, moduleLabel, sess
         {score}
         <div style={{ marginTop: '5vh', paddingBottom: '1.4vh', borderBottom: '1px solid rgba(255,255,255,0.15)', fontSize: epTaille(12, 1.2), letterSpacing: 2, textTransform: 'uppercase', color: EP_VERT, ...epAnim('tvEpMonte', 0.3) }}>✓ Bonne réponse</div>
         <div style={{ marginTop: '3vh', fontSize: epTaille(34, 3.2), fontWeight: 500, lineHeight: 1.35, ...epAnim('tvEpMonte', 0.45) }}>
-          {libre || type === 'power-selector' ? q.hint : 'Les valeurs de l’ordonnance, à l’identique'}
+          {libre || type === 'power-selector'
+            ? (!q.hint
+              ? <span style={{ fontSize: '0.75em', fontWeight: 400, color: 'rgba(255,255,255,0.7)' }}>Votre formateur vous donne la correction</span>
+              // Plusieurs éléments (« A · B · C ») : un par ligne, plus lisible de loin
+              : q.hint.split(' · ').length > 2
+                ? q.hint.split(' · ').map((el, i) => (
+                    <div key={i} style={{ fontSize: '0.8em', padding: '1vh 0', borderBottom: '1px solid rgba(255,255,255,0.08)', ...epAnim('tvEpMonte', 0.5 + i * 0.1) }}>
+                      <span style={{ color: EP_VERT, marginRight: 14 }}>✓</span>{el}
+                    </div>
+                  ))
+                : q.hint)
+            : reponseOrdonnanceFill(q)}
         </div>
         {nb > 0 && bonnes === nb && (
           <div style={{ marginTop: '4vh', fontSize: epTaille(20, 2), color: EP_VERT, ...epAnim('tvEpMonte', 0.6) }}>Tout le monde a bon !</div>
@@ -7448,7 +7461,27 @@ function ProgZoneIcon({ type, color, active }) {
   )
 }
 
-function TVTypesVerresProgressif({ pageIndex, total }) {
+// Identité visuelle reprise du flyer produit Pulsar Next : fond encre nuit,
+// wordmark bicolore (PULSAR en dégradé bleu→violet, NEXT en menthe), texture
+// de points façon "onde" en fond. Palette distincte du flyer Pulsar One
+// (volontairement non traité ici, cf. demande Kevin).
+const PULSAR_NEXT_MINT = '#2fe3b4'
+const PULSAR_NEXT_GRADIENT = 'linear-gradient(90deg, #5B8CFF 0%, #9B6BFF 100%)'
+
+function PulsarNextWordmark({ size = 28, animate = true }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
+      <span style={{
+        fontSize: size, fontWeight: 700, letterSpacing: -0.5,
+        backgroundImage: PULSAR_NEXT_GRADIENT, WebkitBackgroundClip: 'text', backgroundClip: 'text',
+        color: 'transparent', fontFamily: 'inherit',
+      }}>PULSAR</span>
+      <span style={{ fontSize: size * 0.82, fontWeight: 700, letterSpacing: 2, color: PULSAR_NEXT_MINT }}>NEXT</span>
+    </div>
+  )
+}
+
+export function TVTypesVerresProgressif({ pageIndex, total }) {
   const [entered,  setEntered]  = useState(false)
   const [revealed, setRevealed] = useState(0)
 
@@ -7479,21 +7512,39 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
 
   return (
     <div style={{
-      height: '100vh', overflow: 'hidden',
-      background: 'linear-gradient(135deg, #03112a 0%, #0a2a5c 55%, #0d3b7a 100%)',
+      height: '100vh', overflow: 'hidden', position: 'relative',
+      background: 'linear-gradient(145deg, #050b1f 0%, #0a1430 45%, #0c1f45 100%)',
       display: 'flex', flexDirection: 'column',
     }}>
+      <style>{`
+        @keyframes pulsarDotsDrift { from { background-position: 0 0, 0 0; } to { background-position: 180px 90px, 180px 90px; } }
+        @keyframes pulsarUnderline { from { width: 0; } to { width: 64px; } }
+        @keyframes pulsarHeadlineIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
+
+      {/* Texture de fond — nuage de points façon onde, légèrement animé */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5,
+        backgroundImage: `radial-gradient(circle, rgba(91,140,255,0.5) 1px, transparent 1.6px), radial-gradient(circle, rgba(47,227,180,0.35) 1px, transparent 1.6px)`,
+        backgroundSize: '34px 34px, 34px 34px',
+        backgroundPosition: '0 0, 17px 17px',
+        transform: 'rotate(-8deg) scale(1.3)',
+        animation: 'pulsarDotsDrift 50s linear infinite',
+        maskImage: 'radial-gradient(ellipse 80% 70% at 30% 20%, #000 0%, transparent 75%)',
+        WebkitMaskImage: 'radial-gradient(ellipse 80% 70% at 30% 20%, #000 0%, transparent 75%)',
+      }} />
+
       {/* Topbar */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '14px 40px', flexShrink: 0,
+        padding: '14px 40px', flexShrink: 0, position: 'relative', zIndex: 1,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} style={{ objectFit: 'contain' }} />
-          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.15)' }} />
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>Verre progressif Pulsar Next</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>Rodenstock · Allemagne</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={88} height={34} style={{ objectFit: 'contain' }} />
+          <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.15)' }} />
+          <div style={{ opacity: entered ? 1 : 0, transform: entered ? 'translateY(0)' : 'translateY(-6px)', transition: 'all .5s ease' }}>
+            <PulsarNextWordmark size={22} />
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 1, letterSpacing: 0.3 }}>Rodenstock · Allemagne</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 5 }}>
@@ -7501,18 +7552,30 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
             <div key={i} style={{
               height: 5, borderRadius: 3, transition: 'all .3s',
               width: i === pageIndex ? 22 : 5,
-              background: i === pageIndex ? '#7c3aed' : 'rgba(255,255,255,0.2)',
+              background: i === pageIndex ? PULSAR_NEXT_MINT : 'rgba(255,255,255,0.2)',
             }} />
           ))}
         </div>
       </div>
 
-      {/* Phrase */}
-      <div style={{ padding: '0 40px 6px', flexShrink: 0, opacity: entered ? 1 : 0, transition: 'opacity .6s ease .15s' }}>
+      {/* Accroche — reprise de la phrase d'accroche du flyer */}
+      <div style={{ padding: '2px 40px 10px', flexShrink: 0, position: 'relative', zIndex: 1 }}>
+        <h1 style={{
+          margin: 0, fontSize: 25, fontWeight: 800, color: '#fff', lineHeight: 1.22, maxWidth: 620,
+          letterSpacing: -0.3,
+          opacity: entered ? 1 : 0, animation: entered ? 'pulsarHeadlineIn .6s ease .1s both' : 'none',
+        }}>
+          Un champ de vision <span style={{ color: PULSAR_NEXT_MINT }}>élargi</span> à toutes les distances.
+        </h1>
         <div style={{
-          display: 'inline-block',
-          background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.3)',
+          height: 3, borderRadius: 2, background: PULSAR_NEXT_MINT, marginTop: 10,
+          width: entered ? 64 : 0, animation: entered ? 'pulsarUnderline .6s ease .35s both' : 'none',
+        }} />
+        <div style={{
+          marginTop: 12, display: 'inline-block',
+          background: 'rgba(47,227,180,0.1)', border: '1px solid rgba(47,227,180,0.3)',
           borderRadius: 10, padding: '7px 18px',
+          opacity: entered ? 1 : 0, transition: 'opacity .6s ease .4s',
         }}>
           <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
             Pensé pour les presbytes — une seule paire pour voir à toutes les distances.
@@ -7585,15 +7648,15 @@ function TVTypesVerresProgressif({ pageIndex, total }) {
       </div>
 
       {/* Délais de fabrication */}
-      <div style={{ padding: '4px 40px 18px', flexShrink: 0, opacity: entered ? 1 : 0, transition: 'opacity .8s ease .3s' }}>
+      <div style={{ padding: '4px 40px 18px', flexShrink: 0, position: 'relative', zIndex: 1, opacity: entered ? 1 : 0, transition: 'opacity .8s ease .3s' }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8 }}>Délais de fabrication</div>
         <div style={{ display: 'flex', gap: 16 }}>
           <div style={{ flex: 1, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 14, padding: '10px 20px' }}>
             <div style={{ fontSize: 20, fontWeight: 900, color: '#4ade80', marginBottom: 2 }}>24 / 48h</div>
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.35 }}>Verres origine France — Fabriqués à Paris</div>
           </div>
-          <div style={{ flex: 1, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 14, padding: '10px 20px' }}>
-            <div style={{ fontSize: 20, fontWeight: 900, color: '#fbbf24', marginBottom: 2 }}>9 jours</div>
+          <div style={{ flex: 1, background: 'rgba(47,227,180,0.08)', border: '1px solid rgba(47,227,180,0.25)', borderRadius: 14, padding: '10px 20px' }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: PULSAR_NEXT_MINT, marginBottom: 2 }}>9 jours</div>
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.35 }}>Verres Rodenstock — Fabriqués en Allemagne</div>
           </div>
         </div>
@@ -8881,6 +8944,7 @@ function TVQuizPodium({ qIdx, onDone, sessionCode, skipSignal, moduleId }) {
 // ── TV Quiz Final Podium ──────────────────────────────────────────
 function TVQuizFinalPodium({ quiz, sessionCode, moduleId = 'quiz-final' }) {
   const [classement, setClassement] = useState([])
+  const [meilleureSerie, setMeilleureSerie] = useState(null)
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
@@ -8891,6 +8955,7 @@ function TVQuizFinalPodium({ quiz, sessionCode, moduleId = 'quiz-final' }) {
     ]).then(([rows, chrono]) => {
       // Score, puis rapidité moyenne à score égal (cf. quizClassement.js)
       setClassement(classerQuiz((rows || []).filter(r => (r.question_idx ?? 0) < 100), { moduleId, chrono }))
+      setMeilleureSerie(meilleureSerieDuQuiz(rows || [], moduleId))
       setReady(true)
     }).catch(() => setReady(true))
   }, [sessionCode, moduleId])
@@ -8931,7 +8996,6 @@ export function TVPodiumFinalVue({ classement = [], total, ready = true, meilleu
       minHeight: '100vh', background: '#03112a', color: '#fff',
       display: 'flex', flexDirection: 'column', padding: '4vh 5vw', overflow: 'hidden',
     }}>
-  const [meilleureSerie, setMeilleureSerie] = useState(null)
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...apparait(0) }}>
         <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={100} height={38} priority style={{ objectFit: 'contain', height: taille(30, 3), width: 'auto' }} />
         <div style={{ fontSize: taille(13, 1.3), letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>Classement final</div>
@@ -8942,7 +9006,6 @@ export function TVPodiumFinalVue({ classement = [], total, ready = true, meilleu
           Aucune réponse enregistrée pour ce quiz
         </div>
       )}
-      setMeilleureSerie(meilleureSerieDuQuiz(rows || [], moduleId))
 
       {ready && p1 && (
         <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1.15fr', gap: '5vw', alignItems: 'center', marginTop: '3vh', minHeight: 0 }}>
@@ -8963,6 +9026,15 @@ export function TVPodiumFinalVue({ classement = [], total, ready = true, meilleu
                 </div>
               )}
             </div>
+            {/* Meilleure série du groupe (maquette 18/11) */}
+            {meilleureSerie?.longueur >= 3 && (
+              <div style={{ marginTop: '5vh', paddingTop: '2vh', borderTop: '1px solid rgba(249,115,22,0.35)', ...apparait(1.6) }}>
+                <div style={{ fontSize: taille(13, 1.3), letterSpacing: 4, textTransform: 'uppercase', color: '#fb923c' }}>🔥 Meilleure série du groupe</div>
+                <div style={{ fontSize: taille(28, 2.8), fontWeight: 700, marginTop: '1vh' }}>
+                  {String(meilleureSerie.name).trim().split(' ').pop()} <span style={{ fontWeight: 300, color: 'rgba(255,255,255,0.7)' }}>· {meilleureSerie.longueur} bonnes réponses d&apos;affilée</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Classement complet */}
@@ -9013,15 +9085,6 @@ function TVQuizFamilyRates({ sessionCode, moduleId, moduleLabel, quiz }) {
       .then(rows => {
         setFamilles(tauxParFamille(rows, quiz, moduleId))
         setTimeout(() => setAnime(true), 300)
-            {/* Meilleure série du groupe (maquette 18/11) */}
-            {meilleureSerie?.longueur >= 3 && (
-              <div style={{ marginTop: '5vh', paddingTop: '2vh', borderTop: '1px solid rgba(249,115,22,0.35)', ...apparait(1.6) }}>
-                <div style={{ fontSize: taille(13, 1.3), letterSpacing: 4, textTransform: 'uppercase', color: '#fb923c' }}>🔥 Meilleure série du groupe</div>
-                <div style={{ fontSize: taille(28, 2.8), fontWeight: 700, marginTop: '1vh' }}>
-                  {String(meilleureSerie.name).trim().split(' ').pop()} <span style={{ fontWeight: 300, color: 'rgba(255,255,255,0.7)' }}>· {meilleureSerie.longueur} bonnes réponses d&apos;affilée</span>
-                </div>
-              </div>
-            )}
       }).catch(() => setFamilles([]))
   }, [sessionCode, moduleId, quiz])
 
@@ -10019,6 +10082,8 @@ export default function TVView() {
           <WelcomeScreen />
         ) : activeModule === 'offres' && sharedState?.offres_traitements ? (
           <TVTraitementsVerres />
+        ) : isLobby && activeModule === 'simulation-accueil' ? (
+          <TVSimulationLobby sessionCode={sessionCode} />
         ) : isLobby ? (
           <TVModuleLobby moduleLabel={moduleData?.label || ''} moduleSub={moduleData?.sub || ''} />
         ) : isResults ? (
@@ -10033,6 +10098,8 @@ export default function TVView() {
                 : activeModule === 'quiz-j1' || activeModule === 'quiz-j2'
                 ? <TVQuizFamilyRates sessionCode={sessionCode} moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} />
                 : <TVGroupResults moduleId={activeModule} moduleLabel={moduleData?.label || ''} quiz={moduleData?.quiz || []} sessionCode={sessionCode} />
+        ) : isQuiz && quizQuestion?.simulation ? (
+          <TVSimulationScene key={`sim-${modulePage}`} question={quizQuestion} qIdx={modulePage - 100} sessionCode={sessionCode} moduleId={activeModule} correction={!!sharedState?.quiz_show_correction} replique={sharedState?.sim_replique} />
         ) : isQuiz && quizQuestion ? (
           quizInterstitialPhase
             ? <TVQuizPodium qIdx={modulePage - 100} onDone={() => setQuizInterstitialPhase(false)} sessionCode={sessionCode} skipSignal={sharedState?.quiz_podium_skip} moduleId={activeModule} />

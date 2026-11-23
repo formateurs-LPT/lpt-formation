@@ -200,7 +200,7 @@ function StoreDirectionView({ store: baseStore, session, onBack }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseStore.dbId])
 
-  const { progress, history, saveError, setScore, saveNote, reset } = useStoreFollowupProgress(baseStore.id, session.displayName)
+  const { progress } = useStoreFollowupProgress(baseStore.id, session.displayName)
   const store = mergeEntreesIntoRoster(baseStore, entreesData)
   const section = store.sections.find(s => s.id === sectionId) || null
   const collaborateur = section?.collaborateurs.find(c => c.id === collaborateurId) || null
@@ -211,10 +211,7 @@ function StoreDirectionView({ store: baseStore, session, onBack }) {
     return (
       <div className="dash-wrap">
         <CollaborateurFiche
-          store={store} sectionId={sectionId} collaborateur={collaborateur} progress={progress} history={history}
-          onSetScore={(itemId, score) => setScore(collaborateurId, itemId, score)}
-          onSaveNote={(itemId, note) => saveNote(collaborateurId, itemId, note)}
-          onReset={(itemId) => reset(collaborateurId, itemId)}
+          store={store} collaborateur={collaborateur}
           onBack={() => setCollaborateurId(null)}
         />
       </div>

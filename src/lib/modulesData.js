@@ -1,4 +1,5 @@
 import { QUIZ_FINAL_QUESTIONS } from '@/lib/quizFinalData'
+import { SIMULATION_ACCUEIL } from '@/lib/simulationAccueilData'
 export { QUIZ_FINAL_QUESTIONS }
 import { QUIZ_FINAL_QUESTIONS_BELGIQUE } from '@/lib/quizFinalBelgiqueData'
 export { QUIZ_FINAL_QUESTIONS_BELGIQUE }
@@ -1393,6 +1394,7 @@ export const MODULE_DATA = {
   'quiz-final':       { pages: [], quiz: QUIZ_FINAL_QUESTIONS, label: 'Quiz de fin de formation', sub: 'Trame · Optique · Offres · Remboursement' },
   'quiz-final-belgique': { pages: [], quiz: QUIZ_FINAL_QUESTIONS_BELGIQUE, label: 'Quiz de fin de formation', sub: 'Trame · Optique · Offres · Remboursement Belgique' },
   'quiz-j1':          { pages: [], quiz: QUIZ_J1, label: 'Quiz Jour 1', sub: 'Entreprise · Optique · Ordonnances · Types de verres · Montures' },
+  'simulation-accueil': { pages: [], quiz: SIMULATION_ACCUEIL, label: 'Simulation finale', sub: 'Lipto entre en magasin' },
   'quiz-j2':          { pages: [], quiz: QUIZ_J2, label: 'Quiz Jour 2', sub: "Trame d'accueil · Offres · 1=1 · Pack Plan · Ordonnances" },
   'mutuelles-inami':  { pages: [
     { id: 'mutuelles-q1', type: 'pause', icon: '🛡️', titre: 'Que savez-vous des mutuelles ?', sousTitre: 'Partagez ce que vous savez déjà' },

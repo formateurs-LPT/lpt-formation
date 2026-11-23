@@ -157,7 +157,7 @@ export default function StoreFollowupView({ pName, onBack }) {
   const [collaborateurId, setCollaborateurId] = useState(null)
   const [showMesRetours, setShowMesRetours] = useState(false)
 
-  const { progress, history, saveError, setScore, saveNote, reset } = useStoreFollowupProgress(storeId, pName)
+  const { progress } = useStoreFollowupProgress(storeId, pName)
 
   const store = STORES.find(s => s.id === storeId) || null
   const section = store?.sections.find(s => s.id === sectionId) || null
@@ -166,28 +166,12 @@ export default function StoreFollowupView({ pName, onBack }) {
   if (collaborateur && section && store) {
     return (
       <div>
-        {saveError && (
-          <div style={{
-            position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 999,
-            background: '#dc2626', color: '#fff', padding: '10px 20px', borderRadius: 12,
-            fontSize: 13, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-          }}>
-            ⚠️ Échec de la sauvegarde — la table Supabase existe-t-elle ? Ce changement n&apos;est pas enregistré.
-          </div>
-        )}
         <CollaborateurFiche
           store={store}
-          sectionId={sectionId}
           collaborateur={collaborateur}
-          progress={progress}
-          history={history}
-          onSetScore={(itemId, score) => setScore(collaborateurId, itemId, score)}
-          onSaveNote={(itemId, note) => saveNote(collaborateurId, itemId, note)}
-          onReset={(itemId) => reset(collaborateurId, itemId)}
           onBack={() => setCollaborateurId(null)}
           pName={pName}
           role="formateur"
-          showModulesApresFormation
         />
       </div>
     )

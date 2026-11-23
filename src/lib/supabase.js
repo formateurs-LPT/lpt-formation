@@ -1,6 +1,7 @@
 import { getSessionCode } from './env'
 import { resolveSessionCode, resolveRoomStateCode, getLegacySessionCode } from './sessionCode'
 import { enqueueWrite, startWriteQueueLoop } from './writeQueue'
+import { estFauxCandidat } from './fauxCandidats'
 
 // Lu au build / au démarrage de `next dev` depuis .env.local (NEXT_PUBLIC_*)
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
@@ -149,7 +150,18 @@ export async function isSupabaseTableAvailable(table) {
   return !(r.status === 404 && /could not find the table/i.test(String(err?.message || '')))
 }
 
+// Faux candidats de la salle test : leurs résultats ne doivent jamais entrer
+// dans les tables durables (statistiques direction, bilans). Les tables de la
+// salle (réponses, participants…) restent normales : purgées à sa fermeture.
+const TABLES_DURABLES = new Set(['module_results', 'formation_reports'])
+function ecritureFauxCandidat(table, data) {
+  if (!TABLES_DURABLES.has(table)) return false
+  const lignes = Array.isArray(data) ? data : [data]
+  return lignes.some(l => estFauxCandidat(l?.collaborateur))
+}
+
 export async function sbUpsert(table, data, onConflict) {
+  if (ecritureFauxCandidat(table, data)) return Array.isArray(data) ? data : [data]
   let url = `${SB_URL}/rest/v1/${table}`
   if (onConflict) url += '?on_conflict=' + onConflict
   const headers = { ...sbHeaders(), Prefer: 'resolution=merge-duplicates,return=representation' }
@@ -174,6 +186,7 @@ export async function sbUpsert(table, data, onConflict) {
 }
 
 export async function sbUpsertOrThrow(table, data, onConflict) {
+  if (ecritureFauxCandidat(table, data)) return Array.isArray(data) ? data : [data]
   let url = `${SB_URL}/rest/v1/${table}`
   if (onConflict) url += '?on_conflict=' + onConflict
   const headers = { ...sbHeaders(), Prefer: 'resolution=merge-duplicates,return=representation' }
@@ -188,6 +201,7 @@ export async function sbUpsertOrThrow(table, data, onConflict) {
 }
 
 export async function sbInsert(table, data) {
+  if (ecritureFauxCandidat(table, data)) return true
   try {
     const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
       method: 'POST',

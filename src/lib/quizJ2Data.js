@@ -24,6 +24,7 @@ export const QUIZ_J2_BASE = [
   {
     type: 'text-open',
     question: "Dans l'offre 1=1, quels matériaux de monture les clients peuvent-ils choisir ?",
+    hint: "Toutes les montures du magasin rentrent dans l'offre 1=1",
   },
   // Q3 — 2nde paire offerte 1=1 (vrai/faux)
   {
@@ -36,11 +37,27 @@ export const QUIZ_J2_BASE = [
     type: 'text-open',
     numeric: true,
     question: "Combien coûte en moyenne un équipement progressif dans l'offre 1=1 ?",
+    hint: '260 €',
   },
-  // Q5 — avantages 2nde paire 1=1
+  // Q5 — avantages 2nde paire 1=1 : 2 cases (19/11). L'écran formateur coche
+  // les avantages trouvés ; 2 avantages sur 3 suffisent (autoCorrectMin).
   {
-    type: 'text-open',
+    type: 'text-open-multi',
+    fields: 2,
+    fieldLabels: ['Argument 1', 'Argument 2'],
     question: "Citez les avantages de la seconde paire dans l'offre 1=1. Donnez-en au moins 2.",
+    hint: "Même qualité que la première paire · Sur l'intégralité du magasin · Même en solaire",
+    elementsAttendus: [
+      'Même qualité que la première paire',
+      "Sur l'intégralité du magasin",
+      'Même en solaire',
+    ],
+    autoCorrectEach: [
+      ['qualit'],
+      ['magasin', 'intégralit', 'integralit', 'toutes les montures', 'tout le'],
+      ['solaire', 'soleil'],
+    ],
+    autoCorrectMin: 2,
   },
   // Q6 — délai fabrication progressifs 1=1 (auto, override possible)
   {
@@ -61,18 +78,38 @@ export const QUIZ_J2_BASE = [
     type: 'text-open-multi',
     fields: 5,
     question: 'Citez tous les traitements que l\'on peut retrouver dans notre verre Digital Protect Pro.',
+    hint: 'Anti-rayures · Anti-reflets · Anti-salissures · Hydrophobe · Anti-lumière bleue',
   },
-  // Q9 — 5 arguments de vente verre progressif — 2min30
+  // Q9 — 5 arguments de vente verre progressif — 4 minutes (19/11)
+  // elementsAttendus : l'écran formateur coche, pour chaque formé, les
+  // arguments trouvés (mots-clés de autoCorrectEach, dans n'importe quelle
+  // case). Les 5 trouvés = validé automatiquement, le formateur peut corriger.
   {
     type: 'text-open-multi',
     fields: 5,
     question: 'Donnez les 5 arguments de vente du verre progressif.',
-    timeLimitSec: 150,
+    timeLimitSec: 240,
+    hint: "Zones d'aberrations réduites · Vision extra-large à 180° · Vision naturelle au quotidien · Adaptation immédiate · 100 jours de garantie satisfait ou échangé",
+    elementsAttendus: [
+      "Zones d'aberrations réduites",
+      'Vision extra-large à 180°',
+      'Vision naturelle au quotidien',
+      'Adaptation immédiate',
+      '100 jours de garantie satisfait ou échangé',
+    ],
+    autoCorrectEach: [
+      ['aberration'],
+      ['180', 'extra large', 'extra-large', 'extralarge', 'large'],
+      ['naturel'],
+      ['immédiat', 'immediat', 'adapt'],
+      ['100', 'cent jours', 'garanti', 'satisfait', 'échang', 'echang'],
+    ],
   },
   // Q10 — composition paire à 10€
   {
     type: 'text-open',
     question: "De quoi est composée une paire à 10€ ? (Quelle monture et quel traitement de verre ?)",
+    hint: 'Une monture en plastique injecté à 5 € + des verres Basic à 2,50 € le verre',
   },
   // Q11 — réduction 2nde paire offre classique
   {
@@ -95,6 +132,7 @@ export const QUIZ_J2_BASE = [
   {
     type: 'text-open',
     question: 'Avec quel matériau sont fabriquées les montures comprises entre 5 et 15€ ?',
+    hint: 'Plastique injecté',
   },
   // Q15 — correction + matériau monture conseillé (qcm-ordonnance)
   {
@@ -137,6 +175,7 @@ export const QUIZ_J2_BASE = [
     },
     hideOrdoLabels: true,
     cylInParens: true,
+    hint: 'Des verres unifocaux en vision de près : une paire unifocale VP pour la lecture',
   },
   // Q20 — calcul vision de près : le formé saisit uniquement la sphère de
   // près (= sphère + add) pour chaque œil, même mécanique que la saisie de

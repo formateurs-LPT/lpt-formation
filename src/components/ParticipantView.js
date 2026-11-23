@@ -326,9 +326,8 @@ export default function ParticipantView({ pName, pPrenom, onToast, onOnlineCount
   return (
     <div id="pv">
       {disconnectChip}
-      <div className="pshell">
-        <ParticipantDashboard pName={pName} sessionCode={sessionCode} />
-      </div>
+      {/* Accueil plein écran, même DA que les quiz (19/11) — plus de marges autour */}
+      <ParticipantDashboard pName={pName} sessionCode={sessionCode} />
     </div>
   )
 }

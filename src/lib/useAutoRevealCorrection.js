@@ -22,6 +22,7 @@ import { normalizeNameKey } from '@/lib/participantNames'
  */
 export function useAutoRevealCorrection({ answeredNames, resetKey, enabled = true, onReveal }) {
   const [onlineNames, setOnlineNames] = useState([])
+  const [onlineCharge, setOnlineCharge] = useState(false)
   const revealedRef = useRef(false)
 
   useEffect(() => {
@@ -33,6 +34,7 @@ export function useAutoRevealCorrection({ answeredNames, resetKey, enabled = tru
     const poll = async () => {
       const list = await fetchOnlineParticipantsList(code)
       setOnlineNames((list || []).map(p => p.name).filter(Boolean))
+      setOnlineCharge(true)
     }
     poll()
     const t = setInterval(poll, 5000)
@@ -41,16 +43,20 @@ export function useAutoRevealCorrection({ answeredNames, resetKey, enabled = tru
 
   const answeredKeys = new Set((answeredNames || []).map(normalizeNameKey))
   const notAnswered = onlineNames.filter(n => !answeredKeys.has(normalizeNameKey(n)))
-  const connectedCount = onlineNames.length
+  // Un formé qui vient de répondre est forcément là, même si son téléphone
+  // n'a pas encore renvoyé son signal de présence (veille, toutes les 45 s) :
+  // sans ça, « 0 connecté » bloquait la correction automatique (23/11).
+  const onlineKeys = new Set(onlineNames.map(normalizeNameKey))
+  const connectedCount = onlineNames.length + [...answeredKeys].filter(k => k && !onlineKeys.has(k)).length
 
   useEffect(() => {
-    if (!enabled || revealedRef.current) return
+    if (!enabled || revealedRef.current || !onlineCharge) return
     if (connectedCount > 0 && notAnswered.length === 0 && (answeredNames || []).length > 0) {
       revealedRef.current = true
       onReveal()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, connectedCount, notAnswered.length, (answeredNames || []).length])
+  }, [enabled, onlineCharge, connectedCount, notAnswered.length, (answeredNames || []).length])
 
   return { connectedCount, notAnswered }
 }

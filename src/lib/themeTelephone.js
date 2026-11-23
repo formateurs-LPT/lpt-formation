@@ -1,8 +1,8 @@
 'use client'
 // Thème des écrans quiz du téléphone du formé (18/11) : mode sombre (même
 // univers que la TV) ou mode clair (lisible en pleine lumière, en magasin).
-// Par défaut, suit le réglage du téléphone ; le bouton ☀️/🌙 permet de
-// basculer, et le choix est mémorisé sur le téléphone pour les quiz suivants.
+// Par défaut : mode clair ; le bouton ☀️/🌙 permet de basculer, et le choix
+// est mémorisé sur le téléphone pour les quiz suivants.
 import { useSyncExternalStore } from 'react'
 
 const CLE = 'lpt_theme_tel'
@@ -33,9 +33,10 @@ function lireChoix() {
   try { return localStorage.getItem(CLE) } catch { return null }
 }
 
+// Mode clair par défaut pour tout le téléphone du collaborateur (19/11, choix
+// de Kevin) ; le bouton ☀️/🌙 permet toujours de passer en sombre.
 function modeSysteme() {
-  if (typeof window === 'undefined' || !window.matchMedia) return 'sombre'
-  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'clair' : 'sombre'
+  return 'clair'
 }
 
 function modeActuel() {
@@ -57,6 +58,6 @@ export function basculerThemeTel() {
 }
 
 export function useThemeTel() {
-  const mode = useSyncExternalStore(abonner, modeActuel, () => 'sombre')
+  const mode = useSyncExternalStore(abonner, modeActuel, () => 'clair')
   return THEMES_TEL[mode] || THEMES_TEL.sombre
 }

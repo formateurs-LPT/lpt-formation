@@ -36,7 +36,8 @@ export async function archiveAndPurgeRoom(roomCode, { trainerName } = {}) {
   const hadData = hasRelationalData || hasRoomState
 
   let archived = false
-  if (hadData) {
+  // Salle test (faux candidats) : rien à garder dans l'historique, on purge seulement
+  if (hadData && session?.room_type !== 'test') {
     const resolvedTrainer =
       trainerName ||
       session?.label?.replace(/^(Présentiel|Visio|Belgique)\s*—\s*/i, '') ||
@@ -76,7 +77,7 @@ export async function archiveAndPurgeRoom(roomCode, { trainerName } = {}) {
   // Ne purge les tables live QUE si l'archivage a réussi (ou s'il n'y avait rien
   // à archiver) — sinon un échec d'insertSessionHistory (coupure réseau, panne
   // Supabase...) effaçait quand même les résultats live, perte définitive.
-  if (!hadData || archived) {
+  if (!hadData || archived || session?.room_type === 'test') {
     await Promise.all([
       sbDelete('participants', filter),
       sbDelete('quiz_results', filter),
@@ -88,5 +89,5 @@ export async function archiveAndPurgeRoom(roomCode, { trainerName } = {}) {
     ])
   }
 
-  return { archived: !!archived, hadData }
+  return { archived: !!archived, hadData, salleTest: session?.room_type === 'test' }
 }

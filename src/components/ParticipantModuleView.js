@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, createContext, useContext } from 'react'
 import Image from 'next/image'
 import LPTSaleApp from '@/components/LPTSaleApp'
 import QuestionBubble from '@/components/QuestionBubble'
@@ -19,6 +19,8 @@ import { getLevelInfo, getRankMessage, fetchParticipantRanking, fetchWeeklyGloba
 import { canParticipantJoinSession, getCategoryJoinDeniedMessage, mapPosteLabel } from '@/lib/formationCategories'
 import { themeForAnswer, DIRECT_THEME_MODULES, FAMILLE_LABELS } from '@/lib/quizThemeMap'
 import { useThemeTel, basculerThemeTel, THEMES_TEL } from '@/lib/themeTelephone'
+import Lipto from '@/components/lipto/Lipto'
+import { LIPTO_REACTIONS, liptoFinDeQuiz, liptoPourNiveau } from '@/lib/lipto'
 import { resolveParticipantSessionCode, participantJoinBlockedMessage } from '@/lib/participantSession'
 import { QuestionsGameParticipantView } from '@/components/QuestionsGamePanel'
 import { ModuleApresFormationParticipant } from '@/components/modules/ModuleApresFormationSession'
@@ -71,77 +73,72 @@ const STYLES = `
   }
 `
 
-function SessionEndedScreen() {
+// ══ Écrans hors quiz du téléphone — même DA que les quiz (19/11) ══════════
+// Fond uni, typo fine, mode clair par défaut (bouton ☀️/🌙), cf. themeTelephone.js
+function PageTel({ t, centre = false, children }) {
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '40px 24px', textAlign: 'center',
-    }}>
-      <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-      <h3 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 8 }}>Session terminée</h3>
-      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>Merci pour ta participation !<br />Tu peux fermer cet onglet.</p>
+    <div style={{ minHeight: '100dvh', background: t.fond, color: t.texte, display: 'flex', flexDirection: 'column', animation: 'quizScreenIn .3s ease' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'max(16px, env(safe-area-inset-top)) 22px 0' }}>
+        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={80} height={22} style={{ objectFit: 'contain', height: 22, width: 'auto', filter: t.mode === 'clair' ? 'invert(1)' : 'none' }} />
+        <BoutonThemeTel t={t} />
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '0 24px max(28px, env(safe-area-inset-bottom))', ...(centre ? { justifyContent: 'center', alignItems: 'center', textAlign: 'center' } : {}) }}>
+        {children}
+      </div>
     </div>
+  )
+}
+
+function PointAttente({ t, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 28 }}>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: t.accent, animation: 'waitDot 1.4s ease-in-out infinite' }} />
+      <span style={{ fontSize: 14, color: t.doux }}>{children}</span>
+    </div>
+  )
+}
+
+function TitreTel({ t, children, style }) {
+  return <div style={{ fontSize: 26, fontWeight: t.titreSerif ? 600 : 800, fontFamily: t.titreSerif ? 'Georgia, serif' : 'inherit', lineHeight: 1.2, ...style }}>{children}</div>
+}
+
+function SessionEndedScreen() {
+  const t = useThemeTel()
+  return (
+    <PageTel t={t} centre>
+      <div style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: t.vert, fontWeight: 700 }}>✓ Session terminée</div>
+      <TitreTel t={t} style={{ marginTop: 12 }}>Merci pour ta participation !</TitreTel>
+      <p style={{ fontSize: 15, color: t.doux, marginTop: 12, lineHeight: 1.6 }}>Tu peux fermer cet onglet.</p>
+    </PageTel>
   )
 }
 
 function WaitingScreen() {
+  const t = useThemeTel()
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', padding: '40px 24px',
-    }}>
-      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={160} height={60}
-        style={{ objectFit: 'contain', marginBottom: 48 }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 8, height: 8, borderRadius: '50%', background: '#00abe9',
-          animation: 'waitDot 1.4s ease-in-out infinite',
-        }} />
-        <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
-          La formation va commencer…
-        </span>
-      </div>
-    </div>
+    <PageTel t={t} centre>
+      <Lipto pose="bienvenue" anim="apparition" taille={140} t={t} />
+      <PointAttente t={t}>La formation va commencer…</PointAttente>
+    </PageTel>
   )
 }
 
 function WelcomeScreenFirst({ pName }) {
+  const t = useThemeTel()
   const firstName = extractPrenom(pName) || 'toi'
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '40px 24px', textAlign: 'center',
-    }}>
-      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={160} height={60}
-        style={{ objectFit: 'contain', marginBottom: 40 }} />
-      <div style={{ fontSize: 44, marginBottom: 12 }}>👋</div>
-      <h2 style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 10 }}>
-        Bonjour, {firstName} !
-      </h2>
-      <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.65)', lineHeight: 1.7, maxWidth: 300, margin: '0 auto' }}>
-        Bienvenue chez <strong style={{ color: '#00abe9' }}>Lunettes Pour Tous</strong>.<br />
-        Ta formation commence maintenant.
+    <PageTel t={t} centre>
+      <Lipto pose="bienvenue" anim="apparition" taille={150} t={t} />
+      <TitreTel t={t} style={{ marginTop: 22 }}>Bonjour, {firstName} !</TitreTel>
+      <p style={{ fontSize: 15, color: t.doux, lineHeight: 1.6, maxWidth: 300, margin: '12px auto 0' }}>
+        Bienvenue chez <b style={{ color: t.texte }}>Lunettes Pour Tous</b>.<br />Ta formation commence maintenant.
       </p>
-      <div style={{
-        marginTop: 32,
-        background: 'rgba(107,114,128,0.15)', border: '1px solid rgba(107,114,128,0.3)',
-        borderRadius: 16, padding: '20px 28px', display: 'flex', flexDirection: 'column', alignItems: 'center',
-      }}>
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Niveau de départ</div>
-        <div style={{ fontSize: 34 }}>🌱</div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#6b7280', marginTop: 6 }}>Débutant</div>
+      <div style={{ marginTop: 26, padding: '14px 26px', borderRadius: 14, background: t.carte, boxShadow: t.ombre, border: t.mode === 'clair' ? 'none' : `1px solid ${t.trait}` }}>
+        <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: t.doux }}>Niveau de départ</div>
+        <div style={{ fontSize: 17, fontWeight: 700, marginTop: 6 }}>🌱 Débutant</div>
       </div>
-      <div style={{ marginTop: 32, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00abe9', animation: 'waitDot 1.4s ease-in-out infinite' }} />
-        <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>En attente du formateur…</span>
-      </div>
-    </div>
+      <PointAttente t={t}>En attente du formateur…</PointAttente>
+    </PageTel>
   )
 }
 
@@ -186,42 +183,38 @@ function computeBadges({ quizRows, quizHistory }) {
   return badges
 }
 
-function ParticipantBadges({ badges }) {
+function SousTitreTel({ t, children }) {
+  return <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: t.doux, paddingBottom: 8, borderBottom: t.mode === 'clair' ? 'none' : `1px solid ${t.trait}`, marginTop: 24 }}>{children}</div>
+}
+
+// Bloc de lignes : cartes blanches en clair, simples lignes en sombre
+function ListeTel({ t, children }) {
+  return <div style={t.mode === 'clair' ? { marginTop: 6, background: t.carte, borderRadius: 14, boxShadow: t.ombre, overflow: 'hidden' } : {}}>{children}</div>
+}
+
+function ParticipantBadges({ badges, t }) {
   if (!badges?.length) return null
   return (
-    <div style={{ marginBottom: 16 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
-        Badges débloqués
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+    <>
+      <SousTitreTel t={t}>Badges débloqués</SousTitreTel>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
         {badges.map((b, i) => (
-          <div key={i} style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)',
-            borderRadius: 20, padding: '6px 12px',
-          }}>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, padding: '6px 12px', border: `1px solid ${t.accent}`, background: t.mode === 'clair' ? '#fff' : 'transparent' }}>
             <span style={{ fontSize: 15 }}>{b.icon}</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#eab308' }}>{b.label}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: t.accent }}>{b.label}</span>
           </div>
         ))}
       </div>
-    </div>
+    </>
   )
 }
 
-function ParticipantProfileCard({ pName, myProfile }) {
+function ParticipantProfileCard({ pName, myProfile, t }) {
   if (!myProfile) return null
   return (
-    <div style={{
-      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-      borderRadius: 16, padding: '16px 18px', marginBottom: 16,
-      display: 'flex', flexDirection: 'column', gap: 6,
-    }}>
-      <div style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{pName}</div>
-      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
-        {myProfile.magasin && <span>🏬 {myProfile.magasin}</span>}
-        {myProfile.poste && <span>💼 {myProfile.poste}</span>}
-      </div>
+    <div style={{ marginTop: 6, fontSize: 13, color: t.doux, display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+      {myProfile.magasin && <span>🏬 {myProfile.magasin}</span>}
+      {myProfile.poste && <span>💼 {myProfile.poste}</span>}
     </div>
   )
 }
@@ -229,7 +222,7 @@ function ParticipantProfileCard({ pName, myProfile }) {
 // Classement "pour le fun", toutes salles de formation confondues, sur la
 // semaine en cours — voir fetchWeeklyGlobalRanking (scoring.js). Distinct du
 // classement de la salle affiché dans l'onglet "Mon profil".
-function NationalRankingTab({ pName }) {
+function NationalRankingTab({ pName, t }) {
   const [ranking, setRanking] = useState(null) // null = en cours de chargement
   const MEDALS = ['🥇', '🥈', '🥉']
 
@@ -241,45 +234,37 @@ function NationalRankingTab({ pName }) {
         .catch(() => { if (!cancelled) setRanking([]) })
     }
     load()
-    const t = setInterval(load, 30000)
-    return () => { cancelled = true; clearInterval(t) }
+    const timer = setInterval(load, 30000)
+    return () => { cancelled = true; clearInterval(timer) }
   }, [])
 
   const myKey = normalizeNameKey(pName || '')
 
   return (
     <div>
-      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: 18, lineHeight: 1.5, padding: '0 8px' }}>
-        🌍 Meilleurs taux de bonnes réponses de la semaine, toutes salles de formation confondues — pour le fun, ça ne change rien à ton classement de la salle.
+      <div style={{ fontSize: 13, color: t.doux, lineHeight: 1.5, marginTop: 4 }}>
+        🌍 Meilleurs taux de bonnes réponses de la semaine, toutes salles confondues. Pour le fun : ça ne change rien à ton classement de la salle.
       </div>
       {ranking === null ? (
-        <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)', padding: '32px 0' }}>Chargement…</div>
+        <div style={{ fontSize: 13, color: t.doux, padding: '32px 0', textAlign: 'center' }}>Chargement…</div>
       ) : ranking.length === 0 ? (
-        <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)', padding: '32px 0' }}>
-          Pas encore assez de réponses cette semaine pour établir un classement.
-        </div>
+        <div style={{ fontSize: 13, color: t.doux, padding: '32px 0', textAlign: 'center' }}>Pas encore assez de réponses cette semaine pour établir un classement.</div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {ranking.map(r => {
-            const mine = normalizeNameKey(r.name) === myKey
-            return (
-              <div key={r.name} style={{
-                background: mine ? 'rgba(0,171,233,0.14)' : 'rgba(255,255,255,0.03)',
-                border: `1.5px solid ${mine ? 'rgba(0,171,233,0.5)' : 'rgba(255,255,255,0.07)'}`,
-                borderRadius: 14, padding: '12px 16px',
-                display: 'flex', alignItems: 'center', gap: 12,
-              }}>
-                <div style={{ width: 28, textAlign: 'center', fontSize: r.rank <= 3 ? 20 : 14, fontWeight: 800, color: mine ? '#00abe9' : 'rgba(255,255,255,0.5)', flexShrink: 0 }}>
-                  {r.rank <= 3 ? MEDALS[r.rank - 1] : r.rank}
+        <>
+          <SousTitreTel t={t}>Top 10 de la semaine</SousTitreTel>
+          <ListeTel t={t}>
+            {ranking.map((r, i) => {
+              const mine = normalizeNameKey(r.name) === myKey
+              return (
+                <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', borderTop: i ? `1px solid ${t.trait}` : 'none', borderLeft: `3px solid ${mine ? t.accent : 'transparent'}` }}>
+                  <span style={{ width: 26, textAlign: 'center', fontSize: r.rank <= 3 ? 18 : 14, color: r.rank <= 3 ? t.texte : t.doux }}>{r.rank <= 3 ? MEDALS[r.rank - 1] : r.rank}</span>
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: mine ? 800 : 500, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mine ? 'Toi' : r.name}</span>
+                  <span style={{ fontSize: 16, fontWeight: 300, fontVariantNumeric: 'tabular-nums' }}>{Math.round(r.rate * 100)} %</span>
                 </div>
-                <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#fff', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {r.name}{mine && <span style={{ color: '#00abe9' }}> (toi)</span>}
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{Math.round(r.rate * 100)}%</div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </ListeTel>
+        </>
       )}
     </div>
   )
@@ -310,6 +295,8 @@ function groupQuizHistoryByDay(quizHistory) {
 }
 
 function DashboardScreen({ pName, myEntry, ranking, myProfile, quizHistory, badges }) {
+  const t = useThemeTel()
+  const clair = t.mode === 'clair'
   const [tab, setTab] = useState('profil') // profil | historique | national
   const firstName = extractPrenom(pName) || 'toi'
   const points = myEntry?.points ?? 0
@@ -318,151 +305,88 @@ function DashboardScreen({ pName, myEntry, ranking, myProfile, quizHistory, badg
   const msg = rank ? getRankMessage(rank) : null
   const MEDALS = ['🥇', '🥈', '🥉']
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      display: 'flex', flexDirection: 'column',
-      padding: '32px 20px 48px', overflowY: 'auto',
-    }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
-        <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={120} height={45}
-          style={{ objectFit: 'contain', marginBottom: 18 }} />
-        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', textAlign: 'center', margin: 0 }}>
-          Bonjour, {firstName} 👋
-        </h2>
-      </div>
+    <PageTel t={t}>
+      <TitreTel t={t} style={{ marginTop: 22 }}>Bonjour, {firstName} 👋</TitreTel>
+      <ParticipantProfileCard pName={pName} myProfile={myProfile} t={t} />
 
-      {/* Onglets */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        {[['profil', 'Mon profil'], ['historique', 'Mes quiz'], ['national', '🌍 National']].map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            style={{
-              flex: 1, padding: '10px 0', borderRadius: 12, fontSize: 13, fontWeight: 700,
-              cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
-              border: `1.5px solid ${tab === key ? 'rgba(0,171,233,0.5)' : 'rgba(255,255,255,0.12)'}`,
-              background: tab === key ? 'rgba(0,171,233,0.15)' : 'transparent',
-              color: tab === key ? '#00abe9' : 'rgba(255,255,255,0.5)',
-            }}
-          >
-            {label}
-          </button>
+      {/* Onglets : soulignés, comme le reste de la DA */}
+      <div style={{ display: 'flex', gap: 22, marginTop: 22, borderBottom: `1px solid ${t.trait}` }}>
+        {[['profil', 'Mon profil'], ['historique', 'Mes quiz'], ['national', 'National']].map(([key, label]) => (
+          <button key={key} onClick={() => setTab(key)} style={{
+            background: 'none', border: 'none', padding: '0 0 10px', marginBottom: -1, cursor: 'pointer', fontFamily: 'inherit',
+            fontSize: 14, fontWeight: tab === key ? 800 : 500, color: tab === key ? t.texte : t.doux,
+            borderBottom: `2px solid ${tab === key ? t.accent : 'transparent'}`,
+          }}>{label}</button>
         ))}
       </div>
 
-      <div key={tab} style={{ animation: 'dashTabIn .25s ease' }}>
+      <div key={tab} style={{ animation: 'dashTabIn .25s ease', paddingTop: 18 }}>
       {tab === 'national' ? (
-        <NationalRankingTab pName={pName} />
+        <NationalRankingTab pName={pName} t={t} />
       ) : tab === 'profil' ? (
         <>
-          <ParticipantProfileCard pName={pName} myProfile={myProfile} />
-
-          {/* Carte niveau + points */}
-          <div style={{
-            background: levelInfo.levelDef.bg, border: `1px solid ${levelInfo.levelDef.border}`,
-            borderRadius: 20, padding: '24px 20px', textAlign: 'center', marginBottom: 16,
-          }}>
-            <div style={{ fontSize: 42 }}>{levelInfo.levelDef.icon}</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: levelInfo.levelDef.color, marginTop: 6, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              {levelInfo.levelDef.name}
-            </div>
-            <div style={{ fontSize: 56, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginTop: 8 }}>{points}</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 16 }}>points</div>
-            {!levelInfo.isMaxLevel ? (
-              <>
-                <div style={{ height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden', margin: '0 8px' }}>
-                  <div style={{ width: `${levelInfo.progressPct}%`, height: '100%', background: levelInfo.levelDef.color, borderRadius: 99, transition: 'width 0.6s' }} />
-                </div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 8 }}>
-                  Encore {levelInfo.ptsToNext} pts pour le niveau suivant
-                </div>
-              </>
-            ) : (
-              <div style={{ fontSize: 12, color: levelInfo.levelDef.color, fontWeight: 700 }}>Niveau maximum atteint !</div>
-            )}
+          {/* Niveau + points */}
+          <div style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: t.accent, fontWeight: 700 }}>{levelInfo.levelDef.icon} {levelInfo.levelDef.name}</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, marginTop: 8 }}>
+            <span style={{ fontSize: 64, fontWeight: 300, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{points}</span>
+            <span style={{ fontSize: 18, color: t.doux, marginBottom: 6 }}>XP</span>
+            {/* Lipto discret à côté des XP, humeur selon le niveau */}
+            <span style={{ marginLeft: 2, marginBottom: -2 }}><Lipto pose={liptoPourNiveau(levelInfo.level)} anim="apparition" taille={54} t={t} /></span>
           </div>
-
-          <ParticipantBadges badges={badges} />
-
-          {/* Message classement */}
-          {msg && (
-            <div style={{ textAlign: 'center', fontSize: 14, color: msg.color, fontStyle: 'italic', marginBottom: 16, padding: '0 4px', lineHeight: 1.5 }}>
-              {msg.text}
-            </div>
+          {!levelInfo.isMaxLevel ? (
+            <>
+              <div style={{ height: 3, background: t.trait, marginTop: 14 }}>
+                <div style={{ width: `${levelInfo.progressPct}%`, height: '100%', background: t.accent, transition: 'width 0.6s' }} />
+              </div>
+              <div style={{ fontSize: 13, color: t.doux, marginTop: 8 }}>Encore {levelInfo.ptsToNext} XP pour le niveau suivant</div>
+            </>
+          ) : (
+            <div style={{ fontSize: 13, color: t.accent, fontWeight: 700, marginTop: 10 }}>Niveau maximum atteint !</div>
           )}
 
           {/* Ma position */}
           {rank != null && ranking.length > 0 && (
-            <div style={{
-              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: 16, padding: '24px 16px', textAlign: 'center',
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 18 }}>
-                Ta position cette semaine
+            <>
+              <SousTitreTel t={t}>Ta position cette semaine</SousTitreTel>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 12 }}>
+                <span style={{ fontSize: 44, fontWeight: 300, lineHeight: 1 }}>{rank}</span>
+                <span style={{ fontSize: 18, color: t.doux }}>{rank === 1 ? 'er' : 'e'} / {ranking.length}</span>
+                {rank <= 3 && <span style={{ fontSize: 30, marginLeft: 'auto' }}>{MEDALS[rank - 1]}</span>}
               </div>
-              {rank <= 3 ? (
-                <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 6 }}>
-                  {MEDALS[rank - 1]}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2, marginBottom: 6 }}>
-                  <span style={{ fontSize: 58, fontWeight: 900, color: '#00abe9', lineHeight: 1 }}>{rank}</span>
-                  <span style={{ fontSize: 22, fontWeight: 700, color: '#00abe9' }}>e</span>
-                </div>
-              )}
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
-                sur {ranking.length} participant{ranking.length > 1 ? 's' : ''}
-              </div>
+              {msg && <div style={{ fontSize: 14, color: t.doux, marginTop: 8, lineHeight: 1.5 }}>{msg.text}</div>}
               {myEntry?.total > 0 && (
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>
-                  Classement basé sur ton taux de bonnes réponses : {Math.round((myEntry.rate || 0) * 100)}%
-                </div>
+                <div style={{ fontSize: 12, color: t.tresDoux, marginTop: 6 }}>Classement basé sur ton taux de bonnes réponses : {Math.round((myEntry.rate || 0) * 100)} %</div>
               )}
-            </div>
+            </>
           )}
+
+          <ParticipantBadges badges={badges} t={t} />
         </>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+        <div>
           {!quizHistory?.length ? (
-            <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.4)', padding: '32px 0' }}>
-              Aucun quiz fait pour l'instant.
-            </div>
-          ) : groupQuizHistoryByDay(quizHistory).map(group => (
+            <div style={{ fontSize: 14, color: t.doux, padding: '32px 0', textAlign: 'center' }}>Aucun quiz fait pour l&apos;instant.</div>
+          ) : groupQuizHistoryByDay(quizHistory).map((group, gi) => (
             <div key={group.label}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{
-                  width: 20, height: 20, borderRadius: 6, flexShrink: 0,
-                  background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.3)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 800, color: '#00abe9',
-                }}>{group.badge}</span>
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#00abe9', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  {group.label}
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {group.items.map(h => {
-                  const color = h.pct >= 70 ? '#16a34a' : h.pct >= 40 ? '#d97706' : '#dc2626'
+              <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: t.accent, fontWeight: 700, paddingBottom: 8, borderBottom: clair ? 'none' : `1px solid ${t.trait}`, marginTop: gi ? 24 : 0 }}>{group.label}</div>
+              <ListeTel t={t}>
+                {group.items.map((h, i) => {
+                  const color = h.pct >= 70 ? t.vert : h.pct >= 40 ? t.orange : t.rouge
                   return (
-                    <div key={h.moduleId} style={{
-                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-                      borderRadius: 14, padding: '14px 16px',
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                    }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{h.label}</div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color }}>{h.correct}/{h.total} · {h.pct}%</div>
+                    <div key={h.moduleId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 14px', borderTop: i ? `1px solid ${t.trait}` : 'none' }}>
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>{h.label}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{h.correct}/{h.total} · {h.pct} %</span>
                     </div>
                   )
                 })}
-              </div>
+              </ListeTel>
             </div>
           ))}
         </div>
       )}
       </div>
       <style>{`@keyframes dashTabIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-    </div>
+    </PageTel>
   )
 }
 
@@ -512,14 +436,19 @@ function useParticipantRanking(pName, sessionCode, { pollMs = 12000 } = {}) {
           byModule[r.module_id].total++
           if (r.is_correct) byModule[r.module_id].correct++
         }
+        // Total = nombre de questions du quiz (19/11) : une question manquée
+        // compte comme non réussie au lieu de disparaître (« 25/29 » → « 25/30 »)
         const history = Object.entries(byModule)
-          .map(([mid, s]) => ({
-            moduleId: mid,
-            label: MODULE_DATA[mid]?.label || mid,
-            correct: s.correct,
-            total: s.total,
-            pct: s.total ? Math.round((s.correct / s.total) * 100) : 0,
-          }))
+          .map(([mid, s]) => {
+            const total = Math.max(s.total, MODULE_DATA[mid]?.quiz?.length || 0)
+            return {
+              moduleId: mid,
+              label: MODULE_DATA[mid]?.label || mid,
+              correct: s.correct,
+              total,
+              pct: total ? Math.round((s.correct / total) * 100) : 0,
+            }
+          })
           .sort((a, b) => a.label.localeCompare(b.label))
         setQuizHistory(history)
         setBadges(computeBadges({ quizRows, quizHistory: history }))
@@ -545,20 +474,14 @@ export function ParticipantDashboard({ pName, sessionCode }) {
 }
 
 function ParticipantModuleLobby({ moduleLabel, moduleSub }) {
+  const t = useThemeTel()
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: '40px 24px', textAlign: 'center',
-    }}>
-      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={140} height={52}
-        style={{ objectFit: 'contain', marginBottom: 40 }} />
-      <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>
-        {moduleLabel}
-      </div>
-    </div>
+    <PageTel t={t} centre>
+      <div style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: t.accent, fontWeight: 700 }}>Prochain module</div>
+      <TitreTel t={t} style={{ marginTop: 12 }}>{moduleLabel}</TitreTel>
+      {moduleSub && <p style={{ fontSize: 14, color: t.doux, marginTop: 10, lineHeight: 1.5 }}>{moduleSub}</p>}
+      <PointAttente t={t}>Le formateur va lancer le module…</PointAttente>
+    </PageTel>
   )
 }
 
@@ -596,71 +519,62 @@ function ParticipantQuizRanking({ pName, moduleId, qIdx }) {
   }, [pName, moduleId, qIdx])
 
   const total = qIdx + 1
-  const MEDALS = ['🥇', '🥈', '🥉']
+  const t = useThemeTel()
+  const clair = t.mode === 'clair'
+  const MEDAILLES = ['🥇', '🥈', '🥉']
+  const suffixe = (r) => (r === 1 ? 'er' : 'e')
 
+  // Même DA que les écrans quiz du téléphone (19/11) : fond uni, typo fine,
+  // lignes en mode sombre, cartes blanches en mode clair
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: 'linear-gradient(135deg, #020d1f 0%, #071832 50%, #0a2040 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      padding: '40px 24px', color: '#fff',
-    }}>
-      {/* Mon score */}
-      <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        <div style={{ fontSize: 48, marginBottom: 8 }}>
-          {myRank === 1 ? '🥇' : myRank === 2 ? '🥈' : myRank === 3 ? '🥉' : '🏅'}
-        </div>
-        <div style={{
-          background: 'rgba(0,171,233,0.12)', border: '1px solid rgba(0,171,233,0.35)',
-          borderRadius: 20, padding: '6px 22px', display: 'inline-block',
-          fontSize: 12, fontWeight: 700, color: '#00abe9', letterSpacing: 2, textTransform: 'uppercase',
-          marginBottom: 14,
-        }}>Ton classement</div>
-        <div style={{ fontSize: 28, fontWeight: 900, marginBottom: 4 }}>
-          {myRank != null ? `${myRank}${myRank === 1 ? 'er' : 'ème'} sur ${ranking.length}` : '…'}
-        </div>
-        <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.55)' }}>
-          {myScore != null ? `${myScore} bonne${myScore > 1 ? 's' : ''} réponse${myScore > 1 ? 's' : ''} sur ${total} question${total > 1 ? 's' : ''}` : ''}
-        </div>
+    <div style={{ minHeight: '100dvh', background: t.fond, color: t.texte, display: 'flex', flexDirection: 'column', animation: 'quizScreenIn .3s ease' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 'max(16px, env(safe-area-inset-top)) 22px 0' }}>
+        <span style={{ flex: 1, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: t.doux }}>Classement · après la question {total}</span>
+        <BoutonThemeTel t={t} />
       </div>
 
-      {/* Classement complet */}
-      <div style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {ranking.map((p, i) => {
-          const isMe = p.name === pName
-          const pct = total > 0 ? (p.score / total) * 100 : 0
-          return (
-            <div key={p.name} style={{
-              background: isMe ? 'rgba(0,171,233,0.15)' : 'rgba(255,255,255,0.04)',
-              border: `1.5px solid ${isMe ? 'rgba(0,171,233,0.5)' : 'rgba(255,255,255,0.08)'}`,
-              borderRadius: 14, padding: '12px 16px',
-              boxShadow: isMe ? '0 0 20px rgba(0,171,233,0.15)' : 'none',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>
-                    {i < 3 ? MEDALS[i] : `${i + 1}.`}
-                  </span>
-                  <span style={{ fontSize: 15, fontWeight: isMe ? 800 : 600, color: isMe ? '#00abe9' : '#fff' }}>
-                    {isMe ? 'Toi' : p.name}
-                  </span>
-                </div>
-                <span style={{ fontSize: 18, fontWeight: 800, color: isMe ? '#00abe9' : '#fff' }}>
-                  {p.score}<span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: 400, marginLeft: 2 }}>pts</span>
-                </span>
-              </div>
-              <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%', borderRadius: 3,
-                  width: `${pct}%`,
-                  background: isMe ? '#00abe9' : 'rgba(255,255,255,0.25)',
-                  transition: 'width .5s ease',
-                }} />
-              </div>
-            </div>
-          )
-        })}
+      <div style={{ padding: '30px 26px 0' }}>
+        <div style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: t.accent, fontWeight: 700 }}>Ton classement</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 10 }}>
+          <span style={{ fontSize: 64, fontWeight: 300, lineHeight: 1 }}>{myRank ?? '…'}</span>
+          {myRank != null && <span style={{ fontSize: clair ? 22 : 20, color: t.doux }}>{suffixe(myRank)} / {ranking.length}</span>}
+          {myRank != null && myRank <= 3 && <span style={{ fontSize: 34, marginLeft: 'auto' }}>{MEDAILLES[myRank - 1]}</span>}
+        </div>
+        {myScore != null && (
+          <div style={{ fontSize: 15, color: t.doux, marginTop: 10 }}>
+            <b style={{ color: t.texte }}>{myScore} bonne{myScore > 1 ? 's' : ''} réponse{myScore > 1 ? 's' : ''}</b> sur {total} question{total > 1 ? 's' : ''}
+          </div>
+        )}
       </div>
+
+      <div style={{ padding: '26px 22px 14px', flex: 1 }}>
+        <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: t.doux, paddingBottom: 8, borderBottom: clair ? 'none' : `1px solid ${t.trait}` }}>Le groupe</div>
+        <div style={clair ? { marginTop: 6, background: t.carte, borderRadius: 14, boxShadow: t.ombre, overflow: 'hidden' } : {}}>
+          {ranking.map((p, i) => {
+            const moi = p.name === pName
+            const pct = total > 0 ? (p.score / total) * 100 : 0
+            return (
+              <div key={p.name} style={{
+                padding: '13px 14px', borderTop: i ? `1px solid ${t.trait}` : 'none',
+                borderLeft: `3px solid ${moi ? t.accent : 'transparent'}`,
+                background: moi ? (clair ? 'rgba(168,134,26,0.08)' : 'rgba(201,162,39,0.08)') : 'transparent',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ width: 26, textAlign: 'center', fontSize: i < 3 ? 18 : 14, color: i < 3 ? t.texte : t.doux, fontVariantNumeric: 'tabular-nums' }}>{i < 3 ? MEDAILLES[i] : i + 1}</span>
+                  <span style={{ flex: 1, fontSize: 15, fontWeight: moi ? 800 : 500, color: t.texte, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {moi ? 'Toi' : p.name}
+                  </span>
+                  <span style={{ fontSize: 18, fontWeight: 300, fontVariantNumeric: 'tabular-nums' }}>{p.score}<span style={{ fontSize: 12, color: t.tresDoux, marginLeft: 3 }}>/ {total}</span></span>
+                </div>
+                <div style={{ marginLeft: 38, marginTop: 8, height: 2, background: t.trait }}>
+                  <div style={{ width: `${pct}%`, height: '100%', background: moi ? t.accent : t.doux, transition: 'width .5s ease' }} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      <div style={{ padding: '0 22px max(22px, env(safe-area-inset-bottom))', textAlign: 'center', fontSize: 13, color: t.doux }}>En attente de la prochaine question…</div>
     </div>
   )
 }
@@ -808,10 +722,14 @@ function CadreEnteteTel({ t, q, qIdx, total, moduleId, remaining }) {
         <style>{`@keyframes quizTimerPulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }`}</style>
       </div>
       {q?.question && (
-        <div style={{ margin: '20px 22px 0', borderLeft: `2px solid ${t.accent}`, paddingLeft: 14 }}>
-          {famille && <div style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: t.accent, fontWeight: 700 }}>{famille}</div>}
-          <div style={{ fontSize: q.question.length > 90 ? 18 : 20, fontWeight: t.titreSerif ? 600 : 700, fontFamily: t.titreSerif ? 'Georgia, serif' : 'inherit', lineHeight: 1.25, marginTop: 6 }}>{q.question}</div>
-          {q.ordonnance && q.type !== 'ordonnance-fill' && <OrdonnanceTel t={t} q={q} />}
+        <div style={{ margin: '20px 22px 0', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0, borderLeft: `2px solid ${t.accent}`, paddingLeft: 14 }}>
+            {famille && <div style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: t.accent, fontWeight: 700 }}>{famille}</div>}
+            <div style={{ fontSize: q.question.length > 90 ? 18 : 20, fontWeight: t.titreSerif ? 600 : 700, fontFamily: t.titreSerif ? 'Georgia, serif' : 'inherit', lineHeight: 1.25, marginTop: 6 }}>{q.question}</div>
+            {q.ordonnance && q.type !== 'ordonnance-fill' && <OrdonnanceTel t={t} q={q} />}
+          </div>
+          {/* Lipto réfléchit avec le formé — réapparaît à chaque question */}
+          <Lipto key={qIdx} {...LIPTO_REACTIONS.question} taille={72} t={t} />
         </div>
       )}
     </>
@@ -1055,9 +973,17 @@ function QuizResultScreen({ isCorrect, pName, moduleId, timedOut }) {
   return <EcranResultatQuizVue isCorrect={isCorrect} timedOut={timedOut} rankInfo={rankInfo} serie={serie} />
 }
 
+// L'écran résultat signale quand il s'affiche : le téléphone le garde alors
+// quelques secondes avant de passer au classement (19/11 — le dernier à
+// répondre déclenchait la correction et ne voyait son résultat qu'1 seconde).
+const ResultatAfficheCtx = createContext(null)
+const DUREE_MIN_RESULTAT_MS = 4000
+
 // Affichage de l'écran résultat (sans accès aux données) — séparé pour pouvoir
 // le prévisualiser avec des données de test.
 export function EcranResultatQuizVue({ isCorrect, timedOut, rankInfo, serie }) {
+  const signalerResultat = useContext(ResultatAfficheCtx)
+  useEffect(() => { signalerResultat?.() }, [signalerResultat])
   const t = useThemeTel()
   const clair = t.mode === 'clair'
   const couleur = timedOut ? t.orange : isCorrect ? t.vert : t.rouge
@@ -1068,9 +994,14 @@ export function EcranResultatQuizVue({ isCorrect, timedOut, rankInfo, serie }) {
     serie?.xpSemaine != null && { libelle: 'XP de la semaine', valeur: serie.xpSemaine },
   ].filter(Boolean)
   return (
-    <div style={{ minHeight: '100dvh', background: t.fond, color: t.texte, display: 'flex', flexDirection: 'column', animation: 'quizScreenIn .3s ease' }}>
+    <div style={{ minHeight: '100dvh', background: t.fond, color: t.texte, display: 'flex', flexDirection: 'column', animation: 'quizScreenIn .3s ease', overflowX: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', padding: 'max(16px, env(safe-area-inset-top)) 22px 0' }}><BoutonThemeTel t={t} /></div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 26px' }}>
+        <div style={{ alignSelf: 'flex-start', marginBottom: 20 }}>
+          {isCorrect && !timedOut
+            ? <Lipto {...LIPTO_REACTIONS.juste} message={null} taille={150} t={t} />
+            : <Lipto {...LIPTO_REACTIONS.faux} message={timedOut ? 'Le temps file vite ! Tu feras mieux à la prochaine.' : LIPTO_REACTIONS.faux.message} taille={150} bulle="droite" t={t} />}
+        </div>
         {clair
           ? <div style={{ width: 54, height: 54, borderRadius: '50%', background: couleur, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800 }}>{timedOut ? '⏱' : isCorrect ? '✓' : '✗'}</div>
           : <div style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: couleur, fontWeight: 700 }}>{timedOut ? '⏱' : isCorrect ? '✓' : '✗'} {titre}</div>}
@@ -1191,6 +1122,9 @@ function QuizSubmittedWaiting({ moduleId, qIdx, pName, timedOut }) {
     <div style={{ minHeight: '100dvh', background: t.fond, color: t.texte, display: 'flex', flexDirection: 'column', animation: 'quizScreenIn .3s ease' }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', padding: 'max(16px, env(safe-area-inset-top)) 22px 0' }}><BoutonThemeTel t={t} /></div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 26px' }}>
+        <div style={{ alignSelf: 'flex-start', marginBottom: 22 }}>
+          <Lipto {...LIPTO_REACTIONS.attente} taille={104} bulle="droite" t={t} />
+        </div>
         <div style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: t.accent, fontWeight: 700 }}>{timedOut ? '⏱ Temps écoulé' : '✍️ Réponse envoyée'}</div>
         <div style={{ fontSize: 28, fontWeight: t.titreSerif ? 600 : 800, fontFamily: t.titreSerif ? 'Georgia, serif' : 'inherit', lineHeight: 1.15, marginTop: 10 }}>En attente de la validation du formateur…</div>
         {total > 0 ? (
@@ -1716,7 +1650,9 @@ function QuizOrdonnanceFill({ pName, q, qIdx, moduleId, total }) {
       {/* Corps scrollable */}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 16px 8px' }}>
         <div style={{ fontSize: 12, color: t.doux, fontWeight: 600, textAlign: 'center', marginBottom: 16 }}>
-          Regardez l&apos;ordonnance sur l&apos;écran et saisissez les valeurs
+          {q.answerOverride
+            ? <>Regardez l&apos;ordonnance sur l&apos;écran et saisissez le résultat de votre calcul</>
+            : <>Regardez l&apos;ordonnance sur l&apos;écran et saisissez les valeurs</>}
         </div>
 
         {/* En-têtes colonnes */}
@@ -1889,7 +1825,8 @@ function QuizQCMAnswer({ pName, q, qIdx, quiz, moduleId }) {
     if (optIdx === -1) setTimedOut(true)
     setSaving(true)
     setSaveError(false)
-    const isCorrect = optIdx === q.correct
+    // Plusieurs bonnes réponses acceptées (une seule à choisir) : ex. simulation finale, scénario 2
+    const isCorrect = Array.isArray(q.correct) ? q.correct.includes(optIdx) : optIdx === q.correct
     try {
       const saved = await saveModuleQuizAnswer({
         sessionCode: getParticipantSessionCode(),
@@ -1930,6 +1867,8 @@ function QuizQCMAnswer({ pName, q, qIdx, quiz, moduleId }) {
 function QuizAnswerScreen({ pName, qIdx, quiz, moduleId }) {
   const q = quiz[qIdx]
   const type = q?.type || 'qcm'
+  // Simulation finale : scène où Lipto parle, sans question à répondre
+  if (type === 'scene') return <WatchDiffuserMobile moduleLabel={MODULE_DATA[moduleId]?.label} titre={`Lipto : « ${q.simulation?.bulle || ''} »`} />
   if (type === 'text-open') return <QuizTextOpen pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} total={quiz.length} />
   if (type === 'text-open-multi') return <QuizTextOpenMulti pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} total={quiz.length} />
   if (type === 'text-open-pairs') return <QuizTextOpenPairs pName={pName} q={q} qIdx={qIdx} moduleId={moduleId} total={quiz.length} />
@@ -1945,6 +1884,9 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
   const [displayedScore, setDisplayedScore] = useState(0)
   const [displayedXP, setDisplayedXP] = useState(0)
   const [cardsVisible, setCardsVisible] = useState(false)
+  // Réponses libres envoyées mais pas encore validées par le formateur :
+  // tant qu'il en reste, Lipto ne réagit pas au score (score provisoire)
+  const [enAttente, setEnAttente] = useState(0)
 
   useEffect(() => {
     const name = pName || 'Anonyme'
@@ -1958,6 +1900,10 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
         const rows = await sbSelect('quiz_answers', `session_code=eq.${getParticipantSessionCode()}&module_id=eq.${moduleId}&collaborateur=eq.${encodeURIComponent(name)}`)
         data = rows || []
         setAnswers(data)
+        const libres = await sbSelect('open_answers', `session_code=eq.${encodeURIComponent(getParticipantSessionCode())}&participant_name=eq.${encodeURIComponent(name.trim())}&page_id=like.${encodeURIComponent(moduleId)}:*`)
+        const corrigees = new Set(data.map(r => r.question_idx))
+        const envoyees = new Set((libres || []).map(r => Number(String(r.page_id).split(':').pop())).filter(i => Number.isInteger(i)))
+        setEnAttente([...envoyees].filter(i => !corrigees.has(i)).length)
       } catch { /* best-effort */ } finally {
         setLoading(false)
       }
@@ -1990,7 +1936,10 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
 
   const answerMap = {}
   answers.forEach(row => { answerMap[row.question_idx] = row })
-  const total = quiz.length
+  // Simulation finale : seules les scènes jouées comptent (un seul scénario
+  // est joué, et les scènes « Lipto répond » n'ont pas de question)
+  const simulation = quiz.some(q => q.simulation)
+  const total = simulation ? answers.length : quiz.length
   const correct = answers.filter(r => r.is_correct).length
   const xp = correct * 10
 
@@ -2033,100 +1982,81 @@ function PersonalResultsScreen({ pName, quiz, moduleId }) {
     return () => clearTimeout(delay)
   }, [loading])
 
+  const t = useThemeTel()
+  const clair = t.mode === 'clair'
+  const pct = total > 0 ? Math.round((correct / total) * 100) : 0
+
+  // Même DA que les écrans quiz du téléphone (19/11)
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 100%)',
-      padding: '40px 20px 60px',
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-    }}>
-      {/* Header label */}
-      <div style={{
-        background: 'rgba(0,171,233,0.15)', border: '1px solid rgba(0,171,233,0.35)',
-        borderRadius: 20, padding: '6px 20px',
-        fontSize: 11, fontWeight: 700, color: '#00abe9',
-        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 28,
-      }}>Résultats du quiz</div>
+    <div style={{ minHeight: '100dvh', background: t.fond, color: t.texte, overflowX: 'hidden', display: 'flex', flexDirection: 'column', animation: 'quizScreenIn .3s ease' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 'max(16px, env(safe-area-inset-top)) 22px 0' }}>
+        <span style={{ flex: 1, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: t.doux }}>Résultats du quiz</span>
+        <BoutonThemeTel t={t} />
+      </div>
 
-      {/* Big score */}
-      <div style={{ textAlign: 'center', marginBottom: 20 }}>
-        <div style={{ fontSize: 72, fontWeight: 900, color: '#fff', lineHeight: 1 }}>
-          {displayedScore}<span style={{ fontSize: 32, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>/{total}</span>
+      {/* Lipto réagit au score final, seulement une fois tout corrigé */}
+      {!loading && total > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 26 }}>
+          {enAttente > 0
+            ? <Lipto {...LIPTO_REACTIONS.finEnAttente} taille={150} t={t} />
+            : <Lipto key={`fin-${correct}`} {...liptoFinDeQuiz(pct)} taille={160} t={t} />}
         </div>
-        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>bonne{correct !== 1 ? 's' : ''} réponse{correct !== 1 ? 's' : ''}</div>
-        {total > 0 && (
-          <div style={{ fontSize: 15, fontWeight: 800, color: '#00abe9', marginTop: 8 }}>
-            {Math.round((correct / total) * 100)}% de bonnes réponses
+      )}
+
+      {/* Score */}
+      <div style={{ textAlign: 'center', marginTop: 26 }}>
+        <div style={{ fontSize: 72, fontWeight: 300, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+          {displayedScore}<span style={{ fontSize: 26, color: t.doux }}> / {total}</span>
+        </div>
+        <div style={{ fontSize: 14, color: t.doux, marginTop: 8 }}>bonne{correct !== 1 ? 's' : ''} réponse{correct !== 1 ? 's' : ''}</div>
+        {total > 0 && (enAttente > 0 ? (
+          <div style={{ fontSize: 14, fontWeight: 600, color: t.doux, marginTop: 10 }}>
+            Score provisoire · {enAttente} réponse{enAttente > 1 ? 's' : ''} en cours de correction
           </div>
-        )}
+        ) : (
+          <div style={{ fontSize: 15, fontWeight: 700, color: t.texte, marginTop: 10 }}>{pct} % de bonnes réponses</div>
+        ))}
+        <div style={{ display: 'inline-block', marginTop: 16, padding: '7px 18px', borderRadius: 999, border: `1px solid ${t.accent}`, color: t.accent, fontSize: 16, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>
+          +{displayedXP} XP
+        </div>
       </div>
 
-      {/* XP badge */}
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: 8,
-        background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.4)',
-        borderRadius: 20, padding: '8px 20px', marginBottom: 36,
-      }}>
-        <span style={{ fontSize: 20, fontWeight: 900, color: '#a78bfa' }}>+{displayedXP} XP</span>
-      </div>
-
-      {/* Question cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 420 }}>
-        {quiz.map((q, idx) => {
-          const row = answerMap[idx]
-          const isCorrect = row ? row.is_correct : null
-          const chosenIdx = row ? row.answer_idx : null
-          const chosenText = (chosenIdx != null && q.options) ? q.options[chosenIdx] : null
-          const correctText = q.options
-            ? (Array.isArray(q.correct) ? q.correct.map(i => q.options[i]).filter(Boolean).join(' + ') : q.options[q.correct])
-            : (q.hint || null)
-
-          return (
-            <div key={idx} style={{
-              background: isCorrect ? 'rgba(34,197,94,0.08)' : isCorrect === false ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${isCorrect ? 'rgba(34,197,94,0.3)' : isCorrect === false ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)'}`,
-              borderRadius: 18, padding: '16px 18px',
-              opacity: cardsVisible ? 1 : 0,
-              animation: cardsVisible ? `fadeSlideUp .4s ease ${idx * 0.1}s both` : 'none',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: isCorrect === false ? 10 : 0 }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                  background: isCorrect ? 'rgba(34,197,94,0.2)' : isCorrect === false ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.1)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 800, color: '#fff',
-                }}>Q{idx + 1}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', lineHeight: 1.4, marginBottom: 4 }}>
-                    {q.question}
+      {/* Détail question par question */}
+      <div style={{ padding: '30px 22px max(30px, env(safe-area-inset-bottom))' }}>
+        <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: t.doux, paddingBottom: 8, borderBottom: clair ? 'none' : `1px solid ${t.trait}` }}>Tes réponses</div>
+        <div style={clair ? { marginTop: 6, background: t.carte, borderRadius: 14, boxShadow: t.ombre, overflow: 'hidden' } : {}}>
+          {quiz.map((q, idx) => {
+            if (simulation && !answerMap[idx]) return null
+            const row = answerMap[idx]
+            const isCorrect = row ? row.is_correct : null
+            const chosenIdx = row ? row.answer_idx : null
+            const chosenText = (chosenIdx != null && q.options) ? q.options[chosenIdx] : null
+            const correctText = q.options
+              ? (Array.isArray(q.correct) ? q.correct.map(i => q.options[i]).filter(Boolean).join(' + ') : q.options[q.correct])
+              : (q.hint || null)
+            const couleur = isCorrect ? t.vert : isCorrect === false ? t.rouge : t.tresDoux
+            return (
+              <div key={idx} style={{
+                display: 'grid', gridTemplateColumns: '34px 1fr', gap: 10, padding: '14px 14px',
+                borderTop: idx ? `1px solid ${t.trait}` : 'none', borderLeft: `3px solid ${couleur}`,
+                opacity: cardsVisible ? 1 : 0, animation: cardsVisible ? `fadeSlideUp .4s ease ${Math.min(idx, 12) * 0.06}s both` : 'none',
+              }}>
+                <span style={{ fontSize: 11, letterSpacing: 1, color: t.doux, paddingTop: 2 }}>Q{idx + 1}</span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.35 }}>{q.question}</div>
+                  <div style={{ fontSize: 13, marginTop: 5, color: couleur, fontWeight: 600 }}>
+                    {!row ? '— Sans réponse'
+                      : chosenText ? `${isCorrect ? '✓' : '✗'} ${chosenText}`
+                        : isCorrect ? '✓ Bonne réponse' : isCorrect === false ? '✗ À retravailler' : '…'}
                   </div>
-                  {chosenText && (
-                    <div style={{ fontSize: 12, color: isCorrect ? '#4ade80' : '#f87171', fontWeight: 600 }}>
-                      {isCorrect ? '✅' : '❌'} {chosenText}
-                    </div>
-                  )}
-                  {!chosenText && row && isCorrect !== null && (
-                    <div style={{ fontSize: 12, color: isCorrect ? '#4ade80' : '#f87171', fontWeight: 600 }}>
-                      {isCorrect ? '✅ Bonne réponse' : '❌ À retravailler'}
-                    </div>
-                  )}
-                  {!row && (
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>— Sans réponse</div>
+                  {isCorrect === false && correctText && (
+                    <div style={{ fontSize: 13, marginTop: 4, color: t.doux }}>Bonne réponse : <b style={{ color: t.texte }}>{correctText}</b></div>
                   )}
                 </div>
               </div>
-              {isCorrect === false && (
-                <div style={{
-                  background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)',
-                  borderRadius: 10, padding: '8px 12px',
-                  fontSize: 12, color: '#4ade80', fontWeight: 600,
-                }}>
-                  Bonne réponse : {correctText}
-                </div>
-              )}
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
     </div>
   )
@@ -5070,38 +5000,14 @@ function SAVContentMobile({ page, pageIndex, total }) {
 // Écran générique « regardez le diffuseur » pour les phases pilotées par un
 // module_page hors des pages normales (ex : animation PDM sur plage 1000+).
 function WatchDiffuserMobile({ moduleLabel, titre }) {
+  const t = useThemeTel()
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: 'linear-gradient(160deg, #03112a 0%, #0a2a5c 65%, #00abe915 100%)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: '40px 24px', textAlign: 'center',
-    }}>
-      <Image src="/assets/logo-lpt-blanc.png" alt="LPT" width={110} height={42}
-        style={{ objectFit: 'contain', marginBottom: 40 }} />
-      <div style={{
-        display: 'inline-block',
-        background: '#00abe920', border: '1px solid #00abe940',
-        borderRadius: 20, padding: '3px 14px',
-        fontSize: 10, fontWeight: 700, color: '#00abe9',
-        textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 12,
-      }}>{moduleLabel || 'Formation LPT'}</div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.3, marginBottom: 10 }}>
-        {titre}
-      </div>
-      <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: 300, marginBottom: 36 }}>
-        Regardez l&apos;écran de diffusion et suivez le formateur
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {[0, 1, 2].map(i => (
-          <div key={i} style={{
-            width: 7, height: 7, borderRadius: '50%', background: '#00abe9',
-            animation: `waitDot 1.4s ease-in-out ${i * 0.25}s infinite`,
-          }} />
-        ))}
-      </div>
-    </div>
+    <PageTel t={t} centre>
+      <div style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: t.accent, fontWeight: 700 }}>{moduleLabel || 'Formation LPT'}</div>
+      <TitreTel t={t} style={{ marginTop: 12 }}>{titre}</TitreTel>
+      <p style={{ fontSize: 15, color: t.doux, lineHeight: 1.6, maxWidth: 300, marginTop: 12 }}>Regardez l&apos;écran de diffusion et suivez le formateur</p>
+      <PointAttente t={t}>En cours sur le grand écran</PointAttente>
+    </PageTel>
   )
 }
 
@@ -6126,6 +6032,20 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   const activeModule  = forcedModule ?? sync.activeModule
   const modulePage    = forcedPage   ?? sync.modulePage
   const sharedState   = sharedStateProp ?? sync.sharedState
+  // Dernier écran résultat affiché ({ page, at }) — cf. ResultatAfficheCtx
+  const [resultatAffiche, setResultatAffiche] = useState(null)
+  const pageCouranteRef = useRef(modulePage)
+  pageCouranteRef.current = modulePage
+  const [signalerResultat] = useState(() => () => setResultatAffiche({ page: pageCouranteRef.current, at: Date.now() }))
+  // Réaffichage à la fin du délai (sinon rien ne redéclenche le rendu)
+  const [, setFinDelai] = useState(0)
+  useEffect(() => {
+    if (!resultatAffiche || !sharedState?.quiz_show_correction) return
+    const reste = DUREE_MIN_RESULTAT_MS - (Date.now() - resultatAffiche.at)
+    if (reste <= 0) return
+    const t = setTimeout(() => setFinDelai(n => n + 1), reste + 50)
+    return () => clearTimeout(t)
+  }, [resultatAffiche, sharedState?.quiz_show_correction])
   const [planningDay, setPlanningDay]         = useState(null)
   const [tvScreen, setTvScreen]               = useState(null)
   const [progZoneQ, setProgZoneQ]             = useState(null)
@@ -6219,7 +6139,12 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   // sort automatiquement (même garde-fou que côté TV) pour ne jamais rester bloqué dessus.
   const interstitialQ = sharedState?.quiz_interstitial_q
   const quizPodiumActive    = interstitialQ != null && !(qIdx > interstitialQ)
-  const quizShowCorrection  = !!sharedState?.quiz_show_correction
+  const quizShowCorrectionBrut = !!sharedState?.quiz_show_correction
+  // Résultat de CETTE question affiché depuis moins de 4 s → on le laisse
+  // visible avant le classement. Sans réponse (aucun résultat affiché), le
+  // classement s'affiche tout de suite, comme avant.
+  const resultatRecent = resultatAffiche?.page === modulePage && Date.now() - resultatAffiche.at < DUREE_MIN_RESULTAT_MS
+  const quizShowCorrection = quizShowCorrectionBrut && !resultatRecent
 
   if (sessionEnded) return <SessionEndedScreen />
 
@@ -6326,7 +6251,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
   }
 
   return (
-    <>
+    <ResultatAfficheCtx.Provider value={signalerResultat}>
       <style>{STYLES}</style>
       {alertMessage && (
         <AlertPopup message={alertMessage} onDismiss={() => {
@@ -6363,7 +6288,7 @@ function ParticipantModuleContent({ forcedModule, forcedPage, pName, sharedState
                     ? <FAQInputMobile journeeId={faqJournee} />
                     : <ParticipantDashboard pName={pName} sessionCode={sessionCode} />
       }
-    </>
+    </ResultatAfficheCtx.Provider>
   )
 }
 

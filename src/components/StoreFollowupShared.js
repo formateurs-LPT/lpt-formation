@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import {
   STATUS_META, SCORE_ORDER, SCORE_LABELS, scoreToStatus, collaborateurFullName,
@@ -1370,19 +1370,7 @@ export function ItemRow({ item, entry, pastEntries, onSetScore, onSaveNote, onRe
   )
 }
 
-export function CollaborateurFiche({ store, sectionId, collaborateur, progress, history, onSetScore, onSaveNote, onReset, onBack, pName, role = 'formateur', showModulesApresFormation = false }) {
-  const items = getSkillItems(sectionId, isBelgiqueStore(store.id))
-  const categories = useMemo(() => {
-    const groups = {}
-    for (const it of items) {
-      if (!groups[it.category]) groups[it.category] = []
-      groups[it.category].push(it)
-    }
-    return groups
-  }, [items])
-
-  const acquisCount = items.filter(it => progress[`${collaborateur.id}:${it.id}`]?.status === 'acquis').length
-
+export function CollaborateurFiche({ store, collaborateur, onBack, pName, role = 'formateur' }) {
   return (
     <div className="dash-wrap">
       <BackBtn onClick={onBack}>← {store.label}</BackBtn>
@@ -1401,32 +1389,13 @@ export function CollaborateurFiche({ store, sectionId, collaborateur, progress, 
           <p style={{ color: 'var(--dh-subtitle)' }}>
             {store.label} · {collaborateur.contrat}
             {collaborateur.entree && ` · Entrée le ${formatDateFr(collaborateur.entree)} (${tenureLabel(collaborateur.entree)})`}
-            {' '}· {acquisCount}/{items.length} items acquis
           </p>
         </div>
       </div>
 
-      {Object.entries(categories).map(([category, catItems]) => (
-        <div key={category} style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--dh-text-soft)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>{category}</div>
-          {catItems.map(item => (
-            <ItemRow
-              key={item.id}
-              item={item}
-              entry={progress[`${collaborateur.id}:${item.id}`]}
-              pastEntries={history[`${collaborateur.id}:${item.id}`]}
-              onSetScore={onSetScore}
-              onReset={onReset}
-              onSaveNote={onSaveNote}
-              readOnly={role === 'manager'}
-            />
-          ))}
-        </div>
-      ))}
-
       <RetourFormationSection store={store} collaborateur={collaborateur} />
 
-      {showModulesApresFormation && <ModulesApresFormationSection store={store} collaborateur={collaborateur} creerFicheSiAbsente />}
+      <ModulesApresFormationSection store={store} collaborateur={collaborateur} creerFicheSiAbsente />
 
       <CollaborateurNotesSection store={store} collaborateur={collaborateur} pName={pName} role={role} />
     </div>

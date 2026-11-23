@@ -1,5 +1,5 @@
 'use client'
-import { IconHome, IconMapPin, IconSend, IconStar, IconMessageCircle, IconClipboard, IconHelpCircle, IconBarChart, IconBell } from './ManagerIcons'
+import { IconHome, IconMapPin, IconSend, IconStar, IconMessageCircle, IconClipboard, IconHelpCircle, IconBarChart, IconBell, IconTarget, IconVideo } from './ManagerIcons'
 
 // Le détail de quelle activeView appartient à quelle catégorie (et quelle vue
 // sert de "porte d'entrée" par défaut) vit dans Dashboard.js, pas ici : ce
@@ -15,6 +15,8 @@ export const TRAINER_CATEGORIES = [
   { id: 'demandes', label: "Demandes d'intervention", Icon: IconSend },
   { id: 'evaluations', label: 'Évaluations & notes', Icon: IconStar },
   { id: 'retour-formation', label: 'Retour formation', Icon: IconMessageCircle },
+  { id: 'audit-formateurs', label: 'Audit compétences', Icon: IconTarget },
+  { id: 'atelier-lipto', label: 'Atelier Lipto', Icon: IconVideo },
   { id: 'fiches-pratiques', label: 'Fiches pratiques', Icon: IconClipboard },
   { id: 'idees', label: 'Idées & remontées', Icon: IconHelpCircle },
 ]

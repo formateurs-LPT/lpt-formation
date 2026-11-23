@@ -10,6 +10,7 @@ import {
   ensureSession,
 } from './supabase'
 import { normalizeNameKey, isTrainerAccount, TEST_ACCOUNT_KEYS, trainerAccountPrenom } from './trainerAccounts'
+import { fauxCandidat, nomFauxCandidat, estFauxCandidat } from './fauxCandidats'
 
 // Ré-exportées ici pour compatibilité — tout le code existant importe ces deux
 // fonctions depuis participantNames.js. Leur définition vit dans trainerAccounts.js
@@ -271,6 +272,13 @@ export async function resolveParticipantName(rawInput) {
     return { ok: true, canonicalName: raw, prenom: trainerAccountPrenom(raw) || raw.split(' ')[0], entry: { _isTest: true } }
   }
 
+  // Faux candidats de la salle test : reconnus sans la liste RH, et ne
+  // peuvent rejoindre que les salles test (cf. fauxCandidats.js)
+  const faux = fauxCandidat(raw)
+  if (faux) {
+    return { ok: true, canonicalName: nomFauxCandidat(faux), prenom: faux.prenom, entry: { ...faux } }
+  }
+
   const sessionCode = getRuntimeSessionCode()
   if (!sessionCode) {
     return { ok: false, reason: 'no_session_code' }
@@ -319,11 +327,13 @@ export async function resolveParticipantName(rawInput) {
 }
 
 export function filterParticipantsInRh(participants, entrees) {
-  if (!entrees?.length) return []
+  // Les faux candidats de la salle test ne sont jamais dans la liste RH
+  // mais comptent comme de vrais formés côté formateur (cf. fauxCandidats.js)
+  if (!entrees?.length) return (participants || []).filter(p => estFauxCandidat(p.name))
   const rhKeys = new Set(
     entrees.map(c => normalizeNameKey(entreeDisplayName(c))).filter(Boolean)
   )
-  return (participants || []).filter(p => rhKeys.has(normalizeNameKey(p.name)))
+  return (participants || []).filter(p => rhKeys.has(normalizeNameKey(p.name)) || estFauxCandidat(p.name))
 }
 
 export function connectedRhNameKeys(participants, entrees) {

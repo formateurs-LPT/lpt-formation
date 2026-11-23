@@ -9,6 +9,7 @@ import {
 } from '@/lib/participantNames'
 import { sbInsert, sbSelect, getSharedState, setSharedState, getActiveSessionCode, insertSessionHistory } from '@/lib/supabase'
 import { classifyMagasin } from '@/lib/formationCategories'
+import { FAUX_CANDIDATS, peutUtiliserSalleTest } from '@/lib/fauxCandidats'
 
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
@@ -672,6 +673,29 @@ export default function EntreesView({ onBack, onToast, pName }) {
           </button>
         </div>
       </div>
+
+      {/* Faux candidats permanents de la salle test — Kevin et Quentin seulement.
+          Jamais enregistrés dans la liste RH de la semaine. */}
+      {peutUtiliserSalleTest(pName) && (
+        <div style={{ border: '1px solid rgba(245,158,11,0.45)', background: 'rgba(245,158,11,0.07)', borderRadius: 'var(--r)', padding: '16px 18px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)' }}>🧪 Candidats de test · salle test uniquement</div>
+            <div style={{ fontSize: 12, color: 'var(--text-s)' }}>Visibles par Kevin et Quentin · aucune donnée gardée</div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
+            {FAUX_CANDIDATS.map(c => (
+              <div key={c.prenom} style={{ flex: '1 1 220px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px' }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{c.prenom} {c.nom}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 2 }}>{c.poste} · {c.magasin}</div>
+                <div style={{ fontSize: 12, color: 'var(--text)', marginTop: 8 }}>Connexion : nom <b>{c.nom}</b> · prénom <b>{c.prenom}</b></div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-s)', marginTop: 10, lineHeight: 1.5 }}>
+            Ouvrez votre salle en choisissant <b>🧪 Salle test</b>, puis connectez-vous sur un téléphone avec l&apos;un de ces noms (ou en scannant le QR).
+          </div>
+        </div>
+      )}
 
       {/* Paste zone */}
       {!showResults && (

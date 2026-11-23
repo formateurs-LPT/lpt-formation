@@ -25,3 +25,4 @@ npm-debug.log*
 
 # cache local du CLI Supabase (supabase functions deploy)
 supabase/.temp/
+PRODUCT.md

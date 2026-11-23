@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { sbSelect, sbUpdate, sbDelete, getSharedState, parseSessionHistorySummary, getRuntimeSessionCode, SESSION_CODE } from '@/lib/supabase'
 import StoreFollowupView from './StoreFollowupView'
@@ -19,6 +20,10 @@ import { isDynamicRoomCode, setTrainerActiveRoomCode } from '@/lib/sessionCode'
 import { loadIdeesFromSupabase, deleteIdee, voteIdee, updateIdee, clearAllIdees, addIdee } from '@/components/IdeesButton'
 import { MODULE_DATA } from '@/lib/modulesData'
 import { getQuizResultats, periodBounds } from '@/lib/collaborateursApi'
+import AuditFormateursView from './AuditFormateursView'
+import AuditFormateursReporting from './AuditFormateursReporting'
+import AtelierSimulation from './atelier/AtelierSimulation'
+import { peutUtiliserAtelier } from '@/lib/atelierSimulation'
 import DemandesInterventionView from '@/components/DemandesInterventionView'
 import { getFormateurRatings } from '@/lib/formateurRatings'
 import TachesView from '@/components/TachesView'
@@ -46,8 +51,9 @@ import GlobalRatingsView from './GlobalRatingsView'
 import PeerQuizTrainer from './PeerQuizGame'
 import { readTrainerMode, setTrainerMode, TRAINER_MODE_META } from '@/lib/trainerMode'
 import { categorySlugFromZone } from '@/lib/formationCategories'
+import { peutUtiliserSalleTest } from '@/lib/fauxCandidats'
 
-function TrainerModeToggle({ mode, onChange }) {
+function TrainerModeToggle({ mode, onChange, avecTest = false }) {
   const [open, setOpen] = useState(false)
   const [menuPos, setMenuPos] = useState(null)
   const btnRef = useRef(null)
@@ -82,7 +88,9 @@ function TrainerModeToggle({ mode, onChange }) {
       >
         {meta ? `${meta.emoji} ${meta.label}` : '⚙️ Choisir un mode'}
       </button>
-      {open && menuPos && (
+      {/* Rendu dans <body> : sinon la bannière Onboarding juste en dessous
+          (contexte d'empilement à part) captait les clics des dernières options */}
+      {open && menuPos && createPortal(
         <>
           <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 9998 }} />
           <div style={{
@@ -91,7 +99,7 @@ function TrainerModeToggle({ mode, onChange }) {
             borderRadius: 12, padding: 6, minWidth: 160,
             boxShadow: '0 8px 24px rgba(16,24,40,0.14)', display: 'flex', flexDirection: 'column', gap: 2,
           }}>
-            {Object.entries(TRAINER_MODE_META).map(([slug, m]) => (
+            {Object.entries(TRAINER_MODE_META).filter(([, m]) => avecTest || !m.reserve).map(([slug, m]) => (
               <button
                 key={slug}
                 onClick={() => { onChange(slug); setOpen(false) }}
@@ -107,7 +115,8 @@ function TrainerModeToggle({ mode, onChange }) {
               </button>
             ))}
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   )
@@ -151,7 +160,7 @@ function DashHeader({ pName, activeRoomCode, onOpenTv, onOpenRoom, onOpenPlannin
 
       {/* Zone salle active */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, zIndex: 1 }}>
-        <TrainerModeToggle mode={trainerMode} onChange={onTrainerModeChange} />
+        <TrainerModeToggle mode={trainerMode} onChange={onTrainerModeChange} avecTest={peutUtiliserSalleTest(pName)} />
         {onOpenPlanning && (
           <button
             onClick={onOpenPlanning}
@@ -1280,6 +1289,7 @@ const VIEW_TO_CATEGORY = {
   'global-ratings': 'evaluations', 'resultats-tests': 'evaluations', 'auto-eval': 'evaluations',
   'retour-formation': 'retour-formation',
   'fiches-pratiques': 'fiches-pratiques',
+  'atelier-lipto': 'atelier-lipto',
 }
 
 // Vue par défaut quand on clique directement sur une catégorie de la
@@ -1294,6 +1304,8 @@ const CATEGORY_LANDING = {
   'retour-formation': 'retour-formation',
   'fiches-pratiques': 'fiches-pratiques',
   idees: 'idees',
+  'audit-formateurs': 'audit-formateurs',
+  'atelier-lipto': 'atelier-lipto',
 }
 
 // Petit sélecteur d'onglets interne à une catégorie (ex: Entrées ↔
@@ -1422,7 +1434,7 @@ export default function Dashboard({ pName, onLaunchModule, onOpenRoom, onOpenTv,
   // choisi, on repasse par le parcours manuel habituel.
   const handleOpenOnboarding = () => {
     if (trainerMode === 'belgique') setActiveView('onboarding-belgique')
-    else if (trainerMode === 'paris' || trainerMode === 'province') setActiveView('onboarding')
+    else if (trainerMode === 'paris' || trainerMode === 'province' || trainerMode === 'test') setActiveView('onboarding')
     else setActiveView('onboarding-choix')
   }
   // Sondage toutes les 30s (même pattern que tâches/notes/futurs entrées) —
@@ -1577,7 +1589,8 @@ export default function Dashboard({ pName, onLaunchModule, onOpenRoom, onOpenTv,
     // convertir en categorySlug ('presentiel'/'visio'/'belgique') avant
     // d'appeler handleConfirmRoom, sinon openOrCreateRoom rejette 'paris'/
     // 'province' comme catégorie invalide (incident du 18/08).
-    if (trainerMode) {
+    // (mode « Salle test » : réservé à Kevin et Quentin, cf. TrainerModeToggle)
+    if (trainerMode && (trainerMode !== 'test' || peutUtiliserSalleTest(pName))) {
       handleConfirmRoom(categorySlugFromZone(trainerMode))
       return
     }
@@ -1618,7 +1631,8 @@ export default function Dashboard({ pName, onLaunchModule, onOpenRoom, onOpenTv,
     if (result?.ok) {
       setActiveRoomCode('')
       onToast?.(
-        result.archived ? 'Salle terminée et archivée ✓'
+        result.salleTest ? 'Salle test terminée — tout a été effacé ✓'
+          : result.archived ? 'Salle terminée et archivée ✓'
           : result.hadData ? 'Salle terminée — archivage impossible pour le moment, données conservées, réessaie plus tard'
           : 'Salle terminée ✓'
       )
@@ -1774,6 +1788,34 @@ export default function Dashboard({ pName, onLaunchModule, onOpenRoom, onOpenTv,
     )
   }
 
+  if (activeView === 'audit-formateurs') {
+    const estKevin = getTrainerAvatarKey(pName) === 'kevin'
+    return (
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
+        <AuditFormateursView pName={pName} />
+        {estKevin && <div style={{ marginTop: 40 }}><AuditFormateursReporting /></div>}
+      </TrainerPage>
+    )
+  }
+
+  // Atelier Lipto (23/11) : visible par tous, réservé à Kevin et Thomas pour
+  // l'instant (cf. ACCES_ATELIER). Plein écran, avec un retour au dashboard.
+  if (activeView === 'atelier-lipto') {
+    if (peutUtiliserAtelier(pName)) {
+      const prenom = (pName || '').trim().split(/\s+/)[0] || pName
+      return <AtelierSimulation moi={prenom} onQuitter={() => setActiveView('home')} />
+    }
+    return (
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
+        <div style={{ maxWidth: 460, margin: '60px auto', textAlign: 'center', background: '#fff', border: '1px solid var(--border)', borderRadius: 16, padding: '36px 28px' }}>
+          <div style={{ fontSize: 40 }}>🔒</div>
+          <div style={{ fontSize: 18, fontWeight: 800, marginTop: 10 }}>Atelier Lipto</div>
+          <p style={{ color: 'var(--text-s)', marginTop: 8 }}>Vous n’avez pas d’accès à ce module pour le moment.</p>
+        </div>
+      </TrainerPage>
+    )
+  }
+
   if (activeView === 'fiches-pratiques') {
     return (
       <TrainerPage activeView={activeView} {...trainerPageProps}>
@@ -1921,14 +1963,14 @@ export default function Dashboard({ pName, onLaunchModule, onOpenRoom, onOpenTv,
             // Mode déjà choisi (sidebar) : on n'est jamais passé par l'écran
             // France/Belgique, donc "Retour" doit ramener à l'accueil, pas
             // vers un écran qu'on n'a jamais vu.
-            setActiveView((trainerMode === 'paris' || trainerMode === 'province') ? 'home' : 'onboarding-choix')
+            setActiveView((trainerMode === 'paris' || trainerMode === 'province' || trainerMode === 'test') ? 'home' : 'onboarding-choix')
           }}
           onLaunchModule={onLaunchModule}
           onEndRoom={handleEndRoomClick}
           onLaunchPeerQuiz={() => { setObReturnJournee('journee2'); setObReturnView('onboarding'); setActiveView('peer-quiz') }}
           initialStep={(returnJournee || obSkipSelect) ? 'modules' : 'select'}
           initialJournee={returnJournee}
-          initialGroup={(trainerMode === 'paris' || trainerMode === 'province') ? categorySlugFromZone(trainerMode) : null}
+          initialGroup={(trainerMode === 'paris' || trainerMode === 'province' || trainerMode === 'test') ? categorySlugFromZone(trainerMode) : null}
         />
       </TrainerPage>
     )
@@ -2085,6 +2127,8 @@ export default function Dashboard({ pName, onLaunchModule, onOpenRoom, onOpenTv,
         <RoomOpenModal
           trainerName={pName}
           loading={roomLoading}
+          avecTest={peutUtiliserSalleTest(pName)}
+          categorieInitiale={trainerMode ? categorySlugFromZone(trainerMode) : null}
           onCancel={() => setRoomModalOpen(false)}
           onConfirm={handleConfirmRoom}
         />

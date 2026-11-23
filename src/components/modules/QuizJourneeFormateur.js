@@ -6,6 +6,8 @@ import { fetchTrainerQuizAnswers } from '@/lib/participantNames'
 import { fetchOpenAnswers } from '@/lib/supabase'
 import { saveModuleQuizAnswer } from '@/lib/formationSave'
 import { useAutoRevealCorrection } from '@/lib/useAutoRevealCorrection'
+import { fetchOnlineParticipantsList } from '@/lib/participantPresence'
+import { reponseOrdonnanceFill } from '@/lib/quizReponseAttendue'
 import { countVotesPerOption } from '@/lib/quizVotes'
 import { tauxParFamille, statutFamille, themeForAnswer, FAMILLE_LABELS } from '@/lib/quizThemeMap'
 import { useQuizCountdown, QUIZ_TIME_LIMIT_SEC } from '@/components/ParticipantModuleView'
@@ -25,8 +27,51 @@ const STYLES = `
 `
 
 // ── Lobby ────────────────────────────────────────────────────────────
+// Simulation (scénarios fournis) : page d'attente avec les formés connectés,
+// « Commencer la simulation », puis choix du scénario (19/11)
+function LobbySimulation({ onStart, onBack }) {
+  const { titre, lobbyTitre, lobbySous, scenarios } = useQuizJournee()
+  const [connectes, setConnectes] = useState([])
+  const [choix, setChoix] = useState(false)
+  useEffect(() => {
+    const lire = () => fetchOnlineParticipantsList(getActiveSessionCode()).then(l => setConnectes((l || []).map(p => p.name).filter(Boolean))).catch(() => {})
+    lire()
+    const t = setInterval(lire, 4000)
+    return () => clearInterval(t)
+  }, [])
+  return (
+    <div style={{ minHeight: '100vh', background: F_NAVY, color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 12, letterSpacing: 4, textTransform: 'uppercase', color: F_OR, fontWeight: 700 }}>{titre}</div>
+      <h1 style={{ fontSize: 34, fontWeight: 800, margin: '12px 0 6px' }}>{choix ? 'Quel client entre en magasin ?' : lobbyTitre}</h1>
+      <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', marginBottom: 30, lineHeight: 1.6 }}>{choix ? 'Lipto entre et dit…' : lobbySous}</p>
+      {!choix ? (
+        <>
+          <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>Connectés · {connectes.length}</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 640, margin: '12px 0 34px', minHeight: 34 }}>
+            {connectes.length === 0
+              ? <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic' }}>En attente des collaborateurs…</span>
+              : connectes.map(n => <span key={n} style={{ fontSize: 14, padding: '6px 14px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.2)', animation: 'j1FadeIn .3s ease' }}>{n}</span>)}
+          </div>
+          <button onClick={() => setChoix(true)} style={{ background: '#fff', color: F_NAVY, border: 'none', padding: '16px 44px', borderRadius: 14, fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 14 }}>▶ Commencer la simulation</button>
+        </>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(200px, 280px))', gap: 14, marginBottom: 26 }}>
+          {scenarios.map(sc => (
+            <button key={sc.idx} disabled={!sc.pret} onClick={() => sc.pret && onStart(sc.idx)} style={{ textAlign: 'left', padding: '18px 20px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.05)', color: '#fff', cursor: sc.pret ? 'pointer' : 'not-allowed', opacity: sc.pret ? 1 : 0.4, fontFamily: 'inherit' }}>
+              <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: F_OR }}>Scénario {sc.numero ?? sc.idx + 1}{!sc.pret && <span style={{ color: 'rgba(255,255,255,0.6)', marginLeft: 8 }}>· Réponses à rédiger</span>}</div>
+              <div style={{ fontSize: 17, fontWeight: 700, marginTop: 6 }}>« {sc.bulle} »</div>
+            </button>
+          ))}
+        </div>
+      )}
+      <button onClick={choix ? () => setChoix(false) : onBack} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)', padding: '10px 24px', borderRadius: 12, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>← Retour</button>
+    </div>
+  )
+}
+
 function Lobby({ onStart, onBack }) {
-  const { QUIZ, titre, lobbyTitre, lobbySous } = useQuizJournee()
+  const { QUIZ, titre, lobbyTitre, lobbySous, scenarios } = useQuizJournee()
+  if (scenarios) return <LobbySimulation onStart={onStart} onBack={onBack} />
   return (
     <div style={{
       minHeight: '100vh',
@@ -123,8 +168,8 @@ function fReponseAttendue(q) {
     const bonnes = Array.isArray(q.correct) ? q.correct : [q.correct]
     return bonnes.map(i => q.options[i]).join(' · ')
   }
-  if (type === 'ordonnance-fill') return 'Les valeurs de l’ordonnance, à l’identique'
-  return q.hint || '—'
+  if (type === 'ordonnance-fill') return reponseOrdonnanceFill(q)
+  return q.hint || 'Pas de réponse type : à vous de juger chaque réponse'
 }
 
 function FOrdonnance({ q }) {
@@ -177,12 +222,73 @@ function FQuestion({ q, quizQ }) {
       <div style={{ fontWeight: 700, fontSize: q.question.length > 90 ? fT(32, 3.6) : fT(38, 4.2), lineHeight: 1.15, letterSpacing: -0.5, marginTop: '2vh' }}>{q.question}</div>
       <FOrdonnance q={q} />
       <FTrame q={q} />
-      {/* Visible uniquement sur l'écran formateur */}
-      <div style={{ marginTop: '3.5vh', padding: '14px 18px', border: '1px dashed rgba(201,162,39,0.5)', borderRadius: 10 }}>
+      {/* Visible uniquement sur l'écran formateur (pas pour une scène sans question) */}
+      {q.type !== 'scene' && <div style={{ marginTop: '3.5vh', padding: '14px 18px', border: '1px dashed rgba(201,162,39,0.5)', borderRadius: 10 }}>
         <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: F_OR, marginBottom: 6 }}>Réponse attendue · visible par vous seulement</div>
         <div style={{ fontSize: fT(19, 2.1), color: '#fff', lineHeight: 1.35 }}>{fReponseAttendue(q)}</div>
+      </div>}
+    </div>
+  )
+}
+
+// Simulation finale : « Scène suivante » ouvre le choix de ce que répond
+// Lipto (comme le choix du scénario au départ) ; chaque réplique mène à sa
+// scène (r.suite), où Lipto la dit sur la TV.
+function FChoixSuite({ q, onFermer, onEnd }) {
+  const { allerScene } = useQuizJournee()
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(3,17,42,0.96)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, textAlign: 'center', color: '#fff', animation: 'j1FadeIn .25s ease' }}>
+      <div style={{ fontSize: 12, letterSpacing: 4, textTransform: 'uppercase', color: F_OR, fontWeight: 700 }}>Scène suivante</div>
+      <h2 style={{ fontSize: 32, fontWeight: 800, margin: '12px 0 28px' }}>Que répond Lipto ?</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(q.simulation.repliques.length, 3)}, minmax(220px, 320px))`, gap: 14, marginBottom: 26 }}>
+        {q.simulation.repliques.map(r => (
+          <button key={r.id} onClick={() => { onFermer(); allerScene?.(r.suite) }} style={{ textAlign: 'left', padding: '18px 20px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.05)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>
+            <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: F_OR }}>Lipto répond</div>
+            <div style={{ fontSize: 17, fontWeight: 700, marginTop: 6 }}>« {r.texte} »</div>
+            {r.ordonnance && <div style={{ fontSize: 13, color: F_OR, marginTop: 6 }}>📋 + il tend son ordonnance</div>}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 12 }}>
+        <FBouton ton="discret" onClick={onFermer}>← Revenir à la scène</FBouton>
+        <FBouton ton="terminer" onClick={() => { onFermer(); onEnd() }}>✓ Terminer la simulation</FBouton>
       </div>
     </div>
+  )
+}
+
+// Bouton bas à droite : « Scène suivante → » (choix de la réplique) si la
+// scène a des répliques, sinon le bouton habituel
+function FBoutonSuite({ q, isLast, onNext, onEnd, avant = () => true }) {
+  const [choix, setChoix] = useState(false)
+  if (q.simulation?.repliques?.length) {
+    return <>
+      <FBouton ton="suivant" onClick={() => { if (avant()) setChoix(true) }}>Scène suivante →</FBouton>
+      {choix && <FChoixSuite q={q} onFermer={() => setChoix(false)} onEnd={onEnd} />}
+    </>
+  }
+  return isLast
+    ? <FBouton ton="terminer" onClick={() => { if (avant()) onEnd() }}>✓ Terminer {q.simulation ? 'la simulation' : 'le quiz'}</FBouton>
+    : <FBouton ton="suivant" onClick={async () => { if (!avant()) return; await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false }).catch(() => {}); onNext() }}>{q.simulation ? 'Scène suivante →' : 'Question suivante →'}</FBouton>
+}
+
+// Scène sans question (Lipto répond) : en attendant la question qui suivra
+function SceneController({ quizQ, isLast, onNext, onEnd }) {
+  const { QUIZ } = useQuizJournee()
+  const q = QUIZ[quizQ]
+  const sc = q.simulation
+  return (
+    <FCadre
+      entete={<div style={{ fontSize: 12, letterSpacing: 4, textTransform: 'uppercase', color: F_OR }}>Simulation finale · Lipto répond</div>}
+      droite={<FQuestion q={q} quizQ={quizQ} />}
+      gauche={<>
+        <div style={{ fontSize: fT(26, 2.8), fontWeight: 700, lineHeight: 1.3 }}>Sur la TV, Lipto dit :<br />« {sc.bulle} »</div>
+        {sc.ordonnance && <div style={{ marginTop: '2vh', fontSize: 15, color: F_OR }}>📋 Son ordonnance s’affiche sur la TV.</div>}
+        {sc.ticket && <div style={{ marginTop: '2vh', fontSize: 15, color: F_OR }}>🧾 La TV montre l’examen en cours, puis Lipto revient avec son ticket.</div>}
+        <div style={{ marginTop: '3vh', fontSize: 15, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>Les collaborateurs regardent l’écran. La question qui suit cette réplique reste à écrire : échangez à l’oral.</div>
+      </>}
+      actionsDroite={<FBoutonSuite q={q} isLast={isLast} onNext={onNext} onEnd={onEnd} />}
+    />
   )
 }
 
@@ -247,8 +353,34 @@ function FLigneDetail({ libelle, valeur, ok, attendu }) {
   )
 }
 
+// Arguments attendus trouvés par un formé (Quiz J2 · 5 arguments du
+// progressif) : chaque argument est cherché dans toutes ses cases.
+function fElementsTrouves(q, brut) {
+  const cases = String(brut || '').split('||').map(x => x.trim()).filter(Boolean)
+  return (q.elementsAttendus || []).map((libelle, i) => ({ libelle, trouve: cases.some(c => fContient(c, q.autoCorrectEach?.[i])) }))
+}
+
 function FDetailReponse({ q, brut }) {
   const type = q.type || 'qcm'
+  if (type === 'text-open-multi' && q.elementsAttendus) {
+    const cases = String(brut || '').split('||').map(x => x.trim())
+    const elements = fElementsTrouves(q, brut)
+    const nb = elements.filter(e => e.trouve).length
+    return <>
+      {cases.map((c, i) => <FLigneDetail key={i} libelle={q.fieldLabels?.[i] || `Réponse ${i + 1}`} valeur={c} ok={null} />)}
+      <div style={{ marginTop: 12, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>
+        Arguments attendus · <b style={{ color: nb >= (q.autoCorrectMin || elements.length) ? F_VERT : F_AMBRE }}>{nb} / {elements.length} trouvés</b>
+        {q.autoCorrectMin && <span style={{ textTransform: 'none', letterSpacing: 0, marginLeft: 8 }}>({q.autoCorrectMin} suffisent)</span>}
+      </div>
+      {elements.map(e => (
+        <div key={e.libelle} style={{ display: 'grid', gridTemplateColumns: '22px 1fr', gap: 8, alignItems: 'baseline', padding: '4px 0', fontSize: 15, color: e.trouve ? '#fff' : 'rgba(255,255,255,0.45)' }}>
+          <span style={{ color: e.trouve ? F_VERT : F_ROUGE, fontWeight: 800 }}>{e.trouve ? '✓' : '✗'}</span>
+          <span>{e.libelle}{!e.trouve && <i style={{ marginLeft: 8, fontSize: 12 }}>manquant</i>}</span>
+        </div>
+      ))}
+      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>Repérage automatique par mots-clés : à vous de trancher avec ✓ / ✗.</div>
+    </>
+  }
   if (type === 'text-open-multi') {
     const cases = String(brut || '').split('||').map(x => x.trim())
     const groupes = q.autoCorrectEach || []
@@ -281,7 +413,8 @@ function FDetailReponse({ q, brut }) {
     const noms = { sph: 'Sphère', cyl: 'Cylindre', axe: 'Axe', add: 'Addition' }
     const affiche = (champ, v) => champ === 'axe' ? `${Math.round(fNombre(v))}°` : fDioptrie(v)
     return <>{['od', 'og'].flatMap(o => champs.map(c => {
-      const attendu = q.ordonnance[o]?.[c]
+      // Question de calcul (vision de près) : la valeur attendue est le résultat, pas l'ordonnance
+      const attendu = q.answerOverride?.[o]?.[c] ?? q.ordonnance[o]?.[c]
       const ok = c === 'axe' ? Math.round(fNombre(saisie[o]?.[c])) === Math.round(fNombre(attendu)) : Math.abs(fNombre(saisie[o]?.[c]) - fNombre(attendu)) < 0.001
       return <FLigneDetail key={o + c} libelle={`${o.toUpperCase()} · ${noms[c]}`} valeur={affiche(c, saisie[o]?.[c])} ok={ok} attendu={affiche(c, attendu)} />
     }))}</>
@@ -328,6 +461,10 @@ function fResume(q, brut) {
   if (type === 'ordonnance-fill' || type === 'power-selector') {
     try { const v = JSON.parse(brut); return type === 'power-selector' ? `${fDioptrie(v.pos)} / ${fDioptrie(v.neg)}` : `OD ${fDioptrie(v.od?.sph)} · OG ${fDioptrie(v.og?.sph)}` } catch { return '' }
   }
+  if (q.elementsAttendus) {
+    const nb = fElementsTrouves(q, brut).filter(e => e.trouve).length
+    return `${nb}/${q.elementsAttendus.length} ${q.autoCorrectMin ? 'avantages' : 'arguments'} · ` + String(brut || '').split('||').map(x => x.trim()).filter(Boolean).join(' · ')
+  }
   return String(brut || '').split('||').map(x => x.trim()).filter(Boolean).join(' · ')
 }
 
@@ -367,7 +504,10 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
             return q.autoCorrectEach.every((group, i) => group.some(kw => (parts[i] || '').includes(kw.toLowerCase())))
           }
           const parts = raw.split('||').map(p => p.trim().toLowerCase()).filter(Boolean)
-          return q.autoCorrectEach.every(group => group.some(kw => parts.some(p => p.includes(kw.toLowerCase()))))
+          const trouve = (group) => group.some(kw => parts.some(p => p.includes(kw.toLowerCase())))
+          // autoCorrectMin : il suffit de N éléments sur la liste (ex. 2 avantages sur 3)
+          if (q.autoCorrectMin) return q.autoCorrectEach.filter(trouve).length >= q.autoCorrectMin
+          return q.autoCorrectEach.every(trouve)
         })()
         const bloque = q.autoCorrectNot?.length && q.autoCorrectNot.some(kw => text.includes(kw.toLowerCase()))
         const matchPairs = q.answerPairs?.length && (() => {
@@ -544,9 +684,7 @@ function TextOpenController({ quizQ, isLast, onNext, onEnd }) {
             {allAnswered ? '🎯 Voir la correction' : `⏳ En attente (${answers.length}/${connectedCount || '?'})`}
           </FBouton>
         )}
-        {isLast
-          ? <FBouton ton="terminer" onClick={() => { if (confirmSkipPending()) onEnd() }}>✓ Terminer le quiz</FBouton>
-          : <FBouton ton="suivant" onClick={async () => { if (!confirmSkipPending()) return; await setSharedState({ quiz_show_correction: false }).catch(() => {}); onNext() }}>Question suivante →</FBouton>}
+        <FBoutonSuite q={q} isLast={isLast} onNext={onNext} onEnd={onEnd} avant={confirmSkipPending} />
       </>}
     />
   )
@@ -697,9 +835,7 @@ function StandardController({ quizQ, isLast, onNext, onEnd }) {
       </>}
       actionsDroite={<>
         {total > 0 && !enCorrection && <FBouton ton="correction" onClick={handleShowCorrection}>🎯 Voir la correction</FBouton>}
-        {isLast
-          ? <FBouton ton="terminer" onClick={onEnd}>✓ Terminer le quiz</FBouton>
-          : <FBouton ton="suivant" onClick={async () => { await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false }).catch(() => {}); onNext() }}>Question suivante →</FBouton>}
+        <FBoutonSuite q={q} isLast={isLast} onNext={onNext} onEnd={onEnd} />
       </>}
     />
   )
@@ -789,7 +925,8 @@ function GroupResultsView({ onTerminate }) {
 
 // ── Composant principal ──────────────────────────────────────────────
 function QuizJourneeContenu({ pName, onBack }) {
-  const { MODULE_ID, QUIZ } = useQuizJournee()
+  const contexte = useQuizJournee()
+  const { MODULE_ID, QUIZ, sceneSuivante } = contexte
   const [started, setStarted] = useState(false)
   const [quizQ, setQuizQ] = useState(0)
   const [showGroupResults, setShowGroupResults] = useState(false)
@@ -810,7 +947,8 @@ function QuizJourneeContenu({ pName, onBack }) {
     onBack()
   }
 
-  const handleStart = async () => {
+  const handleStart = async (depart = 0) => {
+    const premiere = Number.isInteger(depart) ? depart : 0
     // Réponses d'un passage précédent dans cette salle ? Le formateur décide.
     const code = getActiveSessionCode()
     const avant = await compterReponsesPrecedentes(code, MODULE_ID).catch(() => ({ reponses: 0, formes: 0 }))
@@ -822,10 +960,10 @@ function QuizJourneeContenu({ pName, onBack }) {
     )) {
       await effacerReponsesPrecedentes(code, MODULE_ID).catch(() => {})
     }
-    await setSharedState({ quiz_show_correction: false, quiz_interstitial_q: null, quiz_final_phase: null })
+    await setSharedState({ quiz_show_correction: false, quiz_interstitial_q: null, quiz_final_phase: null, sim_replique: null })
     await clearQuizStarts(getActiveSessionCode(), MODULE_ID).catch(() => {})
-    await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 100 }, `code=eq.${getActiveSessionCode()}`)
-    setQuizQ(0)
+    await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 100 + premiere }, `code=eq.${getActiveSessionCode()}`)
+    setQuizQ(premiere)
     setStarted(true)
   }
 
@@ -833,9 +971,15 @@ function QuizJourneeContenu({ pName, onBack }) {
   // l'appli) — on enchaîne directement, seul le podium final reste (cf.
   // handleEndQuiz). Le classement en temps réel, désormais privé, s'affiche
   // sur le téléphone de chaque formé après chaque correction.
+  const allerScene = async (next) => {
+    await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false, quiz_interstitial_q: null, sim_replique: null }).catch(() => {})
+    await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 100 + next }, `code=eq.${getActiveSessionCode()}`)
+    setQuizQ(next)
+  }
+
   const handleNextQuestion = async () => {
-    const next = quizQ + 1
-    await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false, quiz_interstitial_q: null }).catch(() => {})
+    const next = sceneSuivante ? sceneSuivante(quizQ) : quizQ + 1
+    await setSharedState({ quiz_show_correction: false, quiz_ordo_show: false, quiz_interstitial_q: null, sim_replique: null }).catch(() => {})
     await sbUpdate('sessions', { active_module: MODULE_ID, module_page: 100 + next }, `code=eq.${getActiveSessionCode()}`)
     setQuizQ(next)
   }
@@ -878,23 +1022,27 @@ function QuizJourneeContenu({ pName, onBack }) {
 
   const q = QUIZ[quizQ]
   const type = q?.type || 'qcm'
-  const isLast = quizQ >= QUIZ.length - 1
+  const isLast = sceneSuivante ? sceneSuivante(quizQ) == null : quizQ >= QUIZ.length - 1
 
   return (
-    <>
+    <QuizJourneeCtx.Provider value={{ ...contexte, allerScene }}>
       <style>{STYLES}</style>
-      {(type === 'text-open' || type === 'text-open-multi' || type === 'text-open-pairs') ? (
-        <TextOpenController quizQ={quizQ} isLast={isLast} onNext={handleNextQuestion} onEnd={handleEndQuiz} />
+      {type === 'scene' ? (
+        <SceneController key={quizQ} quizQ={quizQ} isLast={isLast} onNext={handleNextQuestion} onEnd={handleEndQuiz} />
+      ) : (type === 'text-open' || type === 'text-open-multi' || type === 'text-open-pairs') ? (
+        <TextOpenController key={quizQ} quizQ={quizQ} isLast={isLast} onNext={handleNextQuestion} onEnd={handleEndQuiz} />
       ) : (
-        <StandardController quizQ={quizQ} isLast={isLast} onNext={handleNextQuestion} onEnd={handleEndQuiz} />
+        <StandardController key={quizQ} quizQ={quizQ} isLast={isLast} onNext={handleNextQuestion} onEnd={handleEndQuiz} />
       )}
-    </>
+    </QuizJourneeCtx.Provider>
   )
 }
 
-export default function QuizJourneeFormateur({ pName, onBack, moduleId, quiz, titre, lobbyTitre, lobbySous }) {
+// scenarios + sceneSuivante : mode simulation (choix du scénario au départ,
+// parcours entre les scènes) — absents pour les quiz J1/J2, rien ne change.
+export default function QuizJourneeFormateur({ pName, onBack, moduleId, quiz, titre, lobbyTitre, lobbySous, scenarios = null, sceneSuivante = null }) {
   return (
-    <QuizJourneeCtx.Provider value={{ MODULE_ID: moduleId, QUIZ: quiz, titre, lobbyTitre, lobbySous }}>
+    <QuizJourneeCtx.Provider value={{ MODULE_ID: moduleId, QUIZ: quiz, titre, lobbyTitre, lobbySous, scenarios, sceneSuivante }}>
       <QuizJourneeContenu pName={pName} onBack={onBack} />
     </QuizJourneeCtx.Provider>
   )

@@ -40,6 +40,17 @@ export const FORMATION_CATEGORIES = {
     order: 3,
     emoji: '🇧🇪',
   },
+  // Salle de simulation (19/11) : réservée à Kevin et Quentin, avec les faux
+  // candidats de src/lib/fauxCandidats.js. Cachée de toutes les listes
+  // (onboarding, comptages…) sauf l'ouverture de salle, cf. listFormationCategories.
+  test: {
+    label: 'Salle test · Simulation',
+    shortLabel: 'Test',
+    subLabel: 'Faux candidats, aucune donnée réelle',
+    order: 99,
+    emoji: '🧪',
+    cachee: true,
+  },
 }
 
 /** Zone magasin RH → catégorie par défaut (si entree.formation_category absent) */
@@ -47,6 +58,7 @@ const MAGASIN_ZONE_DEFAULT_CATEGORY = {
   paris: 'presentiel',
   province: 'visio',
   belgique: 'belgique',
+  test: 'test', // mode formateur « Salle test » (aucun magasin n'est classé « test »)
 }
 
 const SLUG_RE = /^[a-z][a-z0-9_]{0,31}$/
@@ -92,8 +104,9 @@ export function categorySlugFromZone(zone) {
 }
 
 /** Liste triée pour UI (création salle, onboarding, liste participant) */
-export function listFormationCategories() {
+export function listFormationCategories({ avecTest = false } = {}) {
   return Object.entries(FORMATION_CATEGORIES)
+    .filter(([, meta]) => avecTest || !meta.cachee)
     .sort(([, a], [, b]) => a.order - b.order)
     .map(([slug, meta]) => ({ slug, ...meta }))
 }
@@ -132,7 +145,7 @@ export function formatDefaultRoomLabel(categorySlug, trainerName) {
 /** Comptage par catégorie (onboarding, stats) */
 export function countEntreesByCategory(entrees) {
   const counts = Object.fromEntries(
-    Object.keys(FORMATION_CATEGORIES).map(slug => [slug, 0])
+    Object.keys(FORMATION_CATEGORIES).filter(slug => !FORMATION_CATEGORIES[slug].cachee).map(slug => [slug, 0])
   )
   for (const e of entrees || []) {
     const cat = resolveCategoryFromEntree(e)
@@ -173,6 +186,9 @@ export function entreeHasResolvableCategory(entree) {
 export function canParticipantJoinSession(session, entree) {
   if (entree?._isTest) return true
   const roomType = (session?.room_type || '').trim()
+  // Salle test : uniquement les faux candidats ; et un faux candidat ne
+  // rejoint jamais une vraie salle
+  if (roomType === 'test' || entree?.formation_category === 'test') return roomType === entree?.formation_category
   if (!isValidFormationCategorySlug(roomType)) return true
   if (!entreeHasResolvableCategory(entree)) return true
   return sessionMatchesEntree(session, entree)

@@ -10,6 +10,7 @@ import {
 import { getLegacySessionCode, isDynamicRoomCode } from '@/lib/sessionCode'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import ConfirmModal from '@/components/ConfirmModal'
+import { peutUtiliserAtelier } from '@/lib/atelierSimulation'
 import { MODULE_GROUPES, PREFIXE_SESSION } from '@/lib/modulesApresFormation'
 import { calculerSeries } from '@/lib/quizClassement'
 
@@ -45,16 +46,11 @@ const JOURNEES = (onLaunchModule, onLaunchPeerQuiz) => [
         onClick: () => onLaunchModule('montures'),
       },
       {
-        visual: 'emoji', icon: '🔍',
-        label: 'Découverte des montures',
-        sub: 'Activité terrain — ~17h00',
-        soon: true,
-      },
-      {
         visual: 'emoji', icon: '🧠',
         label: 'Quiz Jour 1',
         sub: 'Entreprise · Optique · Ordonnances · Montures',
         onClick: () => onLaunchModule('quiz-j1'),
+        large: true,
       },
     ],
   },
@@ -286,7 +282,7 @@ function JourneeModules({ journee, onBack, onLaunchModule, avecComplementaires =
             key={i}
             className="dash-tile"
             onClick={mod.soon ? undefined : mod.onClick}
-            style={{ cursor: mod.soon ? 'default' : 'pointer', opacity: mod.soon ? 0.75 : 1 }}
+            style={{ cursor: mod.soon ? 'default' : 'pointer', opacity: mod.soon ? 0.75 : 1, ...(mod.large ? { gridColumn: '1 / -1' } : {}) }}
           >
             <div className="dash-tile-top">
               {mod.visual === 'avatar' && (
@@ -433,6 +429,8 @@ function SessionModules({ pName, onBack, onLaunchModule, onEndRoom, onLaunchPeer
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
   const [roomCode, setRoomCode] = useState('')
   const [endConfirmOpen, setEndConfirmOpen] = useState(false)
+  // Simulation finale avec Lipto : même accès que l'Atelier Lipto (23/11)
+  const [simulationRefusee, setSimulationRefusee] = useState(false)
   const [endingRoom, setEndingRoom] = useState(false)
   const categories = listFormationCategories()
 
@@ -621,21 +619,33 @@ function SessionModules({ pName, onBack, onLaunchModule, onEndRoom, onLaunchPeer
           <div style={{ fontSize: 11, color: '#8b5cf6', marginTop: 8, fontWeight: 600 }}>Lancer le jeu →</div>
         </div>
 
-        <div className="dash-tile" onClick={() => onLaunchModule('quiz-final')} style={{ cursor: 'pointer', borderColor: 'rgba(201,162,39,0.35)' }}>
+        {/* Simulation finale (19/11) : remplace l'ancienne tuile « Quiz Final »
+            (le module quiz-final existe toujours, il n'est plus proposé ici) */}
+        <div className="dash-tile" onClick={() => (peutUtiliserAtelier(pName) ? onLaunchModule('simulation-accueil') : setSimulationRefusee(true))} style={{ cursor: 'pointer', borderColor: 'rgba(201,162,39,0.35)' }}>
           <div className="dash-tile-top">
             <div style={{
               width: 38, height: 38, borderRadius: 10, flexShrink: 0,
               background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
-            }}>🏆</div>
+            }}>🎬</div>
             <span style={{ fontSize: 10, fontWeight: 700, color: '#c9a227', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.3)', borderRadius: 20, padding: '2px 8px', letterSpacing: 0.5 }}>
-              26 questions
+              Avec Lipto
             </span>
           </div>
-          <div className="dash-tile-label" style={{ marginTop: 12 }}>Quiz Final</div>
-          <div className="dash-tile-sub">Toute la formation en un quiz</div>
-          <div style={{ fontSize: 11, color: '#c9a227', marginTop: 8, fontWeight: 600 }}>Lancer le quiz →</div>
+          <div className="dash-tile-label" style={{ marginTop: 12 }}>Simulation finale</div>
+          <div className="dash-tile-sub">Lipto entre en magasin — vos collaborateurs l’accueillent</div>
+          <div style={{ fontSize: 11, color: '#c9a227', marginTop: 8, fontWeight: 600 }}>Lancer la simulation →</div>
         </div>
+        {simulationRefusee && (
+          <div onClick={() => setSimulationRefusee(false)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(3,17,42,0.55)', display: 'grid', placeItems: 'center', padding: 16 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: '#fff', color: '#03112a', borderRadius: 16, padding: '30px 28px', maxWidth: 380, textAlign: 'center' }}>
+              <div style={{ fontSize: 36 }}>🔒</div>
+              <div style={{ fontSize: 17, fontWeight: 800, marginTop: 8 }}>Simulation finale</div>
+              <p style={{ color: '#4a5568', marginTop: 8, fontSize: 14 }}>Vous n’avez pas d’accès à ce module pour le moment.</p>
+              <button onClick={() => setSimulationRefusee(false)} style={{ marginTop: 16, border: 'none', background: '#03112a', color: '#fff', borderRadius: 10, padding: '10px 22px', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>OK</button>
+            </div>
+          </div>
+        )}
 
         {/* ── Nouveau module — Atelier prise en charge (test) ── */}
         <div

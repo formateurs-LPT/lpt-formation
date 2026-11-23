@@ -6,11 +6,14 @@ const ACCENT = {
   presentiel: '#0089ba',
   visio: '#7c3aed',
   belgique: '#db2777',
+  test: '#f59e0b',
 }
 
-export default function RoomOpenModal({ trainerName, onConfirm, onCancel, loading }) {
-  const categories = listFormationCategories()
-  const [selected, setSelected] = useState(categories[0]?.slug || 'presentiel')
+// avecTest : la salle test (faux candidats) n'est proposée qu'à Kevin et Quentin
+export default function RoomOpenModal({ trainerName, onConfirm, onCancel, loading, avecTest = false, categorieInitiale = null }) {
+  const categories = listFormationCategories({ avecTest })
+  // Présélection : le mode formateur habituel s'il y en a un
+  const [selected, setSelected] = useState(categories.some(c => c.slug === categorieInitiale) ? categorieInitiale : (categories[0]?.slug || 'presentiel'))
 
   return (
     <div style={{

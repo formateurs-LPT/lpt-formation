@@ -170,7 +170,13 @@ export async function openOrCreateRoom({
   let result
   try {
     result = await sbUpsertOrThrow('sessions', row, 'code')
-  } catch {
+  } catch (e) {
+    // Salle test : sans son type « test », les faux candidats ne la trouvent
+    // pas — mieux vaut un message clair qu'une salle à moitié créée (19/11 :
+    // la base refusait encore le type « test », cf. supabase/fix-sessions-belgique.sql)
+    if (categorySlug === 'test') {
+      throw new Error(`la base refuse encore les salles test (${e.message || 'erreur'}) — il faut mettre à jour la règle « sessions_room_type_check » dans Supabase`)
+    }
     result = await sbUpsertOrThrow('sessions', {
       code,
       status: 'active',
@@ -190,7 +196,7 @@ export async function endActiveRoom(code, { trainerName } = {}) {
   const roomCode = (code || readTrainerActiveRoomCode() || '').trim()
   if (!roomCode || !isDynamicRoomCode(roomCode)) return false
 
-  const { archived, hadData } = await archiveAndPurgeRoom(roomCode, { trainerName })
+  const { archived, hadData, salleTest } = await archiveAndPurgeRoom(roomCode, { trainerName })
 
   const now = new Date().toISOString()
   const ok = await sbUpdate(
@@ -209,5 +215,5 @@ export async function endActiveRoom(code, { trainerName } = {}) {
   if (ok) {
     setTrainerActiveRoomCode('')
   }
-  return { ok, archived, hadData }
+  return { ok, archived, hadData, salleTest }
 }
