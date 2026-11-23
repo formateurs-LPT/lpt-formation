@@ -331,7 +331,9 @@ function TicketMini({ d }) {
       <div style={{ textAlign: 'right' }}>WD={d.wd}</div>
       <div style={{ marginTop: '1.2cqw' }}>-- FAR --</div>
       {ligne(d.od.sph, 'SPH', d.og.sph)}{ligne(d.od.cyl, 'CYL', d.og.cyl)}{ligne(d.od.axe, 'AXS', d.og.axe)}
+      {(d.od.add || d.og.add) && ligne(d.od.add, 'ADD', d.og.add)}
       <div style={{ textAlign: 'center', marginTop: '0.6cqw' }}>PD {d.pd}</div>
+      {d.npd && <div style={{ textAlign: 'center' }}>NPD {d.npd}</div>}
       <div style={{ textAlign: 'center', marginTop: '1.2cqw' }}>{d.magasin?.[0]}</div>
       <div style={{ textAlign: 'center' }}>{d.magasin?.[1]}</div>
     </div>

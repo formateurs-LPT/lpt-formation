@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Lipto from '@/components/lipto/Lipto'
 import { THEMES_TEL } from '@/lib/themeTelephone'
 import { LIPTO_POSES } from '@/lib/lipto'
-import { TYPES_CASE, FONDS, POSES, NOMS_POSES, problemesCase, documentVide } from '@/lib/atelierSimulation'
+import { TYPES_CASE, FONDS, POSES, NOMS_POSES, problemesCase, documentVide, TESTS_DE_VUE } from '@/lib/atelierSimulation'
 
 const NAVY = '#03112a', BLEU = '#00abe9', TRAIT = '#e3e6ee', DOUX = '#64748b'
 const LETTRES = 'ABCDEF'
@@ -146,9 +146,9 @@ function Question({ c, onMaj }) {
 function Document({ doc, onMaj }) {
   const genre = doc?.genre || null
   const champ = (oeil, cle, largeur = 60) => (
-    <input className="ap-champ ap-mini" style={{ width: largeur }} value={doc[oeil][cle]} onChange={e => onMaj({ ...doc, [oeil]: { ...doc[oeil], [cle]: e.target.value } })} />
+    <input className="ap-champ ap-mini" style={{ width: largeur }} value={doc[oeil][cle] || ''} onChange={e => onMaj({ ...doc, [oeil]: { ...doc[oeil], [cle]: e.target.value } })} />
   )
-  const cles = genre === 'ticket' ? ['sph', 'cyl', 'axe'] : ['sph', 'cyl', 'axe', 'add']
+  const cles = ['sph', 'cyl', 'axe', 'add']
   return (
     <Champ titre="Document montré par Lipto">
       <div style={{ display: 'flex', gap: 6 }}>
@@ -156,11 +156,24 @@ function Document({ doc, onMaj }) {
           <button key={l} className={'ap-puce' + (genre === g ? ' ap-actif' : '')} onClick={() => onMaj(g ? (genre === g ? doc : { genre: g, ...documentVide(g) }) : null)}>{l}</button>
         ))}
       </div>
+      {genre === 'ticket' && (
+        <div style={{ marginTop: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: DOUX, marginBottom: 6 }}>Tests de vue prêts à l’emploi</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {TESTS_DE_VUE.map(t => (
+              <button key={t.id} className="ap-test" onClick={() => onMaj({ genre: 'ticket', ...JSON.parse(JSON.stringify(t.ticket)) })}>
+                <span>🧾 {t.nom}</span><span style={{ fontSize: 11, color: DOUX, fontWeight: 600 }}>{t.info}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {genre && (
         <div style={{ marginTop: 10, background: '#f8f9fc', border: `1px solid ${TRAIT}`, borderRadius: 10, padding: 10 }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
             <label style={{ fontSize: 12, color: DOUX, flex: 1 }}>Date<input className="ap-champ ap-mini" value={doc.date} placeholder="03/11/2026" onChange={e => onMaj({ ...doc, date: e.target.value })} /></label>
-            {genre === 'ticket' && <label style={{ fontSize: 12, color: DOUX, width: 80 }}>Écart (PD)<input className="ap-champ ap-mini" value={doc.pd} onChange={e => onMaj({ ...doc, pd: e.target.value })} /></label>}
+            {genre === 'ticket' && <label style={{ fontSize: 12, color: DOUX, width: 70 }}>PD<input className="ap-champ ap-mini" value={doc.pd || ''} onChange={e => onMaj({ ...doc, pd: e.target.value })} /></label>}
+            {genre === 'ticket' && <label style={{ fontSize: 12, color: DOUX, width: 70 }} title="Écart de près">NPD<input className="ap-champ ap-mini" value={doc.npd || ''} onChange={e => onMaj({ ...doc, npd: e.target.value })} /></label>}
           </div>
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead><tr><th />{cles.map(k => <th key={k} style={{ fontSize: 11, color: DOUX, fontWeight: 700, textAlign: 'left', paddingBottom: 4 }}>{{ sph: 'Sphère', cyl: 'Cylindre', axe: 'Axe', add: 'Add.' }[k]}</th>)}</tr></thead>
@@ -266,6 +279,8 @@ const CSS = `
 .ap-mini { padding: 5px 7px; font-size: 13px; margin-top: 2px; font-variant-numeric: tabular-nums; }
 .ap-fleche { width: 30px; height: 30px; flex-shrink: 0; border: 1px solid ${TRAIT}; background: #fff; border-radius: 8px; font-size: 20px; line-height: 1; color: ${DOUX}; cursor: pointer; font-family: inherit; display: grid; place-items: center; padding-bottom: 2px; }
 .ap-fleche:hover { background: #f1f3f8; color: ${NAVY}; }
+.ap-test { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; border: 1px solid ${TRAIT}; background: #fff; border-radius: 10px; padding: 7px 11px; font-size: 13px; font-weight: 700; color: ${NAVY}; cursor: pointer; font-family: inherit; }
+.ap-test:hover { border-color: ${BLEU}; background: #f0fbfe; }
 .ap-x { width: 30px; height: 30px; flex-shrink: 0; border: none; background: transparent; border-radius: 8px; font-size: 18px; color: #94a3b8; cursor: pointer; }
 .ap-x:hover { background: #f1f3f8; color: ${NAVY}; }
 .ap-ajout { border: 1.5px dashed #cbd5e1; background: #fafbfd; border-radius: 9px; padding: 7px 12px; width: 100%; font-size: 13px; font-weight: 700; color: ${DOUX}; cursor: pointer; font-family: inherit; }

@@ -33,7 +33,22 @@ export const NOMS_POSES = { bienvenue: 'Bonjour', reflexion: 'Réfléchit', pouc
 export const nouvelId = () => 'c' + Math.random().toString(36).slice(2, 9)
 
 const VIDE_ORDO = { patient: 'LIPTO', date: '', od: { sph: '', cyl: '', axe: '', add: '' }, og: { sph: '', cyl: '', axe: '', add: '' } }
-const VIDE_TICKET = { ...TICKET_LIPTO, date: '', od: { sph: '', cyl: '', axe: '' }, og: { sph: '', cyl: '', axe: '' }, pd: '' }
+const VIDE_TICKET = { ...TICKET_LIPTO, date: '', heure: '', od: { sph: '', cyl: '', axe: '', add: '' }, og: { sph: '', cyl: '', axe: '', add: '' }, pd: '', npd: '' }
+
+// Tests de vue prêts à l'emploi : vrais tickets du magasin de Bordeaux,
+// seul le nom est fictif (LIPTO). Un clic les recopie dans la case.
+export const TESTS_DE_VUE = [
+  { id: 'ticket-lipto', nom: 'Sans addition', info: '23/11 · 10:04', ticket: { ...TICKET_LIPTO, od: { ...TICKET_LIPTO.od, add: '' }, og: { ...TICKET_LIPTO.og, add: '' }, npd: '' } },
+  {
+    id: 'ticket-addition', nom: 'Avec addition (+2,00)', info: '23/11 · 10:06',
+    ticket: {
+      nom: 'LIPTO', date: '23/11/2026', heure: '10:06 am', wd: '40cm',
+      od: { sph: '+ 1.50', cyl: '+ 0.50', axe: '40°', add: '+ 2.00' },
+      og: { sph: '+ 1.50', cyl: '+ 0.25', axe: '180°', add: '+ 2.00' },
+      pd: '64.0', npd: '60.0', magasin: ['LUNETTES POUR TOUS', 'BORDEAUX'],
+    },
+  },
+]
 export const documentVide = genre => JSON.parse(JSON.stringify(genre === 'ticket' ? VIDE_TICKET : VIDE_ORDO))
 
 export function nouvelleCase(type) {

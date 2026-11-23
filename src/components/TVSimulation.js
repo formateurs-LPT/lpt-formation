@@ -172,8 +172,10 @@ function TicketExamen({ t: tk }) {
       {ligne(tk.od.sph, 'SPH', tk.og.sph)}
       {ligne(tk.od.cyl, 'CYL', tk.og.cyl)}
       {ligne(tk.od.axe, 'AXS', tk.og.axe)}
+      {(tk.od.add || tk.og.add) && ligne(tk.od.add, 'ADD', tk.og.add)}
       <div style={{ textAlign: 'center', marginTop: '0.6vh' }}>PD</div>
       <div style={{ textAlign: 'center' }}>{tk.pd}</div>
+      {tk.npd && <><div style={{ textAlign: 'center' }}>NPD</div><div style={{ textAlign: 'center' }}>{tk.npd}</div></>}
       <div style={{ textAlign: 'center', marginTop: '3vh' }}>{tk.magasin[0]}</div>
       <div style={{ textAlign: 'center' }}>{tk.magasin[1]}</div>
     </div>

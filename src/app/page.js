@@ -390,7 +390,7 @@ export default function Page() {
   // dashboardResume plutôt que de rebasculer sur l'ancien écran plein écran.
   const resumeDashboardOnboarding = (journeeId) => {
     setDashboardResume({
-      activeView: moduleReturnTo === 'onboarding-modules-belgique' ? 'onboarding-belgique' : 'onboarding',
+      activeView: moduleReturnTo === 'apprendre-lipto' ? 'apprendre-lipto' : moduleReturnTo === 'onboarding-modules-belgique' ? 'onboarding-belgique' : 'onboarding',
       journeeId,
     })
     setView('dashboard')

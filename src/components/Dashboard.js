@@ -23,6 +23,7 @@ import { getQuizResultats, periodBounds } from '@/lib/collaborateursApi'
 import AuditFormateursView from './AuditFormateursView'
 import AuditFormateursReporting from './AuditFormateursReporting'
 import AtelierSimulation from './atelier/AtelierSimulation'
+import ApprendreAvecLipto from './apprendre/ApprendreAvecLipto'
 import { peutUtiliserAtelier } from '@/lib/atelierSimulation'
 import DemandesInterventionView from '@/components/DemandesInterventionView'
 import { getFormateurRatings } from '@/lib/formateurRatings'
@@ -1290,6 +1291,7 @@ const VIEW_TO_CATEGORY = {
   'retour-formation': 'retour-formation',
   'fiches-pratiques': 'fiches-pratiques',
   'atelier-lipto': 'atelier-lipto',
+  'apprendre-lipto': 'apprendre-lipto',
 }
 
 // Vue par défaut quand on clique directement sur une catégorie de la
@@ -1306,6 +1308,7 @@ const CATEGORY_LANDING = {
   idees: 'idees',
   'audit-formateurs': 'audit-formateurs',
   'atelier-lipto': 'atelier-lipto',
+  'apprendre-lipto': 'apprendre-lipto',
 }
 
 // Petit sélecteur d'onglets interne à une catégorie (ex: Entrées ↔
@@ -1812,6 +1815,25 @@ export default function Dashboard({ pName, onLaunchModule, onOpenRoom, onOpenTv,
           <div style={{ fontSize: 18, fontWeight: 800, marginTop: 10 }}>Atelier Lipto</div>
           <p style={{ color: 'var(--text-s)', marginTop: 8 }}>Vous n’avez pas d’accès à ce module pour le moment.</p>
         </div>
+      </TrainerPage>
+    )
+  }
+
+  // Apprendre avec Lipto (23/11) : mini-simulations Lipto (France / Belgique,
+  // mode score ou libre), même accès que l'Atelier Lipto. Aucune n'est encore
+  // jouable : elles seront écrites dans l'atelier.
+  if (activeView === 'apprendre-lipto') {
+    return (
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
+        {peutUtiliserAtelier(pName) ? (
+          <ApprendreAvecLipto integre onLancer={s => onToast(`« ${s.titre} » est en préparation.`)} />
+        ) : (
+          <div style={{ maxWidth: 460, margin: '60px auto', textAlign: 'center', background: '#fff', border: '1px solid var(--border)', borderRadius: 16, padding: '36px 28px' }}>
+            <div style={{ fontSize: 40 }}>🔒</div>
+            <div style={{ fontSize: 18, fontWeight: 800, marginTop: 10 }}>Apprendre avec Lipto</div>
+            <p style={{ color: 'var(--text-s)', marginTop: 8 }}>Vous n’avez pas d’accès à ce module pour le moment.</p>
+          </div>
+        )}
       </TrainerPage>
     )
   }
