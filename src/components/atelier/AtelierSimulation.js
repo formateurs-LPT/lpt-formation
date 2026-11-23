@@ -303,7 +303,7 @@ function BarreLaterale({ moi, projets, projetId, onOuvrir, onNouveau, onImporter
           <span style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.titre}</span>
         </div>
         <div style={{ fontSize: 12, color: DOUX, marginTop: 3, paddingLeft: 16 }}>
-          {p.auteur !== moi && <>{p.auteur} · </>}{b.nbCases} cases{b.suitesManquantes ? ` · ${b.suitesManquantes} à écrire` : ''}
+          {p.auteur !== moi && <>{p.auteur} · </>}{b.nbCases} case{b.nbCases > 1 ? 's' : ''}{b.suitesManquantes ? ` · ${b.suitesManquantes} à écrire` : ''}
         </div>
         <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1, paddingLeft: 16 }}>Modifié {ilYa(p.majLe)}{p.majPar && p.majPar !== p.auteur ? ` par ${p.majPar}` : ''}</div>
       </button>
@@ -351,7 +351,7 @@ function BarreProjet({ projet, moi, enregistrement, onTitre, onStatut, onTester,
         ))}
       </div>
       <div style={{ fontSize: 13, color: DOUX, whiteSpace: 'nowrap' }}>
-        {b.nbCases} cases
+        {b.nbCases} case{b.nbCases > 1 ? 's' : ''}
         {b.suitesManquantes > 0 && <span style={{ color: '#b45309' }}> · {b.suitesManquantes} suite{b.suitesManquantes > 1 ? 's' : ''} à écrire</span>}
         {b.problemes > 0 && <span style={{ color: '#dc2626' }}> · ⚠ {b.problemes}</span>}
       </div>

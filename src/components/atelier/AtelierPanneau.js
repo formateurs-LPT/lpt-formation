@@ -1,5 +1,6 @@
 'use client'
 // Atelier Lipto — panneau de droite : on remplit la case sélectionnée.
+import { useEffect, useState } from 'react'
 import Lipto from '@/components/lipto/Lipto'
 import { THEMES_TEL } from '@/lib/themeTelephone'
 import { LIPTO_POSES } from '@/lib/lipto'
@@ -213,7 +214,22 @@ function Champ({ titre, aide, children }) {
   )
 }
 
+// Notice repliable (23/11) : une flèche la réduit en fine colonne pour
+// laisser plus de place au plan de travail. Choix retenu dans ce navigateur.
+const CLE_AIDE = 'atelier_lipto_aide_repliee'
 function Aide() {
+  const [repliee, setRepliee] = useState(false)
+  useEffect(() => { try { setRepliee(localStorage.getItem(CLE_AIDE) === '1') } catch {} }, [])
+  const basculer = v => { setRepliee(v); try { localStorage.setItem(CLE_AIDE, v ? '1' : '0') } catch {} }
+  if (repliee) {
+    return (
+      <aside style={{ width: 44, flexShrink: 0, borderLeft: `1px solid ${TRAIT}`, background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 14 }}>
+        <style>{CSS}</style>
+        <button onClick={() => basculer(false)} className="ap-fleche" title="Afficher la notice" aria-label="Afficher la notice">‹</button>
+        <button onClick={() => basculer(false)} style={{ marginTop: 14, border: 'none', background: 'none', cursor: 'pointer', writingMode: 'vertical-rl', fontSize: 12, fontWeight: 700, letterSpacing: 1.5, color: DOUX, fontFamily: 'inherit', padding: 0 }}>Comment ça marche ?</button>
+      </aside>
+    )
+  }
   const etape = (n, t, d) => (
     <div style={{ display: 'flex', gap: 12 }}>
       <span style={{ width: 26, height: 26, borderRadius: 13, background: NAVY, color: '#fff', fontSize: 13, fontWeight: 800, display: 'grid', placeItems: 'center', flexShrink: 0 }}>{n}</span>
@@ -221,10 +237,12 @@ function Aide() {
     </div>
   )
   return (
-    <aside style={{ width: 380, flexShrink: 0, borderLeft: `1px solid ${TRAIT}`, background: '#fff', padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <aside style={{ width: 380, flexShrink: 0, borderLeft: `1px solid ${TRAIT}`, background: '#fff', padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 18, overflowY: 'auto' }}>
+      <style>{CSS}</style>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <Lipto pose="conseil" taille={70} t={THEMES_TEL.clair} />
-        <div style={{ fontWeight: 800, fontSize: 17 }}>Comment ça marche ?</div>
+        <div style={{ fontWeight: 800, fontSize: 17, flex: 1 }}>Comment ça marche ?</div>
+        <button onClick={() => basculer(true)} className="ap-fleche" title="Réduire la notice" aria-label="Réduire la notice">›</button>
       </div>
       {etape(1, 'Pars d’un départ 🚩', 'Chaque départ est un scénario que le formateur pourra lancer en formation.')}
       {etape(2, 'Clique sur « + Ajouter la suite »', 'Choisis ce qui se passe ensuite : Lipto parle, une question, le choix du formateur, l’examen de vue ou la fin. L’arbre se range tout seul.')}
@@ -246,6 +264,8 @@ const CSS = `
 .ap-champ { width: 100%; border: 1px solid ${TRAIT}; border-radius: 9px; padding: 8px 10px; font-size: 14px; font-family: inherit; color: ${NAVY}; background: #fff; resize: vertical; line-height: 1.4; }
 .ap-champ:focus { outline: none; border-color: ${BLEU}; box-shadow: 0 0 0 3px ${BLEU}22; }
 .ap-mini { padding: 5px 7px; font-size: 13px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.ap-fleche { width: 30px; height: 30px; flex-shrink: 0; border: 1px solid ${TRAIT}; background: #fff; border-radius: 8px; font-size: 20px; line-height: 1; color: ${DOUX}; cursor: pointer; font-family: inherit; display: grid; place-items: center; padding-bottom: 2px; }
+.ap-fleche:hover { background: #f1f3f8; color: ${NAVY}; }
 .ap-x { width: 30px; height: 30px; flex-shrink: 0; border: none; background: transparent; border-radius: 8px; font-size: 18px; color: #94a3b8; cursor: pointer; }
 .ap-x:hover { background: #f1f3f8; color: ${NAVY}; }
 .ap-ajout { border: 1.5px dashed #cbd5e1; background: #fafbfd; border-radius: 9px; padding: 7px 12px; width: 100%; font-size: 13px; font-weight: 700; color: ${DOUX}; cursor: pointer; font-family: inherit; }
