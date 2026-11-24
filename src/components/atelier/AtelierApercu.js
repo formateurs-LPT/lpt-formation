@@ -5,7 +5,8 @@
 import { useEffect, useState } from 'react'
 import Lipto from '@/components/lipto/Lipto'
 import { THEMES_TEL } from '@/lib/themeTelephone'
-import { TYPES_CASE, reglage, nombreFr } from '@/lib/atelierSimulation'
+import { TYPES_CASE, reglage, nombreFr, qcmMultiple, PD_LIPTO } from '@/lib/atelierSimulation'
+import { BackendMini, FrontoMini } from './DocumentsSav'
 
 const NAVY = '#03112a', OR = '#c9a227', VERT = '#4ade80'
 const LETTRES = 'ABCDEF'
@@ -165,9 +166,12 @@ function melange(c) {
   if (n > 1 && ordre.every((x, i) => x === i)) ordre.reverse()
   return ordre
 }
+// QCM : la ou les réponses cochées (toujours un tableau)
+const choixQcm = rep => (Array.isArray(rep?.choix) ? rep.choix : rep?.choix != null ? [rep.choix] : [])
 function aRepondu(c, rep) {
   if (!rep) return false
-  if (c.mode === 'qcm' || c.mode === 'vraifaux') return rep.choix != null
+  if (c.mode === 'qcm') return choixQcm(rep).length > 0
+  if (c.mode === 'vraifaux') return rep.choix != null
   if (c.mode === 'cases') return (rep.cases || []).some(x => x?.trim())
   if (c.mode === 'ordre') return (rep.ordre || []).length === reglage(c, 'etapes').length
   if (c.mode === 'nombre') return !Number.isNaN(nombreFr(rep.nombre))
@@ -175,7 +179,10 @@ function aRepondu(c, rep) {
 }
 function verdict(c, reponse) {
   if (!aRepondu(c, reponse)) return null
-  if (c.mode === 'qcm') return c.options[reponse.choix]?.juste ? 'juste' : 'faux'
+  if (c.mode === 'qcm') {
+    const choix = choixQcm(reponse)
+    return c.options.every((o, i) => !!o.juste === choix.includes(i)) ? 'juste' : 'faux'
+  }
   if (c.mode === 'vraifaux') return (reponse.choix === 'vrai') === reglage(c, 'vraiFaux') ? 'juste' : 'faux'
   if (c.mode === 'cases') {
     const t = elementsTrouves(c, reponse.cases)
@@ -203,20 +210,23 @@ function Scene({ c, correction, reponse, onReponse }) {
   const fond = (correction && c.fondCorrection) || c.fond
   const pose = correction ? (c.poseCorrection || 'pouce') : c.pose
   const bulle = correction && c.repliqueCorrection ? c.repliqueCorrection : c.bulle
-  const doc = c.document
+  const docs = [c.document, c.document2].filter(Boolean)
+  const doc = docs.length > 0
+  // Fronto seul pendant une question : il est haut, Lipto se met à sa droite
+  const apresFronto = question && docs.length === 1 && docs[0].genre === 'fronto'
   return (
     <Ecran fond={fond}>
       <div style={{ position: 'absolute', top: '3cqw', left: '3.5cqw', fontSize: '1.1cqw', letterSpacing: 4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)' }}>
         Simulation <span style={{ color: OR }}>· {question ? (correction ? 'Correction' : 'Que répondez-vous ?') : 'Lipto parle'}</span>
       </div>
       {doc && (
-        <div style={{ position: 'absolute', left: '3cqw', top: '7cqw', width: question ? '30cqw' : '34cqw', animation: 'aaDoc .7s cubic-bezier(.2,.9,.3,1.2) both' }}>
-          {doc.genre === 'ticket' ? <TicketMini d={doc} /> : <OrdoMini d={doc} />}
+        <div style={{ position: 'absolute', left: '3cqw', top: '6cqw', display: 'flex', alignItems: 'flex-start', gap: '1.6cqw', animation: 'aaDoc .7s cubic-bezier(.2,.9,.3,1.2) both' }}>
+          {docs.map((x, i) => <div key={i} style={{ width: largeurDoc(x, question, docs.length) }}><DocumentMini d={x} /></div>)}
         </div>
       )}
-      <div style={{ position: 'absolute', left: doc && !question ? '40cqw' : '4cqw', bottom: '3cqw', display: 'flex', alignItems: 'flex-end', gap: '1cqw' }}>
+      <div style={{ position: 'absolute', ...(doc && !question ? { right: '3cqw' } : { left: apresFronto ? '28.5cqw' : '4cqw' }), bottom: '3cqw', display: 'flex', alignItems: 'flex-end', gap: '1cqw', zIndex: 1 }}>
         <div style={{ animation: correction ? 'none' : 'aaEntree 1s cubic-bezier(.25,.8,.3,1) both' }}>
-          <LiptoTaille pose={pose} correction={correction} petit={!!doc} />
+          <LiptoTaille pose={pose} correction={correction} petit={doc} mini={docs.length > 1 || apresFronto} />
         </div>
         {bulle && (
           <div style={{ marginBottom: doc ? '9cqw' : '18cqw', background: '#fff', color: NAVY, borderRadius: '1.6cqw', padding: '1.3cqw 1.7cqw', maxWidth: doc ? '20cqw' : '26cqw', boxShadow: '0 10px 30px rgba(0,0,0,0.25)', animation: `aaBulle .4s cubic-bezier(.2,.9,.3,1.3) ${correction ? 0.1 : 0.8}s both`, position: 'relative' }}>
@@ -266,7 +276,15 @@ function Option({ i, lettre, texte, choisie, juste, correction, onClick }) {
 
 function Reponses({ c, reponse, onReponse, correction }) {
   if (c.mode === 'qcm') {
-    return c.options.map((o, i) => <Option key={i} i={i} lettre={LETTRES[i]} texte={o.texte} choisie={reponse?.choix === i} juste={o.juste} correction={correction} onClick={() => onReponse({ choix: i })} />)
+    // Plusieurs bonnes réponses : on peut en cocher plusieurs (un clic ajoute ou retire)
+    const multiple = qcmMultiple(c), choix = choixQcm(reponse)
+    const cliquer = i => onReponse({ choix: multiple ? (choix.includes(i) ? choix.filter(x => x !== i) : [...choix, i].sort()) : [i] })
+    return (
+      <>
+        {multiple && !correction && <div style={{ fontSize: '1.1cqw', fontWeight: 700, color: OR, marginTop: '-0.3cqw' }}>☑ Plusieurs réponses possibles</div>}
+        {c.options.map((o, i) => <Option key={i} i={i} lettre={LETTRES[i]} texte={o.texte} choisie={choix.includes(i)} juste={o.juste} correction={correction} onClick={() => cliquer(i)} />)}
+      </>
+    )
   }
   if (c.mode === 'vraifaux') {
     const bonne = reglage(c, 'vraiFaux') ? 'vrai' : 'faux'
@@ -385,16 +403,16 @@ function ReponsesOrdre({ c, reponse, onReponse, correction }) {
 }
 
 // La taille de Lipto suit la largeur du cadre
-function LiptoTaille({ pose, correction, petit }) {
+function LiptoTaille({ pose, correction, petit, mini }) {
   const [taille, setTaille] = useState(300)
   useEffect(() => {
     const maj = () => {
       const w = Math.min(1180, window.innerWidth * 0.94, (window.innerHeight - 150) * 16 / 9)
-      setTaille(Math.round(w * (petit ? 0.2 : 0.29)))
+      setTaille(Math.round(w * (mini ? 0.14 : petit ? 0.2 : 0.29)))
     }
     maj(); window.addEventListener('resize', maj)
     return () => window.removeEventListener('resize', maj)
-  }, [petit])
+  }, [petit, mini])
   return <Lipto key={pose + correction} pose={pose} anim={correction ? 'rebond' : 'reflexion'} taille={taille} t={THEMES_TEL.clair} />
 }
 
@@ -444,6 +462,19 @@ function ChoixScenario({ departs, onChoix }) {
   )
 }
 
+// Largeur d'un document sur le diffuseur (en % de la largeur de l'écran)
+function largeurDoc(d, question, nb) {
+  if (d.genre === 'backend') return nb > 1 ? '36cqw' : question ? '58cqw' : '62cqw'
+  if (d.genre === 'fronto') return nb > 1 ? '20cqw' : '24cqw'
+  return nb > 1 ? '24cqw' : question ? '30cqw' : '34cqw'
+}
+function DocumentMini({ d }) {
+  if (d.genre === 'ticket') return <TicketMini d={d} />
+  if (d.genre === 'backend') return <BackendMini d={d} />
+  if (d.genre === 'fronto') return <FrontoMini d={d} />
+  return <OrdoMini d={d} />
+}
+
 function OrdoMini({ d }) {
   const cel = { padding: '0.7cqw 0.4cqw', fontSize: '1.35cqw', fontWeight: 600, textAlign: 'center', borderBottom: '1px solid #e5e7eb', fontVariantNumeric: 'tabular-nums' }
   return (
@@ -454,7 +485,7 @@ function OrdoMini({ d }) {
       </div>
       <div style={{ marginTop: '1.4cqw', fontSize: '1.2cqw' }}>Patient : <b style={{ letterSpacing: 2 }}>{d.patient}</b></div>
       <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1cqw', fontFamily: 'inherit' }}>
-        <thead><tr>{['', 'Sphère', 'Cylindre', 'Axe', 'Add.'].map(h => <th key={h} style={{ ...cel, fontSize: '0.85cqw', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1 }}>{h}</th>)}</tr></thead>
+        <thead><tr>{['', 'Sphère', 'Cylindre', 'Axe', 'Add.'].map(h => <th key={h} style={{ ...cel, fontSize: '0.85cqw', color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</th>)}</tr></thead>
         <tbody>
           {[['OD', d.od], ['OG', d.og]].map(([o, v]) => (
             <tr key={o}><td style={{ ...cel, fontWeight: 800, color: '#0089ba' }}>{o}</td><td style={cel}>{v.sph}</td><td style={cel}>{v.cyl ? `(${v.cyl})` : ''}</td><td style={cel}>{v.axe ? `${v.axe}°` : ''}</td><td style={cel}>{v.add}</td></tr>
@@ -468,14 +499,14 @@ function OrdoMini({ d }) {
 function TicketMini({ d }) {
   const ligne = (g, m, dr) => <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '1cqw' }}><span>{g}</span><span>{m}</span><span style={{ textAlign: 'right' }}>{dr}</span></div>
   return (
-    <div style={{ fontFamily: '"Courier New", monospace', letterSpacing: 1.5, width: '24cqw', color: '#1f2937', fontSize: '1.3cqw', fontWeight: 600, lineHeight: 1.35, background: 'linear-gradient(180deg, #fff, #f4f6f8)', padding: '2cqw 1.6cqw', borderRadius: '4px 4px 10px 10px', boxShadow: '0 20px 50px rgba(0,0,0,0.35)', transform: 'rotate(1.5deg)' }}>
+    <div style={{ fontFamily: '"Courier New", monospace', letterSpacing: 1.5, maxWidth: '24cqw', color: '#1f2937', fontSize: '1.3cqw', fontWeight: 600, lineHeight: 1.35, background: 'linear-gradient(180deg, #fff, #f4f6f8)', padding: '2cqw 1.6cqw', borderRadius: '4px 4px 10px 10px', boxShadow: '0 20px 50px rgba(0,0,0,0.35)', transform: 'rotate(1.5deg)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>NAME: {d.nom}</span><span>M/F</span></div>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{d.date}</span><span>{d.heure}</span></div>
       <div style={{ textAlign: 'right' }}>WD={d.wd}</div>
       <div style={{ marginTop: '1.2cqw' }}>-- FAR --</div>
       {ligne(d.od.sph, 'SPH', d.og.sph)}{ligne(d.od.cyl, 'CYL', d.og.cyl)}{ligne(d.od.axe, 'AXS', d.og.axe)}
       {(d.od.add || d.og.add) && ligne(d.od.add, 'ADD', d.og.add)}
-      <div style={{ textAlign: 'center', marginTop: '0.6cqw' }}>PD {d.pd}</div>
+      <div style={{ textAlign: 'center', marginTop: '0.6cqw' }}>PD {PD_LIPTO}</div>
       {d.npd && <div style={{ textAlign: 'center' }}>NPD {d.npd}</div>}
       <div style={{ textAlign: 'center', marginTop: '1.2cqw' }}>{d.magasin?.[0]}</div>
       <div style={{ textAlign: 'center' }}>{d.magasin?.[1]}</div>

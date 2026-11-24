@@ -10,7 +10,7 @@ import { liptoSrc } from '@/lib/lipto'
 import {
   TYPES_CASE, TYPES_QUESTION, TYPES_AJOUTABLES, LARGEUR_CASE, HAUT_ENTETE, HAUT_SORTIE,
   nouvelleCase, nouveauProjet, problemesCase, estApresChoix, bilanProjet, miseEnPage, hauteurCase, ySortie,
-  projetSimulationActuelle, nouvelId,
+  projetSimulationActuelle, nouvelId, GENRES_DOCUMENT, listeProblemes,
 } from '@/lib/atelierSimulation'
 import { chargerProjetsEquipe, enregistrerProjet, supprimerProjetEquipe, verrouilleParAutre, prendreVerrou, rendreVerrou } from '@/lib/atelierSimulationApi'
 import AtelierPanneau from './AtelierPanneau'
@@ -134,11 +134,15 @@ export default function AtelierSimulation({ moi, onQuitter }) {
     return { ...cs, [source]: { ...cs[source], suites } }
   })
 
+  // inserer : la nouvelle case se glisse entre deux cases déjà reliées, et
+  // reprend comme suite la case qui suivait (rien n'est perdu après)
   const ajouterSuite = (type) => {
-    const { source, sortie } = menu
+    const { source, sortie, inserer } = menu
     const c = nouvelleCase(type)
     majCases(cs => {
-      const suites = [...cs[source].suites]; suites[sortie] = c.id
+      const suites = [...cs[source].suites]
+      if (inserer && c.suites.length) c.suites[0] = suites[sortie]
+      suites[sortie] = c.id
       return { ...cs, [c.id]: c, [source]: { ...cs[source], suites } }
     })
     setMenu(null); setSelection(c.id); setFocus({ id: c.id })
@@ -206,7 +210,8 @@ export default function AtelierSimulation({ moi, onQuitter }) {
             <BarreProjet projet={projet} moi={moi} enregistrement={enregistrement}
               onTitre={titre => majProjet(p => ({ ...p, titre }))} onStatut={changerStatut}
               onTester={() => setApercu({ depart: null })} onScenario={ajouterScenario}
-              onDupliquer={dupliquer} onSupprimer={supprimerProjet} />
+              onDupliquer={dupliquer} onSupprimer={supprimerProjet}
+              onAllerCase={id => { setLiaison(null); setMenu(null); setSelection(id); setFocus({ id, t: Date.now() }) }} />
             <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
               <PlanDeTravail
                 projet={projet} pos={pos} selection={selection} liaison={liaison} focus={focus}
@@ -218,7 +223,7 @@ export default function AtelierSimulation({ moi, onQuitter }) {
                   setSelection(id)
                 }}
                 onVide={() => { setSelection(null); setMenu(null) }}
-                onPlus={(source, sortie, e) => { const r = e.currentTarget.getBoundingClientRect(); setMenu({ source, sortie, x: r.right + 8, y: r.top }) }}
+                onPlus={(source, sortie, e, inserer = false) => { const r = e.currentTarget.getBoundingClientRect(); setMenu({ source, sortie, inserer, x: r.right + 8, y: r.top }) }}
                 onDelier={(source, sortie) => relier(source, sortie, null)}
               />
               <div style={{ display: 'flex', pointerEvents: lectureSeule ? 'none' : 'auto', opacity: lectureSeule ? 0.65 : 1 }}>
@@ -246,18 +251,24 @@ export default function AtelierSimulation({ moi, onQuitter }) {
         <>
           <div onClick={() => setMenu(null)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
           <div style={{ position: 'fixed', left: Math.min(menu.x, window.innerWidth - 260), top: Math.min(menu.y, window.innerHeight - 330), zIndex: 41, width: 250, background: '#fff', borderRadius: 14, boxShadow: '0 18px 50px rgba(3,17,42,0.22)', border: `1px solid ${TRAIT}`, padding: 6, animation: 'atApparait .15s ease both' }}>
-            <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: DOUX, fontWeight: 700, padding: '8px 10px 6px' }}>Ajouter la suite</div>
-            {TYPES_AJOUTABLES.map(t => (
+            <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: DOUX, fontWeight: 700, padding: '8px 10px 6px' }}>{menu.inserer ? 'Insérer une case ici' : 'Ajouter la suite'}</div>
+            {TYPES_AJOUTABLES.filter(t => !menu.inserer || t !== 'fin').map(t => (
               <button key={t} className="at-ligne-menu" onClick={() => ajouterSuite(t)}>
                 <span style={{ width: 28, height: 28, borderRadius: 8, background: TYPES_CASE[t].couleur + '1a', display: 'grid', placeItems: 'center' }}>{TYPES_CASE[t].emoji}</span>
                 {TYPES_CASE[t].nom}
               </button>
             ))}
-            <div style={{ height: 1, background: TRAIT, margin: '4px 6px' }} />
-            <button className="at-ligne-menu" onClick={() => { setLiaison({ source: menu.source, sortie: menu.sortie }); setMenu(null) }}>
-              <span style={{ width: 28, height: 28, borderRadius: 8, background: '#eef2f7', display: 'grid', placeItems: 'center' }}>🔗</span>
-              Relier à une case existante
-            </button>
+            {menu.inserer ? (
+              <div style={{ fontSize: 12, color: DOUX, padding: '6px 10px 8px', lineHeight: 1.4 }}>La suite actuelle se raccroche après la nouvelle case.</div>
+            ) : (
+              <>
+                <div style={{ height: 1, background: TRAIT, margin: '4px 6px' }} />
+                <button className="at-ligne-menu" onClick={() => { setLiaison({ source: menu.source, sortie: menu.sortie }); setMenu(null) }}>
+                  <span style={{ width: 28, height: 28, borderRadius: 8, background: '#eef2f7', display: 'grid', placeItems: 'center' }}>🔗</span>
+                  Relier à une case existante
+                </button>
+              </>
+            )}
           </div>
         </>
       )}
@@ -344,8 +355,10 @@ const TitreListe = ({ children }) => <div style={{ fontSize: 11, letterSpacing: 
 const Vide = ({ children }) => <div style={{ fontSize: 12, color: '#94a3b8', padding: '2px 8px 6px' }}>{children}</div>
 
 // ── Barre du haut : titre, statut, test ──
-function BarreProjet({ projet, moi, enregistrement, onTitre, onStatut, onTester, onScenario, onDupliquer, onSupprimer }) {
+function BarreProjet({ projet, moi, enregistrement, onTitre, onStatut, onTester, onScenario, onDupliquer, onSupprimer, onAllerCase }) {
   const b = bilanProjet(projet)
+  const [ouvert, setOuvert] = useState(false)
+  const aRegler = b.suitesManquantes > 0 || b.problemes > 0
   return (
     <div style={{ height: 62, flexShrink: 0, borderBottom: `1px solid ${TRAIT}`, background: '#fff', display: 'flex', alignItems: 'center', gap: 14, padding: '0 18px' }}>
       <input value={projet.titre} onChange={e => onTitre(e.target.value)} className="at-titre" size={Math.max(8, projet.titre.length)} />
@@ -354,10 +367,34 @@ function BarreProjet({ projet, moi, enregistrement, onTitre, onStatut, onTester,
           <button key={v} onClick={() => onStatut(v)} style={{ border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', background: projet.statut === v ? (v === 'pret' ? '#16a34a' : '#fff') : 'transparent', color: projet.statut === v && v === 'pret' ? '#fff' : NAVY, boxShadow: projet.statut === v ? '0 1px 4px rgba(3,17,42,0.12)' : 'none' }}>{l}</button>
         ))}
       </div>
-      <div style={{ fontSize: 13, color: DOUX, whiteSpace: 'nowrap' }}>
+      <div style={{ fontSize: 13, color: DOUX, whiteSpace: 'nowrap', position: 'relative' }}>
         {b.nbCases} case{b.nbCases > 1 ? 's' : ''}
-        {b.suitesManquantes > 0 && <span style={{ color: '#b45309' }}> · {b.suitesManquantes} suite{b.suitesManquantes > 1 ? 's' : ''} à écrire</span>}
-        {b.problemes > 0 && <span style={{ color: '#dc2626' }}> · ⚠ {b.problemes}</span>}
+        {/* Un clic ouvre la liste des points à régler ; un clic sur un point emmène à sa case */}
+        {aRegler && (
+          <button onClick={() => setOuvert(o => !o)} className="at-alerte" title="Voir les points à régler">
+            {b.suitesManquantes > 0 && <span style={{ color: '#b45309' }}>{b.suitesManquantes} suite{b.suitesManquantes > 1 ? 's' : ''} à écrire</span>}
+            {b.suitesManquantes > 0 && b.problemes > 0 && ' · '}
+            {b.problemes > 0 && <span style={{ color: '#dc2626', fontWeight: 800 }}>⚠ {b.problemes}</span>}
+            <span style={{ fontSize: 10, marginLeft: 4 }}>{ouvert ? '▲' : '▼'}</span>
+          </button>
+        )}
+        {ouvert && aRegler && (
+          <>
+            <div onClick={() => setOuvert(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+            <div style={{ position: 'absolute', top: 30, left: 0, zIndex: 41, width: 380, maxHeight: 420, overflowY: 'auto', background: '#fff', borderRadius: 14, boxShadow: '0 18px 50px rgba(3,17,42,0.22)', border: `1px solid ${TRAIT}`, padding: 6, whiteSpace: 'normal', animation: 'atApparait .15s ease both' }}>
+              <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: DOUX, fontWeight: 700, padding: '8px 10px 6px' }}>À régler · clique pour y aller</div>
+              {listeProblemes(projet).map((x, i) => (
+                <button key={i} className="at-ligne-menu" style={{ alignItems: 'flex-start' }} onClick={() => { setOuvert(false); onAllerCase(x.id) }}>
+                  <span style={{ color: x.grave ? '#dc2626' : '#b45309', fontWeight: 800, width: 16, flexShrink: 0 }}>{x.grave ? '⚠' : '＋'}</span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: 'block', fontWeight: 800, color: x.grave ? '#dc2626' : '#b45309' }}>{x.probleme}</span>
+                    <span style={{ display: 'block', fontSize: 12, color: DOUX, fontWeight: 500, lineHeight: 1.35 }}>{x.nom}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
       <div style={{ flex: 1 }} />
       <span style={{ fontSize: 12, color: enregistrement === 'erreur' ? '#dc2626' : '#94a3b8', fontWeight: enregistrement === 'erreur' ? 700 : 400, whiteSpace: 'nowrap' }}>
@@ -465,7 +502,7 @@ function PlanDeTravail({ projet, pos, selection, liaison, focus, onSelection, on
         {Object.values(projet.cases).map(c => pos[c.id] && (
           <CarteCase key={c.id} c={c} p={pos[c.id]} cases={projet.cases} choisie={selection === c.id}
             cible={!!liaison && c.type !== 'depart' && c.id !== liaison.source}
-            onClic={() => onSelection(c.id)} onPlus={(i, e) => onPlus(c.id, i, e)} onDelier={i => onDelier(c.id, i)} />
+            onClic={() => onSelection(c.id)} onPlus={(i, e, inserer) => onPlus(c.id, i, e, inserer)} onDelier={i => onDelier(c.id, i)} />
         ))}
       </div>
 
@@ -501,7 +538,7 @@ function CarteCase({ c, p, cases, choisie, cible, onClic, onPlus, onDelier }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 800, color: T.couleur, display: 'flex', alignItems: 'center', gap: 6 }}>
             <span>{T.emoji}</span>{c.type === 'question' ? (TYPES_QUESTION[c.mode]?.nom || 'Question') : T.nom}
-            {c.document && <span title="Document affiché">{c.document.genre === 'ticket' ? '🧾' : '📄'}</span>}
+            {[c.document, c.document2].filter(Boolean).map((d, i) => <span key={i} title={'Document : ' + GENRES_DOCUMENT[d.genre]?.nom}>{GENRES_DOCUMENT[d.genre]?.emoji}</span>)}
             {problemes.length > 0 && <span title={problemes.join(' · ')} style={{ marginLeft: 'auto', color: '#dc2626' }}>⚠</span>}
           </div>
           {c.type === 'depart'
@@ -524,6 +561,7 @@ function CarteCase({ c, p, cases, choisie, cible, onClic, onPlus, onDelier }) {
             {suite ? (
               <>
                 <span style={{ flex: 1, fontSize: 12, color: DOUX, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.type === 'choix' ? `« ${l} »` : l}</span>
+                <button className="at-inserer" title="Insérer une case ici, sans rien perdre après" onClick={e => { e.stopPropagation(); onPlus(i, e, true) }}>+ Insérer</button>
                 <button className="at-delier" title="Retirer le lien" onClick={e => { e.stopPropagation(); onDelier(i) }}>×</button>
               </>
             ) : (
@@ -555,8 +593,13 @@ const CSS = `
 .at-delier { width: 20px; height: 20px; border-radius: 6px; border: none; background: transparent; color: #94a3b8; cursor: pointer; font-size: 15px; line-height: 1; opacity: 0; }
 .at-carte:hover .at-delier { opacity: 1; }
 .at-delier:hover { background: #fee2e2; color: #dc2626; }
+.at-inserer { height: 22px; border-radius: 6px; border: 1px dashed #cbd5e1; background: #fff; color: ${DOUX}; cursor: pointer; font-size: 11px; font-weight: 700; padding: 0 7px; font-family: inherit; white-space: nowrap; opacity: 0; }
+.at-carte:hover .at-inserer { opacity: 1; }
+.at-inserer:hover { border-color: ${BLEU}; color: ${BLEU}; background: #f0fbfe; }
 .at-ligne-menu { display: flex; width: 100%; align-items: center; gap: 10px; padding: 7px 10px; border: none; background: none; border-radius: 9px; font-size: 14px; font-weight: 600; color: ${NAVY}; cursor: pointer; font-family: inherit; text-align: left; }
 .at-ligne-menu:hover { background: #f1f3f8; }
+.at-alerte { margin-left: 6px; border: 1px solid transparent; background: none; border-radius: 8px; padding: 3px 6px; font-size: 13px; cursor: pointer; font-family: inherit; color: ${DOUX}; }
+.at-alerte:hover { background: #fff7ed; border-color: #fed7aa; }
 .at-projet { display: block; width: 100%; text-align: left; border: 1px solid transparent; border-radius: 10px; padding: 9px 10px; margin-bottom: 2px; cursor: pointer; font-family: inherit; color: ${NAVY}; }
 .at-projet:hover { background: rgba(255,255,255,0.6) !important; }
 .at-titre { font-size: 18px; font-weight: 800; color: ${NAVY}; border: 1px solid transparent; border-radius: 8px; padding: 5px 8px; background: transparent; font-family: inherit; min-width: 120px; max-width: 440px; flex-shrink: 1; }

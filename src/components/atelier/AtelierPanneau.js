@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Lipto from '@/components/lipto/Lipto'
 import { THEMES_TEL } from '@/lib/themeTelephone'
-import { TYPES_CASE, TYPES_QUESTION, reglage, FONDS, POSES, HUMEURS, NOMS_POSES, problemesCase, documentVide, TESTS_DE_VUE } from '@/lib/atelierSimulation'
+import { TYPES_CASE, TYPES_QUESTION, reglage, qcmMultiple, FONDS, POSES, HUMEURS, NOMS_POSES, problemesCase, documentVide, TESTS_DE_VUE, PD_LIPTO, GENRES_DOCUMENT } from '@/lib/atelierSimulation'
 
 const NAVY = '#03112a', BLEU = '#00abe9', TRAIT = '#e3e6ee', DOUX = '#64748b'
 const LETTRES = 'ABCDEF'
@@ -40,7 +40,13 @@ export default function AtelierPanneau({ cas: c, apresChoix, onMaj, onSupprimer,
             </Champ>
             <Champ titre="Attitude de Lipto"><ChoixPose valeur={c.pose} onChoix={pose => onMaj({ pose })} /></Champ>
             <Champ titre="Décor"><ChoixFond valeur={c.fond} onChoix={fond => onMaj({ fond })} /></Champ>
-            <Document doc={c.document} onMaj={document => onMaj({ document })} />
+            {/* Retirer le 1er document fait remonter le 2e */}
+            <Document titre="Document montré par Lipto" doc={c.document}
+              onMaj={document => onMaj(document ? { document } : { document: c.document2 || null, document2: null })} />
+            {c.document && (
+              <Document titre="2e document, pour comparer" aide="Facultatif : par exemple l’ordonnance et le relevé du back-end, côte à côte sur le diffuseur."
+                doc={c.document2 || null} onMaj={document2 => onMaj({ document2 })} />
+            )}
           </>
         )}
 
@@ -115,6 +121,13 @@ function Question({ c, onMaj }) {
             </div>
           ))}
           {c.options.length < 6 && <button className="ap-ajout" onClick={() => onMaj({ options: [...c.options, { texte: '', juste: false }] })}>+ Ajouter une réponse</button>}
+          <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 10, fontSize: 13, cursor: 'pointer' }}>
+            <input type="checkbox" checked={qcmMultiple(c)} disabled={c.options.filter(o => o.juste).length > 1}
+              onChange={e => onMaj({ choixMultiple: e.target.checked })} style={{ marginTop: 2 }} />
+            <span>Les collaborateurs peuvent cocher plusieurs réponses
+              <span style={{ display: 'block', fontSize: 12, color: DOUX }}>{c.options.filter(o => o.juste).length > 1 ? 'Automatique : il y a plusieurs bonnes réponses.' : 'Utile pour ne pas dévoiler qu’il n’y a qu’une bonne réponse.'}</span>
+            </span>
+          </label>
         </Champ>
       )}
       {c.mode === 'vraifaux' && (
@@ -225,16 +238,18 @@ function ReglagesOrdre({ c, onMaj }) {
   )
 }
 
-function Document({ doc, onMaj }) {
+function Document({ titre, aide, doc, onMaj }) {
   const genre = doc?.genre || null
-  const champ = (oeil, cle, largeur = 60) => (
-    <input className="ap-champ ap-mini" style={{ width: largeur }} value={doc[oeil][cle] || ''} onChange={e => onMaj({ ...doc, [oeil]: { ...doc[oeil], [cle]: e.target.value } })} />
+  const champ = (oeil, cle) => (
+    <input className="ap-champ ap-mini" style={{ width: '100%' }} value={doc[oeil]?.[cle] || ''} onChange={e => onMaj({ ...doc, [oeil]: { ...doc[oeil], [cle]: e.target.value } })} />
   )
-  const cles = ['sph', 'cyl', 'axe', 'add']
+  const cles = genre === 'backend' ? (doc.vue === 'mesures' ? ['ecart', 'hauteur'] : ['sph', 'cyl', 'axe'])
+    : genre === 'fronto' ? ['sph', 'cyl', 'axe'] : ['sph', 'cyl', 'axe', 'add']
+  const NOMS = { sph: 'Sphère', cyl: 'Cylindre', axe: 'Axe', add: 'Add.', ecart: 'Écart mono. (mm)', hauteur: 'Hauteur (mm)' }
   return (
-    <Champ titre="Document montré par Lipto">
-      <div style={{ display: 'flex', gap: 6 }}>
-        {[[null, 'Aucun'], ['ordonnance', '📄 Ordonnance'], ['ticket', '🧾 Ticket d’examen']].map(([g, l]) => (
+    <Champ titre={titre} aide={aide}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {[[null, 'Aucun'], ...Object.entries(GENRES_DOCUMENT).map(([g, x]) => [g, `${x.emoji} ${x.nom}`])].map(([g, l]) => (
           <button key={l} className={'ap-puce' + (genre === g ? ' ap-actif' : '')} onClick={() => onMaj(g ? (genre === g ? doc : { genre: g, ...documentVide(g) }) : null)}>{l}</button>
         ))}
       </div>
@@ -243,29 +258,53 @@ function Document({ doc, onMaj }) {
           <div style={{ fontSize: 12, fontWeight: 700, color: DOUX, marginBottom: 6 }}>Tests de vue prêts à l’emploi</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {TESTS_DE_VUE.map(t => (
-              <button key={t.id} className="ap-test" onClick={() => onMaj({ genre: 'ticket', ...JSON.parse(JSON.stringify(t.ticket)) })}>
+              <button key={t.id} className="ap-test" onClick={() => onMaj({ genre: 'ticket', ...JSON.parse(JSON.stringify(t.ticket)), pd: PD_LIPTO })}>
                 <span>🧾 {t.nom}</span><span style={{ fontSize: 11, color: DOUX, fontWeight: 600 }}>{t.info}</span>
               </button>
             ))}
           </div>
         </div>
       )}
+      {genre === 'backend' && (
+        <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+          {[['correction', 'Correction des verres'], ['mesures', 'Mesures (écarts, hauteurs)']].map(([v, l]) => (
+            <button key={v} className={'ap-puce' + ((doc.vue || 'correction') === v ? ' ap-actif' : '')} onClick={() => onMaj({ ...doc, vue: v })}>{l}</button>
+          ))}
+        </div>
+      )}
+      {genre === 'fronto' && (
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 10, fontSize: 12, color: DOUX, fontWeight: 700 }}>
+          Verre sur le fronto :
+          {[['od', 'D · œil droit'], ['og', 'G · œil gauche']].map(([v, l]) => (
+            <button key={v} className={'ap-puce' + ((doc.oeil || 'od') === v ? ' ap-actif' : '')} onClick={() => onMaj({ ...doc, oeil: v })}>{l}</button>
+          ))}
+        </div>
+      )}
       {genre && (
         <div style={{ marginTop: 10, background: '#f8f9fc', border: `1px solid ${TRAIT}`, borderRadius: 10, padding: 10 }}>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <label style={{ fontSize: 12, color: DOUX, flex: 1 }}>Date<input className="ap-champ ap-mini" value={doc.date} placeholder="03/11/2026" onChange={e => onMaj({ ...doc, date: e.target.value })} /></label>
-            {genre === 'ticket' && <label style={{ fontSize: 12, color: DOUX, width: 70 }}>PD<input className="ap-champ ap-mini" value={doc.pd || ''} onChange={e => onMaj({ ...doc, pd: e.target.value })} /></label>}
-            {genre === 'ticket' && <label style={{ fontSize: 12, color: DOUX, width: 70 }} title="Écart de près">NPD<input className="ap-champ ap-mini" value={doc.npd || ''} onChange={e => onMaj({ ...doc, npd: e.target.value })} /></label>}
-          </div>
+          {(genre === 'ordonnance' || genre === 'ticket') && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <label style={{ fontSize: 12, color: DOUX, flex: 1 }}>Date<input className="ap-champ ap-mini" value={doc.date} placeholder="03/11/2026" onChange={e => onMaj({ ...doc, date: e.target.value })} /></label>
+              {genre === 'ticket' && (
+                <label style={{ fontSize: 12, color: DOUX, width: 74 }} title="Écart pupillaire de Lipto : toujours le même">PD
+                  <div className="ap-champ ap-mini" style={{ background: '#eef1f6', color: DOUX, cursor: 'not-allowed' }}>🔒 {PD_LIPTO}</div>
+                </label>
+              )}
+              {genre === 'ticket' && <label style={{ fontSize: 12, color: DOUX, width: 70 }} title="Écart de près">NPD<input className="ap-champ ap-mini" value={doc.npd || ''} onChange={e => onMaj({ ...doc, npd: e.target.value })} /></label>}
+            </div>
+          )}
           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead><tr><th />{cles.map(k => <th key={k} style={{ fontSize: 11, color: DOUX, fontWeight: 700, textAlign: 'left', paddingBottom: 4 }}>{{ sph: 'Sphère', cyl: 'Cylindre', axe: 'Axe', add: 'Add.' }[k]}</th>)}</tr></thead>
+            <thead><tr><th />{cles.map(k => <th key={k} style={{ fontSize: 11, color: DOUX, fontWeight: 700, textAlign: 'left', paddingBottom: 4 }}>{NOMS[k]}</th>)}</tr></thead>
             <tbody>
               {['od', 'og'].map(o => (
-                <tr key={o}><td style={{ fontWeight: 800, fontSize: 13, color: '#0089ba', paddingRight: 6 }}>{o.toUpperCase()}</td>{cles.map(k => <td key={k} style={{ paddingRight: 4, paddingBottom: 4 }}>{champ(o, k, '100%')}</td>)}</tr>
+                <tr key={o}><td style={{ fontWeight: 800, fontSize: 13, color: '#0089ba', paddingRight: 6 }}>{o.toUpperCase()}</td>{cles.map(k => <td key={k} style={{ paddingRight: 4, paddingBottom: 4 }}>{champ(o, k)}</td>)}</tr>
               ))}
             </tbody>
           </table>
-          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Document fictif : aucun vrai nom ni vraie donnée.</div>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+            {genre === 'backend' && doc.vue === 'mesures' ? 'L’écart binoculaire s’additionne tout seul. ' : genre === 'backend' || genre === 'fronto' ? 'Case vide : « — » à l’écran. ' : ''}
+            Document fictif : aucun vrai nom ni vraie donnée.
+          </div>
         </div>
       )}
     </Champ>

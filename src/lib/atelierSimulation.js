@@ -37,7 +37,19 @@ export const NOMS_POSES = {
 export const nouvelId = () => 'c' + Math.random().toString(36).slice(2, 9)
 
 const VIDE_ORDO = { patient: 'LIPTO', date: '', od: { sph: '', cyl: '', axe: '', add: '' }, og: { sph: '', cyl: '', axe: '', add: '' } }
-const VIDE_TICKET = { ...TICKET_LIPTO, date: '', heure: '', od: { sph: '', cyl: '', axe: '', add: '' }, og: { sph: '', cyl: '', axe: '', add: '' }, pd: '', npd: '' }
+// Écart pupillaire de Lipto : toujours le même, non modifiable (Thomas, 23/11)
+export const PD_LIPTO = TICKET_LIPTO.pd
+const VIDE_TICKET = { ...TICKET_LIPTO, date: '', heure: '', od: { sph: '', cyl: '', axe: '', add: '' }, og: { sph: '', cyl: '', axe: '', add: '' }, pd: PD_LIPTO, npd: '' }
+// SAV (23/11) : relevé du back-end (photo de la monture, vue « correction »
+// ou « mesures ») et écran du frontofocomètre (la paire du client)
+const VIDE_BACKEND = { vue: 'correction', od: { sph: '', cyl: '', axe: '', ecart: '', hauteur: '' }, og: { sph: '', cyl: '', axe: '', ecart: '', hauteur: '' } }
+const VIDE_FRONTO = { oeil: 'od', od: { sph: '', cyl: '', axe: '' }, og: { sph: '', cyl: '', axe: '' } }
+export const GENRES_DOCUMENT = {
+  ordonnance: { nom: 'Ordonnance', emoji: '📄' },
+  ticket: { nom: 'Ticket d’examen', emoji: '🧾' },
+  backend: { nom: 'Back-end', emoji: '🕶️' },
+  fronto: { nom: 'Fronto', emoji: '🔬' },
+}
 
 // Tests de vue prêts à l'emploi : vrais tickets du magasin de Bordeaux,
 // seul le nom est fictif (LIPTO). Un clic les recopie dans la case.
@@ -53,7 +65,7 @@ export const TESTS_DE_VUE = [
     },
   },
 ]
-export const documentVide = genre => JSON.parse(JSON.stringify(genre === 'ticket' ? VIDE_TICKET : VIDE_ORDO))
+export const documentVide = genre => JSON.parse(JSON.stringify({ ticket: VIDE_TICKET, backend: VIDE_BACKEND, fronto: VIDE_FRONTO }[genre] || VIDE_ORDO))
 
 // Types de question (23/11). Réglages propres à chaque type, avec leurs valeurs
 // par défaut (aussi utilisées pour les cases créées avant l'ajout d'un type).
@@ -72,6 +84,9 @@ export const REGLAGES_TYPES = {
   valeur: '', tolerance: '', unite: '',
 }
 export const reglage = (c, cle) => (c[cle] ?? REGLAGES_TYPES[cle])
+// Choix multiple : les collaborateurs peuvent cocher plusieurs réponses quand
+// il y a plusieurs bonnes réponses, ou si le formateur l'a demandé
+export const qcmMultiple = c => !!c.choixMultiple || (c.options || []).filter(o => o.juste).length > 1
 
 export function nouvelleCase(type) {
   const base = { id: nouvelId(), type, suites: [] }
@@ -127,6 +142,22 @@ export function problemesCase(c, apresChoix = false) {
 export const nombreFr = t => {
   const v = String(t ?? '').replace(/\s/g, '').replace(',', '.').replace(/[^0-9.+-]/g, '')
   return v === '' ? NaN : Number(v)
+}
+
+// Liste des points à régler, case par case (menu ⚠ de la barre du haut)
+export function listeProblemes(projet) {
+  const cases = projet.cases
+  const nomCase = c => {
+    const t = (c.type === 'depart' ? c.nom : c.type === 'question' ? (c.question || c.bulle) : c.type === 'fin' ? c.message : c.bulle) || ''
+    return TYPES_CASE[c.type].nom + (t.trim() ? ` · « ${t.trim().slice(0, 50)}${t.trim().length > 50 ? '…' : ''} »` : '')
+  }
+  const liste = []
+  for (const c of Object.values(cases)) {
+    for (const p of problemesCase(c, estApresChoix(cases, c.id))) liste.push({ id: c.id, nom: nomCase(c), probleme: p, grave: true })
+    const manque = c.suites.filter(s => !s || !cases[s]).length
+    if (manque) liste.push({ id: c.id, nom: nomCase(c), probleme: manque > 1 ? `${manque} suites à écrire` : 'Suite à écrire', grave: false })
+  }
+  return liste.sort((a, b) => b.grave - a.grave)
 }
 
 export function bilanProjet(projet) {
