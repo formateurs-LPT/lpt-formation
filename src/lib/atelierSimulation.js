@@ -207,7 +207,7 @@ export function miseEnPage(projet) {
 // ── Accès (23/11) : Kevin et Thomas seulement pour l'instant ──
 // Les autres formateurs voient l'atelier dans le menu, avec un message.
 // Quentin sera sans doute ajouté bientôt : sur demande de Kevin uniquement.
-export const ACCES_ATELIER = ['kevin', 'thomas']
+export const ACCES_ATELIER = ['kevin', 'thomas', 'mateo']
 export const peutUtiliserAtelier = pName => ACCES_ATELIER.includes(getTrainerAvatarKey(pName))
 
 // ── Import de la Simulation finale actuelle (simulationAccueilData.js) ──
