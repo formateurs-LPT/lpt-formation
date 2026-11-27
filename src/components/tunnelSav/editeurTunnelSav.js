@@ -490,7 +490,15 @@ export function monterEditeur(racine, ctx) {
 
   /* ---------- maquette intégrée dans la page (pas de fichier joint) ---------- */
   // La maquette est rangée dans la base (collection « maquette », en morceaux) : la page publiée ne contient que du code.
-  function chargerMaq() { $('maqFrame').src = '/maquette-sav/index.html?v=' + Date.now(); }
+  // En ligne, la maquette répond à /maquette-sav/ ; en local (next dev), à /maquette-sav/index.html
+  var adresseMaq = null
+  function chargerMaq() {
+    if (adresseMaq) { $('maqFrame').src = adresseMaq + '?v=' + Date.now(); return; }
+    fetch('/maquette-sav/', { method: 'HEAD', cache: 'no-store' })
+      .then(function (r) { adresseMaq = r.ok ? '/maquette-sav/' : '/maquette-sav/index.html'; })
+      .catch(function () { adresseMaq = '/maquette-sav/index.html'; })
+      .then(function () { var f = $('maqFrame'); if (f) f.src = adresseMaq + '?v=' + Date.now(); });
+  }
 
   /* ---------- lien carte ⇄ maquette ---------- */
   var histoMaq = [], dernierClic = null, rejeu = false, jetonClic = 0;
