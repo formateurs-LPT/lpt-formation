@@ -1801,8 +1801,8 @@ export default function Dashboard({ pName, onLaunchModule, onOpenRoom, onOpenTv,
     )
   }
 
-  // Atelier Lipto (23/11) : visible par tous, réservé à Kevin et Thomas pour
-  // l'instant (cf. ACCES_ATELIER). Plein écran, avec un retour au dashboard.
+  // Atelier Lipto (23/11) : ouvert à tous les formateurs depuis le 27/11
+  // (cf. peutUtiliserAtelier). Plein écran, avec un retour au dashboard.
   if (activeView === 'atelier-lipto') {
     if (peutUtiliserAtelier(pName)) {
       const prenom = (pName || '').trim().split(/\s+/)[0] || pName

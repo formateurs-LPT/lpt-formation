@@ -10,7 +10,7 @@ import {
 import { getLegacySessionCode, isDynamicRoomCode } from '@/lib/sessionCode'
 import { getLiveTrainerRoomCode, trainerLoginFromDisplayName } from '@/lib/sessionRoom'
 import ConfirmModal from '@/components/ConfirmModal'
-import { peutUtiliserAtelier } from '@/lib/atelierSimulation'
+import { peutLancerSimulationFinale } from '@/lib/atelierSimulation'
 import { MODULE_GROUPES, PREFIXE_SESSION } from '@/lib/modulesApresFormation'
 import { calculerSeries } from '@/lib/quizClassement'
 
@@ -638,7 +638,7 @@ function SessionModules({ pName, onBack, onLaunchModule, onEndRoom, onLaunchPeer
         </div>
 
         {/* Simulation finale (19/11) */}
-        <div className="dash-tile" onClick={() => (peutUtiliserAtelier(pName) ? onLaunchModule('simulation-accueil') : setSimulationRefusee(true))} style={{ cursor: 'pointer', borderColor: 'rgba(201,162,39,0.35)' }}>
+        <div className="dash-tile" onClick={() => (peutLancerSimulationFinale(pName) ? onLaunchModule('simulation-accueil') : setSimulationRefusee(true))} style={{ cursor: 'pointer', borderColor: 'rgba(201,162,39,0.35)' }}>
           <div className="dash-tile-top">
             <div style={{
               width: 38, height: 38, borderRadius: 10, flexShrink: 0,

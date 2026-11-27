@@ -15,6 +15,10 @@ import {
 import { chargerProjetsEquipe, enregistrerProjet, supprimerProjetEquipe, verrouilleParAutre, prendreVerrou, rendreVerrou } from '@/lib/atelierSimulationApi'
 import AtelierPanneau from './AtelierPanneau'
 import AtelierApercu from './AtelierApercu'
+import AtelierOrthographe from './AtelierOrthographe'
+import { corrigerCase } from '@/lib/atelierOrthographe'
+import AtelierTuto, { tutoDejaVu } from './AtelierTuto'
+import { Avatar, couleurFormateur } from './AtelierEquipe'
 
 const NAVY = '#03112a', BLEU = '#00abe9', TRAIT = '#e3e6ee', DOUX = '#64748b', FOND = '#f5f6fa'
 const fr = t => (t || '').replace(/ ([?!:;»])/g, '\u00a0$1').replace(/« /g, '«\u00a0')
@@ -37,6 +41,9 @@ export default function AtelierSimulation({ moi, onQuitter }) {
   const [apercu, setApercu] = useState(null) // { depart }
   const [enregistrement, setEnregistrement] = useState('ok') // ok | en-cours | erreur
   const [focus, setFocus] = useState(null) // { id } : la vue se déplace jusqu'à cette case
+  // Tuto de démarrage : ouvert tout seul à la première visite de ce formateur
+  const [tuto, setTuto] = useState(false)
+  useEffect(() => { if (!tutoDejaVu(moi)) setTuto(true) }, [moi])
   const aEnregistrer = useRef(new Set()) // projets modifiés, pas encore envoyés
   const dejaCharge = useRef(false)
   const projetIdRef = useRef(projetId)
@@ -168,7 +175,10 @@ export default function AtelierSimulation({ moi, onQuitter }) {
   }
   const dupliquer = () => creerProjet({ ...JSON.parse(JSON.stringify(projet)), id: nouvelId(), titre: projet.titre + ' (copie)', auteur: moi, statut: 'brouillon', creeLe: new Date().toISOString() })
   const supprimerProjet = () => {
-    if (!window.confirm(`Supprimer « ${projet.titre} » pour toute l’équipe ?`)) return
+    const question = projet.auteur === moi
+      ? `Supprimer « ${projet.titre} » pour toute l’équipe ?`
+      : `« ${projet.titre} » appartient à ${projet.auteur}. Le supprimer pour toute l’équipe ?`
+    if (!window.confirm(question)) return
     const supprime = projet
     aEnregistrer.current.delete(supprime.id)
     const reste = projets.filter(p => p.id !== projetId)
@@ -198,6 +208,7 @@ export default function AtelierSimulation({ moi, onQuitter }) {
         onNouveau={() => creerProjet(nouveauProjet(moi))}
         onImporter={() => creerProjet({ ...projetSimulationActuelle(moi), id: nouvelId() })}
         onQuitter={onQuitter}
+        onTuto={() => setTuto(true)}
       />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         {projet ? (
@@ -211,7 +222,9 @@ export default function AtelierSimulation({ moi, onQuitter }) {
               onTitre={titre => majProjet(p => ({ ...p, titre }))} onStatut={changerStatut}
               onTester={() => setApercu({ depart: null })} onScenario={ajouterScenario}
               onDupliquer={dupliquer} onSupprimer={supprimerProjet}
-              onAllerCase={id => { setLiaison(null); setMenu(null); setSelection(id); setFocus({ id, t: Date.now() }) }} />
+              onAllerCase={id => { setLiaison(null); setMenu(null); setSelection(id); setFocus({ id, t: Date.now() }) }}
+              lectureSeule={lectureSeule}
+              onCorriger={(f, remplacement) => majCase(f.id, corrigerCase(projet.cases[f.id], f.chemin, f.debut, f.fin, remplacement))} />
             <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
               <PlanDeTravail
                 projet={projet} pos={pos} selection={selection} liaison={liaison} focus={focus}
@@ -234,6 +247,7 @@ export default function AtelierSimulation({ moi, onQuitter }) {
                 onSupprimer={() => supprimerCase(selection)}
                 onTester={() => setApercu({ depart: selection })}
                 onFermer={() => setSelection(null)}
+                onTuto={() => setTuto(true)}
               />
               </div>
             </div>
@@ -280,6 +294,8 @@ export default function AtelierSimulation({ moi, onQuitter }) {
         </div>
       )}
 
+      {tuto && <AtelierTuto moi={moi} onFermer={() => setTuto(false)} />}
+
       {apercu && projet && (
         <AtelierApercu projet={projet} depart={apercu.depart} onFermer={() => setApercu(null)}
           onEditer={id => { setApercu(null); setSelection(id); setFocus({ id }) }} />
@@ -305,27 +321,50 @@ function Accueil({ onNouveau, onImporter }) {
 }
 
 // ── Barre latérale gauche : projets de l'équipe ──
-function BarreLaterale({ moi, projets, projetId, onOuvrir, onNouveau, onImporter, onQuitter }) {
-  const miens = projets.filter(p => p.auteur === moi)
-  const equipe = projets.filter(p => p.auteur !== moi)
+// Mes simulations en haut, puis celles des collègues regroupées par formateur
+// (avatar + nom), pour voir tout de suite à qui appartient chaque projet.
+function BarreLaterale({ moi, projets, projetId, onOuvrir, onNouveau, onImporter, onQuitter, onTuto }) {
+  const [recherche, setRecherche] = useState('')
+  const [replies, setReplies] = useState({}) // auteur -> groupe replié
+  const filtre = recherche.trim().toLowerCase()
+  const visibles = filtre ? projets.filter(p => (p.titre + ' ' + p.auteur).toLowerCase().includes(filtre)) : projets
+  const miens = visibles.filter(p => p.auteur === moi)
+  const auteurs = [...new Set(visibles.filter(p => p.auteur !== moi).map(p => p.auteur))].sort((x, y) => x.localeCompare(y, 'fr'))
   const ligne = p => {
     const b = bilanProjet(p)
     const actif = p.id === projetId
+    const occupe = verrouilleParAutre(p, moi)
+    const pret = p.statut === 'pret'
     return (
-      <button key={p.id} onClick={() => onOuvrir(p.id)} className="at-projet" style={{ background: actif ? '#fff' : 'transparent', boxShadow: actif ? '0 2px 10px rgba(3,17,42,0.08)' : 'none', borderColor: actif ? TRAIT : 'transparent' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 8, height: 8, borderRadius: 4, flexShrink: 0, background: p.statut === 'pret' ? '#16a34a' : '#cbd5e1' }} />
-          <span style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.titre}</span>
+      <button key={p.id} onClick={() => onOuvrir(p.id)} className="at-projet" style={{ background: actif ? '#fff' : 'transparent', boxShadow: actif ? '0 2px 10px rgba(3,17,42,0.08)' : 'none', borderColor: actif ? TRAIT : 'transparent', borderLeft: `3px solid ${actif ? couleurFormateur(p.auteur) : 'transparent'}` }}>
+        <div style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.titre}</div>
+        <div style={{ fontSize: 12, color: DOUX, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: pret ? '#16a34a' : '#64748b', background: pret ? '#16a34a18' : '#94a3b81f', borderRadius: 999, padding: '1px 8px' }}>
+            <span style={{ width: 6, height: 6, borderRadius: 3, background: pret ? '#16a34a' : '#94a3b8' }} />{pret ? 'Prêt' : 'Brouillon'}
+          </span>
+          {b.nbCases} case{b.nbCases > 1 ? 's' : ''}{b.suitesManquantes ? ` · ${b.suitesManquantes} à écrire` : ''}
         </div>
-        <div style={{ fontSize: 12, color: DOUX, marginTop: 3, paddingLeft: 16 }}>
-          {p.auteur !== moi && <>{p.auteur} · </>}{b.nbCases} case{b.nbCases > 1 ? 's' : ''}{b.suitesManquantes ? ` · ${b.suitesManquantes} à écrire` : ''}
+        <div style={{ fontSize: 11, color: occupe ? '#b45309' : '#94a3b8', marginTop: 2, fontWeight: occupe ? 700 : 400 }}>
+          {occupe ? `🔒 ${p.verrouPar} y travaille` : `Modifié ${ilYa(p.majLe)}${p.majPar && p.majPar !== p.auteur ? ` par ${p.majPar}` : ''}`}
         </div>
-        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1, paddingLeft: 16 }}>Modifié {ilYa(p.majLe)}{p.majPar && p.majPar !== p.auteur ? ` par ${p.majPar}` : ''}</div>
+      </button>
+    )
+  }
+  const entete = (nom, nb, sousTitre) => {
+    const replie = !!replies[nom]
+    return (
+      <button onClick={() => setReplies(r => ({ ...r, [nom]: !replie }))} className="at-groupe" aria-expanded={!replie}>
+        <Avatar nom={nom} taille={24} />
+        <span style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+          <span style={{ fontWeight: 800, fontSize: 13 }}>{sousTitre || nom}</span>
+          <span style={{ color: '#94a3b8', fontWeight: 600, fontSize: 12 }}> · {nb}</span>
+        </span>
+        <span style={{ fontSize: 10, color: '#94a3b8', transform: replie ? 'rotate(-90deg)' : 'none', transition: 'transform .15s' }}>▼</span>
       </button>
     )
   }
   return (
-    <aside style={{ width: 270, flexShrink: 0, borderRight: `1px solid ${TRAIT}`, background: '#eef0f6', display: 'flex', flexDirection: 'column' }}>
+    <aside style={{ width: 280, flexShrink: 0, borderRight: `1px solid ${TRAIT}`, background: '#eef0f6', display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
         <Lipto pose="pouce" taille={48} t={THEMES_TEL.clair} />
         <div>
@@ -333,35 +372,50 @@ function BarreLaterale({ moi, projets, projetId, onOuvrir, onNouveau, onImporter
           <div style={{ fontSize: 12, color: DOUX }}>Création de simulations</div>
         </div>
       </div>
-      <div style={{ padding: '0 14px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ padding: '0 14px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
         <button onClick={onNouveau} style={{ ...btnPlein, width: '100%' }}>+ Nouvelle simulation</button>
         <button onClick={onImporter} style={{ ...btn, width: '100%', fontSize: 13 }}>Importer la simulation actuelle</button>
+        {projets.length > 4 && (
+          <input value={recherche} onChange={e => setRecherche(e.target.value)} placeholder="🔍 Chercher une simulation ou un formateur" className="at-recherche" />
+        )}
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 8px 12px' }}>
-        <TitreListe>Mes simulations</TitreListe>
-        {miens.length ? miens.map(ligne) : <Vide>Aucune pour l’instant</Vide>}
-        <TitreListe>De l’équipe</TitreListe>
-        {equipe.length ? equipe.map(ligne) : <Vide>Les simulations de tes collègues apparaîtront ici</Vide>}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px 12px' }}>
+        {entete(moi, miens.length, 'Mes simulations')}
+        {!replies[moi] && (miens.length ? miens.map(ligne) : <Vide>{filtre ? 'Aucune ne correspond' : 'Aucune pour l’instant : crée la tienne avec « + Nouvelle simulation »'}</Vide>)}
+        <TitreListe>L’équipe</TitreListe>
+        {auteurs.length ? auteurs.map(a => {
+          const siens = visibles.filter(p => p.auteur === a)
+          return (
+            <div key={a} style={{ marginBottom: 4 }}>
+              {entete(a, siens.length)}
+              {!replies[a] && siens.map(ligne)}
+            </div>
+          )
+        }) : <Vide>{filtre ? 'Aucune ne correspond' : 'Les simulations de tes collègues apparaîtront ici'}</Vide>}
       </div>
-      <div style={{ borderTop: `1px solid ${TRAIT}`, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-        <span style={{ width: 30, height: 30, borderRadius: 15, background: NAVY, color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 800 }}>{moi[0]}</span>
-        <span style={{ flex: 1 }}><b>{moi}</b></span>
+      <button onClick={onTuto} className="at-tuto">🎓 Revoir le tuto de démarrage</button>
+      <div style={{ borderTop: `1px solid ${TRAIT}`, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+        <Avatar nom={moi} taille={30} />
+        <span style={{ flex: 1, minWidth: 0 }}><b>{moi}</b></span>
         <button onClick={onQuitter} style={{ ...btn, padding: '6px 10px', fontSize: 12 }}>← Dashboard</button>
       </div>
     </aside>
   )
 }
-const TitreListe = ({ children }) => <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: DOUX, fontWeight: 700, padding: '14px 8px 6px' }}>{children}</div>
-const Vide = ({ children }) => <div style={{ fontSize: 12, color: '#94a3b8', padding: '2px 8px 6px' }}>{children}</div>
+const TitreListe = ({ children }) => <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: DOUX, fontWeight: 700, padding: '16px 8px 4px', borderTop: `1px solid ${TRAIT}`, marginTop: 10 }}>{children}</div>
+const Vide = ({ children }) => <div style={{ fontSize: 12, color: '#94a3b8', padding: '2px 10px 6px', lineHeight: 1.4 }}>{children}</div>
 
 // ── Barre du haut : titre, statut, test ──
-function BarreProjet({ projet, moi, enregistrement, onTitre, onStatut, onTester, onScenario, onDupliquer, onSupprimer, onAllerCase }) {
+function BarreProjet({ projet, moi, enregistrement, onTitre, onStatut, onTester, onScenario, onDupliquer, onSupprimer, onAllerCase, lectureSeule, onCorriger }) {
   const b = bilanProjet(projet)
   const [ouvert, setOuvert] = useState(false)
   const aRegler = b.suitesManquantes > 0 || b.problemes > 0
   return (
-    <div style={{ height: 62, flexShrink: 0, borderBottom: `1px solid ${TRAIT}`, background: '#fff', display: 'flex', alignItems: 'center', gap: 14, padding: '0 18px' }}>
+    <div style={{ height: 62, flexShrink: 0, borderBottom: `1px solid ${TRAIT}`, background: '#fff', display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px' }}>
       <input value={projet.titre} onChange={e => onTitre(e.target.value)} className="at-titre" size={Math.max(8, projet.titre.length)} />
+      <span title={projet.auteur === moi ? 'Tu es l’auteur de ce projet' : `Projet créé par ${projet.auteur}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, flexShrink: 0, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', padding: '3px 10px 3px 4px', borderRadius: 999, background: couleurFormateur(projet.auteur) + '14', color: NAVY }}>
+        <Avatar nom={projet.auteur} taille={24} /><span className="at-etroit">{projet.auteur === moi ? 'Mon projet' : `Projet de ${projet.auteur}`}</span>
+      </span>
       <div style={{ display: 'flex', background: '#eef0f6', borderRadius: 10, padding: 3 }}>
         {[['brouillon', 'Brouillon'], ['pret', '✓ Prêt']].map(([v, l]) => (
           <button key={v} onClick={() => onStatut(v)} style={{ border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', background: projet.statut === v ? (v === 'pret' ? '#16a34a' : '#fff') : 'transparent', color: projet.statut === v && v === 'pret' ? '#fff' : NAVY, boxShadow: projet.statut === v ? '0 1px 4px rgba(3,17,42,0.12)' : 'none' }}>{l}</button>
@@ -396,13 +450,14 @@ function BarreProjet({ projet, moi, enregistrement, onTitre, onStatut, onTester,
           </>
         )}
       </div>
+      <AtelierOrthographe projet={projet} lectureSeule={lectureSeule} onAllerCase={onAllerCase} onCorriger={onCorriger} />
       <div style={{ flex: 1 }} />
-      <span style={{ fontSize: 12, color: enregistrement === 'erreur' ? '#dc2626' : '#94a3b8', fontWeight: enregistrement === 'erreur' ? 700 : 400, whiteSpace: 'nowrap' }}>
-        {{ ok: 'Enregistré ✓', 'en-cours': 'Enregistrement…', erreur: '⚠ Non enregistré, nouvel essai…' }[enregistrement]}{projet.auteur !== moi ? ` · projet de ${projet.auteur}` : ''}
+      <span className={enregistrement === 'erreur' ? '' : 'at-etroit'} style={{ fontSize: 12, color: enregistrement === 'erreur' ? '#dc2626' : '#94a3b8', fontWeight: enregistrement === 'erreur' ? 700 : 400, whiteSpace: 'nowrap' }}>
+        {{ ok: 'Enregistré ✓', 'en-cours': 'Enregistrement…', erreur: '⚠ Non enregistré, nouvel essai…' }[enregistrement]}
       </span>
-      <button onClick={onScenario} style={btn}>+ Scénario</button>
-      <button onClick={onDupliquer} style={btn} title="Dupliquer le projet">Dupliquer</button>
-      <button onClick={onSupprimer} style={{ ...btn, color: '#dc2626' }} title="Supprimer le projet">Supprimer</button>
+      <button onClick={onScenario} style={btnBarre}>+ Scénario</button>
+      <button onClick={onDupliquer} style={btnBarre} title="Faire une copie de ce projet à mon nom">Dupliquer</button>
+      <button onClick={onSupprimer} style={{ ...btnBarre, color: '#dc2626', padding: '8px 10px' }} title="Supprimer le projet" aria-label="Supprimer le projet">🗑</button>
       <button onClick={onTester} style={btnPlein}>▶ Tester</button>
     </div>
   )
@@ -579,6 +634,7 @@ function CarteCase({ c, p, cases, choisie, cible, onClic, onPlus, onDelier }) {
 
 export const btn = { border: `1px solid ${TRAIT}`, background: '#fff', color: NAVY, borderRadius: 10, padding: '8px 14px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }
 export const btnPlein = { ...btn, background: NAVY, color: '#fff', border: `1px solid ${NAVY}` }
+const btnBarre = { ...btn, padding: '8px 12px', fontSize: 13 }
 const btnRond = { width: 32, height: 32, borderRadius: 8, border: 'none', background: '#f1f3f8', color: NAVY, fontSize: 17, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }
 
 const CSS = `
@@ -602,6 +658,13 @@ const CSS = `
 .at-alerte:hover { background: #fff7ed; border-color: #fed7aa; }
 .at-projet { display: block; width: 100%; text-align: left; border: 1px solid transparent; border-radius: 10px; padding: 9px 10px; margin-bottom: 2px; cursor: pointer; font-family: inherit; color: ${NAVY}; }
 .at-projet:hover { background: rgba(255,255,255,0.6) !important; }
+@media (max-width: 1400px) { .at-etroit { display: none; } }
+.at-groupe { display: flex; width: 100%; align-items: center; gap: 8px; border: none; background: none; padding: 10px 6px 6px; cursor: pointer; font-family: inherit; color: ${NAVY}; border-radius: 8px; }
+.at-groupe:hover { background: rgba(255,255,255,0.5); }
+.at-recherche { width: 100%; border: 1px solid ${TRAIT}; border-radius: 9px; padding: 7px 10px; font-size: 13px; font-family: inherit; color: ${NAVY}; background: #fff; }
+.at-recherche:focus { outline: none; border-color: ${BLEU}; box-shadow: 0 0 0 3px ${BLEU}22; }
+.at-tuto { border: none; border-top: 1px solid ${TRAIT}; background: none; padding: 9px 16px; font-size: 13px; font-weight: 700; color: ${DOUX}; cursor: pointer; font-family: inherit; text-align: left; }
+.at-tuto:hover { background: rgba(255,255,255,0.6); color: ${NAVY}; }
 .at-titre { font-size: 18px; font-weight: 800; color: ${NAVY}; border: 1px solid transparent; border-radius: 8px; padding: 5px 8px; background: transparent; font-family: inherit; min-width: 120px; max-width: 440px; flex-shrink: 1; }
 .at-titre:hover { border-color: ${TRAIT}; }
 .at-titre:focus { outline: none; border-color: ${BLEU}; background: #fff; }

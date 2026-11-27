@@ -204,11 +204,13 @@ export function miseEnPage(projet) {
   return pos
 }
 
-// ── Accès (23/11) : Kevin et Thomas seulement pour l'instant ──
-// Les autres formateurs voient l'atelier dans le menu, avec un message.
-// Quentin sera sans doute ajouté bientôt : sur demande de Kevin uniquement.
-export const ACCES_ATELIER = ['kevin', 'thomas', 'mateo']
-export const peutUtiliserAtelier = pName => ACCES_ATELIER.includes(getTrainerAvatarKey(pName))
+// ── Accès ──
+// Atelier Lipto et Apprendre avec Lipto : ouverts à tous les formateurs (27/11).
+export const peutUtiliserAtelier = pName => !!getTrainerAvatarKey(pName)
+// Simulation finale : pas encore prête, réservée à ces formateurs (le Quiz
+// Final reste proposé à côté). Kevin dira quand l'ouvrir.
+export const ACCES_SIMULATION_FINALE = ['kevin', 'thomas', 'mateo']
+export const peutLancerSimulationFinale = pName => ACCES_SIMULATION_FINALE.includes(getTrainerAvatarKey(pName))
 
 // ── Import de la Simulation finale actuelle (simulationAccueilData.js) ──
 export function projetSimulationActuelle(auteur) {

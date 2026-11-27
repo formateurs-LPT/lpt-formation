@@ -8,8 +8,8 @@ import { TYPES_CASE, TYPES_QUESTION, reglage, qcmMultiple, FONDS, POSES, HUMEURS
 const NAVY = '#03112a', BLEU = '#00abe9', TRAIT = '#e3e6ee', DOUX = '#64748b'
 const LETTRES = 'ABCDEF'
 
-export default function AtelierPanneau({ cas: c, apresChoix, onMaj, onSupprimer, onTester, onFermer }) {
-  if (!c) return <Aide />
+export default function AtelierPanneau({ cas: c, apresChoix, onMaj, onSupprimer, onTester, onFermer, onTuto }) {
+  if (!c) return <Aide onTuto={onTuto} />
   const T = TYPES_CASE[c.type]
   const problemes = problemesCase(c, apresChoix)
   return (
@@ -354,7 +354,7 @@ function Champ({ titre, aide, children }) {
 // Notice repliable (23/11) : une flèche la réduit en fine colonne pour
 // laisser plus de place au plan de travail. Choix retenu dans ce navigateur.
 const CLE_AIDE = 'atelier_lipto_aide_repliee'
-function Aide() {
+function Aide({ onTuto }) {
   const [repliee, setRepliee] = useState(false)
   useEffect(() => { try { setRepliee(localStorage.getItem(CLE_AIDE) === '1') } catch {} }, [])
   const basculer = v => { setRepliee(v); try { localStorage.setItem(CLE_AIDE, v ? '1' : '0') } catch {} }
@@ -386,6 +386,7 @@ function Aide() {
       {etape(3, 'Clique sur une case pour la remplir', 'Ses réglages s’ouvrent ici : phrase de Lipto, décor, réponses, document…')}
       {etape(4, 'Deux chemins, une même suite ?', 'Dans le menu « + », choisis « Relier à une case existante » puis clique sur la case.')}
       {etape(5, 'Teste avec ▶', 'Joue la simulation comme sur le diffuseur, avant de la passer en « Prêt ».')}
+      {onTuto && <button onClick={onTuto} style={{ ...bouton, background: '#f0fbfe', borderColor: '#bde9f8' }}>🎓 Revoir le tuto de démarrage</button>}
       <div style={{ marginTop: 'auto', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
         {Object.entries(TYPES_CASE).map(([k, t]) => (
           <span key={k} style={{ fontSize: 12, fontWeight: 700, color: t.couleur, background: t.couleur + '14', borderRadius: 999, padding: '4px 10px' }}>{t.emoji} {t.nom}</span>
