@@ -25,6 +25,8 @@ import AuditFormateursReporting from './AuditFormateursReporting'
 import AtelierSimulation from './atelier/AtelierSimulation'
 import ApprendreAvecLipto from './apprendre/ApprendreAvecLipto'
 import { peutUtiliserAtelier } from '@/lib/atelierSimulation'
+import AtelierTunnelSav from './tunnelSav/AtelierTunnelSav'
+import { peutUtiliserTunnelSav } from '@/lib/tunnelSavApi'
 import DemandesInterventionView from '@/components/DemandesInterventionView'
 import { getFormateurRatings } from '@/lib/formateurRatings'
 import TachesView from '@/components/TachesView'
@@ -1292,6 +1294,7 @@ const VIEW_TO_CATEGORY = {
   'fiches-pratiques': 'fiches-pratiques',
   'atelier-lipto': 'atelier-lipto',
   'apprendre-lipto': 'apprendre-lipto',
+  'tunnel-sav': 'tunnel-sav',
 }
 
 // Vue par défaut quand on clique directement sur une catégorie de la
@@ -1309,6 +1312,7 @@ const CATEGORY_LANDING = {
   'audit-formateurs': 'audit-formateurs',
   'atelier-lipto': 'atelier-lipto',
   'apprendre-lipto': 'apprendre-lipto',
+  'tunnel-sav': 'tunnel-sav',
 }
 
 // Petit sélecteur d'onglets interne à une catégorie (ex: Entrées ↔
@@ -1342,7 +1346,7 @@ function TabRow({ tabs, activeView, onSelect }) {
 // d'onglets mobile autour du contenu existant, qui ne change pas d'une
 // ligne. Centralise ce qui était avant répété à chaque `return` de
 // Dashboard (id="dashboard" + className) pour ne le faire qu'une fois.
-function TrainerPage({ activeView, setActiveView, inscriptionsPending, demandesInterventionPending, ideeCount, footerSlot, tabs, children }) {
+function TrainerPage({ activeView, setActiveView, inscriptionsPending, demandesInterventionPending, ideeCount, footerSlot, tabs, children, masquer }) {
   return (
     <div id="dashboard" className="manager-light-theme">
       <div className="trainer-shell">
@@ -1351,6 +1355,7 @@ function TrainerPage({ activeView, setActiveView, inscriptionsPending, demandesI
           onNavigateCategory={(catId) => setActiveView(CATEGORY_LANDING[catId])}
           badges={{ inscriptions: inscriptionsPending, demandes: demandesInterventionPending, idees: ideeCount }}
           footerSlot={footerSlot}
+          masquer={masquer}
         />
         <div className="trainer-content-wrap">
           <div className="trainer-content">
@@ -1744,6 +1749,7 @@ export default function Dashboard({ pName, onLaunchModule, onOpenRoom, onOpenTv,
 
   const trainerPageProps = {
     setActiveView, inscriptionsPending, demandesInterventionPending, ideeCount,
+    masquer: peutUtiliserTunnelSav(pName) ? [] : ['tunnel-sav'],
   }
 
   const EVAL_TABS = [
@@ -1797,6 +1803,24 @@ export default function Dashboard({ pName, onLaunchModule, onOpenRoom, onOpenTv,
       <TrainerPage activeView={activeView} {...trainerPageProps}>
         <AuditFormateursView pName={pName} />
         {estKevin && <div style={{ marginTop: 40 }}><AuditFormateursReporting /></div>}
+      </TrainerPage>
+    )
+  }
+
+  // Atelier tunnel SAV (27/11) : flux de l'app SAV en cartes, réservé à
+  // Kevin et Quentin (peutUtiliserTunnelSav). Plein écran, retour au dashboard.
+  if (activeView === 'tunnel-sav') {
+    if (peutUtiliserTunnelSav(pName)) {
+      const prenom = (pName || '').trim().split(/\s+/)[0] || pName
+      return <AtelierTunnelSav moi={prenom} cleFormateur={getTrainerAvatarKey(pName)} onQuitter={() => setActiveView('home')} />
+    }
+    return (
+      <TrainerPage activeView={activeView} {...trainerPageProps}>
+        <div style={{ maxWidth: 460, margin: '60px auto', textAlign: 'center', background: '#fff', border: '1px solid var(--border)', borderRadius: 16, padding: '36px 28px' }}>
+          <div style={{ fontSize: 40 }}>🔒</div>
+          <div style={{ fontSize: 18, fontWeight: 800, marginTop: 10 }}>Tunnel SAV</div>
+          <p style={{ color: 'var(--text-s)', marginTop: 8 }}>Vous n’avez pas d’accès à ce module pour le moment.</p>
+        </div>
       </TrainerPage>
     )
   }

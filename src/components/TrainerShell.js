@@ -1,5 +1,5 @@
 'use client'
-import { IconHome, IconMapPin, IconSend, IconStar, IconMessageCircle, IconClipboard, IconHelpCircle, IconBarChart, IconBell, IconTarget, IconVideo, IconRocket } from './ManagerIcons'
+import { IconHome, IconMapPin, IconSend, IconStar, IconMessageCircle, IconClipboard, IconHelpCircle, IconBarChart, IconBell, IconTarget, IconVideo, IconRocket, IconFlow } from './ManagerIcons'
 
 // Le détail de quelle activeView appartient à quelle catégorie (et quelle vue
 // sert de "porte d'entrée" par défaut) vit dans Dashboard.js, pas ici : ce
@@ -18,6 +18,8 @@ export const TRAINER_CATEGORIES = [
   { id: 'audit-formateurs', label: 'Audit compétences', Icon: IconTarget },
   { id: 'atelier-lipto', label: 'Atelier Lipto', Icon: IconVideo },
   { id: 'apprendre-lipto', label: 'Apprendre avec Lipto', Icon: IconRocket },
+  // Réservé à Kevin et Quentin : masqué pour les autres (prop `masquer`)
+  { id: 'tunnel-sav', label: 'Tunnel SAV', Icon: IconFlow },
   { id: 'fiches-pratiques', label: 'Fiches pratiques', Icon: IconClipboard },
   { id: 'idees', label: 'Idées & remontées', Icon: IconHelpCircle },
 ]
@@ -27,7 +29,8 @@ export const TRAINER_CATEGORIES = [
 // vues formateur (logo, connectés, démarrer, diffusion, déconnexion) — en
 // ajouter un second ferait doublon. Seule la barre d'onglets du bas est
 // nouvelle sur mobile.
-export default function TrainerShell({ active, onNavigateCategory, badges = {}, footerSlot }) {
+export default function TrainerShell({ active, onNavigateCategory, badges = {}, footerSlot, masquer = [] }) {
+  const categories = TRAINER_CATEGORIES.filter(c => !masquer.includes(c.id))
   return (
     <>
       <div className="trainer-sidebar-desktop" style={{
@@ -36,7 +39,7 @@ export default function TrainerShell({ active, onNavigateCategory, badges = {}, 
         padding: '20px 14px', position: 'sticky', top: 0, alignSelf: 'flex-start',
       }}>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-          {TRAINER_CATEGORIES.map(({ id, label, Icon }) => {
+          {categories.map(({ id, label, Icon }) => {
             const isActive = active === id
             const badge = badges[id]
             return (
@@ -73,7 +76,7 @@ export default function TrainerShell({ active, onNavigateCategory, badges = {}, 
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}>
         <div style={{ display: 'flex' }}>
-          {TRAINER_CATEGORIES.map(({ id, label, Icon }) => {
+          {categories.map(({ id, label, Icon }) => {
             const isActive = active === id
             const badge = badges[id]
             return (

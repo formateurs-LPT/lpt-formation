@@ -83,6 +83,17 @@ export function IconVideo({ size = 18, ...props }) {
   )
 }
 
+export function IconFlow({ size = 18, ...props }) {
+  return (
+    <svg width={size} height={size} {...base} {...props}>
+      <rect x="8" y="2" width="8" height="5" rx="1.5" />
+      <rect x="2" y="17" width="8" height="5" rx="1.5" />
+      <rect x="14" y="17" width="8" height="5" rx="1.5" />
+      <path d="M12 7v4M6 17v-3h12v3" />
+    </svg>
+  )
+}
+
 export function IconMapPin({ size = 18, ...props }) {
   return (
     <svg width={size} height={size} {...base} {...props}>
