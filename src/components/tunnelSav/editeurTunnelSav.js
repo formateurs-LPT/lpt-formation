@@ -8,8 +8,30 @@ export const STYLES = ".tsav {\n  color-scheme: light;\n  --fond: #f4f6fb;\n  --
 
 export const MARKUP = "<div class=\"app\">\n  <header class=\"tete\">\n    <button type=\"button\" class=\"btn retour\" data-a=\"quitter\">← Dashboard</button>\n    <div class=\"marque\"><b>Atelier tunnel SAV</b><span>Kevin et Quentin · les étapes de l'app SAV, écran par écran</span></div>\n    <select id=\"choix\" aria-label=\"Flux affiché\"></select>\n    <input id=\"nom\" aria-label=\"Nom du flux\" placeholder=\"Nom du flux (ex. Le client voit mal)\">\n    <button type=\"button\" class=\"btn\" data-a=\"nouveau\">+ Nouveau flux</button>\n    <button type=\"button\" class=\"btn plein\" data-a=\"tester\">▶ Tester le flux</button>\n    <button type=\"button\" class=\"btn\" data-a=\"tel\" id=\"btnTel\" aria-pressed=\"true\">📱 Aperçu</button>\n    <span class=\"espace\"></span>\n    <div class=\"presents\" id=\"presents\" aria-live=\"polite\"></div>\n    <span class=\"etat\" id=\"etat\" aria-live=\"polite\">Connexion…</span>\n    <button type=\"button\" class=\"btn danger\" data-a=\"supprimer\">Supprimer le flux</button>\n  </header>\n  <div class=\"corps\">\n    <div class=\"plan\" id=\"plan\">\n      <div class=\"monde\" id=\"monde\"><svg class=\"liens\" id=\"liens\" width=\"1\" height=\"1\"></svg></div>\n      <p class=\"compteur\" id=\"compteur\" hidden></p>\n      <div class=\"bandeau\" id=\"bandeau\" hidden>Clique la carte à relier · Échap pour annuler</div>\n      <div class=\"vide\" id=\"fluxVide\" hidden><div><b>Ce flux est vide</b><p>Choisis un autre flux dans la liste en haut à gauche, ou supprime celui-ci.</p></div></div>\n      <div class=\"vide\" id=\"vide\" hidden><div><b>Aucun flux pour l'instant</b><p>Crée le premier flux : une carte de départ apparaît, puis tu ajoutes les étapes dessous.</p><button type=\"button\" class=\"btn plein\" data-a=\"nouveau\">+ Nouveau flux</button></div></div>\n      <p class=\"astuce\">Glisser le fond pour se déplacer · glisser une carte pour la bouger · Ctrl + molette pour zoomer</p>\n      <div class=\"outils-plan\">\n        <button type=\"button\" class=\"btn\" data-a=\"moins\" aria-label=\"Dézoomer\">−</button><span class=\"zoom\" id=\"zoom\">80 %</span><button type=\"button\" class=\"btn\" data-a=\"plus\" aria-label=\"Zoomer\">+</button>\n        <button type=\"button\" class=\"btn\" data-a=\"centre\">Recentrer</button>\n      </div>\n    </div>\n    <section class=\"tel-zone\" id=\"telZone\" aria-label=\"Aperçu sur téléphone\">\n      <div class=\"tel-onglets\" role=\"tablist\">\n        <button type=\"button\" role=\"tab\" data-telvue=\"maq\" aria-selected=\"true\">Maquette actuelle</button>\n        <button type=\"button\" role=\"tab\" data-telvue=\"carte\" aria-selected=\"false\">Aperçu de la carte</button>\n      </div>\n      <div class=\"tel-maq\" id=\"telMaq\"></div>\n      <div class=\"tel\" id=\"telCarte\" hidden><div class=\"tel-ecran\" id=\"telEcran\"></div></div>\n      <p class=\"tel-note\" id=\"telNote\">La vraie maquette, utilisable telle quelle · commande de démo 0000000</p>\n      <button type=\"button\" class=\"mini\" id=\"maqRecharger\">Recharger la maquette</button>\n    </section>\n    <aside class=\"panneau\" id=\"panneau\" hidden></aside>\n    <div class=\"essai\" id=\"essai\" hidden></div>\n    <div class=\"menu\" id=\"menu\" hidden></div>\n  </div>\n</div>\n\n"
 
+// Notes « Modifs à faire » par tuile, onglet qui les réunit, et gestion des
+// liens (délier, relier ailleurs, tuiles hors parcours) depuis le panneau.
+const STYLES_MODIFS = `
+.tsav .ct-note { margin-left: auto; padding: 1px 7px; border-radius: 99px; background: #fbeedb; color: #8a4f00; font: 800 10px var(--f); letter-spacing: 0; text-transform: none; }
+.tsav .ct-orph { padding: 1px 7px; border-radius: 99px; background: #fde8e4; color: var(--rouge); font: 800 10px var(--f); letter-spacing: 0; text-transform: none; }
+.tsav .carte.orpheline { border-style: dashed; }
+.tsav .note-modif { display: grid; gap: 6px; padding: 10px; border-radius: 12px; background: #fff7e8; border: 1.5px solid #f3d29b; }
+.tsav .note-modif > span { font-size: 12px; font-weight: 800; color: #8a4f00; }
+.tsav .note-modif textarea { width: 100%; border-radius: 10px; border: 1px solid #f0c987; background: #fff; padding: 8px 10px; font-size: 13.5px; resize: vertical; }
+.tsav .lien-ligne { display: grid; gap: 6px; padding: 8px; border-radius: 10px; border: 1px solid var(--trait); }
+.tsav .lien-ligne p { margin: 0; font-size: 12.5px; color: var(--doux); }
+.tsav .lien-ligne p b { color: var(--encre); }
+.tsav .lien-ligne .rep { flex-wrap: wrap; }
+.tsav .btn.modifs .nb { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-left: 6px; padding: 0 5px; border-radius: 99px; background: #fbeedb; color: #8a4f00; font-size: 11px; }
+.tsav .liste-modifs { width: min(620px, 94%); max-height: 82%; overflow: auto; }
+.tsav .modif-item { display: grid; gap: 4px; text-align: left; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--trait-fort); background: var(--papier); cursor: pointer; }
+.tsav .modif-item:hover { border-color: var(--bleu); }
+.tsav .modif-item small { font: 700 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
+.tsav .modif-item b { font-size: 13.5px; }
+.tsav .modif-item span { font-size: 13px; color: #6b3d00; white-space: pre-wrap; }
+`
+
 export function monterEditeur(racine, ctx) {
-  racine.innerHTML = '<style>' + STYLES + '</style>' + "<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap\">" + MARKUP
+  racine.innerHTML = '<style>' + STYLES + STYLES_MODIFS + '</style>' + "<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap\">" + MARKUP
   var ecoutes = []
   function ecouteDoc(type, fn, opt) { document.addEventListener(type, fn, opt); ecoutes.push([type, fn, opt]) }
   var claude = { use: ctx.use }
@@ -29,7 +51,12 @@ export function monterEditeur(racine, ctx) {
   var L = 260, HT = 78, HS = 40;
   var $ = function (id) { return document.getElementById(id); };
   (function () { var f = document.createElement('iframe'); f.id = 'maqFrame'; f.title = 'Maquette actuelle de l\'app SAV'; $('telMaq').appendChild(f); })();
-  var plan = $('plan'), monde = $('monde'), svg = $('liens'), panneau = $('panneau'), menu = $('menu'), essai = $('essai');
+  (function () {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'btn modifs'; b.dataset.a = 'modifs'; b.id = 'btnModifs'; b.textContent = '✎ Modifs à faire';
+    var t = document.querySelector('.tsav [data-a="tel"]'); t.parentNode.insertBefore(b, t.nextSibling);
+    var l = document.createElement('div'); l.className = 'essai'; l.id = 'listeModifs'; l.hidden = true; $('essai').parentNode.appendChild(l);
+  })();
+  var plan = $('plan'), monde = $('monde'), svg = $('liens'), panneau = $('panneau'), menu = $('menu'), essai = $('essai'), listeModifs = $('listeModifs');
   var db = null, room = null, user = null, moi = null;
   var chargeCartes = false, tunnels = {}, cartes = {}, courant = null, sel = null, liaison = null, geste = null;
   var vue = { x: 60, y: 60, z: 0.8 };
@@ -105,17 +132,17 @@ export function monterEditeur(racine, ctx) {
     $('vide').hidden = !!courant;
     var fv = $('fluxVide'); if (fv) fv.hidden = !courant || Object.keys(cartes).length > 0 || !chargeCartes;
     monde.querySelectorAll('.carte').forEach(function (n) { n.remove(); });
-    var manque = 0;
+    var manque = 0, entrants = entrees();
     Object.values(cartes).forEach(function (c) {
       if (!TYPES[c.type]) return;
-      var T = TYPES[c.type], so = sorties(c), autre = quiSur(c.id);
+      var T = TYPES[c.type], so = sorties(c), autre = quiSur(c.id), orph = c.type !== 'depart' && !entrants[c.id];
       var n = document.createElement('div');
-      n.className = 'carte' + (sel === c.id ? ' choisie' : '') + (autre ? ' autre' : '') + (liaison && c.type !== 'depart' && c.id !== liaison.source ? ' cible' : '');
+      n.className = 'carte' + (sel === c.id ? ' choisie' : '') + (autre ? ' autre' : '') + (orph ? ' orpheline' : '') + (liaison && c.type !== 'depart' && c.id !== liaison.source ? ' cible' : '');
       n.dataset.id = c.id;
       n.style.cssText = 'left:' + c.x + 'px;top:' + c.y + 'px;width:' + larg(c) + 'px;height:' + hauteur(c) + 'px;--c:' + T.coul + (autre ? ';--pc:' + couleurPers(autre) : '');
       var vide = c.type === 'question' ? 'Question à écrire' : c.type === 'action' ? 'Étape à décrire' : c.type === 'depart' ? 'Écran de départ' : 'Titre de la fin';
       var h = (autre ? '<span class="qui">' + esc(nomPers(autre)) + '</span>' : '') +
-        '<div class="ct-tete">' + (c.maq ? '<span class="ct-lie" title="Liée à la maquette">🔗</span>' : '') + '<button type="button" class="ct-dup" data-dup title="Dupliquer (⌘D)" aria-label="Dupliquer la carte">⧉</button>' + '<span class="ct-type"><i>' + T.ic + '</i>' + T.nom + '</span><b class="' + (c.titre ? '' : 'vide-t') + '">' + esc(c.titre || vide) + '</b></div>';
+        '<div class="ct-tete">' + (c.maq ? '<span class="ct-lie" title="Liée à la maquette">🔗</span>' : '') + '<button type="button" class="ct-dup" data-dup title="Dupliquer (⌘D)" aria-label="Dupliquer la carte">⧉</button>' + '<span class="ct-type"><i>' + T.ic + '</i>' + T.nom + (orph ? ' <span class="ct-orph">Hors parcours</span>' : '') + '<span class="ct-note"' + (aNote(c) ? '' : ' hidden') + '>✎ modif</span></span><b class="' + (c.titre ? '' : 'vide-t') + '">' + esc(c.titre || vide) + '</b></div>';
       if (T.fin) h += '<div class="ct-fin">' + esc(resumeFin(c)) + '</div>';
       if (so.length) {
         h += '<div class="ct-sorties">';
@@ -135,11 +162,58 @@ export function monterEditeur(racine, ctx) {
     var cp = $('compteur'); cp.hidden = !courant;
     cp.textContent = manque ? manque + ' sortie' + (manque > 1 ? 's' : '') + ' sans suite' : 'Toutes les sorties ont une suite';
     cp.className = 'compteur' + (manque ? ' alerte' : '');
+    var nbOrph = Object.values(cartes).filter(function (c) { return TYPES[c.type] && c.type !== 'depart' && !entrants[c.id]; }).length;
+    if (courant && nbOrph) cp.textContent += ' · ' + nbOrph + ' tuile' + (nbOrph > 1 ? 's' : '') + ' hors parcours';
+    compterModifs();
     liens();
     remplirPanneau();
     rendreTel();
     if (synchro && synchro[0] === courant) allumer(synchro[1]);
   }
+  function aNote(c) { return !!(c.modifs && c.modifs.trim()); }
+  function entrees() { // id de tuile → [[tuile source, n° de sortie]]
+    var e = {};
+    Object.values(cartes).forEach(function (c) { (c.suites || []).forEach(function (s, i) { if (s && cartes[s] && i < sorties(c).length) (e[s] = e[s] || []).push([c, i]); }); });
+    return e;
+  }
+  function nomCarte(c) { return c ? (c.titre || (TYPES[c.type] ? TYPES[c.type].nom : 'Tuile')) : '—'; }
+  function compterModifs() {
+    var b = $('btnModifs'); if (!b) return;
+    var n = Object.values(cartes).filter(aNote).length;
+    b.innerHTML = '✎ Modifs à faire' + (n ? '<span class="nb">' + n + '</span>' : '');
+  }
+  function afficherModifs() {
+    var avec = Object.values(cartes).filter(function (c) { return TYPES[c.type] && aNote(c); })
+      .sort(function (a, b) { return rangEtape(a.id) - rangEtape(b.id) || a.y - b.y || a.x - b.x; });
+    var nomFlux = courant && tunnels[courant] ? tunnels[courant].nom || 'Sans nom' : '';
+    var h = '<div class="e-carte liste-modifs"><div class="e-tete" style="--c:#b86a00"><span><i>✎</i>Modifs à faire · ' + esc(nomFlux) + '</span><button type="button" class="x" data-m-fermer aria-label="Fermer">×</button></div>';
+    if (!avec.length) h += '<p class="e-info">Aucune note pour l\'instant. Clique une tuile et écris dans l\'encadré « Modifs à faire sur cette tuile ».</p>';
+    else {
+      h += '<p class="aide">' + avec.length + ' tuile' + (avec.length > 1 ? 's' : '') + ' à reprendre. Clique une note pour aller sur la tuile.</p>';
+      h += avec.map(function (c) {
+        var T = TYPES[c.type];
+        return '<button type="button" class="modif-item" data-m-voir="' + esc(c.id) + '" style="--c:' + T.coul + '"><small>' + T.nom + '</small><b>' + esc(nomCarte(c)) + '</b><span>' + esc(c.modifs.trim()) + '</span></button>';
+      }).join('');
+      h += '<div class="e-bas"><button type="button" class="mini" data-m-copier>Copier toutes les notes</button></div>';
+    }
+    listeModifs.innerHTML = h + '</div>';
+    listeModifs.hidden = false;
+  }
+  function allerA(c) {
+    var r = plan.getBoundingClientRect(); vue.x = r.width / 2 - (c.x + larg(c) / 2) * vue.z; vue.y = r.height / 4 - c.y * vue.z; appliquerVue(); choisir(c.id);
+  }
+  listeModifs.addEventListener('click', function (e) {
+    if (e.target === listeModifs) { listeModifs.hidden = true; return; }
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.mFermer != null) listeModifs.hidden = true;
+    else if (b.dataset.mVoir) { var c = cartes[b.dataset.mVoir]; listeModifs.hidden = true; if (c) allerA(c); }
+    else if (b.dataset.mCopier != null) {
+      var txt = Object.values(cartes).filter(aNote).sort(function (a, b2) { return rangEtape(a.id) - rangEtape(b2.id); })
+        .map(function (c) { return '• ' + nomCarte(c) + ' : ' + c.modifs.trim(); }).join('\n');
+      var ok = function () { b.textContent = 'Copié'; setTimeout(function () { b.textContent = 'Copier toutes les notes'; }, 2000); };
+      if (navigator.clipboard) navigator.clipboard.writeText(txt).then(ok, function () {});
+    }
+  });
   function liens() {
     var p = '';
     Object.values(cartes).forEach(function (c) {
@@ -180,12 +254,34 @@ export function monterEditeur(racine, ctx) {
       h += '<label>Le client paie<input id="pPaie" data-champ="paie" value="' + esc(c.paie) + '" placeholder="Ex. Gratuit · prix réel 30 € max"></label>';
       h += '<label>Preuve à fournir<input id="pPreuve" data-champ="preuve" value="' + esc(c.preuve) + '" placeholder="Ex. Photo du verre"></label>';
     }
+    h += '<div class="note-modif"><span>✎ Modifs à faire sur cette tuile</span><textarea id="pModifs" data-champ="modifs" rows="3" placeholder="Vos suggestions pour cette tuile (ce qu\'il faut changer, ajouter, vérifier…)">' + esc(c.modifs) + '</textarea></div>';
+    h += '<div class="gr" id="liensCarte"></div>';
     h += '<div class="gr" id="lienMaq"></div>';
     h += '<div class="p-bas">' + (c.type !== 'depart'
       ? '<button type="button" class="mini" data-dupliquer>Dupliquer</button><button type="button" class="mini danger" data-supprimer>Supprimer la carte</button>'
       : '<button type="button" class="mini" data-dupliquer>Dupliquer</button><span class="aide">La carte de départ ne se supprime pas.</span>') + '</div>';
     panneau.innerHTML = h;
+    remplirLiens();
     remplirLienMaq();
+  }
+  function remplirLiens() {
+    var z = $('liensCarte'), c = sel && cartes[sel]; if (!z || !c) return;
+    var so = sorties(c), arrivees = c.type === 'depart' ? [] : (entrees()[c.id] || []), h = '';
+    if (so.length) {
+      h += '<span>Où mène cette tuile</span>' + so.map(function (lib, i) {
+        var d = c.suites && c.suites[i] && cartes[c.suites[i]];
+        return '<div class="lien-ligne"><p>« ' + esc(lib || '…') + ' » → ' + (d ? '<b>' + esc(nomCarte(d)) + '</b>' : '<i>pas de suite</i>') + '</p><div class="rep">' +
+          (d ? '<button type="button" class="mini" data-l-aller="' + esc(d.id) + '">Voir</button><button type="button" class="mini danger" data-l-delier="' + i + '">Délier</button><button type="button" class="mini" data-l-relier="' + i + '">Relier à une autre tuile</button>'
+             : '<button type="button" class="mini" data-l-creer="' + i + '">+ Nouvelle tuile</button><button type="button" class="mini" data-l-relier="' + i + '">Relier à une tuile existante</button>') +
+          '</div></div>';
+      }).join('');
+    }
+    if (c.type !== 'depart') {
+      h += '<span>Qui arrive sur cette tuile</span>' + (arrivees.length ? arrivees.map(function (a) {
+        return '<div class="lien-ligne"><p><b>' + esc(nomCarte(a[0])) + '</b> · « ' + esc(sorties(a[0])[a[1]] || '…') + ' »</p><div class="rep"><button type="button" class="mini" data-l-aller="' + esc(a[0].id) + '">Voir</button><button type="button" class="mini danger" data-e-delier="' + esc(a[0].id) + ':' + a[1] + '">Délier</button></div></div>';
+      }).join('') : '<p class="aide">Aucune tuile ne mène ici : elle est hors parcours. Pour la raccrocher, ouvre la tuile d\'avant et choisis « Relier à une tuile existante ».</p>');
+    }
+    z.innerHTML = h;
   }
   function remplirLienMaq() {
     var z = $('lienMaq'), c = sel && cartes[sel]; if (!z || !c) return;
@@ -200,6 +296,8 @@ export function monterEditeur(racine, ctx) {
     var n = monde.querySelector('.carte[data-id="' + c.id + '"]'); if (!n) return;
     var b = n.querySelector('.ct-tete b'); b.textContent = c.titre || '…'; b.className = c.titre ? '' : 'vide-t';
     var f = n.querySelector('.ct-fin'); if (f) f.textContent = resumeFin(c);
+    var nt = n.querySelector('.ct-note'); if (nt) nt.hidden = !aNote(c);
+    compterModifs();
     n.querySelectorAll('.ct-sortie').forEach(function (s, i) { var l = s.querySelector('.ct-lib, .ct-plus'); if (l) l.textContent = (l.classList.contains('ct-plus') ? '+ ' : '') + (sorties(c)[i] || ''); });
   }
   panneau.addEventListener('input', function (e) {
@@ -217,6 +315,15 @@ export function monterEditeur(racine, ctx) {
   panneau.addEventListener('click', function (e) {
     var c = cartes[sel], b = e.target.closest('button'); if (!c || !b) return;
     if (b.dataset.fermer != null) { choisir(null); return; }
+    if (b.dataset.lAller) { var d = cartes[b.dataset.lAller]; if (d) allerA(d); return; }
+    if (b.dataset.lDelier != null) { c.suites[+b.dataset.lDelier] = null; ecrire(c); panneau.dataset.id = ''; dessiner(); return; }
+    if (b.dataset.lRelier != null) { liaison = { source: c.id, i: +b.dataset.lRelier }; $('bandeau').hidden = false; dessiner(); return; }
+    if (b.dataset.lCreer != null) { ouvrirMenu(c.id, +b.dataset.lCreer, false, b); return; }
+    if (b.dataset.eDelier) {
+      var p = b.dataset.eDelier.split(':'), s = cartes[p[0]];
+      if (s && s.suites) { s.suites[+p[1]] = null; ecrire(s); }
+      panneau.dataset.id = ''; dessiner(); return;
+    }
     if (b.dataset.maqLier != null && dernierClic) { c.maq = { sel: dernierClic.sel, chemin: dernierClic.chemin, libelle: dernierClic.libelle }; ecrire(c); remplirLienMaq(); synchro = [courant, c.id]; allumer(c.id); return; }
     if (b.dataset.maqDelier != null) { delete c.maq; c.maq = null; ecrire(c); remplirLienMaq(); return; }
     if (b.dataset.maqVoir != null && c.maq) { montrerMaq(); rejouer(c.maq.chemin || [c.maq.sel]); return; }
@@ -281,6 +388,7 @@ export function monterEditeur(racine, ctx) {
     if (e.key !== 'Escape') return;
     menu.hidden = true;
     if (liaison) { liaison = null; $('bandeau').hidden = true; dessiner(); }
+    else if (!listeModifs.hidden) listeModifs.hidden = true;
     else if (!essai.hidden) essai.hidden = true;
   });
 
@@ -342,6 +450,7 @@ export function monterEditeur(racine, ctx) {
     if (a === 'centre') centrer();
     if (a === 'nouveau') creerTunnel();
     if (a === 'tester' && courant) tester();
+    if (a === 'modifs' && courant) afficherModifs();
     if (a === 'tel') { var z = $('telZone'); z.hidden = !z.hidden; b.setAttribute('aria-pressed', z.hidden ? 'false' : 'true'); try { localStorage.setItem('atelier-tel', z.hidden ? '0' : '1'); } catch (er) {} }
     if (a === 'supprimer' && courant) {
       if (!b.classList.contains('confirme')) { b.classList.add('confirme'); b.textContent = 'Confirmer ?'; setTimeout(function () { b.classList.remove('confirme'); b.textContent = 'Supprimer le flux'; }, 3000); return; }
