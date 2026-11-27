@@ -376,7 +376,7 @@ function SessionModulesBelgique({ pName, onBack, onLaunchModule, onEndRoom, onLa
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
             }}>🏆</div>
             <span style={{ fontSize: 10, fontWeight: 700, color: '#c9a227', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.3)', borderRadius: 20, padding: '2px 8px', letterSpacing: 0.5 }}>
-              26 questions
+              32 questions
             </span>
           </div>
           <div className="dash-tile-label" style={{ marginTop: 12 }}>Quiz Final</div>
